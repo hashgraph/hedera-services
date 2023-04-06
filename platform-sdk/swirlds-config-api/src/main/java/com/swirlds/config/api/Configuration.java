@@ -145,52 +145,52 @@ public interface Configuration {
             throws IllegalArgumentException;
 
     /**
-     * Returns a {@link List} of string elements of the property with the given name
+     * Returns a {@link Set} of string elements of the property with the given name
      *
      * @param propertyName the name of the property
-     * @return a {@link List} of elements of the property with the given name
+     * @return a {@link Set} of elements of the property with the given name
      * @throws NoSuchElementException   if the property does not exist.
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
-     *                                  or the given type
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
+     *                                  the given type
      */
     Set<String> getValueSet(String propertyName);
 
     /**
-     * Returns a {@link List} of string elements of the property with the given name or the given default {@link List}
+     * Returns a {@link Set} of string elements of the property with the given name or the given default {@link Set}
      *
      * @param propertyName the name of the property
-     * @param defaultValue the default {@link List}
-     * @return a {@link List} of elements of the property with the given name
+     * @param defaultValue the default {@link Set}
+     * @return a {@link Set} of elements of the property with the given name
      * @throws NoSuchElementException   if the property does not exist.
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
-     *                                  or the given type
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
+     *                                  the given type
      */
     Set<String> getValueSet(String propertyName, Set<String> defaultValue);
 
     /**
-     * Returns a {@link List} of elements of the property with the given name
+     * Returns a {@link Set} of elements of the property with the given name
      *
      * @param propertyName the name of the property
      * @param propertyType the type of the elements
      * @param <T>          the generic type of the elements
-     * @return a {@link List} of elements of the property with the given name
+     * @return a {@link Set} of elements of the property with the given name
      * @throws NoSuchElementException   if the property does not exist.
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
-     *                                  or the given type
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
+     *                                  the given type
      */
     <T> Set<T> getValueSet(String propertyName, Class<T> propertyType)
             throws NoSuchElementException, IllegalArgumentException;
 
     /**
-     * Returns a {@link List} of elements of the property with the given name or the given default {@link List}
+     * Returns a {@link Set} of elements of the property with the given name or the given default {@link Set}
      *
      * @param propertyName the name of the property
      * @param propertyType the type of the elements
-     * @param defaultValue the default {@link List}
+     * @param defaultValue the default {@link Set}
      * @param <T>          the generic type of the elements
-     * @return a {@link List} of elements of the property with the given name or the given default list
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
-     *                                  or the given type
+     * @return a {@link Set} of elements of the property with the given name or the given default set
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
+     *                                  the given type
      */
     <T> Set<T> getValueSet(String propertyName, Class<T> propertyType, Set<T> defaultValue)
             throws IllegalArgumentException;
