@@ -311,7 +311,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = "NestedERC20Contract";
 
-        return defaultHapiSpec("ERC_20_TRANSFER_FROM_CONTRACT_WITH_APPROVAL")
+        return propertyPreservingHapiSpec("ERC_20_TRANSFER_FROM_CONTRACT_WITH_APPROVAL")
+                .preserving("contracts.allowSystemUseOfHapiSigs")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
