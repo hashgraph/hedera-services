@@ -280,7 +280,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         return addressBook;
     }
 
-    private void validateTestScenario() {
+    private boolean validateTestScenario() {
         if (platform == null) {
             throw new IllegalStateException("platform is null, init has not been called.");
         }
@@ -288,24 +288,38 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         logger.info(DEMO_INFO.getMarker(), "Validating test scenario {}.", testScenario);
         switch (testScenario) {
             case 1:
-                validateForceUseOfConfigAddressBookScenario();
-                break;
+                return testScenario1GenesisForceUseOfConfigAddressBook();
             case 2:
-                swirldStateUpdateStakeOnGenesis();
-                break;
+                return testScenario2GenesisSwirldStateUpdateStake();
             case 3:
-                noSoftwareUpdateUseSavedStateAddressBook();
+                return testScenario3NoSoftwareUpdateUseSavedStateAddressBook();
+            case 4:
+                return testScenario4NoSoftwareUpdateForceUseOfConfigAddressBook();
             default:
                 logger.info(DEMO_INFO.getMarker(), "Test Scenario {}: no validation performed.", testScenario);
+                return true;
         }
     }
 
-    private boolean noSoftwareUpdateUseSavedStateAddressBook() {
-        // preconditions check
-        if (addressBookConfig.forceUseOfConfigAddressBook() == true) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "The test scenario requires the setting `addressBook.forceUseOfConfigAddressBook, false`");
+    private boolean testScenario4NoSoftwareUpdateForceUseOfConfigAddressBook() {
+        if (!checkTestScenarioConditions(true, 4, 1, 2)) {
+            return false;
+        }
+
+        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook stateAddressBook = getStateAddressBook();
+        final AddressBook usedAddressBook = getUsedAddressBook();
+        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
+
+        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
+                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false);
+    }
+
+    private boolean testScenario3NoSoftwareUpdateUseSavedStateAddressBook() {
+        if (!checkTestScenarioConditions(false, 3, 1, 2)) {
             return false;
         }
 
@@ -316,12 +330,12 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, false)
-                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, updatedAddressBook, false);
     }
 
-    private boolean swirldStateUpdateStakeOnGenesis() {
+    private boolean testScenario2GenesisSwirldStateUpdateStake() {
         // preconditions check
         if (addressBookConfig.forceUseOfConfigAddressBook() == true) {
             logger.error(
@@ -341,7 +355,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && theStateAddressBookWasNull(true);
     }
 
-    private boolean validateForceUseOfConfigAddressBookScenario() {
+    private boolean testScenario1GenesisForceUseOfConfigAddressBook() {
         // preconditions check
         if (addressBookConfig.forceUseOfConfigAddressBook() == false) {
             logger.error(
@@ -361,8 +375,56 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     }
 
     /**
+     * Check the test scenario preconditions.
+     *
+     * @param forceUseConfigAddressBook the expected value of `addressBook.forceUseOfConfigAddressBook`
+     * @param testScenario              the expected value of `testingTool.testScenario`
+     * @param softwareVersion           the expected value of `testingTool.softwareVersion`
+     * @param stakingBehavior           the expected value of `testingTool.stakingBehavior`
+     * @return true if the preconditions are met, false otherwise
+     */
+    private boolean checkTestScenarioConditions(
+            final boolean forceUseConfigAddressBook,
+            final int testScenario,
+            final int softwareVersion,
+            final int stakingBehavior) {
+        boolean passed = true;
+        if (addressBookConfig.forceUseOfConfigAddressBook() != forceUseConfigAddressBook) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The test scenario requires the setting `addressBook.forceUseOfConfigAddressBook, {}`",
+                    forceUseConfigAddressBook);
+            passed = false;
+        }
+        if (testingToolConfig.testScenario() != testScenario) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The test scenario requires the setting `testingTool.testScenario, {}`",
+                    testScenario);
+            passed = false;
+        }
+        if (testingToolConfig.softwareVersion() != softwareVersion) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The test scenario requires the setting `testingTool.softwareVersion, {}`",
+                    softwareVersion);
+            passed = false;
+        }
+        if (testingToolConfig.stakingBehavior() != stakingBehavior) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The test scenario requires the setting `testingTool.stakingBehavior, {}`",
+                    stakingBehavior);
+            passed = false;
+        }
+        return passed;
+    }
+
+    /**
      * This test compares the equality of two address books against the expected result.  The equality comparison is
-     * performed by converting them to config text and comparing the strings.
+     * performed by converting the address books to config text and comparing the strings.  The conversion to config
+     * text is to avoid needing to load public keys for the addresses and computing accurate isOwnHost values on the
+     * addresses.
      *
      * @param addressBook1 the first address book
      * @param addressBook2 the second address book
