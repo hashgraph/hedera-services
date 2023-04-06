@@ -19,13 +19,10 @@ package com.hedera.node.app.workflows.query;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -39,11 +36,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
-import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -54,8 +48,6 @@ import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
@@ -63,10 +55,8 @@ import io.grpc.StatusRuntimeException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -82,71 +72,42 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES =
             List.of(NETWORK_GET_EXECUTION_TIME, GET_ACCOUNT_DETAILS);
 
-    private final NodeInfo nodeInfo;
-    private final CurrentPlatformStatus currentPlatformStatus;
     private final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
     private final QueryChecker checker;
     private final QueryDispatcher dispatcher;
 
-    /** A map of counter metrics for each type of query received */
-    private final Map<HederaFunctionality, Counter> received = new EnumMap<>(HederaFunctionality.class);
-    /** A map of counter metrics for each type of query answered */
-    private final Map<HederaFunctionality, Counter> answered = new EnumMap<>(HederaFunctionality.class);
-
     private final FeeAccumulator feeAccumulator;
-    private final QueryContext queryContext;
     private final Codec<Query> queryParser;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
      *
-     * @param nodeInfo the {@link NodeInfo} of the current node
-     * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed
      *     state depending on the {@link ResponseType}
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param checker the {@link QueryChecker} with specific checks of an ingest-workflow
      * @param dispatcher the {@link QueryDispatcher} that will call query-specific methods
-     * @param metrics the {@link Metrics} with workflow-specific metrics
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
     public QueryWorkflowImpl(
-            @NonNull final NodeInfo nodeInfo,
-            @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker checker,
             @NonNull final QueryDispatcher dispatcher,
-            @NonNull final Metrics metrics,
             @NonNull final FeeAccumulator feeAccumulator,
-            @NonNull final QueryContextImpl queryContext,
             @NonNull final Codec<Query> queryParser) {
-        this.nodeInfo = requireNonNull(nodeInfo);
-        this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
         this.checker = requireNonNull(checker);
         this.dispatcher = requireNonNull(dispatcher);
         this.feeAccumulator = requireNonNull(feeAccumulator);
-        this.queryContext = requireNonNull(queryContext);
         this.queryParser = requireNonNull(queryParser);
-
-        // Create metrics for tracking each query received and answered per query type
-        for (var function : HederaFunctionality.values()) {
-            var name = function.name() + "Received";
-            var desc = "The number of queries received for " + function.name();
-            received.put(function, metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
-
-            name = function.name() + "Answered";
-            desc = "The number of queries answered for " + function.name();
-            answered.put(function, metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
-        }
     }
 
     @Override
@@ -159,20 +120,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         requireNonNull(responseBuffer);
 
         // 1. Parse and check header
-        final Query query;
-        try {
-            query = queryParser.parseStrict(requestBuffer.toReadableSequentialData());
-        } catch (IOException e) {
-            // TODO there may be other types of errors here. Please cross check with ingest parsing
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
-        }
+        final Query query = parseQuery(requestBuffer);
+        logger.debug("Received query: {}", query);
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Received query: {}", query);
-        }
-
-        final var functionality = functionOf(query);
-        received.get(functionality).increment();
+        final var function = functionOf(query);
 
         final var handler = dispatcher.getHandler(query);
         final var queryHeader = handler.extractHeader(query);
@@ -180,25 +131,18 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
         final ResponseType responseType = queryHeader.responseType();
-        logger.debug("Started answering a {} query of type {}", functionality, responseType);
+        logger.debug("Started answering a {} query of type {}", function, responseType);
 
         Response response;
         long fee = 0L;
         try (final var wrappedState = stateAccessor.apply(responseType)) {
             // Do some general pre-checks
-            if (nodeInfo.isSelfZeroStake()) {
-                // Zero stake nodes are currently not supported
-                throw new PreCheckException(INVALID_NODE_ACCOUNT);
-            }
-            if (currentPlatformStatus.get() != ACTIVE) {
-                throw new PreCheckException(PLATFORM_NOT_ACTIVE);
-            }
+            checker.checkNodeState();
             if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
 
             // 2. Check query throttles
-            final var function = functionOf(query);
             if (throttleAccumulator.shouldThrottleQuery(function, query)) {
                 throw new PreCheckException(BUSY);
             }
@@ -256,10 +200,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             } else {
                 // 6.ii Find response
                 final var header = createResponseHeader(responseType, validity, fee);
-                response = dispatcher.getResponse(storeFactory, query, header, queryContext);
+                response = dispatcher.getResponse(storeFactory, query, header);
             }
-
-            answered.get(functionality).increment();
         } catch (InsufficientBalanceException e) {
             final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
             response = handler.createEmptyResponse(header);
@@ -274,6 +216,15 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         } catch (IOException e) {
             e.printStackTrace();
             throw new StatusRuntimeException(Status.INTERNAL);
+        }
+    }
+
+    private Query parseQuery(Bytes requestBuffer) {
+        try {
+            return queryParser.parseStrict(requestBuffer.toReadableSequentialData());
+        } catch (IOException e) {
+            // TODO there may be other types of errors here. Please cross check with ingest parsing
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
     }
 
@@ -298,7 +249,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
     }
 
-    final class ByteArrayDataOutput extends WritableStreamingData {
+    private static final class ByteArrayDataOutput extends WritableStreamingData {
         private final ByteArrayOutputStream out;
 
         public ByteArrayDataOutput(ByteArrayOutputStream out) {
