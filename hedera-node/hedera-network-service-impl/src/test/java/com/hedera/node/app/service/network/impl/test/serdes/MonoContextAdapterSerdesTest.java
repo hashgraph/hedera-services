@@ -16,18 +16,20 @@
 
 package com.hedera.node.app.service.network.impl.test.serdes;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
-import com.hedera.node.app.service.network.impl.serdes.MonoContextAdapterSerdes;
+import com.hedera.node.app.service.network.impl.serdes.MonoContextAdapterCodec;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -41,16 +43,13 @@ class MonoContextAdapterSerdesTest {
             new ExchangeRates(1, 2, 3L, 4, 5, 6L));
 
     @Mock
-    private DataInput input;
+    private ReadableSequentialData input;
 
-    @Mock
-    private DataOutput output;
-
-    final MonoContextAdapterSerdes subject = new MonoContextAdapterSerdes();
+    final MonoContextAdapterCodec subject = new MonoContextAdapterCodec();
 
     @Test
     void doesntSupportUnnecessary() {
-        assertThrows(UnsupportedOperationException.class, subject::typicalSize);
+        assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_CONTEXT));
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_CONTEXT, input));
     }
@@ -59,18 +58,12 @@ class MonoContextAdapterSerdesTest {
     void canSerializeAndDeserializeFromAppropriateStream() throws IOException {
         final var baos = new ByteArrayOutputStream();
         final var actualOut = new SerializableDataOutputStream(baos);
-        subject.write(SOME_CONTEXT, actualOut);
+        subject.write(SOME_CONTEXT, new WritableStreamingData(actualOut));
         actualOut.flush();
 
         final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        final var parsed = subject.parse(actualIn);
+        final var parsed = subject.parse(new ReadableStreamingData(actualIn));
         assertSomeFields(SOME_CONTEXT, parsed);
-    }
-
-    @Test
-    void doesntSupportOtherStreams() {
-        assertThrows(IllegalArgumentException.class, () -> subject.parse(input));
-        assertThrows(IllegalArgumentException.class, () -> subject.write(SOME_CONTEXT, output));
     }
 
     private void assertSomeFields(final MerkleNetworkContext a, final MerkleNetworkContext b) {

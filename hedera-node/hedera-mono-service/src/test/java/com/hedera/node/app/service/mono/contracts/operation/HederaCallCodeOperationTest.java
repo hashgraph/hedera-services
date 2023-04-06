@@ -39,6 +39,7 @@ package com.hedera.node.app.service.mono.contracts.operation;
  */
 
 import static com.hedera.node.app.service.mono.contracts.operation.CommonCallSetup.commonSetup;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.*;
@@ -149,7 +150,7 @@ class HederaCallCodeOperationTest {
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
         given(acc.getAddress()).willReturn(Address.ZERO);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
                 .willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
 
@@ -177,7 +178,7 @@ class HederaCallCodeOperationTest {
         // and:
         given(worldUpdater.get(any())).willReturn(acc);
         given(acc.getAddress()).willReturn(Address.ZERO);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
                 .willReturn(false);
         given(addressValidator.test(any(), any())).willReturn(true);
 

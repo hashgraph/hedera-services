@@ -16,15 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -34,7 +34,7 @@ import java.util.Set;
 public final class ContractServiceImpl implements ContractService {
     private static final int MAX_STORAGE_ENTRIES = 4096;
     private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().setMinor(34).build();
+            SemanticVersion.newBuilder().minor(34).build();
     public static final String STORAGE_KEY = "STORAGE";
 
     @Override
@@ -46,6 +46,7 @@ public final class ContractServiceImpl implements ContractService {
         return new Schema(CURRENT_VERSION) {
             @NonNull
             @Override
+            @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
                 return Set.of(storageDef());
             }
@@ -53,9 +54,9 @@ public final class ContractServiceImpl implements ContractService {
     }
 
     private static StateDefinition<ContractKey, IterableContractValue> storageDef() {
-        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 ContractKey.MERKLE_VERSION, ContractKey::new, new ContractKeySerializer());
-        final var valueSerdes = MonoMapSerdesAdapter.serdesForVirtualValue(
+        final var valueSerdes = MonoMapCodecAdapter.codecForVirtualValue(
                 IterableContractValue.ITERABLE_VERSION, IterableContractValue::new);
 
         return StateDefinition.onDisk(STORAGE_KEY, keySerdes, valueSerdes, MAX_STORAGE_ENTRIES);

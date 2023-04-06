@@ -21,12 +21,15 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.Exchan
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperationExternalizer;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -127,6 +130,15 @@ public interface ContractsModule {
     @Binds
     @Singleton
     GasCalculator bindHederaGasCalculatorV20(GasCalculatorHederaV22 gasCalculator);
+
+    @Binds
+    @Singleton
+    EvmProperties bindEvmProperties(GlobalDynamicProperties evmProperties);
+
+    @Binds
+    @Singleton
+    CreateOperationExternalizer bindCreateOperationExternalizer(
+            HederaCreateOperationExternalizer createOperationExternalizer);
 
     @Binds
     @Singleton

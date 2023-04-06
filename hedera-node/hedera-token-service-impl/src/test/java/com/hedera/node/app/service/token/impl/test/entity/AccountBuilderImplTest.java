@@ -20,12 +20,12 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.accounts.Account.HBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.service.token.impl.entity.AccountImpl;
 import com.hedera.node.app.spi.accounts.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,10 +33,10 @@ import org.junit.jupiter.api.Test;
 class AccountBuilderImplTest {
     private AccountBuilder subject;
     public static Key A_CONTRACT_KEY = Key.newBuilder()
-            .setContractID(ContractID.newBuilder()
-                    .setShardNum(1L)
-                    .setRealmNum(1L)
-                    .setContractNum(3L)
+            .contractID(ContractID.newBuilder()
+                    .shardNum(1L)
+                    .realmNum(1L)
+                    .contractNum(3L)
                     .build())
             .build();
     private final HederaKey key = asHederaKey(A_CONTRACT_KEY).get();

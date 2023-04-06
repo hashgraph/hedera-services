@@ -22,7 +22,9 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUt
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils.areTopLevelSigsAvailable;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -313,6 +315,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         final int functionId = input.getInt(0);
         this.gasRequirement = 0L;
 
+        final var topLevelSigsEnabledForTransfer =
+                areTopLevelSigsAvailable(senderAddress, CryptoTransfer, dynamicProperties);
         this.precompile = switch (functionId) {
             case AbiConstants.ABI_ID_CRYPTO_TRANSFER,
                     AbiConstants.ABI_ID_TRANSFER_TOKENS,
@@ -328,7 +332,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                     precompilePricingUtils,
                     functionId,
                     senderAddress,
-                    dynamicProperties.isImplicitCreationEnabled());
+                    dynamicProperties.isImplicitCreationEnabled(),
+                    topLevelSigsEnabledForTransfer,
+                    true);
             case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
                     dynamicProperties.isAtomicCryptoTransferEnabled(),
                     () -> new TransferPrecompile(
@@ -341,7 +347,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils,
                             functionId,
                             senderAddress,
-                            dynamicProperties.isImplicitCreationEnabled()));
+                            dynamicProperties.isImplicitCreationEnabled(),
+                            topLevelSigsEnabledForTransfer,
+                            true));
             case AbiConstants.ABI_ID_MINT_TOKEN, AbiConstants.ABI_ID_MINT_TOKEN_V2 -> new MintPrecompile(
                     ledgers,
                     encoder,
@@ -614,7 +622,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             functionId,
-                                            dynamicProperties.isImplicitCreationEnabled()));
+                                            dynamicProperties.isImplicitCreationEnabled(),
+                                            topLevelSigsEnabledForTransfer));
 
                             case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
@@ -631,7 +640,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             functionId,
-                                            dynamicProperties.isImplicitCreationEnabled()));
+                                            dynamicProperties.isImplicitCreationEnabled(),
+                                            topLevelSigsEnabledForTransfer));
                             case AbiConstants.ABI_ID_ERC_ALLOWANCE -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
                                     () -> new AllowancePrecompile(
@@ -754,7 +764,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils,
                             functionId,
-                            dynamicProperties.isImplicitCreationEnabled()));
+                            dynamicProperties.isImplicitCreationEnabled(),
+                            topLevelSigsEnabledForTransfer));
             case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
                     dynamicProperties.areAllowancesEnabled(),
                     () -> new ERCTransferPrecompile(
@@ -769,7 +780,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils,
                             functionId,
-                            dynamicProperties.isImplicitCreationEnabled()));
+                            dynamicProperties.isImplicitCreationEnabled(),
+                            topLevelSigsEnabledForTransfer));
             default -> null;};
         if (precompile != null) {
             decodeInput(input, aliasResolver);

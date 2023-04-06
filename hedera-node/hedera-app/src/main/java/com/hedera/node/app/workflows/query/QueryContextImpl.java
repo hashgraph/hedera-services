@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.workflows.query;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.spi.meta.QueryContext;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import javax.inject.Inject;
 
 /**
@@ -34,7 +34,7 @@ public class QueryContextImpl implements QueryContext {
     }
 
     @Override
-    public ByteString getLedgerId() {
-        return networkInfo.ledgerId();
+    public Bytes getLedgerId() {
+        return Bytes.wrap(networkInfo.ledgerId().toByteArray());
     }
 }

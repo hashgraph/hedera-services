@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
@@ -28,13 +32,11 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.serdes.EntityNumSerdes;
-import com.hedera.node.app.service.token.impl.serdes.StringSerdes;
+import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
+import com.hedera.node.app.service.token.impl.serdes.StringCodec;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -44,7 +46,7 @@ public class TokenServiceImpl implements TokenService {
     private static final int MAX_TOKEN_RELS = 1042;
     private static final int MAX_MINTABLE_NFTS = 4096;
     private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().setMinor(34).build();
+            SemanticVersion.newBuilder().minor(34).build();
 
     public static final String NFTS_KEY = "NFTS";
     public static final String TOKENS_KEY = "TOKENS";
@@ -54,7 +56,8 @@ public class TokenServiceImpl implements TokenService {
     public static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(final @NonNull SchemaRegistry registry) {
+        requireNonNull(registry);
         registry.register(tokenSchema());
     }
 
@@ -76,47 +79,47 @@ public class TokenServiceImpl implements TokenService {
     }
 
     private StateDefinition<EntityNumVirtualKey, OnDiskAccount> onDiskAccountsDef() {
-        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(OnDiskAccount.CURRENT_VERSION, OnDiskAccount::new);
+                MonoMapCodecAdapter.codecForVirtualValue(OnDiskAccount.CURRENT_VERSION, OnDiskAccount::new);
         return StateDefinition.onDisk(ACCOUNTS_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
     }
 
     private StateDefinition<String, EntityNumValue> onDiskAliasesDef() {
-        final var keySerdes = new StringSerdes();
+        final var keySerdes = new StringCodec();
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(EntityNumValue.CURRENT_VERSION, EntityNumValue::new);
+                MonoMapCodecAdapter.codecForVirtualValue(EntityNumValue.CURRENT_VERSION, EntityNumValue::new);
         return StateDefinition.onDisk(ALIASES_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
     }
 
     private StateDefinition<EntityNum, MerklePayerRecords> payerRecordsDef() {
-        final var keySerdes = new EntityNumSerdes();
-        final var valueSerdes = MonoMapSerdesAdapter.serdesForSelfSerializable(
+        final var keySerdes = new EntityNumCodec();
+        final var valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
                 MerklePayerRecords.CURRENT_VERSION, MerklePayerRecords::new);
         return StateDefinition.inMemory(PAYER_RECORDS_KEY, keySerdes, valueSerdes);
     }
 
     private StateDefinition<EntityNum, MerkleToken> tokensDef() {
-        final var keySerdes = new EntityNumSerdes();
+        final var keySerdes = new EntityNumCodec();
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForSelfSerializable(MerkleToken.CURRENT_VERSION, MerkleToken::new);
+                MonoMapCodecAdapter.codecForSelfSerializable(MerkleToken.CURRENT_VERSION, MerkleToken::new);
         return StateDefinition.inMemory(TOKENS_KEY, keySerdes, valueSerdes);
     }
 
     private StateDefinition<EntityNumVirtualKey, OnDiskTokenRel> onDiskTokenRelsDef() {
-        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(OnDiskTokenRel.CURRENT_VERSION, OnDiskTokenRel::new);
+                MonoMapCodecAdapter.codecForVirtualValue(OnDiskTokenRel.CURRENT_VERSION, OnDiskTokenRel::new);
         return StateDefinition.onDisk(TOKEN_RELS_KEY, keySerdes, valueSerdes, MAX_TOKEN_RELS);
     }
 
     private StateDefinition<UniqueTokenKey, UniqueTokenValue> onDiskNftsDef() {
-        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 UniqueTokenKey.CURRENT_VERSION, UniqueTokenKey::new, new UniqueTokenKeySerializer());
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new);
+                MonoMapCodecAdapter.codecForVirtualValue(UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new);
         return StateDefinition.onDisk(NFTS_KEY, keySerdes, valueSerdes, MAX_MINTABLE_NFTS);
     }
 }

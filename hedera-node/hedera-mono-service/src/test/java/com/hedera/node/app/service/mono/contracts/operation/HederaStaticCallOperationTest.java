@@ -45,6 +45,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -78,6 +79,9 @@ class HederaStaticCallOperationTest {
 
     @Mock
     private Account acc;
+
+    @Mock
+    private EvmSigsVerifier sigsVerifier;
 
     @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;

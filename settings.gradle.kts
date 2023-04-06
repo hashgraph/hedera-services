@@ -30,7 +30,7 @@ plugins {
   id("com.gradle.enterprise").version("3.11.4")
   // Use GIT plugin to clone HAPI protobuf files
   // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
-  id("me.champeau.includegit").version("0.1.5")
+  id("me.champeau.includegit").version("0.1.6")
 }
 
 include(":hedera-node")
@@ -98,8 +98,9 @@ gitRepositories {
   include("hedera-protobufs") {
     uri.set("https://github.com/hashgraph/hedera-protobufs.git")
     // choose tag or branch of HAPI you would like to test with
+    // this looks for a tag in hedera-protobufs repo
     // This version needs to match tha HAPI version below in versionCatalogs
-    tag.set("v0.36.1")
+    tag.set("v0.37.0")
     // do not load project from repo
     autoInclude.set(false)
   }
@@ -113,11 +114,12 @@ dependencyResolutionManagement {
     // distribution. These libs can be depended on during compilation, or bundled as part of
     // runtime.
     create("libs") {
-      // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      version("hapi-version", "0.36.1")
+      // The HAPI API version to use, this need to match the Hapi protubuf java version from pom.xml
+      // (https://github.com/hashgraph/hedera-protobufs-java.git)
+      version("hapi-version", "0.37.0-SNAPSHOT")
 
       // Definition of version numbers for all libraries
-      version("pbj-version", "0.3.0")
+      version("pbj-version", "0.5.1")
       version("besu-version", "22.10.1")
       version("besu-native-version", "0.6.1")
       version("bouncycastle-version", "1.70")
@@ -267,7 +269,7 @@ dependencyResolutionManagement {
       version("assertj-version", "3.23.1")
 
       bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
-      bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
+      bundle("mockito", listOf("mockito-inline", "mockito-jupiter"))
       bundle("testcontainers", listOf("testcontainers-core", "testcontainers-junit"))
 
       bundle(
@@ -276,7 +278,7 @@ dependencyResolutionManagement {
               "junit-jupiter",
               "junit-jupiter-api",
               "junit-jupiter-params",
-              "mockito-core",
+              "mockito-inline",
               "mockito-jupiter",
               "hamcrest",
               "awaitility",
@@ -296,10 +298,9 @@ dependencyResolutionManagement {
           .versionRef("junit5-version")
       library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params")
           .versionRef("junit5-version")
-      library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito-version")
+      library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
       library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter")
           .versionRef("mockito-version")
-      library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
       library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
       library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
       library("testcontainers-core", "org.testcontainers", "testcontainers")
