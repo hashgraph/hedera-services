@@ -125,7 +125,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final var failedCallTxn = "failedCallTxn";
 
         return propertyPreservingHapiSpec("FixedFeeFailsWhenNotEnabled")
-                .preserving(EVM_ALIAS_ENABLED_PROP)
+                .preserving(EVM_ALIAS_ENABLED_PROP, "contracts.precompile.unsupportedCustomFeeReceiverDebits")
                 .given(
                         overriding(EVM_ALIAS_ENABLED_PROP, "true"),
                         uploadInitCode(WELL_KNOWN_TREASURY_CONTRACT),
@@ -198,7 +198,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final var failedCallTxn = "failedCallTxn";
 
         return propertyPreservingHapiSpec("FallbackFeePayerMustSign")
-                .preserving(EVM_ALIAS_ENABLED_PROP)
+                .preserving(EVM_ALIAS_ENABLED_PROP, "contracts.precompile.unsupportedCustomFeeReceiverDebits")
                 .given(
                         overriding(EVM_ALIAS_ENABLED_PROP, "true"),
                         uploadInitCode(WELL_KNOWN_TREASURY_CONTRACT),
