@@ -75,6 +75,10 @@ public class BalanceChange {
     private boolean isForCustomFee = false;
     private AccountID payerID = null;
 
+    // This is used to indicate if the balance change is for a custom fee that is a fallback fee
+    // This is used to enforce receiver signature requirements for fallback fees
+    private boolean includesFallbackFee = false;
+
     public static BalanceChange changingHbar(final AccountAmount aa, final AccountID payerID) {
         return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE, payerID);
     }
@@ -437,5 +441,22 @@ public class BalanceChange {
         if (isAlias(accountId)) return alias;
         else if (hasNonEmptyCounterPartyAlias()) return counterPartyAlias;
         else return null;
+    }
+
+    /**
+     * Boolean flag to indicate if the change is for a custom fee that includes a fallback fee.
+     *
+     * @return true if the change is for a custom fee that includes a fallback fee
+     */
+    public boolean includesFallbackFee() {
+        return includesFallbackFee;
+    }
+    /**
+     * Sets the flag to indicate if the change is for a custom fee that includes a fallback fee.
+     * This is used to enforce the receiver signature requirement in a crypto transfer of an NFT
+     * with a fallback royalty fee.
+     */
+    public void setIncludesFallbackFee() {
+        this.includesFallbackFee = true;
     }
 }

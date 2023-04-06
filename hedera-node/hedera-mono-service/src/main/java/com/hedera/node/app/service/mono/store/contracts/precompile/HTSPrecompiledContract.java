@@ -350,6 +350,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils,
                             functionId,
                             senderAddress,
+                            dynamicProperties.getHtsUnsupportedCustomFeeReceiverDebits(),
                             dynamicProperties.isImplicitCreationEnabled(),
                             topLevelSigsEnabledForTransfer,
                             true);
@@ -366,6 +367,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             precompilePricingUtils,
                                             functionId,
                                             senderAddress,
+                                            dynamicProperties
+                                                    .getHtsUnsupportedCustomFeeReceiverDebits(),
                                             dynamicProperties.isImplicitCreationEnabled(),
                                             topLevelSigsEnabledForTransfer,
                                             true));
@@ -714,6 +717,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                             precompilePricingUtils,
                                                             functionId,
                                                             dynamicProperties
+                                                                    .getHtsUnsupportedCustomFeeReceiverDebits(),
+                                                            dynamicProperties
                                                                     .isImplicitCreationEnabled(),
                                                             topLevelSigsEnabledForTransfer));
 
@@ -733,6 +738,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                             infrastructureFactory,
                                                             precompilePricingUtils,
                                                             functionId,
+                                                            dynamicProperties
+                                                                    .getHtsUnsupportedCustomFeeReceiverDebits(),
                                                             dynamicProperties
                                                                     .isImplicitCreationEnabled(),
                                                             topLevelSigsEnabledForTransfer));
@@ -913,6 +920,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             functionId,
+                                            dynamicProperties
+                                                    .getHtsUnsupportedCustomFeeReceiverDebits(),
                                             dynamicProperties.isImplicitCreationEnabled(),
                                             topLevelSigsEnabledForTransfer));
                     case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
@@ -930,6 +939,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             functionId,
+                                            dynamicProperties
+                                                    .getHtsUnsupportedCustomFeeReceiverDebits(),
                                             dynamicProperties.isImplicitCreationEnabled(),
                                             topLevelSigsEnabledForTransfer));
                     default -> null;

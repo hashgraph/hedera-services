@@ -1320,11 +1320,11 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .addCryptoAllowance(OWNER, OWNER, 100L)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasPrecheck(ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER),
+                        // Only reject self approvals for NFTs, else allow as per OZ ERC-20 standard
                         cryptoApproveAllowance()
                                 .payingWith(OWNER)
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, OWNER, 100L)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER),
+                                .fee(ONE_HUNDRED_HBARS),
                         cryptoApproveAllowance()
                                 .payingWith(OWNER)
                                 .addNftAllowance(
@@ -1338,7 +1338,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                         accountDetailsWith()
                                                 .cryptoAllowancesCount(0)
                                                 .nftApprovedForAllAllowancesCount(0)
-                                                .tokenAllowancesCount(0)));
+                                                .tokenAllowancesCount(1)));
     }
 
     private HapiSpec negativeAmountFailsForFungible() {

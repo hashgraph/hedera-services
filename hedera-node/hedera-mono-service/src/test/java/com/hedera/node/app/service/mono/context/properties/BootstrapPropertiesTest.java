@@ -153,6 +153,9 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST, 10000L),
                     entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, true),
                     entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, true),
+                    entry(
+                            CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS,
+                            EnumSet.of(CustomFeeType.FIXED_FEE)),
                     entry(DEV_ONLY_DEFAULT_NODE_LISTENS, true),
                     entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, true),
                     entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
