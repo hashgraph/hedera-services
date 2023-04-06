@@ -613,23 +613,23 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec transferToCaller() {
         final var transferTxn = TRANSFER_TXN;
+        final var sender = "sender";
         return defaultHapiSpec(TRANSFER_TO_CALLER)
                 .given(
                         uploadInitCode(TRANSFERRING_CONTRACT),
                         contractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
-                        getAccountInfo(DEFAULT_CONTRACT_SENDER)
-                                .savingSnapshot(ACCOUNT_INFO)
-                                .payingWith(GENESIS))
+                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+                        getAccountInfo(sender).savingSnapshot(ACCOUNT_INFO).payingWith(GENESIS))
                 .when(withOpContext((spec, log) -> {
                     var transferCall = contractCall(TRANSFERRING_CONTRACT, TRANSFER_TO_CALLER, BigInteger.valueOf(10))
-                            .payingWith(DEFAULT_CONTRACT_SENDER)
+                            .payingWith(sender)
                             .via(transferTxn)
                             .logged();
 
                     var saveTxnRecord = getTxnRecord(transferTxn)
                             .saveTxnRecordToRegistry("txn")
                             .payingWith(GENESIS);
-                    var saveAccountInfoAfterCall = getAccountInfo(DEFAULT_CONTRACT_SENDER)
+                    var saveAccountInfoAfterCall = getAccountInfo(sender)
                             .savingSnapshot(ACCOUNT_INFO_AFTER_CALL)
                             .payingWith(GENESIS);
                     var saveContractInfo =

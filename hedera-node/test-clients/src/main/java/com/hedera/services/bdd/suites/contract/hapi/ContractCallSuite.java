@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -87,6 +86,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -250,55 +250,118 @@ public class ContractCallSuite extends HapiSuite {
                 nestedContractCannotOverSendValue(),
                 depositMoreThanBalanceFailsGracefully(),
                 lowLevelEcrecCallBehavior(),
-                callingAddress0FailsWithInvalidSolidityAddress(),
-                callToSystemEntity());
+                callsToSystemEntityNumsAreTreatedAsPrecompileCalls());
     }
 
     private HapiSpec lowLevelEcrecCallBehavior() {
         final var TEST_CONTRACT = "TestContract";
+        final var somebody = "somebody";
+        final var account = "0.0.1";
         return defaultHapiSpec("LowLevelEcrecCallBehavior")
                 .given(
                         uploadInitCode(TEST_CONTRACT),
-                        contractCreate(TEST_CONTRACT,
-                                idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(2).build()),
-                                BigInteger.ONE).balance(ONE_HBAR),
-                        cryptoCreate("somebody"),
-                        balanceSnapshot("start", "0.0.1")
-                )
-                .when().then(
-                        cryptoUpdate("0.0.1").receiverSigRequired(true).signedBy(GENESIS),
+                        contractCreate(
+                                        TEST_CONTRACT,
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(2)
+                                                .build()),
+                                        BigInteger.ONE)
+                                .balance(ONE_HBAR),
+                        cryptoCreate(somebody),
+                        balanceSnapshot("start", account))
+                .when()
+                .then(
+                        cryptoUpdate(account).receiverSigRequired(true).signedBy(GENESIS),
                         contractCall(TEST_CONTRACT, "lowLevelECREC")
-                                .payingWith("somebody")
+                                .payingWith(somebody)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
-                                .payingWith("somebody")
+                                .payingWith(somebody)
                                 .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
-                        cryptoUpdate("0.0.1").receiverSigRequired(false).signedBy(GENESIS),
+                        cryptoUpdate(account).receiverSigRequired(false).signedBy(GENESIS),
                         contractCall(TEST_CONTRACT, "lowLevelECREC")
-                                .payingWith("somebody")
+                                .payingWith(somebody)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
-                                .payingWith("somebody")
+                                .payingWith(somebody)
                                 .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
-                        // And the value sent with the low-level call will indeed be received by 0.0.1
-                        getAccountBalance("0.0.1").hasTinyBars(changeFromSnapshot("start", +0)));
+                        getAccountBalance(account).hasTinyBars(changeFromSnapshot("start", +0)));
     }
 
-    private HapiSpec callToSystemEntity() {
+    private HapiSpec callsToSystemEntityNumsAreTreatedAsPrecompileCalls() {
         final var TEST_CONTRACT = "TestContract";
-        return defaultHapiSpec("callToSystemEntity")
+        final var ZERO_ADDRESS = 0L;
+        final var zeroAddressTxn = "zeroAddressTxn";
+        final var ECREC_NUM = 1L;
+        final var existingNumAndPrecompileTxn = "existingNumAndPrecompileTxn";
+        final var EXISTING_SYSTEM_ENTITY_NUM = 50L;
+        final var existingSystemEntityTxn = "existingSystemEntityTxn";
+        final var NON_EXISTING_SYSTEM_ENTITY_NUM = 345L;
+        final var nonExistingSystemEntityTxn = "nonExistingSystemEntityTxn";
+        final var callSpecificAddressFunction = "callSpecific";
+        final var callSpecificAddressWithValueFunction = "callSpecificWithValue";
+
+        return defaultHapiSpec("callsToSystemEntityNumsAreTreatedAsPrecompileCalls")
                 .given(
                         uploadInitCode(TEST_CONTRACT),
-                        contractCreate(TEST_CONTRACT,
-                                idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(2).build()),
-                                BigInteger.ONE).balance(ONE_HBAR)
-                )
-                .when().then(
-                        contractCall(TEST_CONTRACT, "callSpecificWithValue", idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(5L).build()))
-                                .sending(555)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                        contractCall(TEST_CONTRACT, "callSpecific", idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(5L).build()))
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                        contractCreate(
+                                        TEST_CONTRACT,
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(2)
+                                                .build()),
+                                        BigInteger.ONE)
+                                .balance(ONE_HBAR))
+                .when(
+                        contractCall(
+                                        TEST_CONTRACT,
+                                        callSpecificAddressFunction,
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(ZERO_ADDRESS)
+                                                .build()))
+                                .via(zeroAddressTxn)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                        contractCall(
+                                        TEST_CONTRACT,
+                                        callSpecificAddressFunction,
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(EXISTING_SYSTEM_ENTITY_NUM)
+                                                .build()))
+                                .via(existingSystemEntityTxn)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                        contractCall(
+                                        TEST_CONTRACT,
+                                        callSpecificAddressFunction,
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(NON_EXISTING_SYSTEM_ENTITY_NUM)
+                                                .build()))
+                                .via(nonExistingSystemEntityTxn)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                        contractCall(
+                                        TEST_CONTRACT,
+                                        callSpecificAddressWithValueFunction,
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(ECREC_NUM)
+                                                .build()))
+                                .via(existingNumAndPrecompileTxn)
+                                .sending(500)
+                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION))
+                .then(
+                        getTxnRecord(zeroAddressTxn)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().error(INVALID_SOLIDITY_ADDRESS.name())))
+                                .logged(),
+                        getTxnRecord(existingSystemEntityTxn)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().error(INVALID_SOLIDITY_ADDRESS.name())))
+                                .logged(),
+                        getTxnRecord(nonExistingSystemEntityTxn)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().error(INVALID_SOLIDITY_ADDRESS.name())))
+                                .logged(),
+                        getTxnRecord(existingNumAndPrecompileTxn)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().error(INVALID_FEE_SUBMITTED.name())))
+                                .logged());
     }
 
     private HapiSpec depositMoreThanBalanceFailsGracefully() {
@@ -1124,19 +1187,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then(getTxnRecord("lightTxn").logged());
     }
 
-    HapiSpec callingAddress0FailsWithInvalidSolidityAddress() {
-        final var CALL_0_CONTRACT = "RevertingContract";
-        return defaultHapiSpec("callingAddress0FailsWithInvalidSolidityAddress")
-                .given(
-                        uploadInitCode(CALL_0_CONTRACT),
-                        contractCreate(CALL_0_CONTRACT, BigInteger.valueOf(5555L)))
-                .when(contractCall(CALL_0_CONTRACT, "callingWrongAddress")
-                        .via(PAY_TXN)
-                        .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))
-                .then(getTxnRecord(PAY_TXN)
-                        .logged());
-    }
-
     HapiSpec depositSuccess() {
         return defaultHapiSpec("DepositSuccess")
                 .given(
@@ -1870,12 +1920,20 @@ public class ContractCallSuite extends HapiSuite {
     private HapiSpec sendHbarsToCallerFromDifferentAddresses() {
         return defaultHapiSpec("sendHbarsToCallerFromDifferentAddresses")
                 .given(withOpContext((spec, log) -> {
+                    final var keyCreation = newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE);
                     if (!spec.isUsingEthCalls()) {
+                        final var sender = "sender";
+                        final var createSender = cryptoCreate(sender);
+                        allRunFor(spec, createSender);
+                        spec.registry()
+                                .saveKey(
+                                        DEFAULT_CONTRACT_RECEIVER,
+                                        spec.registry().getKey(sender));
                         spec.registry()
                                 .saveAccountId(
-                                        DEFAULT_CONTRACT_RECEIVER, spec.setup().strongControlAccount());
+                                        DEFAULT_CONTRACT_RECEIVER,
+                                        spec.registry().getAccountID(sender));
                     }
-                    final var keyCreation = newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE);
                     final var transfer1 = cryptoTransfer(
                                     tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                             .via("autoAccount");

@@ -42,6 +42,32 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_toCall",
+        "type": "address"
+      }
+    ],
+    "name": "delegateCallSpecific",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_toCall",
+        "type": "address"
+      }
+    ],
+    "name": "delegateCallSpecificWithValue",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "foo",
     "outputs": [
