@@ -40,7 +40,7 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -129,12 +129,12 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             recordBuilder.setNewTopicMetadata(
                     asBytes(updatedTopic.runningHash()), updatedTopic.sequenceNumber(), RUNNING_HASH_VERSION);
         } catch (IOException e) {
-            throw new HandleStatusException(INVALID_TRANSACTION);
+            throw new HandleException(INVALID_TRANSACTION);
         }
     }
 
     /**
-     * Validates te transaction body. Throws {@link HandleStatusException} if any of the validations fail.
+     * Validates te transaction body. Throws {@link HandleException} if any of the validations fail.
      * @param txn the {@link TransactionBody} of the active transaction
      * @param config the {@link ConsensusServiceConfig}
      * @param topic the topic to which the message is being submitted
@@ -149,17 +149,17 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         // Question do we need this check ?
         final var msgLen = op.message().length();
         if (msgLen == 0) {
-            throw new HandleStatusException(INVALID_TOPIC_MESSAGE);
+            throw new HandleException(INVALID_TOPIC_MESSAGE);
         }
 
         /* Check if the message submitted is greater than acceptable size */
         if (msgLen > config.maxMessageSize()) {
-            throw new HandleStatusException(MESSAGE_SIZE_TOO_LARGE);
+            throw new HandleException(MESSAGE_SIZE_TOO_LARGE);
         }
 
         /* Check if the topic exists */
         if (topic.isEmpty()) {
-            throw new HandleStatusException(INVALID_TOPIC_ID);
+            throw new HandleException(INVALID_TOPIC_ID);
         }
         /* If the message is too large, user will be able to submit the message fragments in chunks. Validate if chunk info is correct */
         validateChunkInfo(txnId, payer, op);
@@ -168,7 +168,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     /**
      * If the message is too large, user will be able to submit the message fragments in chunks.
      * Validates the chunk info in the transaction body.
-     * Throws {@link HandleStatusException} if any of the validations fail.
+     * Throws {@link HandleException} if any of the validations fail.
      * @param txnId the {@link TransactionID} of the active transaction
      * @param payer the {@link AccountID} of the payer
      * @param op the {@link ConsensusSubmitMessageTransactionBody} of the active transaction
@@ -180,7 +180,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
             /* Validate chunk number */
             if (!(1 <= chunkInfo.number() && chunkInfo.number() <= chunkInfo.total())) {
-                throw new HandleStatusException(INVALID_CHUNK_NUMBER);
+                throw new HandleException(INVALID_CHUNK_NUMBER);
             }
 
             /* Validate the initial chunk transaction payer is the same payer for the current transaction*/
@@ -188,7 +188,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                     .initialTransactionIDOrElse(TransactionID.DEFAULT)
                     .accountIDOrElse(AccountID.DEFAULT)
                     .equals(payer)) {
-                throw new HandleStatusException(INVALID_CHUNK_TRANSACTION_ID);
+                throw new HandleException(INVALID_CHUNK_TRANSACTION_ID);
             }
 
             /* Validate if the transaction is submitting initial chunk,payer in initial transaction Id should be same as payer of the transaction */
@@ -196,7 +196,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                     && !chunkInfo
                             .initialTransactionIDOrElse(TransactionID.DEFAULT)
                             .equals(txnId)) {
-                throw new HandleStatusException(INVALID_CHUNK_TRANSACTION_ID);
+                throw new HandleException(INVALID_CHUNK_TRANSACTION_ID);
             }
         }
     }

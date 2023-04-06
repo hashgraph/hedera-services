@@ -32,7 +32,7 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hederahashgraph.api.proto.java.Key;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -128,7 +128,7 @@ class MonoHandleContextTest {
     }
 
     private static void assertFailsWith(final ResponseCodeEnum expected, final Runnable runnable) {
-        final var e = assertThrows(HandleStatusException.class, runnable::run);
+        final var e = assertThrows(HandleException.class, runnable::run);
         assertEquals(expected, e.getStatus());
     }
 }

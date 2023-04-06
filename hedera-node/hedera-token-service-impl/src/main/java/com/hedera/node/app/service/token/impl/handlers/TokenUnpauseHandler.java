@@ -29,7 +29,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.records.TokenUnPauseRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.UnPauseTokenRecordBuilder;
-import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -98,7 +98,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
         var op = txn.tokenUnpause();
         var token = tokenStore.get(op.token().tokenNum());
         if (token.isEmpty()) {
-            throw new HandleStatusException(INVALID_TOKEN_ID);
+            throw new HandleException(INVALID_TOKEN_ID);
         }
 
         final var copyBuilder = token.get().copyBuilder();

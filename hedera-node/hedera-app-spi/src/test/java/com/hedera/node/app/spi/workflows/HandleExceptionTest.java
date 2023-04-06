@@ -21,23 +21,23 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
-class HandleStatusExceptionTest {
+class HandleExceptionTest {
     @Test
     void reportsItsGivenStatus() {
-        final var ex = new HandleStatusException(MEMO_TOO_LONG);
+        final var ex = new HandleException(MEMO_TOO_LONG);
 
         assertEquals(MEMO_TOO_LONG, ex.getStatus());
     }
 
     @Test
     void trueIsntProblematic() {
-        assertDoesNotThrow(() -> HandleStatusException.validateTrue(true, MEMO_TOO_LONG));
+        assertDoesNotThrow(() -> HandleException.validateTrue(true, MEMO_TOO_LONG));
     }
 
     @Test
     void falseIsProblem() {
         final var failure = assertThrows(
-                HandleStatusException.class, () -> HandleStatusException.validateTrue(false, MEMO_TOO_LONG));
+                HandleException.class, () -> HandleException.validateTrue(false, MEMO_TOO_LONG));
 
         assertEquals(MEMO_TOO_LONG, failure.getStatus());
     }
@@ -45,13 +45,13 @@ class HandleStatusExceptionTest {
     @Test
     void trueIsProblemFromOtherPerspective() {
         final var failure = assertThrows(
-                HandleStatusException.class, () -> HandleStatusException.validateFalse(true, MEMO_TOO_LONG));
+                HandleException.class, () -> HandleException.validateFalse(true, MEMO_TOO_LONG));
 
         assertEquals(MEMO_TOO_LONG, failure.getStatus());
     }
 
     @Test
     void falseIsOkFromOtherPerspective() {
-        assertDoesNotThrow(() -> HandleStatusException.validateFalse(false, MEMO_TOO_LONG));
+        assertDoesNotThrow(() -> HandleException.validateFalse(false, MEMO_TOO_LONG));
     }
 }

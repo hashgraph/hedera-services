@@ -35,7 +35,7 @@ import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -95,7 +95,7 @@ public class TransactionDispatcher {
      *
      * @param function the type of the consensus service transaction
      * @param txn the consensus transaction to be handled
-     * @throws HandleStatusException if the handler fails
+     * @throws HandleException if the handler fails
      * @throws IllegalArgumentException if there is no handler for the given function type
      */
     public void dispatchHandle(

@@ -34,7 +34,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalStaticPropertie
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.AdaptedMonoTransitionRunner;
@@ -96,7 +96,7 @@ class AdaptedMonoTransitionRunnerTest {
     void delegatesConsensusCreateAndTracksFailureIfThrows() {
         given(accessor.getFunction()).willReturn(ConsensusCreateTopic);
         given(accessor.getTxn()).willReturn(mockTxn);
-        willThrow(new HandleStatusException(INVALID_EXPIRATION_TIME))
+        willThrow(new HandleException(INVALID_EXPIRATION_TIME))
                 .given(dispatcher)
                 .dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), storeFactory);
 

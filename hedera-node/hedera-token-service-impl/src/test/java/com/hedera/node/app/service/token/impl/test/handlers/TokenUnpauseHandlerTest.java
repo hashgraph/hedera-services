@@ -33,7 +33,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.records.UnPauseTokenRecordBuilder;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,7 +78,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
         givenInvalidTokenInTxn();
 
         final var msg = assertThrows(
-                HandleStatusException.class,
+                HandleException.class,
                 () -> subject.handle(tokenUnpauseTxn, new UnPauseTokenRecordBuilder(), writableStore));
         assertEquals(INVALID_TOKEN_ID, msg.getStatus());
     }

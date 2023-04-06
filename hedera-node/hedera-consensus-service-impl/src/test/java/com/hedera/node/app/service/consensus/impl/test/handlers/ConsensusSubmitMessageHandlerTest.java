@@ -61,7 +61,7 @@ import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TxnUtils;
@@ -293,7 +293,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleStatusException.class,
+                HandleException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_TOPIC_MESSAGE, msg.getStatus());
     }
@@ -309,7 +309,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         config = new ConsensusServiceConfig(10, 5);
 
         final var msg = assertThrows(
-                HandleStatusException.class,
+                HandleException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE, msg.getStatus());
     }
@@ -323,7 +323,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleStatusException.class,
+                HandleException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, msg.getStatus());
     }
@@ -343,7 +343,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleStatusException.class,
+                HandleException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
     }
@@ -357,7 +357,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleStatusException.class,
+                HandleException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
     }
@@ -373,7 +373,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleStatusException.class,
+                HandleException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
     }
@@ -389,7 +389,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleStatusException.class,
+                HandleException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
     }

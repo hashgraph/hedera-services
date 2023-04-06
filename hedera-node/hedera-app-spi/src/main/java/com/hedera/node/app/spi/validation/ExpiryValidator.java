@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.validation;
 
-import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 
 /**
@@ -30,19 +30,19 @@ public interface ExpiryValidator {
      *
      * @param entityCanSelfFundRenewal whether the entity can self-fund its own auto-renewal
      * @param creationMetadata the expiry metadata for the attempted creation
-     * @throws HandleStatusException if the metadata is invalid
+     * @throws HandleException if the metadata is invalid
      */
     ExpiryMeta resolveCreationAttempt(boolean entityCanSelfFundRenewal, ExpiryMeta creationMetadata);
 
     /**
      * Validates the expiry metadata for an attempt to update an entity, and returns the
      * expiry metadata that will result from the update if it is valid. Otherwise throws
-     * a {@link HandleStatusException}.
+     * a {@link HandleException}.
      *
      * @param currentMetadata the current expiry metadata for the entity
      * @param updateMetadata the expiry metadata for the attempted update
      * @return the expiry metadata that will result from the update
-     * @throws HandleStatusException if the metadata is invalid
+     * @throws HandleException if the metadata is invalid
      */
     ExpiryMeta resolveUpdateAttempt(ExpiryMeta currentMetadata, ExpiryMeta updateMetadata);
 }
