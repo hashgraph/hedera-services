@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.test.handlers.AdapterUtils.PARITY_DEFAULT_PAYER;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.ACCOUNT_ID_4;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
@@ -23,11 +24,10 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.newTopicMeta;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_TOPIC_ADMIN_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,8 +39,12 @@ import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hashgraph.pbj.runtime.io.Bytes;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
@@ -49,17 +53,10 @@ import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.test.utils.KeyUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -92,7 +89,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         // given:
         final var payerKey = mockPayerLookup();
         mockTopicLookup(SIMPLE_KEY_A, null);
-        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), PARITY_DEFAULT_PAYER);
 
         // when:
         subject.preHandle(context, mockStore);
@@ -115,7 +112,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         // given:
         final var payerKey = mockPayerLookup();
         mockTopicLookup(SIMPLE_KEY_A, SIMPLE_KEY_B);
-        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), PARITY_DEFAULT_PAYER);
 
         // when:
         subject.preHandle(context, mockStore);
@@ -135,7 +132,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         given(mockStore.getTopicMetadata(notNull()))
                 .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(
                         ResponseCodeEnum.INVALID_TOPIC_ID));
-        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), PARITY_DEFAULT_PAYER);
 
         // when:
         subject.preHandle(context, mockStore);
@@ -149,11 +146,11 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     @DisplayName("Returns error when payer not found")
     void payerNotFound() {
         // given:
-        given(keyLookup.getKey((AccountID) notNull()))
+        given(keyLookup.getKey(PARITY_DEFAULT_PAYER))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(
                         ResponseCodeEnum.ACCOUNT_DELETED)); // Any error response code
         mockTopicLookup(SIMPLE_KEY_A, SIMPLE_KEY_B);
-        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), PARITY_DEFAULT_PAYER);
 
         // when:
         subject.preHandle(context, mockStore);
@@ -170,7 +167,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         // given:
         mockPayerLookup();
         mockTopicLookup(null, SIMPLE_KEY_A);
-        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), PARITY_DEFAULT_PAYER);
 
         // when:
         subject.preHandle(context, mockStore);
@@ -183,23 +180,23 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Fails handle if topic doesn't exist")
     void topicDoesntExist() {
-        final var txn = newDeleteTxn().getConsensusDeleteTopic();
+        final var txn = newDeleteTxn().consensusDeleteTopicOrThrow();
 
         writableTopicState = emptyWritableTopicState();
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
         writableStore = new WritableTopicStore(writableStates);
 
-        final var msg = assertThrows(HandleStatusException.class, () -> subject.handle(txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, msg.getStatus());
     }
 
     @Test
     @DisplayName("Fails handle if admin key doesn't exist on topic to be deleted")
     void adminKeyDoesntExist() {
-        final var txn = newDeleteTxn().getConsensusDeleteTopic();
+        final var txn = newDeleteTxn().consensusDeleteTopicOrThrow();
 
         topic = new Topic(
-                topicId.getTopicNum(),
+                topicId.topicNum(),
                 sequenceNumber,
                 expirationTime,
                 autoRenewSecs,
@@ -214,7 +211,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
         writableStore = new WritableTopicStore(writableStates);
 
-        final var msg = assertThrows(HandleStatusException.class, () -> subject.handle(txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
 
         assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
     }
@@ -222,7 +219,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Handle works as expected")
     void handleWorksAsExpected() {
-        final var txn = newDeleteTxn().getConsensusDeleteTopic();
+        final var txn = newDeleteTxn().consensusDeleteTopicOrThrow();
 
         final var existingTopic = writableStore.get(topicEntityNum.longValue());
         assertTrue(existingTopic.isPresent());
@@ -241,18 +238,18 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         @BeforeEach
         void setUp() {
             mockStore = mock(ReadableTopicStore.class);
-            keyLookup = com.hedera.node.app.service.consensus.impl.handlers.test.AdapterUtils.wellKnownKeyLookupAt();
+            keyLookup = AdapterUtils.wellKnownKeyLookupAt();
         }
 
         @Test
         void getsConsensusDeleteTopicNoAdminKey() {
             // given:
-            final var txn = txnFrom(CONSENSUS_DELETE_TOPIC_SCENARIO);
+            final var txn = CONSENSUS_DELETE_TOPIC_SCENARIO.pbjTxnBody();
 
             var topicMeta = newTopicMeta(null, A_NONNULL_KEY); // any submit key that isn't null
             given(mockStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(topicMeta));
-            final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
+            final var context = new PreHandleContext(keyLookup, txn, PARITY_DEFAULT_PAYER);
 
             // when:
             subject.preHandle(context, mockStore);
@@ -265,11 +262,11 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         @Test
         void getsConsensusDeleteTopicWithAdminKey() throws Throwable {
             // given:
-            final var txn = txnFrom(CONSENSUS_DELETE_TOPIC_SCENARIO);
+            final var txn = CONSENSUS_DELETE_TOPIC_SCENARIO.pbjTxnBody();
             var topicMeta = newTopicMeta(MISC_TOPIC_ADMIN_KT.asJKey(), null); // any submit key
             given(mockStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(topicMeta));
-            final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
+            final var context = new PreHandleContext(keyLookup, txn, PARITY_DEFAULT_PAYER);
 
             // when:
             subject.preHandle(context, mockStore);
@@ -284,11 +281,11 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         @Test
         void reportsConsensusDeleteTopicMissingTopic() {
             // given:
-            final var txn = txnFrom(CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO);
+            final var txn = CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO.pbjTxnBody();
             given(mockStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(
                             ResponseCodeEnum.INVALID_TOPIC_ID));
-            final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
+            final var context = new PreHandleContext(keyLookup, txn, PARITY_DEFAULT_PAYER);
 
             // when:
             subject.preHandle(context, mockStore);
@@ -300,7 +297,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     private HederaKey mockPayerLookup() {
-        return ConsensusTestUtils.mockPayerLookup(KeyUtils.A_COMPLEX_KEY, DEFAULT_PAYER, keyLookup);
+        return ConsensusTestUtils.mockPayerLookup(A_COMPLEX_KEY, PARITY_DEFAULT_PAYER, keyLookup);
     }
 
     private void mockTopicLookup(final Key adminKey, final Key submitKey) {
@@ -308,14 +305,12 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     private TransactionBody newDeleteTxn() {
-        final var txnId = TransactionID.newBuilder().setAccountID(ACCOUNT_ID_4).build();
-        final var deleteTopicBuilder = ConsensusDeleteTopicTransactionBody.newBuilder()
-                .setTopicID(TopicID.newBuilder()
-                        .setTopicNum(topicEntityNum.longValue())
-                        .build());
+        final var txnId = TransactionID.newBuilder().accountID(ACCOUNT_ID_4).build();
+        final var deleteTopicBuilder =
+                ConsensusDeleteTopicTransactionBody.newBuilder().topicID(WELL_KNOWN_TOPIC_ID);
         return TransactionBody.newBuilder()
-                .setTransactionID(txnId)
-                .setConsensusDeleteTopic(deleteTopicBuilder.build())
+                .transactionID(txnId)
+                .consensusDeleteTopic(deleteTopicBuilder.build())
                 .build();
     }
 }

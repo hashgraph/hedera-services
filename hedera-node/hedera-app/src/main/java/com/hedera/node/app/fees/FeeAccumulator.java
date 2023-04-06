@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.fees;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Timestamp;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Interface for fee calculation. Currently, it is only used to compute payments for Queries. It
@@ -36,7 +37,12 @@ public interface FeeAccumulator {
      * @param query the query
      * @param now the estimated current consensus time
      * @return the fees for the query, assuming it has the given functionality
+     * @throws IllegalArgumentException if the functionality is not some kind of query.
      */
+    @NonNull
     FeeObject computePayment(
-            ReadableStoreFactory readableStoreFactory, HederaFunctionality functionality, Query query, Timestamp now);
+            @NonNull ReadableStoreFactory readableStoreFactory,
+            @NonNull HederaFunctionality functionality,
+            @NonNull Query query,
+            @NonNull Timestamp now);
 }

@@ -58,6 +58,7 @@ import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -1193,11 +1194,11 @@ class SignedTxnAccessorTest {
         return txn;
     }
 
-    private static final Key kycKey = KeyUtils.A_COMPLEX_KEY;
-    private static final Key adminKey = KeyUtils.A_THRESHOLD_KEY;
-    private static final Key freezeKey = KeyUtils.A_KEY_LIST;
-    private static final Key supplyKey = KeyUtils.B_COMPLEX_KEY;
-    private static final Key wipeKey = KeyUtils.C_COMPLEX_KEY;
+    private static final Key kycKey = PbjConverter.fromPbj(KeyUtils.A_COMPLEX_KEY);
+    private static final Key adminKey = PbjConverter.fromPbj(KeyUtils.A_THRESHOLD_KEY);
+    private static final Key freezeKey = PbjConverter.fromPbj(KeyUtils.A_KEY_LIST);
+    private static final Key supplyKey = PbjConverter.fromPbj(KeyUtils.B_COMPLEX_KEY);
+    private static final Key wipeKey = PbjConverter.fromPbj(KeyUtils.C_COMPLEX_KEY);
     private static final long autoRenewPeriod = 1_234_567L;
     private static final String symbol = "ABCDEFGH";
     private static final String name = "WhyWhyWHy";

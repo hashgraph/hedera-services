@@ -826,6 +826,7 @@ public class SigRequirements {
             } else if (customFee.hasFractionalFee()) {
                 couldAddCollector = addAccount(payer, collector, required, true, linkedRefs) == NONE;
             } else {
+                // TODO: Is this check needed here for a royalty fee?
                 final var royaltyFee = customFee.getRoyaltyFee();
                 var alwaysAdd = false;
                 if (royaltyFee.hasFallbackFee()) {
