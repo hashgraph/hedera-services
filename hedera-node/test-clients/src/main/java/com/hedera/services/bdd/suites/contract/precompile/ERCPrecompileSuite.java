@@ -53,7 +53,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -137,7 +136,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String DECIMALS = "decimals";
     private static final String TOTAL_SUPPLY = "totalSupply";
     private static final String BALANCE_OF = "balanceOf";
-    private static final String TRANSFER = "transfer";
+    public static final String TRANSFER = "transfer";
     public static final String APPROVE = "approve";
     private static final String OWNER_OF = "ownerOf";
     private static final String TOKEN_URI = "tokenURI";
@@ -198,7 +197,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                 someERC20NegativeTransferFromScenariosPass(),
                 someERC20ApproveAllowanceScenarioInOneCall(),
                 getErc20TokenDecimalsFromErc721TokenFails(),
-                transferErc20TokenFromErc721TokenFails(),
                 transferErc20TokenReceiverContract(),
                 transferErc20TokenAliasedSender(),
                 directCallsWorkForERC20(),
@@ -964,45 +962,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
                 .then(getTxnRecord(invalidDecimalsTxn).andAllChildRecords().logged());
-    }
-
-    private HapiSpec transferErc20TokenFromErc721TokenFails() {
-        return defaultHapiSpec("ERC_20_TRANSFER_FROM_ERC_721_TOKEN")
-                .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECIPIENT),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
-                        tokenAssociate(ACCOUNT, List.of(NON_FUNGIBLE_TOKEN)),
-                        tokenAssociate(RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
-                        cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY, ACCOUNT))
-                                .payingWith(ACCOUNT),
-                        uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCall(
-                                        ERC_20_CONTRACT,
-                                        TRANSFER,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        BigInteger.TWO)
-                                .payingWith(ACCOUNT)
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .via(TRANSFER_TXN)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
     }
 
     private HapiSpec getErc721TokenName() {

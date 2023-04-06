@@ -45,6 +45,7 @@ import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.properties.CustomFeeType;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
@@ -132,6 +133,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     protected CryptoTransferWrapper transferOp;
     private AbstractAutoCreationLogic autoCreationLogic;
     private int numLazyCreates;
+    private Set<CustomFeeType> htsUnsupportedCustomReceiverDebits;
 
     // Non-final for testing purposes
     private boolean canFallbackToApprovals;
@@ -146,6 +148,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
             final Address senderAddress,
+            final Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits,
             final boolean isLazyCreationEnabled,
             final boolean topLevelSigsAreEnabled,
             final boolean canFallbackToApprovals) {
@@ -155,6 +158,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         this.functionId = functionId;
         this.senderAddress = senderAddress;
         this.impliedTransfersMarshal = infrastructureFactory.newImpliedTransfersMarshal(ledgers.customFeeSchedules());
+        this.htsUnsupportedCustomReceiverDebits = htsUnsupportedCustomFeeReceiverDebits;
         this.isLazyCreationEnabled = isLazyCreationEnabled;
         this.topLevelSigsAreEnabled = topLevelSigsAreEnabled;
         this.canFallbackToApprovals = canFallbackToApprovals;
@@ -222,6 +226,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         hederaTokenStore.setAccountsLedger(ledgers.accounts());
 
+        final boolean allowFixedCustomFeeTransfers =
+                !htsUnsupportedCustomReceiverDebits.contains(CustomFeeType.FIXED_FEE);
+        final boolean allowRoyaltyFallbackCustomFeeTransfers =
+                !htsUnsupportedCustomReceiverDebits.contains(CustomFeeType.ROYALTY_FALLBACK_FEE);
+
         final var transferLogic = infrastructureFactory.newTransferLogic(
                 hederaTokenStore, sideEffects, ledgers.nfts(), ledgers.accounts(), ledgers.tokenRels());
 
@@ -232,8 +241,21 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             if (change.hasAlias()) {
                 replaceAliasWithId(change, changes, completedLazyCreates);
             }
-            if (change.isForNft() || units < 0) {
-                if (change.isApprovedAllowance() || change.isForCustomFee()) {
+
+            final var isDebit = units < 0;
+            final var isCredit = units > 0;
+
+            if (change.isForCustomFee() && isDebit) {
+                if (change.includesFallbackFee())
+                    validateTrue(allowRoyaltyFallbackCustomFeeTransfers, NOT_SUPPORTED, "royalty fee");
+                else validateTrue(allowFixedCustomFeeTransfers, NOT_SUPPORTED, "fixed fee");
+            }
+
+            if (change.isForNft() || isDebit) {
+                // The receiver signature is enforced for a transfer of NFT with a royalty fallback
+                // fee
+                final var isForNonFallbackRoyaltyFee = change.isForCustomFee() && !change.includesFallbackFee();
+                if (change.isApprovedAllowance() || isForNonFallbackRoyaltyFee) {
                     // Signing requirements are skipped for changes to be authorized via an
                     // allowance
                     continue;
@@ -272,7 +294,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                             ledgers,
                             updater.aliases(),
                             CryptoTransfer);
-                } else if (units > 0) {
+                } else if (isCredit) {
                     hasReceiverSigIfReq = KeyActivationUtils.validateKey(
                             frame,
                             change.getAccount().asEvmAddress(),

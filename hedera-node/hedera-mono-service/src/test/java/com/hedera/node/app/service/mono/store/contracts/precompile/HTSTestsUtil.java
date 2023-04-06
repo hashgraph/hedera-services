@@ -447,6 +447,21 @@ public class HTSTestsUtil {
                             .setSerialNumber(2L)
                             .build(),
                     payer));
+    public static final List<BalanceChange> nftTransferChangesWithCustomFeesForRoyalty = List.of(
+            BalanceChange.changingNftOwnership(
+                    Id.fromGrpcToken(token),
+                    token,
+                    NftTransfer.newBuilder()
+                            .setSenderAccountID(sender)
+                            .setReceiverAccountID(receiver)
+                            .setSerialNumber(1L)
+                            .build(),
+                    payer),
+            /* Simulate an assessed fallback fee */
+            setFallBackFeeChange(List.of(BalanceChange.tokenCustomFeeAdjust(
+                            Id.fromGrpcAccount(receiver), Id.fromGrpcToken(token), -AMOUNT)))
+                    .get(0),
+            BalanceChange.tokenCustomFeeAdjust(Id.fromGrpcAccount(feeCollector), Id.fromGrpcToken(token), +AMOUNT));
     public static final List<BalanceChange> balanceChangesForLazyCreateFailing = List.of(
             BalanceChange.changingNftOwnership(
                     Id.fromGrpcToken(token),
@@ -639,6 +654,11 @@ public class HTSTestsUtil {
 
     public static TokenUpdateWrapper createNonFungibleTokenUpdateWrapperWithKeys(final List<TokenKeyWrapper> keys) {
         return new TokenUpdateWrapper(nonFungible, null, null, null, null, keys, new TokenExpiryWrapper(0, null, 0));
+    }
+
+    private static List<BalanceChange> setFallBackFeeChange(final List<BalanceChange> balanceChanges) {
+        balanceChanges.forEach(balanceChange -> balanceChange.setIncludesFallbackFee());
+        return balanceChanges;
     }
 
     public static final TokenCreateWrapper.FixedFeeWrapper fixedFee =
