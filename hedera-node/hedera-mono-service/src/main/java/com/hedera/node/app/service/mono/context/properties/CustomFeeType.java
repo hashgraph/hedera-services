@@ -14,13 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.meta;
+package com.hedera.node.app.service.mono.context.properties;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.csvSet;
+
+import java.util.Set;
 
 /**
- * Provides context for query processing.
+ * These are specifically for custom fees where the receiver pays the fee - this is **not** a
+ * enumeration of all possible custom fee types. See
+ * `contracts.precompile.unsupportedCustomFeeReceiverDebits`
  */
-public interface QueryContext {
-    Bytes getLedgerId();
+public enum CustomFeeType {
+    FIXED_FEE,
+    ROYALTY_FALLBACK_FEE;
+
+    public static Set<CustomFeeType> csvTypeSet(final String propertyValue) {
+        return csvSet(propertyValue, CustomFeeType::valueOf, CustomFeeType.class);
+    }
 }
