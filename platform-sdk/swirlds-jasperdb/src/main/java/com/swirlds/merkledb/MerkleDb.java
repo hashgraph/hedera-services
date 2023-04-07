@@ -455,8 +455,7 @@ public final class MerkleDb {
      * @param <K> Virtual key type
      * @param <V> Virtual value type
      */
-    public <K extends VirtualKey, V extends VirtualValue> MerkleDbTableConfig<K, V> getTableConfig(
-            final int tableId) {
+    public <K extends VirtualKey, V extends VirtualValue> MerkleDbTableConfig<K, V> getTableConfig(final int tableId) {
         if ((tableId < 0) || (tableId >= MAX_TABLES)) {
             // Throw an exception instead? Perhaps, not
             return null;

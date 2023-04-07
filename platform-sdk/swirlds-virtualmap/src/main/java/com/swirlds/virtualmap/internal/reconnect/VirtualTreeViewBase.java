@@ -39,8 +39,7 @@ import java.util.Objects;
  * @param <V>
  * 		The value
  */
-public abstract class VirtualTreeViewBase<K extends VirtualKey, V extends VirtualValue>
-        implements TreeView<Long> {
+public abstract class VirtualTreeViewBase<K extends VirtualKey, V extends VirtualValue> implements TreeView<Long> {
     /**
      * The root node that is involved in reconnect. This would be the saved state for the teacher, and
      * the new root node into which things are being serialized for the learner.

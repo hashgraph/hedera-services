@@ -35,8 +35,7 @@ import java.nio.file.Path;
  * @param <V>
  * 		The value
  */
-public interface VirtualDataSourceBuilder<K extends VirtualKey, V extends VirtualValue>
-        extends SelfSerializable {
+public interface VirtualDataSourceBuilder<K extends VirtualKey, V extends VirtualValue> extends SelfSerializable {
 
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder and

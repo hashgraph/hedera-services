@@ -37,8 +37,7 @@ import java.util.stream.Stream;
  * @param <V>
  *     The value
  */
-final class CompoundHashingQueue<K extends VirtualKey, V extends VirtualValue>
-        implements HashingQueue<K, V> {
+final class CompoundHashingQueue<K extends VirtualKey, V extends VirtualValue> implements HashingQueue<K, V> {
     private final HashingQueue<K, V> queue1;
     private final HashingQueue<K, V> queue2;
 

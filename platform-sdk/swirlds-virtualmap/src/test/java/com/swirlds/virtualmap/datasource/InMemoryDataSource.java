@@ -36,8 +36,7 @@ import javax.imageio.IIOException;
  * @param <V>
  * 		the type for values
  */
-public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue>
-        implements VirtualDataSource<K, V> {
+public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
 
     private static final String NEGATIVE_PATH_MESSAGE = "path is less than 0";
 

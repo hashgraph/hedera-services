@@ -86,8 +86,7 @@ public class VirtualKeySetSerializer implements KeySerializer<VirtualKey> {
      * {@inheritDoc}
      */
     @Override
-    public int serialize(final VirtualKey data, final SerializableDataOutputStream outputStream)
-            throws IOException {
+    public int serialize(final VirtualKey data, final SerializableDataOutputStream outputStream) throws IOException {
         outputStream.writeLong(((VirtualLongKey) data).getKeyAsLong());
         return BYTES_PER_LONG;
     }

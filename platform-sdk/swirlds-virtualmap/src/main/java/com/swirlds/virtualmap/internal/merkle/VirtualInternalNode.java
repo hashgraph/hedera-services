@@ -42,8 +42,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * Represents a virtual internal merkle node.
  */
 @ConstructableIgnored
-public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualValue>
-        extends PartialBinaryMerkleInternal implements MerkleInternal, VirtualNode<VirtualInternalRecord> {
+public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualValue> extends PartialBinaryMerkleInternal
+        implements MerkleInternal, VirtualNode<VirtualInternalRecord> {
 
     private static final int NUMBER_OF_CHILDREN = 2;
 
