@@ -356,6 +356,14 @@ public final class EntityIdUtils {
         return alias.size() == EVM_ADDRESS_SIZE;
     }
 
+    public static boolean isOfEvmAddressSize(final com.hedera.pbj.runtime.io.buffer.Bytes alias) {
+        return alias.length() == EVM_ADDRESS_SIZE;
+    }
+
+    public static boolean isOfEvmAddressSize(final byte[] evmAddress) {
+        return evmAddress.length == EVM_ADDRESS_SIZE;
+    }
+
     public static boolean isOfEcdsaAddressSize(final ByteString alias) {
         return alias.size() == ECDSA_SECP256K1_ALIAS_SIZE;
     }

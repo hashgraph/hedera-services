@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 
 /**
  * This is a special type of key, which _does not_ map to proto Key. It's used only internally.
@@ -63,7 +63,7 @@ public class JWildcardECDSAKey extends JKey {
 
     @Override
     public boolean isValid() {
-        return !(isEmpty() || (evmAddress.length != EVM_ADDRESS_SIZE));
+        return !(isEmpty() || (!isOfEvmAddressSize(evmAddress)));
     }
 
     @Override

@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
@@ -58,7 +59,6 @@ import java.util.Optional;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
 public class ReadableAccountStore implements AccountAccess {
-    public static final int EVM_ADDRESS_LEN = 20;
     private static final byte[] MIRROR_PREFIX = new byte[12];
 
     static {
@@ -192,7 +192,7 @@ public class ReadableAccountStore implements AccountAccess {
                     case ACCOUNT_NUM -> accountOneOf.as();
                     case ALIAS -> {
                         final Bytes alias = accountOneOf.as();
-                        if (alias.length() == EVM_ADDRESS_LEN && isMirror(alias)) {
+                        if (isOfEvmAddressSize(alias) && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
                             final var entityNum = aliases.get(alias.asUtf8String());
@@ -233,7 +233,7 @@ public class ReadableAccountStore implements AccountAccess {
                         // If we didn't find an alias, we will want to auto-create this account. But
                         // we don't want to auto-create an account if there is already another
                         // account in the system with the same EVM address that we would have auto-created.
-                        if (evmAddress.length() > EVM_ADDRESS_LEN && entityNum == null) {
+                        if (!isOfEvmAddressSize(evmAddress) && entityNum == null) {
                             // if we don't find entity num for key alias we can try to derive EVM
                             // address from it and look it up
                             final var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
