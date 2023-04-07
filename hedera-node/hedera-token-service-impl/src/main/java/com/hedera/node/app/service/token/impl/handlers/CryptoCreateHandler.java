@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,29 +28,32 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoCreate}.
+ * HederaFunctionality#CRYPTO_CREATE}.
  */
 @Singleton
 public class CryptoCreateHandler implements TransactionHandler {
     @Inject
-    public CryptoCreateHandler() {}
+    public CryptoCreateHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoCreate}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#CRYPTO_CREATE} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().getCryptoCreateAccount();
-        final var key = asHederaKey(op.getKey());
-        final var receiverSigReq = op.getReceiverSigRequired();
-        if (receiverSigReq && key.isPresent()) {
-            context.addToReqNonPayerKeys(key.get());
+        final var op = context.getTxn().cryptoCreateAccountOrThrow();
+        if (op.hasKey()) {
+            final var key = asHederaKey(op.keyOrThrow());
+            final var receiverSigReq = op.receiverSigRequired();
+            if (receiverSigReq && key.isPresent()) {
+                context.addToReqNonPayerKeys(key.get());
+            }
         }
     }
 
@@ -60,11 +63,9 @@ public class CryptoCreateHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

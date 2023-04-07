@@ -18,32 +18,39 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.scheduled.ScheduleGetInfoResponse;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleGetInfo}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_GET_INFO}.
  */
 @Singleton
 public class ScheduleGetInfoHandler extends PaidQueryHandler {
     @Inject
-    public ScheduleGetInfoHandler() {}
+    public ScheduleGetInfoHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getScheduleGetInfo().getHeader();
+        return query.scheduleGetInfoOrThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = ScheduleGetInfoResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setScheduleGetInfo(response).build();
+        final var response = ScheduleGetInfoResponse.newBuilder().header(header);
+        return Response.newBuilder().scheduleGetInfo(response).build();
     }
 
     /**
@@ -58,6 +65,7 @@ public class ScheduleGetInfoHandler extends PaidQueryHandler {
      * @throws PreCheckException if validation fails
      */
     public ResponseCodeEnum validate(@NonNull final Query query) throws PreCheckException {
+        requireNonNull(query);
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -74,6 +82,8 @@ public class ScheduleGetInfoHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public Response findResponse(@NonNull final Query query, @NonNull final ResponseHeader header) {
+        requireNonNull(query);
+        requireNonNull(header);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

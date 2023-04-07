@@ -33,8 +33,6 @@ import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
-import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.grpc.GrpcStarter;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
@@ -67,7 +65,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ServicesMainTest {
+final class ServicesMainTest {
     private final long selfId = 123L;
     private final long unselfId = 666L;
     private final NodeId nodeId = new NodeId(false, selfId);
@@ -87,15 +85,6 @@ class ServicesMainTest {
 
     @Mock
     private ServicesApp app;
-
-    @Mock
-    private HederaApp hederaApp;
-
-    @Mock
-    private GlobalStaticProperties globalStaticProperties;
-
-    @Mock
-    private NodeLocalProperties nodeLocalProperties;
 
     @Mock
     private NamedDigestFactory namedDigestFactory;
@@ -291,7 +280,6 @@ class ServicesMainTest {
         APPS.save(selfId, app);
         given(nativeCharset.get()).willReturn(UTF_8);
         given(namedDigestFactory.forName("SHA-384")).willReturn(null);
-        given(app.globalStaticProperties()).willReturn(globalStaticProperties);
         given(app.nativeCharset()).willReturn(nativeCharset);
         given(app.digestFactory()).willReturn(namedDigestFactory);
         given(app.consoleOut()).willReturn(Optional.of(consoleOut));

@@ -123,8 +123,13 @@ public class BaseHederaLedgerTestHelper {
             }
 
             @Override
-            public AccountID newAccountId(AccountID newAccountSponsor) {
-                return AccountID.newBuilder().setAccountNum(nextId++).build();
+            public AccountID newAccountId() {
+                return AccountID.newBuilder().setAccountNum(newAccountNumber()).build();
+            }
+
+            @Override
+            public long newAccountNumber() {
+                return nextId++;
             }
 
             @Override

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.SemanticVersionComparator;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
@@ -29,7 +30,6 @@ import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.StringLeaf;
 import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -62,7 +62,7 @@ import org.apache.logging.log4j.Logger;
  * version.
  */
 public class MerkleSchemaRegistry implements SchemaRegistry {
-    private static final Logger log = LogManager.getLogger(MerkleSchemaRegistry.class);
+    private static final Logger logger = LogManager.getLogger(MerkleSchemaRegistry.class);
 
     /** The name of the service using this registry. */
     private final String serviceName;
@@ -99,8 +99,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.remove(schema);
         schemas.add(Objects.requireNonNull(schema));
-        // TODO - add toString() to Schema
-        log.info("Registering schema for {} ", serviceName);
+        logger.debug("Registering schema v{} for service {} ", schema.getVersion(), serviceName);
 
         // Any states being created, need to be registered for deserialization
         schema.statesToCreate().forEach(def -> {
@@ -169,7 +168,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final var statesToCreate = schema.statesToCreate();
             statesToCreate.forEach(def -> {
                 final var stateKey = def.stateKey();
-                log.info("Creating state {} for {}", stateKey, serviceName);
+                logger.debug("Creating state {} for {}", stateKey, serviceName);
                 final var md = new StateMetadata<>(serviceName, schema, def);
                 if (def.singleton()) {
                     final var singleton = new SingletonNode<>(md, null);

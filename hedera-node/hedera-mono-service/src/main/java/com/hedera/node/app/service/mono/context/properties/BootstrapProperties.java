@@ -18,6 +18,8 @@ package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.PropUtils.loadOverride;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
@@ -83,6 +85,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
@@ -466,6 +469,7 @@ public final class BootstrapProperties implements PropertySource {
             CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST,
             CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS,
             CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE,
+            CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS,
             CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED,
             CONTRACTS_EVM_VERSION,
             CONTRACTS_DYNAMIC_EVM_VERSION,
@@ -548,7 +552,9 @@ public final class BootstrapProperties implements PropertySource {
             HEDERA_ALLOWANCES_IS_ENABLED,
             ENTITIES_LIMIT_TOKEN_ASSOCIATIONS,
             UTIL_PRNG_IS_ENABLED,
-            TOKENS_AUTO_CREATIONS_ENABLED);
+            TOKENS_AUTO_CREATIONS_ENABLED,
+            ACCOUNTS_BLOCKLIST_ENABLED,
+            ACCOUNTS_BLOCKLIST_RESOURCE);
 
     static final Set<String> NODE_PROPS = Set.of(
             DEV_ONLY_DEFAULT_NODE_LISTENS,
@@ -663,6 +669,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(HEDERA_TXN_MAX_VALID_DURATION, AS_LONG),
             entry(HEDERA_TXN_MIN_VALID_DURATION, AS_LONG),
             entry(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS, AS_INT),
+            entry(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS, AS_CUSTOM_FEES_TYPE),
             entry(AUTO_CREATION_ENABLED, AS_BOOLEAN),
             entry(LAZY_CREATION_ENABLED, AS_BOOLEAN),
             entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, AS_BOOLEAN),
@@ -796,5 +803,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
             entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
-            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN));
+            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN),
+            entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
+            entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING));
 }

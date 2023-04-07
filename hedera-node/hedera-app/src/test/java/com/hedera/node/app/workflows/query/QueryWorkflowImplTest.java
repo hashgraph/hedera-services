@@ -16,63 +16,65 @@
 
 package com.hedera.node.app.workflows.query;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
+import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Parser;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.file.FileGetInfoQuery;
+import com.hedera.hapi.node.file.FileGetInfoResponse;
+import com.hedera.hapi.node.network.NetworkGetExecutionTimeResponse;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
-import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
-import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import java.nio.ByteBuffer;
+import java.io.IOException;
 import java.util.function.Function;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,18 +83,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 @ExtendWith(MockitoExtension.class)
-class QueryWorkflowImplTest {
+class QueryWorkflowImplTest extends AppTestBase {
 
     private static final int BUFFER_SIZE = 1024 * 6;
 
     @Mock
     private HederaState state;
-
-    @Mock
-    private NodeInfo nodeInfo;
-
-    @Mock(strictness = LENIENT)
-    private CurrentPlatformStatus currentPlatformStatus;
 
     @Mock(strictness = LENIENT)
     private Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
@@ -118,202 +114,103 @@ class QueryWorkflowImplTest {
     @Mock
     private FeeAccumulator feeAccumulator;
 
-    @Mock
-    private QueryContextImpl queryContext;
-
     @Mock(strictness = LENIENT)
-    private Parser<Query> queryParser;
-
-    @Mock
-    private Parser<Transaction> txParser;
-
-    @Mock
-    private Parser<SignedTransaction> signedParser;
-
-    @Mock
-    private Parser<TransactionBody> txBodyParser;
+    private Codec<Query> queryParser;
 
     private Query query;
     private Transaction payment;
     private TransactionBody txBody;
     private AccountID payer;
     private SessionContext ctx;
-    private ByteBuffer requestBuffer;
+    private Bytes requestBuffer;
 
     private QueryWorkflowImpl workflow;
 
     @BeforeEach
-    void setup() throws InvalidProtocolBufferException, PreCheckException {
-        when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
+    void setup() throws PreCheckException, IOException {
         when(stateAccessor.apply(any())).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
-        requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
+        requestBuffer = Bytes.wrap(new byte[] {1, 2, 3});
         payment = Transaction.newBuilder().build();
-        final var queryHeader = QueryHeader.newBuilder().setPayment(payment).build();
+        final var queryHeader = QueryHeader.newBuilder().payment(payment).build();
         query = Query.newBuilder()
-                .setFileGetInfo(FileGetInfoQuery.newBuilder().setHeader(queryHeader))
+                .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader))
                 .build();
-        when(queryParser.parseFrom(requestBuffer)).thenReturn(query);
-        ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
+        when(queryParser.parseStrict(notNull())).thenReturn(query);
+        ctx = new SessionContext();
 
-        payer = AccountID.newBuilder().setAccountNum(42L).build();
-        final var transactionID = TransactionID.newBuilder().setAccountID(payer).build();
-        txBody = TransactionBody.newBuilder().setTransactionID(transactionID).build();
+        payer = AccountID.newBuilder().accountNum(42L).build();
+        final var transactionID = TransactionID.newBuilder().accountID(payer).build();
+        txBody = TransactionBody.newBuilder().transactionID(transactionID).build();
         when(checker.validateCryptoTransfer(ctx, payment)).thenReturn(txBody);
 
         when(handler.extractHeader(query)).thenReturn(queryHeader);
         when(handler.createEmptyResponse(any())).thenAnswer((Answer<Response>) invocation -> {
             final var header = (ResponseHeader) invocation.getArguments()[0];
             return Response.newBuilder()
-                    .setFileGetInfo(
-                            FileGetInfoResponse.newBuilder().setHeader(header).build())
+                    .fileGetInfo(FileGetInfoResponse.newBuilder().header(header).build())
                     .build();
         });
 
         final var responseHeader = ResponseHeader.newBuilder()
-                .setResponseType(ANSWER_ONLY)
-                .setNodeTransactionPrecheckCode(OK)
+                .responseType(ANSWER_ONLY)
+                .nodeTransactionPrecheckCode(OK)
                 .build();
         final var fileGetInfo =
-                FileGetInfoResponse.newBuilder().setHeader(responseHeader).build();
-        final var response = Response.newBuilder().setFileGetInfo(fileGetInfo).build();
+                FileGetInfoResponse.newBuilder().header(responseHeader).build();
+        final var response = Response.newBuilder().fileGetInfo(fileGetInfo).build();
 
         when(dispatcher.getHandler(query)).thenReturn(handler);
-        when(dispatcher.getResponse(any(), eq(query), eq(responseHeader), eq(queryContext)))
-                .thenReturn(response);
+        when(dispatcher.getResponse(any(), eq(query), eq(responseHeader))).thenReturn(response);
 
         workflow = new QueryWorkflowImpl(
-                nodeInfo,
-                currentPlatformStatus,
                 stateAccessor,
                 throttleAccumulator,
                 submissionManager,
                 checker,
                 dispatcher,
-                opCounters,
                 feeAccumulator,
-                queryContext);
+                queryParser);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        null,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
+                        null, throttleAccumulator, submissionManager, checker, dispatcher, feeAccumulator, queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        null,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
+                        stateAccessor, null, submissionManager, checker, dispatcher, feeAccumulator, queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        null,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
+                        stateAccessor, throttleAccumulator, null, checker, dispatcher, feeAccumulator, queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        null,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        null,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
                         stateAccessor,
                         throttleAccumulator,
                         submissionManager,
                         null,
                         dispatcher,
-                        opCounters,
                         feeAccumulator,
-                        queryContext))
+                        queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
                         stateAccessor,
                         throttleAccumulator,
                         submissionManager,
                         checker,
-                        null,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
                         null,
                         feeAccumulator,
-                        queryContext))
+                        queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
+                        stateAccessor, throttleAccumulator, submissionManager, checker, dispatcher, null, queryParser))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
                         throttleAccumulator,
                         submissionManager,
                         checker,
                         dispatcher,
-                        opCounters,
-                        null,
-                        queryContext))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        opCounters,
                         feeAccumulator,
                         null))
                 .isInstanceOf(NullPointerException.class);
@@ -323,8 +220,8 @@ class QueryWorkflowImplTest {
     @Test
     void testHandleQueryWithIllegalParameters() {
         // given
-        final var requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final var requestBuffer = Bytes.wrap(new byte[] {1, 2, 3});
+        final var responseBuffer = newEmptyBuffer();
 
         // then
         assertThatThrownBy(() -> workflow.handleQuery(null, requestBuffer, responseBuffer))
@@ -336,394 +233,329 @@ class QueryWorkflowImplTest {
     }
 
     @Test
-    void testSuccessIfPaymentNotRequired() throws InvalidProtocolBufferException, PreCheckException {
+    void testSuccessIfPaymentNotRequired() throws PreCheckException, IOException {
         given(dispatcher.validate(any(), any())).willReturn(OK);
         // given
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final var responseBuffer = newEmptyBuffer();
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(OK);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters).countAnswered(FileGetInfo);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(OK);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        Assertions.assertThat(header.cost()).isZero();
     }
 
     @Test
-    void testSuccessIfPaymentRequired() throws InvalidProtocolBufferException, PreCheckException {
+    void testSuccessIfPaymentRequired() throws PreCheckException, IOException {
+        // given
         given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
         given(dispatcher.validate(any(), any())).willReturn(OK);
-        given(dispatcher.getResponse(any(), any(), any(), any()))
-                .willReturn(Response.newBuilder().build());
-        // given
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        when(dispatcher.getResponse(any(), any(), any()))
+                .thenReturn(Response.newBuilder()
+                        .fileGetInfo(FileGetInfoResponse.newBuilder()
+                                .header(ResponseHeader.newBuilder().build())
+                                .build())
+                        .build());
+        final var responseBuffer = newEmptyBuffer();
+
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(OK);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters).countAnswered(FileGetInfo);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(OK);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        Assertions.assertThat(header.cost()).isZero();
     }
 
     @Test
-    void testSuccessIfAnswerOnlyCostRequired() throws InvalidProtocolBufferException, PreCheckException {
-        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
-        given(handler.needsAnswerOnlyCost(any())).willReturn(true);
-        given(dispatcher.validate(any(), any())).willReturn(OK);
-        given(dispatcher.getResponse(any(), any(), any(), any()))
-                .willReturn(Response.newBuilder().build());
+    void testParsingFails() throws IOException {
         // given
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-        // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
-
-        // then
-        final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(OK);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isEqualTo(200);
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters).countAnswered(FileGetInfo);
-    }
-
-    @Test
-    void testParsingFails(@Mock Parser<Query> localQueryParser) throws InvalidProtocolBufferException {
-        // given
-        when(localQueryParser.parseFrom(requestBuffer))
-                .thenThrow(new InvalidProtocolBufferException("Expected failure"));
-        final SessionContext localContext = new SessionContext(localQueryParser, txParser, signedParser, txBodyParser);
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        // then
-        assertThatThrownBy(() -> workflow.handleQuery(localContext, requestBuffer, responseBuffer))
-                .isInstanceOf(StatusRuntimeException.class)
-                .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
-        verify(opCounters, never()).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
-    }
-
-    @Test
-    void testUnrecognizableQueryTypeFails(@Mock Parser<Query> localQueryParser) throws InvalidProtocolBufferException {
-        // given
-        final var query = Query.newBuilder().build();
-        when(localQueryParser.parseFrom(requestBuffer)).thenReturn(query);
-        final SessionContext localContext = new SessionContext(localQueryParser, txParser, signedParser, txBodyParser);
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        // then
-        assertThatThrownBy(() -> workflow.handleQuery(localContext, requestBuffer, responseBuffer))
-                .isInstanceOf(StatusRuntimeException.class)
-                .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
-        verify(opCounters, never()).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
-    }
-
-    @SuppressWarnings("JUnitMalformedDeclaration")
-    @Test
-    void testMissingHeaderFails(@Mock QueryHandler localHandler, @Mock QueryDispatcher localDispatcher) {
-        // given
-        when(localDispatcher.getHandler(query)).thenReturn(localHandler);
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-        workflow = new QueryWorkflowImpl(
-                nodeInfo,
-                currentPlatformStatus,
-                stateAccessor,
-                throttleAccumulator,
-                submissionManager,
-                checker,
-                localDispatcher,
-                opCounters,
-                feeAccumulator,
-                queryContext);
+        lenient().when(queryParser.parseStrict(notNull())).thenThrow(new IOException("Expected failure"));
+        final var responseBuffer = newEmptyBuffer();
 
         // then
         assertThatThrownBy(() -> workflow.handleQuery(ctx, requestBuffer, responseBuffer))
                 .isInstanceOf(StatusRuntimeException.class)
                 .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
-        verify(opCounters).countReceived(FileGetInfo);
+        verify(opCounters, never()).countReceived(FileGetInfo);
         verify(opCounters, never()).countAnswered(FileGetInfo);
     }
 
     @Test
-    void testInactiveNodeFails(@Mock NodeInfo localNodeInfo) throws InvalidProtocolBufferException {
+    void testUnrecognizableQueryTypeFails() throws IOException {
         // given
-        when(localNodeInfo.isSelfZeroStake()).thenReturn(true);
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final var query = Query.newBuilder().build();
+        lenient().when(queryParser.parseStrict(notNull())).thenReturn(query);
+        final var responseBuffer = newEmptyBuffer();
+
+        // then
+        assertThatThrownBy(() -> workflow.handleQuery(ctx, requestBuffer, responseBuffer))
+                .isInstanceOf(StatusRuntimeException.class)
+                .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
+        verify(opCounters, never()).countReceived(FileGetInfo);
+        verify(opCounters, never()).countAnswered(FileGetInfo);
+    }
+
+    @Test
+    void testMissingHeaderFails(@Mock QueryHandler localHandler, @Mock QueryDispatcher localDispatcher) {
+        // given
+        when(localDispatcher.getHandler(query)).thenReturn(localHandler);
+        final var responseBuffer = newEmptyBuffer();
         workflow = new QueryWorkflowImpl(
-                localNodeInfo,
-                currentPlatformStatus,
                 stateAccessor,
                 throttleAccumulator,
                 submissionManager,
                 checker,
-                dispatcher,
-                opCounters,
+                localDispatcher,
                 feeAccumulator,
-                queryContext);
+                queryParser);
+
+        // then
+        assertThatThrownBy(() -> workflow.handleQuery(ctx, requestBuffer, responseBuffer))
+                .isInstanceOf(StatusRuntimeException.class)
+                .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
+    }
+
+    @Test
+    void testInvalidNodeFails() throws PreCheckException, IOException {
+        // given
+        doThrow(new PreCheckException(INVALID_NODE_ACCOUNT)).when(checker).checkNodeState();
+        final var responseBuffer = newEmptyBuffer();
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(INVALID_NODE_ACCOUNT);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(INVALID_NODE_ACCOUNT);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        Assertions.assertThat(header.cost()).isZero();
     }
 
     @Test
-    void testInactivePlatformFails(@Mock CurrentPlatformStatus localCurrentPlatformStatus)
-            throws InvalidProtocolBufferException {
+    void testSuccess() throws PreCheckException, IOException {
         // given
-        when(localCurrentPlatformStatus.get()).thenReturn(PlatformStatus.MAINTENANCE);
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-        workflow = new QueryWorkflowImpl(
-                nodeInfo,
-                localCurrentPlatformStatus,
-                stateAccessor,
-                throttleAccumulator,
-                submissionManager,
-                checker,
-                dispatcher,
-                opCounters,
-                feeAccumulator,
-                queryContext);
+        final var responseBuffer = newEmptyBuffer();
+        given(dispatcher.validate(any(), any())).willReturn(OK);
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(PLATFORM_NOT_ACTIVE);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        Assertions.assertThat(response.fileGetInfo()).isNotNull();
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(OK);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        // TODO: Expected costs need to be updated once fee calculation was integrated
+        Assertions.assertThat(header.cost()).isZero();
     }
 
     @Test
-    void testUnsupportedResponseTypeFails() throws InvalidProtocolBufferException {
+    void testUnsupportedResponseTypeFails() throws IOException {
         // given
-        final var localRequestBuffer = ByteBuffer.wrap(new byte[] {4, 5, 6});
+        final var localRequestBuffer = newEmptyBuffer();
         final var queryHeader =
-                QueryHeader.newBuilder().setResponseType(ANSWER_STATE_PROOF).build();
+                QueryHeader.newBuilder().responseType(ANSWER_STATE_PROOF).build();
         final var query = Query.newBuilder()
-                .setFileGetInfo(
-                        FileGetInfoQuery.newBuilder().setHeader(queryHeader).build())
+                .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader).build())
                 .build();
-        when(queryParser.parseFrom(localRequestBuffer)).thenReturn(query);
+        when(queryParser.parseStrict(notNull())).thenReturn(query);
+
+        final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
         when(handler.extractHeader(query)).thenReturn(queryHeader);
         when(dispatcher.getHandler(query)).thenReturn(handler);
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final var responseBuffer = newEmptyBuffer();
 
         // when
-        workflow.handleQuery(ctx, localRequestBuffer, responseBuffer);
+        workflow.handleQuery(ctx, Bytes.wrap(requestBytes), responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_STATE_PROOF);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_STATE_PROOF);
+        Assertions.assertThat(header.cost()).isZero();
     }
 
     @Test
-    void testThrottleFails() throws InvalidProtocolBufferException {
+    void testUnpaidQueryWithRestrictedFunctionalityFails(@Mock NetworkGetExecutionTimeHandler networkHandler)
+            throws IOException {
         // given
-        when(throttleAccumulator.shouldThrottleQuery(eq(FileGetInfo), any())).thenReturn(true);
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final var localRequestBuffer = newEmptyBuffer();
+        final var localQueryHeader =
+                QueryHeader.newBuilder().responseType(COST_ANSWER).build();
+        final var localQuery = Query.newBuilder()
+                .networkGetExecutionTime(PbjConverter.toPbj(NetworkGetExecutionTimeQuery.newBuilder()
+                        .setHeader(PbjConverter.fromPbj(localQueryHeader))
+                        .build()))
+                .build();
+
+        final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
+        when(queryParser.parseStrict(notNull())).thenReturn(localQuery);
+        when(networkHandler.extractHeader(localQuery)).thenReturn(localQueryHeader);
+        when(dispatcher.getHandler(localQuery)).thenReturn(networkHandler);
+
+        final var expectedResponse = Response.newBuilder()
+                .networkGetExecutionTime(NetworkGetExecutionTimeResponse.newBuilder()
+                        .header(ResponseHeader.newBuilder()
+                                .responseType(COST_ANSWER)
+                                .nodeTransactionPrecheckCode(NOT_SUPPORTED)
+                                .build())
+                        .build())
+                .build();
+        when(networkHandler.createEmptyResponse(notNull())).thenReturn(expectedResponse);
+        final var responseBuffer = newEmptyBuffer();
+
+        // when
+        workflow.handleQuery(ctx, Bytes.wrap(requestBytes), responseBuffer);
+
+        // then
+        final var response = parseResponse(responseBuffer);
+        final var header = response.networkGetExecutionTimeOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
+        Assertions.assertThat(header.responseType()).isEqualTo(COST_ANSWER);
+        Assertions.assertThat(header.cost()).isZero();
+    }
+
+    @Test
+    void testThrottleFails() throws IOException {
+        // given
+        when(throttleAccumulator.shouldThrottleQuery(eq(HederaFunctionality.FILE_GET_INFO), any()))
+                .thenReturn(true);
+        final var responseBuffer = newEmptyBuffer();
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(BUSY);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(BUSY);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        Assertions.assertThat(header.cost()).isZero();
     }
 
     @Test
-    void testPaidQueryWithInvalidCryptoTransferFails() throws PreCheckException, InvalidProtocolBufferException {
+    void testPaidQueryWithInvalidCryptoTransferFails() throws PreCheckException, IOException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         when(checker.validateCryptoTransfer(ctx, payment)).thenThrow(new PreCheckException(INSUFFICIENT_TX_FEE));
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final var responseBuffer = newEmptyBuffer();
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_TX_FEE);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_TX_FEE);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        Assertions.assertThat(header.cost()).isZero();
     }
 
     @Test
-    void testPaidQueryWithInvalidAccountsFails(@Mock QueryChecker localChecker)
-            throws PreCheckException, InvalidProtocolBufferException {
+    void testPaidQueryWithInvalidAccountsFails(@Mock QueryChecker localChecker) throws PreCheckException, IOException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         when(localChecker.validateCryptoTransfer(ctx, payment)).thenThrow(new PreCheckException(INSUFFICIENT_TX_FEE));
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final var responseBuffer = newEmptyBuffer();
         workflow = new QueryWorkflowImpl(
-                nodeInfo,
-                currentPlatformStatus,
                 stateAccessor,
                 throttleAccumulator,
                 submissionManager,
                 localChecker,
                 dispatcher,
-                opCounters,
                 feeAccumulator,
-                queryContext);
+                queryParser);
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_TX_FEE);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_TX_FEE);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        Assertions.assertThat(header.cost()).isZero();
     }
 
     @Test
-    void testPaidQueryWithInsufficientPermissionFails() throws PreCheckException, InvalidProtocolBufferException {
+    void testPaidQueryWithInsufficientPermissionFails() throws PreCheckException, IOException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        doThrow(new PreCheckException(NOT_SUPPORTED)).when(checker).checkPermissions(payer, FileGetInfo);
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        doThrow(new PreCheckException(NOT_SUPPORTED))
+                .when(checker)
+                .checkPermissions(payer, HederaFunctionality.FILE_GET_INFO);
+        final var responseBuffer = newEmptyBuffer();
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        Assertions.assertThat(header.cost()).isZero();
     }
 
     @Test
-    void testUnpaidQueryWithRestrictedFunctionalityFails() throws InvalidProtocolBufferException {
+    void testQuerySpecificValidationFails() throws PreCheckException, IOException {
         // given
-        final var localRequestBuffer = ByteBuffer.wrap(new byte[] {4, 5, 6});
-        final var queryHeader =
-                QueryHeader.newBuilder().setResponseType(COST_ANSWER).build();
-        final var query = Query.newBuilder()
-                .setNetworkGetExecutionTime(NetworkGetExecutionTimeQuery.newBuilder()
-                        .setHeader(queryHeader)
-                        .build())
-                .build();
-        when(queryParser.parseFrom(localRequestBuffer)).thenReturn(query);
-        when(handler.extractHeader(query)).thenReturn(queryHeader);
-        when(dispatcher.getHandler(query)).thenReturn(handler);
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        // when
-        workflow.handleQuery(ctx, localRequestBuffer, responseBuffer);
-
-        // then
-        final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
-        assertThat(header.getResponseType()).isEqualTo(COST_ANSWER);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(NetworkGetExecutionTime);
-        verify(opCounters, never()).countAnswered(NetworkGetExecutionTime);
-    }
-
-    @Test
-    void testQuerySpecificValidationFails() throws PreCheckException, InvalidProtocolBufferException {
-        // given
-        doThrow(new PreCheckException(ACCOUNT_FROZEN_FOR_TOKEN))
+        doThrow(new PreCheckException(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN))
                 .when(dispatcher)
                 .validate(any(), eq(query));
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final var responseBuffer = newEmptyBuffer();
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
         // then
-        final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(ACCOUNT_FROZEN_FOR_TOKEN);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        final Response response = parseResponse(responseBuffer);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode())
+                .isEqualTo(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        Assertions.assertThat(header.cost()).isZero();
     }
 
     @Test
-    void testPaidQueryWithFailingSubmissionFails() throws PreCheckException, InvalidProtocolBufferException {
+    void testPaidQueryWithFailingSubmissionFails() throws PreCheckException, IOException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
-                .submit(txBody, payment.toByteArray(), ctx.txBodyParser());
+                .submit(txBody, PbjConverter.asBytes(payment.bodyBytes()));
         given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
-        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final var responseBuffer = newEmptyBuffer();
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isEqualTo(200L);
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
+        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        Assertions.assertThat(header.cost()).isEqualTo(200L);
     }
 
-    private static Response parseResponse(ByteBuffer responseBuffer) throws InvalidProtocolBufferException {
-        final byte[] bytes = new byte[responseBuffer.position()];
-        responseBuffer.get(0, bytes);
-        return Response.parseFrom(bytes);
+    private static Response parseResponse(BufferedData responseBuffer) throws IOException {
+        final byte[] bytes = new byte[Math.toIntExact(responseBuffer.position())];
+        responseBuffer.resetPosition();
+        responseBuffer.readBytes(bytes);
+        return Response.PROTOBUF.parseStrict(BufferedData.wrap(bytes));
+    }
+
+    private static BufferedData newEmptyBuffer() {
+        return BufferedData.allocate(BUFFER_SIZE);
     }
 }
