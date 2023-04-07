@@ -33,7 +33,7 @@ import java.nio.ByteBuffer;
  * general purpose key serializer.
  */
 @ConstructableIgnored
-public class VirtualKeySetSerializer implements KeySerializer<VirtualKey<VirtualLongKey>> {
+public class VirtualKeySetSerializer implements KeySerializer<VirtualKey> {
 
     /** {@inheritDoc} */
     @Override
@@ -43,14 +43,14 @@ public class VirtualKeySetSerializer implements KeySerializer<VirtualKey<Virtual
 
     /** {@inheritDoc} */
     @Override
-    public int serialize(final VirtualKey<VirtualLongKey> data, final ByteBuffer buffer) throws IOException {
+    public int serialize(final VirtualKey data, final ByteBuffer buffer) throws IOException {
         buffer.putLong(((VirtualLongKey) data).getKeyAsLong());
         return BYTES_PER_LONG;
     }
 
     /** {@inheritDoc} */
     @Override
-    public VirtualKey<VirtualLongKey> deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public VirtualKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -88,7 +88,7 @@ public class VirtualKeySetSerializer implements KeySerializer<VirtualKey<Virtual
 
     /** {@inheritDoc} */
     @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final VirtualKey<VirtualLongKey> keyToCompare)
+    public boolean equals(final ByteBuffer buffer, final int dataVersion, final VirtualKey keyToCompare)
             throws IOException {
 
         return buffer.getLong() == ((VirtualLongKey) keyToCompare).getKeyAsLong();

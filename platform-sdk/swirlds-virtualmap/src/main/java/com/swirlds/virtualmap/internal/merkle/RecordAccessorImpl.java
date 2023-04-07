@@ -41,7 +41,7 @@ import java.util.Objects;
  * @param <V>
  * 		The value
  */
-public class RecordAccessorImpl<K extends VirtualKey<? super K>, V extends VirtualValue>
+public class RecordAccessorImpl<K extends VirtualKey, V extends VirtualValue>
         implements RecordAccessor<K, V> {
     private final VirtualStateAccessor state;
     private final VirtualNodeCache<K, V> cache;

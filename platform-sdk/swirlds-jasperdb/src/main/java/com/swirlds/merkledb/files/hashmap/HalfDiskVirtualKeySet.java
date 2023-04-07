@@ -38,7 +38,7 @@ import java.util.Set;
  * @param <K>
  * 		the type of the key
  */
-public class HalfDiskVirtualKeySet<K extends VirtualKey<? super K>> implements VirtualKeySet<K> {
+public class HalfDiskVirtualKeySet<K extends VirtualKey> implements VirtualKeySet<K> {
 
     private static final String STORE_PREFIX = "reconnectKeySet";
 

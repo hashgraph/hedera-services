@@ -19,7 +19,7 @@ package com.swirlds.virtualmap;
 /**
  * Special form of a VirtualKey which is a simple long. This allows much faster special paths in data stores.
  */
-public interface VirtualLongKey extends VirtualKey<VirtualLongKey> {
+public interface VirtualLongKey extends VirtualKey {
 
     /**
      * Direct access to the value of this key in its raw long format
@@ -27,12 +27,4 @@ public interface VirtualLongKey extends VirtualKey<VirtualLongKey> {
      * @return the long value of this key
      */
     long getKeyAsLong();
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    default int compareTo(final VirtualLongKey other) {
-        return Long.compare(getKeyAsLong(), other.getKeyAsLong());
-    }
 }
