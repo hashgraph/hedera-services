@@ -44,8 +44,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.LongSummaryStatistics;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -434,7 +436,8 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
                     oneTransactionsData.keyValuesView().toList();
             final int size = bucketUpdates.size();
             final ReusableBucketPool<K> bucketPool = bucketSerializer.getBucketPool();
-            final BlockingQueue<ReadBucketResult> queue = new ArrayBlockingQueue<>(1024);
+//            final BlockingQueue<ReadBucketResult<K>> queue = new ArrayBlockingQueue<>(1024);
+            final Queue<ReadBucketResult<K>> queue = new ConcurrentLinkedQueue<>();
             for (int i = 0; i < size; i++) {
                 final IntObjectPair<BucketMutation<K>> keyValue = bucketUpdates.get(i);
                 final int bucketIndex = keyValue.getOne();
@@ -451,10 +454,10 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
                         }
                         // for each changed key in bucket, update bucket
                         bucketMap.forEachKeyValue(bucket::putValue);
-                        queue.add(new ReadBucketResult(bucket, null));
+                        queue.add(new ReadBucketResult<>(bucket, null));
                     } catch (final Throwable e) {
                         logger.error(MERKLE_DB.getMarker(), "Failed to read / update bucket", e);
-                        queue.add(new ReadBucketResult(null, e));
+                        queue.add(new ReadBucketResult<>(null, e));
                     }
                 });
             }
@@ -462,17 +465,19 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
             fileCollection.startWriting();
             int processed = 0;
             while (processed < size) {
-                final ReadBucketResult res;
-                try {
-                    res = queue.take();
-                } catch (final InterruptedException e) {
-                    throw new RuntimeException("Interrupt while flushing HDHM", e);
+                final ReadBucketResult<K> res = queue.poll();
+                if (res == null) {
+                    continue;
                 }
+//                try {
+//                    res = queue.take();
+//                } catch (final InterruptedException e) {
+//                    throw new RuntimeException("Interrupt while flushing HDHM", e);
+//                }
                 if (res.error != null) {
                     throw new RuntimeException(res.error);
                 }
-                try (@SuppressWarnings("unchecked")
-                        Bucket<K> bucket = res.bucket) {
+                try (final Bucket<K> bucket = res.bucket) {
                     final int bucketIndex = bucket.getBucketIndex();
                     if (bucket.getBucketEntryCount() == 0) {
                         // bucket is missing or empty, remove it from the index
@@ -598,8 +603,7 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
         return (numOfBuckets - 1) & keyHash;
     }
 
-    @SuppressWarnings("rawtypes")
-    private record ReadBucketResult(Bucket bucket, Throwable error) {
+    private record ReadBucketResult<K extends VirtualKey<? super K>>(Bucket<K> bucket, Throwable error) {
         public ReadBucketResult {
             assert (bucket != null) || (error != null);
             assert (bucket == null) || (error == null);

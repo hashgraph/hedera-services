@@ -17,38 +17,109 @@
 package com.swirlds.merkledb.files.hashmap;
 
 import com.swirlds.virtualmap.VirtualKey;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 public class ReusableBucketPool<K extends VirtualKey<? super K>> {
 
-    private static final int POOL_SIZE = 1024;
+    private static final int DEFAULT_POOL_SIZE = 8192;
 
-    private final BlockingQueue<Bucket<K>> availableBuckets = new ArrayBlockingQueue<>(POOL_SIZE, false);
+    private final int poolSize;
+
+    private final AtomicReferenceArray<Bucket<K>> buckets;
+
+    private final AtomicInteger nextA = new AtomicInteger(1);
+    private final AtomicInteger nextE = new AtomicInteger(0);
 
     public ReusableBucketPool(final BucketSerializer<K> serializer) {
-        try {
-            for (int i = 0; i < POOL_SIZE; i++) {
-                availableBuckets.put(new Bucket<>(serializer.getKeySerializer(), this));
-            }
-        } catch (final InterruptedException e) {
-            throw new RuntimeException(e);
+        this(DEFAULT_POOL_SIZE, serializer);
+    }
+
+    public ReusableBucketPool(final int size, final BucketSerializer<K> serializer) {
+        poolSize = size;
+        buckets = new AtomicReferenceArray<>(poolSize);
+        for (int i = 0; i < poolSize; i++) {
+            buckets.set(i, new Bucket<>(serializer.getKeySerializer(), this));
         }
     }
 
     public Bucket<K> getBucket() {
-        try {
-            final Bucket<K> bucket = availableBuckets.take();
-            bucket.clear();
-            return bucket;
-        } catch (final InterruptedException e) {
-            throw new RuntimeException(e);
+        final int index = nextA.getAndUpdate(t -> (t + 1) % poolSize);
+        Bucket<K> bucket = buckets.getAndSet(index, null);
+        while (bucket == null) {
+            synchronized (this) {
+                try {
+                    wait();
+                } catch (final InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            bucket = buckets.getAndSet(index, null);
         }
+        bucket.clear();
+        return bucket;
     }
 
     public void releaseBucket(final Bucket<K> bucket) {
         assert bucket.getBucketPool() == this;
-        final boolean added = availableBuckets.add(bucket);
-        assert added;
+        int index = nextE.getAndUpdate(t -> (t + 1) % poolSize);
+        boolean released = buckets.compareAndSet(index, null, bucket);
+        while (!released) {
+            index = nextE.getAndUpdate(t -> (t + 1) % poolSize);
+            released = buckets.compareAndSet(index, null, bucket);
+        }
+        synchronized (this) {
+            notifyAll();
+        }
     }
+
+    /*
+    private final Bucket<K>[] buckets;
+
+    private int available;
+
+    public ReusableBucketPool(final BucketSerializer<K> serializer) {
+        this(DEFAULT_POOL_SIZE, serializer);
+    }
+
+    public ReusableBucketPool(final int size, final BucketSerializer<K> serializer) {
+        poolSize = size;
+        synchronized (this) {
+            available = poolSize;
+            buckets = new Bucket[poolSize];
+            for (int i = 0; i < poolSize; i++) {
+                buckets[i] = new Bucket<>(serializer.getKeySerializer(), this);
+            }
+        }
+    }
+
+    public Bucket<K> getBucket() {
+        Bucket<K> bucket;
+        synchronized (this) {
+            while (available == 0) {
+                try {
+                    wait();
+                } catch (final InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            int index = --available;
+            bucket = buckets[index];
+            buckets[index] = null;
+        }
+        bucket.clear();
+        return bucket;
+    }
+
+    public void releaseBucket(final Bucket<K> bucket) {
+        assert bucket.getBucketPool() == this;
+        synchronized (this) {
+            assert available < poolSize;
+            int index = available++;
+            assert buckets[index] == null;
+            buckets[index] = bucket;
+            notify();
+        }
+    }
+    */
 }
