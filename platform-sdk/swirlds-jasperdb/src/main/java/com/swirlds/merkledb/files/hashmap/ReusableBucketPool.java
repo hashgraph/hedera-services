@@ -27,8 +27,9 @@ public class ReusableBucketPool<K extends VirtualKey<? super K>> {
     private final int poolSize;
 
     private final AtomicReferenceArray<Bucket<K>> buckets;
+    private final AtomicReferenceArray<Object> locks;
 
-    private final AtomicInteger nextA = new AtomicInteger(1);
+    private final AtomicInteger nextA = new AtomicInteger(0);
     private final AtomicInteger nextE = new AtomicInteger(0);
 
     public ReusableBucketPool(final BucketSerializer<K> serializer) {
@@ -38,23 +39,29 @@ public class ReusableBucketPool<K extends VirtualKey<? super K>> {
     public ReusableBucketPool(final int size, final BucketSerializer<K> serializer) {
         poolSize = size;
         buckets = new AtomicReferenceArray<>(poolSize);
+        locks = new AtomicReferenceArray<>(poolSize);
         for (int i = 0; i < poolSize; i++) {
             buckets.set(i, new Bucket<>(serializer.getKeySerializer(), this));
+            locks.set(i, new Object());
         }
     }
 
     public Bucket<K> getBucket() {
         final int index = nextA.getAndUpdate(t -> (t + 1) % poolSize);
         Bucket<K> bucket = buckets.getAndSet(index, null);
-        while (bucket == null) {
-            synchronized (this) {
-                try {
-                    wait();
-                } catch (final InterruptedException e) {
-                    throw new RuntimeException(e);
+        if (bucket == null) {
+            final Object lock = locks.get(index);
+            synchronized (lock) {
+                bucket = buckets.getAndSet(index, null);
+                while (bucket == null) {
+                    try {
+                        lock.wait();
+                    } catch (final InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    bucket = buckets.getAndSet(index, null);
                 }
             }
-            bucket = buckets.getAndSet(index, null);
         }
         bucket.clear();
         return bucket;
@@ -65,11 +72,11 @@ public class ReusableBucketPool<K extends VirtualKey<? super K>> {
         int index = nextE.getAndUpdate(t -> (t + 1) % poolSize);
         boolean released = buckets.compareAndSet(index, null, bucket);
         while (!released) {
-            index = nextE.getAndUpdate(t -> (t + 1) % poolSize);
             released = buckets.compareAndSet(index, null, bucket);
         }
-        synchronized (this) {
-            notifyAll();
+        final Object lock = locks.get(index);
+        synchronized (lock) {
+            lock.notify();
         }
     }
 
