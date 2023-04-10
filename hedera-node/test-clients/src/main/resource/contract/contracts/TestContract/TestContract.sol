@@ -44,7 +44,25 @@ contract TestContract {
     }
 
     function callSpecificWithValue(address _toCall) external payable {
-        (bool success, ) = _toCall.call("boo(uint256)");
+        (bool success, ) = _toCall.call{value: msg.value}("boo(uint256)");
         require(success);
+    }
+
+    function delegateCallSpecific(address _toCall) external     {
+        (bool success, ) = _toCall.delegatecall("boo(uint256)");
+        require(success);
+    }
+
+    function delegateCallSpecificWithValue(address _toCall) external payable {
+        (bool success, ) = _toCall.delegatecall("boo(uint256)");
+        require(success);
+    }
+
+    function balanceOf(address _add) public view returns(uint) {
+        return _add.balance;
+    }
+
+    function selfDestructWithBeneficiary(address payable _beneficiary) public {
+        selfdestruct(_beneficiary);
     }
 }

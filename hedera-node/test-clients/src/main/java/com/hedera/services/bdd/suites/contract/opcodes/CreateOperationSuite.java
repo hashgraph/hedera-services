@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -92,20 +93,22 @@ public class CreateOperationSuite extends HapiSuite {
     private HapiSpec factoryAndSelfDestructInConstructorContract() {
         final var contract = "FactorySelfDestructConstructor";
 
+        final var sender = "sender";
         return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract")
-                .given(uploadInitCode(contract), contractCreate(contract).balance(10))
-                .when(contractCall(contract).hasKnownStatus(CONTRACT_DELETED))
+                .given(uploadInitCode(contract), cryptoCreate(sender).balance(ONE_HUNDRED_HBARS), contractCreate(contract).balance(10).payingWith(sender) )
+                .when(contractCall(contract).hasKnownStatus(CONTRACT_DELETED).payingWith(sender))
                 .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
     }
 
     private HapiSpec factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
-
+        final var sender = "sender";
         return defaultHapiSpec("FactoryQuickSelfDestructContract")
-                .given(uploadInitCode(contract), contractCreate(contract))
+                .given(uploadInitCode(contract), contractCreate(contract), cryptoCreate(sender).balance(ONE_HUNDRED_HBARS))
                 .when(contractCall(contract, "createAndDeleteChild")
                         .gas(4_000_000)
-                        .via(CALL_RECORD_TRANSACTION_NAME))
+                        .via(CALL_RECORD_TRANSACTION_NAME)
+                        .payingWith(sender))
                 .then(getTxnRecord(CALL_RECORD_TRANSACTION_NAME)
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()

@@ -19,6 +19,25 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "_add",
+        "type": "address"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "_toCall",
         "type": "address"
       }
@@ -118,6 +137,19 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "_beneficiary",
+        "type": "address"
+      }
+    ],
+    "name": "selfDestructWithBeneficiary",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
