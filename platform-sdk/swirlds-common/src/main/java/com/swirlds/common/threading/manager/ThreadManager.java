@@ -32,7 +32,9 @@ import java.util.concurrent.ScheduledExecutorService;
 public interface ThreadManager {
 
     /**
-     * Create a new cached thread pool.
+     * Create a new cached thread pool. If this thread manager has not yet been started, work submitted the executor
+     * service will be not be handled until after the thread manager has been started (with the exception of the
+     * invokeAny() method, which will throw if called prior to the thread manager being started).
      *
      * @param name the name of the thread pool
      * @return a new cached thread pool
@@ -41,7 +43,9 @@ public interface ThreadManager {
     ExecutorService createCachedThreadPool(@NonNull final String name);
 
     /**
-     * Create a new single thread executor.
+     * Create a new single thread executor. If this thread manager has not yet been started, work submitted the executor
+     * service will be not be handled until after the thread manager has been started (with the exception of the
+     * invokeAny() method, which will throw if called prior to the thread manager being started).
      *
      * @param name the name of the thread pool
      * @return a new single thread executor
@@ -50,7 +54,9 @@ public interface ThreadManager {
     ExecutorService createSingleThreadExecutor(@NonNull final String name);
 
     /**
-     * Create a new fixed thread pool.
+     * Create a new fixed thread pool. If this thread manager has not yet been started, work submitted the executor
+     * service will be not be handled until after the thread manager has been started (with the exception of the
+     * invokeAny() method, which will throw if called prior to the thread manager being started).
      *
      * @param name        the name of the thread pool
      * @param threadCount the number of threads in the pool
@@ -60,7 +66,9 @@ public interface ThreadManager {
     ExecutorService createFixedThreadPool(@NonNull final String name, final int threadCount);
 
     /**
-     * Create a new single thread scheduled executor.
+     * Create a new single thread scheduled executor. If this thread manager has not yet been started, work submitted
+     * the executor service will be not be handled until after the thread manager has been started (with the exception
+     * of the invokeAny() method, which will throw if called prior to the thread manager being started).
      *
      * @param name the name of the thread pool
      * @return a new single thread scheduled executor
@@ -69,7 +77,9 @@ public interface ThreadManager {
     ScheduledExecutorService createSingleThreadScheduledExecutor(@NonNull final String name);
 
     /**
-     * Create a new scheduled thread pool.
+     * Create a new scheduled thread pool. If this thread manager has not yet been started, work submitted the executor
+     * service will be not be handled until after the thread manager has been started (with the exception of the
+     * invokeAny() method, which will throw if called prior to the thread manager being started).
      *
      * @param name        the name of the thread pool
      * @param threadCount the number of threads in the pool
@@ -127,8 +137,9 @@ public interface ThreadManager {
 
     /**
      * Create a new queue thread pool configuration.
+     *
      * @param clazz provides a generics type hint to the compiler
-     * @param <T> the type the object in the queue
+     * @param <T>   the type the object in the queue
      * @return a new queue thread pool configuration
      */
     @NonNull

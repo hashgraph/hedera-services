@@ -26,7 +26,10 @@ import com.swirlds.common.threading.manager.StartableThreadManager;
 import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.LifecyclePhase;
+import com.swirlds.common.utility.Startable;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -38,6 +41,7 @@ import java.util.concurrent.ThreadFactory;
 public final class StandardThreadManager implements StartableThreadManager, ThreadBuilder {
 
     private LifecyclePhase phase = LifecyclePhase.NOT_STARTED;
+    private final List<Startable> thingsToBeStarted = new ArrayList<>();
 
     private final Runnable throwIfInWrongPhase = () -> this.throwIfNotInPhase(LifecyclePhase.STARTED);
 
@@ -53,16 +57,17 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      * {@inheritDoc}
      */
     @Override
-    public void start() {
+    public synchronized void start() {
         throwIfNotInPhase(LifecyclePhase.NOT_STARTED);
         phase = LifecyclePhase.STARTED;
+        thingsToBeStarted.forEach(Startable::start);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void stop() {
+    public synchronized void stop() {
         throwIfNotInPhase(LifecyclePhase.STARTED);
         phase = LifecyclePhase.STOPPED;
     }
@@ -71,17 +76,16 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      * {@inheritDoc}
      */
     @Override
-    public @NonNull Thread buildThread(@NonNull final Runnable runnable) {
+    public synchronized @NonNull Thread buildThread(@NonNull final Runnable runnable) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
         return new ManagedThread(runnable, throwIfInWrongPhase);
     }
 
     /**
-     * Create a thread factory. TODO abstract class?
+     * Create a thread factory.
      */
     @NonNull
-    private ThreadFactory createThreadFactory(
-            @NonNull final String threadName) { // TODO perhaps we should deprecate this
+    private ThreadFactory createThreadFactory(@NonNull final String threadName) {
         return new ThreadConfiguration(this).setThreadName(threadName).buildFactory();
     }
 
@@ -90,10 +94,14 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public ExecutorService createCachedThreadPool(@NonNull final String name) {
+    public synchronized ExecutorService createCachedThreadPool(@NonNull final String name) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
-        return new ManagedExecutorService(
-                Executors.newCachedThreadPool(createThreadFactory(name)), throwIfInWrongPhase);
+        final ManagedExecutorService service =
+                new ManagedExecutorService(Executors.newCachedThreadPool(createThreadFactory(name)));
+        if (phase == LifecyclePhase.NOT_STARTED) {
+            thingsToBeStarted.add(service);
+        }
+        return service;
     }
 
     /**
@@ -101,10 +109,9 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public ExecutorService createSingleThreadExecutor(@NonNull final String name) {
+    public synchronized ExecutorService createSingleThreadExecutor(@NonNull final String name) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
-        return new ManagedExecutorService(
-                Executors.newSingleThreadExecutor(createThreadFactory(name)), throwIfInWrongPhase);
+        return new ManagedExecutorService(Executors.newSingleThreadExecutor(createThreadFactory(name)));
     }
 
     /**
@@ -112,10 +119,14 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public ExecutorService createFixedThreadPool(@NonNull final String name, int threadCount) {
+    public synchronized ExecutorService createFixedThreadPool(@NonNull final String name, int threadCount) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
-        return new ManagedExecutorService(
-                Executors.newFixedThreadPool(threadCount, createThreadFactory(name)), throwIfInWrongPhase);
+        final ManagedExecutorService service =
+                new ManagedExecutorService(Executors.newFixedThreadPool(threadCount, createThreadFactory(name)));
+        if (phase == LifecyclePhase.NOT_STARTED) {
+            thingsToBeStarted.add(service);
+        }
+        return service;
     }
 
     /**
@@ -123,10 +134,14 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public ScheduledExecutorService createSingleThreadScheduledExecutor(final @NonNull String name) {
+    public synchronized ScheduledExecutorService createSingleThreadScheduledExecutor(final @NonNull String name) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
-        return new ManagedScheduledExecutorService(
-                Executors.newSingleThreadScheduledExecutor(createThreadFactory(name)), throwIfInWrongPhase);
+        final ManagedScheduledExecutorService service = new ManagedScheduledExecutorService(
+                Executors.newSingleThreadScheduledExecutor(createThreadFactory(name)));
+        if (phase == LifecyclePhase.NOT_STARTED) {
+            thingsToBeStarted.add(service);
+        }
+        return service;
     }
 
     /**
@@ -134,10 +149,15 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, int threadCount) {
+    public synchronized ScheduledExecutorService createScheduledThreadPool(
+            @NonNull final String name, int threadCount) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
-        return new ManagedScheduledExecutorService(
-                Executors.newScheduledThreadPool(threadCount, createThreadFactory(name)), throwIfInWrongPhase);
+        final ManagedScheduledExecutorService service = new ManagedScheduledExecutorService(
+                Executors.newScheduledThreadPool(threadCount, createThreadFactory(name)));
+        if (phase == LifecyclePhase.NOT_STARTED) {
+            thingsToBeStarted.add(service);
+        }
+        return service;
     }
 
     /**
@@ -145,7 +165,7 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public ThreadConfiguration newThreadConfiguration() {
+    public synchronized ThreadConfiguration newThreadConfiguration() {
         return new ThreadConfiguration(this);
     }
 
@@ -154,7 +174,8 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public <T extends InterruptableRunnable> StoppableThreadConfiguration<T> newStoppableThreadConfiguration() {
+    public synchronized <T extends InterruptableRunnable>
+            StoppableThreadConfiguration<T> newStoppableThreadConfiguration() {
         return new StoppableThreadConfiguration<>(this);
     }
 
@@ -163,7 +184,7 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public <T> QueueThreadConfiguration<T> newQueueThreadConfiguration() {
+    public synchronized <T> QueueThreadConfiguration<T> newQueueThreadConfiguration() {
         return new QueueThreadConfiguration<T>(this);
     }
 
@@ -172,7 +193,7 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public <T> QueueThreadPoolConfiguration<T> newQueueThreadPoolConfiguration() {
+    public synchronized <T> QueueThreadPoolConfiguration<T> newQueueThreadPoolConfiguration() {
         return new QueueThreadPoolConfiguration<T>(this);
     }
 
@@ -181,7 +202,7 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public MultiQueueThreadConfiguration newMultiQueueThreadConfiguration() {
+    public synchronized MultiQueueThreadConfiguration newMultiQueueThreadConfiguration() {
         return new MultiQueueThreadConfiguration(this);
     }
 }

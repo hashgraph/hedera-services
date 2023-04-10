@@ -16,6 +16,7 @@
 
 package com.swirlds.common.threading.manager.internal;
 
+import com.swirlds.common.utility.LifecyclePhase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,11 +34,9 @@ public class ManagedScheduledExecutorService extends ManagedExecutorService impl
      * Wrap an executor service.
      *
      * @param executorService   the executor service to wrap
-     * @param throwIfInWrongPhase a runnable that will throw an exception if the thread manager has not started or has been stopped
      */
-    public ManagedScheduledExecutorService(
-            @NonNull ScheduledExecutorService executorService, @NonNull Runnable throwIfInWrongPhase) {
-        super(executorService, throwIfInWrongPhase);
+    public ManagedScheduledExecutorService(@NonNull ScheduledExecutorService executorService) {
+        super(executorService);
         this.scheduledExecutorService = executorService;
     }
 
@@ -47,7 +46,10 @@ public class ManagedScheduledExecutorService extends ManagedExecutorService impl
     @Override
     public @NonNull ScheduledFuture<?> schedule(
             final @NonNull Runnable command, final long delay, final @NonNull TimeUnit unit) {
-        throwIfInWrongPhase.run();
+        if (getLifecyclePhase() == LifecyclePhase.NOT_STARTED) {
+            return scheduledExecutorService.schedule(wrapRunnable(command), delay, unit);
+        }
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         return scheduledExecutorService.schedule(command, delay, unit);
     }
 
@@ -57,7 +59,10 @@ public class ManagedScheduledExecutorService extends ManagedExecutorService impl
     @Override
     public @NonNull <V> ScheduledFuture<V> schedule(
             final @NonNull Callable<V> callable, final long delay, final @NonNull TimeUnit unit) {
-        throwIfInWrongPhase.run();
+        if (getLifecyclePhase() == LifecyclePhase.NOT_STARTED) {
+            return scheduledExecutorService.schedule(wrapCallable(callable), delay, unit);
+        }
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         return scheduledExecutorService.schedule(callable, delay, unit);
     }
 
@@ -67,7 +72,10 @@ public class ManagedScheduledExecutorService extends ManagedExecutorService impl
     @Override
     public @NonNull ScheduledFuture<?> scheduleAtFixedRate(
             final @NonNull Runnable command, final long initialDelay, final long period, final @NonNull TimeUnit unit) {
-        throwIfInWrongPhase.run();
+        if (getLifecyclePhase() == LifecyclePhase.NOT_STARTED) {
+            return scheduledExecutorService.scheduleAtFixedRate(wrapRunnable(command), initialDelay, period, unit);
+        }
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         return scheduledExecutorService.scheduleAtFixedRate(command, initialDelay, period, unit);
     }
 
@@ -77,7 +85,10 @@ public class ManagedScheduledExecutorService extends ManagedExecutorService impl
     @Override
     public @NonNull ScheduledFuture<?> scheduleWithFixedDelay(
             final @NonNull Runnable command, final long initialDelay, final long delay, final @NonNull TimeUnit unit) {
-        throwIfInWrongPhase.run();
+        if (getLifecyclePhase() == LifecyclePhase.NOT_STARTED) {
+            return scheduledExecutorService.scheduleWithFixedDelay(wrapRunnable(command), initialDelay, delay, unit);
+        }
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         return scheduledExecutorService.scheduleWithFixedDelay(command, initialDelay, delay, unit);
     }
 }

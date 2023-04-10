@@ -16,10 +16,15 @@
 
 package com.swirlds.common.threading.manager.internal;
 
+import com.swirlds.common.threading.interrupt.Uninterruptable;
+import com.swirlds.common.utility.Lifecycle;
+import com.swirlds.common.utility.LifecyclePhase;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -29,21 +34,89 @@ import java.util.concurrent.TimeoutException;
 /**
  * Wraps an executor service. Used to manage lifecycle of the executor.
  */
-public class ManagedExecutorService implements ExecutorService {
+public class ManagedExecutorService implements ExecutorService, Lifecycle {
 
     private final ExecutorService executorService;
-    protected final Runnable throwIfInWrongPhase;
+
+    /**
+     * The current lifecycle phase. It is possible that this value may be changed from NOT_STARTED to STARTED
+     * while another thread is concurrently reading this variable. This is not a problem, since if the thread
+     * incorrectly things the state is NOT_STARTED, the only side effect is that a no-op lambda is created.
+     */
+    private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
+
+    private final CountDownLatch startedLatch = new CountDownLatch(1);
 
     /**
      * Wrap an executor service.
      *
-     * @param executorService   the executor service to wrap
-     * @param throwIfInWrongPhase a runnable that will throw an exception if the thread manager has not started or has been stopped
+     * @param executorService the executor service to wrap
      */
-    public ManagedExecutorService(
-            @NonNull final ExecutorService executorService, @NonNull final Runnable throwIfInWrongPhase) {
+    public ManagedExecutorService(@NonNull final ExecutorService executorService) {
         this.executorService = executorService;
-        this.throwIfInWrongPhase = throwIfInWrongPhase;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public LifecyclePhase getLifecyclePhase() {
+        return lifecyclePhase;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Is not thread safe for multiple callers to call into start() and stop() simultaneously.
+     * </p>
+     */
+    @Override
+    public void start() {
+        throwIfNotInPhase(LifecyclePhase.NOT_STARTED);
+        startedLatch.countDown();
+        lifecyclePhase = LifecyclePhase.STARTED;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Is not thread safe for multiple callers to call into start() and stop() simultaneously.
+     * </p>
+     */
+    @Override
+    public void stop() {
+        throwIfNotInPhase(LifecyclePhase.STARTED);
+        executorService.shutdown();
+        lifecyclePhase = LifecyclePhase.STOPPED;
+    }
+
+    /**
+     * Wrap a runnable so that it will be unable to be fully executed until the executor service is started.
+     *
+     * @param runnable the runnable to wrap
+     * @return a runnable that will block until the service is started, then will execute the provided runnable
+     */
+    protected @NonNull Runnable wrapRunnable(@NonNull final Runnable runnable) {
+        return () -> {
+            Uninterruptable.abortAndThrowIfInterrupted(
+                    startedLatch::await, "interrupted while waiting for executor service to start");
+            runnable.run();
+        };
+    }
+
+    /**
+     * Wrap a callable so that it will be unable to be fully executed until the executor service is started.
+     *
+     * @param callable the callable to wrap
+     * @return a callable that will block until the service is started, then will execute the provided callable
+     */
+    protected @NonNull <T> Callable<T> wrapCallable(@NonNull final Callable<T> callable) {
+        return () -> {
+            Uninterruptable.abortAndThrowIfInterrupted(
+                    startedLatch::await, "interrupted while waiting for executor service to start");
+            return callable.call();
+        };
     }
 
     /**
@@ -91,7 +164,10 @@ public class ManagedExecutorService implements ExecutorService {
      */
     @Override
     public @NonNull <T> Future<T> submit(final @NonNull Callable<T> task) {
-        throwIfInWrongPhase.run();
+        if (lifecyclePhase == LifecyclePhase.NOT_STARTED) {
+            return executorService.submit(wrapCallable(task));
+        }
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         return executorService.submit(task);
     }
 
@@ -100,7 +176,10 @@ public class ManagedExecutorService implements ExecutorService {
      */
     @Override
     public @NonNull <T> Future<T> submit(final @NonNull Runnable task, final @NonNull T result) {
-        throwIfInWrongPhase.run();
+        if (lifecyclePhase == LifecyclePhase.NOT_STARTED) {
+            return executorService.submit(wrapRunnable(task), result);
+        }
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         return executorService.submit(task, result);
     }
 
@@ -109,7 +188,10 @@ public class ManagedExecutorService implements ExecutorService {
      */
     @Override
     public @NonNull Future<?> submit(final @NonNull Runnable task) {
-        throwIfInWrongPhase.run();
+        if (lifecyclePhase == LifecyclePhase.NOT_STARTED) {
+            return executorService.submit(wrapRunnable(task));
+        }
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         return executorService.submit(task);
     }
 
@@ -119,7 +201,14 @@ public class ManagedExecutorService implements ExecutorService {
     @Override
     public @NonNull <T> List<Future<T>> invokeAll(final @NonNull Collection<? extends Callable<T>> tasks)
             throws InterruptedException {
-        throwIfInWrongPhase.run();
+        if (lifecyclePhase == LifecyclePhase.NOT_STARTED) {
+            final List<Callable<T>> wrappedTasks = new ArrayList<>(tasks.size());
+            for (final var task : tasks) {
+                wrappedTasks.add(wrapCallable(task));
+            }
+            return executorService.invokeAll(wrappedTasks);
+        }
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         return executorService.invokeAll(tasks);
     }
 
@@ -130,7 +219,14 @@ public class ManagedExecutorService implements ExecutorService {
     public @NonNull <T> List<Future<T>> invokeAll(
             final @NonNull Collection<? extends Callable<T>> tasks, final long timeout, final @NonNull TimeUnit unit)
             throws InterruptedException {
-        throwIfInWrongPhase.run();
+        if (lifecyclePhase == LifecyclePhase.NOT_STARTED) {
+            final List<Callable<T>> wrappedTasks = new ArrayList<>(tasks.size());
+            for (final var task : tasks) {
+                wrappedTasks.add(wrapCallable(task));
+            }
+            return executorService.invokeAll(wrappedTasks, timeout, unit);
+        }
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         return executorService.invokeAll(tasks, timeout, unit);
     }
 
@@ -140,7 +236,7 @@ public class ManagedExecutorService implements ExecutorService {
     @Override
     public @NonNull <T> T invokeAny(final @NonNull Collection<? extends Callable<T>> tasks)
             throws InterruptedException, ExecutionException {
-        throwIfInWrongPhase.run();
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         return executorService.invokeAny(tasks);
     }
 
@@ -151,7 +247,7 @@ public class ManagedExecutorService implements ExecutorService {
     public @NonNull <T> T invokeAny(
             final @NonNull Collection<? extends Callable<T>> tasks, final long timeout, final @NonNull TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
-        throwIfInWrongPhase.run();
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         return executorService.invokeAny(tasks, timeout, unit);
     }
 
@@ -160,7 +256,6 @@ public class ManagedExecutorService implements ExecutorService {
      */
     @Override
     public void execute(final @NonNull Runnable command) {
-        throwIfInWrongPhase.run();
-        executorService.execute(command);
+        executorService.execute(wrapRunnable(command));
     }
 }
