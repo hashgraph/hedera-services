@@ -1,6 +1,7 @@
 package com.swirlds.demo.preconsensuseventstream;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
+import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -10,6 +11,8 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.transaction.ConsensusTransaction;
+import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
@@ -84,16 +87,32 @@ public class PreconsensusEventStreamTestingToolState extends PartialMerkleLeaf i
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final @NonNull Round round, final @NonNull SwirldDualState swirldDualState) {
-        // TODO
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public synchronized PreconsensusEventStreamTestingToolState copy() {
         throwIfImmutable();
         return new PreconsensusEventStreamTestingToolState(this);
+    }
+
+    /**
+     * Sets the new {@link #stateLong} to the non-cryptographic hash of the existing state, and the contents of the
+     * transaction being handled
+     *
+     * @param transaction the transaction to apply to the state
+     */
+    private void applyTransactionToState(final @NonNull ConsensusTransaction transaction) {
+        throwArgNull(transaction, "transaction");
+
+        final long transactionContents = byteArrayToLong(transaction.getContents(), 0);
+        stateLong = NonCryptographicHashing.hash64(stateLong, transactionContents);
+    }
+
+    /**
+     * Modifies the state based on each transaction in the round
+     * <p>
+     * Writes the round and its contents to a log on disk
+     */
+    @Override
+    public void handleConsensusRound(final @NonNull Round round, final @NonNull SwirldDualState swirldDualState) {
+        round.forEachTransaction(this::applyTransactionToState);
+        StateLogWriter.writeRoundStateToLog(round);
     }
 }
