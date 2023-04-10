@@ -20,11 +20,11 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public final class PathHashRecordSerializer implements DataItemSerializer<PathHashRecord> {
+public final class VirtualHashRecordSerializer implements DataItemSerializer<VirtualHashRecord> {
 
     /**
      * The digest type to use for Virtual Internals, if this is changed then serialized version need
@@ -40,7 +40,7 @@ public final class PathHashRecordSerializer implements DataItemSerializer<PathHa
 
     private static final int SERIALIZED_SIZE = Long.BYTES + DEFAULT_DIGEST.digestLength(); // path + hash
 
-    public PathHashRecordSerializer() {
+    public VirtualHashRecordSerializer() {
         // for deserialization
     }
 
@@ -67,7 +67,7 @@ public final class PathHashRecordSerializer implements DataItemSerializer<PathHa
     }
 
     @Override
-    public PathHashRecord deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public VirtualHashRecord deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         if (dataVersion != CURRENT_SERIALIZATION_VERSION) {
             throw new IllegalArgumentException(
                     "Cannot deserialize version " + dataVersion + ", current is " + CURRENT_SERIALIZATION_VERSION);
@@ -75,12 +75,12 @@ public final class PathHashRecordSerializer implements DataItemSerializer<PathHa
         final long path = buffer.getLong();
         final Hash newHash = new Hash(DigestType.SHA_384);
         buffer.get(newHash.getValue());
-        return new PathHashRecord(path, newHash);
+        return new VirtualHashRecord(path, newHash);
     }
 
     /** {@inheritDoc} */
     @Override
-    public int serialize(final PathHashRecord data, final ByteBuffer buffer) throws IOException {
+    public int serialize(final VirtualHashRecord data, final ByteBuffer buffer) throws IOException {
         final DigestType digestType = data.hash().getDigestType();
         if (DEFAULT_DIGEST != digestType) {
             throw new IllegalArgumentException(

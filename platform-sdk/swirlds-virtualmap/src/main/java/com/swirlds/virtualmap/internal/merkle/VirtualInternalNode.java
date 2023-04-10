@@ -31,7 +31,7 @@ import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
@@ -59,14 +59,14 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
     private final VirtualRootNode<K, V> root;
 
     /**
-     * The {@link PathHashRecord} is the backing data for this node.
+     * The {@link VirtualHashRecord} is the backing data for this node.
      */
-    private final PathHashRecord pathHashRecord;
+    private final VirtualHashRecord virtualHashRecord;
 
-    public VirtualInternalNode(final VirtualRootNode<K, V> root, final PathHashRecord pathHashRecord) {
+    public VirtualInternalNode(final VirtualRootNode<K, V> root, final VirtualHashRecord virtualHashRecord) {
         this.root = Objects.requireNonNull(root);
-        this.pathHashRecord = Objects.requireNonNull(pathHashRecord);
-        setHash(pathHashRecord.hash());
+        this.virtualHashRecord = Objects.requireNonNull(virtualHashRecord);
+        setHash(virtualHashRecord.hash());
     }
 
     /**
@@ -135,7 +135,7 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
     @SuppressWarnings("unchecked")
     @Override
     public VirtualNode getLeft() {
-        return getChild(getLeftChildPath(pathHashRecord.path()));
+        return getChild(getLeftChildPath(virtualHashRecord.path()));
     }
 
     /**
@@ -144,7 +144,7 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
     @SuppressWarnings("unchecked")
     @Override
     public VirtualNode getRight() {
-        return getChild(getRightChildPath(pathHashRecord.path()));
+        return getChild(getRightChildPath(virtualHashRecord.path()));
     }
 
     private VirtualNode getChild(final long childPath) {
@@ -176,7 +176,7 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
             }
         }
 
-        final PathHashRecord rec = new PathHashRecord(path, hash != VirtualNodeCache.DELETED_HASH ? hash : null);
+        final VirtualHashRecord rec = new VirtualHashRecord(path, hash != VirtualNodeCache.DELETED_HASH ? hash : null);
         return new VirtualInternalNode<>(root, rec);
     }
 
@@ -258,7 +258,7 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
     @Override
     public String toString() {
         return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append(pathHashRecord)
+                .append(virtualHashRecord)
                 .toString();
     }
 
@@ -275,7 +275,7 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
             return false;
         }
 
-        return pathHashRecord.equals(that.pathHashRecord);
+        return virtualHashRecord.equals(that.virtualHashRecord);
     }
 
     /**
@@ -283,11 +283,11 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
      */
     @Override
     public int hashCode() {
-        return Objects.hash(pathHashRecord);
+        return Objects.hash(virtualHashRecord);
     }
 
     @Override
     public long getPath() {
-        return pathHashRecord.path();
+        return virtualHashRecord.path();
     }
 }

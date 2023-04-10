@@ -43,7 +43,7 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
  * @param <V>
  * 		The value type
  */
-final class HashJob<K extends VirtualKey<? super K>, V extends VirtualValue> {
+final class HashJob<K extends VirtualKey, V extends VirtualValue> {
     /**
      * A singleton reference to the Cryptography libraries. Used for hashing.
      */

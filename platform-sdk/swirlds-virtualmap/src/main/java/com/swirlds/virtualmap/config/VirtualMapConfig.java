@@ -95,8 +95,7 @@ public record VirtualMapConfig(
         @ConfigProperty(defaultValue = "2000000000") long familyThrottleThreshold,
         @ConfigProperty(defaultValue = "2") int preferredFlushQueueSize,
         @ConfigProperty(defaultValue = "200ms") Duration flushThrottleStepSize,
-        @ConfigProperty(defaultValue = "5s") Duration maximumFlushThrottlePeriod,
-        @ConfigProperty(defaultValue = "false") boolean fullRehashOnLoad) {
+        @ConfigProperty(defaultValue = "5s") Duration maximumFlushThrottlePeriod) {
 
     private static final double UNIT_FRACTION_PERCENT = 100.0;
 

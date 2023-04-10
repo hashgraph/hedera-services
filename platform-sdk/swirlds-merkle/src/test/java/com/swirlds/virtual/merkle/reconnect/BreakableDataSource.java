@@ -20,8 +20,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
@@ -44,7 +44,7 @@ public abstract class BreakableDataSource implements VirtualDataSource<TestKey, 
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<PathHashRecord> pathHashRecordsToUpdate,
+            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
             final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
             throws IOException {

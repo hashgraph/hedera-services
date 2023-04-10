@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.utilities.HashTools.byteBufferToHash;
+import static com.swirlds.jasperdb.utilities.HashTools.DEFAULT_DIGEST;
 
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
@@ -110,7 +110,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
 
         if (hashSerializationVersion != 0) {
             // compatibility: read hash
-            byteBufferToHash(buffer, hashSerializationVersion);
+            buffer.position(buffer.position() + DEFAULT_DIGEST.digestLength());
         }
         // deserialize key
         final K key = keySerializer.deserialize(buffer, keySerializationVersion);

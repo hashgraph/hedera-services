@@ -182,11 +182,12 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      */
     public D readDataItem(final long dataLocation) throws IOException {
         long serializationVersion = metadata.getSerializationVersion();
-        final ByteBuffer data = readDataItemBytes(dataLocation, serializationVersion);
+        final ByteBuffer data = readDataItemBytes(dataLocation);
         return dataItemSerializer.deserialize(data, serializationVersion);
     }
 
-    public ByteBuffer readDataItemBytes(final long dataLocation, final long serializationVersion) throws IOException {
+    public ByteBuffer readDataItemBytes(final long dataLocation) throws IOException {
+        final long serializationVersion = metadata.getSerializationVersion();
         final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
         final int bytesToRead;
         if (dataItemSerializer.isVariableSize()) {

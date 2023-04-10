@@ -37,7 +37,7 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapKe
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValue;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValueBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.PathHashRecordSerializer;
+import com.swirlds.jasperdb.VirtualHashRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.logging.LogMarker;
@@ -92,7 +92,7 @@ public final class VirtualMerkleStateInitializer {
                 final JasperDbBuilder<AccountVirtualMapKey, AccountVirtualMapValue> jasperDbBuilder =
                         new JasperDbBuilder<AccountVirtualMapKey, AccountVirtualMapValue>()
                                 .virtualLeafRecordSerializer(leafRecordSerializer)
-                                .virtualInternalRecordSerializer(new PathHashRecordSerializer())
+                                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
                                 .keySerializer(keySerializer)
                                 .storageDir(pathToJasperDBStorageDir)
                                 .maxNumOfKeys(totalAccountCreations)
@@ -126,7 +126,7 @@ public final class VirtualMerkleStateInitializer {
                 final JasperDbBuilder<SmartContractMapKey, SmartContractMapValue> jasperDbBuilder = new JasperDbBuilder<
                                 SmartContractMapKey, SmartContractMapValue>()
                         .virtualLeafRecordSerializer(leafRecordSerializer)
-                        .virtualInternalRecordSerializer(new PathHashRecordSerializer())
+                        .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
                         .keySerializer(keySerializer)
                         .storageDir(pathToJasperDBStorageDir)
                         .maxNumOfKeys(maximumNumberOfKeyValuePairsCreation)
@@ -157,7 +157,7 @@ public final class VirtualMerkleStateInitializer {
                 final JasperDbBuilder<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> jasperDbBuilder =
                         new JasperDbBuilder<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>()
                                 .virtualLeafRecordSerializer(leafRecordSerializer)
-                                .virtualInternalRecordSerializer(new PathHashRecordSerializer())
+                                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
                                 .keySerializer(keySerializer)
                                 .storageDir(pathToJasperDBStorageDir)
                                 // since each smart contract has one bytecode, we can use the number of

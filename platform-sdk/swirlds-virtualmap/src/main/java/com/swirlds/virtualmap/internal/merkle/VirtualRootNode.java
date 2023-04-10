@@ -60,9 +60,9 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapSettings;
 import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
@@ -160,6 +160,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * then it means a single round of hashing has exceeded this time threshold.
      */
     private static final int MAX_RECONNECT_HASHING_BUFFER_TIMEOUT = 60;
+
+    /**
+     * The number of seconds to wait for the hashing buffer during full leaf rehash
+     * (see {@link VirtualRootNode#fullLeafRehash()}) before we cancel the rehashing with an exception.
+     */
+    private static final int MAX_FULL_REHASHING_BUFFER_TIMEOUT = 10;
 
     /**
      * Placeholder (since this is such a hotspot) to hold the results from {@link VirtualMapSettingsFactory#get()}
@@ -409,10 +415,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * This will iterate over all the leaf nodes from the disk and rehash them.
      */
     public void fullLeafRehash() {
-        if (!settings.getFullRehashOnLoad()) {
-            logger.info("Full rehash on load is disabled, skipping");
-            return;
-        }
         Objects.requireNonNull(records, "Records must be initialized before rehashing");
 
         final ConcurrentBlockingIterator<VirtualLeafRecord<K, V>> rehashIterator =
@@ -429,6 +431,16 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                     lastLeafPath);
             return;
         }
+        try {
+            Hash loadedHash = dataSource.loadHash(lastLeafPath);
+            if (loadedHash != null) {
+                logger.info("Calculated hash found for the last leaf path: {}, skipping full rehash", lastLeafPath);
+                return;
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
         logger.info("Doing full rehash for the path range: {} - {}", firstLeafPath, lastLeafPath);
         final FullLeafRehashHashListener<K, V> hashListener =
                 new FullLeafRehashHashListener<>(firstLeafPath, lastLeafPath, dataSource);
@@ -437,7 +449,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // data to the hash listener to flush.
         new ThreadConfiguration(getStaticThreadManager())
                 .setComponent("virtualmap")
-                .setThreadName("hasher")
+                .setThreadName("leafRehasher")
                 .setRunnable(() -> fullRehashFuture.complete(
                         hasher.hash(records::findHash, rehashIterator, firstLeafPath, lastLeafPath, hashListener)))
                 .setExceptionHandler((thread, exception) -> {
@@ -457,7 +469,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 if (leafRecord != null) {
                     try {
                         final boolean success =
-                                rehashIterator.supply(leafRecord, MAX_RECONNECT_HASHING_BUFFER_TIMEOUT, SECONDS);
+                                rehashIterator.supply(leafRecord, MAX_FULL_REHASHING_BUFFER_TIMEOUT, SECONDS);
                         if (!success) {
                             throw new MerkleSynchronizationException(
                                     "Timed out waiting to supply a new leaf to the hashing iterator buffer");
@@ -569,10 +581,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final T node;
         if (path < state.getFirstLeafPath()) {
             final Hash hash = records.findHash(path);
-            final PathHashRecord pathHashRecord =
-                    new PathHashRecord(path, hash != VirtualNodeCache.DELETED_HASH ? hash : null);
+            final VirtualHashRecord virtualHashRecord =
+                    new VirtualHashRecord(path, hash != VirtualNodeCache.DELETED_HASH ? hash : null);
             //noinspection unchecked
-            node = (T) (new VirtualInternalNode<>(this, pathHashRecord));
+            node = (T) (new VirtualInternalNode<>(this, virtualHashRecord));
         } else if (path <= state.getLastLeafPath()) {
             final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(path, false);
             if (leafRecord == null) {
@@ -1053,7 +1065,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             final Stream<VirtualLeafRecord<K, V>> deletedLeaves = cacheToFlush.deletedLeaves();
 
             // Save the dirty hashes
-            final Stream<PathHashRecord> sortedDirtyHashes = cacheToFlush.dirtyHashes(stateToUse.getLastLeafPath());
+            final Stream<VirtualHashRecord> sortedDirtyHashes = cacheToFlush.dirtyHashes(stateToUse.getLastLeafPath());
 
             ds.saveRecords(
                     stateToUse.getFirstLeafPath(),
@@ -1183,9 +1195,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 state.getLastLeafPath(),
                 hashListener);
 
-        //        LongStream.range(state.getFirstLeafPath(), state.getLastLeafPath() + 1)
-        //                .boxed()
-        //                .map(path -> records.findLeafRecord(path, true)).iterator()
         if (virtualHash == null) {
             final Hash rootHash = (state.size() == 0) ? null : records.findHash(0);
             virtualHash = (rootHash != null) ? rootHash : hasher.emptyRootHash();

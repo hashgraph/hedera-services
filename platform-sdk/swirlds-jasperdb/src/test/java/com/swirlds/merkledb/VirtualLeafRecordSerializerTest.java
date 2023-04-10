@@ -25,7 +25,6 @@ import com.swirlds.merkledb.files.VirtualLeafRecordSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
-import java.io.IOException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -41,7 +40,7 @@ class VirtualLeafRecordSerializerTest {
     @ParameterizedTest
     @EnumSource(TestType.class)
     @SuppressWarnings("rawtypes")
-    void testSerializeDeserialize(final TestType testType) throws IOException {
+    void testSerializeDeserialize(final TestType testType) {
         final KeySerializer<?> keySerializer = testType.dataType().getKeySerializer();
         final ValueSerializer<?> valueSerializer = testType.dataType().getValueSerializer();
 
@@ -63,11 +62,46 @@ class VirtualLeafRecordSerializerTest {
                 (short) valueSerializer.getCurrentDataVersion(),
                 valueSerializer);
         final VirtualLeafRecordSerializer<VirtualLongKey, ExampleFixedSizeVirtualValue> virtualLeafRecordSerializer2 =
-                new VirtualLeafRecordSerializer<>(tableConfig1);
+                new VirtualLeafRecordSerializer<>(tableConfig2);
 
         assertEquals(
                 virtualLeafRecordSerializer1,
                 virtualLeafRecordSerializer2,
                 "Two identical VirtualLeafRecordSerializers did not equal each other");
+    }
+
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    void testSerializedSize(final TestType testType) {
+        final var serializer = createSerializer(testType);
+        int expectedSerializedSize = testType.fixedSize
+                ? testType.dataType().getKeySerializer().getSerializedSize()
+                        + testType.dataType().getValueSerializer().getSerializedSize()
+                        + Long.BYTES
+                : -1;
+        assertEquals(expectedSerializedSize, serializer.getSerializedSize());
+    }
+
+    @ParameterizedTest
+    @EnumSource(TestType.class)
+    void testHeaderSize(final TestType testType) {
+        final var serializer = createSerializer(testType);
+        int expectedSerializedSize = testType.fixedSize ? Long.BYTES : Long.BYTES + Integer.BYTES;
+        assertEquals(expectedSerializedSize, serializer.getHeaderSize());
+    }
+
+    private static VirtualLeafRecordSerializer<VirtualLongKey, ExampleFixedSizeVirtualValue> createSerializer(
+            TestType testType) {
+        final KeySerializer<?> keySerializer = testType.dataType().getKeySerializer();
+        final ValueSerializer<?> valueSerializer = testType.dataType().getValueSerializer();
+
+        final MerkleDbTableConfig<VirtualLongKey, ExampleFixedSizeVirtualValue> tableConfig1 = new MerkleDbTableConfig(
+                (short) 1,
+                DigestType.SHA_384,
+                (short) keySerializer.getCurrentDataVersion(),
+                keySerializer,
+                (short) valueSerializer.getCurrentDataVersion(),
+                valueSerializer);
+        return new VirtualLeafRecordSerializer<>(tableConfig1);
     }
 }

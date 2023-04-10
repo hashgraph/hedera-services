@@ -30,7 +30,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-class PathHashRecordTest {
+class VirtualHashRecordTest {
     private static final Cryptography CRYPTO = CryptographyHolder.get();
 
     @Test
@@ -38,7 +38,7 @@ class PathHashRecordTest {
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Using the path Constructor works")
     void createInternalRecordUsingPathConstructor() {
-        final PathHashRecord rec = new PathHashRecord(101);
+        final VirtualHashRecord rec = new VirtualHashRecord(101);
         assertNull(rec.hash(), "hash should be null");
         assertEquals(101, rec.path(), "path should match expected");
     }
@@ -49,7 +49,7 @@ class PathHashRecordTest {
     @DisplayName("Using the full constructor works")
     void createInternalRecordUsingPathHashConstructor() {
         final Hash hash = CRYPTO.digestSync("Fake Hash".getBytes(StandardCharsets.UTF_8));
-        final PathHashRecord rec = new PathHashRecord(102, hash);
+        final VirtualHashRecord rec = new VirtualHashRecord(102, hash);
         assertEquals(hash, rec.hash(), "hash should match");
         assertEquals(102, rec.path(), "path should match expected");
     }
@@ -59,7 +59,7 @@ class PathHashRecordTest {
     @Tag(TestComponentTags.VMAP)
     @DisplayName("toString with a null hash is OK")
     void toStringWithNullHashDoesNotThrow() {
-        final PathHashRecord rec = new PathHashRecord(103);
+        final VirtualHashRecord rec = new VirtualHashRecord(103);
         final String str = rec.toString();
         assertNotNull(str, "value should not be null");
     }

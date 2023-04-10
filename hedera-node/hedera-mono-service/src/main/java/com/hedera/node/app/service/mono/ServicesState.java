@@ -396,7 +396,8 @@ public class ServicesState extends PartialNaryMerkleInternal
             app.initializationFlow().runWith(this, bootstrapProps);
             if (trigger == RESTART && isUpgrade) {
                 app.stakeStartupHelper().doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
-                // FIXME: uncomment after migration to 0.37+
+                // FIXME: uncomment after migration to plaftorm-sdk 0.37+,
+                // https://github.com/hashgraph/hedera-services/issues/6037
                 /*
                 if(getChild(StateChildIndices.ACCOUNTS) instanceof VirtualMap accounts) {
                    accounts.fullRehash();

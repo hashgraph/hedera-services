@@ -38,12 +38,10 @@ import com.swirlds.demo.migration.virtual.AccountVirtualMapKeySerializer;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapValue;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapValueBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.PathHashRecordSerializer;
+import com.swirlds.jasperdb.VirtualHashRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.VirtualMapSettingsImpl;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -212,7 +210,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         final JasperDbBuilder<AccountVirtualMapKey, AccountVirtualMapValue> jasperDbBuilder = new JasperDbBuilder<
                         AccountVirtualMapKey, AccountVirtualMapValue>()
                 .virtualLeafRecordSerializer(leafRecordSerializer)
-                .virtualInternalRecordSerializer(new PathHashRecordSerializer())
+                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
                 .keySerializer(keySerializer)
                 .maxNumOfKeys(Integer.MAX_VALUE)
                 .hashesRamToDiskThreshold(0)
@@ -260,8 +258,6 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         } else {
             if (virtualMap != null) {
                 // enable full rehash on load
-                ((VirtualMapSettingsImpl) VirtualMapSettingsFactory.get()).setFullRehashOnLoad(true);
-                logger.info(MARKER, "Enabled full rehash for VirtualMap");
                 logger.info(MARKER, "Doing full rehash for the initialized VirtualMap");
                 // the tree leaves no longer contain hashes, so we need to rehash
                 virtualMap.fullLeafRehash();

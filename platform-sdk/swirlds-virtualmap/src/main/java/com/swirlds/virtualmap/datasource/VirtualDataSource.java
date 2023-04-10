@@ -81,7 +81,7 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
     void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<PathHashRecord> pathHashRecordsToUpdate,
+            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
             throws IOException;

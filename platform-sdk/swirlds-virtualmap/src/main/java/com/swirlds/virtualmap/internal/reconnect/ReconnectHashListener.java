@@ -51,8 +51,7 @@ import java.util.stream.Stream;
  * @param <V>
  * 		The value
  */
-public class ReconnectHashListener<K extends VirtualKey<? super K>, V extends VirtualValue>
-        extends AbstractHashListener<K, V> {
+public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue> extends AbstractHashListener<K, V> {
     private final ReconnectNodeRemover<K, V> nodeRemover;
 
     /**

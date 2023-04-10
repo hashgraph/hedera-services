@@ -24,9 +24,9 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
@@ -145,7 +145,7 @@ public class CloseFlushTest {
                 public void saveRecords(
                         final long firstLeafPath,
                         final long lastLeafPath,
-                        final Stream<PathHashRecord> pathHashRecordsToUpdate,
+                        final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                         final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
                         final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete) {
                     try {

@@ -35,7 +35,7 @@ import com.swirlds.common.utility.Units;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.VirtualLongKey;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -184,7 +184,7 @@ class MerkleDbDataSourceTest {
                 dataSource.saveRecords(
                         testSize,
                         testSize * 2,
-                        list.primitiveStream().mapToObj(i -> new PathHashRecord(i, hash(i * 10))),
+                        list.primitiveStream().mapToObj(i -> new VirtualHashRecord(i, hash(i * 10))),
                         Stream.empty(),
                         Stream.empty());
             }
@@ -325,7 +325,7 @@ class MerkleDbDataSourceTest {
         assertLeaf(testType, dataSource, 250, 250);
         assertLeaf(testType, dataSource, 500, 500);
         // move a leaf from 500 to 250, under new API there is no move as such, so we just write 500 leaf at 250 path
-        final PathHashRecord vir500 = new PathHashRecord(
+        final VirtualHashRecord vir500 = new VirtualHashRecord(
                 testType.dataType().createVirtualInternalRecord(250).path(), hash(500));
 
         final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> vlr500 =
@@ -527,8 +527,8 @@ class MerkleDbDataSourceTest {
         return testType.dataType().createDataSource(testDirectory, name, size, hashesRamToDiskThreshold, false, false);
     }
 
-    public static PathHashRecord createVirtualInternalRecord(final int i) {
-        return new PathHashRecord(i, hash(i));
+    public static VirtualHashRecord createVirtualInternalRecord(final int i) {
+        return new VirtualHashRecord(i, hash(i));
     }
 
     public static void assertLeaf(

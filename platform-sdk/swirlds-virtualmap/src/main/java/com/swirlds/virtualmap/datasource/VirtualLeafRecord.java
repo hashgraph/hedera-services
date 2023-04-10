@@ -35,8 +35,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * to take leaf records from caches that are not yet flushed to disk and write them to the stream.
  * We never send hashes in the stream.
  */
-public final class VirtualLeafRecord<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements SelfSerializable {
+public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValue> implements SelfSerializable {
 
     private static final long CLASS_ID = 0x410f45f0acd3264L;
 

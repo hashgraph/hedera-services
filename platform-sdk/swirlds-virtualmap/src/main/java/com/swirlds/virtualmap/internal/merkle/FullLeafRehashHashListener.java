@@ -24,9 +24,10 @@ import com.swirlds.virtualmap.internal.hash.VirtualHashListener;
 import java.util.stream.Stream;
 
 /**
- * A {@link VirtualHashListener} implementation used by {@link VirtualRootNode} on start if {@code fullRehashOnLoad}
- * setting is enabled. On start, all the leaves will be rehashed in ascending order. The hashing algorithm in the
- * {@link com.swirlds.virtualmap.internal.hash.VirtualHasher} is setup to hash enormous trees in breadth-first order.
+ * A {@link VirtualHashListener} implementation used by {@link VirtualRootNode} on start if rehashing is required.
+ * On start, all the leaves will be rehashed in ascending order if hashes for them were not previously calculated.
+ * The hashing algorithm in the {@link com.swirlds.virtualmap.internal.hash.VirtualHasher} is setup to hash
+ * enormous trees in breadth-first order.
  * As the hasher hashes, it notifies this listener which then stores up the changes into different sorted lists.
  * Then, when the "batch" is completed, it flushes the data in the proper order to the data source. This process
  * completely bypasses the {@link com.swirlds.virtualmap.internal.cache.VirtualNodeCache} and the
@@ -50,7 +51,7 @@ import java.util.stream.Stream;
  * @param <V>
  * 		The value
  */
-public class FullLeafRehashHashListener<K extends VirtualKey<? super K>, V extends VirtualValue>
+public class FullLeafRehashHashListener<K extends VirtualKey, V extends VirtualValue>
         extends AbstractHashListener<K, V> {
     /**
      * Create a new {@link FullLeafRehashHashListener}.

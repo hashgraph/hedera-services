@@ -29,7 +29,7 @@ import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualTestBase;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import java.util.ArrayDeque;
@@ -132,11 +132,12 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         assertEquals(expected, rootHash, "Hash value does not match expected");
 
         // Make sure the saver saw each dirty node exactly once.
-        final Set<Long> savedInternals =
-                listener.unsortedInternals().stream().map(PathHashRecord::path).collect(Collectors.toSet());
-        final Set<PathHashRecord> seenInternals = new HashSet<>();
+        final Set<Long> savedInternals = listener.unsortedInternals().stream()
+                .map(VirtualHashRecord::path)
+                .collect(Collectors.toSet());
+        final Set<VirtualHashRecord> seenInternals = new HashSet<>();
         for (final Long dirtyPath : dirtyPaths) {
-            PathHashRecord internal = ds.getInternal(dirtyPath);
+            VirtualHashRecord internal = ds.getInternal(dirtyPath);
             while (internal != null && internal.path() > 0) {
                 assertTrue(savedInternals.contains(internal.path()), "Expected true");
                 seenInternals.add(internal);
@@ -324,7 +325,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
 
     /**
      * We found a bug while doing large reconnect tests where the VirtualHasher was asking for
-     * {@link PathHashRecord}s before they had been written (#4251). In reality, the
+     * {@link VirtualHashRecord}s before they had been written (#4251). In reality, the
      * hasher never should have been asking for those records in the first place (this was a
      * needless performance problem). This test covers that specific case.
      */
@@ -398,9 +399,9 @@ class VirtualHasherTest extends VirtualHasherTestBase {
     }
 
     private static void assertRecordsInRankAreAscendingPathOrder(final HashingListener listener) {
-        for (final List<PathHashRecord> rank : listener.ranks) {
+        for (final List<VirtualHashRecord> rank : listener.ranks) {
             long prevPath = Path.INVALID_PATH;
-            for (final PathHashRecord r : rank) {
+            for (final VirtualHashRecord r : rank) {
                 assertTrue(
                         prevPath < r.path(),
                         "Path not in ascending path order. prevPath=" + prevPath + ", path=" + r.path());
@@ -432,12 +433,12 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         private int onHashingCompletedCallCount = 0;
         private final StringBuilder callHistory = new StringBuilder();
 
-        private final Deque<List<PathHashRecord>> ranks = new ArrayDeque<>();
-        private final Deque<List<PathHashRecord>> internalBatches = new ArrayDeque<>();
+        private final Deque<List<VirtualHashRecord>> ranks = new ArrayDeque<>();
+        private final Deque<List<VirtualHashRecord>> internalBatches = new ArrayDeque<>();
 
-        List<PathHashRecord> unsortedInternals() {
-            List<PathHashRecord> records = new ArrayList<>();
-            for (List<PathHashRecord> list : internalBatches) {
+        List<VirtualHashRecord> unsortedInternals() {
+            List<VirtualHashRecord> records = new ArrayList<>();
+            for (List<VirtualHashRecord> list : internalBatches) {
                 records.addAll(list);
             }
             return records;
@@ -468,7 +469,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         public void onNodeHashed(final long path, final Hash hash) {
             onNodeHashedCallCount++;
             callHistory.append(ON_INTERNAL_SYMBOL);
-            final PathHashRecord rec = new PathHashRecord(path, hash);
+            final VirtualHashRecord rec = new VirtualHashRecord(path, hash);
             internalBatches.getLast().add(rec);
             ranks.getLast().add(rec);
         }

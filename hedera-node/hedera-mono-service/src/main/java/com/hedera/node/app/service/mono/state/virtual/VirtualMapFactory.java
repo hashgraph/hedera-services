@@ -97,8 +97,15 @@ public class VirtualMapFactory {
     }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> newVirtualizedBlobs() {
+        return newVirtualizedBlobs(USE_MERKLE_DB);
+    }
+
+    /**
+     * This method should not be invoked directly, it's for test purposes only.
+     */
+    VirtualMap<VirtualBlobKey, VirtualBlobValue> newVirtualizedBlobs(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<VirtualBlobKey, VirtualBlobValue> dsBuilder;
-        if (USE_MERKLE_DB) {
+        if (useMerkleDb) {
             final MerkleDbTableConfig<VirtualBlobKey, VirtualBlobValue> tableConfig = new MerkleDbTableConfig<>(
                     CURRENT_SERIALIZATION_VERSION,
                     DigestType.SHA_384,
@@ -137,8 +144,15 @@ public class VirtualMapFactory {
     }
 
     public VirtualMap<ContractKey, IterableContractValue> newVirtualizedIterableStorage() {
+        return newVirtualizedIterableStorage(USE_MERKLE_DB);
+    }
+
+    /**
+     * This method should not be invoked directly, it's for test purposes only.
+     */
+    VirtualMap<ContractKey, IterableContractValue> newVirtualizedIterableStorage(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<ContractKey, IterableContractValue> dsBuilder;
-        if (USE_MERKLE_DB) {
+        if (useMerkleDb) {
             final MerkleDbTableConfig<ContractKey, IterableContractValue> tableConfig = new MerkleDbTableConfig<>(
                     CURRENT_SERIALIZATION_VERSION,
                     DigestType.SHA_384,
@@ -256,8 +270,15 @@ public class VirtualMapFactory {
     }
 
     public VirtualMap<EntityNumVirtualKey, OnDiskAccount> newOnDiskAccountStorage() {
+        return newOnDiskAccountStorage(USE_MERKLE_DB);
+    }
+
+    /**
+     * This method should not be invoked directly, it's for test purposes only.
+     */
+    public VirtualMap<EntityNumVirtualKey, OnDiskAccount> newOnDiskAccountStorage(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskAccount> dsBuilder;
-        if (USE_MERKLE_DB) {
+        if (useMerkleDb) {
             final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskAccount> tableConfig = new MerkleDbTableConfig<>(
                     CURRENT_SERIALIZATION_VERSION,
                     DigestType.SHA_384,
@@ -296,8 +317,15 @@ public class VirtualMapFactory {
     }
 
     public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> newOnDiskTokenRels() {
+        return newOnDiskTokenRels(USE_MERKLE_DB);
+    }
+
+    /**
+     * This method should not be invoked directly, it's for test purposes only.
+     */
+    public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> newOnDiskTokenRels(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskTokenRel> dsBuilder;
-        if (USE_MERKLE_DB) {
+        if (useMerkleDb) {
             final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskTokenRel> tableConfig = new MerkleDbTableConfig<>(
                     CURRENT_SERIALIZATION_VERSION,
                     DigestType.SHA_384,
@@ -337,8 +365,15 @@ public class VirtualMapFactory {
     }
 
     public VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage() {
+        return newVirtualizedUniqueTokenStorage(USE_MERKLE_DB);
+    }
+
+    /**
+     * This method should not be invoked directly, it's for test purposes only.
+     */
+    VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<UniqueTokenKey, UniqueTokenValue> dsBuilder;
-        if (USE_MERKLE_DB) {
+        if (useMerkleDb) {
             final MerkleDbTableConfig<UniqueTokenKey, UniqueTokenValue> tableConfig = new MerkleDbTableConfig<>(
                     CURRENT_SERIALIZATION_VERSION,
                     DigestType.SHA_384,

@@ -94,9 +94,4 @@ public class TestVirtualMapSettings implements VirtualMapSettings {
     public Duration getMaximumFlushThrottlePeriod() {
         return original.getMaximumFlushThrottlePeriod();
     }
-
-    @Override
-    public boolean getFullRehashOnLoad() {
-        return original.getFullRehashOnLoad();
-    }
 }

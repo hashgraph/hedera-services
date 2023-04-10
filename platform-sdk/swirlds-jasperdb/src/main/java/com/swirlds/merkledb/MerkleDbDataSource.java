@@ -41,7 +41,7 @@ import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.merkledb.files.DataFileReader;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
-import com.swirlds.merkledb.files.PathHashRecordSerializer;
+import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
 import com.swirlds.merkledb.files.VirtualLeafRecordSerializer;
 import com.swirlds.merkledb.files.hashmap.Bucket;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
@@ -54,8 +54,8 @@ import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.DataInputStream;
@@ -159,7 +159,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      * On disk store for node hashes. Can be null if all hashes are being stored in ram by setting
      * tableConfig.hashesRamToDiskThreshold to Long.MAX_VALUE.
      */
-    private final MemoryIndexDiskKeyValueStore<PathHashRecord> hashStoreDisk;
+    private final MemoryIndexDiskKeyValueStore<VirtualHashRecord> hashStoreDisk;
 
     /** True when hashesRamToDiskThreshold is less than Long.MAX_VALUE */
     private final boolean hasDiskStoreForHashes;
@@ -322,7 +322,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
 
         // data item serializers for internal/leaf file collections
-        final PathHashRecordSerializer pathHashRecordSerializer = new PathHashRecordSerializer();
+        final VirtualHashRecordSerializer virtualHashRecordSerializer = new VirtualHashRecordSerializer();
         final VirtualLeafRecordSerializer<K, V> leafRecordSerializer = new VirtualLeafRecordSerializer<>(tableConfig);
 
         // create path to disk location index
@@ -360,7 +360,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                         dbPaths.hashStoreDiskDirectory,
                         tableName + "_internalhashes",
                         tableName + ":internalHashes",
-                        pathHashRecordSerializer,
+                        virtualHashRecordSerializer,
                         null,
                         pathToDiskLocationInternalNodes)
                 : null;
@@ -569,7 +569,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<PathHashRecord> hashRecordsToUpdate,
+            final Stream<VirtualHashRecord> hashRecordsToUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
             throws IOException {
@@ -781,7 +781,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         if (path < tableConfig.getHashesRamToDiskThreshold()) {
             hash = hashStoreRam.get(path);
         } else {
-            final PathHashRecord rec = hashStoreDisk.get(path);
+            final VirtualHashRecord rec = hashStoreDisk.get(path);
             hash = (rec != null) ? rec.hash() : null;
         }
 
@@ -1175,7 +1175,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     /**
      * Write all hashes to hashStore
      */
-    private void writeHashes(final long maxValidPath, final Stream<PathHashRecord> pathHashRecords) throws IOException {
+    private void writeHashes(final long maxValidPath, final Stream<VirtualHashRecord> pathHashRecords)
+            throws IOException {
         if ((pathHashRecords == null) || (maxValidPath <= 0)) {
             // nothing to do
             return;
@@ -1353,8 +1354,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // we need to merge disk files for internal hashes if they exist and pathToKeyValue store
             if (hasDiskStoreForHashes) {
                 // horrible hack to get around generics because file filters work on any type of DataFileReader
-                final UnaryOperator<List<DataFileReader<PathHashRecord>>> internalRecordFileFilter =
-                        (UnaryOperator<List<DataFileReader<PathHashRecord>>>) ((Object) filesToMergeFilter);
+                final UnaryOperator<List<DataFileReader<VirtualHashRecord>>> internalRecordFileFilter =
+                        (UnaryOperator<List<DataFileReader<VirtualHashRecord>>>) ((Object) filesToMergeFilter);
                 hashStoreDisk.merge(internalRecordFileFilter, settings.getMinNumberOfFilesInMerge());
                 afterInternalHashStoreDiskMerge = Instant.now(clock);
             } else {

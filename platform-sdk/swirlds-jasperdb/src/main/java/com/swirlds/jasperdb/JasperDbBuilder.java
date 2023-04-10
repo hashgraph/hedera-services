@@ -107,7 +107,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      * break it.</b></p>
      * <p><b>must be specified</b></p>
      */
-    private PathHashRecordSerializer pathHashRecordSerializer = new PathHashRecordSerializer();
+    private VirtualHashRecordSerializer virtualHashRecordSerializer = new VirtualHashRecordSerializer();
     /**
      * Serializer for converting raw data to/from keys.
      * <p><b>IMPORTANT: This can only be set before a new database is created, changing on an existing database will
@@ -149,8 +149,8 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      * break it.</b></p>
      * <p><b>must be specified</b></p>
      */
-    public JasperDbBuilder<K, V> virtualInternalRecordSerializer(final PathHashRecordSerializer serializer) {
-        this.pathHashRecordSerializer = Objects.requireNonNull(serializer);
+    public JasperDbBuilder<K, V> virtualInternalRecordSerializer(final VirtualHashRecordSerializer serializer) {
+        this.virtualHashRecordSerializer = Objects.requireNonNull(serializer);
         return this;
     }
 
@@ -233,7 +233,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
         try {
             return createDataSource(
                     virtualLeafRecordSerializer,
-                    pathHashRecordSerializer,
+                    virtualHashRecordSerializer,
                     keySerializer,
                     getStorageDir(label),
                     label,
@@ -262,7 +262,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
             snapshotMeJasperDB.snapshot(to);
             return createDataSource(
                     virtualLeafRecordSerializer,
-                    pathHashRecordSerializer,
+                    virtualHashRecordSerializer,
                     keySerializer,
                     to,
                     label,
@@ -304,7 +304,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
         try {
             return createDataSource(
                     virtualLeafRecordSerializer,
-                    pathHashRecordSerializer,
+                    virtualHashRecordSerializer,
                     keySerializer,
                     to,
                     label,
@@ -349,7 +349,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      */
     VirtualDataSourceJasperDB<K, V> createDataSource(
             final VirtualLeafRecordSerializer<K, V> virtualLeafRecordSerializer,
-            final PathHashRecordSerializer pathHashRecordSerializer,
+            final VirtualHashRecordSerializer virtualHashRecordSerializer,
             final KeySerializer<K> keySerializer,
             final Path storageDir,
             final String label,
@@ -361,7 +361,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
 
         return new VirtualDataSourceJasperDB<>(
                 virtualLeafRecordSerializer,
-                pathHashRecordSerializer,
+                virtualHashRecordSerializer,
                 keySerializer,
                 storageDir,
                 label,
@@ -380,7 +380,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
         out.writeLong(maxNumOfKeys);
         out.writeLong(hashesRamToDiskThreshold);
         out.writeSerializable(virtualLeafRecordSerializer, false);
-        out.writeSerializable(pathHashRecordSerializer, false);
+        out.writeSerializable(virtualHashRecordSerializer, false);
         out.writeSerializable(keySerializer, true);
     }
 
@@ -396,7 +396,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
         maxNumOfKeys = in.readLong();
         hashesRamToDiskThreshold = in.readLong();
         virtualLeafRecordSerializer = in.readSerializable(false, VirtualLeafRecordSerializer::new);
-        pathHashRecordSerializer = in.readSerializable(false, PathHashRecordSerializer::new);
+        virtualHashRecordSerializer = in.readSerializable(false, VirtualHashRecordSerializer::new);
         keySerializer = in.readSerializable();
     }
 
@@ -418,7 +418,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
                 && maxNumOfKeys == that.maxNumOfKeys
                 && hashesRamToDiskThreshold == that.hashesRamToDiskThreshold
                 && Objects.equals(virtualLeafRecordSerializer, that.virtualLeafRecordSerializer)
-                && Objects.equals(pathHashRecordSerializer, that.pathHashRecordSerializer)
+                && Objects.equals(virtualHashRecordSerializer, that.virtualHashRecordSerializer)
                 && Objects.equals(keySerializer, that.keySerializer);
     }
 
@@ -433,7 +433,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
                 maxNumOfKeys,
                 hashesRamToDiskThreshold,
                 virtualLeafRecordSerializer,
-                pathHashRecordSerializer,
+                virtualHashRecordSerializer,
                 keySerializer);
     }
 

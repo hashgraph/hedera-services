@@ -43,21 +43,4 @@ public class CryptoBenchMerkleDb extends CryptoBench {
                 new MerkleDbDataSourceBuilder<>(tableConfig);
         return new VirtualMap<>("vm" + System.nanoTime(), dataSourceBuilder);
     }
-
-    public static void main(final String[] args) throws Exception {
-        final CryptoBenchMerkleDb bench = new CryptoBenchMerkleDb();
-        bench.numFiles = 10;
-        bench.numRecords = 100000;
-        bench.maxKey = 1000000;
-        bench.keySize = 8;
-        bench.recordSize = 24;
-        bench.setup();
-        bench.setupMerkleDb();
-        for (int i = 0; i < 1; i++) {
-            bench.beforeTest();
-            bench.transferSerial();
-            bench.afterTest();
-        }
-        bench.destroy();
-    }
 }

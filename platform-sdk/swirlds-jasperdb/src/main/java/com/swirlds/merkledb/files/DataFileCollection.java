@@ -458,8 +458,8 @@ public class DataFileCollection<D> implements Snapshotable {
                 try {
                     final DataFileWriter<D> newFileWriter = currentCompactionWriter.get();
                     long serializationVersion = reader.getMetadata().getSerializationVersion();
-                    final long newLocation = newFileWriter.writeCopiedDataItem(
-                            serializationVersion, reader.readDataItemBytes(fileOffset));
+                final long newLocation =
+                        newFileWriter.writeCopiedDataItem(serializationVersion, reader.readDataItemBytes(fileOffset));
                     // update the index
                     index.putIfEqual(path, dataLocation, newLocation);
                 } catch (final IOException z) {

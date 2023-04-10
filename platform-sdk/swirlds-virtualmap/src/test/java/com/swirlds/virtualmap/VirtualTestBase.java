@@ -26,7 +26,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import java.io.IOException;
@@ -106,12 +106,12 @@ public class VirtualTestBase {
     protected VirtualNodeCache<TestKey, TestValue> cache;
     private VirtualNodeCache<TestKey, TestValue> lastCache;
 
-    private PathHashRecord rootInternal;
-    private PathHashRecord leftInternal;
-    private PathHashRecord rightInternal;
-    private PathHashRecord leftLeftInternal;
-    private PathHashRecord leftRightInternal;
-    private PathHashRecord rightLeftInternal;
+    private VirtualHashRecord rootInternal;
+    private VirtualHashRecord leftInternal;
+    private VirtualHashRecord rightInternal;
+    private VirtualHashRecord leftLeftInternal;
+    private VirtualHashRecord leftRightInternal;
+    private VirtualHashRecord rightLeftInternal;
     private VirtualLeafRecord<TestKey, TestValue> lastALeaf;
     private VirtualLeafRecord<TestKey, TestValue> lastBLeaf;
     private VirtualLeafRecord<TestKey, TestValue> lastCLeaf;
@@ -149,33 +149,35 @@ public class VirtualTestBase {
         rounds.add(cache);
     }
 
-    protected PathHashRecord rootInternal() {
-        rootInternal = rootInternal == null ? new PathHashRecord(ROOT_PATH) : copy(rootInternal);
+    protected VirtualHashRecord rootInternal() {
+        rootInternal = rootInternal == null ? new VirtualHashRecord(ROOT_PATH) : copy(rootInternal);
         return rootInternal;
     }
 
-    protected PathHashRecord leftInternal() {
-        leftInternal = leftInternal == null ? new PathHashRecord(LEFT_PATH) : copy(leftInternal);
+    protected VirtualHashRecord leftInternal() {
+        leftInternal = leftInternal == null ? new VirtualHashRecord(LEFT_PATH) : copy(leftInternal);
         return leftInternal;
     }
 
-    protected PathHashRecord rightInternal() {
-        rightInternal = rightInternal == null ? new PathHashRecord(RIGHT_PATH) : copy(rightInternal);
+    protected VirtualHashRecord rightInternal() {
+        rightInternal = rightInternal == null ? new VirtualHashRecord(RIGHT_PATH) : copy(rightInternal);
         return rightInternal;
     }
 
-    protected PathHashRecord leftLeftInternal() {
-        leftLeftInternal = leftLeftInternal == null ? new PathHashRecord(LEFT_LEFT_PATH) : copy(leftLeftInternal);
+    protected VirtualHashRecord leftLeftInternal() {
+        leftLeftInternal = leftLeftInternal == null ? new VirtualHashRecord(LEFT_LEFT_PATH) : copy(leftLeftInternal);
         return leftLeftInternal;
     }
 
-    protected PathHashRecord leftRightInternal() {
-        leftRightInternal = leftRightInternal == null ? new PathHashRecord(LEFT_RIGHT_PATH) : copy(leftRightInternal);
+    protected VirtualHashRecord leftRightInternal() {
+        leftRightInternal =
+                leftRightInternal == null ? new VirtualHashRecord(LEFT_RIGHT_PATH) : copy(leftRightInternal);
         return leftRightInternal;
     }
 
-    protected PathHashRecord rightLeftInternal() {
-        rightLeftInternal = rightLeftInternal == null ? new PathHashRecord(RIGHT_LEFT_PATH) : copy(rightLeftInternal);
+    protected VirtualHashRecord rightLeftInternal() {
+        rightLeftInternal =
+                rightLeftInternal == null ? new VirtualHashRecord(RIGHT_LEFT_PATH) : copy(rightLeftInternal);
         return rightLeftInternal;
     }
 
@@ -268,8 +270,8 @@ public class VirtualTestBase {
         return lastGLeaf;
     }
 
-    protected PathHashRecord hash(VirtualLeafRecord<TestKey, TestValue> rec) {
-        return new PathHashRecord(rec.getPath(), CRYPTO.digestSync(rec));
+    protected VirtualHashRecord hash(VirtualLeafRecord<TestKey, TestValue> rec) {
+        return new VirtualHashRecord(rec.getPath(), CRYPTO.digestSync(rec));
     }
 
     private VirtualLeafRecord<TestKey, TestValue> copyWithPath(
@@ -277,8 +279,8 @@ public class VirtualTestBase {
         return new VirtualLeafRecord<>(path, leaf.getKey(), value);
     }
 
-    private PathHashRecord copy(PathHashRecord rec) {
-        return new PathHashRecord(rec.path(), rec.hash());
+    private VirtualHashRecord copy(VirtualHashRecord rec) {
+        return new VirtualHashRecord(rec.path(), rec.hash());
     }
 
     public static final class TestInternal extends PartialBinaryMerkleInternal implements MerkleInternal {

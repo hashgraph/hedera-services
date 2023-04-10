@@ -19,8 +19,8 @@ package com.swirlds.virtualmap.internal.merkle;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.hash.VirtualHashListener;
@@ -58,16 +58,16 @@ import java.util.stream.Stream;
  * @param <V>
  * 		The value
  */
-public abstract class AbstractHashListener<K extends VirtualKey<? super K>, V extends VirtualValue>
+public abstract class AbstractHashListener<K extends VirtualKey, V extends VirtualValue>
         implements VirtualHashListener<K, V> {
     private static final int INITIAL_BATCH_ARRAY_SIZE = 10_000;
     private final VirtualDataSource<K, V> dataSource;
     private final long firstLeafPath;
     private final long lastLeafPath;
     private final List<List<VirtualLeafRecord<K, V>>> batchLeaves = new ArrayList<>();
-    private final List<List<PathHashRecord>> batchNodes = new ArrayList<>();
+    private final List<List<VirtualHashRecord>> batchNodes = new ArrayList<>();
     private List<VirtualLeafRecord<K, V>> rankLeaves;
-    private List<PathHashRecord> rankNodes;
+    private List<VirtualHashRecord> rankNodes;
 
     /**
      * Create a new {@link ReconnectHashListener}.
@@ -120,7 +120,7 @@ public abstract class AbstractHashListener<K extends VirtualKey<? super K>, V ex
      */
     @Override
     public void onNodeHashed(final long path, final Hash hash) {
-        rankNodes.add(new PathHashRecord(path, hash));
+        rankNodes.add(new VirtualHashRecord(path, hash));
     }
 
     /**
@@ -147,9 +147,9 @@ public abstract class AbstractHashListener<K extends VirtualKey<? super K>, V ex
     public void onBatchCompleted() {
         long maxPath = -1;
 
-        Stream<PathHashRecord> sortedDirtyHashes = Stream.of();
+        Stream<VirtualHashRecord> sortedDirtyHashes = Stream.of();
         for (int i = batchNodes.size() - 1; i >= 0; i--) {
-            final List<PathHashRecord> batch = batchNodes.get(i);
+            final List<VirtualHashRecord> batch = batchNodes.get(i);
             if (!batch.isEmpty()) {
                 sortedDirtyHashes = Stream.concat(sortedDirtyHashes, batch.stream());
                 maxPath = Math.max(maxPath, batch.get(batch.size() - 1).path());

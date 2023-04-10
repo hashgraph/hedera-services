@@ -23,8 +23,8 @@ import com.swirlds.common.crypto.Hash;
  * @param path the path of the node
  * @param hash the hash of the node
  */
-public record PathHashRecord(long path, Hash hash) {
-    public PathHashRecord(long path) {
+public record VirtualHashRecord(long path, Hash hash) {
+    public VirtualHashRecord(long path) {
         this(path, null);
     }
 }

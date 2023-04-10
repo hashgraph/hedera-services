@@ -119,7 +119,7 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<PathHashRecord> pathHashRecordsToUpdate,
+            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
             throws IOException {
@@ -274,7 +274,7 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
     // =================================================================================================================
     // private methods
 
-    private void saveInternalRecords(final long maxValidPath, final Stream<PathHashRecord> pathHashRecords)
+    private void saveInternalRecords(final long maxValidPath, final Stream<VirtualHashRecord> pathHashRecords)
             throws IOException {
         final var itr = pathHashRecords.iterator();
         while (itr.hasNext()) {

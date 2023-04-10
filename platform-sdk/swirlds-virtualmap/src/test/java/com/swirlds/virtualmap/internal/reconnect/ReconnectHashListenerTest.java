@@ -30,8 +30,8 @@ import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.datasource.InMemoryBuilder;
 import com.swirlds.virtualmap.datasource.InMemoryKeySet;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.hash.VirtualHasher;
@@ -113,15 +113,15 @@ class ReconnectHashListenerTest {
                 this::hash, LongStream.range(size, last).mapToObj(this::leaf).iterator(), size, last, listener);
 
         // Now validate that everything showed up the data source in ordered chunks
-        final TreeSet<PathHashRecord> allInternalRecords =
-                new TreeSet<>(Comparator.comparingLong(PathHashRecord::path));
-        for (List<PathHashRecord> internalRecords : ds.internalRecords) {
+        final TreeSet<VirtualHashRecord> allInternalRecords =
+                new TreeSet<>(Comparator.comparingLong(VirtualHashRecord::path));
+        for (List<VirtualHashRecord> internalRecords : ds.internalRecords) {
             allInternalRecords.addAll(internalRecords);
         }
 
         assertEquals(size + size, allInternalRecords.size(), "Some internal records were not written!");
         long expected = 0;
-        for (PathHashRecord rec : allInternalRecords) {
+        for (VirtualHashRecord rec : allInternalRecords) {
             final long path = rec.path();
             assertEquals(expected, path, "Path did not match expectation. path=" + path + ", expected=" + expected);
             expected++;
@@ -154,7 +154,7 @@ class ReconnectHashListenerTest {
     private static final class VirtualDataSourceSpy implements VirtualDataSource<TestKey, TestValue> {
         private final VirtualDataSource<TestKey, TestValue> delegate;
 
-        private final List<List<PathHashRecord>> internalRecords = new ArrayList<>();
+        private final List<List<VirtualHashRecord>> internalRecords = new ArrayList<>();
         private final List<List<VirtualLeafRecord<TestKey, TestValue>>> leafRecords = new ArrayList<>();
 
         VirtualDataSourceSpy(VirtualDataSource<TestKey, TestValue> delegate) {
@@ -170,7 +170,7 @@ class ReconnectHashListenerTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                final Stream<PathHashRecord> pathHashRecordsToUpdate,
+                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
                 throws IOException {

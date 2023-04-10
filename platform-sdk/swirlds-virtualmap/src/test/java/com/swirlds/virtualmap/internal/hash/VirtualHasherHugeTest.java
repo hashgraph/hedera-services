@@ -23,7 +23,7 @@ import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.util.function.LongFunction;
 import java.util.stream.LongStream;
@@ -58,7 +58,7 @@ class VirtualHasherHugeTest extends VirtualHasherTestBase {
 
         // Since we're hashing every internal node, we can generate new ones with null hashes. None are ever
         // asked for twice.
-        final LongFunction<PathHashRecord> internalGetter = PathHashRecord::new;
+        final LongFunction<VirtualHashRecord> internalGetter = VirtualHashRecord::new;
 
         // Go ahead and hash. I'm just going to check that the root hash produces *something*. I'm not worried
         // in this test as to the validity of this root hash since correctness is validated heavily in other

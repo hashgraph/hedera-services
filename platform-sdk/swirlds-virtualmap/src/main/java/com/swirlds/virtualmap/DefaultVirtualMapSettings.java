@@ -146,9 +146,4 @@ public final class DefaultVirtualMapSettings implements VirtualMapSettings {
     public Duration getMaximumFlushThrottlePeriod() {
         return DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD;
     }
-
-    @Override
-    public boolean getFullRehashOnLoad() {
-        return DEFAULT_FULL_REHASH_ON_LOAD;
-    }
 }

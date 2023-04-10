@@ -33,8 +33,8 @@ import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.datasource.InMemoryBuilder;
 import com.swirlds.virtualmap.datasource.InMemoryDataSource;
 import com.swirlds.virtualmap.datasource.InMemoryKeySet;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
@@ -73,12 +73,12 @@ public class RecordAccessorImplTest {
         records = new RecordAccessorImpl<>(state, cache, dataSource);
 
         // Prepopulate the database with some records
-        final PathHashRecord root = internal(0);
-        final PathHashRecord left = internal(1);
-        final PathHashRecord right = internal(2);
-        final PathHashRecord leftLeft = internal(3);
-        final PathHashRecord leftRight = internal(4);
-        final PathHashRecord rightLeft = internal(5);
+        final VirtualHashRecord root = internal(0);
+        final VirtualHashRecord left = internal(1);
+        final VirtualHashRecord right = internal(2);
+        final VirtualHashRecord leftLeft = internal(3);
+        final VirtualHashRecord leftRight = internal(4);
+        final VirtualHashRecord rightLeft = internal(5);
         final VirtualLeafRecord<TestKey, TestValue> firstLeaf = leaf(6);
         final VirtualLeafRecord<TestKey, TestValue> secondLeaf = leaf(7);
         final VirtualLeafRecord<TestKey, TestValue> thirdLeaf = leaf(8);
@@ -96,8 +96,9 @@ public class RecordAccessorImplTest {
 
         // Prepopulate the cache with some of those records. Some will be deleted, some will be modified, some will
         // not be in the cache.
-        final var rootChanged = new PathHashRecord(0, CRYPTO.digestSync("0 changed".getBytes(StandardCharsets.UTF_8)));
-        final var rightChanged = new PathHashRecord(
+        final var rootChanged =
+                new VirtualHashRecord(0, CRYPTO.digestSync("0 changed".getBytes(StandardCharsets.UTF_8)));
+        final var rightChanged = new VirtualHashRecord(
                 CHANGED_INTERNAL_PATH, CRYPTO.digestSync("2 changed".getBytes(StandardCharsets.UTF_8)));
         final var sixthLeafMoved = leaf(11);
         sixthLeafMoved.setPath(CHANGED_LEAF_PATH);
@@ -332,7 +333,7 @@ public class RecordAccessorImplTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                final Stream<PathHashRecord> pathHashRecordsToUpdate,
+                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
                 throws IOException {
@@ -397,8 +398,8 @@ public class RecordAccessorImplTest {
         }
     }
 
-    private static PathHashRecord internal(long num) {
-        return new PathHashRecord(num, CRYPTO.digestSync(("" + num).getBytes(StandardCharsets.UTF_8)));
+    private static VirtualHashRecord internal(long num) {
+        return new VirtualHashRecord(num, CRYPTO.digestSync(("" + num).getBytes(StandardCharsets.UTF_8)));
     }
 
     private static VirtualLeafRecord<TestKey, TestValue> leaf(long num) {

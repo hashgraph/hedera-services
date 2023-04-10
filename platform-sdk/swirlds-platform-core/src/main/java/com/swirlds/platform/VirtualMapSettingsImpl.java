@@ -20,7 +20,6 @@ import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_COPY_FLUS
 import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_FAMILY_THROTTLE_THRESHOLD;
 import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_FLUSH_INTERVAL;
 import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_FLUSH_THROTTLE_STEP_SIZE;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_FULL_REHASH_ON_LOAD;
 import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD;
 import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_MAXIMUM_VIRTUAL_MAP_SIZE;
 import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_NUM_CLEANER_THREADS;
@@ -60,7 +59,6 @@ public class VirtualMapSettingsImpl extends SubSetting implements VirtualMapSett
     public int preferredFlushQueueSize = DEFAULT_PREFERRED_FLUSH_QUEUE_SIZE;
     public Duration flushThrottleStepSize = DEFAULT_FLUSH_THROTTLE_STEP_SIZE;
     public Duration maximumFlushThrottlePeriod = DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD;
-    public boolean fullRehashOnLoad = DEFAULT_FULL_REHASH_ON_LOAD;
 
     /**
      * {@inheritDoc}
@@ -255,16 +253,5 @@ public class VirtualMapSettingsImpl extends SubSetting implements VirtualMapSett
      */
     public void setMaximumFlushThrottlePeriod(final Duration maximumFlushThrottlePeriod) {
         this.maximumFlushThrottlePeriod = maximumFlushThrottlePeriod;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public boolean getFullRehashOnLoad() {
-        return fullRehashOnLoad;
-    }
-
-    public void setFullRehashOnLoad(boolean fullRehashOnLoad) {
-        this.fullRehashOnLoad = fullRehashOnLoad;
     }
 }

@@ -24,7 +24,7 @@ import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -38,21 +38,27 @@ import java.nio.file.Path;
 public enum TestType {
 
     /** Parameterizes a test with fixed-size key and fixed-size data. */
-    fixed_fixed(),
+    fixed_fixed(true),
     /** Parameterizes a test with fixed-size key and variable-size data. */
-    fixed_variable(),
+    fixed_variable(false),
     /** Parameterizes a test with fixed-size complex key and fixed-size data. */
-    fixedComplex_fixed(),
+    fixedComplex_fixed(true),
     /** Parameterizes a test with fixed-size complex key and variable-size data. */
-    fixedComplex_variable(),
+    fixedComplex_variable(false),
     /** Parameterizes a test with variable-size key and fixed-size data. */
-    variable_fixed(),
+    variable_fixed(false),
     /** Parameterizes a test with variable-size key and variable-size data. */
-    variable_variable(),
+    variable_variable(false),
     /** Parameterizes a test with variable-size complex key and fixed-size data. */
-    variableComplex_fixed(),
+    variableComplex_fixed(false),
     /** Parameterizes a test with variable-size complex key and variable-size data. */
-    variableComplex_variable();
+    variableComplex_variable(false);
+
+    public final boolean fixedSize;
+
+    TestType(boolean fixedSize) {
+        this.fixedSize = fixedSize;
+    }
 
     public <K extends VirtualKey, V extends VirtualValue> DataTypeConfig<K, V> dataType() {
         return new DataTypeConfig<>(this);
@@ -180,8 +186,8 @@ public enum TestType {
             return database.getDataSource(name, enableMerging);
         }
 
-        public PathHashRecord createVirtualInternalRecord(final int i) {
-            return new PathHashRecord(i, hash(i));
+        public VirtualHashRecord createVirtualInternalRecord(final int i) {
+            return new VirtualHashRecord(i, hash(i));
         }
 
         public VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> createVirtualLeafRecord(final int i) {

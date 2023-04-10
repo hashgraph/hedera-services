@@ -32,7 +32,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.util.Comparator;
@@ -59,7 +59,7 @@ import org.apache.logging.log4j.Logger;
  * completes, a fast-copy of the tree is made, along with a fast-copy of the cache. Any new changes to the
  * modifiable tree are done through the corresponding copy of the cache. The original tree and original
  * cache have <strong>IMMUTABLE</strong> leaf data. The original tree is then submitted to multiple hashing
- * threads. For each internal node that is hashed, a {@link PathHashRecord} is created and added
+ * threads. For each internal node that is hashed, a {@link VirtualHashRecord} is created and added
  * to the {@link VirtualNodeCache}.
  * <p>
  * Eventually, there are multiple copies of the cache in memory. It may become necessary to merge two
@@ -91,7 +91,7 @@ import org.apache.logging.log4j.Logger;
  * To fulfill these design requirements, each "chain" of caches share three different indexes:
  * {@link #keyToDirtyLeafIndex}, {@link #pathToDirtyLeafIndex}, and {@link #pathToDirtyHashIndex}.
  * Each of these is a map from either the leaf key or a path (long) to a custom linked list data structure. Each element
- * in the list is a {@link Mutation} with a reference to the data item (either a {@link PathHashRecord}
+ * in the list is a {@link Mutation} with a reference to the data item (either a {@link VirtualHashRecord}
  * or a {@link VirtualLeafRecord}, depending on the list), and a reference to the next {@link Mutation}
  * in the list. In this way, given a leaf key or path (based on the index), you can get the linked list and
  * walk the links from mutation to mutation. The most recent mutation is first in the list, the oldest mutation
@@ -120,6 +120,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        public static final int NO_LEAF_HASHES = 2;
     }
 
     /**
@@ -818,7 +819,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * For testing purposes only. Equivalent to putHash(node.getPath(), node.getHash())
      * @param node the node to get path and hash from
      */
-    public void putHash(final PathHashRecord node) {
+    public void putHash(final VirtualHashRecord node) {
         Objects.requireNonNull(node);
         putHash(node.path(), node.hash());
     }
@@ -932,7 +933,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @throws MutabilityException
      * 		if called on a non-sealed cache instance.
      */
-    public Stream<PathHashRecord> dirtyHashes(final long lastLeafPath) {
+    public Stream<VirtualHashRecord> dirtyHashes(final long lastLeafPath) {
         if (!dirtyHashes.isImmutable()) {
             throw new MutabilityException("Cannot get the dirty internal records for a non-sealed cache.");
         }
@@ -943,7 +944,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                 .filter(mutation -> mutation.key <= lastLeafPath)
                 .filter(mutation -> dedupeHashByPath(mutation, lastSeen))
                 .filter(mutation -> !mutation.deleted)
-                .map(mutation -> new PathHashRecord(mutation.key, mutation.value != NULL_HASH ? mutation.value : null));
+                .map(mutation ->
+                        new VirtualHashRecord(mutation.key, mutation.value != NULL_HASH ? mutation.value : null));
     }
 
     /**
@@ -991,9 +993,9 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         this.fastCopyVersion.set(in.readLong());
-        deserializeKeyToDirtyLeafIndex(keyToDirtyLeafIndex, in);
+        deserializeKeyToDirtyLeafIndex(keyToDirtyLeafIndex, in, version);
         deserializePathToDirtyLeafIndex(pathToDirtyLeafIndex, in);
-        deserializePathToDirtyHashIndex(pathToDirtyHashIndex, in);
+        deserializePathToDirtyHashIndex(pathToDirtyHashIndex, in, version);
     }
 
     /**
@@ -1001,7 +1003,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.NO_LEAF_HASHES;
     }
 
     /**
@@ -1317,7 +1319,9 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                     : "Trying to serialize pathToDirtyInternalIndex with a version ahead";
             out.writeLong(mutation.version);
             out.writeBoolean(mutation.deleted);
-            out.writeSerializable(mutation.value, true);
+            if (!mutation.deleted) {
+                out.writeSerializable(mutation.value, true);
+            }
         }
     }
 
@@ -1332,14 +1336,21 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * 		In case of trouble.
      */
     private void deserializePathToDirtyHashIndex(
-            final Map<Long, Mutation<Long, Hash>> map, final SerializableDataInputStream in) throws IOException {
+            final Map<Long, Mutation<Long, Hash>> map, final SerializableDataInputStream in, final int version)
+            throws IOException {
         final int sizeOfMap = in.readInt();
         for (int index = 0; index < sizeOfMap; index++) {
             final long key = in.readLong();
             final long mutationVersion = in.readLong();
             final boolean deleted = in.readBoolean();
-            Hash hash = in.readSerializable();
-
+            Hash hash = null;
+            if (!deleted) {
+                if (version == ClassVersion.ORIGINAL) {
+                    // skip path
+                    in.readLong();
+                }
+                hash = in.readSerializable();
+            }
             final Mutation<Long, Hash> mutation = new Mutation<>(null, key, hash, mutationVersion);
             mutation.deleted = deleted;
             map.put(key, mutation);
@@ -1439,11 +1450,17 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * 		In case of trouble.
      */
     private void deserializeKeyToDirtyLeafIndex(
-            final Map<K, Mutation<K, VirtualLeafRecord<K, V>>> map, final SerializableDataInputStream in)
+            final Map<K, Mutation<K, VirtualLeafRecord<K, V>>> map,
+            final SerializableDataInputStream in,
+            final int version)
             throws IOException {
         final int sizeOfMap = in.readInt();
         for (int index = 0; index < sizeOfMap; index++) {
             final VirtualLeafRecord<K, V> leafRecord = in.readSerializable(false, VirtualLeafRecord::new);
+            if (version == ClassVersion.ORIGINAL) {
+                // skip path
+                in.readLong();
+            }
             final long mutationVersion = in.readLong();
             final boolean deleted = in.readBoolean();
             final Mutation<K, VirtualLeafRecord<K, V>> mutation =

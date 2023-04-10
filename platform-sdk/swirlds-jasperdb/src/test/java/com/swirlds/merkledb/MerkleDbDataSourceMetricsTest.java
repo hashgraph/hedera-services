@@ -32,7 +32,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.VirtualLongKey;
-import com.swirlds.virtualmap.datasource.PathHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -206,7 +206,7 @@ class MerkleDbDataSourceMetricsTest {
         return testType.dataType().createDataSource(testDirectory, name, size, hashesRamToDiskThreshold, false, false);
     }
 
-    public static PathHashRecord createVirtualInternalRecord(final int i) {
-        return new PathHashRecord(i, hash(i));
+    public static VirtualHashRecord createVirtualInternalRecord(final int i) {
+        return new VirtualHashRecord(i, hash(i));
     }
 }
