@@ -19,11 +19,15 @@ package com.hedera.node.app.service.evm.contracts.operations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -61,13 +65,39 @@ class HederaEvmOperationsUtilTest {
                         () -> messageFrame.getStackItem(0),
                         gasSupplier,
                         executionSupplier,
-                        (a, b) -> true);
+                        (a, b) -> true, a -> false, () -> mock(Operation.OperationResult.class));
 
         // then:
         assertEquals(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS, result.getHaltReason());
         assertEquals(expectedHaltGas, result.getGasCost());
         // and:
         verify(messageFrame).getStackItem(0);
+        verify(messageFrame, never()).getWorldUpdater();
+        verify(gasSupplier).getAsLong();
+        verify(executionSupplier, never()).get();
+    }
+
+    @Test
+    void handlesOverlowExceptionAsExpected() {
+        // given:
+        doThrow(FixedStack.OverflowException.class).when(messageFrame).pushStackItem(Bytes.EMPTY);
+        given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
+        // when:
+        final var result =
+                com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtil.addressCheckExecution(
+                        messageFrame,
+                        () -> Address.ZERO,
+                        gasSupplier,
+                        executionSupplier,
+                        (a, b) -> true,
+                        a -> true, () -> {
+                            messageFrame.pushStackItem(Bytes.EMPTY);
+                            return mock(Operation.OperationResult.class);
+                        });
+        // then:
+        assertEquals(ExceptionalHaltReason.TOO_MANY_STACK_ITEMS, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
+        // and:
         verify(messageFrame, never()).getWorldUpdater();
         verify(gasSupplier).getAsLong();
         verify(executionSupplier, never()).get();
@@ -86,7 +116,7 @@ class HederaEvmOperationsUtilTest {
                         () -> messageFrame.getStackItem(0),
                         gasSupplier,
                         executionSupplier,
-                        (a, b) -> false);
+                        (a, b) -> false, a -> false, () -> mock(Operation.OperationResult.class));
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
@@ -110,7 +140,7 @@ class HederaEvmOperationsUtilTest {
                         () -> messageFrame.getStackItem(0),
                         gasSupplier,
                         executionSupplier,
-                        (a, b) -> true);
+                        (a, b) -> true, a -> false, () -> mock(Operation.OperationResult.class) );
 
         // when:
         assertNull(result.getHaltReason());

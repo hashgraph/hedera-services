@@ -16,14 +16,9 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
-import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.EVM;
@@ -37,6 +32,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.function.BiPredicate;
+
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HederaExtCodeHashOperationTest {
@@ -69,7 +74,7 @@ class HederaExtCodeHashOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HederaExtCodeHashOperation(gasCalculator, addressValidator);
+        subject = new HederaExtCodeHashOperation(gasCalculator, addressValidator, a -> false);
         given(gasCalculator.extCodeHashOperationGasCost()).willReturn(OPERATION_COST);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
     }
@@ -108,6 +113,18 @@ class HederaExtCodeHashOperationTest {
     }
 
     @Test
+    void executeHappyPathWithPrecompileAccount() {
+        // given
+        subject = new HederaExtCodeHashOperation(gasCalculator, addressValidator, a -> true);
+        given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
+        // when
+        var opResult = subject.execute(mf, evm);
+        // then
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
+        verify(mf).pushStackItem(UInt256.ZERO);
+    }
+
+    @Test
     void executeHappyPathWithAccount() {
         givenMessageFrameWithRemainingGas(ACTUAL_COST + 1L);
         given(account.getCodeHash()).willReturn(Hash.hash(Bytes.of(1)));
@@ -137,6 +154,19 @@ class HederaExtCodeHashOperationTest {
         var opResult = subject.execute(mf, evm);
 
         assertEquals(INSUFFICIENT_STACK_ITEMS, opResult.getHaltReason());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
+    }
+
+    @Test
+    void executeThrowsTooManyStackItems() {
+        // given
+        subject = new HederaExtCodeHashOperation(gasCalculator, addressValidator, a -> true);
+        given(mf.popStackItem()).willReturn(ETH_ADDRESS_INSTANCE);
+        doThrow(FixedStack.OverflowException.class).when(mf).pushStackItem(any(Bytes.class));
+        // when
+        var opResult = subject.execute(mf, evm);
+        // then
+        assertEquals(TOO_MANY_STACK_ITEMS, opResult.getHaltReason());
         assertEquals(ACTUAL_COST, opResult.getGasCost());
     }
 

@@ -38,7 +38,6 @@ package com.hedera.node.app.service.evm.contracts.operations;
  *
  */
 
-import java.util.function.BiPredicate;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -48,6 +47,9 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
+
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 /**
  * Hedera adapted version of the {@link ExtCodeHashOperation}.
@@ -59,17 +61,24 @@ import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
+    private final Predicate<Address> precompileDetector;
 
     public HederaExtCodeHashOperation(
-            GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator,
+            Predicate<Address> precompileDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
+        this.precompileDetector = precompileDetector;
     }
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
         try {
             final Address address = Words.toAddress(frame.popStackItem());
+            if (precompileDetector.test(address)) {
+                frame.pushStackItem(UInt256.ZERO);
+                return new OperationResult(cost(true), null);
+            }
             if (!addressValidator.test(address, frame)) {
                 return new OperationResult(cost(true), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
@@ -90,6 +99,8 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
             }
         } catch (final FixedStack.UnderflowException ufe) {
             return new OperationResult(cost(true), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
+        } catch (final FixedStack.OverflowException ofe) {
+            return new OperationResult(cost(true), ExceptionalHaltReason.TOO_MANY_STACK_ITEMS);
         }
     }
 }

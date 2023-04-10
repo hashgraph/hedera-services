@@ -25,9 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.Account;
@@ -124,14 +126,27 @@ class HederaBalanceOperationTest {
     }
 
     @Test
+    void executesPrecompileBalanceAsExpected() {
+        // given
+        initializeSubject();
+        subject = new HederaBalanceOperation(gasCalculator, addressValidator, a -> true);
+        // when
+        final var result = subject.execute(frame, evm);
+        // then
+        assertNull(result.getHaltReason());
+        verify(frame).pushStackItem(UInt256.ZERO);
+        verify(frame).popStackItems(1);
+    }
+
+    @Test
     void addressValidatorSetterWorks() {
-        subject = new HederaBalanceOperation(gasCalculator, addressValidator);
+        subject = new HederaBalanceOperation(gasCalculator, addressValidator, a -> false);
         subject.setAddressValidator(addressValidator);
         assertEquals(addressValidator, subject.getAddressValidator());
     }
 
     private void initializeSubject() {
-        subject = new HederaBalanceOperation(gasCalculator, addressValidator);
+        subject = new HederaBalanceOperation(gasCalculator, addressValidator, a -> false);
         givenAddress();
         given(gasCalculator.getWarmStorageReadCost()).willReturn(1600L);
         given(gasCalculator.getBalanceOperationGasCost()).willReturn(100L);

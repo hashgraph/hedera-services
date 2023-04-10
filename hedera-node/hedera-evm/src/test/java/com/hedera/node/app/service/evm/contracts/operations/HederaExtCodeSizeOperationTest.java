@@ -21,8 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import java.util.function.BiPredicate;
+
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -66,7 +69,7 @@ class HederaExtCodeSizeOperationTest {
         given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(10L);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(2L);
 
-        subject = new HederaExtCodeSizeOperation(gasCalculator, addressValidator);
+        subject = new HederaExtCodeSizeOperation(gasCalculator, addressValidator, a -> false);
     }
 
     @Test
@@ -109,5 +112,19 @@ class HederaExtCodeSizeOperationTest {
         // then:
         assertNull(opResult.getHaltReason());
         assertEquals(12L, opResult.getGasCost());
+    }
+
+    @Test
+    void successfulExecutionPrecompileAddress() {
+        // given:
+        subject = new HederaExtCodeSizeOperation(gasCalculator, addressValidator, a -> true);
+        given(mf.getStackItem(0)).willReturn(ethAddressInstance);
+        // when:
+        var opResult = subject.execute(mf, evm);
+        // then:
+        assertNull(opResult.getHaltReason());
+        assertEquals(12L, opResult.getGasCost());
+        verify(mf).pushStackItem(UInt256.ZERO);
+        verify(mf).popStackItems(1);
     }
 }

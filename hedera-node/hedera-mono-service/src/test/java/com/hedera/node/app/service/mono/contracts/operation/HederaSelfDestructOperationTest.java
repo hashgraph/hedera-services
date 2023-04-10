@@ -77,7 +77,7 @@ class HederaSelfDestructOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator, evmSigsVerifier);
+        subject = new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator, evmSigsVerifier, a -> false);
 
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(gasCalculator.selfDestructOperationGasCost(any(), eq(Wei.ONE))).willReturn(2L);
@@ -226,6 +226,20 @@ class HederaSelfDestructOperationTest {
 
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
         assertEquals(2L, opResult.getGasCost());
+    }
+
+    @Test
+    void haltsWhenBeneficiaryIsSystemAccount() {
+        // given
+        subject = new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator, evmSigsVerifier, a -> true);
+        final var beneficiaryMirror = beneficiary.toEvmAddress();
+        given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
+        given(frame.getRecipientAddress()).willReturn(eip1014Address);
+        // when
+        final var result = subject.execute(frame, evm);
+        // then
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
+        assertEquals(2L, result.getGasCost());
     }
 
     private void givenRubberstampValidator() {
