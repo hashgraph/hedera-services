@@ -82,7 +82,7 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
         this.metrics = metrics;
         final BlockingQueue<EventImpl> queue = new PriorityBlockingQueue<>(
                 INITIAL_PRE_CONS_EVENT_QUEUE_CAPACITY, EventUtils::consensusPriorityComparator);
-        queueThread = new QueueThreadConfiguration<EventImpl>(threadManager)
+        queueThread = threadManager.newQueueThreadConfiguration(EventImpl.class)
                 .setNodeId(selfId.getId())
                 .setQueue(queue)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)

@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
@@ -1232,7 +1232,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
 
         // This background thread will be responsible for hashing the tree and sending the
         // data to the hash listener to flush.
-        new ThreadConfiguration(getStaticThreadManager())
+        getStaticThreadManager().newThreadConfiguration()
                 .setComponent("virtualmap")
                 .setThreadName("hasher")
                 .setRunnable(() -> reconnectHashingFuture.complete(hasher.hash(

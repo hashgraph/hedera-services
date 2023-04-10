@@ -58,7 +58,7 @@ public class SignedStateSentinel implements Startable, Stoppable {
      */
     public SignedStateSentinel(final ThreadManager threadManager, final Time time) {
         this.time = time;
-        thread = new StoppableThreadConfiguration<>(threadManager)
+        thread = threadManager.newStoppableThreadConfiguration()
                 .setComponent("platform")
                 .setThreadName("signed-state-sentinel")
                 .setMinimumPeriod(Duration.ofSeconds(10))

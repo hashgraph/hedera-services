@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.eventflow;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.threading.framework.Stoppable;
@@ -72,7 +72,7 @@ public class EventSubmitter {
         this.eventConsumer = eventConsumer;
         this.eventsPerBatch = eventsPerBatch;
         this.timeBetweenSubmissions = timeBetweenSubmissions;
-        worker = new StoppableThreadConfiguration<>(getStaticThreadManager())
+        worker = getStaticThreadManager().newStoppableThreadConfiguration()
                 .setThreadName("event-submitter")
                 .setWork(this::submitEvents)
                 .setStopBehavior(Stoppable.StopBehavior.INTERRUPTABLE)

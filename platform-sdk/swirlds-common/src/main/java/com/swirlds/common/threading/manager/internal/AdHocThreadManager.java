@@ -36,23 +36,12 @@ import java.util.concurrent.ThreadFactory;
  */
 public final class AdHocThreadManager implements ThreadBuilder, ThreadManager {
 
-    private static final AdHocThreadManager STATIC_THREAD_MANAGER = new AdHocThreadManager();
-
-    /**
-     * Get the static ad hoc thread manager. This manager does not complain about lifecycle violations.
-     *
-     * @return a thread manager that is always willing to create threads regardless of lifecycle
-     */
-    public static ThreadManager getStaticThreadManager() {
-        return STATIC_THREAD_MANAGER;
-    }
-
     /**
      * {@inheritDoc}
      */
     @Override
-    public @NonNull Thread buildThread(@NonNull final ThreadGroup threadGroup, @NonNull final Runnable runnable) {
-        return new Thread(threadGroup, runnable);
+    public @NonNull Thread buildThread(@NonNull final Runnable runnable) {
+        return new Thread(runnable);
     }
 
     /**

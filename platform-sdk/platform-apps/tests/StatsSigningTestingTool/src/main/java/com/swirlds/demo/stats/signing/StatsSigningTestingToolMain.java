@@ -26,7 +26,7 @@ package com.swirlds.demo.stats.signing;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
@@ -142,7 +142,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     }
 
     public StatsSigningTestingToolMain() {
-        transactionGenerator = new StoppableThreadConfiguration<>(getStaticThreadManager())
+        transactionGenerator = getStaticThreadManager().newStoppableThreadConfiguration()
                 .setComponent("demo")
                 .setThreadName("transaction-generator")
                 .setMaximumRate(50)
@@ -203,7 +203,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public void run() {
-        final Thread shutdownHook = new ThreadConfiguration(getStaticThreadManager())
+        final Thread shutdownHook = getStaticThreadManager().newThreadConfiguration()
                 .setDaemon(false)
                 .setNodeId(platform.getSelfId().getId())
                 .setComponent("app")

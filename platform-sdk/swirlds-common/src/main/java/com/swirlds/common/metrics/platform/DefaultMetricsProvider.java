@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 
 import com.sun.net.httpserver.HttpServer;
 import com.swirlds.common.io.utility.FileUtils;
@@ -50,8 +50,8 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
     private static final Logger logger = LogManager.getLogger(DefaultMetricsProvider.class);
 
     private final MetricsFactory factory = new DefaultMetricsFactory();
-    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
-            getStaticThreadManager().createThreadFactory("platform-core", "MetricsThread"));
+    private final ScheduledExecutorService executor = getStaticThreadManager()
+            .createSingleThreadScheduledExecutor("platform-core: MetricsThread");
 
     private final MetricKeyRegistry metricKeyRegistry = new MetricKeyRegistry();
     private final DefaultMetrics globalMetrics;

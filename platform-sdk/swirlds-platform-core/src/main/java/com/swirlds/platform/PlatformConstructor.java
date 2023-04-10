@@ -134,7 +134,7 @@ final class PlatformConstructor {
             final long selfId,
             final InterruptableConsumer<SignedState> signedStateConsumer) {
 
-        return new QueueThreadConfiguration<SignedState>(threadManager)
+        return threadManager.newQueueThreadConfiguration(SignedState.class)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("state-hash-sign")

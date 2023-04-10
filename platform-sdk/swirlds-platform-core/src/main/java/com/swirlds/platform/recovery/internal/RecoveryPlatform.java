@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 
 import com.swirlds.common.AutoCloseableNonThrowing;
@@ -38,7 +38,6 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.state.signed.SignedState;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -78,8 +77,9 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
 
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
-        metricsExecutor = Executors.newSingleThreadScheduledExecutor(
-                getStaticThreadManager().createThreadFactory("recovery-platform", "MetricsThread"));
+        metricsExecutor = getStaticThreadManager().createSingleThreadScheduledExecutor(
+                "recovery-platform: MetricsThread");
+
         metrics = new DefaultMetrics(
                 this.selfId, new MetricKeyRegistry(), metricsExecutor, new DefaultMetricsFactory(), metricsConfig);
         metrics.start();

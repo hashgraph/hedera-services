@@ -74,7 +74,7 @@ public class ReconnectController implements Runnable {
             return;
         }
         logger.info(LogMarker.RECONNECT.getMarker(), "Starting ReconnectController");
-        new ThreadConfiguration(threadManager)
+        threadManager.newThreadConfiguration()
                 .setComponent("reconnect")
                 .setThreadName("reconnect-controller")
                 .setRunnable(this)

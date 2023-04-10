@@ -71,7 +71,7 @@ public class HashLogger {
         this.nodeId = nodeId;
         this.logQueue = !enabled
                 ? null
-                : new QueueThreadConfiguration<Runnable>(threadManager)
+                : threadManager.newQueueThreadConfiguration(Runnable.class)
                         .setComponent("logging")
                         .setThreadName("log-hashstream")
                         .setCapacity(LOGGING_QUEUE_CAPACITY)

@@ -78,7 +78,7 @@ public class Dispatcher<L extends Listener> {
             stop();
         }
 
-        dispatchThread = new ThreadConfiguration(threadManager)
+        dispatchThread = threadManager.newThreadConfiguration()
                 .setComponent(COMPONENT_NAME)
                 .setThreadName(String.format("notify %s", listenerClassName))
                 .setRunnable(this::worker)

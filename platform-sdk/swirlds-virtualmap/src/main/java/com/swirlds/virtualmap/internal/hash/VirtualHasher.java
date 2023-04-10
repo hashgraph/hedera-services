@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.hash;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
@@ -78,7 +78,7 @@ public final class VirtualHasher<K extends VirtualKey<? super K>, V extends Virt
      * that in the future we will want to have a fixed thread pool to better manage compute resources.
      */
     private static final ExecutorService HASHING_POOL =
-            Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
+            Executors.newCachedThreadPool(getStaticThreadManager().newThreadConfiguration()
                     .setThreadGroup(new ThreadGroup("virtual-map-hashers"))
                     .setComponent("virtual-map")
                     .setThreadName("hasher")

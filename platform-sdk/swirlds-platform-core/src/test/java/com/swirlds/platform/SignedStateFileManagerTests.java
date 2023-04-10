@@ -22,7 +22,7 @@ import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
@@ -251,7 +251,7 @@ class SignedStateFileManagerTests {
                 x -> {});
         manager.start();
 
-        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+        final Thread thread = getStaticThreadManager().newThreadConfiguration()
                 .setInterruptableRunnable(() -> manager.dumpState(signedState, "fatal", true))
                 .build(true);
 

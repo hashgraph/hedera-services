@@ -19,7 +19,7 @@ package com.swirlds.common.test.threading;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -228,7 +228,7 @@ class QueueThreadTests {
         }
 
         // Close the thread before it finishes handling everything
-        final Thread reaperThread = new ThreadConfiguration(getStaticThreadManager())
+        final Thread reaperThread = getStaticThreadManager().newThreadConfiguration()
                 .setRunnable(qt::stop)
                 .build();
         reaperThread.start();
@@ -352,7 +352,7 @@ class QueueThreadTests {
                 .setHandler((i) -> {})
                 .build();
 
-        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+        final Thread thread = getStaticThreadManager().newThreadConfiguration()
                 .setRunnable(() -> {
                     for (int i = 0; i < 1_000; i++) {
                         queueThread.add(i);
@@ -579,7 +579,7 @@ class QueueThreadTests {
         final CountDownLatch exitLatch = new CountDownLatch(1);
 
         // This thread will have the seed injected into it.
-        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+        final Thread thread = getStaticThreadManager().newThreadConfiguration()
                 .setThreadName("inject-into-this-thread")
                 .setInterruptableRunnable(() -> {
                     // The seed will take over this thread for a while

@@ -18,7 +18,7 @@ package com.swirlds.common.test.notification;
 
 import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -872,7 +872,7 @@ public class IntegerNotificationTests {
         // allow the main thread to do assertions while those operations are blocking.
         final AtomicReference<NotificationResult<IntegerNotification>> futureNotificationResult =
                 new AtomicReference<>();
-        final Thread dispatchThread = new ThreadConfiguration(getStaticThreadManager())
+        final Thread dispatchThread = getStaticThreadManager().newThreadConfiguration()
                 .setInterruptableRunnable(() -> {
                     final Future<NotificationResult<IntegerNotification>> future =
                             engine.dispatch(listenerClass, new IntegerNotification(value), callback);

@@ -105,7 +105,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey<? super K>, V ext
         // There is no distinction between originalState and reconnectState in this implementation
         super(root, state, state);
 
-        new ThreadConfiguration(threadManager)
+        threadManager.newThreadConfiguration()
                 .setRunnable(() -> {
                     records = pipeline.detachCopy(root);
                     ready.countDown();

@@ -59,7 +59,7 @@ public class DeadlockSentinel implements Startable, AutoCloseableNonThrowing {
      */
     public DeadlockSentinel(
             final ThreadManager threadManager, final DispatchBuilder dispatchBuilder, final Duration period) {
-        thread = new StoppableThreadConfiguration<>(threadManager)
+        thread = threadManager.newStoppableThreadConfiguration()
                 .setComponent("platform")
                 .setThreadName("deadlock-sentinel")
                 .setMinimumPeriod(period)

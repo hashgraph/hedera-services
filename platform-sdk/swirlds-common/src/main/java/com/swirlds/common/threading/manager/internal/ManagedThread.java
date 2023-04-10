@@ -28,16 +28,14 @@ public class ManagedThread extends Thread {
     /**
      * Create a new managed thread.
      *
-     * @param threadGroup       the thread group into which the thread is placed
      * @param runnable          the runnable that will be executed on the thread
      * @param throwIfNotStarted a method that is executed when the thread is started, should throw if the thread should
      *                          not be started
      */
     public ManagedThread(
-            @NonNull final ThreadGroup threadGroup,
             @NonNull final Runnable runnable,
             @NonNull final Runnable throwIfNotStarted) {
-        super(threadGroup, runnable);
+        super(runnable);
         this.throwIfNotStarted = throwIfNotStarted;
     }
 

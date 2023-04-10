@@ -77,7 +77,7 @@ public class SyncPhaseParallelExecutor implements ParallelExecutor {
         this.beforePhase3 = noopIfNull(beforePhase3);
         this.waitForSecondThread = waitForSecondThread;
 
-        executor = Executors.newCachedThreadPool(threadManager.createThreadFactory("SyncPhase", "SyncPhase"));
+        executor = threadManager.createCachedThreadPool("SyncPhase");
         threadStatus = new AtomicReference<>(ThreadStatus.WAITING_FOR_FIRST_THREAD);
         phase = PHASE_1;
     }

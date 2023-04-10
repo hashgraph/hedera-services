@@ -149,7 +149,7 @@ public class ReconnectNodeRemover<K extends VirtualKey<? super K>, V extends Vir
 
         this.encounteredKeys = Objects.requireNonNull(encounteredKeys);
 
-        final QueueThreadConfiguration<ReceivedNode<K>> config = new QueueThreadConfiguration<>(threadManager);
+        final QueueThreadConfiguration<ReceivedNode<K>> config = threadManager.newQueueThreadConfiguration();
         this.workQueue = config.setCapacity(QUEUE_CAPACITY)
                 .setComponent("reconnect")
                 .setThreadName("vm-node-remover")

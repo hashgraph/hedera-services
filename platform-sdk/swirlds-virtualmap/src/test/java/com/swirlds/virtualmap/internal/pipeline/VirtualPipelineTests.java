@@ -17,7 +17,7 @@
 package com.swirlds.virtualmap.internal.pipeline;
 
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -75,7 +75,7 @@ class VirtualPipelineTests {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+        final Thread thread = getStaticThreadManager().newThreadConfiguration()
                 .setComponent("test")
                 .setThreadName("interrupt-on-timeout")
                 .setRunnable(() -> {

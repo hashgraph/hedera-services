@@ -153,7 +153,7 @@ public class PortMapperPortForwarder implements PortForwarder, Runnable {
                 }
             }
             if (minSleep > 0) {
-                refresher = new ThreadConfiguration(threadManager)
+                refresher = threadManager.newThreadConfiguration()
                         .setComponent("network")
                         .setThreadName("MappingRefresher")
                         .setRunnable(new MappingRefresher(this, minSleep))

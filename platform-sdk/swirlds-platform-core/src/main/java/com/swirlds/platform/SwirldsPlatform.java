@@ -17,7 +17,7 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.common.utility.CommonUtils.combineConsumers;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
@@ -1121,7 +1121,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             intakeHandler = taskDispatcher::dispatchTask;
         }
 
-        intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
+        intakeQueue = components.add(threadManager.newQueueThreadConfiguration(EventIntakeTask.class)
                 .setNodeId(selfId.getId())
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("event-intake")
@@ -1346,7 +1346,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 address.getListenPortIpv4(),
                 socketFactory,
                 inboundConnectionHandler::handle);
-        new StoppableThreadConfiguration<>(threadManager)
+        threadManager.newStoppableThreadConfiguration()
                 .setPriority(settings.getThreadPrioritySync())
                 .setNodeId(selfId.getId())
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
@@ -1404,7 +1404,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final ChatterConfig chatterConfig =
                     platformContext.getConfiguration().getConfigData(ChatterConfig.class);
 
-            chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
+            chatterThreads.add(threadManager.newStoppableThreadConfiguration()
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId.getId())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
@@ -1541,7 +1541,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         for (final NodeId otherId : topology.getNeighbors()) {
             // create and start new threads to listen for incoming sync requests
-            new StoppableThreadConfiguration<>(threadManager)
+            threadManager.newStoppableThreadConfiguration()
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId.getId())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
@@ -1552,7 +1552,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .start();
 
             // create and start new thread to send heartbeats on the SyncCaller channels
-            new StoppableThreadConfiguration<>(threadManager)
+            threadManager.newStoppableThreadConfiguration()
                     .setPriority(settings.getThreadPrioritySync())
                     .setNodeId(selfId.getId())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
@@ -1587,7 +1587,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 platformMetrics);
 
         /* the thread that repeatedly initiates syncs with other members */
-        final Thread syncCallerThread = new ThreadConfiguration(threadManager)
+        final Thread syncCallerThread = threadManager.newThreadConfiguration()
                 .setPriority(settings.getThreadPrioritySync())
                 .setNodeId(selfId.getId())
                 .setComponent(PLATFORM_THREAD_POOL_NAME)

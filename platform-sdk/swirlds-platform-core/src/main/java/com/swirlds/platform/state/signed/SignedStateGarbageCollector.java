@@ -56,7 +56,7 @@ public class SignedStateGarbageCollector implements Startable {
      */
     public SignedStateGarbageCollector(final ThreadManager threadManager, final SignedStateMetrics signedStateMetrics) {
         this.signedStateMetrics = signedStateMetrics;
-        deletionQueue = new QueueThreadConfiguration<Runnable>(threadManager)
+        deletionQueue = threadManager.newQueueThreadConfiguration(Runnable.class)
                 .setComponent("platform")
                 .setThreadName("signed-state-deleter")
                 .setMaxBufferSize(1)

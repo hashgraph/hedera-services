@@ -37,7 +37,7 @@ public class QueueThreadObjectStreamConfiguration<T extends RunningHashable> {
      * 		responsible for managing thread lifecycles
      */
     public QueueThreadObjectStreamConfiguration(final ThreadManager threadManager) {
-        queueThreadConfiguration = new QueueThreadConfiguration<>(threadManager);
+        queueThreadConfiguration = threadManager.newQueueThreadConfiguration();
     }
 
     /**
@@ -101,23 +101,6 @@ public class QueueThreadObjectStreamConfiguration<T extends RunningHashable> {
      */
     public QueueThreadObjectStreamConfiguration<T> setMaxBufferSize(final int maxBufferSize) {
         queueThreadConfiguration.setMaxBufferSize(maxBufferSize);
-        return this;
-    }
-
-    /**
-     * Get the the thread group that new threads will be created in.
-     */
-    public ThreadGroup getThreadGroup() {
-        return queueThreadConfiguration.getThreadGroup();
-    }
-
-    /**
-     * Set the the thread group that new threads will be created in.
-     *
-     * @return this object
-     */
-    public QueueThreadObjectStreamConfiguration<T> setThreadGroup(final ThreadGroup threadGroup) {
-        queueThreadConfiguration.setThreadGroup(threadGroup);
         return this;
     }
 

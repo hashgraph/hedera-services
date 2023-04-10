@@ -19,7 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JVM_PAUSE_WARN;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -509,7 +509,7 @@ public class Browser {
                 // the logger is shut down.
                 ((DefaultShutdownCallbackRegistry) contextFactory.getShutdownCallbackRegistry()).stop();
                 Runtime.getRuntime()
-                        .addShutdownHook(new ThreadConfiguration(getStaticThreadManager())
+                        .addShutdownHook(getStaticThreadManager().newThreadConfiguration()
                                 .setComponent("browser")
                                 .setThreadName("shutdown-hook")
                                 .setRunnable(() -> {
@@ -672,7 +672,7 @@ public class Browser {
 
                 appMain.init(platform, nodeId);
 
-                final Thread appThread = new ThreadConfiguration(getStaticThreadManager())
+                final Thread appThread = getStaticThreadManager().newThreadConfiguration()
                         .setNodeId(nodeId.getId())
                         .setComponent("app")
                         .setThreadName("appMain")

@@ -84,7 +84,7 @@ public class ManualWiring {
         this.wiringMetrics = new WiringMetrics(platformContext.getMetrics());
 
         final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
-        asyncLatestCompleteStateQueue = new QueueThreadConfiguration<Runnable>(threadManager)
+        asyncLatestCompleteStateQueue = threadManager.newQueueThreadConfiguration(Runnable.class)
                 .setThreadName("new-latest-complete-state-consumer-queue")
                 .setComponent("wiring")
                 .setCapacity(wiringConfig.newLatestCompleteStateConsumerQueueSize())

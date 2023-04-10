@@ -26,7 +26,7 @@ package com.swirlds.demo.crypto;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
 import com.swirlds.common.Console;
@@ -73,7 +73,7 @@ public class CryptocurrencyDemoMain implements SwirldMain {
     private final StoppableThread transactionGenerator;
 
     public CryptocurrencyDemoMain() {
-        transactionGenerator = new StoppableThreadConfiguration<>(getStaticThreadManager())
+        transactionGenerator = getStaticThreadManager().newStoppableThreadConfiguration()
                 .setComponent("demo")
                 .setThreadName("transaction-generator")
                 .setMaximumRate(4)

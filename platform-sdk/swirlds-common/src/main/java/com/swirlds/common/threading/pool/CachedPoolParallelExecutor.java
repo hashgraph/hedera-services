@@ -33,11 +33,9 @@ public class CachedPoolParallelExecutor implements ParallelExecutor {
     /**
      * The thread pool used by this class.
      */
-    private ExecutorService threadPool;
+    private final ExecutorService threadPool;
 
     private boolean immutable = false;
-
-    private final ThreadFactory factory;
 
     /**
      * @param threadManager
@@ -46,7 +44,7 @@ public class CachedPoolParallelExecutor implements ParallelExecutor {
      * 		the name given to the threads in the pool
      */
     public CachedPoolParallelExecutor(final ThreadManager threadManager, final String name) {
-        factory = threadManager.createThreadFactory("parallel-executor", name);
+        threadPool = threadManager.createCachedThreadPool("parallel-executor: " + name);
     }
 
     /**
@@ -64,7 +62,6 @@ public class CachedPoolParallelExecutor implements ParallelExecutor {
     public void start() {
         throwIfImmutable("should only be started once");
         immutable = true;
-        threadPool = Executors.newCachedThreadPool(factory);
     }
 
     /**

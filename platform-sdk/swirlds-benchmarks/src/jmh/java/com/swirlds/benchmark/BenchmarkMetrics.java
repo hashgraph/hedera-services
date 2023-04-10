@@ -16,7 +16,7 @@
 
 package com.swirlds.benchmark;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
@@ -334,8 +334,7 @@ public final class BenchmarkMetrics {
                 .build();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = new MetricKeyRegistry();
-        metricService = Executors.newSingleThreadScheduledExecutor(
-                getStaticThreadManager().createThreadFactory("benchmark", "MetricsWriter"));
+        metricService = getStaticThreadManager().createSingleThreadScheduledExecutor("benchmark: MetricsWriter");
         metrics = new DefaultMetrics(null, registry, metricService, new DefaultMetricsFactory(), metricsConfig);
 
         metrics.getOrCreate(TIMESTAMP_CONFIG);

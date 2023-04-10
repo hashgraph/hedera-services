@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.crypto;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.CERTIFICATES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -70,7 +70,7 @@ public final class CryptoSetup {
     public static Crypto[] initNodeSecurity(final AddressBook addressBook, final Configuration configuration) {
         final ExecutorService cryptoThreadPool = Executors.newFixedThreadPool(
                 Settings.getInstance().getNumCryptoThreads(),
-                new ThreadConfiguration(getStaticThreadManager())
+                getStaticThreadManager().newThreadConfiguration()
                         .setComponent("browser")
                         .setThreadName("crypto-verify")
                         .setDaemon(false)

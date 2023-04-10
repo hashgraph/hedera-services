@@ -145,7 +145,7 @@ public class EventStreamParser {
      * appropriate files have been parsed. It is intended to be called once during recovery.
      */
     public void start() {
-        new ThreadConfiguration(threadManager)
+        threadManager.newThreadConfiguration()
                 .setThreadName("event-stream-parser")
                 .setExceptionHandler(this::handleException)
                 .setRunnable(this::eventPlayback)

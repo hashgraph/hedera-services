@@ -137,7 +137,7 @@ public class SignedStateFileManager implements Startable {
 
         final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
 
-        this.taskQueue = new QueueThreadConfiguration<Runnable>(threadManager)
+        this.taskQueue = threadManager.newQueueThreadConfiguration(Runnable.class)
                 .setCapacity(stateConfig.stateSavingQueueSize())
                 .setMaxBufferSize(1)
                 .setPriority(basicConfig.threadPriorityNonSync())

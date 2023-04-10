@@ -18,7 +18,7 @@ package com.swirlds.platform.util;
 
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.platform.DispatchBuilderUtils.getDefaultDispatchConfiguration;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +47,7 @@ class DeadlockSentinelTests {
         final CountDownLatch waitForThreads = new CountDownLatch(2);
         final CountDownLatch waitForDeadlock = new CountDownLatch(1);
 
-        final Thread thread1 = new ThreadConfiguration(getStaticThreadManager())
+        final Thread thread1 = getStaticThreadManager().newThreadConfiguration()
                 .setThreadName("thread1")
                 .setRunnable(() -> {
                     lock1.lock();
@@ -60,7 +60,7 @@ class DeadlockSentinelTests {
                     }
                 })
                 .build(true);
-        final Thread thread2 = new ThreadConfiguration(getStaticThreadManager())
+        final Thread thread2 = getStaticThreadManager().newThreadConfiguration()
                 .setThreadName("thread2")
                 .setRunnable(() -> {
                     lock2.lock();

@@ -169,7 +169,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         eventsAndGenerations = new SignedStateEventsAndGenerations(consensusConfig);
         final ConsensusQueue queue = new ConsensusQueue(consensusHandlingMetrics, settings.getMaxEventQueueForCons());
-        queueThread = new QueueThreadConfiguration<ConsensusRound>(threadManager)
+        queueThread = threadManager.newQueueThreadConfiguration(ConsensusRound.class)
                 .setNodeId(selfId)
                 .setHandler(this::applyConsensusRoundToState)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)

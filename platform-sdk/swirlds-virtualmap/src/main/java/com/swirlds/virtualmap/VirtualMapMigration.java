@@ -82,7 +82,7 @@ public final class VirtualMapMigration {
             // Java only allows final values to be passed into a lambda
             final int index = threadIndex;
 
-            threads.add(new ThreadConfiguration(threadManager)
+            threads.add(threadManager.newThreadConfiguration()
                     .setComponent(COMPONENT_NAME)
                     .setThreadName("reader-" + threadCount)
                     .setInterruptableRunnable(() -> {

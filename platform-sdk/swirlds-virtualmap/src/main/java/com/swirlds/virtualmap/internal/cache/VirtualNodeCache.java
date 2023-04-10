@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.cache;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.FastCopyable;
@@ -170,7 +170,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                     60L,
                     TimeUnit.SECONDS,
                     new LinkedBlockingQueue<>(),
-                    new ThreadConfiguration(getStaticThreadManager())
+                    getStaticThreadManager().newThreadConfiguration()
                             .setThreadGroup(new ThreadGroup("virtual-cache-cleaners"))
                             .setComponent("virtual-map")
                             .setThreadName("cache-cleaner")

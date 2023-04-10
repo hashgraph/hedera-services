@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.eventflow;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -53,7 +53,7 @@ public class TransactionFeeder {
         this.random = random;
         this.transactionConsumer = transactionConsumer;
         this.timeBetweenSubmissions = timeBetweenSubmissions;
-        worker = new StoppableThreadConfiguration<>(getStaticThreadManager())
+        worker = getStaticThreadManager().newStoppableThreadConfiguration()
                 .setNodeId(selfId)
                 .setThreadName("transaction-submitter")
                 .setWork(this::feedTransactions)

@@ -69,7 +69,7 @@ public class EventCreatorThread implements Clearable {
                 .map(a -> NodeId.createMain(a.getId()))
                 .collect(Collectors.toList());
 
-        creatorThread = new StoppableThreadConfiguration<>(threadManager)
+        creatorThread = threadManager.newStoppableThreadConfiguration()
                 .setPriority(Thread.NORM_PRIORITY)
                 .setNodeId(selfId.getId())
                 .setMaximumRate(attemptedChatterEventPerSecond)

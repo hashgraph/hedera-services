@@ -16,7 +16,7 @@
 
 package com.swirlds.benchmark;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -72,7 +72,7 @@ public abstract class VirtualMapBench extends BaseBench {
     private final AtomicLong snapshotTime = new AtomicLong(0L);
     /* Asynchronous hasher */
     private final ExecutorService hasher =
-            Executors.newSingleThreadExecutor(new ThreadConfiguration(getStaticThreadManager())
+            Executors.newSingleThreadExecutor(getStaticThreadManager().newThreadConfiguration()
                     .setComponent("benchmark")
                     .setThreadName("hasher")
                     .setExceptionHandler((t, ex) -> logger.error("Uncaught exception during hashing", ex))

@@ -71,7 +71,7 @@ public class MerkleHashBuilder {
         this.cryptography = cryptography;
         this.cpuThreadCount = cpuThreadCount;
 
-        final ThreadFactory threadFactory = new ThreadConfiguration(threadManager)
+        final ThreadFactory threadFactory = threadManager.newThreadConfiguration()
                 .setDaemon(true)
                 .setComponent(THREAD_COMPONENT_NAME)
                 .setThreadName("merkle hash")

@@ -76,7 +76,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
         final PreConsensusEventStreamConfig config =
                 platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
 
-        handleThread = new MultiQueueThreadConfiguration(threadManager)
+        handleThread = threadManager.newMultiQueueThreadConfiguration()
                 .setComponent("pre-consensus")
                 .setThreadName("event-writer")
                 .setCapacity(config.writeQueueCapacity())

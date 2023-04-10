@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.iss;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.common.utility.ByteUtils.intToByteArray;
 
 import com.swirlds.common.system.Platform;
@@ -45,7 +45,7 @@ public class TransactionGenerator implements Startable {
         final int tps =
                 networkWideTransactionsPerSecond / platform.getAddressBook().getSize();
 
-        thread = new StoppableThreadConfiguration<>(getStaticThreadManager())
+        thread = getStaticThreadManager().newStoppableThreadConfiguration()
                 .setComponent("iss-testing-tool")
                 .setThreadName("transaction-generator")
                 .setMaximumRate(tps)

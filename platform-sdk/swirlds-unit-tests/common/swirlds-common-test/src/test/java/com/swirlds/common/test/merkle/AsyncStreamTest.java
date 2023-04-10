@@ -16,7 +16,7 @@
 
 package com.swirlds.common.test.merkle;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -193,7 +193,7 @@ class AsyncStreamTest {
         out.start();
 
         final AtomicInteger messagesSent = new AtomicInteger(0);
-        final Thread outputThread = new ThreadConfiguration(getStaticThreadManager())
+        final Thread outputThread = getStaticThreadManager().newThreadConfiguration()
                 .setRunnable(() -> {
                     for (int i = 0; i < count; i++) {
                         try {
@@ -274,7 +274,7 @@ class AsyncStreamTest {
         blockingIn.lock();
 
         final AtomicInteger messagesReceived = new AtomicInteger(0);
-        final Thread inputThread = new ThreadConfiguration(getStaticThreadManager())
+        final Thread inputThread = getStaticThreadManager().newThreadConfiguration()
                 .setRunnable(() -> {
                     for (int i = 0; i < count; i++) {
                         try {

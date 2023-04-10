@@ -75,17 +75,16 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      * {@inheritDoc}
      */
     @Override
-    public @NonNull Thread buildThread(@NonNull final ThreadGroup threadGroup, @NonNull final Runnable runnable) {
+    public @NonNull Thread buildThread(@NonNull final Runnable runnable) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
-        return new ManagedThread(threadGroup, runnable, throwIfInWrongPhase);
+        return new ManagedThread(runnable, throwIfInWrongPhase);
     }
 
     /**
      * Create a thread factory. TODO abstract class?
      */
     @NonNull
-    private ThreadFactory createThreadFactory(@NonNull final String threadName) {
-        // TODO is this correct?
+    private ThreadFactory createThreadFactory(@NonNull final String threadName) { // TODO perhaps we should deprecate this
         return new ThreadConfiguration(this)
                 .setThreadName(threadName)
                 .buildFactory();

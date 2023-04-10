@@ -107,7 +107,7 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
         this.provider = provider;
         this.handlerSupplier = handlerSupplier;
 
-        final ThreadFactory threadFactory = new ThreadConfiguration(threadManager)
+        final ThreadFactory threadFactory = threadManager.newThreadConfiguration()
                 .setDaemon(true)
                 .setPriority(Thread.NORM_PRIORITY)
                 .setComponent(THREAD_COMPONENT_NAME)
@@ -117,7 +117,7 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
 
         this.executorService = Executors.newFixedThreadPool(parallelism, threadFactory);
 
-        this.worker = new ThreadConfiguration(threadManager)
+        this.worker = threadManager.newThreadConfiguration()
                 .setDaemon(true)
                 .setPriority(Thread.NORM_PRIORITY)
                 .setComponent(THREAD_COMPONENT_NAME)

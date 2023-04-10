@@ -138,7 +138,7 @@ public class Network {
         portForwarder.setPortMappings(portsToBeMapped);
 
         // execute tries to open the ports specified above
-        portForwarderThread = new ThreadConfiguration(threadManager)
+        portForwarderThread = threadManager.newThreadConfiguration()
                 .setComponent("network")
                 .setThreadName("PortForwarder")
                 .setRunnable(portForwarder)

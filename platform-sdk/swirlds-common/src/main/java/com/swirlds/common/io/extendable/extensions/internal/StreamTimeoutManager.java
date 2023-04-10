@@ -16,7 +16,7 @@
 
 package com.swirlds.common.io.extendable.extensions.internal;
 
-import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 
 import com.swirlds.common.io.extendable.extensions.TimeoutStreamExtension;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -49,7 +49,7 @@ public final class StreamTimeoutManager {
     /**
      * The thread that monitors the timeout extensions.
      */
-    private static final StoppableThread thread = new StoppableThreadConfiguration<>(getStaticThreadManager())
+    private static final StoppableThread thread = getStaticThreadManager().newStoppableThreadConfiguration()
             .setComponent("timeout-extension")
             .setThreadName("manager")
             .setMaximumRate(RATE)
