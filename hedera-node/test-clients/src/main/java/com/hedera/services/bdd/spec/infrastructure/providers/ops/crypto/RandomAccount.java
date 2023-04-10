@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
@@ -44,8 +45,10 @@ public class RandomAccount implements OpProvider {
     private final AtomicInteger opNo = new AtomicInteger();
     private final EntityNameProvider<Key> keys;
     private final RegistrySourcedNameProvider<AccountID> accounts;
-    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_ACCOUNT_ID, INVALID_ALIAS_KEY);
-    private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(KEY_REQUIRED, INVALID_ALIAS_KEY);
+    private final ResponseCodeEnum[] permissibleOutcomes =
+            standardOutcomesAnd(INVALID_ACCOUNT_ID, INVALID_ALIAS_KEY, ALIAS_ALREADY_ASSIGNED);
+    private final ResponseCodeEnum[] permissiblePrechecks =
+            standardPrechecksAnd(KEY_REQUIRED, INVALID_ALIAS_KEY, ALIAS_ALREADY_ASSIGNED);
 
     public RandomAccount(EntityNameProvider<Key> keys, RegistrySourcedNameProvider<AccountID> accounts) {
         this(keys, accounts, false);

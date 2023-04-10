@@ -43,6 +43,8 @@ import java.util.function.Function;
 @SuppressWarnings({"java:S6218", "java:S3358"})
 public record InitialAccountIdentifiers(@Nullable Key key, @Nullable byte[] alias) {
 
+    private static final int COMPRESSED_SECP256K1_PUBLIC_KEY_LEN = 33;
+
     private enum KeyStatus {
         ABSENT,
         PRESENT
@@ -83,13 +85,22 @@ public record InitialAccountIdentifiers(@Nullable Key key, @Nullable byte[] alia
 
     private static Function<Key, InitialAccountIdentifiers> fuzzerFor(
             final KeyStatus keyStatus, final SecondaryIdStatus aliasStatus) {
-        return key -> new InitialAccountIdentifiers(
-                keyStatus == KeyStatus.ABSENT ? null : key,
-                aliasStatus == SecondaryIdStatus.ABSENT
-                        ? null
-                        : (aliasStatus == SecondaryIdStatus.CONGRUENT_WITH_KEY
-                                ? EthSigsUtils.recoverAddressFromPubKey(key.toByteArray())
-                                : INCONGRUENT_ALIAS));
+        return key -> {
+            final var accountKey = keyStatus == KeyStatus.ABSENT ? null : key;
+            byte[] accountAlias = null;
+            if (aliasStatus == SecondaryIdStatus.CONGRUENT_WITH_KEY) {
+                final var keyBytes = key.getECDSASecp256K1().toByteArray();
+                if (keyBytes.length != COMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
+                    throw new IllegalArgumentException("Invalid key bytes length");
+                }
+
+                accountAlias = EthSigsUtils.recoverAddressFromPubKey(keyBytes);
+            } else if (aliasStatus == SecondaryIdStatus.INCONGRUENT_WITH_KEY) {
+                accountAlias = INCONGRUENT_ALIAS;
+            }
+
+            return new InitialAccountIdentifiers(accountKey, accountAlias);
+        };
     }
 
     public static void throwIfNotEcdsa(final Key key) {
