@@ -16,14 +16,12 @@
 
 package com.swirlds.common.threading.manager;
 
-import com.swirlds.common.threading.manager.internal.AdHocThreadManager;
-import com.swirlds.common.threading.manager.internal.StandardThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Builds a new thread.
  */
-public sealed interface ThreadBuilder permits StandardThreadManager, AdHocThreadManager {
+public interface ThreadBuilder {
 
     /**
      * Build a new thread.
