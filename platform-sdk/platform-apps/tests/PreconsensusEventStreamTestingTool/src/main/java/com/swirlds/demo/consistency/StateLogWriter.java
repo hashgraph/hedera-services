@@ -1,4 +1,4 @@
-package com.swirlds.demo.preconsensuseventstream;
+package com.swirlds.demo.consistency;
 
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 
@@ -54,7 +54,7 @@ public final class StateLogWriter {
      * @param round the round to write to the log file
      */
     public static synchronized void writeRoundStateToLog(final @NonNull Round round) {
-        final Path path = Path.of(PreconsensusEventStreamTestingToolUtils.getLogFileName());
+        final Path path = Path.of(ConsistencyTestingToolUtils.getLogFileName());
 
         try (BufferedWriter file = new BufferedWriter(new FileWriter(path.toFile(), true))) {
             file.write(roundToString(round));

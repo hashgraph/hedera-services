@@ -66,7 +66,7 @@ include(":swirlds-platform-apps:tests:MigrationTestingTool")
 
 include(":swirlds-platform-apps:tests:PlatformTestingTool")
 
-include(":swirlds-platform-apps:tests:PreconsensusEventStreamTestingTool")
+include(":swirlds-platform-apps:tests:ConsistencyTestingTool")
 
 include(":swirlds-platform-apps:tests:StatsSigningTestingTool")
 

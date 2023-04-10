@@ -1,4 +1,4 @@
-package com.swirlds.demo.preconsensuseventstream;
+package com.swirlds.demo.consistency;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
@@ -48,7 +48,7 @@ public class TransactionHandlingHistory {
      * Parses the log file and adds all rounds to the {@link #roundHistory}
      */
     public void parseLog() {
-        final Path filePath = Path.of(PreconsensusEventStreamTestingToolUtils.getLogFileName());
+        final Path filePath = Path.of(ConsistencyTestingToolUtils.getLogFileName());
 
         try (final BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()))) {
             addRound(reader.readLine());

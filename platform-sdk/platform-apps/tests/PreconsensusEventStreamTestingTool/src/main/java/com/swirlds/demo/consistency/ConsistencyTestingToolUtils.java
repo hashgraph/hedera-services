@@ -1,20 +1,20 @@
-package com.swirlds.demo.preconsensuseventstream;
+package com.swirlds.demo.consistency;
 
 import java.io.File;
 
 /**
- * Utility class for the {@link PreconsensusEventStreamTestingToolMain} app
+ * Utility class for the {@link ConsistencyTestingToolMain} app
  */
-public final class PreconsensusEventStreamTestingToolUtils {
+public final class ConsistencyTestingToolUtils {
     /**
      * The name of the log file being written to / read from
      */
-    public static final String LOG_FILE_NAME = "PreconsensusEventStreamTestLog";
+    public static final String LOG_FILE_NAME = "ConsistencyTestLog";
 
     /**
      * Hidden constructor
      */
-    private PreconsensusEventStreamTestingToolUtils() {
+    private ConsistencyTestingToolUtils() {
     }
 
     /**

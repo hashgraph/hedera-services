@@ -1,4 +1,4 @@
-package com.swirlds.demo.preconsensuseventstream;
+package com.swirlds.demo.consistency;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -18,9 +18,9 @@ import org.apache.logging.log4j.Logger;
 /**
  * A testing app for guaranteeing proper handling of transactions after a restart
  */
-public class PreconsensusEventStreamTestingToolMain implements SwirldMain {
+public class ConsistencyTestingToolMain implements SwirldMain {
 
-    private static final Logger logger = LogManager.getLogger(PreconsensusEventStreamTestingToolMain.class);
+    private static final Logger logger = LogManager.getLogger(ConsistencyTestingToolMain.class);
 
     /**
      * The default software version of this application
@@ -40,7 +40,7 @@ public class PreconsensusEventStreamTestingToolMain implements SwirldMain {
     /**
      * Constructor
      */
-    public PreconsensusEventStreamTestingToolMain() {
+    public ConsistencyTestingToolMain() {
         logger.info(STARTUP.getMarker(), "constructor called in Main.");
     }
 
@@ -87,7 +87,7 @@ public class PreconsensusEventStreamTestingToolMain implements SwirldMain {
      */
     @Override
     public SwirldState newState() {
-        return new PreconsensusEventStreamTestingToolState();
+        return new ConsistencyTestingToolState();
     }
 
     /**

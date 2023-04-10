@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.demo.preconsensuseventstream;
+package com.swirlds.demo.consistency;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -66,7 +66,7 @@ public class TransactionGenerator implements Startable {
                 networkWideTransactionsPerSecond / platform.getAddressBook().getSize();
 
         thread = new StoppableThreadConfiguration<>(getStaticThreadManager())
-                .setComponent("preconsensuseventstream-testing-tool")
+                .setComponent("consistency-testing-tool")
                 .setThreadName("transaction-generator")
                 .setMaximumRate(tps)
                 .setWork(this::generateTransaction)

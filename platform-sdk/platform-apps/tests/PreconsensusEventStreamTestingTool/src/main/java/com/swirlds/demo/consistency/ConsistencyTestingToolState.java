@@ -1,4 +1,4 @@
-package com.swirlds.demo.preconsensuseventstream;
+package com.swirlds.demo.consistency;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
@@ -19,10 +19,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * State for the Preconsensus Event Stream Testing Tool
+ * State for the Consistency Testing Tool
  */
-public class PreconsensusEventStreamTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
-    private static final Logger logger = LogManager.getLogger(PreconsensusEventStreamTestingToolState.class);
+public class ConsistencyTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+    private static final Logger logger = LogManager.getLogger(ConsistencyTestingToolState.class);
     private static final long CLASS_ID = 0xda03bb07eb897d82L;
 
     private static class ClassVersion {
@@ -37,14 +37,14 @@ public class PreconsensusEventStreamTestingToolState extends PartialMerkleLeaf i
     /**
      * Constructor
      */
-    public PreconsensusEventStreamTestingToolState() {
+    public ConsistencyTestingToolState() {
         logger.info(STARTUP.getMarker(), "New State Constructed.");
     }
 
     /**
      * Copy constructor
      */
-    private PreconsensusEventStreamTestingToolState(@NonNull final PreconsensusEventStreamTestingToolState that) {
+    private ConsistencyTestingToolState(@NonNull final ConsistencyTestingToolState that) {
         super(throwArgNull(that, "that"));
         this.stateLong = that.stateLong;
     }
@@ -87,9 +87,9 @@ public class PreconsensusEventStreamTestingToolState extends PartialMerkleLeaf i
      * {@inheritDoc}
      */
     @Override
-    public synchronized PreconsensusEventStreamTestingToolState copy() {
+    public synchronized ConsistencyTestingToolState copy() {
         throwIfImmutable();
-        return new PreconsensusEventStreamTestingToolState(this);
+        return new ConsistencyTestingToolState(this);
     }
 
     /**
