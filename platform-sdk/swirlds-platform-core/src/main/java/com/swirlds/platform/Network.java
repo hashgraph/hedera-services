@@ -18,7 +18,6 @@ package com.swirlds.platform;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.p2p.portforwarding.PortMapping;
@@ -138,7 +137,8 @@ public class Network {
         portForwarder.setPortMappings(portsToBeMapped);
 
         // execute tries to open the ports specified above
-        portForwarderThread = threadManager.newThreadConfiguration()
+        portForwarderThread = threadManager
+                .newThreadConfiguration()
                 .setComponent("network")
                 .setThreadName("PortForwarder")
                 .setRunnable(portForwarder)

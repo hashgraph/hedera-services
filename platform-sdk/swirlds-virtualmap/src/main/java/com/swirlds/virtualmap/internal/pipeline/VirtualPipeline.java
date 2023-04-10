@@ -21,7 +21,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.VIRTUAL_MERKLE_STATS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import java.nio.file.Path;
@@ -164,7 +163,8 @@ public class VirtualPipeline {
         unhashedCopies = new ConcurrentLinkedDeque<>();
 
         alive = true;
-        executorService = Executors.newSingleThreadExecutor(getStaticThreadManager().newThreadConfiguration()
+        executorService = Executors.newSingleThreadExecutor(getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent(PIPELINE_COMPONENT)
                 .setThreadName(PIPELINE_THREAD_NAME)
                 .setExceptionHandler((t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception ", ex))

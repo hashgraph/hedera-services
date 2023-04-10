@@ -25,7 +25,6 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.payloads.FatalErrorPayload;
 import com.swirlds.platform.FreezeManager;
@@ -84,7 +83,8 @@ public class ManualWiring {
         this.wiringMetrics = new WiringMetrics(platformContext.getMetrics());
 
         final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
-        asyncLatestCompleteStateQueue = threadManager.newQueueThreadConfiguration(Runnable.class)
+        asyncLatestCompleteStateQueue = threadManager
+                .newQueueThreadConfiguration(Runnable.class)
                 .setThreadName("new-latest-complete-state-consumer-queue")
                 .setComponent("wiring")
                 .setCapacity(wiringConfig.newLatestCompleteStateConsumerQueueSize())

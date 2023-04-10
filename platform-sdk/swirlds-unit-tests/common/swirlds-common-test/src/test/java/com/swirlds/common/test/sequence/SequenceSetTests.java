@@ -29,7 +29,6 @@ import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
-import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.test.framework.TestQualifierTags;
 import java.time.Duration;
 import java.util.HashMap;
@@ -673,7 +672,8 @@ public class SequenceSetTests {
 
         final AtomicBoolean error = new AtomicBoolean();
 
-        final StoppableThread purgeThread = getStaticThreadManager().newStoppableThreadConfiguration()
+        final StoppableThread purgeThread = getStaticThreadManager()
+                .newStoppableThreadConfiguration()
                 .setMinimumPeriod(Duration.ofMillis(10))
                 .setExceptionHandler((t, e) -> {
                     e.printStackTrace();
@@ -701,7 +701,8 @@ public class SequenceSetTests {
         final int threadCount = 4;
         final List<StoppableThread> updaterThreads = new LinkedList<>();
         for (int threadIndex = 0; threadIndex < threadCount; threadIndex++) {
-            updaterThreads.add(getStaticThreadManager().newStoppableThreadConfiguration()
+            updaterThreads.add(getStaticThreadManager()
+                    .newStoppableThreadConfiguration()
                     .setExceptionHandler((t, e) -> {
                         e.printStackTrace();
                         error.set(true);

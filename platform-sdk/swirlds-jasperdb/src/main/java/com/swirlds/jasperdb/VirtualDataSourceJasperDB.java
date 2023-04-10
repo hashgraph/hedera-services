@@ -26,7 +26,6 @@ import static com.swirlds.logging.LogMarker.JASPER_DB;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.Units;
 import com.swirlds.jasperdb.collections.HashList;
 import com.swirlds.jasperdb.collections.HashListByteBuffer;
@@ -355,7 +354,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
         // create scheduledThreadPool for executing merges
         mergingExecutor = new ScheduledThreadPoolExecutor(
                 NUMBER_OF_MERGING_THREADS,
-                getStaticThreadManager().newThreadConfiguration()
+                getStaticThreadManager()
+                        .newThreadConfiguration()
                         .setThreadGroup(threadGroup)
                         .setComponent(JASPER_DB_COMPONENT)
                         .setThreadName("Merging")
@@ -363,7 +363,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                                 EXCEPTION.getMarker(), "[{}] Uncaught exception during merging", label, ex))
                         .buildFactory());
         // create thread pool storing internal records
-        storeInternalExecutor = Executors.newSingleThreadExecutor(getStaticThreadManager().newThreadConfiguration()
+        storeInternalExecutor = Executors.newSingleThreadExecutor(getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent(JASPER_DB_COMPONENT)
                 .setThreadGroup(threadGroup)
                 .setThreadName("Store Internal Records")
@@ -371,7 +372,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                         logger.error(EXCEPTION.getMarker(), "[{}] Uncaught exception during storing", label, ex))
                 .buildFactory());
         // create thread pool storing key-to-path mappings
-        storeKeyToPathExecutor = Executors.newSingleThreadExecutor(getStaticThreadManager().newThreadConfiguration()
+        storeKeyToPathExecutor = Executors.newSingleThreadExecutor(getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent(JASPER_DB_COMPONENT)
                 .setThreadGroup(threadGroup)
                 .setThreadName("Store Key to Path")
@@ -379,7 +381,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                         logger.error(EXCEPTION.getMarker(), "[{}] Uncaught exception during storing keys", label, ex))
                 .buildFactory());
         // thread pool creating snapshots, it is unbounded in threads, but we use at most 7
-        snapshotExecutor = Executors.newCachedThreadPool(getStaticThreadManager().newThreadConfiguration()
+        snapshotExecutor = Executors.newCachedThreadPool(getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent(JASPER_DB_COMPONENT)
                 .setThreadGroup(threadGroup)
                 .setThreadName("Snapshot")

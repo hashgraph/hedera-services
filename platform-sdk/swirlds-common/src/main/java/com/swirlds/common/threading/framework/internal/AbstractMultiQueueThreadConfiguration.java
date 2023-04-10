@@ -18,7 +18,6 @@ package com.swirlds.common.threading.framework.internal;
 
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.manager.ThreadBuilder;
-import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;

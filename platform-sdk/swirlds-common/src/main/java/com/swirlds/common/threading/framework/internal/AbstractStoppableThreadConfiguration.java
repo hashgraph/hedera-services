@@ -24,7 +24,6 @@ import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.TypedStoppableThread;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadBuilder;
-import com.swirlds.common.threading.manager.ThreadManager;
 import java.time.Duration;
 
 /**

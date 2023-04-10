@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.internal.AcquiredOnTry;
@@ -139,7 +138,8 @@ class AutoclosableLockTest {
         final CountDownLatch threadBlocker1 = new CountDownLatch(1);
         final AtomicBoolean threadGotLock1 = new AtomicBoolean(false);
 
-        final Thread thread0 = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread0 = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setThreadName("thread0")
                 .setInterruptableRunnable(() -> {
                     try (final Locked locked0 = lock.lock()) {
@@ -154,7 +154,8 @@ class AutoclosableLockTest {
 
         assertEventuallyTrue(threadGotLock0::get, Duration.ofSeconds(1), "thread should have acquired lock by now");
 
-        final Thread thread1 = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread1 = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setThreadName("thread1")
                 .setInterruptableRunnable(() -> {
                     while (true) {
@@ -201,7 +202,8 @@ class AutoclosableLockTest {
         final CountDownLatch threadBlocker1 = new CountDownLatch(1);
         final AtomicBoolean threadGotLock1 = new AtomicBoolean(false);
 
-        final Thread thread0 = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread0 = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setInterruptableRunnable(() -> {
                     try (final Locked locked0 = lock.lock()) {
                         try (final Locked locked1 = lock.lock()) {
@@ -212,7 +214,8 @@ class AutoclosableLockTest {
                 })
                 .build(true);
 
-        final Thread thread1 = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread1 = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setInterruptableRunnable(() -> {
                     while (true) {
                         try (final MaybeLocked maybeLocked = lock.tryLock(1, MILLISECONDS)) {

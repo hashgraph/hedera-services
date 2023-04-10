@@ -47,7 +47,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.test.state.DummySwirldState;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -251,7 +250,8 @@ class SignedStateFileManagerTests {
                 x -> {});
         manager.start();
 
-        final Thread thread = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setInterruptableRunnable(() -> manager.dumpState(signedState, "fatal", true))
                 .build(true);
 

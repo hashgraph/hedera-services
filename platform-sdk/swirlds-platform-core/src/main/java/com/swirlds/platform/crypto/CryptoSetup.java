@@ -24,7 +24,6 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
@@ -70,7 +69,8 @@ public final class CryptoSetup {
     public static Crypto[] initNodeSecurity(final AddressBook addressBook, final Configuration configuration) {
         final ExecutorService cryptoThreadPool = Executors.newFixedThreadPool(
                 Settings.getInstance().getNumCryptoThreads(),
-                getStaticThreadManager().newThreadConfiguration()
+                getStaticThreadManager()
+                        .newThreadConfiguration()
                         .setComponent("browser")
                         .setThreadName("crypto-verify")
                         .setDaemon(false)

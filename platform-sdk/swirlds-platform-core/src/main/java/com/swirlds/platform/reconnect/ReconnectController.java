@@ -20,7 +20,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.threading.BlockingResourceProvider;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.LogMarker;
@@ -74,7 +73,8 @@ public class ReconnectController implements Runnable {
             return;
         }
         logger.info(LogMarker.RECONNECT.getMarker(), "Starting ReconnectController");
-        threadManager.newThreadConfiguration()
+        threadManager
+                .newThreadConfiguration()
                 .setComponent("reconnect")
                 .setThreadName("reconnect-controller")
                 .setRunnable(this)

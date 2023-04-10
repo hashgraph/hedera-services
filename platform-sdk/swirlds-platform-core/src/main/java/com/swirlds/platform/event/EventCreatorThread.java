@@ -20,7 +20,6 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.StoppableThread;
-import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.BooleanFunction;
 import com.swirlds.common.utility.Clearable;
@@ -69,7 +68,8 @@ public class EventCreatorThread implements Clearable {
                 .map(a -> NodeId.createMain(a.getId()))
                 .collect(Collectors.toList());
 
-        creatorThread = threadManager.newStoppableThreadConfiguration()
+        creatorThread = threadManager
+                .newStoppableThreadConfiguration()
                 .setPriority(Thread.NORM_PRIORITY)
                 .setNodeId(selfId.getId())
                 .setMaximumRate(attemptedChatterEventPerSecond)

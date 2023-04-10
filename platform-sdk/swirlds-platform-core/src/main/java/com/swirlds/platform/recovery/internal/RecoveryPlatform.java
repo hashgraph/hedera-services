@@ -77,8 +77,8 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
 
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
-        metricsExecutor = getStaticThreadManager().createSingleThreadScheduledExecutor(
-                "recovery-platform: MetricsThread");
+        metricsExecutor =
+                getStaticThreadManager().createSingleThreadScheduledExecutor("recovery-platform: MetricsThread");
 
         metrics = new DefaultMetrics(
                 this.selfId, new MetricKeyRegistry(), metricsExecutor, new DefaultMetricsFactory(), metricsConfig);

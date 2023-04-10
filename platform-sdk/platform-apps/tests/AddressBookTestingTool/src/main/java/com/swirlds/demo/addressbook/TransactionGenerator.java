@@ -21,7 +21,6 @@ import static com.swirlds.common.utility.ByteUtils.intToByteArray;
 
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.threading.framework.StoppableThread;
-import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.utility.Startable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -50,7 +49,8 @@ public class TransactionGenerator implements Startable {
         final int tps =
                 networkWideTransactionsPerSecond / platform.getAddressBook().getSize();
 
-        thread = getStaticThreadManager().newStoppableThreadConfiguration()
+        thread = getStaticThreadManager()
+                .newStoppableThreadConfiguration()
                 .setComponent("addressbook-testing-tool")
                 .setThreadName("transaction-generator")
                 .setMaximumRate(tps)

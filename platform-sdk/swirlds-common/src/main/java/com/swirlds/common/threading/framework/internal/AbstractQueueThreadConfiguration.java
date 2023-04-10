@@ -25,7 +25,6 @@ import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadBuilder;
-import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 

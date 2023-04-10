@@ -58,7 +58,6 @@ import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.Units;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
@@ -1120,7 +1119,8 @@ public class PlatformTestingToolMain implements SwirldMain {
             }
         };
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setNodeId(platform.getSelfId().getId())
                 .setComponent(PTT_COMPONENT)
                 .setThreadName(ENTER_VALIDATION_THREAD_NAME)
@@ -1151,7 +1151,8 @@ public class PlatformTestingToolMain implements SwirldMain {
             }
         };
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setNodeId(platform.getSelfId().getId())
                 .setComponent(PTT_COMPONENT)
                 .setThreadName(EXIT_VALIDATION_THREAD_NAME)

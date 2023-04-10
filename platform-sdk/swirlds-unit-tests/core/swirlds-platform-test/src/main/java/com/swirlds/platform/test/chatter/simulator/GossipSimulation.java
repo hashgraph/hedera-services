@@ -23,7 +23,6 @@ import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.roundDecimal;
 import static java.time.temporal.ChronoUnit.NANOS;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -88,7 +87,8 @@ public class GossipSimulation {
         } else {
             executor = Executors.newFixedThreadPool(
                     builder.getThreadCount(),
-                    getStaticThreadManager().newThreadConfiguration()
+                    getStaticThreadManager()
+                            .newThreadConfiguration()
                             .setComponent("gossip simulation")
                             .setThreadName("node")
                             .buildFactory());

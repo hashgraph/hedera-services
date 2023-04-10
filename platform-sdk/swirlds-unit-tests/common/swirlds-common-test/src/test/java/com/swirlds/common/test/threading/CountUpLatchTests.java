@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.threading.CountUpLatch;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -120,7 +119,8 @@ class CountUpLatchTests {
         // Create a bunch of threads that will wait for random counts
         for (int threadIndex = 0; threadIndex < threadCount; threadIndex++) {
             final Random threadRandom = new Random(random.nextLong());
-            getStaticThreadManager().newThreadConfiguration()
+            getStaticThreadManager()
+                    .newThreadConfiguration()
                     .setThreadName("testThread-" + threadIndex)
                     .setInterruptableRunnable(() -> {
                         long desiredCount = minCount;
@@ -174,7 +174,8 @@ class CountUpLatchTests {
         // Create a bunch of threads that will wait for random counts
         for (int threadIndex = 0; threadIndex < threadCount; threadIndex++) {
             final Random threadRandom = new Random(random.nextLong());
-            getStaticThreadManager().newThreadConfiguration()
+            getStaticThreadManager()
+                    .newThreadConfiguration()
                     .setThreadName("testThread-" + threadIndex)
                     .setInterruptableRunnable(() -> {
                         long desiredCount = minCount;
@@ -227,7 +228,8 @@ class CountUpLatchTests {
         // Create a bunch of threads that will wait for random counts
         for (int threadIndex = 0; threadIndex < threadCount; threadIndex++) {
             final Random threadRandom = new Random(random.nextLong());
-            getStaticThreadManager().newThreadConfiguration()
+            getStaticThreadManager()
+                    .newThreadConfiguration()
                     .setThreadName("testThread-" + threadIndex)
                     .setInterruptableRunnable(() -> {
                         long desiredCount = minCount;
@@ -256,7 +258,8 @@ class CountUpLatchTests {
 
         final CountDownLatch incrementLatch = new CountDownLatch(1);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setThreadName("incrementThread")
                 .setRunnable(() -> {
                     // Increment the count a little at a time
@@ -288,7 +291,8 @@ class CountUpLatchTests {
 
         final CountDownLatch finishedLatch = new CountDownLatch(1);
         final AtomicBoolean error = new AtomicBoolean(false);
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setThreadName("test")
                 .setInterruptableRunnable(() -> {
                     final boolean success = latch.await(100, Duration.ofSeconds(1));
@@ -324,7 +328,8 @@ class CountUpLatchTests {
 
         final CountDownLatch finishedLatch = new CountDownLatch(1);
         final AtomicBoolean error = new AtomicBoolean(false);
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setThreadName("test")
                 .setInterruptableRunnable(() -> {
                     final boolean success = latch.await(100, Duration.ofSeconds(1));

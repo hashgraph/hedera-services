@@ -197,9 +197,9 @@ public class ReconnectProtocolTests {
 
         // the ReconnectController must be running in order to provide permits
         getStaticThreadManager()
-                .createThreadFactory("test", "test")
-                .newThread(reconnectController)
-                .start();
+                .newThreadConfiguration()
+                .setRunnable(reconnectController)
+                .build(true);
 
         // wait for the background thread to start waiting for the reconnect connection
         while (!reconnectController.acquireLearnerPermit()) {

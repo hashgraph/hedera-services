@@ -17,7 +17,6 @@
 package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Startable;
 import java.time.Duration;
@@ -56,7 +55,8 @@ public class SignedStateGarbageCollector implements Startable {
      */
     public SignedStateGarbageCollector(final ThreadManager threadManager, final SignedStateMetrics signedStateMetrics) {
         this.signedStateMetrics = signedStateMetrics;
-        deletionQueue = threadManager.newQueueThreadConfiguration(Runnable.class)
+        deletionQueue = threadManager
+                .newQueueThreadConfiguration(Runnable.class)
                 .setComponent("platform")
                 .setThreadName("signed-state-deleter")
                 .setMaxBufferSize(1)

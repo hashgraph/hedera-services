@@ -86,7 +86,6 @@ public interface ThreadManager {
     @NonNull
     ThreadConfiguration newThreadConfiguration();
 
-
     /**
      * Create a new stoppable thread configuration.
      *

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components.state;
 
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -38,7 +39,6 @@ import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.metrics.NoOpMetrics;
-import com.swirlds.common.threading.manager.internal.AdHocThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.crypto.PlatformSigner;
@@ -562,7 +562,7 @@ class StateManagementComponentTests {
 
         return new DefaultStateManagementComponent(
                 platformContext,
-                AdHocThreadManager.getStaticThreadManager(),
+                getStaticThreadManager(),
                 addressBook,
                 signer,
                 MAIN,

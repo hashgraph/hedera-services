@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
@@ -62,7 +61,8 @@ class ConsensusQueueTests {
 
     @BeforeEach
     public void setup() {
-        queueThread = new QueueThreadConfiguration<ConsensusRound>(getStaticThreadManager())
+        queueThread = getStaticThreadManager()
+                .newQueueThreadConfiguration(ConsensusRound.class)
                 .setQueue(newQueue())
                 .setNodeId(SELF_ID)
                 .setHandler(this::handleRound)

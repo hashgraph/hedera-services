@@ -26,7 +26,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -105,7 +104,8 @@ public final class VirtualTeacherTreeView<K extends VirtualKey<? super K>, V ext
         // There is no distinction between originalState and reconnectState in this implementation
         super(root, state, state);
 
-        threadManager.newThreadConfiguration()
+        threadManager
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     records = pipeline.detachCopy(root);
                     ready.countDown();

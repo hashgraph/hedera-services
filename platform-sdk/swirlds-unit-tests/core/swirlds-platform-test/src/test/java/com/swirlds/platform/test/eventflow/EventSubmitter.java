@@ -21,7 +21,6 @@ import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStati
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
-import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import java.time.Duration;
@@ -72,7 +71,8 @@ public class EventSubmitter {
         this.eventConsumer = eventConsumer;
         this.eventsPerBatch = eventsPerBatch;
         this.timeBetweenSubmissions = timeBetweenSubmissions;
-        worker = getStaticThreadManager().newStoppableThreadConfiguration()
+        worker = getStaticThreadManager()
+                .newStoppableThreadConfiguration()
                 .setThreadName("event-submitter")
                 .setWork(this::submitEvents)
                 .setStopBehavior(Stoppable.StopBehavior.INTERRUPTABLE)

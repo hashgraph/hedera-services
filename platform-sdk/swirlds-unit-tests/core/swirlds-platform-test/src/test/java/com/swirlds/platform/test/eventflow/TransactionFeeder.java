@@ -23,7 +23,6 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.TransactionUtils;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
-import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Random;
@@ -53,7 +52,8 @@ public class TransactionFeeder {
         this.random = random;
         this.transactionConsumer = transactionConsumer;
         this.timeBetweenSubmissions = timeBetweenSubmissions;
-        worker = getStaticThreadManager().newStoppableThreadConfiguration()
+        worker = getStaticThreadManager()
+                .newStoppableThreadConfiguration()
                 .setNodeId(selfId)
                 .setThreadName("transaction-submitter")
                 .setWork(this::feedTransactions)

@@ -32,9 +32,7 @@ public class ManagedThread extends Thread {
      * @param throwIfNotStarted a method that is executed when the thread is started, should throw if the thread should
      *                          not be started
      */
-    public ManagedThread(
-            @NonNull final Runnable runnable,
-            @NonNull final Runnable throwIfNotStarted) {
+    public ManagedThread(@NonNull final Runnable runnable, @NonNull final Runnable throwIfNotStarted) {
         super(runnable);
         this.throwIfNotStarted = throwIfNotStarted;
     }

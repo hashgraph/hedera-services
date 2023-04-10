@@ -31,7 +31,6 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
@@ -137,7 +136,8 @@ public class SignedStateFileManager implements Startable {
 
         final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
 
-        this.taskQueue = threadManager.newQueueThreadConfiguration(Runnable.class)
+        this.taskQueue = threadManager
+                .newQueueThreadConfiguration(Runnable.class)
                 .setCapacity(stateConfig.stateSavingQueueSize())
                 .setMaxBufferSize(1)
                 .setPriority(basicConfig.threadPriorityNonSync())

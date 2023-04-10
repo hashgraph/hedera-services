@@ -26,7 +26,6 @@ import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadBuilder;
-import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;

@@ -19,7 +19,6 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.threading.framework.StoppableThread;
-import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.time.Time;
@@ -58,7 +57,8 @@ public class SignedStateSentinel implements Startable, Stoppable {
      */
     public SignedStateSentinel(final ThreadManager threadManager, final Time time) {
         this.time = time;
-        thread = threadManager.newStoppableThreadConfiguration()
+        thread = threadManager
+                .newStoppableThreadConfiguration()
                 .setComponent("platform")
                 .setThreadName("signed-state-sentinel")
                 .setMinimumPeriod(Duration.ofSeconds(10))

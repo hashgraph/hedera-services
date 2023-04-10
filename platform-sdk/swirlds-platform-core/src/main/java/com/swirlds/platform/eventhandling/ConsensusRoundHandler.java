@@ -32,7 +32,6 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.Startable;
@@ -169,7 +168,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         eventsAndGenerations = new SignedStateEventsAndGenerations(consensusConfig);
         final ConsensusQueue queue = new ConsensusQueue(consensusHandlingMetrics, settings.getMaxEventQueueForCons());
-        queueThread = threadManager.newQueueThreadConfiguration(ConsensusRound.class)
+        queueThread = threadManager
+                .newQueueThreadConfiguration(ConsensusRound.class)
                 .setNodeId(selfId)
                 .setHandler(this::applyConsensusRoundToState)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)

@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -75,7 +74,8 @@ class VirtualPipelineTests {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        final Thread thread = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent("test")
                 .setThreadName("interrupt-on-timeout")
                 .setRunnable(() -> {

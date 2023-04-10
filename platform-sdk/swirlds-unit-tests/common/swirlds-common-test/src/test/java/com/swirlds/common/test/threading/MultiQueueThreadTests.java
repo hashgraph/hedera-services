@@ -16,6 +16,7 @@
 
 package com.swirlds.common.test.threading;
 
+import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,9 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
-import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.threading.manager.internal.AdHocThreadManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -50,8 +48,8 @@ class MultiQueueThreadTests {
         final AtomicInteger doubleCount = new AtomicInteger(0);
         final AtomicInteger stringCount = new AtomicInteger(0);
 
-        final MultiQueueThread multiQueueThread = new MultiQueueThreadConfiguration(
-                        AdHocThreadManager.getStaticThreadManager())
+        final MultiQueueThread multiQueueThread = getStaticThreadManager()
+                .newMultiQueueThreadConfiguration()
                 .setThreadName("test")
                 .setCapacity(5)
                 .addHandler(Integer.class, (final Integer i) -> {
@@ -105,8 +103,8 @@ class MultiQueueThreadTests {
         final AtomicInteger doubleCount = new AtomicInteger(0);
         final AtomicInteger stringCount = new AtomicInteger(0);
 
-        final MultiQueueThread multiQueueThread = new MultiQueueThreadConfiguration(
-                        AdHocThreadManager.getStaticThreadManager())
+        final MultiQueueThread multiQueueThread = getStaticThreadManager()
+                .newMultiQueueThreadConfiguration()
                 .setThreadName("test")
                 .setCapacity(5)
                 .addHandler(Integer.class, (final Integer i) -> {
@@ -160,8 +158,8 @@ class MultiQueueThreadTests {
         final AtomicInteger doubleCount = new AtomicInteger(0);
         final AtomicInteger stringCount = new AtomicInteger(0);
 
-        final MultiQueueThread multiQueueThread = new MultiQueueThreadConfiguration(
-                        AdHocThreadManager.getStaticThreadManager())
+        final MultiQueueThread multiQueueThread = getStaticThreadManager()
+                .newMultiQueueThreadConfiguration()
                 .setThreadName("test")
                 .setCapacity(5)
                 .addHandler(Integer.class, (final Integer i) -> {
@@ -225,8 +223,8 @@ class MultiQueueThreadTests {
         final AtomicInteger doubleCount = new AtomicInteger(0);
         final AtomicInteger stringCount = new AtomicInteger(0);
 
-        final MultiQueueThread multiQueueThread = new MultiQueueThreadConfiguration(
-                        AdHocThreadManager.getStaticThreadManager())
+        final MultiQueueThread multiQueueThread = getStaticThreadManager()
+                .newMultiQueueThreadConfiguration()
                 .setThreadName("test")
                 .setCapacity(5)
                 .addHandler(Integer.class, (final Integer i) -> {
@@ -263,7 +261,8 @@ class MultiQueueThreadTests {
                 "should have been able to quickly insert 5 objects");
 
         final CountDownLatch latch = new CountDownLatch(1);
-        new ThreadConfiguration(AdHocThreadManager.getStaticThreadManager())
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setThreadName("test2")
                 .setRunnable(() -> {
                     try {

@@ -20,7 +20,6 @@ import com.swirlds.common.threading.framework.QueueThreadPool;
 import com.swirlds.common.threading.framework.internal.AbstractQueueThreadPoolConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadBuilder;
-import com.swirlds.common.threading.manager.ThreadManager;
 
 /**
  * Implements a thread pool that continuously takes elements from a queue and handles them.

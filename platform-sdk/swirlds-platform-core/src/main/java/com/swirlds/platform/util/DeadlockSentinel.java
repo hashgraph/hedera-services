@@ -20,7 +20,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.threading.framework.StoppableThread;
-import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.utility.Startable;
@@ -59,7 +58,8 @@ public class DeadlockSentinel implements Startable, AutoCloseableNonThrowing {
      */
     public DeadlockSentinel(
             final ThreadManager threadManager, final DispatchBuilder dispatchBuilder, final Duration period) {
-        thread = threadManager.newStoppableThreadConfiguration()
+        thread = threadManager
+                .newStoppableThreadConfiguration()
                 .setComponent("platform")
                 .setThreadName("deadlock-sentinel")
                 .setMinimumPeriod(period)

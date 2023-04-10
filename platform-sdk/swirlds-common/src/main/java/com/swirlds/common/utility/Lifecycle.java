@@ -28,7 +28,8 @@ public interface Lifecycle extends Startable, Stoppable {
      *
      * @return the object's current lifecycle phase
      */
-    @NonNull LifecyclePhase getLifecyclePhase();
+    @NonNull
+    LifecyclePhase getLifecyclePhase();
 
     /**
      * Throw an exception if the object is not in the expected phase.

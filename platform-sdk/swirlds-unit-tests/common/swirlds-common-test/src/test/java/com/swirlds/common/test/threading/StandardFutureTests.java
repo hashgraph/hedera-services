@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.StandardFuture;
 import java.time.Duration;
 import java.util.concurrent.CancellationException;
@@ -50,7 +49,8 @@ class StandardFutureTests {
 
         final AtomicBoolean finished = new AtomicBoolean(false);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     try {
                         assertEquals(value, future.get(), "unexpected value");
@@ -85,7 +85,8 @@ class StandardFutureTests {
 
         final AtomicBoolean finished = new AtomicBoolean(false);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     try {
                         assertEquals(value, future.getAndRethrow(), "unexpected value");
@@ -121,7 +122,8 @@ class StandardFutureTests {
 
         final AtomicBoolean finished = new AtomicBoolean(false);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     try {
                         assertEquals(value, future.get(), "unexpected value");
@@ -147,7 +149,8 @@ class StandardFutureTests {
 
         final AtomicBoolean finished = new AtomicBoolean(false);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     // This one should time out
                     assertThrows(TimeoutException.class, () -> future.get(1, MILLISECONDS));
@@ -186,7 +189,8 @@ class StandardFutureTests {
 
         final AtomicBoolean finished = new AtomicBoolean(false);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     // This one should time out
                     assertThrows(TimeoutException.class, () -> future.getAndRethrow(1, MILLISECONDS));
@@ -225,7 +229,8 @@ class StandardFutureTests {
 
         final AtomicBoolean finished = new AtomicBoolean(false);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     try {
                         assertThrows(CancellationException.class, future::get, "expected future to be cancelled");
@@ -260,7 +265,8 @@ class StandardFutureTests {
 
         final AtomicBoolean finished = new AtomicBoolean(false);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     try {
                         assertThrows(ExecutionException.class, future::get, "expected future to be cancelled");
@@ -295,7 +301,8 @@ class StandardFutureTests {
 
         final AtomicBoolean finished = new AtomicBoolean(false);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     try {
                         assertThrows(RuntimeException.class, future::getAndRethrow, "expected future to be cancelled");
@@ -336,7 +343,8 @@ class StandardFutureTests {
         assertFalse(future.isDone(), "future should not be done");
         assertFalse(future.isCancelled(), "future should not be cancelled");
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     try {
                         assertThrows(ExecutionException.class, future::get, "expected future to be cancelled");

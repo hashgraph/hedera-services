@@ -26,7 +26,6 @@ import com.swirlds.common.exceptions.PlatformException;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
@@ -170,7 +169,8 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                     60L,
                     TimeUnit.SECONDS,
                     new LinkedBlockingQueue<>(),
-                    getStaticThreadManager().newThreadConfiguration()
+                    getStaticThreadManager()
+                            .newThreadConfiguration()
                             .setThreadGroup(new ThreadGroup("virtual-cache-cleaners"))
                             .setComponent("virtual-map")
                             .setThreadName("cache-cleaner")

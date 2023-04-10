@@ -41,8 +41,6 @@ import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
-import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.platform.Browser;
@@ -142,7 +140,8 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     }
 
     public StatsSigningTestingToolMain() {
-        transactionGenerator = getStaticThreadManager().newStoppableThreadConfiguration()
+        transactionGenerator = getStaticThreadManager()
+                .newStoppableThreadConfiguration()
                 .setComponent("demo")
                 .setThreadName("transaction-generator")
                 .setMaximumRate(50)
@@ -203,7 +202,8 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public void run() {
-        final Thread shutdownHook = getStaticThreadManager().newThreadConfiguration()
+        final Thread shutdownHook = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setDaemon(false)
                 .setNodeId(platform.getSelfId().getId())
                 .setComponent("app")

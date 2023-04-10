@@ -35,7 +35,6 @@ import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadBuilder;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
@@ -187,8 +186,7 @@ class AbstractQueueThreadConfigurationTest {
         final InterruptableRunnable waitForItemRunnable = mock(InterruptableRunnable.class);
 
         // when
-        when(threadBuilder.buildThread(any(Runnable.class)))
-                .thenReturn(new Thread());
+        when(threadBuilder.buildThread(any(Runnable.class))).thenReturn(new Thread());
         final DummyQueueThreadConfiguration<String> configuration = new DummyQueueThreadConfiguration<String>(
                         threadBuilder)
                 .setNodeId(NODE_ID)
@@ -217,7 +215,7 @@ class AbstractQueueThreadConfigurationTest {
 
         // when
         final DummyQueueThreadConfiguration<String> configuration = new DummyQueueThreadConfiguration<String>(
-                threadBuilder)
+                        threadBuilder)
                 .setNodeId(NODE_ID)
                 .setComponent(THREAD_POOL_NAME)
                 .setThreadName(THREAD_NAME)
@@ -255,7 +253,7 @@ class AbstractQueueThreadConfigurationTest {
 
         // when
         final DummyQueueThreadConfiguration<String> configuration = new DummyQueueThreadConfiguration<String>(
-                threadBuilder)
+                        threadBuilder)
                 .setNodeId(NODE_ID)
                 .setComponent(THREAD_POOL_NAME)
                 .setThreadName(THREAD_NAME)

@@ -21,7 +21,6 @@ import static com.swirlds.logging.LogMarker.STATE_HASH;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.state.State;
@@ -71,7 +70,8 @@ public class HashLogger {
         this.nodeId = nodeId;
         this.logQueue = !enabled
                 ? null
-                : threadManager.newQueueThreadConfiguration(Runnable.class)
+                : threadManager
+                        .newQueueThreadConfiguration(Runnable.class)
                         .setComponent("logging")
                         .setThreadName("log-hashstream")
                         .setCapacity(LOGGING_QUEUE_CAPACITY)

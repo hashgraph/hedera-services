@@ -33,7 +33,6 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.test.merkle.dummy.BlockingInputStream;
 import com.swirlds.common.test.merkle.dummy.BlockingOutputStream;
 import com.swirlds.common.test.merkle.util.PairedStreams;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -193,7 +192,8 @@ class AsyncStreamTest {
         out.start();
 
         final AtomicInteger messagesSent = new AtomicInteger(0);
-        final Thread outputThread = getStaticThreadManager().newThreadConfiguration()
+        final Thread outputThread = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     for (int i = 0; i < count; i++) {
                         try {
@@ -274,7 +274,8 @@ class AsyncStreamTest {
         blockingIn.lock();
 
         final AtomicInteger messagesReceived = new AtomicInteger(0);
-        final Thread inputThread = getStaticThreadManager().newThreadConfiguration()
+        final Thread inputThread = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     for (int i = 0; i < count; i++) {
                         try {

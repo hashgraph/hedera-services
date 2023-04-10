@@ -64,7 +64,6 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -509,7 +508,8 @@ public class Browser {
                 // the logger is shut down.
                 ((DefaultShutdownCallbackRegistry) contextFactory.getShutdownCallbackRegistry()).stop();
                 Runtime.getRuntime()
-                        .addShutdownHook(getStaticThreadManager().newThreadConfiguration()
+                        .addShutdownHook(getStaticThreadManager()
+                                .newThreadConfiguration()
                                 .setComponent("browser")
                                 .setThreadName("shutdown-hook")
                                 .setRunnable(() -> {
@@ -672,7 +672,8 @@ public class Browser {
 
                 appMain.init(platform, nodeId);
 
-                final Thread appThread = getStaticThreadManager().newThreadConfiguration()
+                final Thread appThread = getStaticThreadManager()
+                        .newThreadConfiguration()
                         .setNodeId(nodeId.getId())
                         .setComponent("app")
                         .setThreadName("appMain")

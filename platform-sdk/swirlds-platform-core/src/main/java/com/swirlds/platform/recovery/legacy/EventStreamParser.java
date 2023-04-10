@@ -27,7 +27,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.system.events.Event;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.internal.EventImpl;
@@ -145,7 +144,8 @@ public class EventStreamParser {
      * appropriate files have been parsed. It is intended to be called once during recovery.
      */
     public void start() {
-        threadManager.newThreadConfiguration()
+        threadManager
+                .newThreadConfiguration()
                 .setThreadName("event-stream-parser")
                 .setExceptionHandler(this::handleException)
                 .setRunnable(this::eventPlayback)

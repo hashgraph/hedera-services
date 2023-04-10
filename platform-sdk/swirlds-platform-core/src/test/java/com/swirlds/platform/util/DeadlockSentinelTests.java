@@ -23,7 +23,6 @@ import static com.swirlds.platform.DispatchBuilderUtils.getDefaultDispatchConfig
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.error.DeadlockTrigger;
 import java.time.Duration;
@@ -47,7 +46,8 @@ class DeadlockSentinelTests {
         final CountDownLatch waitForThreads = new CountDownLatch(2);
         final CountDownLatch waitForDeadlock = new CountDownLatch(1);
 
-        final Thread thread1 = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread1 = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setThreadName("thread1")
                 .setRunnable(() -> {
                     lock1.lock();
@@ -60,7 +60,8 @@ class DeadlockSentinelTests {
                     }
                 })
                 .build(true);
-        final Thread thread2 = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread2 = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setThreadName("thread2")
                 .setRunnable(() -> {
                     lock2.lock();

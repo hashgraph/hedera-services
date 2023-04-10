@@ -25,10 +25,6 @@ import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.StartableThreadManager;
 import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.threading.manager.internal.ManagedExecutorService;
-import com.swirlds.common.threading.manager.internal.ManagedScheduledExecutorService;
-import com.swirlds.common.threading.manager.internal.ManagedThread;
-import com.swirlds.common.utility.Lifecycle;
 import com.swirlds.common.utility.LifecyclePhase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ExecutorService;
@@ -84,10 +80,9 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      * Create a thread factory. TODO abstract class?
      */
     @NonNull
-    private ThreadFactory createThreadFactory(@NonNull final String threadName) { // TODO perhaps we should deprecate this
-        return new ThreadConfiguration(this)
-                .setThreadName(threadName)
-                .buildFactory();
+    private ThreadFactory createThreadFactory(
+            @NonNull final String threadName) { // TODO perhaps we should deprecate this
+        return new ThreadConfiguration(this).setThreadName(threadName).buildFactory();
     }
 
     /**
@@ -117,8 +112,7 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public ExecutorService createFixedThreadPool(
-            @NonNull final String name, int threadCount) {
+    public ExecutorService createFixedThreadPool(@NonNull final String name, int threadCount) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
         return new ManagedExecutorService(
                 Executors.newFixedThreadPool(threadCount, createThreadFactory(name)), throwIfInWrongPhase);
@@ -140,12 +134,10 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
      */
     @NonNull
     @Override
-    public ScheduledExecutorService createScheduledThreadPool(
-            @NonNull final String name, int threadCount) {
+    public ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, int threadCount) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
         return new ManagedScheduledExecutorService(
-                Executors.newScheduledThreadPool(threadCount, createThreadFactory(name)),
-                throwIfInWrongPhase);
+                Executors.newScheduledThreadPool(threadCount, createThreadFactory(name)), throwIfInWrongPhase);
     }
 
     /**

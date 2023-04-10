@@ -16,7 +16,6 @@
 
 package com.swirlds.virtualmap;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -82,7 +81,8 @@ public final class VirtualMapMigration {
             // Java only allows final values to be passed into a lambda
             final int index = threadIndex;
 
-            threads.add(threadManager.newThreadConfiguration()
+            threads.add(threadManager
+                    .newThreadConfiguration()
                     .setComponent(COMPONENT_NAME)
                     .setThreadName("reader-" + threadCount)
                     .setInterruptableRunnable(() -> {

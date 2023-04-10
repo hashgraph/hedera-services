@@ -41,7 +41,6 @@ import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
-import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.gui.SwirldsGui;
 import java.io.BufferedWriter;
@@ -88,7 +87,8 @@ public class StatsDemoMain implements SwirldMain {
     private final StoppableThread transactionGenerator;
 
     public StatsDemoMain() {
-        transactionGenerator = getStaticThreadManager().newStoppableThreadConfiguration()
+        transactionGenerator = getStaticThreadManager()
+                .newStoppableThreadConfiguration()
                 .setComponent("demo")
                 .setThreadName("transaction-generator")
                 .setMaximumRate(50)

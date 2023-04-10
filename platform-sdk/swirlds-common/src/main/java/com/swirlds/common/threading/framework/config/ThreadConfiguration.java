@@ -19,7 +19,6 @@ package com.swirlds.common.threading.framework.config;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.internal.AbstractThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadBuilder;
-import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.concurrent.ThreadFactory;
 
 /**

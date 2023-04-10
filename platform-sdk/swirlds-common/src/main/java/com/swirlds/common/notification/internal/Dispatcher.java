@@ -20,7 +20,6 @@ import com.swirlds.common.notification.DispatchException;
 import com.swirlds.common.notification.Listener;
 import com.swirlds.common.notification.Notification;
 import com.swirlds.common.notification.NotificationResult;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -78,7 +77,8 @@ public class Dispatcher<L extends Listener> {
             stop();
         }
 
-        dispatchThread = threadManager.newThreadConfiguration()
+        dispatchThread = threadManager
+                .newThreadConfiguration()
                 .setComponent(COMPONENT_NAME)
                 .setThreadName(String.format("notify %s", listenerClassName))
                 .setRunnable(this::worker)

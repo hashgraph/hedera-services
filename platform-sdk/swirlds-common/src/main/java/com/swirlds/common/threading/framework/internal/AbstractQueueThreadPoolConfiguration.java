@@ -19,7 +19,6 @@ package com.swirlds.common.threading.framework.internal;
 import com.swirlds.common.threading.framework.QueueThreadPool;
 import com.swirlds.common.threading.framework.config.QueueThreadPoolConfiguration;
 import com.swirlds.common.threading.manager.ThreadBuilder;
-import com.swirlds.common.threading.manager.ThreadManager;
 
 /**
  * Boilerplate getters, setters, and configuration for queue thread pool configuration.

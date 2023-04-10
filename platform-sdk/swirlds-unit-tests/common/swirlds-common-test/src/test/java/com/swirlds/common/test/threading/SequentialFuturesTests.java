@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.SequentialFutures;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.utility.ValueReference;
@@ -232,7 +231,8 @@ class SequentialFuturesTests {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent("sequential-futures-test")
                 .setThreadName("verify-eventual-completion-get()-" + indexToCheck)
                 .setExceptionHandler((final Thread thread, final Throwable exception) -> {
@@ -275,7 +275,8 @@ class SequentialFuturesTests {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent("sequential-futures-test")
                 .setThreadName("verify-eventual-cancellation-get()-" + indexToCheck)
                 .setExceptionHandler((final Thread thread, final Throwable exception) -> {

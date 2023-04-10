@@ -26,7 +26,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.Iterator;
@@ -71,7 +70,8 @@ public class MerkleHashBuilder {
         this.cryptography = cryptography;
         this.cpuThreadCount = cpuThreadCount;
 
-        final ThreadFactory threadFactory = threadManager.newThreadConfiguration()
+        final ThreadFactory threadFactory = threadManager
+                .newThreadConfiguration()
                 .setDaemon(true)
                 .setComponent(THREAD_COMPONENT_NAME)
                 .setThreadName("merkle hash")

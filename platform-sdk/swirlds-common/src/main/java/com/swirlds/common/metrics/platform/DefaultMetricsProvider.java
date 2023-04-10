@@ -36,7 +36,6 @@ import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -50,8 +49,8 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
     private static final Logger logger = LogManager.getLogger(DefaultMetricsProvider.class);
 
     private final MetricsFactory factory = new DefaultMetricsFactory();
-    private final ScheduledExecutorService executor = getStaticThreadManager()
-            .createSingleThreadScheduledExecutor("platform-core: MetricsThread");
+    private final ScheduledExecutorService executor =
+            getStaticThreadManager().createSingleThreadScheduledExecutor("platform-core: MetricsThread");
 
     private final MetricKeyRegistry metricKeyRegistry = new MetricKeyRegistry();
     private final DefaultMetrics globalMetrics;

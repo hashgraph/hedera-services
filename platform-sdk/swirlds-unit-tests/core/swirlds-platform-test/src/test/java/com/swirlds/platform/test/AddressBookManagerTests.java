@@ -34,7 +34,6 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookManager;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.platform.state.address.AddressBookManagerImpl;
 import com.swirlds.platform.state.address.AddressBookStore;
 import com.swirlds.platform.state.address.MutableAddressBookManager;
@@ -135,7 +134,8 @@ class AddressBookManagerTests {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent("address-book-manager-test")
                 .setThreadName("verify-eventual-get-" + round)
                 .setExceptionHandler((final Thread thread, final Throwable exception) -> {
@@ -182,7 +182,8 @@ class AddressBookManagerTests {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent("address-book-manager-test")
                 .setThreadName("verify-eventual-cancellation-" + round)
                 .setExceptionHandler((final Thread thread, final Throwable exception) -> {

@@ -19,7 +19,6 @@ package com.swirlds.common.crypto.engine;
 import static com.swirlds.common.crypto.engine.CryptoEngine.THREAD_COMPONENT_NAME;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.List;
 import java.util.Queue;
@@ -107,7 +106,8 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
         this.provider = provider;
         this.handlerSupplier = handlerSupplier;
 
-        final ThreadFactory threadFactory = threadManager.newThreadConfiguration()
+        final ThreadFactory threadFactory = threadManager
+                .newThreadConfiguration()
                 .setDaemon(true)
                 .setPriority(Thread.NORM_PRIORITY)
                 .setComponent(THREAD_COMPONENT_NAME)
@@ -117,7 +117,8 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
 
         this.executorService = Executors.newFixedThreadPool(parallelism, threadFactory);
 
-        this.worker = threadManager.newThreadConfiguration()
+        this.worker = threadManager
+                .newThreadConfiguration()
                 .setDaemon(true)
                 .setPriority(Thread.NORM_PRIORITY)
                 .setComponent(THREAD_COMPONENT_NAME)

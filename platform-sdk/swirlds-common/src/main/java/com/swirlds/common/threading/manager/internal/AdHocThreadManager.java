@@ -50,9 +50,7 @@ public final class AdHocThreadManager implements ThreadBuilder, ThreadManager {
     @NonNull
     private ThreadFactory createThreadFactory(@NonNull final String threadName) {
         // TODO is this correct?
-        return new ThreadConfiguration(this)
-                .setThreadName(threadName)
-                .buildFactory();
+        return new ThreadConfiguration(this).setThreadName(threadName).buildFactory();
     }
 
     /**
@@ -78,8 +76,7 @@ public final class AdHocThreadManager implements ThreadBuilder, ThreadManager {
      */
     @NonNull
     @Override
-    public ExecutorService createFixedThreadPool(
-            @NonNull final String name, final int threadCount) {
+    public ExecutorService createFixedThreadPool(@NonNull final String name, final int threadCount) {
         return Executors.newFixedThreadPool(threadCount, createThreadFactory(name));
     }
 
@@ -97,8 +94,7 @@ public final class AdHocThreadManager implements ThreadBuilder, ThreadManager {
      */
     @NonNull
     @Override
-    public ScheduledExecutorService createScheduledThreadPool(
-            @NonNull final String name, final int threadCount) {
+    public ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, final int threadCount) {
         return Executors.newScheduledThreadPool(threadCount, createThreadFactory(name));
     }
 

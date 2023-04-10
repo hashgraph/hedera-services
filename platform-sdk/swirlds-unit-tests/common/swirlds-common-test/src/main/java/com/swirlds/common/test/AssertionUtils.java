@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.interrupt.InterruptableSupplier;
 import com.swirlds.common.utility.CompareTo;
@@ -237,7 +236,8 @@ public final class AssertionUtils {
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicBoolean error = new AtomicBoolean();
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent("assertion-utils")
                 .setThreadName("assert-prompt-completion")
                 .setInterruptableRunnable(() -> {
@@ -274,7 +274,8 @@ public final class AssertionUtils {
         final AtomicBoolean error = new AtomicBoolean();
         final AtomicReference<T> value = new AtomicReference<>();
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent("assertion-utils")
                 .setThreadName("assert-prompt-completion")
                 .setInterruptableRunnable(() -> {
@@ -317,7 +318,8 @@ public final class AssertionUtils {
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicBoolean error = new AtomicBoolean();
 
-        getStaticThreadManager().newThreadConfiguration()
+        getStaticThreadManager()
+                .newThreadConfiguration()
                 .setComponent("assertion-utils")
                 .setThreadName("assert-prompt-throw")
                 .setRunnable(() -> {

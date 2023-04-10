@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.IndexLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
@@ -62,7 +61,8 @@ class IndexLockTests {
 
         final AtomicBoolean threadIsLocked = new AtomicBoolean();
 
-        final Thread thread = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     lock.lock(object);
                     threadIsLocked.set(true);
@@ -103,7 +103,8 @@ class IndexLockTests {
 
         lock.lock(index);
 
-        final Thread thread = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     lock.lock(index + 1);
                     threadIsLocked.set(true);
@@ -134,7 +135,8 @@ class IndexLockTests {
 
         final AtomicBoolean threadIsLocked = new AtomicBoolean();
 
-        final Thread thread = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     try (final Locked autoLock = lock.autoLock(object)) {
                         threadIsLocked.set(true);
@@ -170,7 +172,8 @@ class IndexLockTests {
 
         final AtomicBoolean threadIsLocked = new AtomicBoolean();
 
-        final Thread thread = getStaticThreadManager().newThreadConfiguration()
+        final Thread thread = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setRunnable(() -> {
                     lock.lock(index);
                     threadIsLocked.set(true);
@@ -222,7 +225,8 @@ class IndexLockTests {
         for (int index = 0; index < size; index++) {
 
             final int finalIndex = index;
-            threads.add(getStaticThreadManager().newThreadConfiguration()
+            threads.add(getStaticThreadManager()
+                    .newThreadConfiguration()
                     .setThreadName("background-locker")
                     .setRunnable(() -> {
                         lock.lock(finalIndex);
@@ -255,7 +259,8 @@ class IndexLockTests {
             for (int index = 0; index < size; index++) {
 
                 final int finalIndex = index;
-                threads.add(getStaticThreadManager().newThreadConfiguration()
+                threads.add(getStaticThreadManager()
+                        .newThreadConfiguration()
                         .setThreadName("background-locker")
                         .setRunnable(() -> {
                             lock.lock(finalIndex);

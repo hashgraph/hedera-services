@@ -37,7 +37,6 @@ import com.swirlds.common.notification.Listener;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationResult;
 import com.swirlds.common.notification.internal.AsyncNotificationEngine;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.ConcurrentFuturePool;
 import com.swirlds.common.threading.futures.FuturePool;
 import com.swirlds.common.threading.futures.StandardFuture;
@@ -872,7 +871,8 @@ public class IntegerNotificationTests {
         // allow the main thread to do assertions while those operations are blocking.
         final AtomicReference<NotificationResult<IntegerNotification>> futureNotificationResult =
                 new AtomicReference<>();
-        final Thread dispatchThread = getStaticThreadManager().newThreadConfiguration()
+        final Thread dispatchThread = getStaticThreadManager()
+                .newThreadConfiguration()
                 .setInterruptableRunnable(() -> {
                     final Future<NotificationResult<IntegerNotification>> future =
                             engine.dispatch(listenerClass, new IntegerNotification(value), callback);

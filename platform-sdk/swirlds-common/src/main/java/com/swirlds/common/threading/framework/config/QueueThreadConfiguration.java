@@ -20,7 +20,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.internal.AbstractQueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadBuilder;
-import com.swirlds.common.threading.manager.ThreadManager;
 
 /**
  * An object used to configure and build {@link QueueThread}s.

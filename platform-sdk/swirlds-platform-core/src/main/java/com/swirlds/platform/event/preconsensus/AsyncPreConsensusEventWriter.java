@@ -22,7 +22,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
-import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -76,7 +75,8 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
         final PreConsensusEventStreamConfig config =
                 platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
 
-        handleThread = threadManager.newMultiQueueThreadConfiguration()
+        handleThread = threadManager
+                .newMultiQueueThreadConfiguration()
                 .setComponent("pre-consensus")
                 .setThreadName("event-writer")
                 .setCapacity(config.writeQueueCapacity())
