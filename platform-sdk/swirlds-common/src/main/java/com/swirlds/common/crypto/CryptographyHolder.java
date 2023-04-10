@@ -16,7 +16,7 @@
 
 package com.swirlds.common.crypto;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;

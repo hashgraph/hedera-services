@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 
 import com.swirlds.common.AutoCloseableNonThrowing;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.eventflow;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.threading.framework.Stoppable;

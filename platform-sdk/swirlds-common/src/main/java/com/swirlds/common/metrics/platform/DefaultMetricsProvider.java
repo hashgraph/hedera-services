@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 
 import com.sun.net.httpserver.HttpServer;
 import com.swirlds.common.io.utility.FileUtils;

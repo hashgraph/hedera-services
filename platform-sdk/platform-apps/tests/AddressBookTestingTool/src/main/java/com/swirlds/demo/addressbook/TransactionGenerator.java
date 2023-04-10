@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.addressbook;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.ByteUtils.intToByteArray;
 
 import com.swirlds.common.system.Platform;

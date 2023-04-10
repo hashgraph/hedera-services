@@ -17,7 +17,7 @@
 package com.swirlds.platform.components.appcomm;
 
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 

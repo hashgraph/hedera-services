@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
 import static com.swirlds.common.utility.Units.BYTES_TO_MEBIBYTES;
 import static com.swirlds.logging.LogMarker.ERROR;

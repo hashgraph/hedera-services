@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.cache;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.FastCopyable;

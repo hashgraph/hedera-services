@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.network.communication.multithreaded;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static org.awaitility.Awaitility.await;
 
 import com.swirlds.common.constructable.ClassConstructorPair;

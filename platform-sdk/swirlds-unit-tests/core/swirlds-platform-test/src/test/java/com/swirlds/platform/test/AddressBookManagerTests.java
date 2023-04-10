@@ -21,7 +21,7 @@ import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.test.AssertionUtils.throwBeforeTimeout;
 import static com.swirlds.common.test.RandomAddressBookGenerator.HashStrategy.REAL_HASH;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.test.AddressBookStoreTests.setUpdateBehavior;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

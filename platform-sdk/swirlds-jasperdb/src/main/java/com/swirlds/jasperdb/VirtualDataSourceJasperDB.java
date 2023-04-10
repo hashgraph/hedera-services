@@ -16,7 +16,7 @@
 
 package com.swirlds.jasperdb;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
 import static com.swirlds.jasperdb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.logging.LogMarker.ERROR;

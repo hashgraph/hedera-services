@@ -16,6 +16,8 @@
 
 package com.swirlds.common.utility;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * An object with a well-defined start/stop lifecycle.
  */
@@ -26,7 +28,7 @@ public interface Lifecycle extends Startable, Stoppable {
      *
      * @return the object's current lifecycle phase
      */
-    LifecyclePhase getLifecyclePhase();
+    @NonNull LifecyclePhase getLifecyclePhase();
 
     /**
      * Throw an exception if the object is not in the expected phase.
@@ -36,7 +38,7 @@ public interface Lifecycle extends Startable, Stoppable {
      * @throws LifecycleException
      * 		if the object is not in the expected phase
      */
-    default void throwIfNotInPhase(final LifecyclePhase phase) {
+    default void throwIfNotInPhase(@NonNull final LifecyclePhase phase) {
         throwIfNotInPhase(phase, "object is in an unexpected phase");
     }
 
@@ -50,11 +52,36 @@ public interface Lifecycle extends Startable, Stoppable {
      * @throws LifecycleException
      * 		if the object is not in the expected phase
      */
-    default void throwIfNotInPhase(final LifecyclePhase phase, final String errorMessage) {
+    default void throwIfNotInPhase(@NonNull final LifecyclePhase phase, @NonNull final String errorMessage) {
         final LifecyclePhase currentPhase = getLifecyclePhase();
         if (currentPhase != phase) {
             throw new LifecycleException(
                     errorMessage + ": current phase = " + currentPhase + ", expected phase = " + phase);
+        }
+    }
+
+    /**
+     * Throw an exception if the object is in a phase after the specified phase.
+     *
+     * @param phase        the phase we should not be after
+     * @throws LifecycleException if the object is after the specified phase
+     */
+    default void throwIfAfterPhase(@NonNull final LifecyclePhase phase) {
+        throwIfAfterPhase(phase, "object is in an unexpected phase");
+    }
+
+    /**
+     * Throw an exception if the object is in a phase after the specified phase.
+     *
+     * @param phase        the phase we should not be after
+     * @param errorMessage a message that provides additional information if an exception is thrown
+     * @throws LifecycleException if the object is after the specified phase
+     */
+    default void throwIfAfterPhase(@NonNull final LifecyclePhase phase, @NonNull final String errorMessage) {
+        final LifecyclePhase currentPhase = getLifecyclePhase();
+        if (currentPhase.ordinal() > phase.ordinal()) {
+            throw new LifecycleException(
+                    errorMessage + ": current phase = " + currentPhase + ", expected not to be after phase = " + phase);
         }
     }
 }

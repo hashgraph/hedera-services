@@ -23,7 +23,7 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThr
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortIfInterrupted;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.retryIfInterrupted;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.tryToSleep;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

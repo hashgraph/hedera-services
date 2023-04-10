@@ -17,11 +17,11 @@
 package com.swirlds.common.test;
 
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.threading.manager.StandardThreadManager;
+import com.swirlds.common.threading.manager.internal.StandardThreadManager;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.LifecycleException;
 import java.time.Duration;

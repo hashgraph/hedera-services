@@ -28,7 +28,7 @@ import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.common.threading.manager.internal.AdHocThreadManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;

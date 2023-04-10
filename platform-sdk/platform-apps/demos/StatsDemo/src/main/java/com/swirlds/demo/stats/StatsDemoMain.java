@@ -27,7 +27,7 @@ package com.swirlds.demo.stats;
  */
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.chatter;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;

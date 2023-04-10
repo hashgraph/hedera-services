@@ -16,7 +16,7 @@
 
 package com.swirlds.benchmark;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;

@@ -16,7 +16,7 @@
 
 package com.swirlds.common.io.extendable.extensions.internal;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.common.io.extendable.extensions.TimeoutStreamExtension;
 import com.swirlds.common.threading.framework.StoppableThread;

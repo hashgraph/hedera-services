@@ -16,7 +16,7 @@
 
 package com.swirlds.common.test.threading;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.threading.manager.internal.AdHocThreadManager.getStaticThreadManager;
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

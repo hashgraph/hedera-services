@@ -38,7 +38,7 @@ import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.metrics.NoOpMetrics;
-import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.common.threading.manager.internal.AdHocThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.crypto.PlatformSigner;
