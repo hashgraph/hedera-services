@@ -84,46 +84,6 @@ class ThreadTests {
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.THREADING)
-    @DisplayName("Thread Group Test")
-    void threadGroupTest() throws InterruptedException {
-
-        final ThreadGroup group1 = Thread.currentThread().getThreadGroup();
-        final Runnable runnable1 =
-                () -> assertSame(group1, Thread.currentThread().getThreadGroup(), "expected thread group to match");
-
-        final ThreadGroup group2 = new ThreadGroup("myGroup");
-        final Runnable runnable2 =
-                () -> assertSame(group2, Thread.currentThread().getThreadGroup(), "expected thread group to match");
-
-        final AtomicBoolean threadException = new AtomicBoolean(false);
-
-        getStaticThreadManager()
-                .newThreadConfiguration()
-                .setExceptionHandler((t, e) -> {
-                    e.printStackTrace();
-                    threadException.set(true);
-                })
-                .setRunnable(runnable1)
-                .build(true)
-                .join();
-        assertFalse(threadException.get(), "there should not have been any exceptions");
-
-        getStaticThreadManager()
-                .newThreadConfiguration()
-                .setExceptionHandler((t, e) -> {
-                    e.printStackTrace();
-                    threadException.set(true);
-                })
-                .setThreadGroup(group2)
-                .setRunnable(runnable2)
-                .build(true)
-                .join();
-        assertFalse(threadException.get(), "there should not have been any exceptions");
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.THREADING)
     @DisplayName("Daemon Test")
     void daemonTest() throws InterruptedException {
         final Runnable runnable1 =

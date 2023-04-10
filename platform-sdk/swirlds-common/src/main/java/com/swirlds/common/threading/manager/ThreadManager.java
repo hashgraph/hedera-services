@@ -34,7 +34,7 @@ public interface ThreadManager {
     /**
      * Create a new cached thread pool. If this thread manager has not yet been started, work submitted the executor
      * service will be not be handled until after the thread manager has been started (with the exception of the
-     * invokeAny() method, which will throw if called prior to the thread manager being started).
+     * invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being started).
      *
      * @param name the name of the thread pool
      * @return a new cached thread pool
@@ -45,7 +45,7 @@ public interface ThreadManager {
     /**
      * Create a new single thread executor. If this thread manager has not yet been started, work submitted the executor
      * service will be not be handled until after the thread manager has been started (with the exception of the
-     * invokeAny() method, which will throw if called prior to the thread manager being started).
+     * invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being started).
      *
      * @param name the name of the thread pool
      * @return a new single thread executor
@@ -56,7 +56,7 @@ public interface ThreadManager {
     /**
      * Create a new fixed thread pool. If this thread manager has not yet been started, work submitted the executor
      * service will be not be handled until after the thread manager has been started (with the exception of the
-     * invokeAny() method, which will throw if called prior to the thread manager being started).
+     * invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being started).
      *
      * @param name        the name of the thread pool
      * @param threadCount the number of threads in the pool
@@ -68,7 +68,8 @@ public interface ThreadManager {
     /**
      * Create a new single thread scheduled executor. If this thread manager has not yet been started, work submitted
      * the executor service will be not be handled until after the thread manager has been started (with the exception
-     * of the invokeAny() method, which will throw if called prior to the thread manager being started).
+     * of the invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being
+     * started).
      *
      * @param name the name of the thread pool
      * @return a new single thread scheduled executor
@@ -79,7 +80,7 @@ public interface ThreadManager {
     /**
      * Create a new scheduled thread pool. If this thread manager has not yet been started, work submitted the executor
      * service will be not be handled until after the thread manager has been started (with the exception of the
-     * invokeAny() method, which will throw if called prior to the thread manager being started).
+     * invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being started).
      *
      * @param name        the name of the thread pool
      * @param threadCount the number of threads in the pool

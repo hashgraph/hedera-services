@@ -201,13 +201,6 @@ public class ManagedExecutorService implements ExecutorService, Lifecycle {
     @Override
     public @NonNull <T> List<Future<T>> invokeAll(final @NonNull Collection<? extends Callable<T>> tasks)
             throws InterruptedException {
-        if (lifecyclePhase == LifecyclePhase.NOT_STARTED) {
-            final List<Callable<T>> wrappedTasks = new ArrayList<>(tasks.size());
-            for (final var task : tasks) {
-                wrappedTasks.add(wrapCallable(task));
-            }
-            return executorService.invokeAll(wrappedTasks);
-        }
         throwIfNotInPhase(LifecyclePhase.STARTED);
         return executorService.invokeAll(tasks);
     }
@@ -219,13 +212,6 @@ public class ManagedExecutorService implements ExecutorService, Lifecycle {
     public @NonNull <T> List<Future<T>> invokeAll(
             final @NonNull Collection<? extends Callable<T>> tasks, final long timeout, final @NonNull TimeUnit unit)
             throws InterruptedException {
-        if (lifecyclePhase == LifecyclePhase.NOT_STARTED) {
-            final List<Callable<T>> wrappedTasks = new ArrayList<>(tasks.size());
-            for (final var task : tasks) {
-                wrappedTasks.add(wrapCallable(task));
-            }
-            return executorService.invokeAll(wrappedTasks, timeout, unit);
-        }
         throwIfNotInPhase(LifecyclePhase.STARTED);
         return executorService.invokeAll(tasks, timeout, unit);
     }
@@ -256,6 +242,11 @@ public class ManagedExecutorService implements ExecutorService, Lifecycle {
      */
     @Override
     public void execute(final @NonNull Runnable command) {
+        if (lifecyclePhase == LifecyclePhase.NOT_STARTED) {
+            executorService.execute(wrapRunnable(command));
+            return;
+        }
+        throwIfNotInPhase(LifecyclePhase.STARTED);
         executorService.execute(wrapRunnable(command));
     }
 }
