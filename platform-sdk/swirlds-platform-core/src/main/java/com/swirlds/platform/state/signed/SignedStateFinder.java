@@ -27,7 +27,12 @@ import java.util.function.Predicate;
 public interface SignedStateFinder {
 
     /**
-     * Search for a state matching the given criteria.
+     * Search for a state matching the given criteria, and return the most recent state that matches. States are
+     * iterated over from newest to oldest, starting at the latest immutable state.
+     *
+     * @param criteria the first state that matches this criteria is returned
+     * @return a wrapper around the first matching state, or a wrapper around null if no state currently in memory
+     * matches the criteria
      */
     @NonNull
     AutoCloseableWrapper<SignedState> find(@NonNull final Predicate<SignedState> criteria);

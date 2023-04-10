@@ -91,20 +91,6 @@ public class SignedStateMap {
     }
 
     /**
-     * Take a reservation.
-     */
-    private static void reserve(@NonNull final SignedState signedState) {
-        signedState.reserve();
-    }
-
-    /**
-     * Release a reservation.
-     */
-    private static void release(@NonNull final SignedState signedState) {
-        signedState.release();
-    }
-
-    /**
      * Add a signed state to the map.
      *
      * @param signedState the signed state to add
@@ -112,12 +98,12 @@ public class SignedStateMap {
     public synchronized void put(@NonNull final SignedState signedState) {
         throwArgNull(signedState, "signedState");
 
-        reserve(signedState);
+        signedState.reserve();
 
         final SignedState previousState = map.put(signedState.getRound(), signedState);
 
         if (previousState != null) {
-            release(previousState);
+            signedState.release();
         }
     }
 
@@ -129,7 +115,7 @@ public class SignedStateMap {
     public synchronized void remove(final long round) {
         final SignedState signedState = map.remove(round);
         if (signedState != null) {
-            release(signedState);
+            signedState.release();
         }
     }
 
@@ -138,7 +124,7 @@ public class SignedStateMap {
      */
     public synchronized void clear() {
         for (final SignedState signedState : map.values()) {
-            release(signedState);
+            signedState.release();
         }
         map.clear();
     }
@@ -177,7 +163,7 @@ public class SignedStateMap {
             public void remove() {
                 baseIterator.remove();
                 if (previous != null) {
-                    release(previous);
+                    previous.release();
                 }
             }
         };

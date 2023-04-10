@@ -58,14 +58,14 @@ public class SignedStateMetrics {
 
     private static final Counter.Config TOTAL_NEVER_SIGNED_STATES_CONFIG = new Counter.Config(
                     CATEGORY, "totalNeverSignedStates")
-            .withDescription("total number of states that did not receive enough signatures in the " + "allowed time")
+            .withDescription("total number of states that did not receive enough signatures in the allowed time")
             .withUnit("count");
     private final Counter totalNeverSignedStates;
 
     private static final Counter.Config TOTAL_NEVER_SIGNED_DISK_STATES_CONFIG = new Counter.Config(
                     CATEGORY, "totalNeverSignedDiskStates")
             .withDescription(
-                    "total number of disk-bound states that did not receive enough signatures " + "in the allowed time")
+                    "total number of disk-bound states that did not receive enough signatures in the allowed time")
             .withUnit("count");
     private final Counter totalNeverSignedDiskStates;
 

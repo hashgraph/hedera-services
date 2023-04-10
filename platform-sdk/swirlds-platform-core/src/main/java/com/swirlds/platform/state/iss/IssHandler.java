@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.state.iss;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
+
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.state.notifications.IssNotification;
@@ -71,16 +73,16 @@ public class IssHandler {
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final IssConsumer issConsumer) {
 
-        this.issConsumer = issConsumer;
-        this.haltRequestedConsumer = haltRequestedConsumer;
-        this.fatalErrorConsumer = fatalErrorConsumer;
+        this.issConsumer = throwArgNull(issConsumer, "issConsumer");
+        this.haltRequestedConsumer = throwArgNull(haltRequestedConsumer, "haltRequestedConsumer");
+        this.fatalErrorConsumer = throwArgNull(fatalErrorConsumer, "fatalErrorConsumer");
         this.stateDumpRequestedDispatcher =
                 dispatchBuilder.getDispatcher(this, StateDumpRequestedTrigger.class)::dispatch;
 
-        this.stateConfig = stateConfig;
+        this.stateConfig = throwArgNull(stateConfig, "stateConfig");
         this.issDumpRateLimiter = new RateLimiter(time, Duration.ofSeconds(stateConfig.secondsBetweenISSDumps()));
 
-        this.selfId = selfId;
+        this.selfId = throwArgNull(selfId, "selfId");
     }
 
     /**

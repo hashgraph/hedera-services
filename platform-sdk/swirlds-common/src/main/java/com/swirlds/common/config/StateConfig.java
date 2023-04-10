@@ -78,8 +78,8 @@ import java.nio.file.Path;
  *                                              waiting for it to gather enough signatures. If a state becomes fully
  *                                              signed prior to reaching this age it may be removed from memory.
  * @param roundsToKeepAfterSigning              The number of rounds to keep states after they have been signed and
- *                                              after a newer state has become fully signed. If set to 0 then states
- *                                              will be garbage collection eligible as soon as it is not the most
+ *                                              after a newer state has become fully signed. If set to 0 then each state
+ *                                              becomes garbage collection eligible as soon as it is not the most
  *                                              recently signed state.
  * @param signedStateSentinelEnabled            If true, then enable extra debug code that tracks signed states. Very
  *                                              useful for debugging state leaks. This debug code is relatively

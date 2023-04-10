@@ -21,13 +21,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Sends dispatches when a dump of the most recent signed state is requested.
+ * Sends dispatches when a dump of ta signed state is requested.
  */
 @FunctionalInterface
 public interface StateDumpRequestedTrigger extends TriggerThree<Long, String, Boolean> {
 
     /**
-     * Request that the most recent signed state be dumped to disk.
+     * Request that a signed state be dumped to disk.
      *
      * @param desiredRound the round that should be dumped if still in memory. If the desired round is not in memory
      *                     then the most recent immutable state will be dumped. If null, then the most recent state will

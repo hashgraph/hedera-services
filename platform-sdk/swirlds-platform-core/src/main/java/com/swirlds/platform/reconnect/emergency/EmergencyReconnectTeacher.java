@@ -63,12 +63,11 @@ public class EmergencyReconnectTeacher {
     /**
      * Builds a predicate used to find a state in a {@link com.swirlds.platform.state.signed.SignedStateManager} that is
      * safe to use for an emergency reconnect. Finds a signed state for the given round number and hash even if it is
-     * not fully signed, or a later round that is signed by more than half the network stake. If such a state is not
-     * available.
+     * not fully signed, or a later round that is signed by more than half the network stake.
      *
-     * @param round the round of the state to find
-     * @param hash the hash of the state to find
-     * @return
+     * @param round the state must have a round greater than this if it does not exactly match the hash
+     * @param hash the hash of the state to find, ignored if the round is greater than the requested round
+     * @return a predicate that decides if a state is suitable for an emergency reconnect
      */
     public static @NonNull Predicate<SignedState> emergencyStateCriteria(final long round, @NonNull final Hash hash) {
         return (@NonNull final SignedState signedState) -> {

@@ -66,12 +66,12 @@ public class SignedStateManager implements SignedStateFinder {
     /**
      * Signed states awaiting signatures.
      */
-    private final SignedStateMap unsignedStates = new SignedStateMap();
+    private final SignedStateMap incompleteStates = new SignedStateMap();
 
     /**
      * States that have already been signed.
      */
-    private final SignedStateMap signedStates = new SignedStateMap();
+    private final SignedStateMap completeStates = new SignedStateMap();
 
     private final StateConfig stateConfig;
 
@@ -134,7 +134,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @return latest round for which we have a majority of signatures
      */
     public long getLastCompleteRound() {
-        return signedStates.getLatestRound();
+        return completeStates.getLatestRound();
     }
 
     /**
@@ -143,7 +143,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @return a wrapper with the latest complete signed state, or null if no recent states that are complete
      */
     public @NonNull AutoCloseableWrapper<SignedState> getLatestSignedState() {
-        return signedStates.getLatest();
+        return completeStates.getLatest();
     }
 
     /**
@@ -183,9 +183,9 @@ public class SignedStateManager implements SignedStateFinder {
         // The map makes sure that duplicates are not returned to the caller.
         final Map<Long, SignedState> stateMap = new HashMap<>();
 
-        unsignedStates.atomicIteration(iterator ->
+        incompleteStates.atomicIteration(iterator ->
                 iterator.forEachRemaining(signedState -> stateMap.put(signedState.getRound(), signedState)));
-        signedStates.atomicIteration(iterator ->
+        completeStates.atomicIteration(iterator ->
                 iterator.forEachRemaining(signedState -> stateMap.put(signedState.getRound(), signedState)));
 
         // Sort the states based on round number
@@ -200,8 +200,7 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
-     * Add a completed signed state, e.g. a state from reconnect or a state from disk. State is ignored if it is too old
-     * (i.e. there is a newer complete state) or if it is not actually complete.
+     * Add a state. State may be ignored if it is too old..
      *
      * @param signedState the signed state to add
      */
@@ -218,10 +217,10 @@ public class SignedStateManager implements SignedStateFinder {
         signedState.pruneInvalidSignatures();
 
         if (signedState.isComplete()) {
-            signedStates.put(signedState);
+            completeStates.put(signedState);
             notifyNewLatestCompleteState(signedState);
         } else {
-            unsignedStates.put(signedState);
+            incompleteStates.put(signedState);
             gatherSavedSignatures(signedState);
         }
 
@@ -290,8 +289,8 @@ public class SignedStateManager implements SignedStateFinder {
 
         final List<SignedState> allStates = new ArrayList<>();
 
-        signedStates.atomicIteration(it -> it.forEachRemaining(allStates::add));
-        unsignedStates.atomicIteration(it -> it.forEachRemaining(allStates::add));
+        completeStates.atomicIteration(it -> it.forEachRemaining(allStates::add));
+        incompleteStates.atomicIteration(it -> it.forEachRemaining(allStates::add));
 
         // Sort the list from the highest round to the lowest round
         allStates.sort((a, b) -> Long.compare(b.getRound(), a.getRound()));
@@ -315,7 +314,7 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
-     * Given an iterator that walks over the states in {@link #unsignedStates}, remove any states that are too old.
+     * Given an iterator that walks over the states in {@link #incompleteStates}, remove any states that are too old.
      *
      * @param iterator an iterator that walks over a collection of signed states
      */
@@ -335,7 +334,7 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
-     * Given an iterator that walks over the states in {@link #signedStates}, remove any states that are too old.
+     * Given an iterator that walks over the states in {@link #completeStates}, remove any states that are too old.
      *
      * @param iterator an iterator that walks over a collection of signed states
      */
@@ -345,7 +344,7 @@ public class SignedStateManager implements SignedStateFinder {
         final long earliestPermittedRound = getEarliestPermittedRound();
 
         // The latest state that has gathered all of its signatures.
-        final long latestSignedRound = signedStates.getLatestRound();
+        final long latestSignedRound = completeStates.getLatestRound();
 
         // If state signing is working as desired, then this will be the oldest signed state we keep in this structure.
         // If state signing breaks down, we will not remove the latest signed state when it becomes older than this
@@ -371,11 +370,11 @@ public class SignedStateManager implements SignedStateFinder {
      * Get rid of old states.
      */
     private void purgeOldStates() {
-        unsignedStates.atomicIteration(this::removeOldUnsignedStates);
-        signedStates.atomicIteration(this::removeOldSignedStates);
+        incompleteStates.atomicIteration(this::removeOldUnsignedStates);
+        completeStates.atomicIteration(this::removeOldSignedStates);
 
-        signedStateMetrics.getUnsignedStatesMetric().update(unsignedStates.getSize());
-        signedStateMetrics.geSignedStatesMetric().update(signedStates.getSize());
+        signedStateMetrics.getUnsignedStatesMetric().update(incompleteStates.getSize());
+        signedStateMetrics.geSignedStatesMetric().update(completeStates.getSize());
     }
 
     /**
@@ -386,7 +385,7 @@ public class SignedStateManager implements SignedStateFinder {
      * not present
      */
     private @NonNull AutoCloseableWrapper<SignedState> getIncompleteState(final long round) {
-        return unsignedStates.get(round);
+        return incompleteStates.get(round);
     }
 
     /**
@@ -425,12 +424,12 @@ public class SignedStateManager implements SignedStateFinder {
                         .toMillis());
 
         notifyStateHasEnoughSignatures(signedState);
-        if (signedStates.getLatestRound() < signedState.getRound()) {
+        if (completeStates.getLatestRound() < signedState.getRound()) {
             notifyNewLatestCompleteState(signedState);
         }
 
-        signedStates.put(signedState);
-        unsignedStates.remove(signedState.getRound());
+        completeStates.put(signedState);
+        incompleteStates.remove(signedState.getRound());
 
         purgeOldStates();
     }

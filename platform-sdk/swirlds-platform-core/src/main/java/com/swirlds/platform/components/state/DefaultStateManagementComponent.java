@@ -480,6 +480,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     /**
      * This observer is called when the most recent signed state is requested to be dumped to disk.
      *
+     * @param round    the round that should be dumped if available. If this parameter is null or if the requested round
+     *                 is unavailable then the latest immutable round should be dumped.
      * @param reason   reason why the state is being dumped, e.g. "fatal" or "iss". Is used as a part of the file path
      *                 for the dumped state files, so this string should not contain any special characters or
      *                 whitespace.
@@ -491,14 +493,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
         if (round == null) {
             // No round is specified, dump the latest immutable state.
-            try (final AutoCloseableWrapper<SignedState> wrapper = signedStateManager.getLatestImmutableState()) {
-                if (wrapper.get() == null) {
-                    logger.warn(STATE_TO_DISK.getMarker(), "State dump requested, but no state is available.");
-                    return;
-                }
-                signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
-                return;
-            }
+            dumpLatestImmutableState(reason, blocking);
+            return;
         }
 
         try (final AutoCloseableWrapper<SignedState> wrapper =
@@ -510,19 +506,28 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             }
         }
 
+        // We weren't able to find the requested round, so the best we can do is the latest round.
+        logger.info(
+                STATE_TO_DISK.getMarker(),
+                "State dump for round {} requested, but round could not be "
+                        + "found in the signed state manager. Dumping latest immutable round instead.",
+                round);
+        dumpLatestImmutableState(reason, blocking);
+    }
+
+    /**
+     * Dump the latest immutable state if it is available.
+     *
+     * @param reason   the reason why the state is being dumped
+     * @param blocking if true then block until the state dump is complete
+     */
+    private void dumpLatestImmutableState(@NonNull final String reason, final boolean blocking) {
         try (final AutoCloseableWrapper<SignedState> wrapper = signedStateManager.getLatestImmutableState()) {
-            // We weren't able to find the requested round, so the best we can do is the latest round.
             if (wrapper.get() == null) {
                 logger.warn(STATE_TO_DISK.getMarker(), "State dump requested, but no state is available.");
-                return;
+            } else {
+                signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
             }
-            logger.info(
-                    STATE_TO_DISK.getMarker(),
-                    "State dump for round {} requested, but round could not be "
-                            + "found in the signed state manager. Dumping round {} instead.",
-                    round,
-                    wrapper.get().getRound());
-            signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
         }
     }
 
