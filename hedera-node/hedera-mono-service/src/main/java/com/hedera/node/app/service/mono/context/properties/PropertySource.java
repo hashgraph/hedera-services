@@ -86,6 +86,7 @@ public interface PropertySource {
     Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
     Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
     Function<String, Object> AS_ACCESS_LIST = MapAccessType::csvAccessList;
+    Function<String, Object> AS_CUSTOM_FEES_TYPE = CustomFeeType::csvTypeSet;
     Function<String, Object> AS_SIDECARS = s -> asEnumSet(SidecarType.class, SidecarType::valueOf, s);
     Function<String, Object> AS_RECOMPUTE_TYPES =
             s -> asEnumSet(StakeStartupHelper.RecomputeType.class, StakeStartupHelper.RecomputeType::valueOf, s);
@@ -134,6 +135,11 @@ public interface PropertySource {
 
     @SuppressWarnings("unchecked")
     default Set<EntityType> getTypesProperty(final String name) {
+        return getTypedProperty(Set.class, name);
+    }
+
+    @SuppressWarnings("unchecked")
+    default Set<CustomFeeType> getCustomFeesProperty(String name) {
         return getTypedProperty(Set.class, name);
     }
 

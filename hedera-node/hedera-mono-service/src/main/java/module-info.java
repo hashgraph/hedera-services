@@ -62,7 +62,9 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app.service.network.impl.test,
             com.hedera.node.app.service.schedule.impl.test,
-            com.hedera.node.app.service.consensus.impl.test;
+            com.hedera.node.app.service.consensus.impl.test,
+            com.hedera.node.app.service.admin.impl,
+            com.hedera.node.app.service.admin.impl.test;
     exports com.hedera.node.app.service.mono.state.validation to
             com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl,

@@ -59,6 +59,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
@@ -246,6 +247,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enableAllowances;
     private boolean limitTokenAssociations;
     private boolean enableHTSPrecompileCreate;
+    private Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits;
     private boolean atomicCryptoTransferEnabled;
     private KnownBlockValues knownBlockValues;
     private long exchangeRateGasReq;
@@ -388,6 +390,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
         limitTokenAssociations = properties.getBooleanProperty(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS);
         enableHTSPrecompileCreate = properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE);
+        htsUnsupportedCustomFeeReceiverDebits =
+                properties.getCustomFeesProperty(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS);
         atomicCryptoTransferEnabled =
                 properties.getBooleanProperty(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
@@ -749,6 +753,10 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isHTSPrecompileCreateEnabled() {
         return enableHTSPrecompileCreate;
+    }
+
+    public Set<CustomFeeType> getHtsUnsupportedCustomFeeReceiverDebits() {
+        return htsUnsupportedCustomFeeReceiverDebits;
     }
 
     public boolean isAtomicCryptoTransferEnabled() {
