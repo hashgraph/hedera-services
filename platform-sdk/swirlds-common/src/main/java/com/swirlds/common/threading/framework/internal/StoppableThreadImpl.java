@@ -62,12 +62,12 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
     /**
      * Determines the default behavior of the thread when closed
      */
-    private final Stoppable.StopBehavior stopBehavior;
+    private final StopBehavior stopBehavior;
 
     /**
      * The amount of time in milliseconds to wait after setting the thread status to {@link Status#DYING}
      * before interrupting the thread if {@link #stopBehavior} is
-     * {@link com.swirlds.common.threading.framework.Stoppable.StopBehavior#INTERRUPTABLE INTERRUPTABLE}.
+     * {@link StopBehavior#INTERRUPTABLE INTERRUPTABLE}.
      */
     private final int joinWaitMs;
 
@@ -624,7 +624,7 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
 
     /**
      * Perform the last cycle of work. Only called if {@link #stopBehavior} is
-     * {@link com.swirlds.common.threading.framework.Stoppable.StopBehavior#BLOCKING BLOCKING}.
+     * {@link StopBehavior#BLOCKING BLOCKING}.
      *
      * @throws InterruptedException
      * 		if the thread running the work is interrupted

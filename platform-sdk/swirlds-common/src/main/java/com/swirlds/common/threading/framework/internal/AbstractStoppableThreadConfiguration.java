@@ -23,6 +23,7 @@ import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.TypedStoppableThread;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
+import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.time.Duration;
 
@@ -80,7 +81,7 @@ public abstract class AbstractStoppableThreadConfiguration<
      */
     private Duration hangingThreadPeriod = DEFAULT_HANGING_PERIOD;
 
-    protected AbstractStoppableThreadConfiguration(final ThreadManager threadManager) {
+    protected AbstractStoppableThreadConfiguration(final ThreadBuilder threadManager) {
         super(threadManager);
     }
 
@@ -141,7 +142,7 @@ public abstract class AbstractStoppableThreadConfiguration<
 
     /**
      * Get the method that will be run after the thread is stopped. Ignored if {@link #stopBehavior} is
-     * {@link com.swirlds.common.threading.framework.Stoppable.StopBehavior#INTERRUPTABLE INTERRUPTABLE}.
+     * {@link Stoppable.StopBehavior#INTERRUPTABLE INTERRUPTABLE}.
      */
     protected InterruptableRunnable getFinalCycleWork() {
         return finalCycleWork;
@@ -149,7 +150,7 @@ public abstract class AbstractStoppableThreadConfiguration<
 
     /**
      * Set the method that will be run after the thread is stopped. Ignored if {@link #stopBehavior} is
-     * {@link com.swirlds.common.threading.framework.Stoppable.StopBehavior#INTERRUPTABLE INTERRUPTABLE}.
+     * {@link Stoppable.StopBehavior#INTERRUPTABLE INTERRUPTABLE}.
      *
      * @return this object
      */

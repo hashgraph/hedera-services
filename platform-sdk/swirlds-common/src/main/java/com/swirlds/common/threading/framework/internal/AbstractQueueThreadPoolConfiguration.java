@@ -18,6 +18,7 @@ package com.swirlds.common.threading.framework.internal;
 
 import com.swirlds.common.threading.framework.QueueThreadPool;
 import com.swirlds.common.threading.framework.config.QueueThreadPoolConfiguration;
+import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 
 /**
@@ -35,8 +36,8 @@ public abstract class AbstractQueueThreadPoolConfiguration<C extends AbstractQue
 
     private int threadCount = DEFAULT_THREAD_COUNT;
 
-    protected AbstractQueueThreadPoolConfiguration(final ThreadManager threadManager) {
-        super(threadManager);
+    protected AbstractQueueThreadPoolConfiguration(final ThreadBuilder threadBuilder) {
+        super(threadBuilder);
     }
 
     /**

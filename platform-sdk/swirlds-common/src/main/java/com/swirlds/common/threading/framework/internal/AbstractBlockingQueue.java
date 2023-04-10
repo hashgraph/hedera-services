@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * @param <T>
  * 		the type of the element in the queue
  */
-@SuppressWarnings({"NullableProblems", "SuspiciousToArrayCall"})
+@SuppressWarnings({"NullableProblems"})
 public abstract class AbstractBlockingQueue<T> implements BlockingQueue<T> {
 
     private final BlockingQueue<T> queue;

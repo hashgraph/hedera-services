@@ -19,6 +19,7 @@ package com.swirlds.common.threading.framework.config;
 import com.swirlds.common.threading.framework.QueueThreadPool;
 import com.swirlds.common.threading.framework.internal.AbstractQueueThreadPoolConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 
 /**
@@ -33,11 +34,11 @@ public class QueueThreadPoolConfiguration<T>
     /**
      * Create a new QueueThreadPool configuration.
      *
-     * @param threadManager
-     * 		responsible for creating and managing threads
+     * @param threadBuilder
+     * 		responsible for building threads
      */
-    public QueueThreadPoolConfiguration(final ThreadManager threadManager) {
-        super(threadManager);
+    public QueueThreadPoolConfiguration(final ThreadBuilder threadBuilder) {
+        super(threadBuilder);
     }
 
     /**

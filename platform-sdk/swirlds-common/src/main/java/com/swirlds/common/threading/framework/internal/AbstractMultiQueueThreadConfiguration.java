@@ -17,6 +17,7 @@
 package com.swirlds.common.threading.framework.internal;
 
 import com.swirlds.common.threading.framework.MultiQueueThread;
+import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,11 +40,11 @@ public abstract class AbstractMultiQueueThreadConfiguration<C extends AbstractQu
     /**
      * Construct a new instance.
      *
-     * @param threadManager
-     * 		the thread manager, responsible for creating new threads
+     * @param threadBuilder
+     * 		the thread builder, responsible for creating new threads
      */
-    protected AbstractMultiQueueThreadConfiguration(final ThreadManager threadManager) {
-        super(threadManager);
+    protected AbstractMultiQueueThreadConfiguration(final ThreadBuilder threadBuilder) {
+        super(threadBuilder);
     }
 
     /**

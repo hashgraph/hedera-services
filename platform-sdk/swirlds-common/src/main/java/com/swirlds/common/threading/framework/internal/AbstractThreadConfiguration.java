@@ -25,6 +25,7 @@ import com.swirlds.common.Mutable;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
+import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,7 +48,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
     /**
      * Responsible for creating and managing threads used by this object.
      */
-    private final ThreadManager threadManager;
+    private final ThreadBuilder threadBuilder;
 
     /**
      * The ID of the node that is running the thread.
@@ -75,11 +76,6 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
      * particular node.
      */
     private Long otherNodeId;
-
-    /**
-     * The thread group that will contain new threads.
-     */
-    private ThreadGroup threadGroup = defaultThreadGroup();
 
     /**
      * If true then use thread numbers when generating the thread name.
@@ -124,8 +120,8 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
     /**
      * Build a new thread configuration with default values.
      */
-    protected AbstractThreadConfiguration(final ThreadManager threadManager) {
-        this.threadManager = threadManager;
+    protected AbstractThreadConfiguration(final ThreadBuilder threadBuilder) {
+        this.threadBuilder = threadBuilder;
         nextThreadNumber = new AtomicInteger();
     }
 
@@ -137,13 +133,12 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
      */
     @SuppressWarnings("CopyConstructorMissesField")
     protected AbstractThreadConfiguration(final AbstractThreadConfiguration<C> that) {
-        this.threadManager = that.threadManager;
+        this.threadBuilder = that.threadBuilder;
         this.nodeId = that.nodeId;
         this.component = that.component;
         this.threadName = that.threadName;
         this.fullyFormattedThreadName = that.fullyFormattedThreadName;
         this.otherNodeId = that.otherNodeId;
-        this.threadGroup = that.threadGroup;
         this.daemon = that.daemon;
         this.priority = that.priority;
         this.contextClassLoader = that.contextClassLoader;
@@ -158,8 +153,8 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
      *
      * @return a thread factory
      */
-    protected ThreadManager getThreadManager() {
-        return threadManager;
+    protected ThreadBuilder getThreadBuilder() {
+        return threadBuilder;
     }
 
     /**
@@ -192,7 +187,6 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
         setPriority(thread.getPriority());
         setExceptionHandler(thread.getUncaughtExceptionHandler());
         setContextClassLoader(thread.getContextClassLoader());
-        setThreadGroup(thread.getThreadGroup());
     }
 
     /**
@@ -211,7 +205,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
      */
     protected Thread buildThread(final boolean start) {
         final Runnable runnable = requireNonNull(getRunnable(), "runnable must not be null");
-        final Thread thread = threadManager.createThread(getThreadGroup(), runnable);
+        final Thread thread = threadBuilder.buildThread(runnable);
         configureThread(thread);
 
         if (start) {
@@ -245,7 +239,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
         requireNonNull(getRunnable(), "runnable must not be null");
 
         return () -> {
-            final ThreadConfiguration originalConfiguration = captureThreadConfiguration(threadManager);
+            final ThreadConfiguration originalConfiguration = captureThreadConfiguration(threadBuilder);
 
             try {
                 configureThread(Thread.currentThread());
@@ -255,18 +249,6 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
                 originalConfiguration.configureThread(Thread.currentThread());
             }
         };
-    }
-
-    /**
-     * Get the default thread group that will be used if there is no user provided thread group
-     */
-    private static ThreadGroup defaultThreadGroup() {
-        final SecurityManager securityManager = System.getSecurityManager();
-        if (System.getSecurityManager() == null) {
-            return Thread.currentThread().getThreadGroup();
-        } else {
-            return securityManager.getThreadGroup();
-        }
     }
 
     /**
@@ -373,22 +355,15 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
     }
 
     /**
-     * Get the the thread group that new threads will be created in.
-     */
-    public ThreadGroup getThreadGroup() {
-        return threadGroup;
-    }
-
-    /**
      * Set the the thread group that new threads will be created in.
      *
      * @return this object
+     * @deprecated this value is ignored
      */
     @SuppressWarnings("unchecked")
+    @Deprecated
     public C setThreadGroup(final ThreadGroup threadGroup) {
         throwIfImmutable();
-
-        this.threadGroup = threadGroup;
         return (C) this;
     }
 

@@ -24,6 +24,7 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
+import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -77,8 +78,8 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
      */
     private boolean minSizeMetricEnabled;
 
-    protected AbstractQueueThreadConfiguration(final ThreadManager threadManager) {
-        super(threadManager);
+    protected AbstractQueueThreadConfiguration(final ThreadBuilder threadBuilder) {
+        super(threadBuilder);
 
         // Queue threads are not interruptable by default
         setStopBehavior(Stoppable.StopBehavior.BLOCKING);

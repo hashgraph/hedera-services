@@ -18,6 +18,7 @@ package com.swirlds.common.threading.framework.config;
 
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.internal.AbstractThreadConfiguration;
+import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.concurrent.ThreadFactory;
 
@@ -29,11 +30,11 @@ public class ThreadConfiguration extends AbstractThreadConfiguration<ThreadConfi
     /**
      * Build a new thread configuration with default values.
      *
-     * @param threadManager
+     * @param threadBuilder
      * 		capable of building raw thread objects
      */
-    public ThreadConfiguration(final ThreadManager threadManager) {
-        super(threadManager);
+    public ThreadConfiguration(final ThreadBuilder threadBuilder) {
+        super(threadBuilder);
     }
 
     /**
@@ -60,26 +61,26 @@ public class ThreadConfiguration extends AbstractThreadConfiguration<ThreadConfi
     /**
      * Extracts the thread configuration from the caller's thread.
      *
-     * @param threadManager
+     * @param threadBuilder
      * 		capable of building raw thread objects
      * @return a thread configuration with properties matching the caller's thread
      */
-    public static ThreadConfiguration captureThreadConfiguration(final ThreadManager threadManager) {
-        return captureThreadConfiguration(threadManager, Thread.currentThread());
+    public static ThreadConfiguration captureThreadConfiguration(final ThreadBuilder threadBuilder) {
+        return captureThreadConfiguration(threadBuilder, Thread.currentThread());
     }
 
     /**
      * Extracts the thread configuration from a given thread.
      *
-     * @param threadManager
+     * @param threadBuilder
      * 		capable of building raw thread objects
      * @param thread
      * 		the thread to copy configuration from
      * @return a thread configuration that matches the provided thread
      */
     public static ThreadConfiguration captureThreadConfiguration(
-            final ThreadManager threadManager, final Thread thread) {
-        final ThreadConfiguration configuration = new ThreadConfiguration(threadManager);
+            final ThreadBuilder threadBuilder, final Thread thread) {
+        final ThreadConfiguration configuration = new ThreadConfiguration(threadBuilder);
         configuration.copyThreadConfiguration(thread);
         return configuration;
     }
@@ -132,8 +133,8 @@ public class ThreadConfiguration extends AbstractThreadConfiguration<ThreadConfi
     public ThreadFactory buildFactory() {
         enableThreadNumbering();
 
-        final java.util.concurrent.ThreadFactory factory = (final Runnable r) -> {
-            final Thread thread = getThreadManager().createThread(getThreadGroup(), r);
+        final ThreadFactory factory = (final Runnable r) -> {
+            final Thread thread = getThreadBuilder().buildThread(r);
             configureThread(thread);
             return thread;
         };
@@ -151,7 +152,7 @@ public class ThreadConfiguration extends AbstractThreadConfiguration<ThreadConfi
      * </p>
      *
      * <p>
-     * Note that this seed will be unable to change the thread group or daemon status of the calling thread,
+     * Note that this seed will be unable to change daemon status of the calling thread,
      * regardless the values set in this configuration.
      * </p>
      *
