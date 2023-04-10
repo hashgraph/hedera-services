@@ -71,7 +71,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
         }
 
         final var op = context.getTxn().tokenUnpause();
-        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT).tokenNum());
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());
             return;

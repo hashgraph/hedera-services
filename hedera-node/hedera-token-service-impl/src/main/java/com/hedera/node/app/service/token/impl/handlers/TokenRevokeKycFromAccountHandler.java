@@ -56,7 +56,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
         final var op = context.getTxn().tokenRevokeKycOrThrow();
-        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT).tokenNum());
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
 
         if (!tokenMeta.failed()) {
             tokenMeta.metadata().kycKey().ifPresent(context::addToReqNonPayerKeys);

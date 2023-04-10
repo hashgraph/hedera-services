@@ -52,7 +52,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.getTxn().tokenGrantKycOrThrow();
 
-        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT).tokenNum());
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
 
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());

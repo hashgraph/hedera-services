@@ -36,16 +36,16 @@ class HandleExceptionTest {
 
     @Test
     void falseIsProblem() {
-        final var failure = assertThrows(
-                HandleException.class, () -> HandleException.validateTrue(false, MEMO_TOO_LONG));
+        final var failure =
+                assertThrows(HandleException.class, () -> HandleException.validateTrue(false, MEMO_TOO_LONG));
 
         assertEquals(MEMO_TOO_LONG, failure.getStatus());
     }
 
     @Test
     void trueIsProblemFromOtherPerspective() {
-        final var failure = assertThrows(
-                HandleException.class, () -> HandleException.validateFalse(true, MEMO_TOO_LONG));
+        final var failure =
+                assertThrows(HandleException.class, () -> HandleException.validateFalse(true, MEMO_TOO_LONG));
 
         assertEquals(MEMO_TOO_LONG, failure.getStatus());
     }

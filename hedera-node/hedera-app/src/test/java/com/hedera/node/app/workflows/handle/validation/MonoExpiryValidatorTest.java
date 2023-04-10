@@ -95,8 +95,7 @@ class MonoExpiryValidatorTest {
         given(numbers.shard()).willReturn(1L);
         final var newMeta = new ExpiryMeta(aTime, aPeriod, 2L, 2L, anAutoRenewNum);
 
-        final var failure =
-                assertThrows(HandleException.class, () -> subject.resolveCreationAttempt(false, newMeta));
+        final var failure = assertThrows(HandleException.class, () -> subject.resolveCreationAttempt(false, newMeta));
         assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
@@ -106,8 +105,7 @@ class MonoExpiryValidatorTest {
         given(numbers.realm()).willReturn(2L);
         final var newMeta = new ExpiryMeta(aTime, aPeriod, 1L, 3L, anAutoRenewNum);
 
-        final var failure =
-                assertThrows(HandleException.class, () -> subject.resolveCreationAttempt(false, newMeta));
+        final var failure = assertThrows(HandleException.class, () -> subject.resolveCreationAttempt(false, newMeta));
         assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 

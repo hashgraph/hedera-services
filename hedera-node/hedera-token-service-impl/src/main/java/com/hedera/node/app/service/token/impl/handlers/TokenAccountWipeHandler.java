@@ -52,7 +52,7 @@ public class TokenAccountWipeHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.getTxn().tokenWipeOrThrow();
 
-        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT).tokenNum());
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
 
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());

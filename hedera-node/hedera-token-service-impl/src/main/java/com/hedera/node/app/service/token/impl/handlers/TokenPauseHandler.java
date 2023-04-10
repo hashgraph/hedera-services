@@ -69,7 +69,7 @@ public class TokenPauseHandler implements TransactionHandler {
             return;
         }
         final var op = context.getTxn().tokenPause();
-        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT).tokenNum());
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
 
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());

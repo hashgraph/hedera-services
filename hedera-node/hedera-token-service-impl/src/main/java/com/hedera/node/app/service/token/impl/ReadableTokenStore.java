@@ -16,15 +16,17 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.hapi.node.transaction.CustomFee.FeeOneOfType.ROYALTY_FEE;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,8 +39,8 @@ import java.util.Optional;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
 public class ReadableTokenStore {
-  /** The underlying data storage class that holds the token data. */
-  private final ReadableKVState<EntityNum, MerkleToken> tokenState;
+    /** The underlying data storage class that holds the token data. */
+    private final ReadableKVState<EntityNum, Token> tokenState;
 
     /**
      * Create a new {@link ReadableTokenStore} instance.
@@ -50,15 +52,15 @@ public class ReadableTokenStore {
     }
 
     public record TokenMetadata(
-            Optional<JKey> adminKey,
-            Optional<JKey> kycKey,
-            Optional<JKey> wipeKey,
-            Optional<JKey> freezeKey,
-            Optional<JKey> supplyKey,
-            Optional<JKey> feeScheduleKey,
-            Optional<JKey> pauseKey,
+            Optional<HederaKey> adminKey,
+            Optional<HederaKey> kycKey,
+            Optional<HederaKey> wipeKey,
+            Optional<HederaKey> freezeKey,
+            Optional<HederaKey> supplyKey,
+            Optional<HederaKey> feeScheduleKey,
+            Optional<HederaKey> pauseKey,
             boolean hasRoyaltyWithFallback,
-            EntityId treasury) {}
+            long treasuryNum) {}
 
     public record TokenMetaOrLookupFailureReason(TokenMetadata metadata, ResponseCodeEnum failureReason) {
         public boolean failed() {
@@ -70,19 +72,19 @@ public class ReadableTokenStore {
      * Returns the token metadata needed for signing requirements. If the token doesn't exist
      * returns failureReason. If the token exists , the failure reason will be null.
      *
-     * @param tokenNum token id being looked up
+     * @param id token id being looked up
      * @return token's metadata
      */
-    public TokenMetaOrLookupFailureReason getTokenMeta(@NonNull final long tokenNum) {
-        requireNonNull(tokenNum);
-        final var token = getTokenLeaf(tokenNum);
-        return token.map(merkleToken -> new TokenMetaOrLookupFailureReason(tokenMetaFrom(merkleToken), null))
+    public TokenMetaOrLookupFailureReason getTokenMeta(@NonNull final TokenID id) {
+        requireNonNull(id);
+        final var token = getTokenLeaf(id.tokenNum());
+        return token.map(t -> new TokenMetaOrLookupFailureReason(tokenMetaFrom(t), null))
                 .orElseGet(() -> new TokenMetaOrLookupFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID));
     }
 
-    private TokenMetadata tokenMetaFrom(final MerkleToken token) {
+    private TokenMetadata tokenMetaFrom(final Token token) {
         boolean hasRoyaltyWithFallback = false;
-        final var customFees = token.customFeeSchedule();
+        final var customFees = token.customFees();
         if (!customFees.isEmpty()) {
             for (final var customFee : customFees) {
                 if (isRoyaltyWithFallback(customFee)) {
@@ -92,20 +94,19 @@ public class ReadableTokenStore {
             }
         }
         return new TokenMetadata(
-                token.adminKey(),
-                token.kycKey(),
-                token.wipeKey(),
-                token.freezeKey(),
-                token.supplyKey(),
-                token.feeScheduleKey(),
-                token.pauseKey(),
+                asHederaKey(token.adminKeyOrElse(Key.DEFAULT)),
+                asHederaKey(token.kycKeyOrElse(Key.DEFAULT)),
+                asHederaKey(token.wipeKeyOrElse(Key.DEFAULT)),
+                asHederaKey(token.freezeKeyOrElse(Key.DEFAULT)),
+                asHederaKey(token.supplyKeyOrElse(Key.DEFAULT)),
+                asHederaKey(token.feeScheduleKeyOrElse(Key.DEFAULT)),
+                asHederaKey(token.pauseKeyOrElse(Key.DEFAULT)),
                 hasRoyaltyWithFallback,
-                token.treasury());
+                token.treasuryAccountNumber()); // remove this and make it a long
     }
 
-    private boolean isRoyaltyWithFallback(final FcCustomFee fee) {
-        return fee.getFeeType() == FcCustomFee.FeeType.ROYALTY_FEE
-                && fee.getRoyaltyFeeSpec().fallbackFee() != null;
+    private boolean isRoyaltyWithFallback(final CustomFee fee) {
+        return fee.fee().kind() == ROYALTY_FEE && fee.royaltyFee().hasFallbackFee();
     }
 
     /**
@@ -115,7 +116,7 @@ public class ReadableTokenStore {
      * @param tokenNum given tokenId's number
      * @return merkleToken leaf for the given tokenId
      */
-    private Optional<MerkleToken> getTokenLeaf(final long tokenNum) {
+    private Optional<Token> getTokenLeaf(final long tokenNum) {
         final var token = tokenState.get(EntityNum.fromLong(tokenNum));
         return Optional.ofNullable(token);
     }

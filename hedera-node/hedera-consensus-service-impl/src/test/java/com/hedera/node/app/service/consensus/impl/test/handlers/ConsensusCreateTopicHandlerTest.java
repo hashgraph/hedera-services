@@ -345,8 +345,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
         final var failure = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+                HandleException.class, () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
         assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
     }
 
@@ -362,8 +361,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT));
 
         final var failure = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+                HandleException.class, () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
         assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
@@ -380,9 +378,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .when(validator)
                 .validateMemo(op.memo());
 
-        assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+        assertThrows(HandleException.class, () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
         assertTrue(topicStore.get(1234L).isEmpty());
     }
 
@@ -398,9 +394,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         doThrow(new HandleException(ResponseCodeEnum.BAD_ENCODING))
                 .when(validator)
                 .validateKey(adminKey);
-        assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+        assertThrows(HandleException.class, () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
         assertTrue(topicStore.get(1234L).isEmpty());
     }
 
@@ -420,8 +414,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         config = new ConsensusServiceConfig(1, 1);
 
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+                HandleException.class, () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
         assertEquals(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
         assertEquals(0, topicStore.modifiedTopics().size());
     }
@@ -445,8 +438,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         doThrow(HandleException.class).when(expiryValidator).resolveCreationAttempt(anyBoolean(), any());
 
         final var failure = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+                HandleException.class, () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
         assertEquals(HandleException.class, failure.getClass());
         assertEquals(0, topicStore.modifiedTopics().size());
     }

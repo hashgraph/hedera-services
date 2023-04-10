@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -87,7 +86,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         requireNonNull(tokenStore);
         final var op = context.getTxn().cryptoTransferOrThrow();
         for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
-            final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT).tokenNum());
+            final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
             if (!tokenMeta.failed()) {
                 handleTokenTransfers(transfers.transfersOrElse(emptyList()), context, accountStore);
                 handleNftTransfers(transfers.nftTransfersOrElse(emptyList()), context, tokenMeta, op, accountStore);
@@ -165,11 +164,11 @@ public class CryptoTransferHandler implements TransactionHandler {
                 meta.addNonPayerKeyIfReceiverSigRequired(receiverId, INVALID_TRANSFER_ACCOUNT_ID);
             } else if (tokenMeta.metadata().hasRoyaltyWithFallback()
                     && !receivesFungibleValue(nftTransfer.senderAccountID(), op, accountStore)) {
-                // Fallback situation; but we still need to check if the treasury is
+                // Fallback situation; but we still need to check if the treasuryNum is
                 // the sender or receiver, since in neither case will the fallback
                 // fee actually be charged
-                final var treasury = toPbj(tokenMeta.metadata().treasury().toGrpcAccountId());
-                if (!treasury.equals(senderId) && !treasury.equals(receiverId)) {
+                final var treasury = tokenMeta.metadata().treasuryNum();
+                if (treasury != senderId.accountNum() && treasury != receiverId.accountNum()) {
                     meta.addNonPayerKey(receiverId);
                 }
             }

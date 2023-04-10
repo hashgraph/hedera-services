@@ -53,7 +53,7 @@ public class TokenDeleteHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.getTxn().tokenDeletionOrThrow();
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
-        final var tokenMeta = tokenStore.getTokenMeta(tokenId.tokenNum());
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());
         } else {

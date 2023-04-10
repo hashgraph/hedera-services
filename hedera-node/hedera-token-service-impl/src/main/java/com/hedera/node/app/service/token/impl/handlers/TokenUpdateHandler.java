@@ -37,7 +37,7 @@ import javax.inject.Singleton;
  * SigRequirements:
  *
  * <ol>
- *   <li>When a missing account is used as a token treasury, fails with {@code INVALID_ACCOUNT_ID}
+ *   <li>When a missing account is used as a token treasuryNum, fails with {@code INVALID_ACCOUNT_ID}
  *       rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}.
  * </ol>
  *
@@ -68,7 +68,7 @@ public class TokenUpdateHandler implements TransactionHandler {
         final var op = context.getTxn().tokenUpdateOrThrow();
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
 
-        final var tokenMeta = tokenStore.getTokenMeta(tokenId.tokenNum());
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());
             return;

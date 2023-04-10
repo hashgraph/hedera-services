@@ -35,11 +35,12 @@ class TokenUnpauseHandlerParityTest extends ParityTestBase {
 
     @BeforeEach
     void setUp() {
+        super.setUp();
         subject = new TokenUnpauseHandler();
     }
 
     @Test
-    void tokenWipeWithValidExtantTokenScenario() {
+    void tokenUnpauseWithValidExtantTokenScenario() {
         final var theTxn = txnFrom(VALID_UNPAUSE_WITH_EXTANT_TOKEN);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);

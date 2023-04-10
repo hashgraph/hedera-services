@@ -91,6 +91,7 @@ public class TokenHandlerTestBase {
 
     @Mock
     protected ReadableStates readableStates;
+
     @Mock
     protected WritableStates writableStates;
 
