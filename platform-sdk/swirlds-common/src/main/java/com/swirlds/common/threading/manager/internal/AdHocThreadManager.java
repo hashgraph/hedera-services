@@ -45,11 +45,10 @@ public final class AdHocThreadManager implements ThreadBuilder, ThreadManager {
     }
 
     /**
-     * Create a thread factory. TODO abstract class?
+     * Create a thread factory.
      */
     @NonNull
     private ThreadFactory createThreadFactory(@NonNull final String threadName) {
-        // TODO is this correct?
         return new ThreadConfiguration(this).setThreadName(threadName).buildFactory();
     }
 
