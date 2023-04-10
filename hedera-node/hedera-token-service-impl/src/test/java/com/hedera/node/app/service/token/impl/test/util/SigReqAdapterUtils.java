@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.test.util;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromFcCustomFee;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromGrpcKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbjCustomFee;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbjKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_IMMUTABLE;
@@ -102,7 +102,7 @@ public class SigReqAdapterUtils {
         final var customFee = token.customFeeSchedule();
         final List<CustomFee> pbjFees = new ArrayList<>();
         if (customFee != null) {
-            customFee.forEach(fee -> pbjFees.add(toPbjCustomFee(fee)));
+            customFee.forEach(fee -> pbjFees.add(fromFcCustomFee(fee)));
         }
         return new Token(
                 token.entityNum(),
@@ -112,23 +112,23 @@ public class SigReqAdapterUtils {
                 token.totalSupply(),
                 token.treasuryNum().longValue(),
                 !token.adminKey().isEmpty()
-                        ? toPbjKey(asKeyUnchecked(token.adminKey().get()))
+                        ? fromGrpcKey(asKeyUnchecked(token.adminKey().get()))
                         : Key.DEFAULT,
                 !token.kycKey().isEmpty()
-                        ? toPbjKey(asKeyUnchecked(token.kycKey().get()))
+                        ? fromGrpcKey(asKeyUnchecked(token.kycKey().get()))
                         : Key.DEFAULT,
                 !token.freezeKey().isEmpty()
-                        ? toPbjKey(asKeyUnchecked(token.freezeKey().get()))
+                        ? fromGrpcKey(asKeyUnchecked(token.freezeKey().get()))
                         : Key.DEFAULT,
                 !token.wipeKey().isEmpty()
-                        ? toPbjKey(asKeyUnchecked(token.wipeKey().get()))
+                        ? fromGrpcKey(asKeyUnchecked(token.wipeKey().get()))
                         : Key.DEFAULT,
-                !token.supplyKey().isEmpty() ? toPbjKey(asKeyUnchecked(token.getSupplyKey())) : Key.DEFAULT,
+                !token.supplyKey().isEmpty() ? fromGrpcKey(asKeyUnchecked(token.getSupplyKey())) : Key.DEFAULT,
                 !token.feeScheduleKey().isEmpty()
-                        ? toPbjKey(asKeyUnchecked(token.feeScheduleKey().get()))
+                        ? fromGrpcKey(asKeyUnchecked(token.feeScheduleKey().get()))
                         : Key.DEFAULT,
                 !token.pauseKey().isEmpty()
-                        ? toPbjKey(asKeyUnchecked(token.pauseKey().get()))
+                        ? fromGrpcKey(asKeyUnchecked(token.pauseKey().get()))
                         : Key.DEFAULT,
                 token.getLastUsedSerialNumber(),
                 token.isDeleted(),

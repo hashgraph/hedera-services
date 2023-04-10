@@ -1279,27 +1279,7 @@ public final class PbjConverter {
         }
     }
 
-    /**
-     * Tries to convert a PBJ {@link Key} to a {@link JKey} (the only {@link HederaKey} implementation);
-     * returns an empty optional if the conversion succeeds, but the resulting {@link JKey} is not valid.
-     *
-     * @param key the PBJ {@link Key} to convert
-     * @return the converted {@link JKey} if valid, or an empty optional if invalid
-     * @throws IllegalStateException if the conversion fails
-     */
-    public static @NonNull Key toPbjKey(@Nullable final com.hederahashgraph.api.proto.java.Key key) {
-        try (final var bais =
-                new ByteArrayInputStream(Objects.requireNonNull(key).toByteArray())) {
-            final var stream = new ReadableStreamingData(bais);
-            stream.limit(bais.available());
-            return Key.PROTOBUF.parse(stream);
-        } catch (final IOException e) {
-            // Should be impossible, so just propagate an exception
-            throw new IllegalStateException("Invalid conversion to PBJ for JKey", e);
-        }
-    }
-
-    public static @NonNull CustomFee toPbjCustomFee(@Nullable final FcCustomFee fcFee) {
+    public static @NonNull CustomFee fromFcCustomFee(@Nullable final FcCustomFee fcFee) {
         try (final var bais =
                 new ByteArrayInputStream(Objects.requireNonNull(fcFee).asGrpc().toByteArray())) {
             final var stream = new ReadableStreamingData(bais);

@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbjKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromGrpcKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -81,14 +81,16 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
         assertNull(result.failureReason());
 
         final var meta = result.metadata();
-        assertEquals(adminKey, toPbjKey(asKeyUnchecked((JKey) meta.adminKey().get())));
-        assertEquals(kycKey, toPbjKey(asKeyUnchecked((JKey) meta.kycKey().get())));
-        assertEquals(wipeKey, toPbjKey(asKeyUnchecked((JKey) meta.wipeKey().get())));
-        assertEquals(freezeKey, toPbjKey(asKeyUnchecked((JKey) meta.freezeKey().get())));
-        assertEquals(supplyKey, toPbjKey(asKeyUnchecked((JKey) meta.supplyKey().get())));
-        assertEquals(feeScheduleKey, toPbjKey(asKeyUnchecked((JKey)
+        assertEquals(adminKey, fromGrpcKey(asKeyUnchecked((JKey) meta.adminKey().get())));
+        assertEquals(kycKey, fromGrpcKey(asKeyUnchecked((JKey) meta.kycKey().get())));
+        assertEquals(wipeKey, fromGrpcKey(asKeyUnchecked((JKey) meta.wipeKey().get())));
+        assertEquals(
+                freezeKey, fromGrpcKey(asKeyUnchecked((JKey) meta.freezeKey().get())));
+        assertEquals(
+                supplyKey, fromGrpcKey(asKeyUnchecked((JKey) meta.supplyKey().get())));
+        assertEquals(feeScheduleKey, fromGrpcKey(asKeyUnchecked((JKey)
                 meta.feeScheduleKey().get())));
-        assertEquals(pauseKey, toPbjKey(asKeyUnchecked((JKey) meta.pauseKey().get())));
+        assertEquals(pauseKey, fromGrpcKey(asKeyUnchecked((JKey) meta.pauseKey().get())));
         assertFalse(meta.hasRoyaltyWithFallback());
         assertEquals(treasury.accountNum(), meta.treasuryNum());
     }
@@ -108,7 +110,7 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
     void classifiesRoyaltyWithFallback() {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
-        copy.customFees(PbjConverter.toPbjCustomFee(
+        copy.customFees(PbjConverter.fromFcCustomFee(
                 FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
 
         given(tokens.get(tokenEntityNum)).willReturn(copy.build());
@@ -125,7 +127,7 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
     void classifiesRoyaltyWithNoFallback() {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
-        copy.customFees(PbjConverter.toPbjCustomFee(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
+        copy.customFees(PbjConverter.fromFcCustomFee(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
 
         given(tokens.get(tokenEntityNum)).willReturn(copy.build());
 
