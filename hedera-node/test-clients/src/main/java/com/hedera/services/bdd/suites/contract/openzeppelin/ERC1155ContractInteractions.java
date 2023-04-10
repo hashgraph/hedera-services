@@ -30,12 +30,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -65,14 +63,28 @@ public class ERC1155ContractInteractions extends HapiSuite {
 
     private HapiSpec erc1155() {
         return defaultHapiSpec("ERC-1155")
-                .given(newKeyNamed("ec").shape(SECP_256K1_SHAPE), cryptoCreate(ACCOUNT1), withOpContext((spec, log) -> allRunFor(spec, cryptoCreate(ACCOUNT2).balance(ONE_HUNDRED_HBARS).key("ec").alias(ByteString.copyFrom(EthSigsUtils.recoverAddressFromPubKey(spec.registry().getKey("ec").getECDSASecp256K1().toByteArray()))))), uploadInitCode(CONTRACT))
+                .given(
+                        newKeyNamed("ec").shape(SECP_256K1_SHAPE),
+                        cryptoCreate(ACCOUNT1),
+                        withOpContext((spec, log) -> allRunFor(
+                                spec,
+                                cryptoCreate(ACCOUNT2)
+                                        .balance(ONE_HUNDRED_HBARS)
+                                        .key("ec")
+                                        .alias(ByteString.copyFrom(EthSigsUtils.recoverAddressFromPubKey(spec.registry()
+                                                .getKey("ec")
+                                                .getECDSASecp256K1()
+                                                .toByteArray()))))),
+                        uploadInitCode(CONTRACT))
                 .when()
                 .then(
                         contractCreate(CONTRACT).via("contractCreate").payingWith(ACCOUNT2),
                         getTxnRecord("contractCreate").logged(),
                         getAccountBalance(ACCOUNT2).logged(),
                         getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
-                        getAccountInfo(ACCOUNT2).savingSnapshot(ACCOUNT2 + "Info").logged(),
+                        getAccountInfo(ACCOUNT2)
+                                .savingSnapshot(ACCOUNT2 + "Info")
+                                .logged(),
                         withOpContext((spec, log) -> {
                             final var accountOneAddress = spec.registry()
                                     .getAccountInfo(ACCOUNT1 + "Info")

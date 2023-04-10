@@ -16,11 +16,9 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
-
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -55,7 +53,8 @@ public class HederaDelegateCallOperation extends DelegateCallOperation {
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
         final Supplier<OperationResult> precompileSupplierExecution = () -> {
-            // we have an attempted call to a precompile address, but make sure an actual precompile exists at that address
+            // we have an attempted call to a precompile address, but make sure an actual precompile exists at that
+            // address
             return precompileContractRegistry.get(to(frame)) != null
                     ? super.execute(frame, evm)
                     : new OperationResult(cost(frame), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);

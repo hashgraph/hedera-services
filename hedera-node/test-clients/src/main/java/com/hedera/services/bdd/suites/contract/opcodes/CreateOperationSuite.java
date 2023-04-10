@@ -95,7 +95,10 @@ public class CreateOperationSuite extends HapiSuite {
 
         final var sender = "sender";
         return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract")
-                .given(uploadInitCode(contract), cryptoCreate(sender).balance(ONE_HUNDRED_HBARS), contractCreate(contract).balance(10).payingWith(sender) )
+                .given(
+                        uploadInitCode(contract),
+                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+                        contractCreate(contract).balance(10).payingWith(sender))
                 .when(contractCall(contract).hasKnownStatus(CONTRACT_DELETED).payingWith(sender))
                 .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
     }
@@ -104,7 +107,10 @@ public class CreateOperationSuite extends HapiSuite {
         final var contract = "FactoryQuickSelfDestruct";
         final var sender = "sender";
         return defaultHapiSpec("FactoryQuickSelfDestructContract")
-                .given(uploadInitCode(contract), contractCreate(contract), cryptoCreate(sender).balance(ONE_HUNDRED_HBARS))
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS))
                 .when(contractCall(contract, "createAndDeleteChild")
                         .gas(4_000_000)
                         .via(CALL_RECORD_TRANSACTION_NAME)

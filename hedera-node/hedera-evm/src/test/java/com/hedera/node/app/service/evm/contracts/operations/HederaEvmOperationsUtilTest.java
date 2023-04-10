@@ -26,7 +26,6 @@ import static org.mockito.Mockito.verify;
 
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -65,7 +64,9 @@ class HederaEvmOperationsUtilTest {
                         () -> messageFrame.getStackItem(0),
                         gasSupplier,
                         executionSupplier,
-                        (a, b) -> true, a -> false, () -> mock(Operation.OperationResult.class));
+                        (a, b) -> true,
+                        a -> false,
+                        () -> mock(Operation.OperationResult.class));
 
         // then:
         assertEquals(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS, result.getHaltReason());
@@ -90,7 +91,8 @@ class HederaEvmOperationsUtilTest {
                         gasSupplier,
                         executionSupplier,
                         (a, b) -> true,
-                        a -> true, () -> {
+                        a -> true,
+                        () -> {
                             messageFrame.pushStackItem(Bytes.EMPTY);
                             return mock(Operation.OperationResult.class);
                         });
@@ -116,7 +118,9 @@ class HederaEvmOperationsUtilTest {
                         () -> messageFrame.getStackItem(0),
                         gasSupplier,
                         executionSupplier,
-                        (a, b) -> false, a -> false, () -> mock(Operation.OperationResult.class));
+                        (a, b) -> false,
+                        a -> false,
+                        () -> mock(Operation.OperationResult.class));
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
@@ -140,7 +144,9 @@ class HederaEvmOperationsUtilTest {
                         () -> messageFrame.getStackItem(0),
                         gasSupplier,
                         executionSupplier,
-                        (a, b) -> true, a -> false, () -> mock(Operation.OperationResult.class) );
+                        (a, b) -> true,
+                        a -> false,
+                        () -> mock(Operation.OperationResult.class));
 
         // when:
         assertNull(result.getHaltReason());

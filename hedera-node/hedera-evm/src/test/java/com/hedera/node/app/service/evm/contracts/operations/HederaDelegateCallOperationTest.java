@@ -123,7 +123,7 @@ class HederaDelegateCallOperationTest {
         subject = new HederaDelegateCallOperation(calc, addressValidator, precompileContractRegistry, a -> true);
         given(worldUpdater.get(any())).willReturn(null);
         given(calc.callOperationGasCost(
-                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
@@ -143,7 +143,7 @@ class HederaDelegateCallOperationTest {
     void executesPrecompileAsExpected() {
         subject = new HederaDelegateCallOperation(calc, addressValidator, precompileContractRegistry, a -> true);
         given(calc.callOperationGasCost(
-                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
         for (int i = 0; i < 10; i++) {
             lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));

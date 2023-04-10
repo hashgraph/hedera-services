@@ -73,7 +73,12 @@ public class SelfDestructSuite extends HapiSuite {
         final var nextAccount = "civilian";
         return defaultHapiSpec("HSCS_EVM_008_SelfDestructInConstructorWorks")
                 .given(cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS), uploadInitCode(contract))
-                .when(contractCreate(contract).balance(3 * ONE_HBAR).via("contractCreate").payingWith(BENEFICIARY), cryptoCreate(nextAccount))
+                .when(
+                        contractCreate(contract)
+                                .balance(3 * ONE_HBAR)
+                                .via("contractCreate")
+                                .payingWith(BENEFICIARY),
+                        cryptoCreate(nextAccount))
                 .then(
                         getAccountInfo(contract).hasCostAnswerPrecheck(ACCOUNT_DELETED),
                         getContractInfo(contract).has(contractWith().isDeleted()),

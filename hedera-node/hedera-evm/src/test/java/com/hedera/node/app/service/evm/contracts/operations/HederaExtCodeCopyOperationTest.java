@@ -149,7 +149,9 @@ class HederaExtCodeCopyOperationTest {
         // then:
         assertNull(opResult.getHaltReason());
         assertEquals(ACTUAL_COST, opResult.getGasCost());
-        verify(mf).writeMemory(clampedToLong(MEM_OFFSET), clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES), Bytes.EMPTY);
+        verify(mf)
+                .writeMemory(
+                        clampedToLong(MEM_OFFSET), clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES), Bytes.EMPTY);
         verify(mf).popStackItems(4);
     }
 }

@@ -43,7 +43,6 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -64,7 +63,8 @@ public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
     private final Predicate<Address> precompileDetector;
 
     public HederaExtCodeCopyOperation(
-            GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator,
+            GasCalculator gasCalculator,
+            BiPredicate<Address, MessageFrame> addressValidator,
             Predicate<Address> precompileDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;

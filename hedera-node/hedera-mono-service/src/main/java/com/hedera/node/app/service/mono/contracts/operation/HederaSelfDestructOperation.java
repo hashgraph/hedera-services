@@ -25,7 +25,6 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;

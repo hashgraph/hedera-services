@@ -16,12 +16,11 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiPredicate;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
