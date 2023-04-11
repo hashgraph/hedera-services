@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.sync.protocol;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
@@ -26,7 +27,7 @@ import java.util.function.BooleanSupplier;
  *
  * @param checks the list of checks to be performed when deciding to sync or not
  */
-public record PeerAgnosticSyncChecks(List<BooleanSupplier> checks) {
+public record PeerAgnosticSyncChecks(@NonNull List<BooleanSupplier> checks) {
     /**
      * Checks whether the node should sync or not (peer agnostic)
      *

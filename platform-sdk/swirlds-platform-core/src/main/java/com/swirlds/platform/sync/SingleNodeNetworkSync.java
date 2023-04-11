@@ -17,6 +17,7 @@
 package com.swirlds.platform.sync;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -83,10 +84,10 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
 
         final long sleepTime = sleepTimeSupplier.getAsLong();
         if (sleepTime > 0) {
-            Thread.sleep(sleepTime);
+            MILLISECONDS.sleep(sleepTime);
         } else {
             // if no sleep time is defined, sleep for a short time anyway
-            Thread.sleep(50);
+            MILLISECONDS.sleep(50);
         }
     }
 }
