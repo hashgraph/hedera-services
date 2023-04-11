@@ -43,6 +43,7 @@ dependencies {
   api(project(":hedera-node:hapi"))
   compileOnlyApi(libs.spotbugs.annotations)
 
+  testRuntimeOnly(libs.swirlds.config.impl)
   testImplementation(testLibs.bundles.testing)
   testCompileOnly(libs.spotbugs.annotations)
 
