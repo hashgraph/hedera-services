@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.sync;
 
-import com.swirlds.base.ArgumentUtils;
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
+
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
-import com.swirlds.platform.components.EventTaskCreator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 
 /**
  * An {@link InterruptableRunnable} that imitates sync on a single node network
@@ -33,12 +33,12 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
     private final Runnable statusChecker;
 
     /**
-     * A supplier of the event task creator
+     * A method which accepts a node ID and creates an event
      */
-    private final Supplier<EventTaskCreator> eventTaskCreatorSupplier;
+    private final LongConsumer eventCreator;
 
     /**
-     * A supplier of the amount of time to sleep after creating an event
+     * A supplier of the amount of time to sleep after creating an event (milliseconds)
      */
     private final LongSupplier sleepTimeSupplier;
 
@@ -50,24 +50,20 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
     /**
      * Constructor
      *
-     * @param statusChecker            runnable to check status of the platform
-     * @param eventTaskCreatorSupplier supplier of event task creator
-     * @param sleepTimeSupplier        supplier of the amount of time to sleep after creating an event
-     * @param selfId                   the id of the single running node
+     * @param statusChecker     runnable to check status of the platform
+     * @param eventCreator      method which accepts a node ID and creates an event
+     * @param sleepTimeSupplier supplier of the amount of time to sleep after creating an event (milliseconds)
+     * @param selfId            the id of the single running node
      */
     public SingleNodeNetworkSync(
             @NonNull final Runnable statusChecker,
-            @NonNull final Supplier<EventTaskCreator> eventTaskCreatorSupplier,
+            @NonNull final LongConsumer eventCreator,
             @NonNull final LongSupplier sleepTimeSupplier,
             final long selfId) {
 
-        ArgumentUtils.throwArgNull(statusChecker, "statusChecker");
-        ArgumentUtils.throwArgNull(eventTaskCreatorSupplier, "eventTaskCreatorSupplier");
-        ArgumentUtils.throwArgNull(sleepTimeSupplier, "sleepTimeSupplier");
-
-        this.statusChecker = statusChecker;
-        this.eventTaskCreatorSupplier = eventTaskCreatorSupplier;
-        this.sleepTimeSupplier = sleepTimeSupplier;
+        this.statusChecker = throwArgNull(statusChecker, "statusChecker");
+        this.eventCreator = throwArgNull(eventCreator, "eventCreator");
+        this.sleepTimeSupplier = throwArgNull(sleepTimeSupplier, "sleepTimeSupplier");
         this.selfId = selfId;
     }
 
@@ -83,7 +79,7 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
     @Override
     public void run() throws InterruptedException {
         statusChecker.run();
-        eventTaskCreatorSupplier.get().createEvent(selfId);
+        eventCreator.accept(selfId);
 
         final long sleepTime = sleepTimeSupplier.getAsLong();
         if (sleepTime > 0) {
