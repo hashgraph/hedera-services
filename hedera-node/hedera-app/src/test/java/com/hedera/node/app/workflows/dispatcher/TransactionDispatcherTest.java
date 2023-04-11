@@ -733,7 +733,7 @@ class TransactionDispatcherTest {
                                         .freeze(FreezeTransactionBody.DEFAULT)
                                         .build(),
                                 (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                        verify(handlers.freezeHandler()).preHandle(meta)),
+                                        verify(handlers.freezeHandler()).preHandle(meta, any())),
 
                         // network
                         Arguments.of(
