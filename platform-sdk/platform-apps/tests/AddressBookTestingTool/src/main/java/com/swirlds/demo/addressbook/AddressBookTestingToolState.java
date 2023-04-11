@@ -173,7 +173,15 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         }
 
         if (!validationPerformed.getAndSet(true)) {
-            validateTestScenario();
+            if (validateTestScenario()) {
+                logger.info(
+                        STARTUP.getMarker(),
+                        "Test scenario {} validated successfully.",
+                        testingToolConfig.testScenario());
+            } else {
+                logger.error(
+                        EXCEPTION.getMarker(), "Test scenario {} validation failed.", testingToolConfig.testScenario());
+            }
         }
     }
 
