@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.network.impl.serdes;
+package com.hedera.node.app.service.admin.impl.codec;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.pbj.runtime.Codec;

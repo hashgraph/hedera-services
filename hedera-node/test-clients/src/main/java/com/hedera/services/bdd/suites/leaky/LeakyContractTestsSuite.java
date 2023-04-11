@@ -139,14 +139,17 @@ import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferH
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.APPROVE;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.ERC_20_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.RECIPIENT;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM_ACCOUNT_TXN;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIGNATURE;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIG_NAME;
+import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.FIRST_META;
 import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NON_FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.OWNER;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
@@ -273,7 +276,48 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 requiresTopLevelSignatureOrApprovalDependingOnControllingProperty(),
                 transferWorksWithTopLevelSignatures(),
                 transferDontWorkWithoutTopLevelSignatures(),
-                transferErc20TokenFromContractWithApproval());
+                transferErc20TokenFromContractWithApproval(),
+                transferErc20TokenFromErc721TokenFails());
+    }
+
+    private HapiSpec transferErc20TokenFromErc721TokenFails() {
+        return propertyPreservingHapiSpec("ERC_20_TRANSFER_FROM_ERC_721_TOKEN")
+                .preserving("hedera.allowances.isEnabled")
+                .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
+                        cryptoCreate(RECIPIENT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
+                        tokenAssociate(ACCOUNT, List.of(NON_FUNGIBLE_TOKEN)),
+                        tokenAssociate(RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
+                        cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY, ACCOUNT))
+                                .payingWith(ACCOUNT),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        ERC_20_CONTRACT,
+                                        TRANSFER,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        BigInteger.TWO)
+                                .payingWith(ACCOUNT)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .via(TRANSFER_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
     }
 
     private HapiSpec transferErc20TokenFromContractWithApproval() {
