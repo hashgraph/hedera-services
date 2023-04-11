@@ -28,3 +28,4 @@ jasperDb.iteratorInputBufferBytes,             16777216
 virtualMap.preferredFlushQueueSize,            10000
 prometheusEndpointEnabled,                     true
 state.mainClassNameOverride,                   com.hedera.services.ServicesMain
+transThrottle,                                 false
