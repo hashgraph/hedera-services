@@ -125,7 +125,8 @@ class FractionalFeeAssessorTest {
                         FcCustomFee.fixedFee(
                                 netFee, tokenWithFractionalFee.asEntityId(), netOfTransfersFeeCollector, true),
                         changeManager,
-                        accumulator);
+                        accumulator,
+                        false);
     }
 
     @Test

@@ -35,6 +35,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.properties.CustomFeeType;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -58,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -100,6 +102,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
+            final Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits,
             final boolean isLazyCreationEnabled,
             final boolean topLevelSigsAreEnabled) {
         super(
@@ -112,6 +115,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 pricingUtils,
                 functionId,
                 callerAccount,
+                htsUnsupportedCustomFeeReceiverDebits,
                 isLazyCreationEnabled,
                 topLevelSigsAreEnabled,
                 false);
@@ -133,6 +137,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
+            final Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits,
             final boolean isLazyCreationEnabled,
             final boolean topLevelSigsAreEnabled) {
         this(
@@ -148,6 +153,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 infrastructureFactory,
                 pricingUtils,
                 functionId,
+                htsUnsupportedCustomFeeReceiverDebits,
                 isLazyCreationEnabled,
                 topLevelSigsAreEnabled);
     }
