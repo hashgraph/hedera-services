@@ -53,7 +53,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
@@ -121,7 +120,6 @@ class QueryWorkflowImplTest extends AppTestBase {
     private Transaction payment;
     private TransactionBody txBody;
     private AccountID payer;
-    private SessionContext ctx;
     private Bytes requestBuffer;
 
     private QueryWorkflowImpl workflow;
@@ -136,12 +134,11 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader))
                 .build();
         when(queryParser.parseStrict(notNull())).thenReturn(query);
-        ctx = new SessionContext();
 
         payer = AccountID.newBuilder().accountNum(42L).build();
         final var transactionID = TransactionID.newBuilder().accountID(payer).build();
         txBody = TransactionBody.newBuilder().transactionID(transactionID).build();
-        when(checker.validateCryptoTransfer(ctx, payment)).thenReturn(txBody);
+        when(checker.validateCryptoTransfer(payment)).thenReturn(txBody);
 
         when(handler.extractHeader(query)).thenReturn(queryHeader);
         when(handler.createEmptyResponse(any())).thenAnswer((Answer<Response>) invocation -> {
@@ -224,12 +221,8 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // then
-        assertThatThrownBy(() -> workflow.handleQuery(null, requestBuffer, responseBuffer))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> workflow.handleQuery(ctx, null, responseBuffer))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> workflow.handleQuery(ctx, requestBuffer, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> workflow.handleQuery(null, responseBuffer)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -238,7 +231,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         // given
         final var responseBuffer = newEmptyBuffer();
         // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+        workflow.handleQuery(requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
@@ -263,7 +256,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+        workflow.handleQuery(requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
@@ -280,7 +273,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // then
-        assertThatThrownBy(() -> workflow.handleQuery(ctx, requestBuffer, responseBuffer))
+        assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
                 .isInstanceOf(StatusRuntimeException.class)
                 .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
         verify(opCounters, never()).countReceived(FileGetInfo);
@@ -295,7 +288,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // then
-        assertThatThrownBy(() -> workflow.handleQuery(ctx, requestBuffer, responseBuffer))
+        assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
                 .isInstanceOf(StatusRuntimeException.class)
                 .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
         verify(opCounters, never()).countReceived(FileGetInfo);
@@ -317,7 +310,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 queryParser);
 
         // then
-        assertThatThrownBy(() -> workflow.handleQuery(ctx, requestBuffer, responseBuffer))
+        assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
                 .isInstanceOf(StatusRuntimeException.class)
                 .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
     }
@@ -329,7 +322,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+        workflow.handleQuery(requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
@@ -346,7 +339,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         given(dispatcher.validate(any(), any())).willReturn(OK);
 
         // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+        workflow.handleQuery(requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
@@ -375,7 +368,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // when
-        workflow.handleQuery(ctx, Bytes.wrap(requestBytes), responseBuffer);
+        workflow.handleQuery(Bytes.wrap(requestBytes), responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
@@ -415,7 +408,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // when
-        workflow.handleQuery(ctx, Bytes.wrap(requestBytes), responseBuffer);
+        workflow.handleQuery(Bytes.wrap(requestBytes), responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
@@ -433,7 +426,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+        workflow.handleQuery(requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
@@ -447,11 +440,11 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testPaidQueryWithInvalidCryptoTransferFails() throws PreCheckException, IOException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        when(checker.validateCryptoTransfer(ctx, payment)).thenThrow(new PreCheckException(INSUFFICIENT_TX_FEE));
+        when(checker.validateCryptoTransfer(payment)).thenThrow(new PreCheckException(INSUFFICIENT_TX_FEE));
         final var responseBuffer = newEmptyBuffer();
 
         // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+        workflow.handleQuery(requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
@@ -465,7 +458,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testPaidQueryWithInvalidAccountsFails(@Mock QueryChecker localChecker) throws PreCheckException, IOException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        when(localChecker.validateCryptoTransfer(ctx, payment)).thenThrow(new PreCheckException(INSUFFICIENT_TX_FEE));
+        when(localChecker.validateCryptoTransfer(payment)).thenThrow(new PreCheckException(INSUFFICIENT_TX_FEE));
         final var responseBuffer = newEmptyBuffer();
         workflow = new QueryWorkflowImpl(
                 stateAccessor,
@@ -477,7 +470,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 queryParser);
 
         // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+        workflow.handleQuery(requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
@@ -497,7 +490,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+        workflow.handleQuery(requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
@@ -516,7 +509,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+        workflow.handleQuery(requestBuffer, responseBuffer);
 
         // then
         final Response response = parseResponse(responseBuffer);
@@ -538,7 +531,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+        workflow.handleQuery(requestBuffer, responseBuffer);
 
         // then
         final var response = parseResponse(responseBuffer);
