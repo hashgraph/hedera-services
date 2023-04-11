@@ -27,7 +27,6 @@ import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.time.TimeFactory;
-import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
