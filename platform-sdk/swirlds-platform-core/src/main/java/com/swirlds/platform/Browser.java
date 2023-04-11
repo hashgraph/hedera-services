@@ -181,7 +181,7 @@ public class Browser {
                 Settings.getInstance().getConfigPath());
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
-        final ConfigSource settingsAliasConfigSource = ConfigMappings.addConfigAliases(settingsConfigSource);
+        final ConfigSource settingsAliasConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
         final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
         final ConfigSource configPropertiesAliasConfigSource = new MappedConfigSource(configPropertiesConfigSource);

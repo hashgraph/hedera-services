@@ -44,7 +44,7 @@ public final class ConfigMappings {
      * @return the original source with added aliases
      */
     @NonNull
-    public static ConfigSource addConfigAliases(@NonNull final ConfigSource configSource) {
+    public static ConfigSource addConfigMapping(@NonNull final ConfigSource configSource) {
         final MappedConfigSource withAliases = new MappedConfigSource(configSource);
         MAPPINGS.forEach(withAliases::addMapping);
 

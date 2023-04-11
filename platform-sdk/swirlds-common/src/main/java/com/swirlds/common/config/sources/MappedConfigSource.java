@@ -57,13 +57,16 @@ import org.apache.logging.log4j.Logger;
  * @see ConfigMapping
  */
 public class MappedConfigSource extends AbstractConfigSource {
-
+    private static final String PROPERTY_NOT_FOUND = "Property '%s' not found in original config source";
+    private static final String PROPERTY_ALREADY_DEFINED = "Property '%s' already defined";
+    private static final String DUPLICATE_PROPERTY = "Property '%s' already found in original config source";
+    private static final String PROPERTY_ALREADY_MAPPED = "Property '%s' has already a mapping defined";
     private static final Logger logger = LogManager.getLogger(MappedConfigSource.class);
 
     private final ConfigSource wrappedSource;
 
     private final Queue<ConfigMapping> configMappings;
-    private Map<String, String> properties;
+    private final Map<String, String> properties;
 
     /**
      * Constructor that takes the wrapped config.
@@ -72,7 +75,8 @@ public class MappedConfigSource extends AbstractConfigSource {
      */
     public MappedConfigSource(@NonNull final ConfigSource wrappedSource) {
         this.wrappedSource = ArgumentUtils.throwArgNull(wrappedSource, "wrappedSource");
-        this.configMappings = new ConcurrentLinkedQueue<>();
+        configMappings = new ConcurrentLinkedQueue<>();
+        properties = new HashMap<>();
     }
 
     /**
@@ -97,23 +101,20 @@ public class MappedConfigSource extends AbstractConfigSource {
     @Override
     @NonNull
     protected Map<String, String> getInternalProperties() {
-        if (properties == null) {
+        if (properties.isEmpty()) {
             final Map<String, String> internalProperties = wrappedSource.getProperties();
             final Map<String, String> mappedProperties = new HashMap<>();
             final Set<String> originals = new HashSet<>();
 
             configMappings.forEach(configMapping -> {
                 if (internalProperties.containsKey(configMapping.mappedName())) {
-                    throw new IllegalArgumentException(
-                            "Property '" + configMapping.mappedName() + "' already found in original config source");
+                    throw new IllegalArgumentException(DUPLICATE_PROPERTY.formatted(configMapping.mappedName()));
                 } else if (mappedProperties.containsKey(configMapping.mappedName())) {
-                    throw new IllegalArgumentException("Property '" + configMapping.mappedName() + "' already defined");
+                    throw new IllegalArgumentException(PROPERTY_ALREADY_DEFINED.formatted(configMapping.mappedName()));
                 } else if (!internalProperties.containsKey(configMapping.originalName())) {
-                    throw new IllegalArgumentException(
-                            "Property '" + configMapping.originalName() + "' not found in original config source");
+                    throw new IllegalArgumentException(PROPERTY_NOT_FOUND.formatted(configMapping.originalName()));
                 } else if (originals.contains(configMapping.originalName())) {
-                    throw new IllegalArgumentException(
-                            "Property '" + configMapping.originalName() + "' has already a mapping defined");
+                    throw new IllegalArgumentException(PROPERTY_ALREADY_MAPPED.formatted(configMapping.originalName()));
                 } else {
                     mappedProperties.put(
                             configMapping.mappedName(), internalProperties.get(configMapping.originalName()));
@@ -121,7 +122,6 @@ public class MappedConfigSource extends AbstractConfigSource {
                     logger.debug(CONFIG.getMarker(), "Added config mapping: {}", configMapping);
                 }
             });
-            properties = new HashMap<>();
             properties.putAll(internalProperties);
             properties.putAll(mappedProperties);
         }
