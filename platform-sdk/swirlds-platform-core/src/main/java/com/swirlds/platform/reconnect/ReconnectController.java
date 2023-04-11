@@ -145,7 +145,6 @@ public class ReconnectController implements Runnable {
      * 		if the calling thread is interrupted while the connection is being used
      */
     public void provideLearnerConnection(final Connection connection) throws InterruptedException {
-        logger.info(EXCEPTION.getMarker(), "provideLearnerConnection()\n" + StackTrace.getStackTrace()); // TODO
         connectionProvider.provide(connection);
     }
 
