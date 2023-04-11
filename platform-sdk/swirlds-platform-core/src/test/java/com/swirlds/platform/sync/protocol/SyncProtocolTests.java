@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.sync.protocol;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -64,9 +80,16 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol should initiate connection")
     void shouldInitiate() {
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum, peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
@@ -76,9 +99,16 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol doesn't initiate without a permit")
     void noPermitAvailableToInitiate() {
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum, peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
         // obtain the only existing permit, so it isn't available to the protocol
@@ -93,11 +123,17 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol doesn't initiate if peer agnostic checks fail")
     void peerAgnosticChecksFailAtInitiate() {
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum,
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
                 // peer agnostic checks fail
                 new PeerAgnosticSyncChecks(List.of(() -> false)),
-                sleepAfterSyncSupplier, syncMetrics);
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
@@ -110,9 +146,16 @@ class SyncProtocolTests {
         // node is fallen behind
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
 
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum, peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
@@ -126,9 +169,16 @@ class SyncProtocolTests {
         Mockito.when(criticalQuorum.isInCriticalQuorum(Mockito.anyLong())).thenReturn(false);
 
         // peer 6 isn't needed for fallen behind
-        final SyncProtocol protocol = new SyncProtocol(new NodeId(false, 6), shadowGraphSynchronizer,
-                fallenBehindManager, outgoingPermitProvider, incomingPermitProvider, criticalQuorum,
-                peerAgnosticSyncChecks, sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                new NodeId(false, 6),
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
@@ -142,9 +192,16 @@ class SyncProtocolTests {
         Mockito.when(criticalQuorum.isInCriticalQuorum(Mockito.anyLong())).thenReturn(false);
 
         // peer *is* needed for fallen behind (by default)
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum, peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
@@ -155,9 +212,16 @@ class SyncProtocolTests {
     @DisplayName("Protocol initiates if peer is part of critical quorum")
     void initiateForCriticalQuorum() {
         // peer 6 isn't needed for fallen behind, but it *is* in critical quorum (by default)
-        final SyncProtocol protocol = new SyncProtocol(new NodeId(false, 6), shadowGraphSynchronizer,
-                fallenBehindManager, outgoingPermitProvider, incomingPermitProvider, criticalQuorum,
-                peerAgnosticSyncChecks, sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                new NodeId(false, 6),
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
@@ -173,9 +237,16 @@ class SyncProtocolTests {
         assertTrue(wastedPermit.isLockAcquired());
         assertEquals(1, incomingPermitProvider.getNumAvailable());
 
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum, peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertTrue(protocol.shouldAccept());
         assertEquals(0, incomingPermitProvider.getNumAvailable());
@@ -194,9 +265,16 @@ class SyncProtocolTests {
 
         assertEquals(0, incomingPermitProvider.getNumAvailable());
 
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum, peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertFalse(protocol.shouldAccept());
         assertEquals(0, incomingPermitProvider.getNumAvailable());
@@ -205,11 +283,17 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol doesn't accept if peer agnostic checks fail")
     void peerAgnosticChecksFailAtAccept() {
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum,
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
                 // peer agnostic checks fail
                 new PeerAgnosticSyncChecks(List.of(() -> false)),
-                sleepAfterSyncSupplier, syncMetrics);
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(2, incomingPermitProvider.getNumAvailable());
         assertFalse(protocol.shouldAccept());
@@ -222,9 +306,16 @@ class SyncProtocolTests {
         // node is fallen behind
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
 
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum, peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(2, incomingPermitProvider.getNumAvailable());
         assertFalse(protocol.shouldAccept());
@@ -234,9 +325,16 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Permit closes after failed initiate")
     void permitClosesAfterFailedInitiate() {
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum, peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
@@ -248,9 +346,16 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol runs successfully when initiating")
     void successfulInitiatedProtocol() {
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum, peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
         protocol.shouldInitiate();
@@ -262,9 +367,16 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol runs successfully when accepting")
     void successfulAcceptedProtocol() {
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum, peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertEquals(2, incomingPermitProvider.getNumAvailable());
         protocol.shouldAccept();
@@ -276,9 +388,16 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol doesn't run without first obtaining a permit")
     void failedProtocol() {
-        final SyncProtocol protocol = new SyncProtocol(peerId, shadowGraphSynchronizer, fallenBehindManager,
-                outgoingPermitProvider, incomingPermitProvider, criticalQuorum, peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier, syncMetrics);
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                outgoingPermitProvider,
+                incomingPermitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSyncSupplier,
+                syncMetrics);
 
         assertThrows(NetworkProtocolException.class, () -> protocol.runProtocol(mock(Connection.class)));
     }
