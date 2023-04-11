@@ -22,10 +22,8 @@ import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Singleton;
-import java.io.File;
 import java.util.function.BooleanSupplier;
+import javax.inject.Singleton;
 
 @Module
 public interface ProcessLogicModule {

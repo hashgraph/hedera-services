@@ -23,9 +23,8 @@ import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
-
-import javax.inject.Singleton;
 import java.util.function.BooleanSupplier;
+import javax.inject.Singleton;
 
 @Module
 public interface ConfigModule {

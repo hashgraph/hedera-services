@@ -45,7 +45,6 @@ import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreat
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.logic.HandleLogicModule;
 import com.hedera.node.app.service.mono.state.logic.ReconnectListener;
-import com.hedera.node.app.service.mono.state.logic.RecordingProcessLogic;
 import com.hedera.node.app.service.mono.state.logic.RecordingStatusChangeListener;
 import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener;
@@ -96,7 +95,6 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
@@ -128,10 +126,11 @@ public interface StateModule {
     @Singleton
     static PlatformStatusChangeListener provideStatusChangeListener(
             @NonNull final MutableStateChildren stateChildren,
+            @NonNull final ReplayAssetRecording assetRecording,
             @NonNull final StatusChangeListener statusChangeListener,
             @IsFacilityRecordingOn @NonNull final BooleanSupplier isRecordingFacilityMocks) {
         if (isRecordingFacilityMocks.getAsBoolean()) {
-            return new RecordingStatusChangeListener(stateChildren, statusChangeListener);
+            return new RecordingStatusChangeListener(stateChildren, assetRecording, statusChangeListener);
         } else {
             return statusChangeListener;
         }
@@ -362,8 +361,7 @@ public interface StateModule {
             @IsFacilityRecordingOn @NonNull final BooleanSupplier isRecordingFacilityMocks) {
         if (isRecordingFacilityMocks.getAsBoolean()) {
             return new SeqNoEntityIdSource(() -> new RecordingSequenceNumber(
-                    assetRecording,
-                    workingState.networkCtx().seqNo()));
+                    assetRecording, workingState.networkCtx().seqNo()));
         } else {
             return new SeqNoEntityIdSource(() -> workingState.networkCtx().seqNo());
         }

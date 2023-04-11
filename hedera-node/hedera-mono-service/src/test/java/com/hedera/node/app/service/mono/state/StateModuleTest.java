@@ -34,14 +34,11 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.RecordingSequenceNumber;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
-import com.hedera.node.app.service.mono.utils.replay.IsFacilityRecordingOn;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.CommonUtils;
 import java.nio.charset.Charset;
 import java.util.function.BooleanSupplier;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -52,6 +49,7 @@ class StateModuleTest {
 
     @Mock
     private ScheduleStore scheduleStore;
+
     @Mock
     private BooleanSupplier isRecordingFacilityMocks;
 
@@ -66,6 +64,7 @@ class StateModuleTest {
 
     @Mock
     private ReplayAssetRecording assetRecording;
+
     @Mock
     private MerkleNetworkContext networkContext;
 
@@ -77,8 +76,8 @@ class StateModuleTest {
         given(isRecordingFacilityMocks.getAsBoolean()).willReturn(true);
         given(workingState.networkCtx()).willReturn(networkContext);
         given(networkContext.seqNo()).willReturn(new SequenceNumber());
-        final var ids = StateModule.provideWorkingEntityIdSource(
-                assetRecording, workingState, isRecordingFacilityMocks);
+        final var ids =
+                StateModule.provideWorkingEntityIdSource(assetRecording, workingState, isRecordingFacilityMocks);
         final var seqNo = ((SeqNoEntityIdSource) ids).getSeqNo().get();
         assertInstanceOf(RecordingSequenceNumber.class, seqNo);
     }
@@ -87,8 +86,8 @@ class StateModuleTest {
     void providesNormalSeqNumbersOtherwise() {
         given(workingState.networkCtx()).willReturn(networkContext);
         given(networkContext.seqNo()).willReturn(new SequenceNumber());
-        final var ids = StateModule.provideWorkingEntityIdSource(
-                assetRecording, workingState, isRecordingFacilityMocks);
+        final var ids =
+                StateModule.provideWorkingEntityIdSource(assetRecording, workingState, isRecordingFacilityMocks);
         final var seqNo = ((SeqNoEntityIdSource) ids).getSeqNo().get();
         assertInstanceOf(SequenceNumber.class, seqNo);
     }

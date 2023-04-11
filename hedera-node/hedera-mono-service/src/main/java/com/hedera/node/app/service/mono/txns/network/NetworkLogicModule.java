@@ -23,15 +23,11 @@ import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.utils.UnzipUtility;
-import com.hedera.node.app.service.mono.utils.replay.IsFacilityRecordingOn;
 import com.swirlds.common.system.SwirldDualState;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 

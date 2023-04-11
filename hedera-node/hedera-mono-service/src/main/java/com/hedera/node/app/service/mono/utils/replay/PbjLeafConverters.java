@@ -16,14 +16,17 @@
 
 package com.hedera.node.app.service.mono.utils.replay;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public class PbjLeafConverters {
+    private PbjLeafConverters() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
 
-@Target({ElementType.METHOD, ElementType.PARAMETER})
-@Qualifier
-@Retention(RUNTIME)
-public @interface IsFacilityRecordingOn {}
+    public static Topic leafFromMerkle(final MerkleTopic topic) {
+        final var builder = Topic.newBuilder();
+
+        return builder.build();
+    }
+}
