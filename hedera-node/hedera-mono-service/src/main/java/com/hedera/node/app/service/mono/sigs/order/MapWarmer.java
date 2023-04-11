@@ -136,7 +136,11 @@ public class MapWarmer {
                 // NFT:
                 final var nftKey = new UniqueTokenKey(tokenNum, senderSerialNum);
                 final var nftMap = nftsAdapter.get().getOnDiskNfts();
-                Objects.requireNonNull(nftMap).warm(nftKey);
+                final var nftValue = Objects.requireNonNull(nftMap).get(nftKey);
+                if (nftValue != null) {
+                    nftMap.warm(UniqueTokenKey.from(nftValue.getPrev().nftId()));
+                    nftMap.warm(UniqueTokenKey.from(nftValue.getNext().nftId()));
+                }
             });
 
             threadpool.execute(() -> {
