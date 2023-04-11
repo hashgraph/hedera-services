@@ -63,6 +63,7 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     @Test
     void getForModifyReturnsImmutableToken() {
         token = createToken();
+
         writableStore.put(token);
 
         final var maybeReadToken = writableStore.getForModify(tokenEntityNum.longValue());
@@ -73,15 +74,36 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void commitsTokenChangesToState() {
+    void putsTokenChangesToStateInModifications() {
         token = createToken();
         assertFalse(writableTokenState.contains(tokenEntityNum));
 
+        // put, keeps the token in the modifications
         writableStore.put(token);
 
         assertTrue(writableTokenState.contains(tokenEntityNum));
         final var writtenToken = writableTokenState.get(tokenEntityNum);
         assertEquals(token, writtenToken);
+    }
+
+    @Test
+    void commitsTokenChangesToState() {
+        token = createToken();
+        assertFalse(writableTokenState.contains(tokenEntityNum));
+        // put, keeps the token in the modifications.
+        // Size of state includes modifications and size of backing state.
+        writableStore.put(token);
+
+        assertTrue(writableTokenState.contains(tokenEntityNum));
+        final var writtenToken = writableTokenState.get(tokenEntityNum);
+        assertEquals(1, writableStore.sizeOfState());
+        assertTrue(writableStore.modifiedTokens().contains(tokenEntityNum));
+        assertEquals(token, writtenToken);
+
+        // commit, pushes modifications to backing store. But the size of state is still 1
+        writableStore.commit();
+        assertEquals(1, writableStore.sizeOfState());
+        assertTrue(writableStore.modifiedTokens().contains(tokenEntityNum));
     }
 
     @Test

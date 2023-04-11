@@ -81,9 +81,9 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     void pauseTokenFailsIfInvalidToken() {
         givenInvalidTokenInTxn();
 
-        final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(tokenPauseTxn, new PauseTokenRecordBuilder(), writableStore));
+        final var builder = new PauseTokenRecordBuilder();
+        final var msg =
+                assertThrows(HandleException.class, () -> subject.handle(tokenPauseTxn, builder, writableStore));
         assertEquals(INVALID_TOKEN_ID, msg.getStatus());
     }
 

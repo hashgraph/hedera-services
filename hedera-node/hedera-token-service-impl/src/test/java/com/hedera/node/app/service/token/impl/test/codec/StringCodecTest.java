@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -44,13 +45,13 @@ class StringCodecTest {
     final StringCodec subject = new StringCodec();
 
     @Test
-    void providesFastEquals() throws IOException {
+    void providesFastEquals() {
         given(in.readInt()).willReturn(SOME_STRING.getBytes().length);
-        subject.fastEquals(SOME_STRING, in);
+        assertFalse(subject.fastEquals(SOME_STRING, in));
     }
 
     @Test
-    void measuresInput() throws IOException {
+    void measuresInput() {
         given(in.readInt()).willReturn(SOME_STRING.getBytes().length);
         assertEquals(SOME_STRING.getBytes().length, subject.measure(in));
     }

@@ -82,9 +82,10 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
         assertTrue(writableStore.get(tokenId.tokenNum()).get().paused());
         givenInvalidTokenInTxn();
 
-        final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(tokenUnpauseTxn, new UnPauseTokenRecordBuilder(), writableStore));
+        final var builder = new UnPauseTokenRecordBuilder();
+
+        final var msg =
+                assertThrows(HandleException.class, () -> subject.handle(tokenUnpauseTxn, builder, writableStore));
         assertEquals(INVALID_TOKEN_ID, msg.getStatus());
     }
 
