@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.records;
-
-import com.hedera.node.app.spi.records.RecordBuilder;
+package com.hedera.node.app.spi.records;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side-effects of a
- * {@code TokenUnPause} transaction.
+ * Base implementation of a {@code UniversalRecordBuilder} that will track all the
+ * "universal" transaction metadata and side effects. This builder is used when there are no
+ * side effects to record from the transaction(e.g. a token pause).
  */
-public interface TokenUnPauseRecordBuilder extends RecordBuilder<TokenUnPauseRecordBuilder> {}
+public class BaseRecordBuilder<T extends RecordBuilder<T>> extends UniversalRecordBuilder<T> {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public T self() {
+        return (T) this;
+    }
+}

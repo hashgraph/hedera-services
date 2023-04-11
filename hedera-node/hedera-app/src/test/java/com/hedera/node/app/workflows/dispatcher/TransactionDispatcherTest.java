@@ -132,8 +132,6 @@ import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccount
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
-import com.hedera.node.app.service.token.impl.records.TokenPauseRecordBuilder;
-import com.hedera.node.app.service.token.impl.records.TokenUnPauseRecordBuilder;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -539,9 +537,6 @@ class TransactionDispatcherTest {
 
     @Test
     void dispatchesTokenPauseAsExpected() {
-        final var tokenPauseBuilder = mock(TokenPauseRecordBuilder.class);
-
-        given(tokenPauseHandler.newRecordBuilder()).willReturn(tokenPauseBuilder);
         given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
 
         dispatcher.dispatchHandle(HederaFunctionality.TOKEN_PAUSE, transactionBody, writableStoreFactory);
@@ -551,9 +546,6 @@ class TransactionDispatcherTest {
 
     @Test
     void dispatchesTokenUnpauseAsExpected() {
-        final var tokenUnPauseBuilder = mock(TokenUnPauseRecordBuilder.class);
-
-        given(tokenUnpauseHandler.newRecordBuilder()).willReturn(tokenUnPauseBuilder);
         given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
 
         dispatcher.dispatchHandle(HederaFunctionality.TOKEN_UNPAUSE, transactionBody, writableStoreFactory);

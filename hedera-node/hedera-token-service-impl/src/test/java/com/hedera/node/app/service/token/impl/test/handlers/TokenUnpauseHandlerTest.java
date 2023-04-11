@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -35,9 +36,9 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
-import com.hedera.node.app.service.token.impl.records.UnPauseTokenRecordBuilder;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.records.BaseRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +71,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
         pauseKnownToken();
         assertTrue(writableStore.get(tokenId.tokenNum()).get().paused());
 
-        subject.handle(tokenUnpauseTxn, new UnPauseTokenRecordBuilder(), writableStore);
+        subject.handle(tokenUnpauseTxn, writableStore);
 
         final var unpausedToken = writableStore.get(tokenId.tokenNum()).get();
         assertFalse(unpausedToken.paused());
@@ -82,19 +83,19 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
         assertTrue(writableStore.get(tokenId.tokenNum()).get().paused());
         givenInvalidTokenInTxn();
 
-        final var builder = new UnPauseTokenRecordBuilder();
-
-        final var msg =
-                assertThrows(HandleException.class, () -> subject.handle(tokenUnpauseTxn, builder, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(tokenUnpauseTxn, writableStore));
         assertEquals(INVALID_TOKEN_ID, msg.getStatus());
     }
 
     @Test
+    void returnsExpectedRecordBuilderType() {
+        assertInstanceOf(BaseRecordBuilder.class, subject.newRecordBuilder());
+    }
+
+    @Test
     void failsForNullArguments() {
-        final var builder = new UnPauseTokenRecordBuilder();
-        assertThrows(NullPointerException.class, () -> subject.handle(null, builder, writableStore));
-        assertThrows(NullPointerException.class, () -> subject.handle(tokenUnpauseTxn, null, writableStore));
-        assertThrows(NullPointerException.class, () -> subject.handle(tokenUnpauseTxn, builder, null));
+        assertThrows(NullPointerException.class, () -> subject.handle(null, writableStore));
+        assertThrows(NullPointerException.class, () -> subject.handle(tokenUnpauseTxn, null));
     }
 
     @Test

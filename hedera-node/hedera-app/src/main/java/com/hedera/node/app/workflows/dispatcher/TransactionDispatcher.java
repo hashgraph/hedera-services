@@ -287,8 +287,7 @@ public class TransactionDispatcher {
     private void dispatchTokenUnpause(
             @NonNull final TransactionBody tokenUnpause, @NonNull final WritableTokenStore tokenStore) {
         final var handler = handlers.tokenUnpauseHandler();
-        final var recordBuilder = handler.newRecordBuilder();
-        handler.handle(tokenUnpause, recordBuilder, tokenStore);
+        handler.handle(tokenUnpause, tokenStore);
         tokenStore.commit();
     }
 
@@ -300,8 +299,7 @@ public class TransactionDispatcher {
     private void dispatchTokenPause(
             @NonNull final TransactionBody tokenPause, @NonNull final WritableTokenStore tokenStore) {
         final var handler = handlers.tokenPauseHandler();
-        final var recordBuilder = handler.newRecordBuilder();
-        handler.handle(tokenPause, recordBuilder, tokenStore);
+        handler.handle(tokenPause, tokenStore);
         tokenStore.commit();
     }
 }

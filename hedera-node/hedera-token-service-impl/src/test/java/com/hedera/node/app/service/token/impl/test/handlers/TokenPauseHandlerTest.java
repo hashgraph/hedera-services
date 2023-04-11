@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -35,9 +36,9 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
-import com.hedera.node.app.service.token.impl.records.PauseTokenRecordBuilder;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.records.BaseRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,7 +72,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
         unPauseKnownToken();
         assertFalse(writableStore.get(tokenId.tokenNum()).get().paused());
 
-        subject.handle(tokenPauseTxn, new PauseTokenRecordBuilder(), writableStore);
+        subject.handle(tokenPauseTxn, writableStore);
 
         final var unpausedToken = writableStore.get(tokenId.tokenNum()).get();
         assertTrue(unpausedToken.paused());
@@ -81,18 +82,14 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     void pauseTokenFailsIfInvalidToken() {
         givenInvalidTokenInTxn();
 
-        final var builder = new PauseTokenRecordBuilder();
-        final var msg =
-                assertThrows(HandleException.class, () -> subject.handle(tokenPauseTxn, builder, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(tokenPauseTxn, writableStore));
         assertEquals(INVALID_TOKEN_ID, msg.getStatus());
     }
 
     @Test
     void failsForNullArguments() {
-        final var builder = new PauseTokenRecordBuilder();
-        assertThrows(NullPointerException.class, () -> subject.handle(null, builder, writableStore));
-        assertThrows(NullPointerException.class, () -> subject.handle(tokenPauseTxn, null, writableStore));
-        assertThrows(NullPointerException.class, () -> subject.handle(tokenPauseTxn, builder, null));
+        assertThrows(NullPointerException.class, () -> subject.handle(null, writableStore));
+        assertThrows(NullPointerException.class, () -> subject.handle(tokenPauseTxn, null));
     }
 
     @Test
@@ -151,6 +148,11 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
 
         assertEquals(0, preHandleContext.getRequiredNonPayerKeys().size());
         assertEquals(OK, preHandleContext.getStatus());
+    }
+
+    @Test
+    void returnsExpectedRecordBuilderType() {
+        assertInstanceOf(BaseRecordBuilder.class, subject.newRecordBuilder());
     }
 
     private void givenValidTxn() {

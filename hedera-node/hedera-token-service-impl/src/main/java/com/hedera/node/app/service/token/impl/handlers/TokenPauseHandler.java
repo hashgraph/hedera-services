@@ -27,8 +27,7 @@ import com.hedera.hapi.node.token.TokenPauseTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.records.PauseTokenRecordBuilder;
-import com.hedera.node.app.service.token.impl.records.TokenPauseRecordBuilder;
+import com.hedera.node.app.spi.records.BaseRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -82,16 +81,11 @@ public class TokenPauseHandler implements TransactionHandler {
      * This method is called during the handle workflow. It executes the actual transaction.
      *
      * @param txn the {@link TokenPauseTransactionBody} of the active transaction
-     * @param recordBuilder record builder for the active transaction
      * @param tokenStore the {@link WritableTokenStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(
-            @NonNull final TransactionBody txn,
-            @NonNull final TokenPauseRecordBuilder recordBuilder,
-            @NonNull final WritableTokenStore tokenStore) {
+    public void handle(@NonNull final TransactionBody txn, @NonNull final WritableTokenStore tokenStore) {
         requireNonNull(txn);
-        requireNonNull(recordBuilder);
         requireNonNull(tokenStore);
 
         var op = txn.tokenPause();
@@ -121,7 +115,7 @@ public class TokenPauseHandler implements TransactionHandler {
     }
 
     @Override
-    public TokenPauseRecordBuilder newRecordBuilder() {
-        return new PauseTokenRecordBuilder();
+    public BaseRecordBuilder newRecordBuilder() {
+        return new BaseRecordBuilder<>();
     }
 }

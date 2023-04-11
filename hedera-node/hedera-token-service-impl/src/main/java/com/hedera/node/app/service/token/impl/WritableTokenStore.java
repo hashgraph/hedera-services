@@ -58,14 +58,14 @@ public class WritableTokenStore {
      * @param token - the token to be mapped onto a new {@link MerkleToken} and persisted.
      */
     public void put(@NonNull final Token token) {
-        Objects.requireNonNull(tokenState).put(EntityNum.fromLong(token.tokenNumber()), Objects.requireNonNull(token));
+        Objects.requireNonNull(token);
+        tokenState.put(EntityNum.fromLong(token.tokenNumber()), Objects.requireNonNull(token));
     }
 
     /**
      * Commits the changes to the underlying data storage.
      */
     public void commit() {
-        requireNonNull(tokenState);
         ((WritableKVStateBase) tokenState).commit();
     }
 
@@ -73,8 +73,10 @@ public class WritableTokenStore {
      * Returns the {@link Token} with the given number. If no such Token exists, returns {@code Optional.empty()}
      * @param tokenNum - the number of the Token to be retrieved.
      */
+    @NonNull
     public Optional<Token> get(final long tokenNum) {
-        final var token = Objects.requireNonNull(tokenState).get(EntityNum.fromLong(tokenNum));
+        requireNonNull(tokenNum);
+        final var token = tokenState.get(EntityNum.fromLong(tokenNum));
         return Optional.ofNullable(token);
     }
 
@@ -83,9 +85,10 @@ public class WritableTokenStore {
      * If no such token exists, returns {@code Optional.empty()}
      * @param tokenNum - the number of the token to be retrieved.
      */
-    public Optional<Token> getForModify(@NonNull final long tokenNum) {
+    @NonNull
+    public Optional<Token> getForModify(final long tokenNum) {
         requireNonNull(tokenNum);
-        final var token = Objects.requireNonNull(tokenState).getForModify(EntityNum.fromLong(tokenNum));
+        final var token = tokenState.getForModify(EntityNum.fromLong(tokenNum));
         return Optional.ofNullable(token);
     }
 
@@ -101,6 +104,7 @@ public class WritableTokenStore {
      * Returns the set of tokens modified in existing state.
      * @return the set of tokens modified in existing state
      */
+    @NonNull
     public Set<EntityNum> modifiedTokens() {
         return tokenState.modifiedKeys();
     }
