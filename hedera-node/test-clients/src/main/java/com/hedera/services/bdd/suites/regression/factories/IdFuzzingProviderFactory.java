@@ -44,6 +44,8 @@ public class IdFuzzingProviderFactory {
      */
     private static final int NUM_DISTINCT_ECDSA_KEYS = 42;
 
+    private static final String RANDOM_TRANSFER_BIAS = "randomTransfer.bias";
+
     public static Function<HapiSpec, OpProvider> idFuzzingWith(final String resource) {
         return spec -> {
             final var props = RegressionProviderFactory.propsFrom(resource);
@@ -61,8 +63,8 @@ public class IdFuzzingProviderFactory {
                                     .ceiling(intPropOrElse(
                                             "randomAccount.ceilingNum", RandomAccount.DEFAULT_CEILING_NUM, props)),
                             intPropOrElse("randomAccount.bias", 0, props))
-                    .withOp(new TransferToRandomEVMAddress(keys), intPropOrElse("randomTransfer.bias", 0, props))
-                    .withOp(new TransferToRandomKey(keys), intPropOrElse("randomTransfer.bias", 0, props))
+                    .withOp(new TransferToRandomEVMAddress(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props))
+                    .withOp(new TransferToRandomKey(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props))
                     .withOp(
                             new RandomAccountUpdate(keys, accounts),
                             intPropOrElse("randomAccountUpdate.bias", 0, props));
@@ -80,7 +82,7 @@ public class IdFuzzingProviderFactory {
                     /* --- <inventory> --- */
                     .withInitialization(keyInventory.creationOps())
                     /* ----- CRYPTO ----- */
-                    .withOp(new TransferToRandomKey(keys), intPropOrElse("randomTransfer.bias", 0, props));
+                    .withOp(new TransferToRandomKey(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props));
         };
     }
 
