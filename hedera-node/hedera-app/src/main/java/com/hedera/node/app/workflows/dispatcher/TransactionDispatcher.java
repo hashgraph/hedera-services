@@ -161,7 +161,7 @@ public class TransactionDispatcher {
             case FILE_DELETE -> handlers.fileDeleteHandler().preHandle(context);
             case FILE_APPEND -> handlers.fileAppendHandler().preHandle(context);
 
-            case FREEZE -> handlers.freezeHandler().preHandle(context);
+            case FREEZE -> handlers.freezeHandler().preHandle(context, storeFactory.createSpecialFileStore());
 
             case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler().preHandle(context);
 

@@ -85,6 +85,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
@@ -468,6 +469,7 @@ public final class BootstrapProperties implements PropertySource {
             CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST,
             CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS,
             CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE,
+            CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS,
             CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED,
             CONTRACTS_EVM_VERSION,
             CONTRACTS_DYNAMIC_EVM_VERSION,
@@ -667,6 +669,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(HEDERA_TXN_MAX_VALID_DURATION, AS_LONG),
             entry(HEDERA_TXN_MIN_VALID_DURATION, AS_LONG),
             entry(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS, AS_INT),
+            entry(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS, AS_CUSTOM_FEES_TYPE),
             entry(AUTO_CREATION_ENABLED, AS_BOOLEAN),
             entry(LAZY_CREATION_ENABLED, AS_BOOLEAN),
             entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, AS_BOOLEAN),
