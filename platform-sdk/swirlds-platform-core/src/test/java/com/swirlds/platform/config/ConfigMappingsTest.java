@@ -36,7 +36,7 @@ class ConfigMappingsTest {
                 .withValue("state.roundsExpired", String.valueOf(valueExpired))
                 .withValue("coinFreq", String.valueOf(valueCoin));
         final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(ConfigMappings.addConfigAliases(configSource))
+                .withSource(ConfigMappings.addConfigMapping(configSource))
                 .withConfigDataType(ConsensusConfig.class)
                 .build();
 
