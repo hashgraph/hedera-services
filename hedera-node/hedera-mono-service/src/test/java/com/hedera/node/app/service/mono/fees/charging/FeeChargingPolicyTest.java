@@ -111,9 +111,9 @@ class FeeChargingPolicyTest {
         // then:
         verify(narratedCharging).setFees(captor.capture());
         // and:
-        assertEquals(feesForDuplicateTxn.getNodeFee(), captor.getValue().getNodeFee());
-        assertEquals(feesForDuplicateTxn.getNetworkFee(), captor.getValue().getNetworkFee());
-        assertEquals(feesForDuplicateTxn.getServiceFee(), captor.getValue().getServiceFee());
+        assertEquals(feesForDuplicateTxn.nodeFee(), captor.getValue().nodeFee());
+        assertEquals(feesForDuplicateTxn.networkFee(), captor.getValue().networkFee());
+        assertEquals(feesForDuplicateTxn.serviceFee(), captor.getValue().serviceFee());
         // and:
         verify(narratedCharging).chargePayerAllFees();
         // and:
