@@ -614,7 +614,7 @@ public class SyncTests {
         executor.setGenerationDefinitions((caller, listener) -> {
             long listenerMaxGen = SyncUtils.getMaxGen(listener.getShadowGraph().getTips());
             // make the min non-ancient gen slightly below the max gen
-            long listenerMinNonAncient = listenerMaxGen - (listenerMaxGen/10);
+            long listenerMinNonAncient = listenerMaxGen - (listenerMaxGen / 10);
             long listenerMinGen = SyncUtils.getMinGen(listener.getShadowGraph()
                     .findAncestors(listener.getShadowGraph().getTips(), (e) -> true));
 
@@ -624,7 +624,7 @@ public class SyncTests {
 
             long callerMaxGen = SyncUtils.getMaxGen(caller.getShadowGraph().getTips());
             // make the min non-ancient gen slightly below the max gen
-            long callerMinNonAncient = callerMaxGen - (callerMaxGen/10);
+            long callerMinNonAncient = callerMaxGen - (callerMaxGen / 10);
             long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph()
                     .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
 

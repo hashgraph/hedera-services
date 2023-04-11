@@ -292,9 +292,9 @@ class AddressBookInitializerTest {
         when(softwareVersion.getVersion()).thenReturn(version);
         final AtomicReference<SoftwareVersion> softVersion = new AtomicReference<>();
         when(softwareVersion.compareTo(argThat(sv -> {
-            softVersion.set(sv);
-            return true;
-        })))
+                    softVersion.set(sv);
+                    return true;
+                })))
                 .thenAnswer(i -> {
                     final SoftwareVersion other = softVersion.get();
                     if (other == null) {
@@ -328,10 +328,10 @@ class AddressBookInitializerTest {
     private SignedState getMockSignedState(final int scenario, final int stakeValue) {
         final SignedState signedState = mock(SignedState.class);
         switch (scenario) {
-            // case 0: null SignedState
+                // case 0: null SignedState
             case 0:
                 return null;
-            // default case: swirldstate exists with given staking scenario
+                // default case: swirldstate exists with given staking scenario
             default:
                 final SoftwareVersion softwareVersion = getMockSoftwareVersion(2);
                 final SwirldState swirldState =
