@@ -140,7 +140,7 @@ public class StateSettings extends SubSetting {
      * This debug code is relatively expensive (it takes and stores stack traces when operations are
      * performed on signed state objects).
      */
-    public boolean signedStateSentinelEnabled = false;
+    public boolean signedStateSentinelEnabled = true; // TODO disable prior to merging
 
     /**
      * Ignored if {@link #signedStateSentinelEnabled} is not true. The age of a signed state, in seconds, which is

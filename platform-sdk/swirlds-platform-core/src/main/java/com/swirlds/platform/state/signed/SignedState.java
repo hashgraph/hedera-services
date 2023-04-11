@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.SIGNED_STATE;
 import com.swirlds.common.Reservable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -126,11 +127,9 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     /**
      * Instantiate a signed state.
      *
-     * @param state
-     * 		a fast copy of the state resulting from all transactions in consensus order from all
-     * 		events with received rounds up through the round this SignedState represents
-     * @param freezeState
-     * 		specifies whether this state is the last one saved before the freeze
+     * @param state       a fast copy of the state resulting from all transactions in consensus order from all events
+     *                    with received rounds up through the round this SignedState represents
+     * @param freezeState specifies whether this state is the last one saved before the freeze
      */
     public SignedState(final State state, final boolean freezeState) {
         this(state);
@@ -234,7 +233,14 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
         if (history != null) {
             history.recordAction(SignedStateHistory.SignedStateAction.RESERVE, getReservationCount());
         }
-        super.reserve();
+        try {
+            super.reserve();
+        } catch (final ReferenceCountException e) {
+            if (history != null) {
+                logger.error(EXCEPTION.getMarker(), "Reference count error when reserving signed state.\n{}", history);
+            }
+            throw e;
+        }
     }
 
     /**
@@ -245,7 +251,14 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
         if (history != null) {
             history.recordAction(SignedStateAction.RELEASE, getReservationCount());
         }
-        return super.release();
+        try {
+            return super.release();
+        } catch (final ReferenceCountException e) {
+            if (history != null) {
+                logger.error(EXCEPTION.getMarker(), "Reference count error when releasing signed state.\n{}", history);
+            }
+            throw e;
+        }
     }
 
     /**
