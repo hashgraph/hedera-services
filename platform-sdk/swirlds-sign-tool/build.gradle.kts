@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hapi.utils.fee;
+plugins {
+  id("com.swirlds.platform.conventions")
+  id("com.swirlds.platform.library")
+  id("com.swirlds.platform.maven-publish")
+}
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+dependencies {
+  // Individual Dependencies
+  implementation(project(":swirlds-common"))
+  implementation(project(":swirlds-base"))
+  implementation(project(":swirlds-logging"))
+  implementation(libs.bundles.logging.impl)
+  implementation(libs.jackson.databind)
+  implementation(libs.jackson.datatype.jsr310)
+  compileOnly(libs.spotbugs.annotations)
 
-class FeeObjectTest {
-    @Test
-    void toStringWorks() {
-        final var subject = new FeeObject(1L, 2L, 3L);
-        final var desired = "FeeObject{nodeFee=1, networkFee=2, serviceFee=3}";
-
-        Assertions.assertEquals(desired, subject.toString());
-    }
+  testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
 }
