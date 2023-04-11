@@ -17,7 +17,7 @@ module com.hedera.node.app.service.token.impl.test {
     requires com.hedera.node.hapi;
     requires com.hedera.pbj.runtime;
     requires com.hedera.node.app.spi.fixtures;
-    requires com.github.spotbugs.annotations;
+    requires static com.github.spotbugs.annotations;
 
     opens com.hedera.node.app.service.token.impl.test.entity to
             org.junit.platform.commons;
