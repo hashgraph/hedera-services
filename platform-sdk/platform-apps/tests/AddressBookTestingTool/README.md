@@ -197,14 +197,29 @@ Errors are logged if any of the following conditions are violated.
     * **the state saved address book contains the addresses in the config.txt, all with stake 10. (differs from previous section)**
     * **the used address book has the text `The Configuration Address Book Was Used.` (differs from previous section)**
 
-### Software Upgrade, Staking Behavior 2
-# START HERE WITH CONTINUING TO REVISE THE TEST DESCRIPTIONS FOR AUTOMATION
+### Test Scenario 5: Software Upgrade, Staking Behavior 2
 #### Instructions
-1. Ensure settings.txt has `state.saveStatePeriod,     10`
-2. Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, false`
-3. **Ensure settings.txt has the value `addressBookTestingTool.softwareVersion, 2` (differs from previous section)**
-4. **Ensure settings.txt has the value `addressBookTestingTool.stakingBehavior, 2` (differs from previous section)**
-6. Run the app for 20 seconds.
+
+1. Delete `sdk/data/saved` directory if it exists
+2. Ensure settings.txt has the following values
+```
+state.saveStatePeriod,                    10
+addressBook.forceUseOfConfigAddressBook,  false
+addressBookTestingTool.testScenario,      0
+addressBookTestingTool.softwareVersion,   1
+addressBookTestingTool.stakingBehavior,   1
+```
+3. Run the app for 60 seconds
+4. Stop the app
+5. Ensure settings.txt has the following values
+```
+state.saveStatePeriod,                    10
+addressBook.forceUseOfConfigAddressBook,  false
+addressBookTestingTool.testScenario,      5
+addressBookTestingTool.softwareVersion,   2
+addressBookTestingTool.stakingBehavior,   2
+```
+6. Run the app for 60 seconds.
 
 #### Validation
 
@@ -213,6 +228,14 @@ Errors are logged if any of the following conditions are violated.
 ```
 AddressBookInitializer: Software Upgrade from version 1 to 2. The address book stake will be updated by the saved state's SwirldState.
 ```
+and
+```
+AddressBookTestingToolState: Validating test scenario 5.
+```
+
+* check that there are no errors or exceptions in the swirlds.log
+
+Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
@@ -222,14 +245,29 @@ AddressBookInitializer: Software Upgrade from version 1 to 2. The address book s
     * The state saved address book is the same as what is in config.txt
     * **the used address book matches the content of the non-debug .txt file. (differs from previous section)**
 
-
-### Software Upgrade, Force Use Of Config Address Book
+### Test Scenario 6: Software Upgrade, Force Use Of Config Address Book
 #### Instructions
-1. Ensure settings.txt has `state.saveStatePeriod,     10`
-2. **Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, true` (differs from previous section)**
-3. **Ensure settings.txt has the value `addressBookTestingTool.softwareVersion, 3` (differs from previous section)**
-4. **Ensure settings.txt has the value `addressBookTestingTool.stakingBehavior, 1` (differs from previous section)**
-6. Run the app for 20 seconds.
+
+1. Delete `sdk/data/saved` directory if it exists
+2. Ensure settings.txt has the following values
+```
+state.saveStatePeriod,                    10
+addressBook.forceUseOfConfigAddressBook,  false
+addressBookTestingTool.testScenario,      0
+addressBookTestingTool.softwareVersion,   1
+addressBookTestingTool.stakingBehavior,   1
+```
+3. Run the app for 60 seconds
+4. Stop the app
+5. Ensure settings.txt has the following values
+```
+state.saveStatePeriod,                    10
+addressBook.forceUseOfConfigAddressBook,  true
+addressBookTestingTool.testScenario,      6
+addressBookTestingTool.softwareVersion,   2
+addressBookTestingTool.stakingBehavior,   2
+```
+6. Run the app for 60 seconds.
 
 #### Validation
 
@@ -238,6 +276,14 @@ AddressBookInitializer: Software Upgrade from version 1 to 2. The address book s
 ```
 AddressBookInitializer: Overriding the address book in the state with the address book from config.txt
 ```
+and
+```
+AddressBookTestingToolState: Validating test scenario 5.
+```
+
+* check that there are no errors or exceptions in the swirlds.log
+
+Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt

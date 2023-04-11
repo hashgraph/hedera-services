@@ -303,10 +303,49 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 return testScenario3NoSoftwareUpdateUseSavedStateAddressBook();
             case 4:
                 return testScenario4NoSoftwareUpdateForceUseOfConfigAddressBook();
+            case 5:
+                return testScenario5SoftwareUpgradeStakingBehavior2();
+            case 6:
+                return testScenario6SoftwareUpgradeForceUseOfConfigAddressBook();
             default:
                 logger.info(DEMO_INFO.getMarker(), "Test Scenario {}: no validation performed.", testScenario);
                 return true;
         }
+    }
+
+    private boolean testScenario6SoftwareUpgradeForceUseOfConfigAddressBook() {
+        if (!checkTestScenarioConditions(true, 6, 2, 2)) {
+            return false;
+        }
+
+        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook stateAddressBook = getStateAddressBook();
+        final AddressBook usedAddressBook = getUsedAddressBook();
+        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
+
+        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
+                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
+                && theConfigurationAddressBookWasUsed();
+    }
+
+    private boolean testScenario5SoftwareUpgradeStakingBehavior2() {
+        if (!checkTestScenarioConditions(false, 5, 2, 2)) {
+            return false;
+        }
+
+        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook stateAddressBook = getStateAddressBook();
+        final AddressBook usedAddressBook = getUsedAddressBook();
+        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
+
+        return equalsAsConfigText(platformAddressBook, configAddressBook, false)
+                && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
+                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, true);
     }
 
     private boolean testScenario4NoSoftwareUpdateForceUseOfConfigAddressBook() {
@@ -323,7 +362,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false);
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
+                && theConfigurationAddressBookWasUsed();
     }
 
     private boolean testScenario3NoSoftwareUpdateUseSavedStateAddressBook() {
@@ -344,11 +384,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     }
 
     private boolean testScenario2GenesisSwirldStateUpdateStake() {
-        // preconditions check
-        if (addressBookConfig.forceUseOfConfigAddressBook() == true) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "The test scenario requires the setting `addressBook.forceUseOfConfigAddressBook, false`");
+        if (!checkTestScenarioConditions(false, 2, 1, 1)) {
             return false;
         }
 
@@ -364,20 +400,18 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     }
 
     private boolean testScenario1GenesisForceUseOfConfigAddressBook() {
-        // preconditions check
-        if (addressBookConfig.forceUseOfConfigAddressBook() == false) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "The test scenario requires the setting `addressBook.forceUseOfConfigAddressBook, true`");
+        if (!checkTestScenarioConditions(true, 1, 1, 1)) {
             return false;
         }
 
         final AddressBook platformAddressBook = platform.getAddressBook();
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
+        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
                 && theStateAddressBookWasNull(true)
                 && theConfigurationAddressBookWasUsed();
     }
