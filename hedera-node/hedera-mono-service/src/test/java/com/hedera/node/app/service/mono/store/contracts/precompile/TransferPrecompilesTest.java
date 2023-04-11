@@ -408,7 +408,7 @@ class TransferPrecompilesTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createUnsuccessfulSyntheticRecord(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN))
                 .willReturn(mockRecordBuilder);
         given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
@@ -470,7 +470,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -538,7 +538,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createUnsuccessfulSyntheticRecord(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS))
                 .willReturn(mockRecordBuilder);
         when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
@@ -590,7 +590,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -656,7 +656,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -722,7 +722,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -795,7 +795,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -872,7 +872,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -947,7 +947,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -1011,7 +1011,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -1077,7 +1077,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -1143,7 +1143,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -1295,7 +1295,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -1381,7 +1381,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -1464,7 +1464,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(balanceChangesForLazyCreateFailing);
@@ -1551,7 +1551,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(balanceChangesForLazyCreateFailing);
@@ -1624,7 +1624,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
@@ -1688,7 +1688,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
@@ -1760,7 +1760,7 @@ class TransferPrecompilesTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.FAIL_INVALID))
                 .willReturn(mockRecordBuilder);
         given(frame.getSenderAddress()).willReturn(contractAddress);
