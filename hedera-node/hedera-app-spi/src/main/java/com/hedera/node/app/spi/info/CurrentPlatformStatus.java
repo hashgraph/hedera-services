@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.query;
+package com.hedera.node.app.spi.info;
 
-import com.hedera.hapi.node.transaction.Query;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.system.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** A workflow for processing queries. */
-public interface QueryWorkflow {
+/**
+ * Provides the current platform status.
+ */
+public interface CurrentPlatformStatus {
 
     /**
-     * Called to handle a single query.
+     * Returns the current platform status.
      *
-     * @param requestBuffer The raw protobuf query bytes. Must be a {@link Query} object.
-     * @param responseBuffer The raw protobuf response bytes.
+     * @return the current platform status
      */
-    void handleQuery(@NonNull Bytes requestBuffer, @NonNull BufferedData responseBuffer);
+    @NonNull
+    PlatformStatus get();
 }

@@ -571,12 +571,15 @@ public final class Hedera implements SwirldMain {
     private void createSpecialGenesisChildren(
             @NonNull final MerkleHederaState state, @NonNull final AddressBook addressBook, final long seqStart) {
 
+        // Prepopulate the FreezeService state with default values for genesis
+        final var adminStates = state.createWritableStates(FreezeService.NAME);
+        adminStates.getSingleton(FreezeServiceImpl.UPGRADE_FILES_KEY).put(new MerkleSpecialFiles());
+
         // Prepopulate the NetworkServices state with default values for genesis
         // Can these be moved to Schema version 1 of NetworkServicesImpl?
         final var networkStates = state.createWritableStates(NetworkService.NAME);
         networkStates.getSingleton(NetworkServiceImpl.CONTEXT_KEY).put(genesisNetworkCtxWith(seqStart));
         networkStates.getSingleton(NetworkServiceImpl.RUNNING_HASHES_KEY).put(genesisRunningHashLeaf());
-        networkStates.getSingleton(NetworkServiceImpl.SPECIAL_FILES_KEY).put(new MerkleSpecialFiles());
         buildStakingInfoMap(addressBook, bootstrapProps, networkStates.get(NetworkServiceImpl.STAKING_KEY));
         ((MerkleWritableStates) networkStates).commit();
 

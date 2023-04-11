@@ -49,7 +49,7 @@ final class QueryMethodTest {
     private static final String SERVICE_NAME = "testService";
     private static final String METHOD_NAME = "testMethod";
 
-    private final QueryWorkflow queryWorkflow = (session, requestBuffer, responseBuffer) -> {};
+    private final QueryWorkflow queryWorkflow = (requestBuffer, responseBuffer) -> {};
     private final Metrics metrics = TestUtils.metrics();
 
     @Test
@@ -82,7 +82,7 @@ final class QueryMethodTest {
         final var arr = TestUtils.randomBytes(numBytes);
         final var requestBuffer = BufferedData.wrap(arr);
         final AtomicBoolean called = new AtomicBoolean(false);
-        final QueryWorkflow w = (s, req, res) -> called.set(true);
+        final QueryWorkflow w = (req, res) -> called.set(true);
         final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
 
         // When we invoke the method
@@ -106,7 +106,7 @@ final class QueryMethodTest {
         // Given a request with data and a workflow that should be called, and a QueryMethod
         final var requestBuffer = BufferedData.allocate(100);
         final AtomicBoolean called = new AtomicBoolean(false);
-        final QueryWorkflow w = (s, req, res) -> {
+        final QueryWorkflow w = (req, res) -> {
             assertEquals(requestBuffer.getBytes(0, requestBuffer.length()), req);
             called.set(true);
             res.writeBytes(new byte[] {1, 2, 3});
@@ -138,7 +138,7 @@ final class QueryMethodTest {
     void unexpectedExceptionFromHandler(@Mock final StreamObserver<BufferedData> streamObserver) {
         // Given a request with data and a workflow that will throw, and a QueryMethod
         final var requestBuffer = BufferedData.allocate(100);
-        final QueryWorkflow w = (s, req, res) -> {
+        final QueryWorkflow w = (req, res) -> {
             throw new RuntimeException("Unexpected!");
         };
         final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
@@ -168,7 +168,7 @@ final class QueryMethodTest {
     void hammer() {
         final var numThreads = 5;
         final var numRequests = 1000;
-        final QueryWorkflow w = (s, req, res) -> res.writeBytes(req);
+        final QueryWorkflow w = (req, res) -> res.writeBytes(req);
         final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
 
         final var futures = new ArrayList<Future<?>>();
