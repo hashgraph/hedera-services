@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app;
+package com.hedera.node.app.spi.info;
 
-/** This record keeps a list of everything that is used per-thread */
-public record SessionContext() {}
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+/**
+ * Provides information about the network.
+ */
+public interface NetworkInfo {
+
+    /**
+     * Returns the current ledger ID.
+     *
+     * @return the {@link Bytes} of the current ledger ID
+     */
+    @NonNull
+    Bytes ledgerId();
+}

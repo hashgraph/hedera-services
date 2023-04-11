@@ -42,7 +42,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -138,24 +137,22 @@ public class TransactionChecker {
      * Parse the given {@link Bytes} into a transaction, and check its validity.
      *
      * <p>After verifying that the number of bytes comprising the transaction does not exceed the maximum allowed, the
-     * transaction is parsed and checked. See {@link #check(SessionContext, Transaction)} for details on the checks
+     * transaction is parsed and checked. See {@link #check(Transaction)} for details on the checks
      * performed.
      *
-     * @param ctx the {@link SessionContext}
      * @param buffer the {@code ByteBuffer} with the serialized transaction
      * @return an {@link TransactionInfo} with the parsed and checked entities
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionInfo parseAndCheck(@NonNull final SessionContext ctx, @NonNull final Bytes buffer)
-            throws PreCheckException {
+    public TransactionInfo parseAndCheck(@NonNull final Bytes buffer) throws PreCheckException {
         // Fail fast if there are too many transaction bytes
         if (buffer.length() > maxSignedTxnSize) {
             throw new PreCheckException(TRANSACTION_OVERSIZE);
         }
 
         final var tx = parseStrict(buffer.toReadableSequentialData(), Transaction.PROTOBUF, INVALID_TRANSACTION);
-        return check(ctx, tx);
+        return check(tx);
     }
 
     /**
@@ -187,14 +184,12 @@ public class TransactionChecker {
      * other scenarios. Those will be checked in later stages of the workflow (and in many cases, within the service
      * modules themselves).</p>
      *
-     * @param ctx the {@link SessionContext}
      * @param tx the {@link Transaction} that needs to be checked
      * @return an {@link TransactionInfo} with the parsed and checked entities
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionInfo check(@NonNull final SessionContext ctx, @NonNull final Transaction tx)
-            throws PreCheckException {
+    public TransactionInfo check(@NonNull final Transaction tx) throws PreCheckException {
 
         // NOTE: Since we've already parsed the transaction, we assume that the transaction was not too many
         // bytes. This is a safe assumption because the code that receives the transaction bytes and parses
