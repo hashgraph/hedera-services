@@ -30,6 +30,7 @@ import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.TypedStoppableThread;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.utility.DurationUtils;
+import com.swirlds.common.utility.LifecycleException;
 import com.swirlds.common.utility.StackTrace;
 import java.time.Duration;
 import java.time.Instant;
@@ -267,7 +268,12 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
 
         final Thread t = configuration.buildThread(false);
         markAsStarted(t);
-        t.start();
+        try {
+            t.start();
+        } catch (final LifecycleException e) {
+            status.set(Status.DEAD);
+            throw e;
+        }
     }
 
     /**
