@@ -23,7 +23,6 @@ import com.swirlds.common.threading.BlockingResourceProvider;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.utility.StackTrace;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.state.signed.SignedState;
