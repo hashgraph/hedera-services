@@ -218,7 +218,9 @@ public class SignedStateManager implements SignedStateFinder {
 
         if (signedState.isComplete()) {
             completeStates.put(signedState);
-            notifyNewLatestCompleteState(signedState);
+            if (completeStates.getLatestRound() == signedState.getRound()) {
+                notifyNewLatestCompleteState(signedState);
+            }
         } else {
             incompleteStates.put(signedState);
             gatherSavedSignatures(signedState);

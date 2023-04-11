@@ -21,7 +21,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Sends dispatches when a dump of ta signed state is requested.
+ * Sends dispatches when a dump of a signed state is requested.
  */
 @FunctionalInterface
 public interface StateDumpRequestedTrigger extends TriggerThree<Long, String, Boolean> {
