@@ -60,9 +60,9 @@ abstract class GrpcTestBase extends TestBase {
     private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     /** A built-in {@link IngestWorkflow} which succeeds and does nothing. */
-    protected static final IngestWorkflow NOOP_INGEST_WORKFLOW = (session, requestBuffer, responseBuffer) -> {};
+    protected static final IngestWorkflow NOOP_INGEST_WORKFLOW = (requestBuffer, responseBuffer) -> {};
     /** A built-in {@link QueryWorkflow} which succeeds and does nothing. */
-    protected static final QueryWorkflow NOOP_QUERY_WORKFLOW = (session, requestBuffer, responseBuffer) -> {};
+    protected static final QueryWorkflow NOOP_QUERY_WORKFLOW = (requestBuffer, responseBuffer) -> {};
 
     /**
      * This {@link GrpcServer} is used to handle the wire protocol tasks and delegate to our gRPC
