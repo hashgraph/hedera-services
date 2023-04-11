@@ -32,6 +32,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.primitives.Ints;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -61,6 +62,27 @@ class ContractKeyTest {
         assertEquals(-1, base.compareTo(largerNum));
         final var smallerKey = new ContractKey(contractNum, 1);
         assertEquals(+1, base.compareTo(smallerKey));
+    }
+
+    // The first two columns form a ContractKey(id, 32-byte word) and the third column is the
+    // result of running ContractKey.hashCode() on that key using the v0.35.3 tag.
+    @CsvSource({
+        "5347959350198992124,cd53935a7e183dac3557134dfc73766479c520c7ffeace8723488bffa2da3fa2,-672529924",
+        "4793581390134811504,4a164095f80400a99cc906b97cda21a0ccbdcc68c30f25acfb3be365188ffa92,-117896145",
+        "495049458345236169,ccc59e0e848fc33929be60250bea580a0b627462a40caa923cef92b52521d91d,-2046179395",
+        "1431041771021977088,b9d0e90be872a7dbec4374994456d827511b5119e91753e4c470bce5f70ae8c9,1791841599",
+        "7691249564562953528,3c9c72d879d1f8d3c58bfd3646104bc4b3e15a1ab9620046110281148be061a5,-791511019",
+        "5054707002752848259,a8d3ac6828f9b9c0c40d1d852928e32d2c3ac8594b833dfde0690d860c146679,-864395628",
+        "3197462047532630427,302b67d47cae0cbb28a088c54e06a7f9d0f7294c79c9a24a7a7dd338c2120d04,-416588588",
+        "7450692693395689069,83155a9613b37702263c403a1155634391fe2cb52a602c471111afc5556a10bc,-1845261180",
+        "6927692228180407389,0eee723a1379e18de57b833948aaaa27a3ab50782ec3e3357c033324c8e6b6ea,1695791916",
+        "4625164975176510159,f7526434d62eb147a11c0d186c795d98ad5053089f9b677fb99e637978bf8d6d,-173217838",
+    })
+    @ParameterizedTest
+    void computesV035HashCodes(final long contractNum, final String keyHex, final int expectedCode) {
+        final var word = CommonUtils.unhex(keyHex);
+        final var subject = new ContractKey(contractNum, word);
+        assertEquals(expectedCode, subject.hashCode());
     }
 
     @Test
