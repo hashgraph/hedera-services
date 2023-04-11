@@ -31,5 +31,4 @@ public interface StartableThreadManager extends ThreadManager, Lifecycle, AutoCl
     default void close() {
         stop();
     }
-
 }

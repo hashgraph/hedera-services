@@ -72,9 +72,6 @@ public class ManagedScheduledExecutorService extends ManagedExecutorService impl
     @Override
     public @NonNull ScheduledFuture<?> scheduleAtFixedRate(
             final @NonNull Runnable command, final long initialDelay, final long period, final @NonNull TimeUnit unit) {
-        if (getLifecyclePhase() == LifecyclePhase.NOT_STARTED) {
-            return scheduledExecutorService.scheduleAtFixedRate(wrapRunnable(command), initialDelay, period, unit);
-        }
         throwIfNotInPhase(LifecyclePhase.STARTED);
         return scheduledExecutorService.scheduleAtFixedRate(command, initialDelay, period, unit);
     }

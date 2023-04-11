@@ -20,7 +20,6 @@ import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.utility.Lifecycle;
 import com.swirlds.common.utility.LifecyclePhase;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -247,6 +246,6 @@ public class ManagedExecutorService implements ExecutorService, Lifecycle {
             return;
         }
         throwIfNotInPhase(LifecyclePhase.STARTED);
-        executorService.execute(wrapRunnable(command));
+        executorService.execute(command);
     }
 }
