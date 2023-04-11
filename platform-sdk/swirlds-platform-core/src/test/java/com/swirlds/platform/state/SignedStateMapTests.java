@@ -128,23 +128,19 @@ class SignedStateMapTests {
 
         final AtomicInteger references1 = new AtomicInteger();
 
-        final AtomicInteger referencesHeldByMap1 = references1;
-
         final SignedState signedState1 = SignedStateReferenceTests.buildSignedState(references1);
         final long round = 1234;
         doReturn(round).when(signedState1).getRound();
 
         final AtomicInteger references2 = new AtomicInteger();
 
-        final AtomicInteger referencesHeldByMap2 = references2;
-
         final SignedState signedState2 = SignedStateReferenceTests.buildSignedState(references2);
         doReturn(round).when(signedState2).getRound();
 
         map.put(signedState1);
         assertEquals(1, map.getSize(), "unexpected size");
-        assertEquals(1, referencesHeldByMap1.get(), "invalid reference count");
-        assertEquals(0, referencesHeldByMap2.get(), "invalid reference count");
+        assertEquals(1, references1.get(), "invalid reference count");
+        assertEquals(0, references2.get(), "invalid reference count");
         try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatest()) {
             assertSame(signedState1, wrapper.get());
         }
@@ -152,8 +148,8 @@ class SignedStateMapTests {
 
         map.put(signedState2);
         assertEquals(1, map.getSize(), "unexpected size");
-        assertEquals(0, referencesHeldByMap1.get(), "invalid reference count");
-        assertEquals(1, referencesHeldByMap2.get(), "invalid reference count");
+        assertEquals(0, references1.get(), "invalid reference count");
+        assertEquals(1, references2.get(), "invalid reference count");
         try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatest()) {
             assertSame(signedState2, wrapper.get());
         }

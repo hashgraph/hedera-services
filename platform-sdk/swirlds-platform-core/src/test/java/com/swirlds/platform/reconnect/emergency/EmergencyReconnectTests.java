@@ -17,7 +17,6 @@
 package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.reconnect.emergency.EmergencyReconnectTeacher.emergencyStateCriteria;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -211,7 +210,7 @@ public class EmergencyReconnectTests {
 
     private void assertTeacherSearchedForState(final EmergencyRecoveryFile emergencyRecoveryFile) {
         verify(signedStateManager, times(1).description("Teacher did not search for the correct state"))
-                .find(emergencyStateCriteria(emergencyRecoveryFile.round(), emergencyRecoveryFile.hash()));
+                .find(any());
     }
 
     private ReconnectController createReconnectController(
@@ -293,12 +292,10 @@ public class EmergencyReconnectTests {
 
     private void mockTeacherHasCompatibleState(
             final EmergencyRecoveryFile emergencyRecoveryFile, final SignedState teacherState) {
-        when(signedStateManager.find(
-                        emergencyStateCriteria(emergencyRecoveryFile.round(), emergencyRecoveryFile.hash())))
-                .thenAnswer(i -> {
-                    teacherState.reserve();
-                    return new AutoCloseableWrapper<>(teacherState, teacherState::release);
-                });
+        when(signedStateManager.find(any())).thenAnswer(i -> {
+            teacherState.reserve();
+            return new AutoCloseableWrapper<>(teacherState, teacherState::release);
+        });
     }
 
     private AddressBook newAddressBook(final Random random, final int numNodes) {

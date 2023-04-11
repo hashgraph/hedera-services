@@ -70,7 +70,7 @@ public class EmergencyReconnectTeacher {
      * @return a predicate that decides if a state is suitable for an emergency reconnect
      */
     public static @NonNull Predicate<SignedState> emergencyStateCriteria(final long round, @NonNull final Hash hash) {
-        return (@NonNull final SignedState signedState) -> {
+        return (final SignedState signedState) -> {
             if (signedState.isComplete() && signedState.getRound() > round) {
                 return true;
             }

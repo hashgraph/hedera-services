@@ -23,6 +23,7 @@ import com.swirlds.common.threading.BlockingResourceProvider;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.state.signed.SignedState;
@@ -144,6 +145,7 @@ public class ReconnectController implements Runnable {
      * 		if the calling thread is interrupted while the connection is being used
      */
     public void provideLearnerConnection(final Connection connection) throws InterruptedException {
+        logger.info(EXCEPTION.getMarker(), "provideLearnerConnection()\n" + StackTrace.getStackTrace()); // TODO
         connectionProvider.provide(connection);
     }
 

@@ -19,6 +19,9 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.platform.state.signed.SignedStateUtilities.newSignedStateWrapper;
 
+import com.swirlds.common.threading.locks.AutoClosableLock;
+import com.swirlds.common.threading.locks.Locks;
+import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
@@ -32,6 +35,7 @@ import java.util.function.Consumer;
 public class SignedStateMap {
 
     private final SortedMap<Long, SignedState> map = new TreeMap<>();
+    private final AutoClosableLock lock = Locks.createAutoLock();
 
     /**
      * The round returned if there are no states in this map.
@@ -52,8 +56,10 @@ public class SignedStateMap {
      * @return an auto-closable object that wraps a signed state. May point to a null state if there is no state for the
      * given round. Will automatically release the state when closed.
      */
-    public synchronized @NonNull AutoCloseableWrapper<SignedState> get(final long round) {
-        return newSignedStateWrapper(map.get(round));
+    public @NonNull AutoCloseableWrapper<SignedState> get(final long round) {
+        try (final Locked l = lock.lock()) {
+            return newSignedStateWrapper(map.get(round));
+        }
     }
 
     /**
@@ -62,11 +68,13 @@ public class SignedStateMap {
      * @return an auto-closable object that wraps a signed state. May point to a null state if there are no states in
      * this container. Will automatically release the state when closed.
      */
-    public synchronized @NonNull AutoCloseableWrapper<SignedState> getLatest() {
-        if (map.isEmpty()) {
-            return newSignedStateWrapper(null);
+    public @NonNull AutoCloseableWrapper<SignedState> getLatest() {
+        try (final Locked l = lock.lock()) {
+            if (map.isEmpty()) {
+                return newSignedStateWrapper(null);
+            }
+            return newSignedStateWrapper(map.get(map.lastKey()));
         }
-        return newSignedStateWrapper(map.get(map.lastKey()));
     }
 
     /**
@@ -74,11 +82,13 @@ public class SignedStateMap {
      *
      * @return the latest round in this map, or {@link #NO_STATE_ROUND} if this map is empty
      */
-    public synchronized long getLatestRound() {
-        if (map.isEmpty()) {
-            return NO_STATE_ROUND;
+    public long getLatestRound() {
+        try (final Locked l = lock.lock()) {
+            if (map.isEmpty()) {
+                return NO_STATE_ROUND;
+            }
+            return map.lastKey();
         }
-        return map.lastKey();
     }
 
     /**
@@ -86,8 +96,10 @@ public class SignedStateMap {
      *
      * @return true if the map is empty, otherwise false.
      */
-    public synchronized boolean isEmpty() {
-        return map.isEmpty();
+    public boolean isEmpty() {
+        try (final Locked l = lock.lock()) {
+            return map.isEmpty();
+        }
     }
 
     /**
@@ -95,15 +107,17 @@ public class SignedStateMap {
      *
      * @param signedState the signed state to add
      */
-    public synchronized void put(@NonNull final SignedState signedState) {
+    public void put(@NonNull final SignedState signedState) {
         throwArgNull(signedState, "signedState");
 
-        signedState.reserve();
+        try (final Locked l = lock.lock()) {
+            signedState.reserve();
 
-        final SignedState previousState = map.put(signedState.getRound(), signedState);
+            final SignedState previousState = map.put(signedState.getRound(), signedState);
 
-        if (previousState != null) {
-            signedState.release();
+            if (previousState != null) {
+                previousState.release();
+            }
         }
     }
 
@@ -112,21 +126,25 @@ public class SignedStateMap {
      *
      * @param round the round to remove
      */
-    public synchronized void remove(final long round) {
-        final SignedState signedState = map.remove(round);
-        if (signedState != null) {
-            signedState.release();
+    public void remove(final long round) {
+        try (final Locked l = lock.lock()) {
+            final SignedState signedState = map.remove(round);
+            if (signedState != null) {
+                signedState.release();
+            }
         }
     }
 
     /**
      * Remove all signed states from this collection.
      */
-    public synchronized void clear() {
-        for (final SignedState signedState : map.values()) {
-            signedState.release();
+    public void clear() {
+        try (final Locked l = lock.lock()) {
+            for (final SignedState signedState : map.values()) {
+                signedState.release();
+            }
+            map.clear();
         }
-        map.clear();
     }
 
     /**
@@ -141,40 +159,43 @@ public class SignedStateMap {
      *
      * @param operation an operation that will use an iterator
      */
-    public synchronized void atomicIteration(@NonNull final Consumer<Iterator<SignedState>> operation) {
+    public void atomicIteration(@NonNull final Consumer<Iterator<SignedState>> operation) {
+        try (final Locked l = lock.lock()) {
+            final Iterator<SignedState> baseIterator = map.values().iterator();
 
-        final Iterator<SignedState> baseIterator = map.values().iterator();
+            final Iterator<SignedState> iterator = new Iterator<>() {
+                private SignedState previous;
 
-        final Iterator<SignedState> iterator = new Iterator<>() {
-            private SignedState previous;
-
-            @Override
-            public boolean hasNext() {
-                return baseIterator.hasNext();
-            }
-
-            @Override
-            public SignedState next() {
-                previous = baseIterator.next();
-                return previous;
-            }
-
-            @Override
-            public void remove() {
-                baseIterator.remove();
-                if (previous != null) {
-                    previous.release();
+                @Override
+                public boolean hasNext() {
+                    return baseIterator.hasNext();
                 }
-            }
-        };
 
-        operation.accept(iterator);
+                @Override
+                public SignedState next() {
+                    previous = baseIterator.next();
+                    return previous;
+                }
+
+                @Override
+                public void remove() {
+                    baseIterator.remove();
+                    if (previous != null) {
+                        previous.release();
+                    }
+                }
+            };
+
+            operation.accept(iterator);
+        }
     }
 
     /**
      * Get the number of states in this map.
      */
-    public synchronized int getSize() {
-        return map.size();
+    public int getSize() {
+        try (final Locked l = lock.lock()) {
+            return map.size();
+        }
     }
 }
