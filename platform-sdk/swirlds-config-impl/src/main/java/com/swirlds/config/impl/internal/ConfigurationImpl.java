@@ -18,6 +18,8 @@ package com.swirlds.config.impl.internal;
 
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -38,9 +40,9 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     private boolean initialized = false;
 
     ConfigurationImpl(
-            final ConfigPropertiesService propertiesService,
-            final ConverterService converterService,
-            final ConfigValidationService validationService) {
+            @NonNull final ConfigPropertiesService propertiesService,
+            @NonNull final ConverterService converterService,
+            @NonNull final ConfigValidationService validationService) {
         this.propertiesService = CommonUtils.throwArgNull(propertiesService, "propertiesService");
         this.converterService = CommonUtils.throwArgNull(converterService, "converterService");
         this.validationService = CommonUtils.throwArgNull(validationService, "validationService");
@@ -123,7 +125,8 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     }
 
     @Override
-    public Set<String> getValueSet(final String propertyName) {
+    @Nullable
+    public Set<String> getValueSet(@NonNull final String propertyName) {
         final List<String> values = getValues(propertyName);
         if (values == null) {
             return null;
@@ -132,7 +135,8 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     }
 
     @Override
-    public Set<String> getValueSet(final String propertyName, final Set<String> defaultValue) {
+    @Nullable
+    public Set<String> getValueSet(@NonNull final String propertyName, @Nullable final Set<String> defaultValue) {
         if (!exists(propertyName)) {
             return defaultValue;
         }
@@ -140,7 +144,8 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     }
 
     @Override
-    public <T> Set<T> getValueSet(final String propertyName, final Class<T> propertyType)
+    @Nullable
+    public <T> Set<T> getValueSet(@NonNull final String propertyName, @NonNull final Class<T> propertyType)
             throws NoSuchElementException, IllegalArgumentException {
         final List<T> values = getValues(propertyName, propertyType);
         if (values == null) {
@@ -150,7 +155,11 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     }
 
     @Override
-    public <T> Set<T> getValueSet(final String propertyName, final Class<T> propertyType, final Set<T> defaultValue)
+    @Nullable
+    public <T> Set<T> getValueSet(
+            @NonNull final String propertyName,
+            @NonNull final Class<T> propertyType,
+            @Nullable final Set<T> defaultValue)
             throws IllegalArgumentException {
         if (!exists(propertyName)) {
             return defaultValue;

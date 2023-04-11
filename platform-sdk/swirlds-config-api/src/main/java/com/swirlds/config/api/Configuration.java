@@ -16,6 +16,8 @@
 
 package com.swirlds.config.api;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -153,7 +155,8 @@ public interface Configuration {
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
      *                                  the given type
      */
-    Set<String> getValueSet(String propertyName);
+    @Nullable
+    Set<String> getValueSet(@NonNull String propertyName);
 
     /**
      * Returns a {@link Set} of string elements of the property with the given name or the given default {@link Set}
@@ -165,7 +168,8 @@ public interface Configuration {
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
      *                                  the given type
      */
-    Set<String> getValueSet(String propertyName, Set<String> defaultValue);
+    @Nullable
+    Set<String> getValueSet(@NonNull String propertyName, @Nullable Set<String> defaultValue);
 
     /**
      * Returns a {@link Set} of elements of the property with the given name
@@ -178,7 +182,8 @@ public interface Configuration {
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
      *                                  the given type
      */
-    <T> Set<T> getValueSet(String propertyName, Class<T> propertyType)
+    @Nullable
+    <T> Set<T> getValueSet(@NonNull String propertyName, @NonNull Class<T> propertyType)
             throws NoSuchElementException, IllegalArgumentException;
 
     /**
@@ -192,7 +197,8 @@ public interface Configuration {
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
      *                                  the given type
      */
-    <T> Set<T> getValueSet(String propertyName, Class<T> propertyType, Set<T> defaultValue)
+    @Nullable
+    <T> Set<T> getValueSet(@NonNull String propertyName, @NonNull Class<T> propertyType, @Nullable Set<T> defaultValue)
             throws IllegalArgumentException;
 
     /**

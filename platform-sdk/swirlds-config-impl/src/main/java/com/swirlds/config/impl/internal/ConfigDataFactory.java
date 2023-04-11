@@ -51,7 +51,7 @@ class ConfigDataFactory {
      */
     private final ConverterService converterService;
 
-    ConfigDataFactory(final Configuration configuration, final ConverterService converterService) {
+    ConfigDataFactory(@NonNull final Configuration configuration, @NonNull final ConverterService converterService) {
         this.configuration = CommonUtils.throwArgNull(configuration, "configuration");
         this.converterService = CommonUtils.throwArgNull(converterService, "converterService");
     }
@@ -136,7 +136,8 @@ class ConfigDataFactory {
                 ConfigReflectionUtils.getSingleGenericTypeArgument((ParameterizedType) component.getGenericType());
     }
 
-    private <T> Set<T> getDefaultValueSet(final RecordComponent component) {
+    @NonNull
+    private <T> Set<T> getDefaultValueSet(@NonNull final RecordComponent component) {
         CommonUtils.throwArgNull(component, "component");
         final Class<?> type = getGenericSetType(component);
         final String rawValue = getRawValue(component);
@@ -161,7 +162,8 @@ class ConfigDataFactory {
                 .toList();
     }
 
-    private String getRawValue(final RecordComponent component) {
+    @NonNull
+    private String getRawValue(@NonNull final RecordComponent component) {
         final Optional<String> rawDefaultValue = getRawDefaultValue(component);
         if (rawDefaultValue.isEmpty()) {
             throw new IllegalArgumentException("Default value not defined for parameter");
