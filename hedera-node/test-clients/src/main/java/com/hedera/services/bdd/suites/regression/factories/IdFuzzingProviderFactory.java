@@ -61,23 +61,11 @@ public class IdFuzzingProviderFactory {
                                     .ceiling(intPropOrElse(
                                             "randomAccount.ceilingNum", RandomAccount.DEFAULT_CEILING_NUM, props)),
                             intPropOrElse("randomAccount.bias", 0, props))
+                    .withOp(new TransferToRandomEVMAddress(keys), intPropOrElse("randomTransfer.bias", 0, props))
+                    .withOp(new TransferToRandomKey(keys), intPropOrElse("randomTransfer.bias", 0, props))
                     .withOp(
                             new RandomAccountUpdate(keys, accounts),
                             intPropOrElse("randomAccountUpdate.bias", 0, props));
-        };
-    }
-
-    public static Function<HapiSpec, OpProvider> idTransferToEVMAddressWith(final String resource) {
-        return spec -> {
-            final var props = RegressionProviderFactory.propsFrom(resource);
-
-            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
-
-            return new BiasedDelegatingProvider()
-                    /* --- <inventory> --- */
-                    .withInitialization(onlyEcdsaKeys())
-                    /* ----- CRYPTO ----- */
-                    .withOp(new TransferToRandomEVMAddress(keys), intPropOrElse("randomTransfer.bias", 0, props));
         };
     }
 

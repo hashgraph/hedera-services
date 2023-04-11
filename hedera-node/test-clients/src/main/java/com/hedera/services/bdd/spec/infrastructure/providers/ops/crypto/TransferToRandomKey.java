@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -45,7 +46,7 @@ public class TransferToRandomKey implements OpProvider {
 
         var to = involvedKey.get();
         HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, to, 5))
-                .hasKnownStatusFrom(SUCCESS, INVALID_ALIAS_KEY)
+                .hasKnownStatusFrom(SUCCESS, INVALID_ALIAS_KEY, INVALID_SIGNATURE)
                 .payingWith(UNIQUE_PAYER_ACCOUNT);
 
         return Optional.of(op);

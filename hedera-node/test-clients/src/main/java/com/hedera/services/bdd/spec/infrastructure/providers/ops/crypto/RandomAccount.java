@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
@@ -70,7 +71,7 @@ public class RandomAccount implements OpProvider {
 
     @Override
     public List<HapiSpecOperation> suggestedInitializers() {
-        return List.of(newKeyNamed(my("simpleKey")));
+        return fuzzIdentifiers ? EMPTY_LIST : List.of(newKeyNamed(my("simpleKey")));
     }
 
     @Override
