@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hapi.utils.fee;
+package com.hedera.node.app.spi.info;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import com.swirlds.common.system.address.AddressBook;
 
-class FeeObjectTest {
-    @Test
-    void toStringWorks() {
-        final var subject = new FeeObject(1L, 2L, 3L);
-        final var desired = "FeeObject{nodeFee=1, networkFee=2, serviceFee=3}";
+/**
+ * Summarizes useful information about the nodes in the {@link AddressBook} from the Platform. In
+ * the future, there may be events that require re-reading the book; but at present nodes may treat
+ * the initializing book as static.
+ */
+public interface NodeInfo {
 
-        Assertions.assertEquals(desired, subject.toString());
-    }
+    /**
+     * Convenience method to check if this node is zero-stake.
+     *
+     * @return whether this node has zero stake.
+     */
+    boolean isSelfZeroStake();
 }

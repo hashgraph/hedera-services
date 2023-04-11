@@ -52,7 +52,7 @@ import org.apache.logging.log4j.Logger;
  * @param <V>
  * 		the type of the value
  */
-public class ReconnectNodeRemover<K extends VirtualKey<? super K>, V extends VirtualValue> {
+public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> {
 
     private static final Logger logger = LogManager.getLogger(ReconnectNodeRemover.class);
 
