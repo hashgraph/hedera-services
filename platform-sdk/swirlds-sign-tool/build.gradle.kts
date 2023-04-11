@@ -14,7 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app;
+plugins {
+  id("com.swirlds.platform.conventions")
+  id("com.swirlds.platform.library")
+  id("com.swirlds.platform.maven-publish")
+}
 
-/** This record keeps a list of everything that is used per-thread */
-public record SessionContext() {}
+dependencies {
+  // Individual Dependencies
+  implementation(project(":swirlds-common"))
+  implementation(project(":swirlds-base"))
+  implementation(project(":swirlds-logging"))
+  implementation(libs.bundles.logging.impl)
+  implementation(libs.jackson.databind)
+  implementation(libs.jackson.datatype.jsr310)
+  compileOnly(libs.spotbugs.annotations)
+
+  testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+}
