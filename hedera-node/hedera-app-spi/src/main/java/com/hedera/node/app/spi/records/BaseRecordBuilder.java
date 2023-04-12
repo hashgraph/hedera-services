@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.virtualmap;
+package com.hedera.node.app.spi.records;
 
 /**
- * Special form of a VirtualKey which is a simple long. This allows much faster special paths in data stores.
+ * Base implementation of a {@code UniversalRecordBuilder} that will track all the
+ * "universal" transaction metadata and side effects. This builder is used when there are no
+ * side effects to record from the transaction(e.g. a token pause).
  */
-public interface VirtualLongKey extends VirtualKey {
-
+public class BaseRecordBuilder<T extends RecordBuilder<T>> extends UniversalRecordBuilder<T> {
     /**
-     * Direct access to the value of this key in its raw long format
-     *
-     * @return the long value of this key
+     * {@inheritDoc}
      */
-    long getKeyAsLong();
+    @Override
+    public T self() {
+        return (T) this;
+    }
 }

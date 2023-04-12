@@ -112,7 +112,7 @@ public class CloseFlushTest {
         Assertions.assertNull(exception.get(), "No exceptions expected, but caught " + exception.get());
     }
 
-    public static class CustomDataSourceBuilder<K extends VirtualKey<? super K>, V extends VirtualValue>
+    public static class CustomDataSourceBuilder<K extends VirtualKey, V extends VirtualValue>
             extends MerkleDbDataSourceBuilder<K, V> {
 
         private VirtualDataSource<K, V> delegate = null;

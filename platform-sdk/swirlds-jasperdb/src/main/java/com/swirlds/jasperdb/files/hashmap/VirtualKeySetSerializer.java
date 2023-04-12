@@ -21,7 +21,6 @@ import static com.swirlds.common.utility.Units.BYTES_PER_LONG;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,7 +31,7 @@ import java.nio.ByteBuffer;
  * purpose key serializer.
  */
 @ConstructableIgnored
-public class VirtualKeySetSerializer implements KeySerializer<VirtualKey<VirtualLongKey>> {
+public class VirtualKeySetSerializer implements KeySerializer<VirtualLongKey> {
 
     /**
      * {@inheritDoc}
@@ -78,7 +77,7 @@ public class VirtualKeySetSerializer implements KeySerializer<VirtualKey<Virtual
      * {@inheritDoc}
      */
     @Override
-    public VirtualKey<VirtualLongKey> deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public VirtualLongKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -86,9 +85,9 @@ public class VirtualKeySetSerializer implements KeySerializer<VirtualKey<Virtual
      * {@inheritDoc}
      */
     @Override
-    public int serialize(final VirtualKey<VirtualLongKey> data, final SerializableDataOutputStream outputStream)
+    public int serialize(final VirtualLongKey data, final SerializableDataOutputStream outputStream)
             throws IOException {
-        outputStream.writeLong(((VirtualLongKey) data).getKeyAsLong());
+        outputStream.writeLong(data.getKeyAsLong());
         return BYTES_PER_LONG;
     }
 
@@ -112,9 +111,8 @@ public class VirtualKeySetSerializer implements KeySerializer<VirtualKey<Virtual
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final VirtualKey<VirtualLongKey> keyToCompare)
+    public boolean equals(final ByteBuffer buffer, final int dataVersion, final VirtualLongKey keyToCompare)
             throws IOException {
-
-        return buffer.getLong() == ((VirtualLongKey) keyToCompare).getKeyAsLong();
+        return buffer.getLong() == keyToCompare.getKeyAsLong();
     }
 }
