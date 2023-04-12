@@ -70,9 +70,9 @@ public class AddressBookTestingToolMain implements SwirldMain {
 
     @Override
     public void setConfiguration(@NonNull final Configuration configuration) {
-        final int softwareVersion =
+        final int softVersion =
                 configuration.getConfigData(AddressBookTestingToolConfig.class).softwareVersion();
-        this.softwareVersion = new BasicSoftwareVersion(softwareVersion);
+        this.softwareVersion = new BasicSoftwareVersion(softVersion);
     }
 
     /**

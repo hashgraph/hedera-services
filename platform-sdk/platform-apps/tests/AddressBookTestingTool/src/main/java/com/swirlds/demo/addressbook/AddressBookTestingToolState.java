@@ -76,12 +76,9 @@ import org.apache.logging.log4j.Logger;
 public class AddressBookTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
-    //
-    //    /** modify this value to change how updateStake behaves. */
-    //    private final int stakingBehavior;
-    //
-    //    /** modify this value to change the test scenario being run and validated. */
-    //    private final int testScenario;
+
+    /** the suffix for the debug address book */
+    private static String DEBUG = "debug";
 
     private final AddressBookTestingToolConfig testingToolConfig =
             ConfigurationHolder.getConfigData(AddressBookTestingToolConfig.class);
@@ -293,27 +290,32 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             throw new IllegalStateException("platform is null, init has not been called.");
         }
         final int testScenario = testingToolConfig.testScenario();
-        logger.info(DEMO_INFO.getMarker(), "Validating test scenario {}.", testScenario);
-        switch (testScenario) {
-            case 1:
-                return testScenario1GenesisForceUseOfConfigAddressBook();
-            case 2:
-                return testScenario2GenesisSwirldStateUpdateStake();
-            case 3:
-                return testScenario3NoSoftwareUpdateUseSavedStateAddressBook();
-            case 4:
-                return testScenario4NoSoftwareUpdateForceUseOfConfigAddressBook();
-            case 5:
-                return testScenario5SoftwareUpgradeStakingBehavior2();
-            case 6:
-                return testScenario6SoftwareUpgradeForceUseOfConfigAddressBook();
-            default:
-                logger.info(DEMO_INFO.getMarker(), "Test Scenario {}: no validation performed.", testScenario);
-                return true;
+        try {
+            logger.info(DEMO_INFO.getMarker(), "Validating test scenario {}.", testScenario);
+            switch (testScenario) {
+                case 1:
+                    return testScenario1GenesisForceUseOfConfigAddressBook();
+                case 2:
+                    return testScenario2GenesisSwirldStateUpdateStake();
+                case 3:
+                    return testScenario3NoSoftwareUpdateUseSavedStateAddressBook();
+                case 4:
+                    return testScenario4NoSoftwareUpdateForceUseOfConfigAddressBook();
+                case 5:
+                    return testScenario5SoftwareUpgradeStakingBehavior2();
+                case 6:
+                    return testScenario6SoftwareUpgradeForceUseOfConfigAddressBook();
+                default:
+                    logger.info(DEMO_INFO.getMarker(), "Test Scenario {}: no validation performed.", testScenario);
+                    return true;
+            }
+        } catch (final Exception e) {
+            logger.error(EXCEPTION.getMarker(), "Exception occurred in Test Scenario {}.", testScenario, e);
+            return false;
         }
     }
 
-    private boolean testScenario6SoftwareUpgradeForceUseOfConfigAddressBook() {
+    private boolean testScenario6SoftwareUpgradeForceUseOfConfigAddressBook() throws IOException, ParseException {
         if (!checkTestScenarioConditions(true, 6, 2, 2)) {
             return false;
         }
@@ -331,7 +333,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && theConfigurationAddressBookWasUsed();
     }
 
-    private boolean testScenario5SoftwareUpgradeStakingBehavior2() {
+    private boolean testScenario5SoftwareUpgradeStakingBehavior2() throws IOException, ParseException {
         if (!checkTestScenarioConditions(false, 5, 2, 2)) {
             return false;
         }
@@ -348,7 +350,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && equalsAsConfigText(platformAddressBook, updatedAddressBook, true);
     }
 
-    private boolean testScenario4NoSoftwareUpdateForceUseOfConfigAddressBook() {
+    private boolean testScenario4NoSoftwareUpdateForceUseOfConfigAddressBook() throws IOException, ParseException {
         if (!checkTestScenarioConditions(true, 4, 1, 2)) {
             return false;
         }
@@ -366,7 +368,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && theConfigurationAddressBookWasUsed();
     }
 
-    private boolean testScenario3NoSoftwareUpdateUseSavedStateAddressBook() {
+    private boolean testScenario3NoSoftwareUpdateUseSavedStateAddressBook() throws IOException, ParseException {
         if (!checkTestScenarioConditions(false, 3, 1, 2)) {
             return false;
         }
@@ -383,7 +385,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && equalsAsConfigText(platformAddressBook, updatedAddressBook, false);
     }
 
-    private boolean testScenario2GenesisSwirldStateUpdateStake() {
+    private boolean testScenario2GenesisSwirldStateUpdateStake() throws IOException, ParseException {
         if (!checkTestScenarioConditions(false, 2, 1, 1)) {
             return false;
         }
@@ -399,7 +401,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && theStateAddressBookWasNull(true);
     }
 
-    private boolean testScenario1GenesisForceUseOfConfigAddressBook() {
+    private boolean testScenario1GenesisForceUseOfConfigAddressBook() throws IOException, ParseException {
         if (!checkTestScenarioConditions(true, 1, 1, 1)) {
             return false;
         }
@@ -480,7 +482,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final String addressBook2ConfigText = addressBook2.toConfigText();
         final boolean pass = addressBook1ConfigText.equals(addressBook2ConfigText) == expectedResult;
         if (!pass) {
-            if (expectedResult == true) {
+            if (expectedResult) {
                 logger.error(
                         EXCEPTION.getMarker(),
                         "The address books are not equal as config text. {}",
@@ -502,27 +504,19 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @param expectedResult the expected result of the test.
      * @return true if the test passes, false otherwise.
      */
-    private boolean theStateAddressBookWasNull(final boolean expectedResult) {
-        try {
-            final String fileContents = getLastAddressBookFileEndsWith("debug");
-            final String textAfterStateHeader = getTextAfterHeader(fileContents, STATE_ADDRESS_BOOK_HEADER);
-            final boolean pass = textAfterStateHeader.contains(STATE_ADDRESS_BOOK_NULL) == expectedResult;
-            if (!pass) {
-                if (expectedResult == true) {
-                    logger.error(
-                            EXCEPTION.getMarker(),
-                            "The state address book was not null. {}",
-                            StackTrace.getStackTrace());
-                } else {
-                    logger.error(
-                            EXCEPTION.getMarker(), "The state address book was null. {}", StackTrace.getStackTrace());
-                }
+    private boolean theStateAddressBookWasNull(final boolean expectedResult) throws IOException {
+        final String fileContents = getLastAddressBookFileEndsWith(DEBUG);
+        final String textAfterStateHeader = getTextAfterHeader(fileContents, STATE_ADDRESS_BOOK_HEADER);
+        final boolean pass = textAfterStateHeader.contains(STATE_ADDRESS_BOOK_NULL) == expectedResult;
+        if (!pass) {
+            if (expectedResult) {
+                logger.error(
+                        EXCEPTION.getMarker(), "The state address book was not null. {}", StackTrace.getStackTrace());
+            } else {
+                logger.error(EXCEPTION.getMarker(), "The state address book was null. {}", StackTrace.getStackTrace());
             }
-            return pass;
-        } catch (IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Unable to read address book files", e);
-            return !expectedResult;
         }
+        return pass;
     }
 
     /**
@@ -530,22 +524,17 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      *
      * @return true if the configuration address book was used, false otherwise.
      */
-    private boolean theConfigurationAddressBookWasUsed() {
-        try {
-            final String fileContents = getLastAddressBookFileEndsWith("debug");
-            final String textAfterUsedHeader = getTextAfterHeader(fileContents, USED_ADDRESS_BOOK_HEADER);
-            final boolean pass = textAfterUsedHeader.contains(CONFIG_ADDRESS_BOOK_USED);
-            if (!pass) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "The configuration address book was not used. {}",
-                        StackTrace.getStackTrace());
-            }
-            return pass;
-        } catch (IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Unable to read address book files", e);
-            return false;
+    private boolean theConfigurationAddressBookWasUsed() throws IOException {
+        final String fileContents = getLastAddressBookFileEndsWith(DEBUG);
+        final String textAfterUsedHeader = getTextAfterHeader(fileContents, USED_ADDRESS_BOOK_HEADER);
+        final boolean pass = textAfterUsedHeader.contains(CONFIG_ADDRESS_BOOK_USED);
+        if (!pass) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The configuration address book was not used. {}",
+                    StackTrace.getStackTrace());
         }
+        return pass;
     }
 
     /**
@@ -553,15 +542,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      *
      * @return the address book in the last usedAddressBook file.
      */
-    @Nullable
-    private AddressBook getUsedAddressBook() {
-        try {
-            final String fileContents = getLastAddressBookFileEndsWith("txt");
-            return parseAddressBook(fileContents);
-        } catch (IOException | ParseException e) {
-            logger.error(EXCEPTION.getMarker(), "Unable to read address book files", e);
-            return null;
-        }
+    @NonNull
+    private AddressBook getUsedAddressBook() throws IOException, ParseException {
+        final String fileContents = getLastAddressBookFileEndsWith("txt");
+        return parseAddressBook(fileContents);
     }
 
     /**
@@ -569,8 +553,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      *
      * @return the config address book from the last debug addressBook file.
      */
-    @Nullable
-    private AddressBook getConfigAddressBook() {
+    @NonNull
+    private AddressBook getConfigAddressBook() throws IOException, ParseException {
         return getDebugAddressBookAfterHeader(CONFIG_ADDRESS_BOOK_HEADER);
     }
 
@@ -579,8 +563,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      *
      * @return the state address book from the last debug addressBook file.
      */
-    @Nullable
-    private AddressBook getStateAddressBook() {
+    @NonNull
+    private AddressBook getStateAddressBook() throws IOException, ParseException {
         return getDebugAddressBookAfterHeader(STATE_ADDRESS_BOOK_HEADER);
     }
 
@@ -590,16 +574,11 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @param header the header to find.
      * @return the address book in the last debug addressBook file after the header.
      */
-    @Nullable
-    AddressBook getDebugAddressBookAfterHeader(String header) {
-        try {
-            final String fileContents = getLastAddressBookFileEndsWith("debug");
-            final String addressBookString = getTextAfterHeader(fileContents, header);
-            return parseAddressBook(addressBookString);
-        } catch (IOException | ParseException e) {
-            logger.error(EXCEPTION.getMarker(), "Unable to read address book files", e);
-            return null;
-        }
+    @NonNull
+    AddressBook getDebugAddressBookAfterHeader(@NonNull final String header) throws IOException, ParseException {
+        final String fileContents = getLastAddressBookFileEndsWith(DEBUG);
+        final String addressBookString = getTextAfterHeader(fileContents, header);
+        return parseAddressBook(addressBookString);
     }
 
     /**
@@ -609,8 +588,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @param header       the header to find.
      * @return the text from the fileContents after the header.
      */
-    @Nullable
-    String getTextAfterHeader(String fileContents, String header) {
+    @NonNull
+    String getTextAfterHeader(@NonNull final String fileContents, @NonNull final String header) {
+        Objects.requireNonNull(fileContents, "fileContents must not be null");
+        Objects.requireNonNull(header, "header must not be null");
         final int headerStartIndex = fileContents.indexOf(header);
         final int addressBookStartIndex = headerStartIndex + header.length();
         final int addressBookEndIndex = fileContents.indexOf("\n\n", addressBookStartIndex);
@@ -626,15 +607,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @return the address book.
      * @throws ParseException if unable to parse the address book.
      */
-    @Nullable
-    private AddressBook parseAddressBook(@Nullable final String addressBookString) throws ParseException {
-        if (addressBookString == null || addressBookString.isEmpty()) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Unable to parse address book from null or empty string. {}",
-                    StackTrace.getStackTrace());
-            return null;
-        }
+    @NonNull
+    private AddressBook parseAddressBook(@NonNull final String addressBookString) throws ParseException {
+        Objects.requireNonNull(addressBookString, "addressBookString must not be null");
         return AddressBookUtils.parseAddressBookConfigText(
                 addressBookString,
                 id -> id,
@@ -646,7 +621,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                         return false;
                     }
                 },
-                id -> id.toString());
+                Object::toString);
     }
 
     /**
@@ -656,8 +631,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @return the last address book file that ends with the given suffix.
      * @throws IOException if unable to read the file.
      */
-    @Nullable
-    private String getLastAddressBookFileEndsWith(String suffix) throws IOException {
+    @NonNull
+    private String getLastAddressBookFileEndsWith(@NonNull final String suffix) throws IOException {
         final Path addressBookDirectory = Path.of(addressBookConfig.addressBookDirectory());
         final AtomicReference<Path> lastAddressBookDebugFile = new AtomicReference<>(null);
         try (final Stream<Path> files = Files.list(addressBookDirectory)) {
