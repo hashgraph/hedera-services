@@ -43,7 +43,7 @@ import java.util.Objects;
  * @param <V>
  *     Virtual value type
  */
-public class MerkleDbDataSourceBuilder<K extends VirtualKey<? super K>, V extends VirtualValue>
+public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualValue>
         implements VirtualDataSourceBuilder<K, V> {
 
     private static final long CLASS_ID = 0x176ede0e1a69828L;

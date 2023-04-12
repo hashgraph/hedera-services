@@ -33,7 +33,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
@@ -115,11 +114,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     }
 
     @Override
-    public void handleQuery(
-            @NonNull final SessionContext session,
-            @NonNull final Bytes requestBuffer,
-            @NonNull final BufferedData responseBuffer) {
-        requireNonNull(session);
+    public void handleQuery(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
@@ -159,7 +154,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             if (paymentRequired) {
                 // 3.i Validate CryptoTransfer
                 allegedPayment = queryHeader.paymentOrThrow();
-                final var transactionInfo = ingestChecker.runAllChecks(state, session, allegedPayment);
+                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
                 queryChecker.validateCryptoTransfer(transactionInfo);
 
                 txBody = transactionInfo.txBody();
@@ -230,7 +225,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     }
 
     private long totalFee(final FeeObject costs) {
-        return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
+        return costs.networkFee() + costs.serviceFee() + costs.nodeFee();
     }
 
     private static ResponseHeader createResponseHeader(

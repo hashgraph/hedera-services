@@ -43,7 +43,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -84,9 +83,6 @@ class IngestWorkflowImplTest extends AppTestBase {
     /** The buffer to write responses into. */
     private final BufferedData responseBuffer = BufferedData.allocate(1024 * 6);
 
-    /** Used when calling the workflow. */
-    private SessionContext ctx;
-
     /** The request transaction */
     private Transaction transaction;
 
@@ -119,7 +115,6 @@ class IngestWorkflowImplTest extends AppTestBase {
     void setup() throws PreCheckException {
         // The request buffer, with basically random bytes
         requestBuffer = randomBytes(10);
-        ctx = new SessionContext();
         transactionBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(1001).build())
@@ -142,7 +137,7 @@ class IngestWorkflowImplTest extends AppTestBase {
                 transactionBody,
                 SignatureMap.newBuilder().build(),
                 HederaFunctionality.CONSENSUS_CREATE_TOPIC);
-        when(ingestChecker.runAllChecks(state, ctx, transaction)).thenReturn(transactionInfo);
+        when(ingestChecker.runAllChecks(state, transaction)).thenReturn(transactionInfo);
 
         // Create the workflow we are going to test with
         workflow = new IngestWorkflowImpl(
@@ -159,14 +154,14 @@ class IngestWorkflowImplTest extends AppTestBase {
         assertThatThrownBy(() -> new IngestWorkflowImpl(
                         null,
                         transactionChecker,
-                ingestChecker,
+                        ingestChecker,
                         submissionManager,
                         metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IngestWorkflowImpl(
                         stateAccessor,
                         null,
-                ingestChecker,
+                        ingestChecker,
                         submissionManager,
                         metrics))
                 .isInstanceOf(NullPointerException.class);
@@ -180,14 +175,14 @@ class IngestWorkflowImplTest extends AppTestBase {
         assertThatThrownBy(() -> new IngestWorkflowImpl(
                         stateAccessor,
                         transactionChecker,
-                ingestChecker,
+                        ingestChecker,
                         null,
                         metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IngestWorkflowImpl(
                         stateAccessor,
                         transactionChecker,
-                ingestChecker,
+                        ingestChecker,
                         submissionManager,
                         null))
                 .isInstanceOf(NullPointerException.class);
@@ -197,7 +192,7 @@ class IngestWorkflowImplTest extends AppTestBase {
     @DisplayName("When everything goes right, the transaction should be submitted")
     void testSuccess() throws PreCheckException, IOException {
         // When the transaction is submitted
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(requestBuffer, responseBuffer);
 
         // Then we get a response that is OK
         final TransactionResponse response = parseResponse(responseBuffer);
@@ -220,7 +215,7 @@ class IngestWorkflowImplTest extends AppTestBase {
             doThrow(new PreCheckException(INVALID_NODE_ACCOUNT)).when(ingestChecker).checkNodeState();
 
             // When the transaction is submitted
-            workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+            workflow.submitTransaction(requestBuffer, responseBuffer);
 
             // Then the request is rejected with INVALID_NODE_ACCOUNT
             final TransactionResponse response = parseResponse(responseBuffer);
@@ -245,7 +240,7 @@ class IngestWorkflowImplTest extends AppTestBase {
                 doThrow(new PreCheckException(PLATFORM_NOT_ACTIVE)).when(ingestChecker).checkNodeState();
 
                 // When the transaction is submitted
-                workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+                workflow.submitTransaction(requestBuffer, responseBuffer);
 
                 // Then the response fails with PLATFORM_NOT_ACTIVE
                 final TransactionResponse response = parseResponse(responseBuffer);
@@ -285,7 +280,7 @@ class IngestWorkflowImplTest extends AppTestBase {
                     .thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is submitted
-            workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+            workflow.submitTransaction(requestBuffer, responseBuffer);
 
             // Then the response fails with the given failure reason
             final TransactionResponse response = parseResponse(responseBuffer);
@@ -306,7 +301,7 @@ class IngestWorkflowImplTest extends AppTestBase {
                     .thenThrow(new RuntimeException("parseAndCheck exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> workflow.submitTransaction(ctx, requestBuffer, responseBuffer))
+            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("parseAndCheck exception");
             // And the transaction is not submitted to the platform
@@ -326,7 +321,7 @@ class IngestWorkflowImplTest extends AppTestBase {
             when(ingestChecker.runAllChecks(state, ctx, transaction)).thenThrow(new PreCheckException(BUSY));
 
             // When the transaction is submitted
-            workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+            workflow.submitTransaction(requestBuffer, responseBuffer);
 
             // Then the response fails with BUSY
             final TransactionResponse response = parseResponse(responseBuffer);
@@ -343,11 +338,11 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from IngestChecker, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a ThrottleAccumulator that will throw a RuntimeException
-            when(ingestChecker.runAllChecks(state, ctx, transaction))
+            when(ingestChecker.runAllChecks(state, transaction))
                     .thenThrow(new RuntimeException("runAllChecks exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> workflow.submitTransaction(ctx, requestBuffer, responseBuffer))
+            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("runAllChecks exception");
             // And the transaction is not submitted to the platform
@@ -370,7 +365,7 @@ class IngestWorkflowImplTest extends AppTestBase {
                     .submit(any(), any());
 
             // When we submit a transaction
-            workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+            workflow.submitTransaction(requestBuffer, responseBuffer);
 
             // Then the response will indicate the platform rejected the transaction
             final TransactionResponse response = parseResponse(responseBuffer);
@@ -390,7 +385,7 @@ class IngestWorkflowImplTest extends AppTestBase {
                     .submit(any(), any());
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> workflow.submitTransaction(ctx, requestBuffer, responseBuffer))
+            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("submit exception");
             // And the metrics for counting submitted transactions was not incremented

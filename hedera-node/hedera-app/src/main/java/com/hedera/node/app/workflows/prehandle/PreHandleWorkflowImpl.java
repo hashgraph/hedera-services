@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -55,13 +54,6 @@ import org.apache.logging.log4j.Logger;
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     private static final Logger LOG = LogManager.getLogger(PreHandleWorkflowImpl.class);
-
-    /**
-     * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a thread local, because we
-     * do not have control over the thread pool used by the underlying gRPC server.
-     */
-    private static final ThreadLocal<SessionContext> SESSION_CONTEXT_THREAD_LOCAL =
-            ThreadLocal.withInitial(SessionContext::new);
 
     private final TransactionChecker transactionChecker;
     private final TransactionDispatcher dispatcher;
@@ -152,12 +144,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         TransactionBody txBody;
         try {
             // Parse the Transaction and check the syntax
-            final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var txBytes = Bytes.wrap(platformTx.getContents());
 
             // 1. Parse the Transaction and check the syntax
             final var tx = transactionChecker.parse(txBytes);
-            final var transactionInfo = transactionChecker.check(ctx, tx);
+            final var transactionInfo = transactionChecker.check(tx);
             txBody = transactionInfo.txBody();
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required

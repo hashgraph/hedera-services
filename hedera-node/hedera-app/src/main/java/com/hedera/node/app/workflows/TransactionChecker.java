@@ -42,7 +42,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -138,7 +137,7 @@ public class TransactionChecker {
      * Parse the given {@link Bytes} into a transaction.
      *
      * <p>After verifying that the number of bytes comprising the transaction does not exceed the maximum allowed, the
-     * transaction is parsed. A transaction can be checked with {@link #check(SessionContext, Transaction)}.
+     * transaction is parsed. A transaction can be checked with {@link #check(Transaction)}.
      *
      * @param buffer the {@code ByteBuffer} with the serialized transaction
      * @return an {@link TransactionInfo} with the parsed and checked entities
@@ -183,14 +182,12 @@ public class TransactionChecker {
      * other scenarios. Those will be checked in later stages of the workflow (and in many cases, within the service
      * modules themselves).</p>
      *
-     * @param ctx the {@link SessionContext}
      * @param tx the {@link Transaction} that needs to be checked
      * @return an {@link TransactionInfo} with the parsed and checked entities
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionInfo check(@NonNull final SessionContext ctx, @NonNull final Transaction tx)
-            throws PreCheckException {
+    public TransactionInfo check(@NonNull final Transaction tx) throws PreCheckException {
 
         // NOTE: Since we've already parsed the transaction, we assume that the transaction was not too many
         // bytes. This is a safe assumption because the code that receives the transaction bytes and parses

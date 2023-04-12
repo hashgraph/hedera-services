@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hapi.utils.fee;
+package com.hedera.node.app.spi.records;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-class FeeObjectTest {
-    @Test
-    void toStringWorks() {
-        final var subject = new FeeObject(1L, 2L, 3L);
-        final var desired = "FeeObject{nodeFee=1, networkFee=2, serviceFee=3}";
-
-        Assertions.assertEquals(desired, subject.toString());
+/**
+ * Base implementation of a {@code UniversalRecordBuilder} that will track all the
+ * "universal" transaction metadata and side effects. This builder is used when there are no
+ * side effects to record from the transaction(e.g. a token pause).
+ */
+public class BaseRecordBuilder<T extends RecordBuilder<T>> extends UniversalRecordBuilder<T> {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public T self() {
+        return (T) this;
     }
 }

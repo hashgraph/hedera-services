@@ -35,7 +35,6 @@ import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
@@ -117,12 +116,6 @@ class SyncPreConsensusEventWriterTests {
             events.add(generator.generateEvent().convertToEventImpl());
         }
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
-
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
@@ -134,12 +127,21 @@ class SyncPreConsensusEventWriterTests {
         writer.start();
 
         long minimumGenerationNonAncient = 0;
-        for (final EventImpl event : events) {
+        final Iterator<EventImpl> iterator = events.iterator();
+        while (iterator.hasNext()) {
+            final EventImpl event = iterator.next();
+
             sequencer.assignStreamSequenceNumber(event);
 
             minimumGenerationNonAncient =
                     Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
             writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+
+            if (event.getGeneration() < minimumGenerationNonAncient) {
+                // Although it's not common, it's actually possible that the generator will generate
+                // an event that is ancient (since it isn't aware of what we consider to be ancient)
+                iterator.remove();
+            }
 
             writer.writeEvent(event);
         }
@@ -178,12 +180,6 @@ class SyncPreConsensusEventWriterTests {
             }
         }
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
-
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
@@ -198,13 +194,20 @@ class SyncPreConsensusEventWriterTests {
         writer.start();
 
         long minimumGenerationNonAncient = 0;
-        for (final EventImpl event : events) {
+        final Iterator<EventImpl> iterator = events.iterator();
+        while (iterator.hasNext()) {
+            final EventImpl event = iterator.next();
             minimumGenerationNonAncient =
                     Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
             writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
 
             writer.writeEvent(event);
-            if (flushSet.contains(event)) {
+
+            if (event.getGeneration() < minimumGenerationNonAncient) {
+                // Although it's not common, it's actually possible that the generator will generate
+                // an event that is ancient (since it isn't aware of what we consider to be ancient)
+                iterator.remove();
+            } else if (flushSet.contains(event)) {
                 assertTrue(writer.isEventDurable(event));
             }
         }
@@ -244,12 +247,6 @@ class SyncPreConsensusEventWriterTests {
 
         Collections.shuffle(flushIndexes, random);
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
-
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
@@ -264,13 +261,20 @@ class SyncPreConsensusEventWriterTests {
         writer.start();
 
         long minimumGenerationNonAncient = 0;
-        for (final EventImpl event : events) {
+        final Iterator<EventImpl> iterator = events.iterator();
+        while (iterator.hasNext()) {
+            final EventImpl event = iterator.next();
             minimumGenerationNonAncient =
                     Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
             writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
 
             writer.writeEvent(event);
-            if (flushSet.contains(event)) {
+
+            if (event.getGeneration() < minimumGenerationNonAncient) {
+                // Although it's not common, it's actually possible that the generator will generate
+                // an event that is ancient (since it isn't aware of what we consider to be ancient)
+                iterator.remove();
+            } else if (flushSet.contains(event)) {
                 assertTrue(writer.isEventDurable(event));
             }
         }
@@ -299,12 +303,6 @@ class SyncPreConsensusEventWriterTests {
             events.add(generator.generateEvent().convertToEventImpl());
         }
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
-
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
@@ -316,12 +314,20 @@ class SyncPreConsensusEventWriterTests {
         writer.start();
 
         long minimumGenerationNonAncient = 0;
-        for (final EventImpl event : events) {
+        final Iterator<EventImpl> iterator = events.iterator();
+        while (iterator.hasNext()) {
+            final EventImpl event = iterator.next();
             sequencer.assignStreamSequenceNumber(event);
 
             minimumGenerationNonAncient =
                     Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
             writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+
+            if (event.getGeneration() < minimumGenerationNonAncient) {
+                // Although it's not common, it's actually possible that the generator will generate
+                // an event that is ancient (since it isn't aware of what we consider to be ancient)
+                iterator.remove();
+            }
 
             writer.writeEvent(event);
         }
@@ -352,12 +358,6 @@ class SyncPreConsensusEventWriterTests {
             events.add(generator.generateEvent().convertToEventImpl());
         }
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
-
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
@@ -369,12 +369,21 @@ class SyncPreConsensusEventWriterTests {
         writer.start();
 
         long minimumGenerationNonAncient = 0;
-        for (final EventImpl event : events) {
+        final Iterator<EventImpl> iterator = events.iterator();
+        while (iterator.hasNext()) {
+            final EventImpl event = iterator.next();
+
             sequencer.assignStreamSequenceNumber(event);
 
             minimumGenerationNonAncient =
                     Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
             writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+
+            if (event.getGeneration() < minimumGenerationNonAncient) {
+                // Although it's not common, it's actually possible that the generator will generate
+                // an event that is ancient (since it isn't aware of what we consider to be ancient)
+                iterator.remove();
+            }
 
             writer.writeEvent(event);
         }
@@ -420,12 +429,6 @@ class SyncPreConsensusEventWriterTests {
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEvent().convertToEventImpl());
         }
-
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PlatformContext platformContext = buildContext();
 
