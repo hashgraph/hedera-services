@@ -45,6 +45,8 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.MalformedProtobufException;
+import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -217,8 +219,15 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private Query parseQuery(Bytes requestBuffer) {
         try {
             return queryParser.parseStrict(requestBuffer.toReadableSequentialData());
+        } catch (MalformedProtobufException | UnknownFieldException e) {
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         } catch (IOException e) {
-            // TODO there may be other types of errors here. Please cross check with ingest parsing
+            // This should technically not be possible. The data buffer supplied
+            // is either based on a byte[] or a byte buffer, in both cases all data
+            // is available and a generic IO exception shouldn't happen. If it does,
+            // it indicates the data could not be parsed, but for a reason other than
+            // those causing an MalformedProtobufException or UnknownFieldException.
+            logger.warn("Unexpected IO exception while parsing protobuf", e);
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
     }
