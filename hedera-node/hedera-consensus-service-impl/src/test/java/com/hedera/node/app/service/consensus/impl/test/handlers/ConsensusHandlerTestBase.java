@@ -35,7 +35,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -84,9 +83,6 @@ public class ConsensusHandlerTestBase {
 
     @Mock
     protected WritableStates writableStates;
-
-    @Mock
-    protected QueryContext queryContext;
 
     protected MapReadableKVState<EntityNum, Topic> readableTopicState;
     protected MapWritableKVState<EntityNum, Topic> writableTopicState;

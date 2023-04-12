@@ -84,11 +84,10 @@ class PreConsensusEventFileTests {
         final Instant timestamp = RandomUtils.randomInstant(random);
 
         final String expectedName =
-                SEQUENCE_NUMBER_PREFIX + sequenceNumber + EVENT_FILE_SEPARATOR + MINIMUM_GENERATION_PREFIX
+                timestamp.toString().replace(":", "+") + EVENT_FILE_SEPARATOR + SEQUENCE_NUMBER_PREFIX
+                        + sequenceNumber + EVENT_FILE_SEPARATOR + MINIMUM_GENERATION_PREFIX
                         + minimumGeneration + EVENT_FILE_SEPARATOR + MAXIMUM_GENERATION_PREFIX
-                        + maximumGeneration + EVENT_FILE_SEPARATOR
-                        + timestamp.toString().replace(":", "+")
-                        + ".pces";
+                        + maximumGeneration + ".pces";
 
         Assertions.assertEquals(
                 expectedName,

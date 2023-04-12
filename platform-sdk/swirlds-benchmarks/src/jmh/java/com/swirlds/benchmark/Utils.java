@@ -17,11 +17,13 @@
 package com.swirlds.benchmark;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 import javax.management.MBeanServer;
@@ -35,6 +37,21 @@ public final class Utils {
 
     private Utils() {
         // do not instantiate
+    }
+
+    public static String buildVersion() {
+        try (InputStream is = Utils.class.getClassLoader().getResourceAsStream("git.properties")) {
+            if (is != null) {
+                Properties p = new Properties();
+                p.load(is);
+                return String.format(
+                        "%s (%s)",
+                        p.getProperty("git.build.version", "?version?"),
+                        p.getProperty("git.commit.id.abbrev", "?commit?"));
+            }
+        } catch (IOException ignore) {
+        }
+        return "(unknown)";
     }
 
     public static void deleteRecursively(Path path) {
