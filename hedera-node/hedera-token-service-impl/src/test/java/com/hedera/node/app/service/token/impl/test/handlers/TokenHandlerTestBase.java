@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
@@ -39,8 +40,10 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -176,6 +179,8 @@ public class TokenHandlerTestBase {
                 pauseKey,
                 0,
                 deleted,
+                TokenType.FUNGIBLE_COMMON,
+                TokenSupplyType.INFINITE,
                 autoRenewAccountNumber,
                 autoRenewSecs,
                 expirationTime,
@@ -184,8 +189,6 @@ public class TokenHandlerTestBase {
                 paused,
                 accountsFrozenByDefault,
                 accountsKycGrantedByDefault,
-                TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.INFINITE,
                 Collections.emptyList());
     }
 
