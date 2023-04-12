@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -408,7 +409,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
                                 .sending(tcValue)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> getContractInfo(expectedCreate2Address.get())
                                 .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)),
                         sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
@@ -456,7 +457,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
                                 /* Cannot repeat CREATE2 with same args without destroying the existing contract */
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // https://github.com/hashgraph/hedera-services/issues/2874
                         // autoRenewAccountID is inherited from the sender
                         sourcing(() -> getContractInfo(expectedCreate2Address.get())
