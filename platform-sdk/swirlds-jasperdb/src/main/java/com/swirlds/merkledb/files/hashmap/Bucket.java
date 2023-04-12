@@ -83,7 +83,7 @@ public final class Bucket<K extends VirtualKey<? super K>> implements Closeable 
      * entries, and entry data. Buffer is expanded as needed, when new entries are added. Buffer
      * limit is kept equal to the bucket size in bytes.
      */
-    private volatile ByteBuffer bucketBuffer;
+    private ByteBuffer bucketBuffer;
 
     private final KeySerializer<K> keySerializer;
     private ByteBuffer reusableBuffer;
