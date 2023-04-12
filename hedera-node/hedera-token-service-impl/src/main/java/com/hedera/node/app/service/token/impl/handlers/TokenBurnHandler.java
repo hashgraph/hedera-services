@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,19 +50,15 @@ public class TokenBurnHandler implements TransactionHandler {
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
+            throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().tokenBurnOrThrow();
+        final var op = context.body().tokenBurnOrThrow();
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
-        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
-        if (tokenMeta.failed()) {
-            context.status(tokenMeta.failureReason());
-        } else {
-            final var tokenMetadata = tokenMeta.metadata();
-            final var supplyKey = tokenMetadata.supplyKey();
-            // we will fail in handle() if token has no supply key
-            supplyKey.ifPresent(context::addToReqNonPayerKeys);
-        }
+        final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
+        final var supplyKey = tokenMetadata.supplyKey();
+        // we will fail in handle() if token has no supply key
+        supplyKey.ifPresent(context::requireKey);
     }
 
     /**

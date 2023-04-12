@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_FOR_TOKEN_WITHOUT_KYC;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_INVALID_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_MISSING_TXN_BODY;
@@ -26,16 +28,16 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,19 +56,19 @@ class TokenRevokeKycFromAccountHandlerTest {
     }
 
     @Test
-    void tokenRevokeKycWithExtant() {
+    void tokenRevokeKycWithExtant() throws PreCheckException {
         final var txn = txnFrom(VALID_REVOKE_WITH_EXTANT_TOKEN);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context, tokenStore);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_KYC_KT.asPbjKey()));
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_KYC_KT.asPbjKey()));
+        basicContextAssertions(context, 1);
     }
 
     @Test
-    void tokenRevokeMissingTxnBody() {
+    void tokenRevokeMissingTxnBody() throws PreCheckException {
         final var txn = txnFrom(REVOKE_WITH_MISSING_TXN_BODY);
 
         final var context = new PreHandleContext(accountStore, txn);
@@ -74,25 +76,21 @@ class TokenRevokeKycFromAccountHandlerTest {
     }
 
     @Test
-    void tokenRevokeKycWithInvalidToken() {
+    void tokenRevokeKycWithInvalidToken() throws PreCheckException {
         final var txn = txnFrom(REVOKE_WITH_INVALID_TOKEN);
 
         final var context = new PreHandleContext(accountStore, txn);
-        subject.preHandle(context, tokenStore);
-
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertTrue(sanityRestoredToPbj(context.getRequiredNonPayerKeys()).isEmpty());
-        basicContextAssertions(context, 0, true, ResponseCodeEnum.INVALID_TOKEN_ID);
+        assertPreCheck(() -> subject.preHandle(context, tokenStore), INVALID_TOKEN_ID);
     }
 
     @Test
-    void tokenRevokeKycWithoutKyc() {
+    void tokenRevokeKycWithoutKyc() throws PreCheckException {
         final var txn = txnFrom(REVOKE_FOR_TOKEN_WITHOUT_KYC);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context, tokenStore);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertTrue(sanityRestoredToPbj(context.getRequiredNonPayerKeys()).isEmpty());
+        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(sanityRestoredToPbj(context.requiredNonPayerKeys()).isEmpty());
     }
 }

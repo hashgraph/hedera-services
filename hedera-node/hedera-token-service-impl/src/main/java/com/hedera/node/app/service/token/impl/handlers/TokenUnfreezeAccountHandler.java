@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,16 +54,12 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
      * @param tokenStore the {@link ReadableTokenStore}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
+            throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().tokenUnfreezeOrThrow();
+        final var op = context.body().tokenUnfreezeOrThrow();
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
-
-        if (!tokenMeta.failed()) {
-            tokenMeta.metadata().freezeKey().ifPresent(context::addToReqNonPayerKeys);
-        } else {
-            context.status(tokenMeta.failureReason());
-        }
+        tokenMeta.freezeKey().ifPresent(context::requireKey);
     }
 
     /**

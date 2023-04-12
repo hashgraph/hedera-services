@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -56,26 +57,22 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
+            throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().tokenFeeScheduleUpdateOrThrow();
+        final var op = context.body().tokenFeeScheduleUpdateOrThrow();
         final var tokenId = op.tokenIdOrElse(TokenID.DEFAULT);
-        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
-        if (tokenMeta.failed()) {
-            context.status(tokenMeta.failureReason());
-        } else {
-            final var tokenMetadata = tokenMeta.metadata();
-            final var feeScheduleKey = tokenMetadata.feeScheduleKey();
-            if (feeScheduleKey.isPresent()) {
-                context.addToReqNonPayerKeys(feeScheduleKey.get());
-                for (final var customFee : op.customFeesOrElse(emptyList())) {
-                    final var collector = customFee.feeCollectorAccountIdOrElse(AccountID.DEFAULT);
-                    context.addNonPayerKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
-                }
+        final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
+        final var feeScheduleKey = tokenMetadata.feeScheduleKey();
+        if (feeScheduleKey.isPresent()) {
+            context.requireKey(feeScheduleKey.get());
+            for (final var customFee : op.customFeesOrElse(emptyList())) {
+                final var collector = customFee.feeCollectorAccountIdOrElse(AccountID.DEFAULT);
+                context.requireKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
             }
-            // we do not set a failure status if a fee schedule key is not present for the token,
-            // we choose to fail with TOKEN_HAS_NO_FEE_SCHEDULE_KEY in the handle() method
         }
+        // we do not set a failure status if a fee schedule key is not present for the token,
+        // we choose to fail with TOKEN_HAS_NO_FEE_SCHEDULE_KEY in the handle() method
     }
 
     /**

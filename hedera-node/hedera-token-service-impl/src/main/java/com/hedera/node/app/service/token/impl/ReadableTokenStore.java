@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
@@ -59,24 +60,19 @@ public class ReadableTokenStore {
             boolean hasRoyaltyWithFallback,
             EntityId treasury) {}
 
-    public record TokenMetaOrLookupFailureReason(TokenMetadata metadata, ResponseCodeEnum failureReason) {
-        public boolean failed() {
-            return failureReason != null;
-        }
-    }
-
     /**
-     * Returns the token metadata needed for signing requirements. If the token doesn't exist
-     * returns failureReason. If the token exists , the failure reason will be null.
+     * Returns the token metadata needed for signing requirements.
      *
      * @param id token id being looked up
      * @return token's metadata
      */
-    public TokenMetaOrLookupFailureReason getTokenMeta(@NonNull final TokenID id) {
+    public TokenMetadata getTokenMeta(@NonNull final TokenID id) throws PreCheckException {
         requireNonNull(id);
         final var token = getTokenLeaf(id);
-        return token.map(merkleToken -> new TokenMetaOrLookupFailureReason(tokenMetaFrom(merkleToken), null))
-                .orElseGet(() -> new TokenMetaOrLookupFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID));
+        if (token.isEmpty()) {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_TOKEN_ID);
+        }
+        return tokenMetaFrom(token.get());
     }
 
     private TokenMetadata tokenMetaFrom(final MerkleToken token) {

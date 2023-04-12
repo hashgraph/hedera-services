@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,18 +49,12 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
+            throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().tokenGrantKycOrThrow();
-
+        final var op = context.body().tokenGrantKycOrThrow();
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
-
-        if (tokenMeta.failed()) {
-            context.status(tokenMeta.failureReason());
-            return;
-        }
-
-        tokenMeta.metadata().kycKey().ifPresent(context::addToReqNonPayerKeys);
+        tokenMeta.kycKey().ifPresent(context::requireKey);
     }
 
     /**

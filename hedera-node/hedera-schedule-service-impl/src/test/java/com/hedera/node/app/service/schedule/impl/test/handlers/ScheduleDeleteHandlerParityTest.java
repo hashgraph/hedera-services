@@ -17,13 +17,15 @@
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
-import static com.hedera.test.factories.scenarios.ContractCreateScenarios.*;
-import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.*;
+import static com.hedera.test.factories.scenarios.ContractCreateScenarios.KNOWN_SCHEDULE_IMMUTABLE_ID;
+import static com.hedera.test.factories.scenarios.ContractCreateScenarios.KNOWN_SCHEDULE_WITH_ADMIN_ID;
+import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE;
+import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_MISSING_SCHEDULE;
+import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -71,11 +73,8 @@ class ScheduleDeleteHandlerParityTest {
         scheduleStore = AdapterUtils.mockSchedule(
                 999L, ADMIN_KEY, theTxn); // use any schedule id that does not match UNKNOWN_SCHEDULE_ID
         final var context = new PreHandleContext(keyLookup, theTxn);
-        subject.preHandle(context, scheduleStore);
 
-        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
-        assertTrue(context.failed());
-        assertEquals(INVALID_SCHEDULE_ID, context.getStatus());
+        assertPreCheck(() -> subject.preHandle(context, scheduleStore), INVALID_SCHEDULE_ID);
     }
 
     @Test
@@ -84,11 +83,8 @@ class ScheduleDeleteHandlerParityTest {
         scheduleStore = AdapterUtils.mockSchedule(
                 IdUtils.asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID).getScheduleNum(), null, theTxn);
         final var context = new PreHandleContext(keyLookup, theTxn);
-        subject.preHandle(context, scheduleStore);
 
-        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
-        assertTrue(context.failed());
-        assertEquals(SCHEDULE_IS_IMMUTABLE, context.getStatus());
+        assertPreCheck(() -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
     }
 
     @Test
@@ -99,8 +95,7 @@ class ScheduleDeleteHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, scheduleStore);
 
-        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).contains(ADMIN_KEY.asKey()));
-        assertEquals(OK, context.getStatus());
+        assertTrue(sanityRestored(context.requiredNonPayerKeys()).contains(ADMIN_KEY.asKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
