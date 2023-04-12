@@ -42,7 +42,6 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.txns.submission.SolvencyPrecheck;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.signature.SignaturePreparer;
@@ -79,9 +78,6 @@ class IngestCheckerTest extends AppTestBase {
     private static final AccountID MOCK_NODE_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(3L).build();
 
-    /** Used when calling the checker. */
-    private SessionContext ctx;
-
     @Mock
     private HederaState state;
 
@@ -111,7 +107,6 @@ class IngestCheckerTest extends AppTestBase {
     @BeforeEach
     void setUp() throws PreCheckException {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
-        ctx = new SessionContext();
 
         txBody = TransactionBody.newBuilder()
                 .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
@@ -127,7 +122,7 @@ class IngestCheckerTest extends AppTestBase {
                 .build();
 
         final var transactionInfo = new TransactionInfo(tx, txBody, MOCK_SIGNATURE_MAP, HederaFunctionality.UNCHECKED_SUBMIT);
-        when(transactionChecker.check(ctx, tx)).thenReturn(transactionInfo);
+        when(transactionChecker.check(tx)).thenReturn(transactionInfo);
 
         subject = new IngestChecker(MOCK_NODE_ACCOUNT_ID, nodeInfo, currentPlatformStatus, transactionChecker, throttleAccumulator, solvencyPrecheck, signaturePreparer);
     }
@@ -190,11 +185,11 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("If the transaction fails TransactionChecker, a failure response is returned with the right error")
         void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
             // Given a TransactionChecker that will throw a PreCheckException with the given failure reason
-            when(transactionChecker.check(any(), any()))
+            when(transactionChecker.check(any()))
                     .thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is checked
-            assertThatThrownBy(() ->subject.runAllChecks(state, ctx, tx))
+            assertThatThrownBy(() ->subject.runAllChecks(state, tx))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", failureReason);
         }
@@ -203,11 +198,11 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from TransactionChecker, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a WorkflowOnset that will throw a RuntimeException
-            when(transactionChecker.check(any(), any()))
+            when(transactionChecker.check(any()))
                     .thenThrow(new RuntimeException("check exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() ->subject.runAllChecks(state, ctx, tx))
+            assertThatThrownBy(() ->subject.runAllChecks(state, tx))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("check exception");
         }
@@ -223,7 +218,7 @@ class IngestCheckerTest extends AppTestBase {
             when(throttleAccumulator.shouldThrottle(txBody)).thenReturn(true);
 
             // When the transaction is submitted
-            assertThatThrownBy(() ->subject.runAllChecks(state, ctx, tx))
+            assertThatThrownBy(() ->subject.runAllChecks(state, tx))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", BUSY);
         }
@@ -236,7 +231,7 @@ class IngestCheckerTest extends AppTestBase {
                     .thenThrow(new RuntimeException("shouldThrottle exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() ->subject.runAllChecks(state, ctx, tx))
+            assertThatThrownBy(() ->subject.runAllChecks(state, tx))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("shouldThrottle exception");
         }
@@ -276,7 +271,7 @@ class IngestCheckerTest extends AppTestBase {
         void payerSignatureFails() {
             given(signaturePreparer.syncGetPayerSigStatus(any())).willReturn(INVALID_SIGNATURE);
 
-            assertThatThrownBy(() ->subject.runAllChecks(state, ctx, tx))
+            assertThatThrownBy(() ->subject.runAllChecks(state, tx))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", INVALID_SIGNATURE);
         }
@@ -290,7 +285,7 @@ class IngestCheckerTest extends AppTestBase {
                     .syncGetPayerSigStatus(any());
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() ->subject.runAllChecks(state, ctx, tx))
+            assertThatThrownBy(() ->subject.runAllChecks(state, tx))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("checkPayerSignature exception");
         }
@@ -336,7 +331,7 @@ class IngestCheckerTest extends AppTestBase {
             given(signaturePreparer.syncGetPayerSigStatus(any())).willReturn(OK);
             given(solvencyPrecheck.payerAccountStatus2(MOCK_PAYER_NUM)).willReturn(PAYER_ACCOUNT_DELETED);
 
-            assertThatThrownBy(() ->subject.runAllChecks(state, ctx, tx))
+            assertThatThrownBy(() ->subject.runAllChecks(state, tx))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", PAYER_ACCOUNT_DELETED);
         }
@@ -351,7 +346,7 @@ class IngestCheckerTest extends AppTestBase {
                     .payerAccountStatus2(any());
 
             // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() ->subject.runAllChecks(state, ctx, tx))
+            assertThatThrownBy(() ->subject.runAllChecks(state, tx))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("checkSolvency exception");
         }

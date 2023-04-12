@@ -318,7 +318,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("When ingest checks fail, the transaction should be rejected")
         void testThrottleFails() throws PreCheckException, IOException {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(ingestChecker.runAllChecks(state, ctx, transaction)).thenThrow(new PreCheckException(BUSY));
+            when(ingestChecker.runAllChecks(state, transaction)).thenThrow(new PreCheckException(BUSY));
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);

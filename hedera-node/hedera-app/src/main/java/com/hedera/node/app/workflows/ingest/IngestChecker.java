@@ -31,7 +31,6 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.submission.SolvencyPrecheck;
@@ -110,11 +109,10 @@ public class IngestChecker {
 
     public TransactionInfo runAllChecks(
             @NonNull final HederaState state,
-            @NonNull final SessionContext ctx,
             @NonNull final Transaction tx)
             throws PreCheckException {
         // 1. Check the syntax
-        final var transactionInfo = transactionChecker.check(ctx, tx);
+        final var transactionInfo = transactionChecker.check(tx);
         final var txBody = transactionInfo.txBody();
         final var signatureMap = transactionInfo.signatureMap();
         final var functionality = transactionInfo.functionality();
