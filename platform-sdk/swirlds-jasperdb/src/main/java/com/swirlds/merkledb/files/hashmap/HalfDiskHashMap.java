@@ -60,7 +60,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
-public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoCloseable, Snapshotable {
+public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Snapshotable {
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
     /** The version number for format of current data files */
