@@ -31,6 +31,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.utils.Pause;
 import com.hedera.node.app.service.mono.utils.SleepingPause;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.virtualmap.VirtualMap;
@@ -134,6 +135,8 @@ class ServicesStatsManagerTest {
         given(threads.apply(captor.capture())).willReturn(thread);
 
         // when:
+        final var platformContext = mock(PlatformContext.class);
+        given(platform.getContext()).willReturn(platformContext);
         subject.initializeFor(platform);
 
         // then:

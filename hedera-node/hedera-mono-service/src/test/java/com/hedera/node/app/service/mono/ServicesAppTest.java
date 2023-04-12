@@ -60,6 +60,7 @@ import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
 import com.hedera.node.app.service.mono.utils.JvmSystemExits;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -83,6 +84,9 @@ class ServicesAppTest {
     private Cryptography cryptography;
 
     @Mock
+    private PlatformContext platformContext;
+
+    @Mock
     private PropertySource overridingProps;
 
     private ServicesApp subject;
@@ -96,7 +100,8 @@ class ServicesAppTest {
         final var logDirVal = "data/recordStreams";
         final var nodeProps = new ScreenedNodeFileProps();
 
-        given(platform.getContext().getCryptography()).willReturn(cryptography);
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getCryptography()).willReturn(cryptography);
         given(platform.getSelfId()).willReturn(selfNodeId);
         if (!nodeProps.containsProperty(logDirKey)) {
             given(overridingProps.containsProperty(any())).willReturn(false);

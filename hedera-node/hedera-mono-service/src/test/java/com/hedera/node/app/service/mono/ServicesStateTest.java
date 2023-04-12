@@ -79,6 +79,7 @@ import com.hedera.test.utils.CryptoConfigUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.ResponsibleVMapUser;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -879,6 +880,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     private Platform createMockPlatformWithCrypto() {
         final var platform = mock(Platform.class);
+        final var platformContext = mock(PlatformContext.class);
+        when(platform.getContext()).thenReturn(platformContext);
         when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
         when(platform.getContext().getCryptography())
                 .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
