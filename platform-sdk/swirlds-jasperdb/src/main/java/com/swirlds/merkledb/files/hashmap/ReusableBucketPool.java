@@ -53,7 +53,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ReusableBucketPool<K extends VirtualKey> {
 
     /** Default number of reusable buckets in this pool */
-    private static final int DEFAULT_POOL_SIZE = 32;
+    private static final int DEFAULT_POOL_SIZE = 8192;
 
     /** Pool size */
     private final int poolSize;
