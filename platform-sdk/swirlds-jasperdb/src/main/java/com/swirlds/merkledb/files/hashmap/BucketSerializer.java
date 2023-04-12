@@ -28,7 +28,8 @@ import java.nio.ByteBuffer;
  *
  * @param <K> The map key type stored in the buckets
  */
-public class BucketSerializer<K extends VirtualKey<? super K>> implements DataItemSerializer<Bucket<K>> {
+public class BucketSerializer<K extends VirtualKey> implements DataItemSerializer<Bucket<K>> {
+    /** Bucket pool used by this serializer */
     private final ReusableBucketPool<K> reusableBucketPool;
 
     /**
@@ -66,6 +67,11 @@ public class BucketSerializer<K extends VirtualKey<? super K>> implements DataIt
         return keySerializer;
     }
 
+    /**
+     * Reusable bucket pool for this bucket serializer.
+     *
+     * @return This serializer's reusable bucket pool.
+     */
     public ReusableBucketPool<K> getBucketPool() {
         return reusableBucketPool;
     }

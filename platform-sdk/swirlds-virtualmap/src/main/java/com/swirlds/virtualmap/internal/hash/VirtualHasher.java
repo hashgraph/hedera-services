@@ -57,7 +57,7 @@ import org.apache.logging.log4j.Logger;
  * @param <V>
  * 		The {@link VirtualValue} type
  */
-public final class VirtualHasher<K extends VirtualKey<? super K>, V extends VirtualValue> {
+public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
     /**
      * Use this for all logging, as controlled by the optional data/log4j2.xml file
      */

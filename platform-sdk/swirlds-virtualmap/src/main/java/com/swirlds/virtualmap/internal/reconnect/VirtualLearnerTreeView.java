@@ -52,7 +52,7 @@ import java.util.Objects;
  * @param <V>
  * 		The value
  */
-public final class VirtualLearnerTreeView<K extends VirtualKey<? super K>, V extends VirtualValue>
+public final class VirtualLearnerTreeView<K extends VirtualKey, V extends VirtualValue>
         extends VirtualTreeViewBase<K, V> implements LearnerTreeView<Long> {
 
     /**

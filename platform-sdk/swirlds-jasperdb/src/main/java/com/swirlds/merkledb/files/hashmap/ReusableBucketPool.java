@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * an array of buckets with fast concurrent read/write access from multiple
  * threads.
  */
-public class ReusableBucketPool<K extends VirtualKey<? super K>> {
+public class ReusableBucketPool<K extends VirtualKey> {
 
     /** Default number of reusable buckets in this pool */
     private static final int DEFAULT_POOL_SIZE = 8192;

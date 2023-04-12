@@ -67,7 +67,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
-public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoCloseable, Snapshotable {
+public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Snapshotable {
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
     /** The version number for format of current data files */
@@ -595,7 +595,7 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
         return (numOfBuckets - 1) & keyHash;
     }
 
-    private record ReadBucketResult<K extends VirtualKey<? super K>>(Bucket<K> bucket, Throwable error) {
+    private record ReadBucketResult<K extends VirtualKey>(Bucket<K> bucket, Throwable error) {
         public ReadBucketResult {
             assert (bucket != null) || (error != null);
             assert (bucket == null) || (error == null);

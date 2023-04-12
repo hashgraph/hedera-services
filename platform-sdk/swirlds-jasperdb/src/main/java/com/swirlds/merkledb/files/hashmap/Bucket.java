@@ -54,7 +54,7 @@ import org.apache.logging.log4j.Logger;
  * </ul>
  */
 @SuppressWarnings("unused")
-public final class Bucket<K extends VirtualKey<? super K>> implements Closeable {
+public final class Bucket<K extends VirtualKey> implements Closeable {
     private static final Logger logger = LogManager.getLogger(Bucket.class);
 
     /** When increasing the capacity of a bucket, increase it by this many bytes. */

@@ -298,7 +298,7 @@ public final class MerkleDb {
      * @throws IllegalStateException If a data source (table) with the specified name already exists
      *     in the database instance
      */
-    public <K extends VirtualKey<? super K>, V extends VirtualValue> MerkleDbDataSource<K, V> createDataSource(
+    public <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> createDataSource(
             final String label, final MerkleDbTableConfig<K, V> tableConfig, final boolean dbCompactionEnabled)
             throws IOException {
         // This method should be synchronized, as between tableExists() and tableConfigs.set()
@@ -338,7 +338,7 @@ public final class MerkleDb {
      * @param <V> Virtual value type
      * @throws IOException If an I/O error occurs
      */
-    public <K extends VirtualKey<? super K>, V extends VirtualValue> MerkleDbDataSource<K, V> copyDataSource(
+    public <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> copyDataSource(
             final MerkleDbDataSource<K, V> dataSource, final boolean makeCopyPrimary) throws IOException {
         final String label = dataSource.getTableName();
         final int tableId = getNextTableId();
@@ -378,7 +378,7 @@ public final class MerkleDb {
      * @param <V> Virtual value type
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public <K extends VirtualKey<? super K>, V extends VirtualValue> MerkleDbDataSource<K, V> getDataSource(
+    public <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> getDataSource(
             final String name, final boolean dbCompactionEnabled) throws IOException {
         final TableMetadata metadata = getTableMetadata(name);
         if (metadata == null) {
@@ -413,7 +413,7 @@ public final class MerkleDb {
      * @param <K> Virtual key type
      * @param <V> Virtual value type
      */
-    public <K extends VirtualKey<? super K>, V extends VirtualValue> void closeDataSource(
+    public <K extends VirtualKey, V extends VirtualValue> void closeDataSource(
             final MerkleDbDataSource<K, V> dataSource) {
         if (this != dataSource.getDatabase()) {
             throw new IllegalStateException("Can't close table in a different database");
@@ -458,8 +458,7 @@ public final class MerkleDb {
      * @param <K> Virtual key type
      * @param <V> Virtual value type
      */
-    public <K extends VirtualKey<? super K>, V extends VirtualValue> MerkleDbTableConfig<K, V> getTableConfig(
-            final int tableId) {
+    public <K extends VirtualKey, V extends VirtualValue> MerkleDbTableConfig<K, V> getTableConfig(final int tableId) {
         if ((tableId < 0) || (tableId >= MAX_TABLES)) {
             // Throw an exception instead? Perhaps, not
             return null;
