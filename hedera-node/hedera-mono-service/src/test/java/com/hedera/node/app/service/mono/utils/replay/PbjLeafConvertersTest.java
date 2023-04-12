@@ -16,15 +16,19 @@
 
 package com.hedera.node.app.service.mono.utils.replay;
 
+import static com.hedera.node.app.service.mono.sigs.order.SigRequirementsTest.sanityRestored;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 class PbjLeafConvertersTest {
     private static final long AUTO_RENEW_DURATION_SECONDS = 7776000L;
@@ -36,6 +40,7 @@ class PbjLeafConvertersTest {
     @Test
     void canConvertWithNoOptionalFields() {
         final var topic = new MerkleTopic();
+        setRequiredFields(topic);
 
         final var pbjTopic = PbjLeafConverters.leafFromMerkle(topic);
 
@@ -46,9 +51,24 @@ class PbjLeafConvertersTest {
         assertFalse(pbjTopic.hasSubmitKey());
     }
 
+
     @Test
     void canConvertWithAllOptionalFields() {
         final var memo = "Some memo text";
+        final var adminKey = new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes());
+        final var submitKey = new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes());
+
+        final var topic = new MerkleTopic();
+        setRequiredFields(topic);
+        topic.setMemo(memo);
+        topic.setAdminKey(adminKey);
+        topic.setSubmitKey(submitKey);
+
+        final var pbjTopic = PbjLeafConverters.leafFromMerkle(topic);
+        assertRequiredFieldsAsExpected(pbjTopic);
+        assertEquals(memo, pbjTopic.memo());
+        assertEquals(PbjConverter.toPbj(adminKey), pbjTopic.adminKey());
+        assertEquals(PbjConverter.toPbj(submitKey), pbjTopic.submitKey());
     }
 
     private void assertRequiredFieldsAsExpected(final Topic topic) {

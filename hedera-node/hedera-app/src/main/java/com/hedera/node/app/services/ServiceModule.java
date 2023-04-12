@@ -38,7 +38,7 @@ import dagger.Module;
 import dagger.Provides;
 import javax.inject.Singleton;
 
-@Module(subcomponents = {QueryComponent.class, IngestComponent.class})
+@Module
 public interface ServiceModule {
     @Provides
     @Singleton

@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.mono.utils.replay;
 
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 
 public class PbjLeafConverters {
     private PbjLeafConverters() {
@@ -25,8 +27,22 @@ public class PbjLeafConverters {
     }
 
     public static Topic leafFromMerkle(final MerkleTopic topic) {
-        final var builder = Topic.newBuilder();
-
+        final var builder = Topic.newBuilder()
+                .topicNumber(topic.getKey().longValue())
+                .sequenceNumber(topic.getSequenceNumber())
+                .expiry(topic.getExpirationTimestamp().getSeconds())
+                .autoRenewPeriod(topic.getAutoRenewDurationSeconds())
+                .deleted(topic.isDeleted())
+                .runningHash(Bytes.wrap(topic.getRunningHash()));
+        if (topic.hasMemo()) {
+            builder.memo(topic.getMemo());
+        }
+        if (topic.hasAdminKey()) {
+            builder.adminKey(PbjConverter.toPbj(topic.getAdminKey()));
+        }
+        if (topic.hasSubmitKey()) {
+            builder.submitKey(PbjConverter.toPbj(topic.getSubmitKey()));
+        }
         return builder.build();
     }
 }

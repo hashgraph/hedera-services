@@ -23,7 +23,7 @@ import dagger.Subcomponent;
 /**
  * A Dagger subcomponent that provides the Ingest workflow.
  */
-@Subcomponent(modules = IngestModule.class)
+@Subcomponent
 public interface IngestComponent {
     IngestWorkflow ingestWorkflow();
 

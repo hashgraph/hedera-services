@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.context.StateChildren;
+import com.hedera.node.app.service.mono.utils.replay.PbjLeafConverters;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
@@ -25,8 +27,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toB64Encoding;
+
 public class RecordingStatusChangeListener implements PlatformStatusChangeListener {
-    public static final String FINAL_TOPICS_ASSET = "final-topics.json";
+    public static final String FINAL_TOPICS_ASSET = "final-topics.txt";
 
     private static final Logger log = LogManager.getLogger(RecordingStatusChangeListener.class);
     private final StateChildren stateChildren;
@@ -47,9 +51,15 @@ public class RecordingStatusChangeListener implements PlatformStatusChangeListen
         delegate.notify(notification);
         if (notification.getNewStatus() == PlatformStatus.FREEZE_COMPLETE) {
             log.info("Now recording the final state children for replay verification");
+            recordTopics();
         }
-        // TODO - for each child of state we want to verify at the end of a replay test
-        // (accounts, tokens, etc.), write a representation of this child to a file,
-        // preferably using PBJ for leaf representations
+    }
+
+    private void recordTopics() {
+        final var topics = stateChildren.topics();
+        topics.forEach((num, topic) -> {
+            final var pbjTopic = PbjLeafConverters.leafFromMerkle(topic);
+            assetRecording.appendJsonToAsset(FINAL_TOPICS_ASSET, toB64Encoding(pbjTopic, Topic.class));
+        });
     }
 }

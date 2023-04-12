@@ -303,4 +303,11 @@ public class RecordStreamManager {
     public Hash getInitialHash() {
         return new Hash(initialHash);
     }
+
+    public void close() {
+        multiStream.close();
+        if (writeQueueThread != null) {
+            writeQueueThread.close();
+        }
+    }
 }

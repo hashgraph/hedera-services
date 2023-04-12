@@ -54,7 +54,7 @@ class RecordingSequenceNumberTest {
 
         assertEquals(2, subject.current());
         verify(assetRecording, times(3))
-                .appendJsonLineToReplayAsset(eq(RecordingSequenceNumber.REPLAY_SEQ_NOS_ASSET), captor.capture());
+                .appendJsonToAsset(eq(RecordingSequenceNumber.REPLAY_SEQ_NOS_ASSET), captor.capture());
 
         final var values = captor.getAllValues();
         assertEquals(0L, values.get(0).getNumber());

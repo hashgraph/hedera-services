@@ -35,6 +35,8 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
+import com.hedera.node.app.workflows.dispatcher.WorkingStateWritableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -46,7 +48,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
-@Module
+@Module(includes = {HandlersModule.class})
 public interface HandleWorkflowModule {
     @Provides
     static Expansion.CryptoSigsCreation provideCryptoSigsCreation() {
@@ -70,70 +72,14 @@ public interface HandleWorkflowModule {
     @Singleton
     ExpiryValidator bindEntityExpiryValidator(MonoExpiryValidator monoEntityExpiryValidator);
 
+    @Binds
+    @Singleton
+    WritableStoreFactory bindWritableStoreFactory(WorkingStateWritableStoreFactory writableStoreFactory);
+
     @Provides
     @SuppressWarnings({"unchecked", "rawtypes"})
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
         return () -> (AutoCloseableWrapper) platform.getLatestImmutableState();
-    }
-
-    @Provides
-    @Singleton
-    static TransactionHandlers provideTransactionHandlers(
-            @NonNull AdminComponent adminComponent,
-            @NonNull ConsensusComponent consensusComponent,
-            @NonNull FileComponent fileComponent,
-            @NonNull NetworkComponent networkComponent,
-            @NonNull ContractComponent contractComponent,
-            @NonNull ScheduleComponent scheduleComponent,
-            @NonNull TokenComponent tokenComponent,
-            @NonNull UtilComponent utilComponent) {
-        return new TransactionHandlers(
-                consensusComponent.consensusCreateTopicHandler(),
-                consensusComponent.consensusUpdateTopicHandler(),
-                consensusComponent.consensusDeleteTopicHandler(),
-                consensusComponent.consensusSubmitMessageHandler(),
-                contractComponent.contractCreateHandler(),
-                contractComponent.contractUpdateHandler(),
-                contractComponent.contractCallHandler(),
-                contractComponent.contractDeleteHandler(),
-                contractComponent.contractSystemDeleteHandler(),
-                contractComponent.contractSystemUndeleteHandler(),
-                contractComponent.etherumTransactionHandler(),
-                tokenComponent.cryptoCreateHandler(),
-                tokenComponent.cryptoUpdateHandler(),
-                tokenComponent.cryptoTransferHandler(),
-                tokenComponent.cryptoDeleteHandler(),
-                tokenComponent.cryptoApproveAllowanceHandler(),
-                tokenComponent.cryptoDeleteAllowanceHandler(),
-                tokenComponent.cryptoAddLiveHashHandler(),
-                tokenComponent.cryptoDeleteLiveHashHandler(),
-                fileComponent.fileCreateHandler(),
-                fileComponent.fileUpdateHandler(),
-                fileComponent.fileDeleteHandler(),
-                fileComponent.fileAppendHandler(),
-                fileComponent.fileSystemDeleteHandler(),
-                fileComponent.fileSystemUndeleteHandler(),
-                adminComponent.freezeHandler(),
-                networkComponent.networkUncheckedSubmitHandler(),
-                scheduleComponent.scheduleCreateHandler(),
-                scheduleComponent.scheduleSignHandler(),
-                scheduleComponent.scheduleDeleteHandler(),
-                tokenComponent.tokenCreateHandler(),
-                tokenComponent.tokenUpdateHandler(),
-                tokenComponent.tokenMintHandler(),
-                tokenComponent.tokenBurnHandler(),
-                tokenComponent.tokenDeleteHandler(),
-                tokenComponent.tokenAccountWipeHandler(),
-                tokenComponent.tokenFreezeAccountHandler(),
-                tokenComponent.tokenUnfreezeAccountHandler(),
-                tokenComponent.tokenGrantKycToAccountHandler(),
-                tokenComponent.tokenRevokeKycFromAccountHandler(),
-                tokenComponent.tokenAssociateToAccountHandler(),
-                tokenComponent.tokenDissociateFromAccountHandler(),
-                tokenComponent.tokenFeeScheduleUpdateHandler(),
-                tokenComponent.tokenPauseHandler(),
-                tokenComponent.tokenUnpauseHandler(),
-                utilComponent.prngHandler());
     }
 }

@@ -21,7 +21,7 @@ import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class RecordingSequenceNumber extends SequenceNumber {
-    public static final String REPLAY_SEQ_NOS_ASSET = "replay-sequence-numbers.json";
+    public static final String REPLAY_SEQ_NOS_ASSET = "replay-sequence-numbers.txt";
     private final ReplayAssetRecording assetRecording;
     private final SequenceNumber delegate;
 
@@ -36,7 +36,7 @@ public class RecordingSequenceNumber extends SequenceNumber {
         final var ans = delegate.getAndIncrement();
         final var next = new NewId();
         next.setNumber(ans);
-        assetRecording.appendJsonLineToReplayAsset(REPLAY_SEQ_NOS_ASSET, next);
+        assetRecording.appendJsonToAsset(REPLAY_SEQ_NOS_ASSET, next);
         return ans;
     }
 

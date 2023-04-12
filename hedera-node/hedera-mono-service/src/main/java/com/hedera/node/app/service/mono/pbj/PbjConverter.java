@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.pbj;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
@@ -49,10 +50,14 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.hederahashgraph.api.proto.java.AccountID.AccountCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.commons.codec.DecoderException;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Base64;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -1204,6 +1209,14 @@ public final class PbjConverter {
         return protoToPbj(topicId, TopicID.class);
     }
 
+    public static Key toPbj(@NonNull final JKey key) {
+        try {
+            return protoToPbj(JKey.mapJKey(key), Key.class);
+        } catch (DecoderException e) {
+            throw new AssertionError("Not implemented");
+        }
+    }
+
     public static <T extends Record, R extends GeneratedMessageV3> R pbjToProto(
             final T pbj, final Class<T> pbjClass, final Class<R> protoClass) {
         try {
@@ -1215,6 +1228,21 @@ public final class PbjConverter {
         } catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             // Should be impossible, so just propagate an exception
             throw new RuntimeException("Invalid conversion to proto for " + pbjClass.getSimpleName(), e);
+        }
+    }
+
+    public static <T extends Record> String toB64Encoding(final T pbj, final Class<T> pbjClass) {
+        return Base64.getEncoder().encodeToString(toByteArray(pbj, pbjClass));
+    }
+
+    public static <T extends Record> byte[] toByteArray(final T pbj, final Class<T> pbjClass) {
+        try {
+            final var codecField = pbjClass.getDeclaredField("PROTOBUF");
+            final var codec = (Codec<T>) codecField.get(null);
+            return asBytes(codec, pbj);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            // Should be impossible, so just propagate an exception
+            throw new RuntimeException("Invalid conversion to bytes for " + pbjClass.getSimpleName(), e);
         }
     }
 

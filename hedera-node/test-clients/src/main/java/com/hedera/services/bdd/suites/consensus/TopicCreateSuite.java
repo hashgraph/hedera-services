@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
@@ -209,7 +210,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     private HapiSpec allFieldsSetHappyCase() {
-        return defaultHapiSpec("AllFieldsSetHappyCase")
+        return onlyDefaultHapiSpec("AllFieldsSetHappyCase")
                 .given(newKeyNamed("adminKey"), newKeyNamed("submitKey"), cryptoCreate("autoRenewAccount"))
                 .when()
                 .then(createTopic("testTopic")

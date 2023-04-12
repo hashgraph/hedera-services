@@ -62,6 +62,7 @@ dependencies {
   itestImplementation(testLibs.bundles.mockito)
   itestCompileOnly(libs.spotbugs.annotations)
 
+  testAnnotationProcessor(libs.dagger.compiler)
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
   testImplementation(testLibs.classgraph)

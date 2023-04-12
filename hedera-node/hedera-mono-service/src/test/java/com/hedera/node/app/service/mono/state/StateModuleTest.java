@@ -68,9 +68,6 @@ class StateModuleTest {
     @Mock
     private MerkleNetworkContext networkContext;
 
-    @Mock
-    private StateModule.ConsoleCreator consoleCreator;
-
     @Test
     void providesRecordingSeqNumbersIfApropos() {
         given(isRecordingFacilityMocks.getAsBoolean()).willReturn(true);

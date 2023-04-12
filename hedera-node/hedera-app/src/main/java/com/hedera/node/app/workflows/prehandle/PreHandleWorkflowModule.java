@@ -17,6 +17,8 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.node.app.components.IngestComponent;
+import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;

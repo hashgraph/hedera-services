@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -121,6 +122,7 @@ public class ContractCreateSuite extends HapiSuite {
                 receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
                 cannotSendToNonExistentAccount(),
                 delegateContractIdRequiredForTransferInDelegateCall(),
+                canCreateContractWithContractIdKeyNoSig(),
                 vanillaSuccess(),
                 blockTimestampChangesWithinFewSeconds(),
                 contractWithAutoRenewNeedSignatures(),
@@ -365,6 +367,28 @@ public class ContractCreateSuite extends HapiSuite {
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).balance(1L).hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+    }
+
+    private HapiSpec canCreateContractWithContractIdKeyNoSig() {
+        final var justSendContract = "JustSend";
+        final var sendInternalAndDelegateContract = "SendInternalAndDelegate";
+        final var nonSelfIdKey = "nonSelfIdKey";
+        final var selfIdKey = "selfIdKey";
+
+        return defaultHapiSpec("CanCreateContractWithContractIdKeyNoSig")
+                .given(
+                        uploadInitCode(justSendContract, sendInternalAndDelegateContract),
+                        contractCreate(justSendContract).gas(300_000L),
+                        newKeyNamed(nonSelfIdKey).shape(CONTRACT.signedWith(justSendContract)))
+                .when(
+                        contractCreate(sendInternalAndDelegateContract)
+                                .gas(300_000L)
+                                .adminKey(nonSelfIdKey)
+                                .signedBy(DEFAULT_PAYER))
+                .then(
+                        newKeyNamed(selfIdKey).shape(CONTRACT.signedWith(sendInternalAndDelegateContract)),
+                        getContractInfo(sendInternalAndDelegateContract).has(contractWith()
+                                .adminKey(selfIdKey)));
     }
 
     private HapiSpec delegateContractIdRequiredForTransferInDelegateCall() {

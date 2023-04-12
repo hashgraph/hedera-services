@@ -16,21 +16,28 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
+import static com.hedera.node.app.service.mono.state.logic.RecordingStatusChangeListener.FINAL_TOPICS_ASSET;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.context.StateChildren;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.replay.PbjLeafConverters;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
+import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
-import java.util.function.BiConsumer;
+
+import java.util.SplittableRandom;
+
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +46,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RecordingStatusChangeListenerTest {
+    private static final int NUM_MOCK_TOPICS = 10;
     @Mock
     private StateChildren stateChildren;
 
@@ -51,8 +59,7 @@ class RecordingStatusChangeListenerTest {
     @Mock
     private ReplayAssetRecording assetRecording;
 
-    @Mock
-    private MerkleMapLike<EntityNum, MerkleTopic> topics;
+    private MerkleMap<EntityNum, MerkleTopic> topics;
 
     private RecordingStatusChangeListener subject;
 
@@ -72,19 +79,26 @@ class RecordingStatusChangeListenerTest {
 
     @Test
     void recordsChildDataOnFreezeComplete() {
+        givenSomeTopics();
         given(platformStatusChangeNotification.getNewStatus()).willReturn(FREEZE_COMPLETE);
+
         subject.notify(platformStatusChangeNotification);
+
         verify(delegate).notify(platformStatusChangeNotification);
+        for (int i = 0; i < NUM_MOCK_TOPICS; i++) {
+            final var topic = topics.get(EntityNum.fromLong(i));
+            final var encodedTopic = PbjConverter.toB64Encoding(PbjLeafConverters.leafFromMerkle(topic), Topic.class);
+            verify(assetRecording).appendJsonToAsset(FINAL_TOPICS_ASSET, encodedTopic);
+        }
     }
 
-    @Test
-    void exportsAllTopics() {
-        willAnswer(invocation -> {
-                    final BiConsumer<EntityNum, MerkleTopic> action = invocation.getArgument(0);
-
-                    return null;
-                })
-                .given(topics)
-                .forEach(any());
+    private void givenSomeTopics() {
+        topics = new MerkleMap<>();
+        final var r = new SplittableRandom(1_234_567L);
+        final var source = new SeededPropertySource(r);
+        for (int i = 0; i < NUM_MOCK_TOPICS; i++) {
+            topics.put(EntityNum.fromLong(i), source.nextTopic());
+        }
+        given(stateChildren.topics()).willReturn(MerkleMapLike.from(topics));
     }
 }

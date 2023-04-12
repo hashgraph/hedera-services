@@ -41,20 +41,34 @@ class ReplayAssetRecordingTest {
     }
 
     @Test
-    void recreatesOnFirstTouchOnlyAndFirstTouchOnly() throws IOException {
-        Files.write(Paths.get(assetDir.toString(), "foo.json"), List.of("not-a", "not-b"));
+    void jsonAppendRecreatesOnFirstTouchAndFirstTouchOnly() throws IOException {
+        Files.write(Paths.get(assetDir.toString(), "foo.txt"), List.of("not-a", "not-b"));
 
         final var a = new Foo("a");
         final var b = new Foo("b");
 
-        subject.appendJsonLineToReplayAsset("foo.json", a);
-        subject.appendJsonLineToReplayAsset("foo.json", b);
+        subject.appendJsonToAsset("foo.txt", a);
+        subject.appendJsonToAsset("foo.txt", b);
 
-        final var foos = subject.readJsonLinesFromReplayAsset("foo.json", Foo.class);
+        final var foos = subject.readJsonLinesFromReplayAsset("foo.txt", Foo.class);
 
         assertEquals(2, foos.size());
         assertEquals(a, foos.get(0));
         assertEquals(b, foos.get(1));
+    }
+
+    @Test
+    void plaintextAppendRecreatesOnFirstTouchAndFirstTouchOnly() throws IOException {
+        Files.write(Paths.get(assetDir.toString(), "foo.txt"), List.of("not-a", "not-b"));
+
+        subject.appendPlaintextToAsset("foo.txt", "a");
+        subject.appendPlaintextToAsset("foo.txt", "b");
+
+        final var foos = subject.readPlaintextLinesFromReplayAsset("foo.txt");
+
+        assertEquals(2, foos.size());
+        assertEquals("a", foos.get(0));
+        assertEquals("b", foos.get(1));
     }
 
     private static class Foo {

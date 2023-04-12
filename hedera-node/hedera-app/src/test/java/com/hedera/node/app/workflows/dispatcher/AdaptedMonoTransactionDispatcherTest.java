@@ -151,7 +151,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TransactionDispatcherTest {
+class AdaptedMonoTransactionDispatcherTest {
 
     @Mock(strictness = LENIENT)
     private HederaState state;
@@ -377,29 +377,29 @@ class TransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new TransactionDispatcher(
+        dispatcher = new AdaptedMonoTransactionDispatcher(
                 handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new TransactionDispatcher(
+        assertThatThrownBy(() -> new AdaptedMonoTransactionDispatcher(
                         null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
+        assertThatThrownBy(() -> new AdaptedMonoTransactionDispatcher(
                         handleContext, null, handlers, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
+        assertThatThrownBy(() -> new AdaptedMonoTransactionDispatcher(
                         handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
+        assertThatThrownBy(() -> new AdaptedMonoTransactionDispatcher(
                         handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() ->
-                        new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
+                        new AdaptedMonoTransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
+        assertThatThrownBy(() -> new AdaptedMonoTransactionDispatcher(
                         handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
                 .isInstanceOf(NullPointerException.class);
     }

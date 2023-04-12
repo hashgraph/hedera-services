@@ -24,16 +24,22 @@ import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
 import com.hedera.node.app.service.mono.stream.CurrentRecordStreamType;
 import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.stream.RecordStreamType;
+import com.hedera.node.app.service.mono.stream.RecordingRecordStreamManager;
+import com.hedera.node.app.service.mono.utils.replay.IsFacilityRecordingOn;
+import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.Platform;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 import javax.inject.Singleton;
 
 @Module
@@ -67,16 +73,30 @@ public interface RecordsModule {
             final @StaticAccountMemo String accountMemo,
             final Hash initialHash,
             final RecordStreamType streamType,
-            final GlobalDynamicProperties globalDynamicProperties) {
+            final GlobalDynamicProperties globalDynamicProperties,
+            @NonNull final ReplayAssetRecording assetRecording,
+            @IsFacilityRecordingOn @NonNull final BooleanSupplier isRecordingFacilityMocks) {
         try {
-            return new RecordStreamManager(
-                    platform,
-                    runningAvgs,
-                    nodeLocalProperties,
-                    accountMemo,
-                    initialHash,
-                    streamType,
-                    globalDynamicProperties);
+            if (isRecordingFacilityMocks.getAsBoolean()) {
+                return new RecordingRecordStreamManager(
+                        platform,
+                        runningAvgs,
+                        nodeLocalProperties,
+                        accountMemo,
+                        initialHash,
+                        streamType,
+                        globalDynamicProperties,
+                        assetRecording);
+            } else {
+                return new RecordStreamManager(
+                        platform,
+                        runningAvgs,
+                        nodeLocalProperties,
+                        accountMemo,
+                        initialHash,
+                        streamType,
+                        globalDynamicProperties);
+            }
         } catch (NoSuchAlgorithmException | IOException fatal) {
             throw new IllegalStateException("Could not construct record stream manager", fatal);
         }

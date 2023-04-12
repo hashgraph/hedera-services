@@ -65,7 +65,7 @@ class RecordingProcessLogicTest {
         final var memberId = 123L;
         subject.incorporateConsensusTxn(txn, memberId);
         verify(delegate).incorporateConsensusTxn(txn, memberId);
-        verify(assetRecording).appendJsonLineToReplayAsset(eq(REPLAY_TRANSACTIONS_ASSET), captor.capture());
+        verify(assetRecording).appendJsonToAsset(eq(REPLAY_TRANSACTIONS_ASSET), captor.capture());
 
         final var observed = captor.getValue();
         assertEquals(memberId, observed.getMemberId());

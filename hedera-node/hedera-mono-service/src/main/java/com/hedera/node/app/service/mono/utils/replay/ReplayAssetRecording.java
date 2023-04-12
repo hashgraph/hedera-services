@@ -60,7 +60,7 @@ public class ReplayAssetRecording {
         }
     }
 
-    public void appendJsonLineToReplayAsset(final String assetFileName, final Object data) {
+    public void appendJsonToAsset(final String assetFileName, final Object data) {
         try {
             removeIfFirstUsage(assetFileName);
             final var jsonLine = om.writeValueAsString(data);
@@ -71,23 +71,43 @@ public class ReplayAssetRecording {
         }
     }
 
-    public <T> List<T> readJsonLinesFromReplayAsset(@NonNull final String assetFileName, @NonNull final Class<T> type) {
+    public void appendPlaintextToAsset(final String assetFileName, final String line) {
         try {
             removeIfFirstUsage(assetFileName);
             final var assetPath = replayPathDirOf(assetFileName);
+            Files.write(assetPath, List.of(line), CREATE, APPEND);
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public <T> List<T> readJsonLinesFromReplayAsset(@NonNull final String assetFileName, @NonNull final Class<T> type) {
+        try {
+            final var assetPath = replayPathDirOf(assetFileName);
             try (final var lines = Files.lines(assetPath)) {
-                return lines.map(line -> readValueUnchecked(line, type)).toList();
+                return lines.map(line -> readJsonValueUnchecked(line, type)).toList();
             }
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private <T> T readValueUnchecked(final String line, final Class<T> type) {
+    public List<String> readPlaintextLinesFromReplayAsset(@NonNull final String assetFileName) {
+        try {
+            final var assetPath = replayPathDirOf(assetFileName);
+            try (final var lines = Files.lines(assetPath)) {
+                return lines.toList();
+            }
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private <T> T readJsonValueUnchecked(final String line, final Class<T> type) {
         try {
             return om.readValue(line, type);
         } catch (final JsonProcessingException e) {
-            throw new AssertionError("Not implemented");
+            throw new UncheckedIOException(e);
         }
     }
 

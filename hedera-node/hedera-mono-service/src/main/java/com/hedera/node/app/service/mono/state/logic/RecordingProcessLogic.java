@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class RecordingProcessLogic implements ProcessLogic {
     private static final Logger log = LogManager.getLogger(RecordingProcessLogic.class);
-    public static final String REPLAY_TRANSACTIONS_ASSET = "replay-transactions.json";
+    public static final String REPLAY_TRANSACTIONS_ASSET = "replay-transactions.txt";
 
     private final ProcessLogic delegate;
     private final ReplayAssetRecording assetRecording;
@@ -50,7 +50,7 @@ public class RecordingProcessLogic implements ProcessLogic {
         next.setB64Transaction(Base64.getEncoder().encodeToString(platformTxn.getContents()));
         next.setMemberId(submittingMember);
         next.setConsensusTimestamp(platformTxn.getConsensusTimestamp().toString());
-        assetRecording.appendJsonLineToReplayAsset(REPLAY_TRANSACTIONS_ASSET, next);
+        assetRecording.appendJsonToAsset(REPLAY_TRANSACTIONS_ASSET, next);
         delegate.incorporateConsensusTxn(platformTxn, submittingMember);
     }
 }
