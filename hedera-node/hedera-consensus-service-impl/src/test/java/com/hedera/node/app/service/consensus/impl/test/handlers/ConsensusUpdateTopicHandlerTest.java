@@ -451,7 +451,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         subject.preHandle(context, readableStore);
 
         assertThat(context.payerKey()).isEqualTo(adminKey);
-        // adminKey and auto-renew key
+        // auto-renew key
         assertEquals(1, context.requiredNonPayerKeys().size());
     }
 
