@@ -16,17 +16,20 @@
 
 package com.hedera.services.bdd.spec.infrastructure.meta;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.SplittableRandom;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 /**
  * Represents a choice of the two account identifiers (key, alias) that can be used to
@@ -44,6 +47,7 @@ import java.util.function.Function;
 public record InitialAccountIdentifiers(@Nullable Key key, @Nullable byte[] alias) {
 
     private static final int COMPRESSED_SECP256K1_PUBLIC_KEY_LEN = 33;
+    public static final String KEY_FOR_INCONGRUENT_ALIAS = "keyForIncongruentAlias";
 
     private enum KeyStatus {
         ABSENT,
@@ -56,9 +60,7 @@ public record InitialAccountIdentifiers(@Nullable Key key, @Nullable byte[] alia
         INCONGRUENT_WITH_KEY
     }
 
-    private static final byte[] INCONGRUENT_ALIAS = randomUtf8Bytes(20);
-
-    private static final List<Function<Key, InitialAccountIdentifiers>> ALL_COMBINATIONS = Arrays.stream(
+    private static final List<BiFunction<HapiSpec, Key, InitialAccountIdentifiers>> ALL_COMBINATIONS = Arrays.stream(
                     KeyStatus.values())
             .flatMap(keyStatus -> Arrays.stream(SecondaryIdStatus.values())
                     .flatMap(aliasStatus -> Arrays.stream(SecondaryIdStatus.values())
@@ -69,23 +71,31 @@ public record InitialAccountIdentifiers(@Nullable Key key, @Nullable byte[] alia
 
     private static final int NUM_CHOICES = ALL_COMBINATIONS.size();
 
-    public static InitialAccountIdentifiers fuzzedFrom(final Key key) {
+    public static InitialAccountIdentifiers fuzzedFrom(final HapiSpec spec, final Key key) {
         throwIfNotEcdsa(key);
-        return ALL_COMBINATIONS.get(RANDOM.nextInt(NUM_CHOICES)).apply(key);
+        return ALL_COMBINATIONS.get(RANDOM.nextInt(NUM_CHOICES)).apply(spec, key);
     }
 
-    public void customize(final CryptoCreateTransactionBody.Builder op) {
+    public void customize(final HapiCryptoCreate op, final CryptoCreateTransactionBody.Builder opBody) {
         if (key != null) {
-            op.setKey(key);
+            opBody.setKey(key);
         }
         if (alias != null) {
-            op.setAlias(ByteStringUtils.wrapUnsafely(alias));
+            opBody.setAlias(ByteStringUtils.wrapUnsafely(alias));
+        }
+
+        opBody.setReceiverSigRequired(RANDOM.nextBoolean());
+
+        final var shouldIncludeSigForIncongruentAlias = RANDOM.nextBoolean();
+        if (shouldIncludeSigForIncongruentAlias) {
+            op.signedBy(GENESIS, KEY_FOR_INCONGRUENT_ALIAS);
+            op.sigMapPrefixes(uniqueWithFullPrefixesFor(KEY_FOR_INCONGRUENT_ALIAS));
         }
     }
 
-    private static Function<Key, InitialAccountIdentifiers> fuzzerFor(
+    private static BiFunction<HapiSpec, Key, InitialAccountIdentifiers> fuzzerFor(
             final KeyStatus keyStatus, final SecondaryIdStatus aliasStatus) {
-        return key -> {
+        return (spec, key) -> {
             final var accountKey = keyStatus == KeyStatus.ABSENT ? null : key;
             byte[] accountAlias = null;
             if (aliasStatus == SecondaryIdStatus.CONGRUENT_WITH_KEY) {
@@ -96,7 +106,12 @@ public record InitialAccountIdentifiers(@Nullable Key key, @Nullable byte[] alia
 
                 accountAlias = EthSigsUtils.recoverAddressFromPubKey(keyBytes);
             } else if (aliasStatus == SecondaryIdStatus.INCONGRUENT_WITH_KEY) {
-                accountAlias = INCONGRUENT_ALIAS;
+                final var keyBytesForIncongruentAlias = spec.registry()
+                        .getKey(KEY_FOR_INCONGRUENT_ALIAS)
+                        .getECDSASecp256K1()
+                        .toByteArray();
+
+                accountAlias = EthSigsUtils.recoverAddressFromPubKey(keyBytesForIncongruentAlias);
             }
 
             return new InitialAccountIdentifiers(accountKey, accountAlias);
