@@ -91,6 +91,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
@@ -352,6 +353,7 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 163_840),
             entry(CONTRACTS_CHAIN_ID, 295),
             entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, true),
+            entry(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS, EnumSet.of(CustomFeeType.FIXED_FEE)),
             entry(
                     CONTRACTS_PERMITTED_DELEGATE_CALLERS,
                     Set.of(Address.fromHexString("0x164e64"), Address.fromHexString("0x103783"))),

@@ -105,7 +105,8 @@ class RoyaltyFeeAssessorTest {
                         feeMeta,
                         FcCustomFee.fixedFee(33, null, targetCollector, false),
                         changeManager,
-                        accumulator);
+                        accumulator,
+                        true);
     }
 
     @Test
@@ -140,7 +141,8 @@ class RoyaltyFeeAssessorTest {
                         feeMeta,
                         FcCustomFee.fixedFee(33, denom, targetCollector, false),
                         changeManager,
-                        accumulator);
+                        accumulator,
+                        true);
     }
 
     @Test
