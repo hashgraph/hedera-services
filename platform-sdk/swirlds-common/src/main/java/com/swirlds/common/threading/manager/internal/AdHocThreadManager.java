@@ -25,16 +25,16 @@ import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * A simple thread manager. The goal of this implementation is to create threads without complaining about lifecycle.
  * Eventually, this implementation should not be used in production code.
  */
-public final class AdHocThreadManager implements ThreadBuilder, ThreadManager {
+public final class AdHocThreadManager extends AbstractThreadManager implements ThreadBuilder, ThreadManager {
 
     /**
      * {@inheritDoc}
@@ -45,11 +45,13 @@ public final class AdHocThreadManager implements ThreadBuilder, ThreadManager {
     }
 
     /**
-     * Create a thread factory.
+     * {@inheritDoc}
      */
     @NonNull
-    private ThreadFactory createThreadFactory(@NonNull final String threadName) {
-        return new ThreadConfiguration(this).setThreadName(threadName).buildFactory();
+    @Override
+    public ExecutorService createCachedThreadPool(
+            @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        return Executors.newCachedThreadPool(buildThreadFactory(name, uncaughtExceptionHandler));
     }
 
     /**
@@ -57,8 +59,9 @@ public final class AdHocThreadManager implements ThreadBuilder, ThreadManager {
      */
     @NonNull
     @Override
-    public ExecutorService createCachedThreadPool(@NonNull final String name) {
-        return Executors.newCachedThreadPool(createThreadFactory(name));
+    public ExecutorService createSingleThreadExecutor(
+            @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        return Executors.newSingleThreadExecutor(buildThreadFactory(name, uncaughtExceptionHandler));
     }
 
     /**
@@ -66,8 +69,11 @@ public final class AdHocThreadManager implements ThreadBuilder, ThreadManager {
      */
     @NonNull
     @Override
-    public ExecutorService createSingleThreadExecutor(@NonNull final String name) {
-        return Executors.newSingleThreadExecutor(createThreadFactory(name));
+    public ExecutorService createFixedThreadPool(
+            @NonNull final String name,
+            final int threadCount,
+            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        return Executors.newFixedThreadPool(threadCount, buildThreadFactory(name, uncaughtExceptionHandler));
     }
 
     /**
@@ -75,8 +81,9 @@ public final class AdHocThreadManager implements ThreadBuilder, ThreadManager {
      */
     @NonNull
     @Override
-    public ExecutorService createFixedThreadPool(@NonNull final String name, final int threadCount) {
-        return Executors.newFixedThreadPool(threadCount, createThreadFactory(name));
+    public ScheduledExecutorService createSingleThreadScheduledExecutor(
+            @NonNull String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        return Executors.newSingleThreadScheduledExecutor(buildThreadFactory(name, uncaughtExceptionHandler));
     }
 
     /**
@@ -84,17 +91,11 @@ public final class AdHocThreadManager implements ThreadBuilder, ThreadManager {
      */
     @NonNull
     @Override
-    public ScheduledExecutorService createSingleThreadScheduledExecutor(@NonNull String name) {
-        return Executors.newSingleThreadScheduledExecutor(createThreadFactory(name));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, final int threadCount) {
-        return Executors.newScheduledThreadPool(threadCount, createThreadFactory(name));
+    public ScheduledExecutorService createScheduledThreadPool(
+            @NonNull final String name,
+            final int threadCount,
+            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        return Executors.newScheduledThreadPool(threadCount, buildThreadFactory(name, uncaughtExceptionHandler));
     }
 
     /**
