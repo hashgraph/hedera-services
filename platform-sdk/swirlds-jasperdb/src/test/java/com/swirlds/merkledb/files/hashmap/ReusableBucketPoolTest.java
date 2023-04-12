@@ -23,10 +23,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ReusableBucketPoolTest {
+class ReusableBucketPoolTest {
 
     @Test
-    public void test1() {
+    void test1() {
         final BucketSerializer<ExampleLongKeyFixedSize> serializer =
                 new BucketSerializer<>(new ExampleLongKeyFixedSize.Serializer());
         final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(2, serializer);
@@ -42,7 +42,7 @@ public class ReusableBucketPoolTest {
     }
 
     @Test
-    public void test2() {
+    void test2() {
         final BucketSerializer<ExampleLongKeyFixedSize> serializer =
                 new BucketSerializer<>(new ExampleLongKeyFixedSize.Serializer());
         final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(2, serializer);
@@ -69,7 +69,7 @@ public class ReusableBucketPoolTest {
     }
 
     @Test
-    public void test3() {
+    void test3() {
         final BucketSerializer<ExampleLongKeyFixedSize> serializer =
                 new BucketSerializer<>(new ExampleLongKeyFixedSize.Serializer());
         final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(2, serializer);
@@ -109,7 +109,7 @@ public class ReusableBucketPoolTest {
     }
 
     @Test
-    public void test4() throws Exception {
+    void test4() throws Exception {
         final BucketSerializer<ExampleLongKeyFixedSize> serializer =
                 new BucketSerializer<>(new ExampleLongKeyFixedSize.Serializer());
         final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(2, serializer);
