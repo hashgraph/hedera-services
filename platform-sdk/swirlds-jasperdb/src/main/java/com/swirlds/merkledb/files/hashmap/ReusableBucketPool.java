@@ -19,6 +19,9 @@ package com.swirlds.merkledb.files.hashmap;
 import com.swirlds.virtualmap.VirtualKey;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * HalfDiskHashMap buckets are somewhat expensive resources. Every bucket has an
@@ -50,7 +53,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 public class ReusableBucketPool<K extends VirtualKey> {
 
     /** Default number of reusable buckets in this pool */
-    private static final int DEFAULT_POOL_SIZE = 8192;
+    private static final int DEFAULT_POOL_SIZE = 32;
 
     /** Pool size */
     private final int poolSize;
@@ -62,7 +65,9 @@ public class ReusableBucketPool<K extends VirtualKey> {
      * locks are used to wait, if the pool is empty (no available buckets), or to wake
      * up the waiting thread, when a bucket is released back to the pool.
      */
-    private final AtomicReferenceArray<Object> locks;
+    private final AtomicReferenceArray<Lock> locks;
+    /** Condition objects for the locks above, to await and signal on */
+    private final AtomicReferenceArray<Condition> conditions;
 
     /**
      * Index in the array of the next available (non-null) bucket. When a bucket is
@@ -99,9 +104,12 @@ public class ReusableBucketPool<K extends VirtualKey> {
         poolSize = size;
         buckets = new AtomicReferenceArray<>(poolSize);
         locks = new AtomicReferenceArray<>(poolSize);
+        conditions = new AtomicReferenceArray<>(poolSize);
         for (int i = 0; i < poolSize; i++) {
             buckets.set(i, new Bucket<>(serializer.getKeySerializer(), this));
-            locks.set(i, new Object());
+            final Lock lock = new ReentrantLock();
+            locks.set(i, lock);
+            conditions.set(i, lock.newCondition());
         }
     }
 
@@ -118,19 +126,23 @@ public class ReusableBucketPool<K extends VirtualKey> {
         // Try optimistic get first
         Bucket<K> bucket = buckets.getAndSet(index, null);
         if (bucket == null) {
-            final Object lock = locks.get(index);
-            synchronized (lock) {
+            final Lock lock = locks.get(index);
+            final Condition cond = conditions.get(index);
+            lock.lock();
+            try {
                 bucket = buckets.getAndSet(index, null);
                 // Wait until a bucket at the given index is released
                 while (bucket == null) {
                     try {
-                        lock.wait();
+                        cond.await();
                     } catch (final InterruptedException e) {
                         Thread.currentThread().interrupt();
                         throw new RuntimeException(e);
                     }
                     bucket = buckets.getAndSet(index, null);
                 }
+            } finally {
+                lock.unlock();
             }
         }
         bucket.clear();
@@ -148,11 +160,16 @@ public class ReusableBucketPool<K extends VirtualKey> {
         int index = nextIndexToRelease.getAndUpdate(t -> (t + 1) % poolSize);
         boolean released = buckets.compareAndSet(index, null, bucket);
         while (!released) {
+            Thread.yield();
             released = buckets.compareAndSet(index, null, bucket);
         }
-        final Object lock = locks.get(index);
-        synchronized (lock) {
-            lock.notifyAll();
+        final Lock lock = locks.get(index);
+        final Condition cond = conditions.get(index);
+        lock.lock();
+        try {
+            cond.signalAll();
+        } finally {
+            lock.unlock();
         }
     }
 }

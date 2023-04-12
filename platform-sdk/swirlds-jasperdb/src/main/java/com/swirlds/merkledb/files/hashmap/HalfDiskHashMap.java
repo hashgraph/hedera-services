@@ -433,30 +433,11 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             final MutableList<IntObjectPair<BucketMutation<K>>> bucketUpdates =
                     oneTransactionsData.keyValuesView().toList();
             final int size = bucketUpdates.size();
-            final ReusableBucketPool<K> bucketPool = bucketSerializer.getBucketPool();
             final Queue<ReadBucketResult<K>> queue = new ConcurrentLinkedQueue<>();
-            for (int i = 0; i < size; i++) {
-                final IntObjectPair<BucketMutation<K>> keyValue = bucketUpdates.get(i);
+            for (final IntObjectPair<BucketMutation<K>> keyValue : bucketUpdates) {
                 final int bucketIndex = keyValue.getOne();
                 final BucketMutation<K> bucketMap = keyValue.getTwo();
-                flushExecutor.execute(() -> {
-                    try {
-                        // The bucket will be closed on the lifecycle thread
-                        Bucket<K> bucket =
-                                fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
-                        if (bucket == null) {
-                            // create a new bucket
-                            bucket = bucketPool.getBucket();
-                            bucket.setBucketIndex(bucketIndex);
-                        }
-                        // for each changed key in bucket, update bucket
-                        bucketMap.forEachKeyValue(bucket::putValue);
-                        queue.add(new ReadBucketResult<>(bucket, null));
-                    } catch (final Throwable e) {
-                        logger.error(MERKLE_DB.getMarker(), "Failed to read / update bucket", e);
-                        queue.add(new ReadBucketResult<>(null, e));
-                    }
-                });
+                flushExecutor.execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
             }
             //  write to files
             fileCollection.startWriting();
@@ -493,6 +474,34 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
         oneTransactionsData = null;
     }
 
+    /**
+     * Reads a bucket with a given index from disk, updates given keys in it, and puts the bucket to
+     * a queue. If an exception is thrown, it's put to the queue instead, so the number of {@code
+     * ReadBucketResult} objects in the queue is consistent.
+     *
+     * @param bucketIndex The bucket index
+     * @param keyUpdates Key/value updates to apply to the bucket
+     * @param queue The queue to put the bucket or exception to
+     */
+    private void readUpdateQueueBucket(
+            final int bucketIndex, final BucketMutation<K> keyUpdates, final Queue<ReadBucketResult<K>> queue) {
+        try {
+            // The bucket will be closed on the lifecycle thread
+            Bucket<K> bucket = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
+            if (bucket == null) {
+                // create a new bucket
+                bucket = bucketSerializer.getBucketPool().getBucket();
+                bucket.setBucketIndex(bucketIndex);
+            }
+            // for each changed key in bucket, update bucket
+            keyUpdates.forEachKeyValue(bucket::putValue);
+            queue.add(new ReadBucketResult<>(bucket, null));
+        } catch (final Exception e) {
+            logger.error(MERKLE_DB.getMarker(), "Failed to read / update bucket", e);
+            queue.add(new ReadBucketResult<>(null, e));
+        }
+    }
+
     // =================================================================================================================
     // Reading API - Multi thead safe
 
@@ -511,9 +520,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
         }
         final int keyHash = key.hashCode();
         final int bucketIndex = computeBucketIndex(keyHash);
-        final Bucket<K> bucket = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
-        if (bucket != null) {
-            try (bucket) {
+        try (final Bucket<K> bucket = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex)) {
+            if (bucket != null) {
                 return bucket.findValue(keyHash, key, notFoundValue);
             }
         }
@@ -597,8 +605,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
 
     private record ReadBucketResult<K extends VirtualKey>(Bucket<K> bucket, Throwable error) {
         public ReadBucketResult {
-            assert (bucket != null) || (error != null);
-            assert (bucket == null) || (error == null);
+            assert (bucket != null) ^ (error != null);
         }
     }
 }
