@@ -18,8 +18,6 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -31,7 +29,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.Infrastructur
 import com.hedera.node.app.service.mono.store.contracts.precompile.Precompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Association;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -42,10 +39,10 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /* --- Constructor functional interfaces for mocking --- */
 public abstract class AbstractAssociatePrecompile implements Precompile {
-    private static final String ASSOCIATE_FAILURE_MESSAGE = "Invalid full prefix for associate precompile!";
-    private final WorldLedgers ledgers;
-    private final ContractAliases aliases;
-    private final EvmSigsVerifier sigsVerifier;
+    protected static final String ASSOCIATE_FAILURE_MESSAGE = "Invalid full prefix for associate precompile!";
+    protected final WorldLedgers ledgers;
+    protected final ContractAliases aliases;
+    protected final EvmSigsVerifier sigsVerifier;
     private final SideEffectsTracker sideEffects;
     private final InfrastructureFactory infrastructureFactory;
     protected final PrecompilePricingUtils pricingUtils;
@@ -53,6 +50,8 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
     protected Association associateOp;
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final Provider<FeeCalculator> feeCalculator;
+    // This must be set by the subclasses after the associateOp has been created
+    protected Id accountId;
 
     protected AbstractAssociatePrecompile(
             final WorldLedgers ledgers,
@@ -75,12 +74,7 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 
     @Override
     public void run(final MessageFrame frame) {
-        // --- Check required signatures ---
-        final var accountId =
-                Id.fromGrpcAccount(Objects.requireNonNull(associateOp).accountId());
-        final var hasRequiredSigs = KeyActivationUtils.validateKey(
-                frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, aliases, TokenAssociateToAccount);
-        validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, ASSOCIATE_FAILURE_MESSAGE);
+        Objects.requireNonNull(associateOp);
 
         // --- Build the necessary infrastructure to execute the transaction ---
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

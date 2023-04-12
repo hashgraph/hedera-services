@@ -18,9 +18,12 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -34,11 +37,15 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Association;
+import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class AssociatePrecompile extends AbstractAssociatePrecompile {
     private static final Function ASSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)", INT);
@@ -68,8 +75,20 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
     @Override
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         associateOp = decodeAssociation(input, aliasResolver);
+        accountId = Id.fromGrpcAccount(Objects.requireNonNull(associateOp).accountId());
+
         transactionBody = syntheticTxnFactory.createAssociate(associateOp);
         return transactionBody;
+    }
+
+    @Override
+    public void run(final MessageFrame frame) {
+        // --- Check required signatures ---
+        final var hasRequiredSigs = KeyActivationUtils.validateKey(
+                frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, aliases, TokenAssociateToAccount);
+        validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, ASSOCIATE_FAILURE_MESSAGE);
+
+        super.run(frame);
     }
 
     @Override

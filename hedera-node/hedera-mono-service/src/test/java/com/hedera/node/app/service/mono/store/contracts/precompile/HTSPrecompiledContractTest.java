@@ -663,8 +663,6 @@ class HTSPrecompiledContractTest {
         final var builder = TokenAssociateTransactionBody.newBuilder();
         builder.setAccount(multiDissociateOp.accountId());
         builder.addAllTokens(multiDissociateOp.tokenIds());
-        given(syntheticTxnFactory.createAssociate(any()))
-                .willReturn(TransactionBody.newBuilder().setTokenAssociate(builder));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 

@@ -72,6 +72,8 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetToken
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenKeyPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenTypePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GrantKycPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.HRCAssociatePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.HRCDissociatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsFrozenPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsKycPrecompile;
@@ -141,6 +143,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
     private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
     private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
+    private static final String NOT_SUPPORTED_HRC_OPERATION_REASON = "Invalid operation for HRC token!";
     public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
 
     private final EntityCreator creator;
@@ -694,6 +697,32 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             encoder,
                                             evmEncoder,
                                             precompilePricingUtils));
+                            case AbiConstants.ABI_ID_HRC_ASSOCIATE -> checkHRC(
+                                    ledgers.tokens().exists(tokenId),
+                                    () -> new HRCAssociatePrecompile(
+                                            tokenId,
+                                            senderAddress,
+                                            ledgers,
+                                            updater.aliases(),
+                                            sigsVerifier,
+                                            sideEffectsTracker,
+                                            syntheticTxnFactory,
+                                            infrastructureFactory,
+                                            precompilePricingUtils,
+                                            feeCalculator));
+                            case AbiConstants.ABI_ID_HRC_DISSOCIATE -> checkHRC(
+                                    ledgers.tokens().exists(tokenId),
+                                    () -> new HRCDissociatePrecompile(
+                                            tokenId,
+                                            senderAddress,
+                                            ledgers,
+                                            updater.aliases(),
+                                            sigsVerifier,
+                                            sideEffectsTracker,
+                                            syntheticTxnFactory,
+                                            infrastructureFactory,
+                                            precompilePricingUtils,
+                                            feeCalculator));
                             default -> null;
                         };
                 yield isExplicitRedirectCall
@@ -814,6 +843,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private Precompile checkFungible(final boolean isFungible, final Supplier<Precompile> precompileSupplier) {
         if (!isFungible) {
             throw new InvalidTransactionException(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
+        } else {
+            return precompileSupplier.get();
+        }
+    }
+
+    private Precompile checkHRC(final boolean validToken, final Supplier<Precompile> precompileSupplier) {
+        if (!validToken) {
+            throw new InvalidTransactionException(NOT_SUPPORTED_HRC_OPERATION_REASON, INVALID_TOKEN_ID);
         } else {
             return precompileSupplier.get();
         }
