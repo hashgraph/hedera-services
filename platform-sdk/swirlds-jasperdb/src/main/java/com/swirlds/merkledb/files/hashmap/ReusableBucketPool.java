@@ -160,7 +160,7 @@ public class ReusableBucketPool<K extends VirtualKey> {
         int index = nextIndexToRelease.getAndUpdate(t -> (t + 1) % poolSize);
         boolean released = buckets.compareAndSet(index, null, bucket);
         while (!released) {
-            Thread.yield();
+            Thread.onSpinWait();
             released = buckets.compareAndSet(index, null, bucket);
         }
         final Lock lock = locks.get(index);
