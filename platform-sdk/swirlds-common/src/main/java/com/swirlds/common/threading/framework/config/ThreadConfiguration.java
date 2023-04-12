@@ -129,7 +129,7 @@ public class ThreadConfiguration extends AbstractThreadConfiguration<ThreadConfi
      * threads, factories, or seeds.
      * </p>
      */
-    public ThreadFactory buildFactory() {
+    public ThreadFactory buildFactory() { // TODO remove this method!
         enableThreadNumbering();
 
         final ThreadFactory factory = (final Runnable r) -> {

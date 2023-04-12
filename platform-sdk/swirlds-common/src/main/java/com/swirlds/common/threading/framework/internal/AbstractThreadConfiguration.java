@@ -272,7 +272,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
      * If the fully formatted thread name has been set, then use that thread name instead of the standard format.
      * </p>
      */
-    private String buildThreadName() {
+    private String buildThreadName() { // TODO expose this maybe
         if (fullyFormattedThreadName != null) {
             return fullyFormattedThreadName;
         }

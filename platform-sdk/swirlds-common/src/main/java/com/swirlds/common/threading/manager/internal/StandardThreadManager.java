@@ -16,6 +16,8 @@
 
 package com.swirlds.common.threading.manager.internal;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadPoolConfiguration;
@@ -34,11 +36,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A standard implementation of a {@link ThreadManager}. Will not permit work to be done on threads until started.
  */
 public final class StandardThreadManager implements StartableThreadManager, ThreadBuilder {
+
+    private static final Logger logger = LogManager.getLogger();
 
     private LifecyclePhase phase = LifecyclePhase.NOT_STARTED;
     private final List<Startable> thingsToBeStarted = new ArrayList<>();
@@ -82,14 +89,6 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
     }
 
     /**
-     * Create a thread factory.
-     */
-    @NonNull
-    private ThreadFactory createThreadFactory(@NonNull final String threadName) {
-        return new ThreadConfiguration(this).setThreadName(threadName).buildFactory();
-    }
-
-    /**
      * {@inheritDoc}
      */
     @NonNull
@@ -97,7 +96,7 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
     public synchronized ExecutorService createCachedThreadPool(@NonNull final String name) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
         final ManagedExecutorService service =
-                new ManagedExecutorService(Executors.newCachedThreadPool(createThreadFactory(name)));
+                new ManagedExecutorService(Executors.newCachedThreadPool(buildThreadFactory(name)));
         if (phase == LifecyclePhase.NOT_STARTED) {
             thingsToBeStarted.add(service);
         }
@@ -111,7 +110,7 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
     @Override
     public synchronized ExecutorService createSingleThreadExecutor(@NonNull final String name) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
-        return new ManagedExecutorService(Executors.newSingleThreadExecutor(createThreadFactory(name)));
+        return new ManagedExecutorService(Executors.newSingleThreadExecutor(buildThreadFactory(name)));
     }
 
     /**
@@ -122,7 +121,7 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
     public synchronized ExecutorService createFixedThreadPool(@NonNull final String name, int threadCount) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
         final ManagedExecutorService service =
-                new ManagedExecutorService(Executors.newFixedThreadPool(threadCount, createThreadFactory(name)));
+                new ManagedExecutorService(Executors.newFixedThreadPool(threadCount, buildThreadFactory(name)));
         if (phase == LifecyclePhase.NOT_STARTED) {
             thingsToBeStarted.add(service);
         }
@@ -137,7 +136,7 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
     public synchronized ScheduledExecutorService createSingleThreadScheduledExecutor(final @NonNull String name) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
         final ManagedScheduledExecutorService service = new ManagedScheduledExecutorService(
-                Executors.newSingleThreadScheduledExecutor(createThreadFactory(name)));
+                Executors.newSingleThreadScheduledExecutor(buildThreadFactory(name)));
         if (phase == LifecyclePhase.NOT_STARTED) {
             thingsToBeStarted.add(service);
         }
@@ -153,7 +152,7 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
             @NonNull final String name, int threadCount) {
         throwIfAfterPhase(LifecyclePhase.STARTED);
         final ManagedScheduledExecutorService service = new ManagedScheduledExecutorService(
-                Executors.newScheduledThreadPool(threadCount, createThreadFactory(name)));
+                Executors.newScheduledThreadPool(threadCount, buildThreadFactory(name)));
         if (phase == LifecyclePhase.NOT_STARTED) {
             thingsToBeStarted.add(service);
         }
@@ -204,5 +203,29 @@ public final class StandardThreadManager implements StartableThreadManager, Thre
     @Override
     public synchronized MultiQueueThreadConfiguration newMultiQueueThreadConfiguration() {
         return new MultiQueueThreadConfiguration(this);
+    }
+
+    // TODO this duplicates a lot of logic!
+
+    /**
+     * An default exception handler for executor services.
+     */
+    private static final Thread.UncaughtExceptionHandler exceptionHandler = (final Thread t, final Throwable e) ->
+            logger.error(EXCEPTION.getMarker(), "exception on thread {}", t.getName(), e);
+
+    /**
+     * Builds a thread factory for an executor service.
+     *
+     * @param baseName the name of the executor service
+     * @return a thread factory
+     */
+    private @NonNull ThreadFactory buildThreadFactory(@NonNull final String baseName) {
+        final AtomicInteger threadNumber = new AtomicInteger(0);
+        return (final Runnable runnable) -> {
+            final String name = "<" + baseName + " #" + threadNumber.getAndIncrement() + ">";
+            final Thread thread = new Thread(runnable, name);
+            thread.setUncaughtExceptionHandler(exceptionHandler);
+            return thread;
+        };
     }
 }

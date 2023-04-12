@@ -16,16 +16,22 @@
 
 package com.swirlds.common.test;
 
+import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.swirlds.common.threading.framework.BlockingQueueInserter;
+import com.swirlds.common.threading.framework.MultiQueueThread;
+import com.swirlds.common.threading.framework.QueueThread;
+import com.swirlds.common.threading.framework.QueueThreadPool;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.manager.StartableThreadManager;
 import com.swirlds.common.threading.manager.ThreadManagerFactory;
 import com.swirlds.common.utility.LifecycleException;
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.DisplayName;
@@ -33,16 +39,6 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("ThreadManager Tests")
 class ThreadManagerTests {
-
-    // TODO
-    //    ExecutorService createCachedThreadPool(@NonNull final String name);
-    //    ExecutorService createSingleThreadExecutor(@NonNull final String name);
-    //    ExecutorService createFixedThreadPool(@NonNull final String name, final int threadCount);
-    //    ScheduledExecutorService createSingleThreadScheduledExecutor(@NonNull final String name);
-    //    ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, final int threadCount);
-    //    <T> QueueThreadConfiguration<T> newQueueThreadConfiguration();
-    //    <T> QueueThreadPoolConfiguration<T> newQueueThreadPoolConfiguration();
-    //    MultiQueueThreadConfiguration newMultiQueueThreadConfiguration();
 
     @Test
     @DisplayName("Thread Test")
@@ -105,7 +101,188 @@ class ThreadManagerTests {
             // attempting to start this thread in the wrong part of the lifecycle leaves it in a broken state
             thread2.start();
 
-            AssertionUtils.assertEventuallyTrue(() -> count2.get() > 100, Duration.ofSeconds(1), "thread did not run");
+            assertEventuallyTrue(() -> count2.get() > 100, Duration.ofSeconds(1), "thread did not run");
         }
     }
+
+    @Test
+    @DisplayName("QueueThread Test")
+    void queueThreadTest() throws InterruptedException {
+        try (final StartableThreadManager threadManager = ThreadManagerFactory.buildThreadManager()) {
+
+            final AtomicLong count1 = new AtomicLong();
+            final AtomicLong count2 = new AtomicLong();
+
+            final QueueThread<Integer> thread1 = threadManager
+                    .newQueueThreadConfiguration(Integer.class)
+                    .setHandler(count1::getAndAdd)
+                    .build();
+
+            final QueueThread<Integer> thread2 = threadManager
+                    .newQueueThreadConfiguration(Integer.class)
+                    .setHandler(count2::getAndAdd)
+                    .build();
+
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+                thread1.add(i);
+                thread2.add(i);
+            }
+
+            assertThrows(LifecycleException.class, thread1::start);
+            assertFalse(thread1.isAlive());
+
+            // The thread should not be running in the background.
+            // But pause briefly to allow it to do bad things if it wants to do bad things.
+            MILLISECONDS.sleep(10);
+
+            assertEquals(0, count1.get());
+
+            threadManager.start();
+
+            // Don't bother trying to start thread1,
+            // attempting to start this thread in the wrong part of the lifecycle leaves it in a broken state
+            thread2.start();
+
+            final int finalSum = sum;
+            assertEventuallyTrue(() -> finalSum == count2.get(), Duration.ofSeconds(1), "thread did not properly run");
+
+            thread2.stop();
+        }
+    }
+
+    @Test
+    @DisplayName("QueueThreadPool Test")
+    void queueThreadPoolTest() throws InterruptedException {
+        try (final StartableThreadManager threadManager = ThreadManagerFactory.buildThreadManager()) {
+
+            final AtomicLong count1 = new AtomicLong();
+            final AtomicLong count2 = new AtomicLong();
+
+            final QueueThreadPool<Integer> thread1 = threadManager
+                    .newQueueThreadPoolConfiguration(Integer.class)
+                    .setHandler(count1::getAndAdd)
+                    .build();
+
+            final QueueThreadPool<Integer> thread2 = threadManager
+                    .newQueueThreadPoolConfiguration(Integer.class)
+                    .setHandler(count2::getAndAdd)
+                    .build();
+
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+                thread1.add(i);
+                thread2.add(i);
+            }
+
+            assertThrows(LifecycleException.class, thread1::start);
+
+            // The thread should not be running in the background.
+            // But pause briefly to allow it to do bad things if it wants to do bad things.
+            MILLISECONDS.sleep(10);
+
+            assertEquals(0, count1.get());
+
+            threadManager.start();
+
+            // Don't bother trying to start thread1,
+            // attempting to start this thread in the wrong part of the lifecycle leaves it in a broken state
+            thread2.start();
+
+            final int finalSum = sum;
+            assertEventuallyTrue(() -> finalSum == count2.get(), Duration.ofSeconds(1), "thread did not properly run");
+
+            thread2.stop();
+        }
+    }
+
+    @Test
+    @DisplayName("MultiQueueThread Test")
+    void multiQueueThreadTest() throws InterruptedException {
+        try (final StartableThreadManager threadManager = ThreadManagerFactory.buildThreadManager()) {
+
+            final AtomicLong count1 = new AtomicLong();
+            final AtomicLong count2 = new AtomicLong();
+
+            final MultiQueueThread thread1 = threadManager
+                    .newMultiQueueThreadConfiguration()
+                    .addHandler(Integer.class, x -> count1.getAndAdd(x))
+                    .build();
+            final BlockingQueueInserter<Integer> inserter1 = thread1.getInserter(Integer.class);
+
+            final MultiQueueThread thread2 = threadManager
+                    .newMultiQueueThreadConfiguration()
+                    .addHandler(Integer.class, x -> count2.getAndAdd(x))
+                    .build();
+            final BlockingQueueInserter<Integer> inserter2 = thread2.getInserter(Integer.class);
+
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+                inserter1.add(i);
+                inserter2.add(i);
+            }
+
+            assertThrows(LifecycleException.class, thread1::start);
+            assertFalse(thread1.isAlive());
+
+            // The thread should not be running in the background.
+            // But pause briefly to allow it to do bad things if it wants to do bad things.
+            MILLISECONDS.sleep(10);
+
+            assertEquals(0, count1.get());
+
+            threadManager.start();
+
+            // Don't bother trying to start thread1,
+            // attempting to start this thread in the wrong part of the lifecycle leaves it in a broken state
+            thread2.start();
+
+            final int finalSum = sum;
+            assertEventuallyTrue(() -> finalSum == count2.get(), Duration.ofSeconds(1), "thread did not properly run");
+
+            thread2.stop();
+        }
+    }
+
+    @Test
+    @DisplayName("Cached Thread Pool Test")
+    void cachedThreadPoolTest() throws InterruptedException {
+        try (final StartableThreadManager threadManager = ThreadManagerFactory.buildThreadManager()) {
+
+            final AtomicLong count = new AtomicLong();
+
+            final ExecutorService executorService = threadManager.createCachedThreadPool("test");
+
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+                final int finalI = i;
+                executorService.execute(() -> count.getAndAdd(finalI));
+            }
+
+            // The executor service should not be running in the background.
+            // But pause briefly to allow it to do bad things if it wants to do bad things.
+            MILLISECONDS.sleep(10);
+
+            assertEquals(0, count.get());
+
+            threadManager.start();
+
+            final int finalSum = sum;
+            assertEventuallyTrue(
+                    () -> finalSum == count.get(), Duration.ofSeconds(1), "executor service did not properly run");
+
+            executorService.shutdown();
+        }
+    }
+
+    // TODO
+    //    ExecutorService createSingleThreadExecutor(@NonNull final String name);
+    //    ExecutorService createFixedThreadPool(@NonNull final String name, final int threadCount);
+    //    ScheduledExecutorService createSingleThreadScheduledExecutor(@NonNull final String name);
+    //    ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, final int threadCount);
+    //    MultiQueueThreadConfiguration newMultiQueueThreadConfiguration();
 }
