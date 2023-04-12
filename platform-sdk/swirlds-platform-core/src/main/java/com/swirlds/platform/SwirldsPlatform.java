@@ -1546,6 +1546,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
         if (basicConfig.syncAsProtocolEnabled()) {
+            reconnectController.set(new ReconnectController(threadManager, reconnectHelper, () -> {
+            }));
             startSyncAsProtocolNetwork(connectionManagers);
             return;
         }
@@ -1825,7 +1827,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             if (oldStatus != newStatus) {
                 final PlatformStatus ns = newStatus;
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
+                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
                         .toString());
 
                 logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());

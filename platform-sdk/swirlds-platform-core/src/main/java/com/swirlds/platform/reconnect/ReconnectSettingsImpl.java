@@ -32,7 +32,7 @@ public class ReconnectSettingsImpl extends SubSetting implements ReconnectSettin
     /**
      * Determines what a node will do when it falls behind. If true, it will attempt a reconnect, if false, it will die.
      */
-    public boolean active = false;
+    public boolean active = true;
 
     /**
      * Defines a window of time after the node starts up when the node is allowed to reconnect. If -1 then
