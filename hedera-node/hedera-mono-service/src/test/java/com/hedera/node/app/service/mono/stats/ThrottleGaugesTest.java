@@ -78,7 +78,7 @@ class ThrottleGaugesTest {
     void initializesMetricsAsExpected() {
         givenThrottleMocksWithGas();
         givenThrottleCollabs();
-        given(platform.getMetrics()).willReturn(metrics);
+        given(platform.getContext().getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 
@@ -95,7 +95,7 @@ class ThrottleGaugesTest {
         given(bThrottle.percentUsed(any())).willReturn(50.0);
         given(consGasThrottle.percentUsed(any())).willReturn(33.0);
         given(hapiGasThrottle.percentUsed(any())).willReturn(13.0);
-        given(platform.getMetrics()).willReturn(metrics);
+        given(platform.getContext().getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(pretendGauge);
 
         subject.registerWith(platform);
@@ -113,7 +113,7 @@ class ThrottleGaugesTest {
         givenThrottleCollabs();
         given(aThrottle.percentUsed(any())).willReturn(10.0);
         given(bThrottle.percentUsed(any())).willReturn(50.0);
-        given(platform.getMetrics()).willReturn(metrics);
+        given(platform.getContext().getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(pretendGauge);
 
         subject.registerWith(platform);
@@ -127,7 +127,7 @@ class ThrottleGaugesTest {
     void initializesWithoutGasMetricsAsExpected() {
         givenThrottleMocksWithoutGas();
         givenThrottleCollabs();
-        given(platform.getMetrics()).willReturn(metrics);
+        given(platform.getContext().getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 

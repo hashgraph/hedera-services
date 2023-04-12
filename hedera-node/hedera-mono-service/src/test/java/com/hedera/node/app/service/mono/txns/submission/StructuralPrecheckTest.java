@@ -448,7 +448,7 @@ class StructuralPrecheckTest {
     }
 
     private void withVerifiableCounters() {
-        given(platform.getMetrics()).willReturn(metrics);
+        given(platform.getContext().getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(counter);
         counters.registerWith(platform);
     }

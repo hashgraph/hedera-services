@@ -55,7 +55,7 @@ class EntityUtilGaugesTest {
 
     @Test
     void registersAndUpdatesExpectedGauges() {
-        given(platform.getMetrics()).willReturn(metrics);
+        given(platform.getContext().getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(pretendGauge);
         given(usageLimits.percentAccountsUsed()).willReturn(2.0);
         given(usageLimits.percentContractsUsed()).willReturn(3.0);

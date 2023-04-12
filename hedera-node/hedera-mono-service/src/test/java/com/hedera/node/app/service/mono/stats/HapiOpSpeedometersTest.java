@@ -93,7 +93,7 @@ class HapiOpSpeedometersTest {
 
     @Test
     void beginsRationally() {
-        given(platform.getMetrics()).willReturn(metrics);
+        given(platform.getContext().getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 
@@ -112,7 +112,7 @@ class HapiOpSpeedometersTest {
 
     @Test
     void registersExpectedStatEntries() {
-        given(platform.getMetrics()).willReturn(metrics);
+        given(platform.getContext().getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 

@@ -62,7 +62,7 @@ class MiscRunningAvgsTest {
     @Test
     void registersExpectedStatEntries() {
         setMocks();
-        given(platform.getMetrics()).willReturn(metrics);
+        given(platform.getContext().getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 

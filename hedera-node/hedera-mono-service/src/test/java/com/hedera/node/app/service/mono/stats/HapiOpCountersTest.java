@@ -68,7 +68,7 @@ class HapiOpCountersTest {
 
         subject = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
-        given(platform.getMetrics()).willReturn(metrics);
+        given(platform.getContext().getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(counter);
 
         subject.registerWith(platform);

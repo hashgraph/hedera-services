@@ -96,7 +96,7 @@ class ServicesAppTest {
         final var logDirVal = "data/recordStreams";
         final var nodeProps = new ScreenedNodeFileProps();
 
-        given(platform.getCryptography()).willReturn(cryptography);
+        given(platform.getContext().getCryptography()).willReturn(cryptography);
         given(platform.getSelfId()).willReturn(selfNodeId);
         if (!nodeProps.containsProperty(logDirKey)) {
             given(overridingProps.containsProperty(any())).willReturn(false);

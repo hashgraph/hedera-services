@@ -47,7 +47,7 @@ class IngestComponentTest {
 
     @BeforeEach
     void setUp() {
-        given(platform.getCryptography()).willReturn(cryptography);
+        given(platform.getContext().getCryptography()).willReturn(cryptography);
 
         final var selfNodeId = new NodeId(false, 666L);
 
