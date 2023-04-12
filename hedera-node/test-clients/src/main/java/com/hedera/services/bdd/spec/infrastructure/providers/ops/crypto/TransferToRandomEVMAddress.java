@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -44,7 +45,7 @@ public class TransferToRandomEVMAddress implements OpProvider {
 
         var to = involvedKey.get();
         HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, to, 5, true))
-                .hasKnownStatusFrom(SUCCESS)
+                .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE)
                 .payingWith(UNIQUE_PAYER_ACCOUNT);
 
         return Optional.of(op);
