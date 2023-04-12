@@ -23,15 +23,18 @@ import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.FILE_VERSION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
+import static com.swirlds.platform.state.signed.SignedStateFileUtils.STATE_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.payloads.StateSavedToDiskPayload;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.StateSettings;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -130,6 +133,22 @@ public final class SignedStateFileWriter {
         writeMetadataFile(selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
         Settings.getInstance().writeSettingsUsed(directory);
+        writeStateAddressBookFile(directory, signedState.getAddressBook());
+    }
+
+    /**
+     * Write the state's address book in human-readable form.
+     *
+     * @param directory   the directory to write to
+     * @param addressBook the address book to write
+     */
+    private static void writeStateAddressBookFile(@NonNull final Path directory, @NonNull final AddressBook addressBook)
+            throws IOException {
+        final Path addressBookFile = directory.resolve(STATE_ADDRESS_BOOK_FILE_NAME);
+
+        try (final BufferedWriter writer = new BufferedWriter(new FileWriter(addressBookFile.toFile()))) {
+            writer.write(addressBook.toConfigText());
+        }
     }
 
     /**
