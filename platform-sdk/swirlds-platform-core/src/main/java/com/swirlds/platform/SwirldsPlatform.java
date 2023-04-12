@@ -576,6 +576,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 selfId,
                 initialAddressBook.getSize(),
                 settings.getNumConnections(),
+                // unidirectional connections are ONLY used for old-style syncs, that don't run as a protocol
                 !settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled());
 
         fallenBehindManager = new FallenBehindManagerImpl(
@@ -583,6 +584,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 topology.getConnectionGraph(),
                 this::checkPlatformStatus,
                 () -> {
+                    // if we are using old-style syncs, early out and don't start the reconnect controller
                     if (!settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled()) {
                         return;
                     }
@@ -1281,6 +1283,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 eventTaskCreator::addEvent,
                 syncManager,
                 shadowgraphExecutor,
+                // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
                 !basicConfig.syncAsProtocolEnabled(),
                 () -> {});
 
@@ -1355,6 +1358,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this,
                 socketFactory,
                 initialAddressBook,
+                // only do a version check for old-style sync
                 !settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled(),
                 appVersion);
         final StaticConnectionManagers connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
@@ -1364,6 +1368,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 initialAddressBook,
                 connectionManagers::newConnection,
                 StaticSettingsProvider.getSingleton(),
+                // only do a version check for old-style sync
                 !settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled(),
                 appVersion);
         // allow other members to create connections to me
@@ -1828,7 +1833,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             if (oldStatus != newStatus) {
                 final PlatformStatus ns = newStatus;
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
+                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
                         .toString());
 
                 logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());
