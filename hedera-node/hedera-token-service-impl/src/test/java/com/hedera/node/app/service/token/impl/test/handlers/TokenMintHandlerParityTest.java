@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
 import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_FOR_TOKEN_WITHOUT_SUPPLY;
 import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_WITH_SUPPLY_KEYED_TOKEN;
@@ -27,10 +27,9 @@ import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.Test;
 
@@ -38,42 +37,33 @@ class TokenMintHandlerParityTest extends ParityTestBase {
     private final TokenMintHandler subject = new TokenMintHandler();
 
     @Test
-    void tokenMintWithSupplyKeyedTokenScenario() {
+    void tokenMintWithSupplyKeyedTokenScenario() throws PreCheckException {
         final var theTxn = txnFrom(MINT_WITH_SUPPLY_KEYED_TOKEN);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_SUPPLY_KT.asPbjKey()));
+        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_SUPPLY_KT.asPbjKey()));
     }
 
     @Test
-    void tokenMintWithMissingTokenScenario() {
+    void tokenMintWithMissingTokenScenario() throws PreCheckException {
         final var theTxn = txnFrom(MINT_WITH_MISSING_TOKEN);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context, readableTokenStore);
-
-        assertTrue(context.failed());
-        assertEquals(INVALID_TOKEN_ID, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(0, context.getRequiredNonPayerKeys().size());
+        assertPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
     }
 
     @Test
-    void tokenMintWithoutSupplyScenario() {
+    void tokenMintWithoutSupplyScenario() throws PreCheckException {
         final var theTxn = txnFrom(MINT_FOR_TOKEN_WITHOUT_SUPPLY);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(0, context.getRequiredNonPayerKeys().size());
+        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(0, context.requiredNonPayerKeys().size());
     }
 }

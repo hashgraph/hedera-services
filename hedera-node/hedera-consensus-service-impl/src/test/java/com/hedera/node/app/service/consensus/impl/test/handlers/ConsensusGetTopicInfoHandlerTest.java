@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -118,8 +119,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         final var store = new ReadableTopicStore(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
-        final var response = subject.validate(query, store);
-        assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, response);
+        assertPreCheck(() -> subject.validate(query, store), ResponseCodeEnum.INVALID_TOPIC_ID);
     }
 
     @Test

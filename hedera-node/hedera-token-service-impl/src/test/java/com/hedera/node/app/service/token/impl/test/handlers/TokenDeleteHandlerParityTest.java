@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_KNOWN_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN_ADMIN_KEY;
@@ -25,12 +25,11 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMI
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.Test;
 
@@ -39,42 +38,33 @@ class TokenDeleteHandlerParityTest extends ParityTestBase {
     private final TokenDeleteHandler subject = new TokenDeleteHandler();
 
     @Test
-    void tokenDeletionWithValidTokenScenario() {
+    void tokenDeletionWithValidTokenScenario() throws PreCheckException {
         final var theTxn = txnFrom(DELETE_WITH_KNOWN_TOKEN);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
     }
 
     @Test
-    void tokenDeletionWithMissingTokenScenario() {
+    void tokenDeletionWithMissingTokenScenario() throws PreCheckException {
         final var theTxn = txnFrom(DELETE_WITH_MISSING_TOKEN);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context, readableTokenStore);
-
-        assertTrue(context.failed());
-        assertEquals(INVALID_TOKEN_ID, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(0, context.getRequiredNonPayerKeys().size());
+        assertPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
     }
 
     @Test
-    void tokenDeletionWithTokenWithoutAnAdminKeyScenario() {
+    void tokenDeletionWithTokenWithoutAnAdminKeyScenario() throws PreCheckException {
         final var theTxn = txnFrom(DELETE_WITH_MISSING_TOKEN_ADMIN_KEY);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(0, context.getRequiredNonPayerKeys().size());
+        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(0, context.requiredNonPayerKeys().size());
     }
 }

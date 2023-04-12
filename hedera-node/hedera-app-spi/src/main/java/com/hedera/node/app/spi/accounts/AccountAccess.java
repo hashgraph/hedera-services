@@ -18,75 +18,46 @@ package com.hedera.node.app.spi.accounts;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * An interface used for looking up Keys on the account. NOTE: This class can be modified to return
- * any other fields needed from account object if needed in the future.
+ * Provides access to {@link Account}s by looking up through {@link AccountID} and {@link ContractID}.
  */
 public interface AccountAccess {
+    /**
+     * Fetches an {@link Account} object from state with the given {@link AccountID}. If the account could not be
+     * fetched because the given account doesn't exist, returns {@code null}.
+     *
+     * @param accountID given account id or alias
+     * @return {@link Account} object if successfully fetched or {@code null} if the account doesn't exist
+     */
+    @Nullable
+    Account getAccountById(@NonNull final AccountID accountID);
 
     /**
-     * Fetches the account's key from given accountID. If the key could not be fetched as the given
-     * accountId is invalid or doesn't exist provides information about the failure failureReason.
-     * If there is no failure failureReason will be null.
+     * Fetches an {@link Account} object from state with the given {@link ContractID}. If the contract account could not
+     * be fetched because the given contract doesn't exist, returns {@code null}.
      *
-     * @param idOrAlias account id whose key should be fetched
-     * @return key if successfully fetched or failureReason for failure
+     * @param contractID given contract id
+     * @return {@link Account} object if successfully fetched or {@code null} if the contract account doesn't exist
      */
-    @NonNull
-    KeyOrLookupFailureReason getKey(@NonNull final AccountID idOrAlias);
+    @Nullable
+    default Account getContractById(@NonNull final ContractID contractID) {
+        // ContractID and AccountID are the same thing, really, and contracts are accounts. So we convert
+        // from the contract ID to an account ID and reuse the existing method (no need for something else).
+        // If we look up the account based on the ID successfully, but it isn't a smart contract account, then
+        // we return null (we didn't find a contract with that ID).
+        final var builder =
+                AccountID.newBuilder().shardNum(contractID.shardNum()).realmNum(contractID.realmNum());
 
-    /**
-     * Fetches the account's key from given accountID and returns the keys if the account has
-     * receiverSigRequired flag set to true.
-     *
-     * <p>If the receiverSigRequired flag is not true on the account, returns key as null and
-     * failureReason as null. If the key could not be fetched as the given accountId is invalid or
-     * doesn't exist, provides information about the failure failureReason. If there is no failure
-     * failureReason will be null.
-     *
-     * @param idOrAlias account id whose key should be fetched
-     * @return key if successfully fetched or failureReason for failure
-     */
-    @NonNull
-    KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final AccountID idOrAlias);
+        if (contractID.hasEvmAddress()) {
+            builder.alias(contractID.evmAddressOrThrow());
+        } else {
+            builder.accountNum(contractID.contractNumOrElse(0L));
+        }
 
-    /**
-     * Fetches the contract's key from given contractID. If the key could not be fetched as the
-     * given contractID is invalid or doesn't exist provides information about the failure
-     * failureReason. If there is no failure failureReason will be null.
-     *
-     * @param idOrAlias contract id whose key should be fetched
-     * @return key if successfully fetched or failureReason for failure
-     */
-    @NonNull
-    KeyOrLookupFailureReason getKey(@NonNull final ContractID idOrAlias);
-
-    /**
-     * Fetches the contract's key from given contractID and returns the keys if the account has
-     * receiverSigRequired flag set to true.
-     *
-     * <p>If the receiverSigRequired flag is not true on the account, returns key as null and
-     * failureReason as null. If the key could not be fetched as the given contractID is invalid or
-     * doesn't exist, provides information about the failure failureReason. If there is no failure
-     * failureReason will be null.
-     *
-     * @param idOrAlias contract id whose key should be fetched
-     * @return key if successfully fetched or failureReason for failure
-     */
-    @NonNull
-    KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID idOrAlias);
-
-    /**
-     * Fetches {@link Account} object from given accountID. If the account could not be fetched as the
-     * given account doesn't exist, returns {@code Optional.empty()}.
-     * @param accountOrAlias given account id or alias
-     * @return {@link Account} object if successfully fetched or {@code Optional.empty()} if
-     * the account doesn't exist
-     */
-    @NonNull
-    Optional<Account> getAccountById(@NonNull final AccountID accountOrAlias);
+        final var account = getAccountById(builder.build());
+        return account == null || !account.isSmartContract() ? null : account;
+    }
 }

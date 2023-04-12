@@ -18,10 +18,12 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -37,6 +39,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -85,71 +88,65 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
     private CryptoApproveAllowanceHandler subject = new CryptoApproveAllowanceHandler();
 
     @Test
-    void cryptoApproveAllowanceVanilla() {
+    void cryptoApproveAllowanceVanilla() throws PreCheckException {
         given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn);
         subject.preHandle(context);
-        basicMetaAssertions(context, 3, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
-        assertIterableEquals(List.of(ownerKey, ownerKey, ownerKey), context.getRequiredNonPayerKeys());
+        basicMetaAssertions(context, 1);
+        assertEquals(payerKey, context.payerKey());
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(ownerKey);
     }
 
     @Test
-    void cryptoApproveAllowanceFailsWithInvalidOwner() {
+    void cryptoApproveAllowanceFailsWithInvalidOwner() throws PreCheckException {
         given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var context = new PreHandleContext(store, txn, payer);
-        subject.preHandle(context);
-        basicMetaAssertions(context, 0, true, INVALID_ALLOWANCE_OWNER_ID);
-        assertEquals(payerKey, context.getPayerKey());
-        assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
+        final var context = new PreHandleContext(store, txn);
+        assertPreCheck(() -> subject.preHandle(context), INVALID_ALLOWANCE_OWNER_ID);
     }
 
     @Test
-    void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() {
+    void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() throws PreCheckException {
         given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
-        final var context = new PreHandleContext(store, txn, owner);
+        final var context = new PreHandleContext(store, txn);
         subject.preHandle(context);
-        basicMetaAssertions(context, 0, false, OK);
-        assertEquals(ownerKey, context.getPayerKey());
-        assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
+        basicMetaAssertions(context, 0);
+        assertEquals(ownerKey, context.payerKey());
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
-    void cryptoApproveAllowanceAddsDelegatingSpender() {
+    void cryptoApproveAllowanceAddsDelegatingSpender() throws PreCheckException {
         given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
         given(accounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum())))
                 .willReturn(payerAccount);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn);
         subject.preHandle(context);
-        basicMetaAssertions(context, 3, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
-        assertIterableEquals(List.of(ownerKey, ownerKey, payerKey), context.getRequiredNonPayerKeys());
+        basicMetaAssertions(context, 1);
+        assertEquals(payerKey, context.payerKey());
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(ownerKey);
     }
 
     @Test
-    void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() {
+    void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() throws PreCheckException {
         given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
         given(accounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum())))
                 .willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var context = new PreHandleContext(store, txn, payer);
-        subject.preHandle(context);
-        assertEquals(payerKey, context.getPayerKey());
-        basicMetaAssertions(context, 2, true, INVALID_DELEGATING_SPENDER);
-        assertIterableEquals(List.of(ownerKey, ownerKey), context.getRequiredNonPayerKeys());
+        final var context = new PreHandleContext(store, txn);
+        assertPreCheck(() -> subject.preHandle(context), INVALID_DELEGATING_SPENDER);
     }
 
     @Test

@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -187,9 +188,7 @@ class QueryCheckerTest {
                 cryptoTransferHandler);
 
         // then
-        assertThatThrownBy(() -> checker.checkNodeState())
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", ResponseCodeEnum.INVALID_NODE_ACCOUNT);
+        assertPreCheck(() -> checker.checkNodeState(), ResponseCodeEnum.INVALID_NODE_ACCOUNT);
     }
 
     @Test
@@ -206,9 +205,7 @@ class QueryCheckerTest {
                 cryptoTransferHandler);
 
         // then
-        assertThatThrownBy(() -> checker.checkNodeState())
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", ResponseCodeEnum.PLATFORM_NOT_ACTIVE);
+        assertPreCheck(() -> checker.checkNodeState(), ResponseCodeEnum.PLATFORM_NOT_ACTIVE);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -249,9 +246,7 @@ class QueryCheckerTest {
                 cryptoTransferHandler);
 
         // then
-        assertThatThrownBy(() -> checker.validateCryptoTransfer(transaction))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION);
+        assertPreCheck(() -> checker.validateCryptoTransfer(transaction), INVALID_TRANSACTION);
     }
 
     @Test
@@ -273,9 +268,7 @@ class QueryCheckerTest {
                 cryptoTransferHandler);
 
         // then
-        assertThatThrownBy(() -> checker.validateCryptoTransfer(transaction))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_TX_FEE);
+        assertPreCheck(() -> checker.validateCryptoTransfer(transaction), INSUFFICIENT_TX_FEE);
     }
 
     @Test
@@ -300,9 +293,7 @@ class QueryCheckerTest {
                 cryptoTransferHandler);
 
         // then
-        assertThatThrownBy(() -> checker.validateCryptoTransfer(transaction))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INVALID_ACCOUNT_AMOUNTS);
+        assertPreCheck(() -> checker.validateCryptoTransfer(transaction), INVALID_ACCOUNT_AMOUNTS);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -477,8 +468,6 @@ class QueryCheckerTest {
         when(authorizer.isAuthorized(payer, GET_ACCOUNT_DETAILS)).thenReturn(false);
 
         // then
-        assertThatThrownBy(() -> checker.checkPermissions(payer, GET_ACCOUNT_DETAILS))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", NOT_SUPPORTED);
+        assertPreCheck(() -> checker.checkPermissions(payer, GET_ACCOUNT_DETAILS), NOT_SUPPORTED);
     }
 }

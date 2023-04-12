@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromGrpcKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +40,9 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.test.handlers.TokenHandlerTestBase;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import java.util.List;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,15 +76,10 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void getsMerkleTokenIfTokenIdPresent() {
+    void getsMerkleTokenIfTokenIdPresent() throws PreCheckException {
         given(tokens.get(tokenEntityNum)).willReturn(token);
 
-        final var result = subject.getTokenMeta(tokenId);
-
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-
-        final var meta = result.metadata();
+        final var meta = subject.getTokenMeta(tokenId);
         assertEquals(adminKey, fromGrpcKey(asKeyUnchecked((JKey) meta.adminKey().get())));
         assertEquals(kycKey, fromGrpcKey(asKeyUnchecked((JKey) meta.kycKey().get())));
         assertEquals(wipeKey, fromGrpcKey(asKeyUnchecked((JKey) meta.wipeKey().get())));
@@ -96,18 +95,13 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void getsNullKeyIfMissingAccount() {
+    void getsNullKeyIfMissingAccount() throws PreCheckException {
         given(tokens.get(tokenEntityNum)).willReturn(null);
-
-        final var result = subject.getTokenMeta(tokenId);
-
-        assertTrue(result.failed());
-        assertEquals(INVALID_TOKEN_ID, result.failureReason());
-        assertNull(result.metadata());
+        assertNull(subject.getTokenMeta(tokenId));
     }
 
     @Test
-    void classifiesRoyaltyWithFallback() {
+    void classifiesRoyaltyWithFallback() throws PreCheckException {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
         copy.customFees(PbjConverter.fromFcCustomFee(
@@ -115,27 +109,23 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
 
         given(tokens.get(tokenEntityNum)).willReturn(copy.build());
 
-        final var result = subject.getTokenMeta(tokenId);
+        final var meta = subject.getTokenMeta(tokenId);
 
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-        assertTrue(result.metadata().hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), result.metadata().treasuryNum());
+        assertTrue(meta.hasRoyaltyWithFallback());
+        assertSame(treasury.accountNum(), meta.treasuryNum());
     }
 
     @Test
-    void classifiesRoyaltyWithNoFallback() {
+    void classifiesRoyaltyWithNoFallback() throws PreCheckException {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
         copy.customFees(PbjConverter.fromFcCustomFee(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
 
         given(tokens.get(tokenEntityNum)).willReturn(copy.build());
 
-        final var result = subject.getTokenMeta(tokenId);
+        final var meta = subject.getTokenMeta(tokenId);
 
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-        assertFalse(result.metadata().hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), result.metadata().treasuryNum());
+        assertFalse(meta.hasRoyaltyWithFallback());
+        assertSame(treasury.accountNum(), meta.treasuryNum());
     }
 }
