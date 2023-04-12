@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -200,12 +199,9 @@ public abstract class CryptoBench extends VirtualMapBench {
         final long[] map = new long[verify ? maxKey : 0];
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
 
-        final ExecutorService prefetchPool = Executors.newCachedThreadPool(getStaticThreadManager()
-                .newThreadConfiguration()
-                .setComponent("benchmark")
-                .setThreadName("prefetch")
-                .setExceptionHandler((t, ex) -> logger.error("Uncaught exception during prefetching", ex))
-                .buildFactory());
+        final ExecutorService prefetchPool = getStaticThreadManager()
+                .createCachedThreadPool(
+                        "benchmark: prefetch", (t, ex) -> logger.error("Uncaught exception during prefetching", ex));
 
         tps = BenchmarkMetrics.registerTPS();
 
@@ -299,12 +295,9 @@ public abstract class CryptoBench extends VirtualMapBench {
         final long[] map = new long[verify ? maxKey : 0];
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
 
-        final ExecutorService prefetchPool = Executors.newCachedThreadPool(getStaticThreadManager()
-                .newThreadConfiguration()
-                .setComponent("benchmark")
-                .setThreadName("prefetch")
-                .setExceptionHandler((t, ex) -> logger.error("Uncaught exception during prefetching", ex))
-                .buildFactory());
+        final ExecutorService prefetchPool = getStaticThreadManager()
+                .createCachedThreadPool(
+                        "benchmark: prefetch", (t, ex) -> logger.error("Uncaught exception during prefetching", ex));
 
         tps = BenchmarkMetrics.registerTPS();
 

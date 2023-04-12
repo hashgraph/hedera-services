@@ -24,16 +24,14 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Implementation of a reusable background thread that dispatches asynchronous work items to the provided {@link
- * AsyncOperationHandler} by removing the work items from the provided {@link Queue}.
+ * Implementation of a reusable background thread that dispatches asynchronous work items to the provided
+ * {@link AsyncOperationHandler} by removing the work items from the provided {@link Queue}.
  */
 public class IntakeDispatcher<Element, Provider extends OperationProvider, Handler extends AsyncOperationHandler> {
 
@@ -59,8 +57,8 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
     private final Provider provider;
 
     /**
-     * A {@link BiFunction} that accepts an {@link OperationProvider} and a list of work items then returns an {@link
-     * AsyncOperationHandler} instance.
+     * A {@link BiFunction} that accepts an {@link OperationProvider} and a list of work items then returns an
+     * {@link AsyncOperationHandler} instance.
      */
     private final BiFunction<Provider, List<Element>, Handler> handlerSupplier;
 
@@ -78,22 +76,16 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
      * Constructor that initializes all internal variables and launches the background thread. All background threads
      * are launched with a {@link java.lang.Thread.UncaughtExceptionHandler} to handle and log all exceptions thrown by
      * the thread.
-     *
+     * <p>
      * All threads constructed by this class are launched with the {@link Thread#setDaemon(boolean)} value specified as
      * {@code true}. This class will launch a total of {@code parallelism + 1} threads.
      *
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param elementType
-     * 		the type of Element
-     * @param backingQueue
-     * 		the queue of Elements to be processed
-     * @param provider
-     * 		the cryptographic transformation provider
-     * @param parallelism
-     * 		the number of threads in the pool
-     * @param handlerSupplier
-     * 		the supplier of the handler
+     * @param threadManager   responsible for managing thread lifecycles
+     * @param elementType     the type of Element
+     * @param backingQueue    the queue of Elements to be processed
+     * @param provider        the cryptographic transformation provider
+     * @param parallelism     the number of threads in the pool
+     * @param handlerSupplier the supplier of the handler
      */
     public IntakeDispatcher(
             final ThreadManager threadManager,
@@ -106,16 +98,10 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
         this.provider = provider;
         this.handlerSupplier = handlerSupplier;
 
-        final ThreadFactory threadFactory = threadManager
-                .newThreadConfiguration()
-                .setDaemon(true)
-                .setPriority(Thread.NORM_PRIORITY)
-                .setComponent(THREAD_COMPONENT_NAME)
-                .setThreadName(String.format("%s tp worker", elementType.getSimpleName()))
-                .setExceptionHandler(this::handleThreadException)
-                .buildFactory();
-
-        this.executorService = Executors.newFixedThreadPool(parallelism, threadFactory);
+        this.executorService = threadManager.createFixedThreadPool(
+                String.format("%s: %s tp worker", THREAD_COMPONENT_NAME, elementType.getSimpleName()),
+                parallelism,
+                this::handleThreadException);
 
         this.worker = threadManager
                 .newThreadConfiguration()

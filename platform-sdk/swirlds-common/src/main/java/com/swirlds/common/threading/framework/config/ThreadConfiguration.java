@@ -19,7 +19,6 @@ package com.swirlds.common.threading.framework.config;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.internal.AbstractThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadBuilder;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * This object is used to configure and build {@link Thread} instances.
@@ -117,30 +116,6 @@ public class ThreadConfiguration extends AbstractThreadConfiguration<ThreadConfi
     public Thread build(final boolean start) {
         becomeImmutable();
         return buildThread(start);
-    }
-
-    /**
-     * <p>
-     * Get a {@link ThreadFactory} that contains the configuration specified by this object.
-     * </p>
-     *
-     * <p>
-     * After calling this method, this configuration object should not be modified or used to construct other
-     * threads, factories, or seeds.
-     * </p>
-     */
-    public ThreadFactory buildFactory() { // TODO remove this method!
-        enableThreadNumbering();
-
-        final ThreadFactory factory = (final Runnable r) -> {
-            final Thread thread = getThreadBuilder().buildThread(r);
-            configureThread(thread);
-            return thread;
-        };
-
-        becomeImmutable();
-
-        return factory;
     }
 
     /**

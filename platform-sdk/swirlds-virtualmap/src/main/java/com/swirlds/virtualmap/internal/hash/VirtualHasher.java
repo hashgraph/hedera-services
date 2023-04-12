@@ -41,7 +41,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongFunction;
 import org.apache.logging.log4j.LogManager;
@@ -76,14 +75,10 @@ public final class VirtualHasher<K extends VirtualKey<? super K>, V extends Virt
      * pool. This approach was used to avoid more complicated thread pool semantics, however, it is anticipated
      * that in the future we will want to have a fixed thread pool to better manage compute resources.
      */
-    private static final ExecutorService HASHING_POOL = Executors.newCachedThreadPool(getStaticThreadManager()
-            .newThreadConfiguration()
-            .setThreadGroup(new ThreadGroup("virtual-map-hashers"))
-            .setComponent("virtual-map")
-            .setThreadName("hasher")
-            .setExceptionHandler(
-                    (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during hashing", ex))
-            .buildFactory());
+    private static final ExecutorService HASHING_POOL = getStaticThreadManager()
+            .createCachedThreadPool(
+                    "virtual-map: hasher",
+                    (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during hashing", ex));
 
     /**
      * This thread-local gets a HashBuilder that can be used for hashing on a per-thread basis.

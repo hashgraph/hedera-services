@@ -25,7 +25,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,10 +74,7 @@ public class ConnectionServer implements InterruptableRunnable {
         this.port = port;
         this.newConnectionHandler = newConnectionHandler;
         this.socketFactory = socketFactory;
-        this.incomingConnPool = Executors.newCachedThreadPool(threadManager
-                .newThreadConfiguration()
-                .setThreadName("sync_server")
-                .buildFactory());
+        this.incomingConnPool = threadManager.createCachedThreadPool("sync_server");
     }
 
     @Override

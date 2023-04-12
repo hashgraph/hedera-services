@@ -40,9 +40,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -163,20 +160,11 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      */
     private static final Executor CLEANING_POOL = Boolean.getBoolean("syncCleaningPool")
             ? Runnable::run
-            : new ThreadPoolExecutor(
-                    CACHE_CLEANER_THREAD_COUNT,
-                    CACHE_CLEANER_THREAD_COUNT,
-                    60L,
-                    TimeUnit.SECONDS,
-                    new LinkedBlockingQueue<>(),
-                    getStaticThreadManager()
-                            .newThreadConfiguration()
-                            .setThreadGroup(new ThreadGroup("virtual-cache-cleaners"))
-                            .setComponent("virtual-map")
-                            .setThreadName("cache-cleaner")
-                            .setExceptionHandler(
-                                    (t, ex) -> logger.error("Failed to purge unneeded key/mutationList pairs", ex))
-                            .buildFactory());
+            : getStaticThreadManager()
+                    .createFixedThreadPool(
+                            "virtual-map: cache-cleaner",
+                            CACHE_CLEANER_THREAD_COUNT,
+                            (t, ex) -> logger.error("Failed to purge unneeded key/mutationList pairs", ex));
 
     /**
      * The fast-copyable version of the cache. This version number is auto-incrementing and set

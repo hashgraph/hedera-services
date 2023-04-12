@@ -21,7 +21,6 @@ import static com.swirlds.common.threading.framework.config.ThreadConfiguration.
 import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,7 +33,6 @@ import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -252,43 +250,6 @@ class ThreadTests {
     }
 
     @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.THREADING)
-    @DisplayName("Factory Test")
-    void factoryTest() {
-
-        Thread.UncaughtExceptionHandler exceptionHandler = (a, b) -> {};
-
-        final ThreadGroup group = new ThreadGroup("threadGroup1");
-        final ClassLoader classLoader =
-                Thread.currentThread().getContextClassLoader().getParent();
-
-        final ThreadFactory factory = getStaticThreadManager()
-                .newThreadConfiguration()
-                .setNodeId(1234L)
-                .setComponent("pool1")
-                .setThreadName("thread1")
-                .setDaemon(false)
-                .setExceptionHandler(exceptionHandler)
-                .setThreadGroup(group)
-                .setContextClassLoader(classLoader)
-                .buildFactory();
-
-        final Thread thread1 = factory.newThread(() -> {});
-
-        final Thread thread2 = factory.newThread(() -> {});
-
-        assertNotEquals(thread1.getName(), thread2.getName(), "thread names should be unique");
-        assertEquals(thread1.isDaemon(), thread2.isDaemon(), "daemon settings should match");
-        assertSame(
-                thread1.getUncaughtExceptionHandler(),
-                thread2.getUncaughtExceptionHandler(),
-                "should have same exception handler");
-        assertSame(thread1.getThreadGroup(), thread2.getThreadGroup(), "should have same thread group");
-        assertSame(thread1.getContextClassLoader(), thread2.getContextClassLoader(), "should have same class loader");
-    }
-
-    @Test
     @DisplayName("Naming Tests")
     void namingTests() {
 
@@ -331,22 +292,6 @@ class ThreadTests {
                 .setOtherNodeId(4321L)
                 .build();
         assertEquals("<foo: bar 1234 to 4321>", thread4.getName(), "unexpected thread name");
-
-        final ThreadFactory factory = getStaticThreadManager()
-                .newThreadConfiguration()
-                .setRunnable(() -> {})
-                .setComponent("foo")
-                .setThreadName("bar")
-                .setNodeId(1234L)
-                .setOtherNodeId(4321L)
-                .buildFactory();
-
-        assertEquals("<foo: bar 1234 to 4321 #0>", factory.newThread(null).getName(), "unexpected thread name");
-        assertEquals("<foo: bar 1234 to 4321 #1>", factory.newThread(null).getName(), "unexpected thread name");
-        assertEquals("<foo: bar 1234 to 4321 #2>", factory.newThread(null).getName(), "unexpected thread name");
-        assertEquals("<foo: bar 1234 to 4321 #3>", factory.newThread(null).getName(), "unexpected thread name");
-        assertEquals("<foo: bar 1234 to 4321 #4>", factory.newThread(null).getName(), "unexpected thread name");
-        assertEquals("<foo: bar 1234 to 4321 #5>", factory.newThread(null).getName(), "unexpected thread name");
     }
 
     @Test
@@ -536,54 +481,6 @@ class ThreadTests {
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class, () -> configuration1.setRunnable(null), "configuration should be immutable");
-
-        // Build factory should make the configuration immutable
-        final ThreadConfiguration configuration2 =
-                getStaticThreadManager().newThreadConfiguration().setRunnable(() -> {});
-
-        assertTrue(configuration2.isMutable(), "configuration should be mutable");
-
-        configuration2.buildFactory();
-        assertTrue(configuration2.isImmutable(), "configuration should be immutable");
-
-        assertThrows(
-                MutabilityException.class, () -> configuration2.setNodeId(0L), "configuration should be immutable");
-        assertThrows(
-                MutabilityException.class,
-                () -> configuration2.setComponent("asdf"),
-                "configuration should be immutable");
-        assertThrows(
-                MutabilityException.class,
-                () -> configuration2.setThreadName("asdf"),
-                "configuration should be immutable");
-        assertThrows(
-                MutabilityException.class,
-                () -> configuration2.setFullyFormattedThreadName("asdf"),
-                "configuration should be immutable");
-        assertThrows(
-                MutabilityException.class,
-                () -> configuration2.setOtherNodeId(0L),
-                "configuration should be immutable");
-        assertThrows(
-                MutabilityException.class,
-                () -> configuration2.setThreadGroup(null),
-                "configuration should be immutable");
-        assertThrows(
-                MutabilityException.class, () -> configuration2.setDaemon(false), "configuration should be immutable");
-        assertThrows(
-                MutabilityException.class,
-                () -> configuration2.setPriority(Thread.MAX_PRIORITY),
-                "configuration should be immutable");
-        assertThrows(
-                MutabilityException.class,
-                () -> configuration2.setContextClassLoader(null),
-                "configuration should be immutable");
-        assertThrows(
-                MutabilityException.class,
-                () -> configuration2.setExceptionHandler(null),
-                "configuration should be immutable");
-        assertThrows(
-                MutabilityException.class, () -> configuration2.setRunnable(null), "configuration should be immutable");
     }
 
     @Test
@@ -598,7 +495,6 @@ class ThreadTests {
 
         assertThrows(MutabilityException.class, configuration0::build, "configuration has already been used");
         assertThrows(MutabilityException.class, configuration0::buildSeed, "configuration has already been used");
-        assertThrows(MutabilityException.class, configuration0::buildFactory, "configuration has already been used");
 
         // buildSeed() should cause future calls to build(), buildSeed(), and buildFactory() to fail.
         final ThreadConfiguration configuration1 =
@@ -608,17 +504,6 @@ class ThreadTests {
 
         assertThrows(MutabilityException.class, configuration1::build, "configuration has already been used");
         assertThrows(MutabilityException.class, configuration1::buildSeed, "configuration has already been used");
-        assertThrows(MutabilityException.class, configuration1::buildFactory, "configuration has already been used");
-
-        // buildSeed() should cause future calls to build(), buildSeed(), and buildFactory() to fail.
-        final ThreadConfiguration configuration2 =
-                getStaticThreadManager().newThreadConfiguration().setRunnable(() -> {});
-
-        configuration2.buildFactory();
-
-        assertThrows(MutabilityException.class, configuration2::build, "configuration has already been used");
-        assertThrows(MutabilityException.class, configuration2::buildSeed, "configuration has already been used");
-        assertThrows(MutabilityException.class, configuration2::buildFactory, "configuration has already been used");
     }
 
     @Test

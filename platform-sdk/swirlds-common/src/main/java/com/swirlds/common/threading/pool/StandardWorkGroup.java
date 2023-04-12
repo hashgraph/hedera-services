@@ -18,11 +18,9 @@ package com.swirlds.common.threading.pool;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.ConcurrentFuturePool;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,13 +71,9 @@ public class StandardWorkGroup {
 
         this.onException = abortAction;
 
-        final ThreadConfiguration configuration = threadManager
-                .newThreadConfiguration()
-                .setComponent("work group " + groupName)
-                .setExceptionHandler((t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception ", ex))
-                .setThreadName(DEFAULT_TASK_NAME);
-
-        this.executorService = Executors.newCachedThreadPool(configuration.buildFactory());
+        this.executorService = threadManager.createCachedThreadPool(
+                "work group " + groupName + ": " + DEFAULT_TASK_NAME,
+                (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception ", ex));
     }
 
     public void shutdown() {

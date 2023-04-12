@@ -29,7 +29,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -163,12 +162,10 @@ public class VirtualPipeline {
         unhashedCopies = new ConcurrentLinkedDeque<>();
 
         alive = true;
-        executorService = Executors.newSingleThreadExecutor(getStaticThreadManager()
-                .newThreadConfiguration()
-                .setComponent(PIPELINE_COMPONENT)
-                .setThreadName(PIPELINE_THREAD_NAME)
-                .setExceptionHandler((t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception ", ex))
-                .buildFactory());
+        executorService = getStaticThreadManager()
+                .createSingleThreadExecutor(
+                        PIPELINE_COMPONENT + ": " + PIPELINE_THREAD_NAME,
+                        (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception ", ex));
     }
 
     /**

@@ -42,7 +42,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,14 +66,9 @@ public final class CryptoSetup {
      * @return an array of crypto objects, one for each node
      */
     public static Crypto[] initNodeSecurity(final AddressBook addressBook, final Configuration configuration) {
-        final ExecutorService cryptoThreadPool = Executors.newFixedThreadPool(
-                Settings.getInstance().getNumCryptoThreads(),
-                getStaticThreadManager()
-                        .newThreadConfiguration()
-                        .setComponent("browser")
-                        .setThreadName("crypto-verify")
-                        .setDaemon(false)
-                        .buildFactory());
+        final ExecutorService cryptoThreadPool = getStaticThreadManager()
+                .createFixedThreadPool(
+                        "browser: crypto-verify", Settings.getInstance().getNumCryptoThreads());
 
         final Path keysDirPath = Settings.getInstance().getKeysDirPath();
         final KeysAndCerts[] keysAndCerts;

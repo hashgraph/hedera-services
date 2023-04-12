@@ -27,7 +27,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -70,12 +69,9 @@ public abstract class VirtualMapBench extends BaseBench {
     private boolean doSnapshots;
     private final AtomicLong snapshotTime = new AtomicLong(0L);
     /* Asynchronous hasher */
-    private final ExecutorService hasher = Executors.newSingleThreadExecutor(getStaticThreadManager()
-            .newThreadConfiguration()
-            .setComponent("benchmark")
-            .setThreadName("hasher")
-            .setExceptionHandler((t, ex) -> logger.error("Uncaught exception during hashing", ex))
-            .buildFactory());
+    private final ExecutorService hasher = getStaticThreadManager()
+            .createSingleThreadExecutor(
+                    "benchmark: hasher", (t, ex) -> logger.error("Uncaught exception during hashing", ex));
 
     @TearDown
     public void destroyLocal() throws IOException {

@@ -30,9 +30,7 @@ import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.Iterator;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,18 +68,11 @@ public class MerkleHashBuilder {
         this.cryptography = cryptography;
         this.cpuThreadCount = cpuThreadCount;
 
-        final ThreadFactory threadFactory = threadManager
-                .newThreadConfiguration()
-                .setDaemon(true)
-                .setComponent(THREAD_COMPONENT_NAME)
-                .setThreadName("merkle hash")
-                .setPriority(Thread.NORM_PRIORITY)
-                .setExceptionHandler((t, ex) -> {
-                    logger.error(EXCEPTION.getMarker(), "Uncaught exception in MerkleHashBuilder thread pool", ex);
-                })
-                .buildFactory();
-
-        this.threadPool = Executors.newFixedThreadPool(cpuThreadCount, threadFactory);
+        this.threadPool = threadManager.createFixedThreadPool(
+                THREAD_COMPONENT_NAME + ": merkle hash",
+                cpuThreadCount,
+                (t, ex) ->
+                        logger.error(EXCEPTION.getMarker(), "Uncaught exception in MerkleHashBuilder thread pool", ex));
     }
 
     /**

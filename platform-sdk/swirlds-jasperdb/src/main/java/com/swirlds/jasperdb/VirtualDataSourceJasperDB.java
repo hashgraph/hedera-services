@@ -69,9 +69,8 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -217,7 +216,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     /**
      * ScheduledThreadPool for executing merges
      */
-    private final ScheduledThreadPoolExecutor mergingExecutor;
+    private final ScheduledExecutorService mergingExecutor;
 
     /** Future for scheduled merging thread */
     private ScheduledFuture<?> mergingFuture = null;
@@ -352,43 +351,29 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("JasperDB-" + label);
         // create scheduledThreadPool for executing merges
-        mergingExecutor = new ScheduledThreadPoolExecutor(
-                NUMBER_OF_MERGING_THREADS,
-                getStaticThreadManager()
-                        .newThreadConfiguration()
-                        .setThreadGroup(threadGroup)
-                        .setComponent(JASPER_DB_COMPONENT)
-                        .setThreadName("Merging")
-                        .setExceptionHandler((t, ex) -> logger.error(
-                                EXCEPTION.getMarker(), "[{}] Uncaught exception during merging", label, ex))
-                        .buildFactory());
+        mergingExecutor = getStaticThreadManager()
+                .createScheduledThreadPool(
+                        JASPER_DB_COMPONENT + ": Merging",
+                        NUMBER_OF_MERGING_THREADS,
+                        (t, ex) -> logger.error(
+                                EXCEPTION.getMarker(), "[{}] Uncaught exception during merging", label, ex));
         // create thread pool storing internal records
-        storeInternalExecutor = Executors.newSingleThreadExecutor(getStaticThreadManager()
-                .newThreadConfiguration()
-                .setComponent(JASPER_DB_COMPONENT)
-                .setThreadGroup(threadGroup)
-                .setThreadName("Store Internal Records")
-                .setExceptionHandler((t, ex) ->
-                        logger.error(EXCEPTION.getMarker(), "[{}] Uncaught exception during storing", label, ex))
-                .buildFactory());
+        storeInternalExecutor = getStaticThreadManager()
+                .createSingleThreadExecutor(
+                        JASPER_DB_COMPONENT + ": Store Internal Records",
+                        (t, ex) -> logger.error(
+                                EXCEPTION.getMarker(), "[{}] Uncaught exception during storing", label, ex));
         // create thread pool storing key-to-path mappings
-        storeKeyToPathExecutor = Executors.newSingleThreadExecutor(getStaticThreadManager()
-                .newThreadConfiguration()
-                .setComponent(JASPER_DB_COMPONENT)
-                .setThreadGroup(threadGroup)
-                .setThreadName("Store Key to Path")
-                .setExceptionHandler((t, ex) ->
-                        logger.error(EXCEPTION.getMarker(), "[{}] Uncaught exception during storing keys", label, ex))
-                .buildFactory());
+        storeKeyToPathExecutor = getStaticThreadManager()
+                .createSingleThreadExecutor(
+                        JASPER_DB_COMPONENT + ": Store Key to Path",
+                        (t, ex) -> logger.error(
+                                EXCEPTION.getMarker(), "[{}] Uncaught exception during storing keys", label, ex));
         // thread pool creating snapshots, it is unbounded in threads, but we use at most 7
-        snapshotExecutor = Executors.newCachedThreadPool(getStaticThreadManager()
-                .newThreadConfiguration()
-                .setComponent(JASPER_DB_COMPONENT)
-                .setThreadGroup(threadGroup)
-                .setThreadName("Snapshot")
-                .setExceptionHandler(
-                        (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during snapshots", ex))
-                .buildFactory());
+        snapshotExecutor = getStaticThreadManager()
+                .createCachedThreadPool(
+                        JASPER_DB_COMPONENT + ": Snapshot",
+                        (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during snapshots", ex));
         // build paths and file names
         this.dbPaths = new JasperDbPaths(storageDir);
         // check if we are loading an existing database or creating a new one

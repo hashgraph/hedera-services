@@ -32,6 +32,8 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public interface ThreadManager {
 
+    // TODO test non-default exception handlers
+
     /**
      * Create a new cached thread pool. If this thread manager has not yet been started, work submitted the executor
      * service will be not be handled until after the thread manager has been started (with the exception of the

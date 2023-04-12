@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
@@ -85,13 +84,8 @@ public class GossipSimulation {
         if (singleThreaded) {
             executor = null;
         } else {
-            executor = Executors.newFixedThreadPool(
-                    builder.getThreadCount(),
-                    getStaticThreadManager()
-                            .newThreadConfiguration()
-                            .setComponent("gossip simulation")
-                            .setThreadName("node")
-                            .buildFactory());
+            executor =
+                    getStaticThreadManager().createFixedThreadPool("gossip simulation: node", builder.getThreadCount());
         }
     }
 
