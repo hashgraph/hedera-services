@@ -21,13 +21,11 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Singleton;
 
 /** A Dagger module for providing dependencies based on {@link Metrics}. */
@@ -42,5 +40,5 @@ public interface MetricsDaggerModule {
                 Executors.newSingleThreadScheduledExecutor(),
                 new DefaultMetricsFactory(),
                 platform.getContext().getConfiguration().getConfigData(MetricsConfig.class));
-        }
+    }
 }

@@ -43,7 +43,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
@@ -337,8 +336,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         // then:
         verify(metadata).release();
     }
-
-
 
     @Test
     void preHandleUsesEventExpansion() {

@@ -45,12 +45,14 @@ public class TestUtils {
     }
 
     public static Metrics metrics() {
-        final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
+        final MetricsConfig metricsConfig =
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
         return new DefaultMetrics(
                 NodeId.createMain(DEFAULT_NODE_ID),
                 new MetricKeyRegistry(),
                 Executors.newSingleThreadScheduledExecutor(),
-                new DefaultMetricsFactory(),metricsConfig);
+                new DefaultMetricsFactory(),
+                metricsConfig);
     }
 }

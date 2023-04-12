@@ -43,13 +43,14 @@ public class AppTestBase extends TestBase implements TransactionFactory {
     protected final AccountID nodeSelfAccountId =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();
 
-    private final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
+    private final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
     /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure
      * they are being set correctly for different types of calls.
      */
-    protected Metrics metrics =
-            new DefaultMetrics(nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory(), metricsConfig);
+    protected Metrics metrics = new DefaultMetrics(
+            nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory(), metricsConfig);
 
     protected Counter counterMetric(String name) {
         return (Counter) metrics.getMetric("app", name);

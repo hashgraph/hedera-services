@@ -37,7 +37,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
@@ -173,7 +172,6 @@ class UniqueTokenMapAdapterTest {
         virtualMapAdapter.remove(virtualKey);
         verify(virtualMap, times(1)).remove(UniqueTokenKey.from(virtualKey));
     }
-
 
     @Test
     void testHash() {

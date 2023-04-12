@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-///TODO: temporary solution to solve AppTestBase and TestUtils compiler error
-package com.hedera.node.app;
 
+package com.hedera.node.app;
 
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;

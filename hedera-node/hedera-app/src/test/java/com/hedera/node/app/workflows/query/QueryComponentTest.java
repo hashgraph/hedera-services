@@ -52,8 +52,8 @@ class QueryComponentTest {
         final var selfNodeId = new NodeId(false, 666L);
         Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         PlatformContext platformContext = mock(PlatformContext.class);
-        when (platformContext.getConfiguration()).thenReturn(configuration);
-        when (platform.getContext()).thenReturn(platformContext);
+        when(platformContext.getConfiguration()).thenReturn(configuration);
+        when(platform.getContext()).thenReturn(platformContext);
         app = DaggerHederaApp.builder()
                 .platform(platform)
                 .crypto(CryptographyHolder.get())

@@ -54,8 +54,8 @@ class IngestComponentTest {
     void setUp() {
         Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         PlatformContext platformContext = mock(PlatformContext.class);
-        when (platformContext.getConfiguration()).thenReturn(configuration);
-        when (platform.getContext()).thenReturn(platformContext);
+        when(platformContext.getConfiguration()).thenReturn(configuration);
+        when(platform.getContext()).thenReturn(platformContext);
 
         given(platform.getContext().getCryptography()).willReturn(cryptography);
 
