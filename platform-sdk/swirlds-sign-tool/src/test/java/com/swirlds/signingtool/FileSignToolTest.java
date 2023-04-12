@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,28 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.signingTool;
+package com.swirlds.signingtool;
 
-import static com.swirlds.common.signingtool.FileSignTool.ALIAS_PROPERTY;
-import static com.swirlds.common.signingtool.FileSignTool.DEST_DIR_PROPERTY;
-import static com.swirlds.common.signingtool.FileSignTool.DIR_PROPERTY;
-import static com.swirlds.common.signingtool.FileSignTool.FILE_NAME_PROPERTY;
-import static com.swirlds.common.signingtool.FileSignTool.KEY_PROPERTY;
-import static com.swirlds.common.signingtool.FileSignTool.LOG_CONFIG_PROPERTY;
-import static com.swirlds.common.signingtool.FileSignTool.PASSWORD_PROPERTY;
-import static com.swirlds.common.signingtool.FileSignTool.TYPE_FILE_HASH;
-import static com.swirlds.common.signingtool.FileSignTool.TYPE_SIGNATURE;
-import static com.swirlds.common.signingtool.FileSignTool.buildDestSigFilePath;
-import static com.swirlds.common.signingtool.FileSignTool.integerToBytes;
-import static com.swirlds.common.signingtool.FileSignTool.loadPfxKey;
-import static com.swirlds.common.signingtool.FileSignTool.prepare;
-import static com.swirlds.common.signingtool.FileSignTool.sign;
-import static com.swirlds.common.signingtool.FileSignTool.signSingleFile;
-import static com.swirlds.common.signingtool.FileSignTool.signSingleFileOldVersion;
-import static com.swirlds.common.signingtool.FileSignTool.verifySignature;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeEntireHash;
 import static com.swirlds.common.stream.internal.LinkedObjectStreamValidateUtils.validateFileAndSignature;
 import static com.swirlds.common.stream.internal.StreamValidationResult.OK;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.signingtool.FileSignTool.ALIAS_PROPERTY;
+import static com.swirlds.signingtool.FileSignTool.DEST_DIR_PROPERTY;
+import static com.swirlds.signingtool.FileSignTool.DIR_PROPERTY;
+import static com.swirlds.signingtool.FileSignTool.FILE_NAME_PROPERTY;
+import static com.swirlds.signingtool.FileSignTool.KEY_PROPERTY;
+import static com.swirlds.signingtool.FileSignTool.LOG_CONFIG_PROPERTY;
+import static com.swirlds.signingtool.FileSignTool.PASSWORD_PROPERTY;
+import static com.swirlds.signingtool.FileSignTool.TYPE_FILE_HASH;
+import static com.swirlds.signingtool.FileSignTool.TYPE_SIGNATURE;
+import static com.swirlds.signingtool.FileSignTool.buildDestSigFilePath;
+import static com.swirlds.signingtool.FileSignTool.integerToBytes;
+import static com.swirlds.signingtool.FileSignTool.loadPfxKey;
+import static com.swirlds.signingtool.FileSignTool.prepare;
+import static com.swirlds.signingtool.FileSignTool.sign;
+import static com.swirlds.signingtool.FileSignTool.signSingleFile;
+import static com.swirlds.signingtool.FileSignTool.signSingleFileOldVersion;
+import static com.swirlds.signingtool.FileSignTool.verifySignature;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,10 +43,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.internal.SettingsCommon;
-import com.swirlds.common.signingtool.FileSignTool;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.StreamType;
 import com.swirlds.common.stream.internal.StreamValidationResult;
+import com.swirlds.test.framework.TestQualifierTags;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -87,7 +86,7 @@ class FileSignToolTest {
 
     @Test
     void loadJsonTest() throws IOException {
-        StreamType loadedStreamType = FileSignTool.loadStreamTypeFromJson(JSON_FILE_PATH);
+        final StreamType loadedStreamType = FileSignTool.loadStreamTypeFromJson(JSON_FILE_PATH);
 
         final String expectedDesc = "records";
         final String expectedExtension = "rcd";
@@ -146,7 +145,7 @@ class FileSignToolTest {
     }
 
     @Test
-    @Tag(TIME_CONSUMING)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void signSingleFileTest() throws Exception {
         // register constructables and set settings
         prepare(EventStreamType.getInstance());
@@ -157,7 +156,7 @@ class FileSignToolTest {
         signSingleFile(KEY_PAIR, eventStreamFile, destDir, EventStreamType.getInstance());
         final File sigFile = new File(buildDestSigFilePath(destDir, eventStreamFile));
 
-        StreamValidationResult validationResult =
+        final StreamValidationResult validationResult =
                 validateFileAndSignature(eventStreamFile, sigFile, KEY_PAIR.getPublic(), EventStreamType.getInstance());
         assertEquals(OK, validationResult, SIG_VALID_MSG);
         // generated signature file should match expected
@@ -165,7 +164,7 @@ class FileSignToolTest {
     }
 
     @Test
-    @Tag(TIME_CONSUMING)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void mainSignSingleFileTest() throws IOException {
         setProperties();
         System.setProperty(FILE_NAME_PROPERTY, EVTS_FILE_PATH);
@@ -176,7 +175,7 @@ class FileSignToolTest {
     }
 
     @Test
-    @Tag(TIME_CONSUMING)
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void mainSignDirTest() throws IOException {
         setProperties();
         System.setProperty(DIR_PROPERTY, JSON_DIR_PATH);
@@ -233,29 +232,28 @@ class FileSignToolTest {
     }
 
     /**
-     * Read the file hash and the signature byte array contained in the signature file;
-     * return a pair of FileHash and signature
+     * Read the file hash and the signature byte array contained in the signature file; return a pair of FileHash and
+     * signature
      *
-     * @param file
-     * 		an signature file with old format
+     * @param file an signature file with old format
      * @return a pair of hash bytes and signature bytes
      */
     private static Pair<byte[], byte[]> parseOldSigFile(final File file) throws IOException {
         if (!file.getName().endsWith("_sig")) {
             return null;
         }
-        try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
+        try (final DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
             byte[] fileHash = null;
             byte[] sig = null;
             while (dis.available() != 0) {
-                byte typeDelimiter = dis.readByte();
+                final byte typeDelimiter = dis.readByte();
                 switch (typeDelimiter) {
                     case TYPE_FILE_HASH:
                         fileHash = new byte[48];
                         dis.readFully(fileHash);
                         break;
                     case TYPE_SIGNATURE:
-                        int sigLength = dis.readInt();
+                        final int sigLength = dis.readInt();
                         sig = new byte[sigLength];
                         dis.readFully(sig);
                         break;

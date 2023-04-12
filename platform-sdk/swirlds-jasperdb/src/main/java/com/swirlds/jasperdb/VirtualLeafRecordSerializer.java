@@ -44,7 +44,7 @@ import java.util.Objects;
  * 		VirtualValue type
  */
 @SuppressWarnings("DuplicatedCode")
-public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V extends VirtualValue>
+public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue>
         implements DataItemSerializer<VirtualLeafRecord<K, V>>, SelfSerializable {
 
     private static final long CLASS_ID = 0x39f4704ad17104fL;
