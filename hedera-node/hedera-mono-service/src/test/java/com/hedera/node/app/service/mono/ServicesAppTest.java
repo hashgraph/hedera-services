@@ -74,7 +74,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ServicesAppTest {
 
     private final long selfId = 123;
-    private final String accountMemo = "0.0.3";
+    private static final String ACCOUNT_MEMO = "0.0.3";
     private final NodeId selfNodeId = new NodeId(false, selfId);
 
     @Mock
@@ -110,7 +110,7 @@ class ServicesAppTest {
         }
 
         subject = DaggerServicesApp.builder()
-                .staticAccountMemo(accountMemo)
+                .staticAccountMemo(ACCOUNT_MEMO)
                 .bootstrapProps(props)
                 .initialHash(EMPTY_HASH)
                 .platform(platform)

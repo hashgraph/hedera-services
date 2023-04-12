@@ -46,11 +46,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class HapiOpCountersTest {
-    private Platform platform;
     private Counter counter;
     private MiscRunningAvgs runningAvgs;
     private TransactionContext txnCtx;
-    private Function<HederaFunctionality, String> statNameFn;
     private Metrics metrics;
 
     private HapiOpCounters subject;
@@ -62,8 +60,8 @@ class HapiOpCountersTest {
 
         txnCtx = mock(TransactionContext.class);
         counter = mock(Counter.class);
-        platform = mock(Platform.class);
-        statNameFn = HederaFunctionality::toString;
+        Platform platform = mock(Platform.class);
+        Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
         runningAvgs = mock(MiscRunningAvgs.class);
         metrics = mock(Metrics.class);
 

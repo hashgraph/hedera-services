@@ -46,10 +46,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ServicesStatsManagerTest {
-    private final long opsUpdateIntervalMs = 1_000;
+    private static final long OPS_UPDATE_INTERVAL_MS = 1_000;
 
-    private final long throttleGaugesUpdateIntervalMs = 2_000;
-    private final long entityUtilGaugesUpdateIntervalMs = 3_000;
+    private static final long THROTTLE_GAUGES_UPDATE_INTERVAL_MS = 2_000;
+    private static final long ENTITY_UTIL_GAUGES_UPDATE_INTERVAL_MS = 3_000;
 
     @Mock
     private Pause pause;
@@ -98,9 +98,9 @@ class ServicesStatsManagerTest {
         ServicesStatsManager.pause = pause;
 
         given(platform.getSelfId()).willReturn(new NodeId(false, 123L));
-        given(properties.hapiOpsStatsUpdateIntervalMs()).willReturn(opsUpdateIntervalMs);
-        given(properties.entityUtilStatsUpdateIntervalMs()).willReturn(entityUtilGaugesUpdateIntervalMs);
-        given(properties.throttleUtilStatsUpdateIntervalMs()).willReturn(throttleGaugesUpdateIntervalMs);
+        given(properties.hapiOpsStatsUpdateIntervalMs()).willReturn(OPS_UPDATE_INTERVAL_MS);
+        given(properties.entityUtilStatsUpdateIntervalMs()).willReturn(ENTITY_UTIL_GAUGES_UPDATE_INTERVAL_MS);
+        given(properties.throttleUtilStatsUpdateIntervalMs()).willReturn(THROTTLE_GAUGES_UPDATE_INTERVAL_MS);
 
         subject = new ServicesStatsManager(
                 expiryStats,
@@ -116,7 +116,7 @@ class ServicesStatsManagerTest {
     }
 
     @AfterEach
-    public void cleanup() throws Exception {
+    public void cleanup() {
         ServicesStatsManager.pause = SleepingPause.SLEEPING_PAUSE;
         ServicesStatsManager.loopFactory = runnable -> new Thread(() -> {
             while (true) {

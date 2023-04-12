@@ -73,14 +73,12 @@ class HapiOpSpeedometersTest {
     @Mock
     private SpeedometerMetric xferDeprecatedRcvd;
 
-    private Function<HederaFunctionality, String> statNameFn;
     private HapiOpSpeedometers subject;
 
     @BeforeEach
     void setup() {
         HapiOpSpeedometers.allFunctions = () -> new HederaFunctionality[] {CryptoTransfer, TokenGetInfo};
-
-        statNameFn = HederaFunctionality::toString;
+        Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
 
         properties = mock(NodeLocalProperties.class);
 

@@ -65,11 +65,11 @@ class StructuralPrecheckTest {
     private static final int pretendMaxMessageDepth = 42;
     private StructuralPrecheck subject;
 
-    private TransactionContext txnCtx = mock(TransactionContext.class);
-    private Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
-    private MiscRunningAvgs runningAvgs = mock(MiscRunningAvgs.class);
+    private final TransactionContext txnCtx = mock(TransactionContext.class);
+    private final Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
+    private final MiscRunningAvgs runningAvgs = mock(MiscRunningAvgs.class);
 
-    private HapiOpCounters counters = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
+    private final HapiOpCounters counters = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
     @Mock
     private Counter counter;
@@ -80,10 +80,10 @@ class StructuralPrecheckTest {
     @Mock
     private Metrics metrics;
 
-    private SignedStateViewFactory viewFactory = mock(SignedStateViewFactory.class);
-    private AccessorFactory accessorFactory = mock(AccessorFactory.class);
+    private final SignedStateViewFactory viewFactory = mock(SignedStateViewFactory.class);
+    private final AccessorFactory accessorFactory = mock(AccessorFactory.class);
 
-    private SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
+    private final SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
     private Transaction txn;
 
     @BeforeEach
