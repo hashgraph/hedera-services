@@ -116,7 +116,6 @@ public class TransactionDispatcher {
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
             case FREEZE -> dispatchFreeze(txn.freezeOrThrow(), writableStoreFactory.createUpgradeFileStore());
-            case FREEZE -> dispatchFreeze(txn.freezeOrThrow(), writableStoreFactory.createUpgradeFileStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -305,13 +304,6 @@ public class TransactionDispatcher {
         final var handler = handlers.tokenPauseHandler();
         handler.handle(tokenPause, tokenStore);
         tokenStore.commit();
-    }
-
-    private void dispatchFreeze(
-            @NonNull final FreezeTransactionBody freezeTxn, @NonNull final WritableUpgradeFileStore upgradeFileStore) {
-        final var handler = handlers.freezeHandler();
-        handler.handle(freezeTxn, upgradeFileStore);
-        upgradeFileStore.commit();
     }
 
     private void dispatchFreeze(

@@ -73,10 +73,4 @@ public class WritableStoreFactory {
         final var upgradeFileStates = stateAccessor.getHederaState().createWritableStates(FreezeService.NAME);
         return new WritableUpgradeFileStore(upgradeFileStates);
     }
-
-    @NonNull
-    public WritableUpgradeFileStore createUpgradeFileStore() {
-        final var upgradeFileStates = stateAccessor.getHederaState().createWritableStates(FreezeService.NAME);
-        return new WritableUpgradeFileStore(upgradeFileStates);
-    }
 }
