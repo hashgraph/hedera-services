@@ -819,17 +819,17 @@ public class Address implements SelfSerializable {
         }
 
         Address address = (Address) o;
-        return equalsWithoutStake(address) && ownHost == address.ownHost && stake == address.stake;
+        return equalsWithoutStakeAndOwnHost(address) && ownHost == address.ownHost && stake == address.stake;
     }
 
     /**
-     * Checks for equality with another addresses without checking the equality of stake values.
+     * Checks for equality with another addresses without checking the equality of stake or ownHost values.
      *
      * @param address The other address to check for equality with this address.
-     * @return true if all values in the other address match this address without consideration of stake, false
-     * otherwise.
+     * @return true if all values in the other address match this address without consideration of stake or ownHost
+     * values, false otherwise.
      */
-    public boolean equalsWithoutStake(@NonNull final Address address) {
+    public boolean equalsWithoutStakeAndOwnHost(@NonNull final Address address) {
         return id == address.id
                 && portInternalIpv4 == address.portInternalIpv4
                 && portExternalIpv4 == address.portExternalIpv4
