@@ -112,7 +112,7 @@ final class TransactionCheckerTest extends AppTestBase {
 
     private SignatureMap.Builder sigMapBuilder() {
         final var sigPair =
-                SignaturePair.newBuilder().ed25519(Bytes.wrap(randomBytes(64))).build();
+                SignaturePair.newBuilder().ed25519(randomBytes(64)).build();
         return SignatureMap.newBuilder().sigPair(sigPair);
     }
 
@@ -190,19 +190,19 @@ final class TransactionCheckerTest extends AppTestBase {
         @SuppressWarnings("ConstantConditions")
         @DisplayName("`parseAndCheck` requires Bytes")
         void parseAndCheck() {
-            assertThatThrownBy(() -> checker.parseAndCheck(ctx, null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> checker.parse(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @DisplayName("`parseAndCheck` bytes must have no more than the configured MaxSignedTxnSize bytes")
         void parseAndCheckWithTooManyBytes() {
-            assertThatThrownBy(() -> checker.parseAndCheck(ctx, Bytes.wrap(randomBytes(MAX_TX_SIZE + 1))))
+            assertThatThrownBy(() -> checker.parse(randomBytes(MAX_TX_SIZE + 1)))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_OVERSIZE);
 
             // NOTE: I'm going to also try a number of bytes that JUST FITS. But these are not real transaction
             //       bytes, so they will fail to parse. But that is OK, as long as it is not TRANSACTION_OVERSIZE.
-            assertThatThrownBy(() -> checker.parseAndCheck(ctx, Bytes.wrap(randomBytes(MAX_TX_SIZE))))
+            assertThatThrownBy(() -> checker.parse(randomBytes(MAX_TX_SIZE)))
                     .isInstanceOf(PreCheckException.class)
                     .extracting("responseCode")
                     .isNotEqualTo(TRANSACTION_OVERSIZE);
@@ -210,10 +210,11 @@ final class TransactionCheckerTest extends AppTestBase {
 
         @Test
         @DisplayName("A transaction with no bytes at all fails")
-        void parseAndCheckWithNoBytes() {
+        void parseAndCheckWithNoBytes() throws PreCheckException {
             // Given a transaction with no bytes at all
             // Then the checker should throw a PreCheckException
-            assertThatThrownBy(() -> checker.parseAndCheck(ctx, Bytes.EMPTY))
+            final var transaction = checker.parse(Bytes.EMPTY);
+            assertThatThrownBy(() -> checker.check(ctx, transaction))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
         }
@@ -228,7 +229,8 @@ final class TransactionCheckerTest extends AppTestBase {
         @DisplayName("A valid transaction passes parseAndCheck")
         void happyPath() throws PreCheckException {
             // Given a valid serialized transaction, when we parseStrict and check
-            final var info = checker.parseAndCheck(ctx, inputBuffer);
+            final var transaction = checker.parse(inputBuffer);
+            final var info = checker.check(ctx, transaction);
 
             // Then the parsed data is as we expected
             assertThat(info.transaction()).isEqualTo(tx);
@@ -257,7 +259,8 @@ final class TransactionCheckerTest extends AppTestBase {
             inputBuffer = Bytes.wrap(asByteArray(localTx));
 
             // When we parseStrict and check
-            final var info = checker.parseAndCheck(ctx, inputBuffer);
+            final var transaction = checker.parse(inputBuffer);
+            final var info = checker.check(ctx, transaction);
 
             // Then everything works because the deprecated fields are supported
             assertThat(info.transaction()).isEqualTo(localTx);
@@ -274,10 +277,10 @@ final class TransactionCheckerTest extends AppTestBase {
         @Test
         @DisplayName("A transaction with super deprecated fields alone will throw")
         @SuppressWarnings("deprecation")
-        void parseAndCheckWithSuperDeprecatedFields() {
+        void parseAndCheckWithSuperDeprecatedFields() throws PreCheckException {
             // Given a transaction using the super deprecated fields
             final var sig =
-                    Signature.newBuilder().ed25519(Bytes.wrap(randomBytes(64))).build();
+                    Signature.newBuilder().ed25519(randomBytes(64)).build();
             final var localTx = Transaction.newBuilder()
                     .body(txBody)
                     .sigs(SignatureList.newBuilder().sigs(sig).build())
@@ -285,7 +288,8 @@ final class TransactionCheckerTest extends AppTestBase {
             inputBuffer = Bytes.wrap(asByteArray(localTx));
 
             // When we check, then we get a PreCheckException with INVALID_TRANSACTION_BODY
-            assertThatThrownBy(() -> checker.parseAndCheck(ctx, inputBuffer))
+            final var transaction = checker.parse(inputBuffer);
+            assertThatThrownBy(() -> checker.check(ctx, transaction))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
 
@@ -302,7 +306,7 @@ final class TransactionCheckerTest extends AppTestBase {
             inputBuffer = Bytes.wrap(invalidProtobuf());
 
             // When we parse and check, then the parsing fails because this is an INVALID_TRANSACTION
-            assertThatThrownBy(() -> checker.parseAndCheck(ctx, inputBuffer))
+            assertThatThrownBy(() -> checker.parse(inputBuffer))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION);
         }
@@ -314,7 +318,7 @@ final class TransactionCheckerTest extends AppTestBase {
             inputBuffer = Bytes.wrap(appendUnknownField(asByteArray(tx)));
 
             // When we parse and check, then the parsing fails because has unknown fields
-            assertThatThrownBy(() -> checker.parseAndCheck(ctx, inputBuffer))
+            assertThatThrownBy(() -> checker.parse(inputBuffer))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_HAS_UNKNOWN_FIELDS);
         }
@@ -394,7 +398,7 @@ final class TransactionCheckerTest extends AppTestBase {
             void happyWithSuperDeprecatedFields() {
                 // Given a transaction using the super deprecated fields
                 final var sig = Signature.newBuilder()
-                        .ed25519(Bytes.wrap(randomBytes(64)))
+                        .ed25519(randomBytes(64))
                         .build();
                 final var localTx = Transaction.newBuilder()
                         .body(txBody)
@@ -419,7 +423,7 @@ final class TransactionCheckerTest extends AppTestBase {
             void checkWithSuperDeprecatedFieldsAndSignedTransactionBytes() throws PreCheckException {
                 // Given a transaction using the super deprecated fields and signedTransactionBytes
                 final var sig = Signature.newBuilder()
-                        .ed25519(Bytes.wrap(randomBytes(64)))
+                        .ed25519(randomBytes(64))
                         .build();
                 final var localTx = Transaction.newBuilder()
                         .body(txBody)
@@ -446,7 +450,7 @@ final class TransactionCheckerTest extends AppTestBase {
             void checkWithSuperDeprecatedFieldsAndDeprecatedFields() throws PreCheckException {
                 // Given a transaction using the super deprecated fields and signedTransactionBytes
                 final var sig = Signature.newBuilder()
-                        .ed25519(Bytes.wrap(randomBytes(64)))
+                        .ed25519(randomBytes(64))
                         .build();
                 final var localTx = Transaction.newBuilder()
                         .body(txBody)
@@ -521,10 +525,9 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var localTx = Transaction.newBuilder()
                         .signedTransactionBytes(Bytes.wrap(invalidProtobuf()))
                         .build();
-                inputBuffer = Bytes.wrap(asByteArray(localTx));
 
                 // When we parse and check, then the parsing fails because this is an INVALID_TRANSACTION
-                assertThatThrownBy(() -> checker.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> checker.check(ctx, localTx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION);
             }
@@ -537,10 +540,9 @@ final class TransactionCheckerTest extends AppTestBase {
                 tx = Transaction.newBuilder()
                         .signedTransactionBytes(badSignedTxBytes)
                         .build();
-                inputBuffer = Bytes.wrap(asByteArray(tx));
 
                 // When we parse and check, then the parsing fails because has unknown fields
-                assertThatThrownBy(() -> checker.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> checker.check(ctx, tx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_HAS_UNKNOWN_FIELDS);
             }
@@ -562,10 +564,9 @@ final class TransactionCheckerTest extends AppTestBase {
                 tx = Transaction.newBuilder()
                         .signedTransactionBytes(signedTransactionBytes)
                         .build();
-                inputBuffer = Bytes.wrap(asByteArray(tx));
 
                 // When we parse and check, then the parsing fails because has unknown fields
-                assertThatThrownBy(() -> checker.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> checker.check(ctx, tx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
             }
@@ -584,10 +585,9 @@ final class TransactionCheckerTest extends AppTestBase {
                 tx = Transaction.newBuilder()
                         .signedTransactionBytes(signedTransactionBytes)
                         .build();
-                inputBuffer = Bytes.wrap(asByteArray(tx));
 
                 // When we parse and check, then the parsing fails because this is an TRANSACTION_HAS_UNKNOWN_FIELDS
-                assertThatThrownBy(() -> checker.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> checker.check(ctx, tx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_HAS_UNKNOWN_FIELDS);
             }
@@ -790,7 +790,7 @@ final class TransactionCheckerTest extends AppTestBase {
                     hapiUtils.when(() -> HapiUtils.functionOf(eq(txBody))).thenThrow(new UnknownHederaFunctionality());
 
                     // When we parse and check, then the parsing fails due to the exception
-                    assertThatThrownBy(() -> checker.parseAndCheck(ctx, inputBuffer))
+                    assertThatThrownBy(() -> checker.check(ctx, tx))
                             .isInstanceOf(PreCheckException.class)
                             .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
                 }

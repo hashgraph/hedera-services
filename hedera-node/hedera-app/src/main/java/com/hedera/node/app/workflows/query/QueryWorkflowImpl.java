@@ -36,6 +36,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -43,16 +44,15 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -75,7 +75,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
-    private final QueryChecker checker;
+    private final QueryChecker queryChecker;
+    private final IngestChecker ingestChecker;
     private final QueryDispatcher dispatcher;
 
     private final FeeAccumulator feeAccumulator;
@@ -88,7 +89,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      *     state depending on the {@link ResponseType}
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
-     * @param checker the {@link QueryChecker} with specific checks of an ingest-workflow
+     * @param queryChecker the {@link QueryChecker} with specific checks of an ingest-workflow
+     * @param ingestChecker the {@link IngestChecker} to handle the crypto transfer
      * @param dispatcher the {@link QueryDispatcher} that will call query-specific methods
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -97,14 +99,16 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
-            @NonNull final QueryChecker checker,
+            @NonNull final QueryChecker queryChecker,
+            @NonNull final IngestChecker ingestChecker,
             @NonNull final QueryDispatcher dispatcher,
             @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final Codec<Query> queryParser) {
         this.stateAccessor = requireNonNull(stateAccessor);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
-        this.checker = requireNonNull(checker);
+        this.ingestChecker = requireNonNull(ingestChecker);
+        this.queryChecker = requireNonNull(queryChecker);
         this.dispatcher = requireNonNull(dispatcher);
         this.feeAccumulator = requireNonNull(feeAccumulator);
         this.queryParser = requireNonNull(queryParser);
@@ -137,7 +141,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         long fee = 0L;
         try (final var wrappedState = stateAccessor.apply(responseType)) {
             // Do some general pre-checks
-            checker.checkNodeState();
+            ingestChecker.checkNodeState();
             if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
@@ -155,11 +159,14 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             if (paymentRequired) {
                 // 3.i Validate CryptoTransfer
                 allegedPayment = queryHeader.paymentOrThrow();
-                txBody = checker.validateCryptoTransfer(session, allegedPayment);
+                final var transactionInfo = ingestChecker.runAllChecks(state, session, allegedPayment);
+                queryChecker.validateCryptoTransfer(transactionInfo);
+
+                txBody = transactionInfo.txBody();
                 final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
 
                 // 3.ii Check permissions
-                checker.checkPermissions(payer, function);
+                queryChecker.checkPermissions(payer, function);
 
                 // 3.iii Calculate costs
                 final var feeData =
@@ -167,7 +174,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 fee = totalFee(feeData);
 
                 // 3.iv Check account balances
-                checker.validateAccountBalances(payer, txBody, fee);
+                queryChecker.validateAccountBalances(payer, txBody, fee);
             } else {
                 if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
                     throw new PreCheckException(NOT_SUPPORTED);
@@ -179,14 +186,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             // 5. Submit payment to platform
             if (paymentRequired) {
-                final var out = new ByteArrayOutputStream();
-                try {
-                    Transaction.PROTOBUF.write(allegedPayment, new ByteArrayDataOutput(out));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new StatusRuntimeException(Status.INTERNAL);
-                }
-                submissionManager.submit(txBody, out.toByteArray());
+                final var txBytes = PbjConverter.asWrappedBytes(Transaction.PROTOBUF, allegedPayment);
+                submissionManager.submit(txBody, txBytes);
             }
 
             if (handler.needsAnswerOnlyCost(responseType)) {
@@ -246,19 +247,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             return HapiUtils.functionOf(query);
         } catch (UnknownHederaFunctionality e) {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
-        }
-    }
-
-    private static final class ByteArrayDataOutput extends WritableStreamingData {
-        private final ByteArrayOutputStream out;
-
-        public ByteArrayDataOutput(ByteArrayOutputStream out) {
-            super(out);
-            this.out = out;
-        }
-
-        public Bytes getBytes() {
-            return Bytes.wrap(out.toByteArray());
         }
     }
 }

@@ -18,12 +18,14 @@ package com.hedera.node.app.workflows.query;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.HederaApp;
 import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
@@ -37,6 +39,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class QueryComponentTest {
+
+    @Mock
+    private Cryptography cryptography;
     @Mock
     private Platform platform;
 
@@ -45,6 +50,7 @@ class QueryComponentTest {
     @BeforeEach
     void setUp() {
         final var selfNodeId = new NodeId(false, 666L);
+        when(platform.getCryptography()).thenReturn(cryptography);
 
         app = DaggerHederaApp.builder()
                 .platform(platform)

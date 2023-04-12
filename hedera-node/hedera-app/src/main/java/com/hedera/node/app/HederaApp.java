@@ -52,6 +52,7 @@ import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.throttle.ThrottleAccumulatorModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.prehandle.AdaptedMonoEventExpansion;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;
@@ -103,7 +104,8 @@ import javax.inject.Singleton;
             HederaStateModule.class,
             MetricsDaggerModule.class,
             AuthorizerDaggerModule.class,
-            InfoDaggerModule.class
+            InfoDaggerModule.class,
+            ThrottleAccumulatorModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
