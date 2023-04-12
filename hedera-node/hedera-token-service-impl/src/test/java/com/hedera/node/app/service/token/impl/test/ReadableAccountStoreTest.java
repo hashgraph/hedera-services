@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
-import static com.hedera.test.utils.IdUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
@@ -30,6 +29,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -40,7 +40,6 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -539,29 +538,29 @@ class ReadableAccountStoreTest {
         // then
         assertThat(result).isNotEmpty();
         final var mappedAccount = result.get();
-        assertThat(mappedAccount.getKey()).hasValue(payerHederaKey);
+        assertEquals(payerHederaKey, mappedAccount.key());
         assertThat(mappedAccount.expiry()).isEqualTo(5L);
-        assertThat(mappedAccount.balanceInHbar()).isEqualTo(7L);
-        assertThat(mappedAccount.balanceInTinyBar()).isEqualTo(7L * HBARS_TO_TINYBARS);
+        assertThat(mappedAccount.tinybarBalance()).isEqualTo(7L);
+        assertThat(mappedAccount.tinybarBalance()).isEqualTo(7L * HBARS_TO_TINYBARS);
         assertThat(mappedAccount.memo()).isEqualTo("Hello World");
-        assertThat(mappedAccount.isDeleted()).isTrue();
-        assertThat(mappedAccount.isReceiverSigRequired()).isTrue();
-        assertThat(mappedAccount.numberOfOwnedNfts()).isEqualTo(11L);
+        assertThat(mappedAccount.deleted()).isTrue();
+        assertThat(mappedAccount.receiverSigRequired()).isTrue();
+        assertThat(mappedAccount.numberOwnedNfts()).isEqualTo(11L);
         assertThat(mappedAccount.maxAutoAssociations()).isEqualTo(13);
         assertThat(mappedAccount.usedAutoAssociations()).isEqualTo(17);
-        assertThat(mappedAccount.numAssociations()).isEqualTo(19);
-        assertThat(mappedAccount.numPositiveBalances()).isEqualTo(23);
+        assertThat(mappedAccount.numberAssociations()).isEqualTo(19);
+        assertThat(mappedAccount.numberPositiveBalances()).isEqualTo(23);
         assertThat(mappedAccount.ethereumNonce()).isEqualTo(29L);
         assertThat(mappedAccount.stakedToMe()).isEqualTo(31L);
         assertThat(mappedAccount.stakePeriodStart()).isEqualTo(37L);
-        assertThat(mappedAccount.stakedNum()).isEqualTo(41L);
+        assertThat(mappedAccount.stakedNumber()).isEqualTo(41L);
         assertThat(mappedAccount.declineReward()).isTrue();
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isEqualTo(37L);
         assertThat(mappedAccount.autoRenewAccountNumber()).isEqualTo(53L);
         assertThat(mappedAccount.autoRenewSecs()).isEqualTo(59L);
         assertThat(mappedAccount.accountNumber()).isEqualTo(payer.accountNum());
-        assertThat(mappedAccount.alias()).hasValue(new byte[] {1, 2, 3});
-        assertThat(mappedAccount.isSmartContract()).isTrue();
+        assertEquals(Bytes.wrap(new byte[] {1, 2, 3}), mappedAccount.alias());
+        assertThat(mappedAccount.smartContract()).isTrue();
     }
 
     @SuppressWarnings("unchecked")
@@ -578,29 +577,29 @@ class ReadableAccountStoreTest {
         // then
         assertThat(result).isNotEmpty();
         final var mappedAccount = result.get();
-        assertThat(mappedAccount.getKey()).hasValue(payerHederaKey);
+        assertEquals(payerHederaKey, mappedAccount.key());
         assertThat(mappedAccount.expiry()).isZero();
-        assertThat(mappedAccount.balanceInHbar()).isZero();
-        assertThat(mappedAccount.balanceInTinyBar()).isZero();
+        assertThat(mappedAccount.tinybarBalance()).isZero();
+        assertThat(mappedAccount.tinybarBalance()).isZero();
         assertThat(mappedAccount.memo()).isEmpty();
-        assertThat(mappedAccount.isDeleted()).isFalse();
-        assertThat(mappedAccount.isReceiverSigRequired()).isFalse();
-        assertThat(mappedAccount.numberOfOwnedNfts()).isZero();
+        assertThat(mappedAccount.deleted()).isFalse();
+        assertThat(mappedAccount.receiverSigRequired()).isFalse();
+        assertThat(mappedAccount.numberOwnedNfts()).isZero();
         assertThat(mappedAccount.maxAutoAssociations()).isZero();
         assertThat(mappedAccount.usedAutoAssociations()).isZero();
-        assertThat(mappedAccount.numAssociations()).isZero();
-        assertThat(mappedAccount.numPositiveBalances()).isZero();
+        assertThat(mappedAccount.numberAssociations()).isZero();
+        assertThat(mappedAccount.numberPositiveBalances()).isZero();
         assertThat(mappedAccount.ethereumNonce()).isZero();
         assertThat(mappedAccount.stakedToMe()).isZero();
         assertThat(mappedAccount.stakePeriodStart()).isZero();
-        assertThat(mappedAccount.stakedNum()).isZero();
+        assertThat(mappedAccount.stakedNumber()).isZero();
         assertThat(mappedAccount.declineReward()).isFalse();
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isZero();
         assertThat(mappedAccount.autoRenewAccountNumber()).isZero();
         assertThat(mappedAccount.autoRenewSecs()).isZero();
         assertThat(mappedAccount.accountNumber()).isEqualTo(payer.accountNum());
-        assertThat(mappedAccount.alias()).isEmpty();
-        assertThat(mappedAccount.isSmartContract()).isFalse();
+        assertEquals(Bytes.EMPTY, mappedAccount.alias());
+        assertThat(mappedAccount.smartContract()).isFalse();
     }
 
     @SuppressWarnings("unchecked")

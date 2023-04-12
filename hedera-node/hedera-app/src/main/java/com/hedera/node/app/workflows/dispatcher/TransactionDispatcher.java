@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
@@ -32,6 +33,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -267,10 +269,28 @@ public class TransactionDispatcher {
                 handleContext,
                 messageSubmission,
                 new ConsensusServiceConfig(
-                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                        dynamicProperties.maxNumTopics(),
+                        dynamicProperties.messageMaxBytesAllowed()),
                 recordBuilder,
                 topicStore);
-        txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
+        txnCtx.setTopicRunningHash(
+                recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
         topicStore.commit();
+    }
+
+    private void dispatchCryptoCreate(
+            @NonNull final CryptoCreateTransactionBody cryptoCreate,
+            @NonNull final WritableAccountStore accountStore) {
+        final var handler = handlers.cryptoCreateHandler();
+        handler.handle(
+                handleContext,
+                cryptoCreate,
+                accountStore,
+                handler.newRecordBuilder(),
+                usageLimits.areCreatableAccounts(1));
+        // TODO: Commit will be called in workflow or some other place when handle workflow is
+        // implemented
+        // This is temporary solution to make sure that topic is created
+        accountStore.commit();
     }
 }

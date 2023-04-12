@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.hapi.node.state.token.Account;
 import java.util.Optional;
 
 /**

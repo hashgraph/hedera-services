@@ -36,7 +36,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
