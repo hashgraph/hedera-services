@@ -34,7 +34,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeAccumulator;
-import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -166,7 +165,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 // 3.iii Calculate costs
                 final var feeData =
                         feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
-                fee = totalFee(feeData);
+                fee = feeData.totalFee();
 
                 // 3.iv Check account balances
                 queryChecker.validateAccountBalances(payer, txBody, fee);
@@ -189,7 +188,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 // 6.i Estimate costs
                 final var feeData =
                         feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
-                fee = totalFee(feeData);
+                fee = feeData.totalFee();
 
                 final var header = createResponseHeader(responseType, validity, fee);
                 response = handler.createEmptyResponse(header);
@@ -224,9 +223,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
     }
 
-    private long totalFee(final FeeObject costs) {
-        return costs.networkFee() + costs.serviceFee() + costs.nodeFee();
-    }
 
     private static ResponseHeader createResponseHeader(
             @NonNull final ResponseType type, @NonNull final ResponseCodeEnum responseCode, final long fee) {
