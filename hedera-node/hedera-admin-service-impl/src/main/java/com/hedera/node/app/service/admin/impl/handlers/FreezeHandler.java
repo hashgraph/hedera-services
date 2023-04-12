@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FREEZE_START_TIME_MUST_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -63,7 +62,8 @@ public class FreezeHandler implements TransactionHandler {
     // it is necessary to check getStartHour, getStartMin, getEndHour, getEndMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore) throws PreCheckException {
+            @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore)
+            throws PreCheckException {
         requireNonNull(context);
 
         FreezeTransactionBody freezeTxn = context.body().freeze();

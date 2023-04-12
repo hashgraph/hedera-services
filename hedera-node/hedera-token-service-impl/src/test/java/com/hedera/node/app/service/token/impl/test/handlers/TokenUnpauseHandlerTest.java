@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
@@ -62,8 +61,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
 
     @BeforeEach
     void setUp() throws PreCheckException {
-        given(accountAccess.getAccountById(payerId))
-                .willReturn(account);
+        given(accountAccess.getAccountById(payerId)).willReturn(account);
         given(account.getKey()).willReturn(payerHederaKey);
         subject = new TokenUnpauseHandler();
         givenValidTxn();
