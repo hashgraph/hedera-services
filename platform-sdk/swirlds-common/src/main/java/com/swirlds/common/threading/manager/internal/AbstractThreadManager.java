@@ -20,10 +20,10 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.threading.manager.ThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
@@ -36,8 +36,6 @@ public abstract class AbstractThreadManager implements ThreadManager {
 
     private static final Logger logger = LogManager.getLogger(AbstractThreadManager.class);
 
-    // TODO reduce duplication of logic with ThreadConfiguration class
-
     /**
      * An default exception handler for executor services.
      */
@@ -48,16 +46,19 @@ public abstract class AbstractThreadManager implements ThreadManager {
     /**
      * Builds a thread factory for an executor service.
      *
-     * @param baseName the name of the executor service
+     * @param baseName                 the name of the executor service
+     * @param uncaughtExceptionHandler use this uncaught exception handler if not null
      * @return a thread factory
      */
     protected @NonNull ThreadFactory buildThreadFactory(
-            @NonNull final String baseName, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+            @NonNull final String baseName, @Nullable final UncaughtExceptionHandler uncaughtExceptionHandler) {
         final AtomicInteger threadNumber = new AtomicInteger(0);
         return (final Runnable runnable) -> {
             final String name = "<" + baseName + " #" + threadNumber.getAndIncrement() + ">";
             final Thread thread = new Thread(runnable, name);
-            thread.setUncaughtExceptionHandler(uncaughtExceptionHandler);
+            if (uncaughtExceptionHandler != null) {
+                thread.setUncaughtExceptionHandler(uncaughtExceptionHandler);
+            }
             return thread;
         };
     }
@@ -90,25 +91,5 @@ public abstract class AbstractThreadManager implements ThreadManager {
     public ExecutorService createFixedThreadPool(@NonNull final String name, final int threadCount) {
         Objects.requireNonNull(name);
         return createFixedThreadPool(name, threadCount, defaultExceptionHandler);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ScheduledExecutorService createSingleThreadScheduledExecutor(@NonNull final String name) {
-        Objects.requireNonNull(name);
-        return createSingleThreadScheduledExecutor(name, defaultExceptionHandler);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, final int threadCount) {
-        Objects.requireNonNull(name);
-        return createScheduledThreadPool(name, threadCount, defaultExceptionHandler);
     }
 }

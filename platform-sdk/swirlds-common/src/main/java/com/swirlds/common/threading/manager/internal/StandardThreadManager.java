@@ -34,6 +34,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -100,6 +101,8 @@ public final class StandardThreadManager extends AbstractThreadManager
     @Override
     public ExecutorService createCachedThreadPool(
             @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(uncaughtExceptionHandler);
         try (final Locked l = lock.lock()) {
             throwIfAfterPhase(LifecyclePhase.STARTED);
             final ManagedExecutorService service = new ManagedExecutorService(
@@ -118,6 +121,8 @@ public final class StandardThreadManager extends AbstractThreadManager
     @Override
     public ExecutorService createSingleThreadExecutor(
             @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(uncaughtExceptionHandler);
         try (final Locked l = lock.lock()) {
             throwIfAfterPhase(LifecyclePhase.STARTED);
             final ManagedExecutorService service = new ManagedExecutorService(
@@ -138,6 +143,8 @@ public final class StandardThreadManager extends AbstractThreadManager
             @NonNull final String name,
             int threadCount,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(uncaughtExceptionHandler);
         try (final Locked l = lock.lock()) {
             throwIfAfterPhase(LifecyclePhase.STARTED);
             final ManagedExecutorService service = new ManagedExecutorService(
@@ -154,12 +161,12 @@ public final class StandardThreadManager extends AbstractThreadManager
      */
     @NonNull
     @Override
-    public ScheduledExecutorService createSingleThreadScheduledExecutor(
-            final @NonNull String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+    public ScheduledExecutorService createSingleThreadScheduledExecutor(final @NonNull String name) {
+        Objects.requireNonNull(name);
         try (final Locked l = lock.lock()) {
             throwIfAfterPhase(LifecyclePhase.STARTED);
             final ManagedScheduledExecutorService service = new ManagedScheduledExecutorService(
-                    Executors.newSingleThreadScheduledExecutor(buildThreadFactory(name, uncaughtExceptionHandler)));
+                    Executors.newSingleThreadScheduledExecutor(buildThreadFactory(name, null)));
             if (phase == LifecyclePhase.NOT_STARTED) {
                 thingsToBeStarted.add(service);
             }
@@ -172,14 +179,12 @@ public final class StandardThreadManager extends AbstractThreadManager
      */
     @NonNull
     @Override
-    public ScheduledExecutorService createScheduledThreadPool(
-            @NonNull final String name,
-            int threadCount,
-            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+    public ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, int threadCount) {
+        Objects.requireNonNull(name);
         try (final Locked l = lock.lock()) {
             throwIfAfterPhase(LifecyclePhase.STARTED);
             final ManagedScheduledExecutorService service = new ManagedScheduledExecutorService(
-                    Executors.newScheduledThreadPool(threadCount, buildThreadFactory(name, uncaughtExceptionHandler)));
+                    Executors.newScheduledThreadPool(threadCount, buildThreadFactory(name, null)));
             if (phase == LifecyclePhase.NOT_STARTED) {
                 thingsToBeStarted.add(service);
             }

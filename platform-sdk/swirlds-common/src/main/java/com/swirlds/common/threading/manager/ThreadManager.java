@@ -32,8 +32,6 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public interface ThreadManager {
 
-    // TODO test non-default exception handlers
-
     /**
      * Create a new cached thread pool. If this thread manager has not yet been started, work submitted the executor
      * service will be not be handled until after the thread manager has been started (with the exception of the
@@ -123,20 +121,6 @@ public interface ThreadManager {
     ScheduledExecutorService createSingleThreadScheduledExecutor(@NonNull final String name);
 
     /**
-     * Create a new single thread scheduled executor. If this thread manager has not yet been started, work submitted
-     * the executor service will be not be handled until after the thread manager has been started (with the exception
-     * of the scheduleAtFixedRate(), invokeAny(), and invokeAll() methods, which will throw if called prior to the
-     * thread manager being started).
-     *
-     * @param name                     the name of the thread pool
-     * @param uncaughtExceptionHandler handles uncaught exceptions
-     * @return a new single thread scheduled executor
-     */
-    @NonNull
-    ScheduledExecutorService createSingleThreadScheduledExecutor(
-            @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler);
-
-    /**
      * Create a new scheduled thread pool. If this thread manager has not yet been started, work submitted the executor
      * service will be not be handled until after the thread manager has been started (with the exception of the
      * scheduleAtFixedRate(), invokeAny() and invokeAll() methods, which will throw if called prior to the thread
@@ -148,23 +132,6 @@ public interface ThreadManager {
      */
     @NonNull
     ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, final int threadCount);
-
-    /**
-     * Create a new scheduled thread pool. If this thread manager has not yet been started, work submitted the executor
-     * service will be not be handled until after the thread manager has been started (with the exception of the
-     * scheduleAtFixedRate(), invokeAny() and invokeAll() methods, which will throw if called prior to the thread
-     * manager being started).
-     *
-     * @param name                     the name of the thread pool
-     * @param threadCount              the number of threads in the pool
-     * @param uncaughtExceptionHandler handles uncaught exceptions
-     * @return a new scheduled thread pool
-     */
-    @NonNull
-    ScheduledExecutorService createScheduledThreadPool(
-            @NonNull final String name,
-            final int threadCount,
-            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler);
 
     /**
      * Create a new thread configuration.

@@ -352,11 +352,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
         final ThreadGroup threadGroup = new ThreadGroup("JasperDB-" + label);
         // create scheduledThreadPool for executing merges
         mergingExecutor = getStaticThreadManager()
-                .createScheduledThreadPool(
-                        JASPER_DB_COMPONENT + ": Merging",
-                        NUMBER_OF_MERGING_THREADS,
-                        (t, ex) -> logger.error(
-                                EXCEPTION.getMarker(), "[{}] Uncaught exception during merging", label, ex));
+                .createScheduledThreadPool(JASPER_DB_COMPONENT + ": Merging", NUMBER_OF_MERGING_THREADS);
         // create thread pool storing internal records
         storeInternalExecutor = getStaticThreadManager()
                 .createSingleThreadExecutor(

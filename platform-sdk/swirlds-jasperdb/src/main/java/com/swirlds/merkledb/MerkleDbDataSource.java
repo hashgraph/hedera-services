@@ -266,11 +266,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
         // create scheduledThreadPool for executing merges
         mergingExecutor = getStaticThreadManager()
-                .createScheduledThreadPool(
-                        MERKLEDB_COMPONENT + ": Merging",
-                        NUMBER_OF_MERGING_THREADS,
-                        (t, ex) -> logger.error(
-                                EXCEPTION.getMarker(), "[{}] Uncaught exception during merging", tableName, ex));
+                .createScheduledThreadPool(MERKLEDB_COMPONENT + ": Merging", NUMBER_OF_MERGING_THREADS);
         // create thread pool storing internal records
         storeInternalExecutor = getStaticThreadManager()
                 .createSingleThreadExecutor(

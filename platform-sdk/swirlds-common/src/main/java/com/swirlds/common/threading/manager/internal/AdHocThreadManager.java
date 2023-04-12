@@ -26,6 +26,7 @@ import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -51,6 +52,8 @@ public final class AdHocThreadManager extends AbstractThreadManager implements T
     @Override
     public ExecutorService createCachedThreadPool(
             @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(uncaughtExceptionHandler);
         return Executors.newCachedThreadPool(buildThreadFactory(name, uncaughtExceptionHandler));
     }
 
@@ -61,6 +64,8 @@ public final class AdHocThreadManager extends AbstractThreadManager implements T
     @Override
     public ExecutorService createSingleThreadExecutor(
             @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(uncaughtExceptionHandler);
         return Executors.newSingleThreadExecutor(buildThreadFactory(name, uncaughtExceptionHandler));
     }
 
@@ -73,6 +78,8 @@ public final class AdHocThreadManager extends AbstractThreadManager implements T
             @NonNull final String name,
             final int threadCount,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(uncaughtExceptionHandler);
         return Executors.newFixedThreadPool(threadCount, buildThreadFactory(name, uncaughtExceptionHandler));
     }
 
@@ -81,9 +88,9 @@ public final class AdHocThreadManager extends AbstractThreadManager implements T
      */
     @NonNull
     @Override
-    public ScheduledExecutorService createSingleThreadScheduledExecutor(
-            @NonNull String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
-        return Executors.newSingleThreadScheduledExecutor(buildThreadFactory(name, uncaughtExceptionHandler));
+    public ScheduledExecutorService createSingleThreadScheduledExecutor(@NonNull String name) {
+        Objects.requireNonNull(name);
+        return Executors.newSingleThreadScheduledExecutor(buildThreadFactory(name, null));
     }
 
     /**
@@ -91,11 +98,9 @@ public final class AdHocThreadManager extends AbstractThreadManager implements T
      */
     @NonNull
     @Override
-    public ScheduledExecutorService createScheduledThreadPool(
-            @NonNull final String name,
-            final int threadCount,
-            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
-        return Executors.newScheduledThreadPool(threadCount, buildThreadFactory(name, uncaughtExceptionHandler));
+    public ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, final int threadCount) {
+        Objects.requireNonNull(name);
+        return Executors.newScheduledThreadPool(threadCount, buildThreadFactory(name, null));
     }
 
     /**
