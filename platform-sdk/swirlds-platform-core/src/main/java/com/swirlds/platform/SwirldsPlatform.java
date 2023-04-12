@@ -584,7 +584,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 topology.getConnectionGraph(),
                 this::checkPlatformStatus,
                 () -> {
-                    // if we are using old-style syncs, early out and don't start the reconnect controller
+                    // if we are using old-style syncs, don't start the reconnect controller
                     if (!settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled()) {
                         return;
                     }

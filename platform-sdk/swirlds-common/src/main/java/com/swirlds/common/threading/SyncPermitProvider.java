@@ -39,7 +39,7 @@ public class SyncPermitProvider {
     /**
      * Creates a new instance with a maximum number of permits
      *
-     * @param numPermits the number of concurrent outgoing syncs to allow
+     * @param numPermits the number of concurrent syncs this provider will allow
      */
     public SyncPermitProvider(final int numPermits) {
         this.syncPermits = new Semaphore(numPermits);
