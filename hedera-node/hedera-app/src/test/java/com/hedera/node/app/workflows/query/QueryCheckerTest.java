@@ -90,6 +90,8 @@ class QueryCheckerTest {
     void setup() {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
 
+        ctx = new SessionContext();
+
         checker = new QueryChecker(
                 nodeInfo,
                 currentPlatformStatus,
@@ -134,9 +136,9 @@ class QueryCheckerTest {
                         nodeInfo,
                         currentPlatformStatus,
                         transactionChecker,
+
                         null,
-                        queryFeeCheck,
-                        authorizer,
+                       queryFeeCheck, authorizer,
                         cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(
@@ -144,8 +146,9 @@ class QueryCheckerTest {
                         currentPlatformStatus,
                         transactionChecker,
                         accountNumbers,
+
                         null,
-                        authorizer,
+                       authorizer,
                         cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(
@@ -154,6 +157,7 @@ class QueryCheckerTest {
                         transactionChecker,
                         accountNumbers,
                         queryFeeCheck,
+
                         null,
                         cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
@@ -166,6 +170,49 @@ class QueryCheckerTest {
                         authorizer,
                         null))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testNodeStateSucceeds() {
+        assertThatCode(() -> checker.checkNodeState()).doesNotThrowAnyException();
+    }
+
+    @Test
+    void testZeroStakeNodeFails(@Mock NodeInfo localNodeInfo) {
+        // given
+        when(localNodeInfo.isSelfZeroStake()).thenReturn(true);
+        checker = new QueryChecker(
+                localNodeInfo,
+                currentPlatformStatus,
+                transactionChecker,
+                accountNumbers,
+                queryFeeCheck,
+                authorizer,
+                cryptoTransferHandler);
+
+        // then
+        assertThatThrownBy(() -> checker.checkNodeState())
+                .isInstanceOf(PreCheckException.class)
+                .hasFieldOrPropertyWithValue("responseCode", ResponseCodeEnum.INVALID_NODE_ACCOUNT);
+    }
+
+    @Test
+    void testInactivePlatformFails(@Mock CurrentPlatformStatus localCurrentPlatformStatus) {
+        // given
+        when(localCurrentPlatformStatus.get()).thenReturn(PlatformStatus.MAINTENANCE);
+        checker = new QueryChecker(
+                nodeInfo,
+                localCurrentPlatformStatus,
+                transactionChecker,
+                accountNumbers,
+                queryFeeCheck,
+                authorizer,
+                cryptoTransferHandler);
+
+        // then
+        assertThatThrownBy(() -> checker.checkNodeState())
+                .isInstanceOf(PreCheckException.class)
+                .hasFieldOrPropertyWithValue("responseCode", ResponseCodeEnum.PLATFORM_NOT_ACTIVE);
     }
 
     @Test
