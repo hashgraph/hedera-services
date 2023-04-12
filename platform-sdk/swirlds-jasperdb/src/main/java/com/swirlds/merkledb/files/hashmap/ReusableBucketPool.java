@@ -126,6 +126,7 @@ public class ReusableBucketPool<K extends VirtualKey<? super K>> {
                     try {
                         lock.wait();
                     } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         throw new RuntimeException(e);
                     }
                     bucket = buckets.getAndSet(index, null);
@@ -151,7 +152,7 @@ public class ReusableBucketPool<K extends VirtualKey<? super K>> {
         }
         final Object lock = locks.get(index);
         synchronized (lock) {
-            lock.notify();
+            lock.notifyAll();
         }
     }
 }
