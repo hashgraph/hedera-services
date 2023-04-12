@@ -30,7 +30,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * and the {@code keyValuePairIndex} which is its index on the
  * smart contract list.
  */
-public final class SmartContractMapKey implements VirtualKey<SmartContractMapKey> {
+public final class SmartContractMapKey implements VirtualKey {
     private static final long CLASS_ID = 0x3760716d0ab5b622L;
 
     private static final class ClassVersion {
@@ -118,19 +118,6 @@ public final class SmartContractMapKey implements VirtualKey<SmartContractMapKey
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         contractId = in.readLong();
         keyValuePairIndex = in.readLong();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int compareTo(final SmartContractMapKey other) {
-        int order = Long.compare(contractId, other.contractId);
-        if (order != 0) {
-            return order;
-        }
-
-        return Long.compare(keyValuePairIndex, other.keyValuePairIndex);
     }
 
     /**

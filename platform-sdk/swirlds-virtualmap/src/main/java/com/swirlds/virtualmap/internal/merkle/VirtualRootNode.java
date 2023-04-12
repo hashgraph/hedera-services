@@ -118,8 +118,7 @@ import org.apache.logging.log4j.Logger;
  * 		The value
  */
 @DebugIterationEndpoint
-public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends VirtualValue>
-        extends PartialBinaryMerkleInternal
+public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue> extends PartialBinaryMerkleInternal
         implements CustomReconnectRoot<Long, Long>, ExternalSelfSerializable, VirtualRoot, MerkleInternal {
 
     private static final String NO_NULL_KEYS_ALLOWED_MESSAGE = "Null keys are not allowed";
