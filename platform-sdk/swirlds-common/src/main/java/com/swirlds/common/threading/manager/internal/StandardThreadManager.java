@@ -120,8 +120,12 @@ public final class StandardThreadManager extends AbstractThreadManager
             @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
         try (final Locked l = lock.lock()) {
             throwIfAfterPhase(LifecyclePhase.STARTED);
-            return new ManagedExecutorService(
+            final ManagedExecutorService service = new ManagedExecutorService(
                     Executors.newSingleThreadExecutor(buildThreadFactory(name, uncaughtExceptionHandler)));
+            if (phase == LifecyclePhase.NOT_STARTED) {
+                thingsToBeStarted.add(service);
+            }
+            return service;
         }
     }
 

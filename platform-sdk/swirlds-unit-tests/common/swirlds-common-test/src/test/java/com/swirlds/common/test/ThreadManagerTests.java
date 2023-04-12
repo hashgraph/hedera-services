@@ -18,6 +18,7 @@ package com.swirlds.common.test;
 
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,6 +33,7 @@ import com.swirlds.common.threading.manager.ThreadManagerFactory;
 import com.swirlds.common.utility.LifecycleException;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.DisplayName;
@@ -279,10 +281,136 @@ class ThreadManagerTests {
         }
     }
 
-    // TODO
-    //    ExecutorService createSingleThreadExecutor(@NonNull final String name);
-    //    ExecutorService createFixedThreadPool(@NonNull final String name, final int threadCount);
-    //    ScheduledExecutorService createSingleThreadScheduledExecutor(@NonNull final String name);
-    //    ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, final int threadCount);
-    //    MultiQueueThreadConfiguration newMultiQueueThreadConfiguration();
+    @Test
+    @DisplayName("Single Thread Executor Test")
+    void singleThreadExecutorTest() throws InterruptedException {
+        try (final StartableThreadManager threadManager = ThreadManagerFactory.buildThreadManager()) {
+
+            final AtomicLong count = new AtomicLong();
+
+            final ExecutorService executorService = threadManager.createSingleThreadExecutor("test");
+
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+                final int finalI = i;
+                executorService.execute(() -> count.getAndAdd(finalI));
+            }
+
+            // The executor service should not be running in the background.
+            // But pause briefly to allow it to do bad things if it wants to do bad things.
+            MILLISECONDS.sleep(10);
+
+            assertEquals(0, count.get());
+
+            threadManager.start();
+
+            SECONDS.sleep(1);
+            System.out.println(count.get());
+
+            final int finalSum = sum;
+            assertEventuallyTrue(
+                    () -> finalSum == count.get(), Duration.ofSeconds(1), "executor service did not properly run");
+
+            executorService.shutdown();
+        }
+    }
+
+    @Test
+    @DisplayName("Fixed Thread Pool Test")
+    void fixedThreadPoolTest() throws InterruptedException {
+        try (final StartableThreadManager threadManager = ThreadManagerFactory.buildThreadManager()) {
+
+            final AtomicLong count = new AtomicLong();
+
+            final ExecutorService executorService = threadManager.createFixedThreadPool("test", 3);
+
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+                final int finalI = i;
+                executorService.execute(() -> count.getAndAdd(finalI));
+            }
+
+            // The executor service should not be running in the background.
+            // But pause briefly to allow it to do bad things if it wants to do bad things.
+            MILLISECONDS.sleep(10);
+
+            assertEquals(0, count.get());
+
+            threadManager.start();
+
+            final int finalSum = sum;
+            assertEventuallyTrue(
+                    () -> finalSum == count.get(), Duration.ofSeconds(1), "executor service did not properly run");
+
+            executorService.shutdown();
+        }
+    }
+
+    @Test
+    @DisplayName("Single Thread Scheduled Executor Test")
+    void singleThreadScheduledExecutorTest() throws InterruptedException {
+        try (final StartableThreadManager threadManager = ThreadManagerFactory.buildThreadManager()) {
+
+            final AtomicLong count = new AtomicLong();
+
+            final ScheduledExecutorService executorService = threadManager.createSingleThreadScheduledExecutor("test");
+
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+                final int finalI = i;
+                executorService.execute(() -> count.getAndAdd(finalI));
+            }
+
+            // The executor service should not be running in the background.
+            // But pause briefly to allow it to do bad things if it wants to do bad things.
+            MILLISECONDS.sleep(10);
+
+            assertEquals(0, count.get());
+
+            threadManager.start();
+
+            final int finalSum = sum;
+            assertEventuallyTrue(
+                    () -> finalSum == count.get(), Duration.ofSeconds(1), "executor service did not properly run");
+
+            executorService.shutdown();
+        }
+    }
+
+    @Test
+    @DisplayName("Single Thread Scheduled Executor Test")
+    void scheduledThreadPoolTest() throws InterruptedException {
+        try (final StartableThreadManager threadManager = ThreadManagerFactory.buildThreadManager()) {
+
+            final AtomicLong count = new AtomicLong();
+
+            final ScheduledExecutorService executorService = threadManager.createScheduledThreadPool("test", 3);
+
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+                final int finalI = i;
+                executorService.execute(() -> count.getAndAdd(finalI));
+            }
+
+            // The executor service should not be running in the background.
+            // But pause briefly to allow it to do bad things if it wants to do bad things.
+            MILLISECONDS.sleep(10);
+
+            assertEquals(0, count.get());
+
+            threadManager.start();
+
+            final int finalSum = sum;
+            assertEventuallyTrue(
+                    () -> finalSum == count.get(), Duration.ofSeconds(1), "executor service did not properly run");
+
+            executorService.shutdown();
+        }
+    }
+
+    // TODO tests with exception handlers
 }
