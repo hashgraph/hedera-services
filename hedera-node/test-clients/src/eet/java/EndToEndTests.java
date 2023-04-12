@@ -433,8 +433,7 @@ class EndToEndTests extends E2ETestBase {
         return List.of(
                 //				extractSpecsFromSuite(SplittingThrottlesWorks::new),
                 //				extractSpecsFromSuite(SteadyStateThrottlingCheck::new),
-                extractSpecsFromSuite(UmbrellaRedux::new),
-                extractSpecsFromSuite(AddressAliasIdFuzzing::new));
+                extractSpecsFromSuite(UmbrellaRedux::new), extractSpecsFromSuite(AddressAliasIdFuzzing::new));
     }
 
     @Tag("throttling")
