@@ -35,7 +35,7 @@ public final class ThreadManagerFactory {
      * @return the static thread manager
      * @deprecated avoid using the static thread manager wherever possible
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static @NonNull ThreadManager getStaticThreadManager() {
         return STATIC_THREAD_MANAGER;
     }

@@ -360,7 +360,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
      * @deprecated this value is ignored
      */
     @SuppressWarnings("unchecked")
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public C setThreadGroup(final ThreadGroup threadGroup) {
         throwIfImmutable();
         return (C) this;

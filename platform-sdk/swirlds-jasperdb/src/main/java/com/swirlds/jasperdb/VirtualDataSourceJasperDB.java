@@ -348,8 +348,6 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
         this.label = label;
         // updated count of open databases
         COUNT_OF_OPEN_DATABASES.increment();
-        // create thread group with label
-        final ThreadGroup threadGroup = new ThreadGroup("JasperDB-" + label);
         // create scheduledThreadPool for executing merges
         mergingExecutor = getStaticThreadManager()
                 .createScheduledThreadPool(JASPER_DB_COMPONENT + ": Merging", NUMBER_OF_MERGING_THREADS);

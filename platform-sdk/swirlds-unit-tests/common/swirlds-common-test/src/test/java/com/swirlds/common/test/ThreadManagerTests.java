@@ -18,7 +18,6 @@ package com.swirlds.common.test;
 
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -346,9 +345,6 @@ class ThreadManagerTests {
 
             threadManager.start();
 
-            SECONDS.sleep(1);
-            System.out.println(count.get());
-
             final int finalSum = sum;
             assertEventuallyTrue(
                     () -> finalSum == count.get(), Duration.ofSeconds(1), "executor service did not properly run");
@@ -387,9 +383,6 @@ class ThreadManagerTests {
             assertEquals(0, count.get());
 
             threadManager.start();
-
-            SECONDS.sleep(1);
-            System.out.println(count.get());
 
             final int finalSum = sum;
             assertEventuallyTrue(

@@ -221,7 +221,7 @@ public final class StandardThreadManager extends AbstractThreadManager
     @Override
     public <T> QueueThreadConfiguration<T> newQueueThreadConfiguration() {
         try (final Locked l = lock.lock()) {
-            return new QueueThreadConfiguration<T>(this);
+            return new QueueThreadConfiguration<>(this);
         }
     }
 
@@ -232,7 +232,7 @@ public final class StandardThreadManager extends AbstractThreadManager
     @Override
     public <T> QueueThreadPoolConfiguration<T> newQueueThreadPoolConfiguration() {
         try (final Locked l = lock.lock()) {
-            return new QueueThreadPoolConfiguration<T>(this);
+            return new QueueThreadPoolConfiguration<>(this);
         }
     }
 

@@ -127,7 +127,7 @@ public final class AdHocThreadManager extends AbstractThreadManager implements T
     @NonNull
     @Override
     public <T> QueueThreadConfiguration<T> newQueueThreadConfiguration() {
-        return new QueueThreadConfiguration<T>(this);
+        return new QueueThreadConfiguration<>(this);
     }
 
     /**
@@ -136,7 +136,7 @@ public final class AdHocThreadManager extends AbstractThreadManager implements T
     @NonNull
     @Override
     public <T> QueueThreadPoolConfiguration<T> newQueueThreadPoolConfiguration() {
-        return new QueueThreadPoolConfiguration<T>(this);
+        return new QueueThreadPoolConfiguration<>(this);
     }
 
     /**

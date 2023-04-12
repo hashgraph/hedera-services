@@ -262,8 +262,6 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         // updated count of open databases
         COUNT_OF_OPEN_DATABASES.increment();
 
-        // create thread group with label
-        final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
         // create scheduledThreadPool for executing merges
         mergingExecutor = getStaticThreadManager()
                 .createScheduledThreadPool(MERKLEDB_COMPONENT + ": Merging", NUMBER_OF_MERGING_THREADS);
