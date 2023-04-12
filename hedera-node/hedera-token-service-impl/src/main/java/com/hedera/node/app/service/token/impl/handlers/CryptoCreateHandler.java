@@ -112,6 +112,8 @@ public class CryptoCreateHandler implements TransactionHandler {
             final long newPayerBalance = optionalPayer.get().tinybarBalance() - op.initialBalance();
             validatePayer(optionalPayer, newPayerBalance);
 
+            // Change payer's balance to reflect the deduction of the initial balance for the new
+            // account
             final var modifiedPayer =
                     optionalPayer.get().copyBuilder().tinybarBalance(newPayerBalance).build();
             accountStore.put(modifiedPayer);
@@ -120,10 +122,11 @@ public class CryptoCreateHandler implements TransactionHandler {
             final var accountCreated = buildAccount(op, handleContext);
             accountStore.put(accountCreated);
 
-            recordBuilder.setCreatedAccount(accountCreated.accountNumber());
+            final var createdAccountNum = accountCreated.accountNumber();
+            recordBuilder.setCreatedAccount(createdAccountNum);
 
             if (op.alias() != Bytes.EMPTY) {
-                aliasState.put(op.alias(), EntityNum.fromAccount(created));
+                accountStore.putAlias(op.alias().toString(), createdAccountNum);
             }
         } catch (InsufficientFundsException ife) {
             throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
@@ -133,6 +136,13 @@ public class CryptoCreateHandler implements TransactionHandler {
         }
     }
 
+    /**
+     * Validates the payer account exists and has enough balance to cover the initial balance of the
+     * account to be created.
+     *
+     * @param optionalPayer the payer account
+     * @param initialBalance the initial balance of the account to be created
+     */
     private void validatePayer(
             @NonNull final Optional<Account> optionalPayer, final long initialBalance) {
         final var payerAccount = optionalPayer.get();
@@ -147,6 +157,13 @@ public class CryptoCreateHandler implements TransactionHandler {
         }
     }
 
+    /**
+     * Builds an account based on the transaction body and the consensus time.
+     *
+     * @param op the transaction body
+     * @param handleContext the handle context
+     * @return the account created
+     */
     private Account buildAccount(CryptoCreateTransactionBody op, HandleContext handleContext) {
         long autoRenewPeriod = op.autoRenewPeriod().seconds();
         long consensusTime = handleContext.consensusNow().getEpochSecond();
@@ -158,6 +175,7 @@ public class CryptoCreateHandler implements TransactionHandler {
                         .autoRenewSecs(autoRenewPeriod)
                         .receiverSigRequired(op.receiverSigRequired())
                         .maxAutoAssociations(op.maxAutomaticTokenAssociations())
+                        .tinybarBalance(op.initialBalance())
                         .declineReward(op.declineReward());
 
         if (onlyKeyProvided(op)) {
@@ -171,20 +189,29 @@ public class CryptoCreateHandler implements TransactionHandler {
                     getStakedId(op.stakedId().kind(), op.stakedAccountId(), op.stakedNodeId());
             builder.stakedNumber(stakeNumber);
         }
+        // set the new account number
         builder.accountNumber(handleContext.newEntityNumSupplier().getAsLong());
         return builder.build();
     }
 
+    /**
+     * Checks if only key is provided.
+     *
+     * @param op the transaction body
+     * @return true if only key is provided, false otherwise
+     */
     private boolean onlyKeyProvided(@NonNull final CryptoCreateTransactionBody op) {
-        return op.hasKey() && op.getAlias().isEmpty();
+        return op.hasKey() && op.alias().equals(Bytes.EMPTY);
     }
 
+    /**
+     * Checks if both key and alias are provided.
+     *
+     * @param op the transaction body
+     * @return true if both key and alias are provided, false otherwise
+     */
     private boolean keyAndAliasProvided(@NonNull final CryptoCreateTransactionBody op) {
-        return op.hasKey() && !op.getAlias().isEmpty();
-    }
-
-    private boolean onlyAliasProvided(@NonNull final CryptoCreateTransactionBody op) {
-        return !op.hasKey() && !op.getAlias().isEmpty();
+        return op.hasKey() && !op.alias().equals(Bytes.EMPTY);
     }
 
     /**
