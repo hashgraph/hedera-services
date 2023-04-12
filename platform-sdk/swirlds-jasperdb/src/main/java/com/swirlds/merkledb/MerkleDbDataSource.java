@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
+import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.Hash;
@@ -267,14 +268,14 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 NUMBER_OF_MERGING_THREADS,
                 new ThreadConfiguration(getStaticThreadManager())
                         .setThreadGroup(threadGroup)
-                        .setComponent(MerkleDb.MERKLEDB_COMPONENT)
+                        .setComponent(MERKLEDB_COMPONENT)
                         .setThreadName("Merging")
                         .setExceptionHandler((t, ex) -> logger.error(
                                 EXCEPTION.getMarker(), "[{}] Uncaught exception during merging", tableName, ex))
                         .buildFactory());
         // create thread pool storing internal records
         storeInternalExecutor = Executors.newSingleThreadExecutor(new ThreadConfiguration(getStaticThreadManager())
-                .setComponent(MerkleDb.MERKLEDB_COMPONENT)
+                .setComponent(MERKLEDB_COMPONENT)
                 .setThreadGroup(threadGroup)
                 .setThreadName("Store Internal Records")
                 .setExceptionHandler((t, ex) ->
@@ -282,7 +283,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 .buildFactory());
         // create thread pool storing key-to-path mappings
         storeKeyToPathExecutor = Executors.newSingleThreadExecutor(new ThreadConfiguration(getStaticThreadManager())
-                .setComponent(MerkleDb.MERKLEDB_COMPONENT)
+                .setComponent(MERKLEDB_COMPONENT)
                 .setThreadGroup(threadGroup)
                 .setThreadName("Store Key to Path")
                 .setExceptionHandler((t, ex) -> logger.error(
@@ -290,7 +291,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 .buildFactory());
         // thread pool creating snapshots, it is unbounded in threads, but we use at most 7
         snapshotExecutor = Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
-                .setComponent(MerkleDb.MERKLEDB_COMPONENT)
+                .setComponent(MERKLEDB_COMPONENT)
                 .setThreadGroup(threadGroup)
                 .setThreadName("Snapshot")
                 .setExceptionHandler(

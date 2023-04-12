@@ -17,16 +17,19 @@
 package com.swirlds.merkledb.files.hashmap;
 
 import com.swirlds.merkledb.ExampleLongKeyFixedSize;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class ReusableBucketPoolTest {
 
     @Test
-    void test1() {
+    @DisplayName("Basic get / release bucket")
+    void basicGetRelease() {
         final BucketSerializer<ExampleLongKeyFixedSize> serializer =
                 new BucketSerializer<>(new ExampleLongKeyFixedSize.Serializer());
         final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(2, serializer);
@@ -42,7 +45,8 @@ class ReusableBucketPoolTest {
     }
 
     @Test
-    void test2() {
+    @DisplayName("Blocking get when pool is empty")
+    void blockingGet() {
         final BucketSerializer<ExampleLongKeyFixedSize> serializer =
                 new BucketSerializer<>(new ExampleLongKeyFixedSize.Serializer());
         final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(2, serializer);
@@ -69,7 +73,8 @@ class ReusableBucketPoolTest {
     }
 
     @Test
-    void test3() {
+    @DisplayName("Multiple gets when pool is empty")
+    void multipleBlockingGets() {
         final BucketSerializer<ExampleLongKeyFixedSize> serializer =
                 new BucketSerializer<>(new ExampleLongKeyFixedSize.Serializer());
         final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(2, serializer);
@@ -109,7 +114,8 @@ class ReusableBucketPoolTest {
     }
 
     @Test
-    void test4() throws Exception {
+    @DisplayName("Chained release / get calls")
+    void chainedReleasesGets() throws Exception {
         final BucketSerializer<ExampleLongKeyFixedSize> serializer =
                 new BucketSerializer<>(new ExampleLongKeyFixedSize.Serializer());
         final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(2, serializer);
@@ -118,6 +124,7 @@ class ReusableBucketPoolTest {
         final Bucket<ExampleLongKeyFixedSize> bucket2 = pool.getBucket();
         Assertions.assertNotNull(bucket2);
         final Set<Thread> threads = new HashSet<>();
+        // Create a few threads that will all wait until there is a bucket available
         for (int i = 0; i < 4; i++) {
             final Thread t = new Thread(() -> {
                 final Bucket<ExampleLongKeyFixedSize> bucket3 = pool.getBucket();
@@ -127,9 +134,10 @@ class ReusableBucketPoolTest {
             threads.add(t);
             t.start();
         }
+        // Release one of the buckets. It should trigger chained thread unblock reaction
         Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket1));
         for (final Thread t : threads) {
-            t.join();
+            Assertions.assertTimeout(Duration.ofSeconds(10), () -> t.join());
         }
         Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket2));
     }

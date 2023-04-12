@@ -19,13 +19,13 @@ package com.swirlds.merkledb.files.hashmap;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.Units;
-import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
@@ -135,7 +135,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     private static final ExecutorService flushExecutor = Executors.newFixedThreadPool(
             settings.getNumHalfDiskHashMapFlushThreads(),
             new ThreadConfiguration(getStaticThreadManager())
-                    .setComponent(MerkleDb.MERKLEDB_COMPONENT)
+                    .setComponent(MERKLEDB_COMPONENT)
                     .setThreadName("HalfDiskHashMap Flushing")
                     .setExceptionHandler((t, ex) ->
                             logger.error(EXCEPTION.getMarker(), "Uncaught exception during HDHM flushing", ex))

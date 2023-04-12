@@ -73,13 +73,13 @@ public class ReusableBucketPool<K extends VirtualKey> {
      * pool is empty. In this case, the thread that requests a new bucket from will be
      * blocked, until a bucket is released into the array at the index.
      */
-    private final AtomicInteger nextA = new AtomicInteger(0);
+    private final AtomicInteger nextIndexToGet = new AtomicInteger(0);
     /**
      * Index in the array of the next empty slot. When a bucket is released to the pool,
      * it's put to the array at this index, and the index is increased by one. If another
      * thread is waiting for a bucket to be released at the given index, it is notified.
      */
-    private final AtomicInteger nextE = new AtomicInteger(0);
+    private final AtomicInteger nextIndexToRelease = new AtomicInteger(0);
 
     /**
      * Creates a new reusable bucket pool of the default size.
@@ -114,7 +114,7 @@ public class ReusableBucketPool<K extends VirtualKey> {
      */
     public Bucket<K> getBucket() {
         // Every call to this method is bound to a particular index in the pool
-        final int index = nextA.getAndUpdate(t -> (t + 1) % poolSize);
+        final int index = nextIndexToGet.getAndUpdate(t -> (t + 1) % poolSize);
         // Try optimistic get first
         Bucket<K> bucket = buckets.getAndSet(index, null);
         if (bucket == null) {
@@ -145,7 +145,7 @@ public class ReusableBucketPool<K extends VirtualKey> {
      */
     public void releaseBucket(final Bucket<K> bucket) {
         assert bucket.getBucketPool() == this;
-        int index = nextE.getAndUpdate(t -> (t + 1) % poolSize);
+        int index = nextIndexToRelease.getAndUpdate(t -> (t + 1) % poolSize);
         boolean released = buckets.compareAndSet(index, null, bucket);
         while (!released) {
             released = buckets.compareAndSet(index, null, bucket);
