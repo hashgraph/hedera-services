@@ -26,7 +26,7 @@ import java.time.Duration;
 @Deprecated(forRemoval = true)
 public class ChatterSubSetting extends SubSetting implements ChatterSettings {
     /** @see #isChatterUsed() */
-    public boolean useChatter = false;
+    public boolean useChatter = true;
     /** @see #getAttemptedChatterEventPerSecond() */
     public int attemptedChatterEventPerSecond = 40;
     /** @see #getChatteringCreationThreshold() */
