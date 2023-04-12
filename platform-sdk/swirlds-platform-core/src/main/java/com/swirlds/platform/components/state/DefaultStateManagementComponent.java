@@ -478,7 +478,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     }
 
     /**
-     * This observer is called a signed state is requested to be dumped to disk.
+     * This observer is called when a signed state is requested to be dumped to disk.
      *
      * @param round    the round that should be dumped if available. If this parameter is null or if the requested round
      *                 is unavailable then the latest immutable round should be dumped.
