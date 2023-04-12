@@ -36,6 +36,9 @@ public class SyncPermitProvider {
      */
     private final AcquiredOnTry acquired;
 
+    /**
+     * The number of permits this provider has available to distribute
+     */
     private final int numPermits;
 
     /**
@@ -70,6 +73,11 @@ public class SyncPermitProvider {
         return MaybeLocked.NOT_ACQUIRED;
     }
 
+    /**
+     * First acquires all permits uninterruptibly, then releases them again
+     * <p>
+     * The purpose of this method is to allow the caller to wait for all syncs to complete before proceeding
+     */
     public void join() {
         syncPermits.acquireUninterruptibly(numPermits);
         syncPermits.release(numPermits);

@@ -16,13 +16,20 @@
 
 package com.swirlds.common.threading;
 
+import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 class SyncPermitProviderTest {
@@ -86,5 +93,48 @@ class SyncPermitProviderTest {
                     syncPermitProvider.getNumAvailable(),
                     "one more permit should be available when a permit is released");
         }
+    }
+
+    @Test
+    void testJoin() {
+        final int numPermits = 3;
+        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits);
+
+        final List<MaybeLocked> permits = new ArrayList<>(numPermits);
+        // Acquire all the permits
+        for (int i = 0; i < numPermits; i++) {
+            final MaybeLocked maybeLocked = syncPermitProvider.tryAcquire();
+            permits.add(maybeLocked);
+            assertTrue(maybeLocked.isLockAcquired());
+        }
+
+        // Attempts to acquire more permits should fail
+        final MaybeLocked shouldNotAcquire = syncPermitProvider.tryAcquire();
+        assertFalse(shouldNotAcquire.isLockAcquired(), "no further permits should be able to be acquired");
+
+        final AtomicBoolean joinCalled = new AtomicBoolean(false);
+
+        // Have a separate thread attempt to join the syncPermitProvider
+        final ExecutorService executorService = Executors.newSingleThreadExecutor();
+        final Future<Void> future = executorService.submit(() -> {
+            syncPermitProvider.join();
+            joinCalled.set(true);
+            return null;
+        });
+
+        try {
+            // wait a bit, to give join time to potentially misbehave
+            MILLISECONDS.sleep(50);
+        } catch (final InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        assertFalse(joinCalled.get(), "join should not be called until all permits are released");
+
+        // close the permits that have already been acquired, so the join will succeed
+        permits.forEach(MaybeLocked::close);
+
+        assertEventuallyTrue(
+                joinCalled::get, Duration.ofMillis(1000), "join should be called after all permits are released");
     }
 }

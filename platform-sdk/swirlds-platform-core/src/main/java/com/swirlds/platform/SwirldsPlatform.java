@@ -417,11 +417,18 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final PreConsensusEventWriter preConsensusEventWriter;
 
     /**
-     * True if gossip has been halted
+     * True if gossip has been halted. Only relevant for sync-as-a-protocol
      */
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
 
+    /**
+     * The permit provider for outgoing syncs. Only relevant when sync is running as a protocol
+     */
     private SyncPermitProvider outgoingSyncPermitProvider;
+
+    /**
+     * The permit provider for incoming syncs. Only relevant when sync is running as a protocol
+     */
     private SyncPermitProvider incomingSyncPermitProvider;
 
     /**
@@ -1005,7 +1012,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             thread.stop();
         }
 
-        gossipHalted.set(true);
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        if (basicConfig.syncAsProtocolEnabled()) {
+            gossipHalted.set(true);
+        }
 
         if (syncManager != null) {
             syncManager.haltRequestedObserver(reason);
@@ -1299,6 +1309,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             stopGossip = chatterCore::stopChatter;
         } else if (basicConfig.syncAsProtocolEnabled()) {
             stopGossip = () -> {
+                gossipHalted.set(true);
+                // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
+                // we've fallen behind
                 outgoingSyncPermitProvider.join();
                 incomingSyncPermitProvider.join();
             };
@@ -1568,7 +1581,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         if (basicConfig.syncAsProtocolEnabled()) {
             // startChatter callback is a no-op, since nothing needs to be done to start sync-as-a-protocol
-            reconnectController.set(new ReconnectController(threadManager, reconnectHelper, () -> {}));
+            reconnectController.set(
+                    new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false)));
             startSyncAsProtocolNetwork(connectionManagers);
             return;
         }
