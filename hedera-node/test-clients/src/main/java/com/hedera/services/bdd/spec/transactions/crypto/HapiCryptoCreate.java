@@ -262,6 +262,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                         CryptoCreateTransactionBody.class, b -> {
                             if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
                                 InitialAccountIdentifiers.fuzzedFrom(spec, key).customize(this, b);
+                            } else if (setEvmAddressAliasFromKey) {
+                                final var congruentAddress = EthSigsUtils.recoverAddressFromPubKey(
+                                        key.getECDSASecp256K1().toByteArray());
+                                b.setKey(key);
+                                b.setAlias(ByteString.copyFrom(congruentAddress));
                             } else {
                                 if (alias.isPresent() || evmAddress.isPresent()) {
                                     keyName.ifPresent(
@@ -272,6 +277,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                                     b.setKey(key);
                                 }
                             }
+
                             if (unknownFieldLocation == UnknownFieldLocation.OP_BODY) {
                                 b.setUnknownFields(nonEmptyUnknownFields());
                             }
@@ -292,15 +298,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                                 b.setStakedNodeId(stakedNodeId.get());
                             }
                             b.setDeclineReward(isDeclinedReward);
-
-                            if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
-                                InitialAccountIdentifiers.fuzzedFrom(spec, key).customize(this, b);
-                            } else if (setEvmAddressAliasFromKey) {
-                                final var congruentAddress = EthSigsUtils.recoverAddressFromPubKey(
-                                        key.getECDSASecp256K1().toByteArray());
-                                b.setKey(key);
-                                b.setAlias(ByteString.copyFrom(congruentAddress));
-                            }
                         });
         return b -> b.setCryptoCreateAccount(opBody);
     }
