@@ -30,3 +30,4 @@ virtualMap.preferredFlushQueueSize,            10000
 state.mainClassNameOverride,                   com.hedera.services.ServicesMain
 chatter.useChatter,                            false
 prometheusEndpointEnabled,                     true
+transThrottle,                                 false
