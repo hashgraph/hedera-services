@@ -44,13 +44,6 @@ import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Optional;
@@ -321,5 +314,5 @@ class FreezeHandlerTest {
         assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
     }
 
-    //TODO: add tests for handler
+    // TODO: add tests for handler
 }

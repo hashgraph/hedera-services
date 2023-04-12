@@ -136,9 +136,9 @@ class QueryCheckerTest {
                         nodeInfo,
                         currentPlatformStatus,
                         transactionChecker,
-
                         null,
-                       queryFeeCheck, authorizer,
+                        queryFeeCheck,
+                        authorizer,
                         cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(
@@ -146,9 +146,8 @@ class QueryCheckerTest {
                         currentPlatformStatus,
                         transactionChecker,
                         accountNumbers,
-
                         null,
-                       authorizer,
+                        authorizer,
                         cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(
@@ -157,7 +156,6 @@ class QueryCheckerTest {
                         transactionChecker,
                         accountNumbers,
                         queryFeeCheck,
-
                         null,
                         cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
