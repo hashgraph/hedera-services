@@ -47,14 +47,14 @@ public class HRCDissociatePrecompile extends AbstractDissociatePrecompile {
     public HRCDissociatePrecompile(
             final TokenID tokenID,
             final Address callerAccount,
-            WorldLedgers ledgers,
-            ContractAliases aliases,
-            EvmSigsVerifier sigsVerifier,
-            SideEffectsTracker sideEffects,
-            SyntheticTxnFactory syntheticTxnFactory,
-            InfrastructureFactory infrastructureFactory,
-            PrecompilePricingUtils pricingUtils,
-            Provider<FeeCalculator> feeCalculator) {
+            final WorldLedgers ledgers,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final Provider<FeeCalculator> feeCalculator) {
         super(
                 ledgers,
                 aliases,
@@ -66,13 +66,13 @@ public class HRCDissociatePrecompile extends AbstractDissociatePrecompile {
                 feeCalculator);
 
         this.tokenID = tokenID;
-        this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
+        this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(Objects.requireNonNull(callerAccount));
     }
 
     @Override
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        dissociateOp = Dissociation.singleDissociation(callerAccountID, tokenID);
-        accountId = Id.fromGrpcAccount(Objects.requireNonNull(dissociateOp).accountId());
+        dissociateOp = Dissociation.singleDissociation(Objects.requireNonNull(callerAccountID), tokenID);
+        accountId = Id.fromGrpcAccount(callerAccountID);
         transactionBody = syntheticTxnFactory.createDissociate(dissociateOp);
         return transactionBody;
     }

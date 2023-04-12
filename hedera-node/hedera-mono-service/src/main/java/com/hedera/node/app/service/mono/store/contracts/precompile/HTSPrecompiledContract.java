@@ -697,7 +697,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             encoder,
                                             evmEncoder,
                                             precompilePricingUtils));
-                            case AbiConstants.ABI_ID_HRC_ASSOCIATE -> checkHRC(
+                            case AbiConstants.ABI_ID_HRC_ASSOCIATE -> checkHRCToken(
                                     ledgers.tokens().exists(tokenId),
                                     () -> new HRCAssociatePrecompile(
                                             tokenId,
@@ -710,7 +710,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             feeCalculator));
-                            case AbiConstants.ABI_ID_HRC_DISSOCIATE -> checkHRC(
+                            case AbiConstants.ABI_ID_HRC_DISSOCIATE -> checkHRCToken(
                                     ledgers.tokens().exists(tokenId),
                                     () -> new HRCDissociatePrecompile(
                                             tokenId,
@@ -848,7 +848,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         }
     }
 
-    private Precompile checkHRC(final boolean validToken, final Supplier<Precompile> precompileSupplier) {
+    private Precompile checkHRCToken(final boolean validToken, final Supplier<Precompile> precompileSupplier) {
         if (!validToken) {
             throw new InvalidTransactionException(NOT_SUPPORTED_HRC_OPERATION_REASON, INVALID_TOKEN_ID);
         } else {
