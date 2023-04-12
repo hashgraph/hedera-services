@@ -294,7 +294,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                             b.setDeclineReward(isDeclinedReward);
 
                             if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
-                                InitialAccountIdentifiers.fuzzedFrom(key).customize(b);
+                                InitialAccountIdentifiers.fuzzedFrom(spec, key).customize(this, b);
                             } else if (setEvmAddressAliasFromKey) {
                                 final var congruentAddress = EthSigsUtils.recoverAddressFromPubKey(
                                         key.getECDSASecp256K1().toByteArray());
