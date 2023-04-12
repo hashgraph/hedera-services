@@ -15,7 +15,9 @@ import com.hedera.node.app.service.util.impl.components.UtilComponent;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.hedera.test.mocks.MockAccountNumbers;
 import dagger.Binds;
 import dagger.Module;
@@ -34,6 +36,10 @@ public interface ReplayFacilityModule {
     @Binds
     @Singleton
     HandleContext bindHandleContext(ReplayFacilityHandleContext context);
+
+    @Binds
+    @Singleton
+    AttributeValidator bindAttributeValidator(StandardizedAttributeValidator attributeValidator);
 
     @Binds
     @Singleton

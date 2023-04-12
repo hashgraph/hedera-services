@@ -1,5 +1,6 @@
 package com.hedera.node.app.integration;
 
+import com.hedera.node.app.integration.facilities.ReplayAdvancingConsensusNow;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
@@ -21,6 +22,7 @@ public interface ReplayFacilityComponent {
     }
 
     ReplayAssetRecording assetRecording();
+    ReplayAdvancingConsensusNow consensusNow();
     InMemoryWritableStoreFactory writableStoreFactory();
     ReplayFacilityTransactionDispatcher transactionDispatcher();
 }

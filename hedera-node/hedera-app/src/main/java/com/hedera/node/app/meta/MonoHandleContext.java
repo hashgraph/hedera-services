@@ -43,8 +43,6 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class MonoHandleContext implements HandleContext {
-    private static final AccountID PLACEHOLDER_ID = AccountID.newBuilder().build();
-
     private final LongSupplier nums;
     private final ExpiryValidator expiryValidator;
     private final TransactionContext txnCtx;
