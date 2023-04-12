@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.merkledb.files.hashmap;
 
 import com.swirlds.merkledb.ExampleLongKeyFixedSize;
@@ -36,14 +52,15 @@ public class ReusableBucketPoolTest {
         Assertions.assertNotNull(bucket2);
         final AtomicBoolean bucket2Released = new AtomicBoolean(false);
         new Thread(() -> {
-            // This call should block until bucket2 is released
-            final Bucket<ExampleLongKeyFixedSize> bucket3 = pool.getBucket();
-            Assertions.assertNotNull(bucket3);
-            synchronized (bucket2Released) {
-                Assertions.assertTrue(bucket2Released.get());
-            }
-            Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket3));
-        }).start();
+                    // This call should block until bucket2 is released
+                    final Bucket<ExampleLongKeyFixedSize> bucket3 = pool.getBucket();
+                    Assertions.assertNotNull(bucket3);
+                    synchronized (bucket2Released) {
+                        Assertions.assertTrue(bucket2Released.get());
+                    }
+                    Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket3));
+                })
+                .start();
         synchronized (bucket2Released) {
             Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket2));
             bucket2Released.set(true);
@@ -63,26 +80,28 @@ public class ReusableBucketPoolTest {
         final AtomicBoolean bucket1Released = new AtomicBoolean(false);
         final AtomicBoolean bucket2Released = new AtomicBoolean(false);
         new Thread(() -> {
-            // This call should block until bucket1 or bucket4 is released
-            final Bucket<ExampleLongKeyFixedSize> bucket3 = pool.getBucket();
-            Assertions.assertNotNull(bucket3);
-            synchronized (bucket1Released) {
-                Assertions.assertTrue(bucket1Released.get());
-            }
-            synchronized (bucket2Released) {
-                Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket3));
-            }
-        }).start();
+                    // This call should block until bucket1 or bucket4 is released
+                    final Bucket<ExampleLongKeyFixedSize> bucket3 = pool.getBucket();
+                    Assertions.assertNotNull(bucket3);
+                    synchronized (bucket1Released) {
+                        Assertions.assertTrue(bucket1Released.get());
+                    }
+                    synchronized (bucket2Released) {
+                        Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket3));
+                    }
+                })
+                .start();
         new Thread(() -> {
-            // This call should block until bucket1 or bucket3 is released
-            final Bucket<ExampleLongKeyFixedSize> bucket4 = pool.getBucket();
-            Assertions.assertNotNull(bucket4);
-            synchronized (bucket2Released) {
-                Assertions.assertFalse(bucket2Released.get());
-                Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket2));
-            }
-            Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket4));
-        }).start();
+                    // This call should block until bucket1 or bucket3 is released
+                    final Bucket<ExampleLongKeyFixedSize> bucket4 = pool.getBucket();
+                    Assertions.assertNotNull(bucket4);
+                    synchronized (bucket2Released) {
+                        Assertions.assertFalse(bucket2Released.get());
+                        Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket2));
+                    }
+                    Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket4));
+                })
+                .start();
         synchronized (bucket1Released) {
             Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket1));
             bucket1Released.set(true);
@@ -114,5 +133,4 @@ public class ReusableBucketPoolTest {
         }
         Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket2));
     }
-
 }

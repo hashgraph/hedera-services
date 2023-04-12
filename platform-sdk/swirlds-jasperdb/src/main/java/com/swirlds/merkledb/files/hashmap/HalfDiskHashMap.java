@@ -45,8 +45,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -130,8 +128,18 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
      */
     private Thread writingThread;
 
+    /** MerkleDb settings */
+    private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
+
     /** Executor for parallel bucket reads/updates in {@link #endWriting()} */
-    private final ExecutorService flushExecutor;
+    private static final ExecutorService flushExecutor = Executors.newFixedThreadPool(
+            settings.getNumHalfDiskHashMapFlushThreads(),
+            new ThreadConfiguration(getStaticThreadManager())
+                    .setComponent(MerkleDb.MERKLEDB_COMPONENT)
+                    .setThreadName("HalfDiskHashMap Flushing")
+                    .setExceptionHandler((t, ex) ->
+                            logger.error(EXCEPTION.getMarker(), "Uncaught exception during HDHM flushing", ex))
+                    .buildFactory());
 
     /**
      * Construct a new HalfDiskHashMap
@@ -159,18 +167,8 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
             final String legacyStoreName,
             final boolean preferDiskBasedIndexes)
             throws IOException {
-        final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
-
         this.mapSize = mapSize;
         this.storeName = storeName;
-        flushExecutor = Executors.newFixedThreadPool(
-                16,
-                new ThreadConfiguration(getStaticThreadManager())
-                        .setComponent(MerkleDb.MERKLEDB_COMPONENT)
-                        .setThreadName("HDHM Flush " + storeName)
-                        .setExceptionHandler((t, ex) -> logger.error(
-                                EXCEPTION.getMarker(), "[{}] Uncaught exception during flushing", storeName, ex))
-                        .buildFactory());
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
         // create bucket serializer
         this.bucketSerializer = new BucketSerializer<>(keySerializer);
@@ -436,7 +434,6 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
                     oneTransactionsData.keyValuesView().toList();
             final int size = bucketUpdates.size();
             final ReusableBucketPool<K> bucketPool = bucketSerializer.getBucketPool();
-//            final BlockingQueue<ReadBucketResult<K>> queue = new ArrayBlockingQueue<>(1024);
             final Queue<ReadBucketResult<K>> queue = new ConcurrentLinkedQueue<>();
             for (int i = 0; i < size; i++) {
                 final IntObjectPair<BucketMutation<K>> keyValue = bucketUpdates.get(i);
@@ -469,11 +466,6 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
                 if (res == null) {
                     continue;
                 }
-//                try {
-//                    res = queue.take();
-//                } catch (final InterruptedException e) {
-//                    throw new RuntimeException("Interrupt while flushing HDHM", e);
-//                }
                 if (res.error != null) {
                     throw new RuntimeException(res.error);
                 }

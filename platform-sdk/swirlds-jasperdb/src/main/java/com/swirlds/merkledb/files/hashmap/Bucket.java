@@ -88,6 +88,10 @@ public final class Bucket<K extends VirtualKey<? super K>> implements Closeable 
     private final KeySerializer<K> keySerializer;
     private ByteBuffer reusableBuffer;
 
+    /**
+     * Bucket pool this bucket is managed by, optional. If not null, the bucket is
+     * released back to the pool on close.
+     */
     private final ReusableBucketPool<K> bucketPool;
 
     /**
@@ -115,6 +119,9 @@ public final class Bucket<K extends VirtualKey<? super K>> implements Closeable 
         this.bucketPool = bucketPool;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void close() throws IOException {
         if (bucketPool != null) {
@@ -122,6 +129,11 @@ public final class Bucket<K extends VirtualKey<? super K>> implements Closeable 
         }
     }
 
+    /**
+     * Gets this bucket's reusable bucket pool. May be null.
+     *
+     * @return Bucket pool this bucket is managed by
+     */
     public ReusableBucketPool<K> getBucketPool() {
         return bucketPool;
     }
