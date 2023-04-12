@@ -327,13 +327,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    void onReleaseAndArchiveNoopIfMetadataNull() {
-        mockAllMaps(mock(MerkleMap.class), mock(VirtualMap.class));
-        Assertions.assertDoesNotThrow(subject::archive);
-        Assertions.assertDoesNotThrow(subject::destroyNode);
-    }
-
-    @Test
     void onReleaseForwardsToMetadataIfNonNull() {
         // setup:
         subject.setMetadata(metadata);
@@ -345,20 +338,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         verify(metadata).release();
     }
 
-    @Test
-    void archiveForwardsToMetadataAndMerkleMaps() {
-        final MerkleMap<?, ?> mockMm = mock(MerkleMap.class);
 
-        subject.setMetadata(metadata);
-        mockAllMaps(mockMm, mock(VirtualMap.class));
-
-        // when:
-        subject.archive();
-
-        // then:
-        verify(metadata).release();
-        verify(mockMm, times(6)).archive();
-    }
 
     @Test
     void preHandleUsesEventExpansion() {

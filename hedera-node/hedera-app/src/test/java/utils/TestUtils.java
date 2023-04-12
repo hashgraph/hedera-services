@@ -16,7 +16,9 @@
 
 package utils;
 
+import com.hedera.node.app.TestConfigBuilder;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
@@ -43,10 +45,12 @@ public class TestUtils {
     }
 
     public static Metrics metrics() {
+        final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
+
         return new DefaultMetrics(
                 NodeId.createMain(DEFAULT_NODE_ID),
                 new MetricKeyRegistry(),
                 Executors.newSingleThreadScheduledExecutor(),
-                new DefaultMetricsFactory());
+                new DefaultMetricsFactory(),metricsConfig);
     }
 }

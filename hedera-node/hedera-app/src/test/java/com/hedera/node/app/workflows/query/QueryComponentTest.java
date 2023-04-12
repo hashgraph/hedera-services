@@ -18,16 +18,21 @@ package com.hedera.node.app.workflows.query;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.HederaApp;
+import com.hedera.node.app.TestConfigBuilder;
 import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gui.SwirldsGui;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +50,10 @@ class QueryComponentTest {
     @BeforeEach
     void setUp() {
         final var selfNodeId = new NodeId(false, 666L);
-
+        Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        PlatformContext platformContext = mock(PlatformContext.class);
+        when (platformContext.getConfiguration()).thenReturn(configuration);
+        when (platform.getContext()).thenReturn(platformContext);
         app = DaggerHederaApp.builder()
                 .platform(platform)
                 .crypto(CryptographyHolder.get())

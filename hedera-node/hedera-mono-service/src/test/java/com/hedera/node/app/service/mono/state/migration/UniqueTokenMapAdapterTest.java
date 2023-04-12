@@ -174,14 +174,6 @@ class UniqueTokenMapAdapterTest {
         verify(virtualMap, times(1)).remove(UniqueTokenKey.from(virtualKey));
     }
 
-    @Test
-    void testArchive() {
-        merkleMapAdapter.archive();
-        verify(merkleMap, times(1)).archive();
-
-        virtualMapAdapter.archive();
-        Mockito.verifyNoInteractions(virtualMap);
-    }
 
     @Test
     void testHash() {
