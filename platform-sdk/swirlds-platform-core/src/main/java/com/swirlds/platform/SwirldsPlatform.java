@@ -421,6 +421,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
 
+    private SyncPermitProvider outgoingSyncPermitProvider;
+    private SyncPermitProvider incomingSyncPermitProvider;
+
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
@@ -1287,12 +1290,25 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 !basicConfig.syncAsProtocolEnabled(),
                 () -> {});
 
-        final Runnable stopGossip = settings.getChatter().isChatterUsed()
-                ? chatterCore::stopChatter
-                // wait and acquire all sync ongoing locks and release them immediately
-                // this will ensure any ongoing sync are finished before we start reconnect
-                // no new sync will start because we have a fallen behind status
-                : getSimultaneousSyncThrottle()::waitForAllSyncsToFinish;
+        outgoingSyncPermitProvider = new SyncPermitProvider(settings.getMaxOutgoingSyncs());
+        incomingSyncPermitProvider =
+                new SyncPermitProvider(settings.getMaxOutgoingSyncs() + settings.getMaxIncomingSyncsInc());
+
+        final Runnable stopGossip;
+        if (settings.getChatter().isChatterUsed()) {
+            stopGossip = chatterCore::stopChatter;
+        } else if (basicConfig.syncAsProtocolEnabled()) {
+            stopGossip = () -> {
+                outgoingSyncPermitProvider.join();
+                incomingSyncPermitProvider.join();
+            };
+        } else {
+            // wait and acquire all sync ongoing locks and release them immediately
+            // this will ensure any ongoing sync are finished before we start reconnect
+            // no new sync will start because we have a fallen behind status
+            stopGossip = getSimultaneousSyncThrottle()::waitForAllSyncsToFinish;
+        }
+
         reconnectHelper = new ReconnectHelper(
                 stopGossip,
                 clearAllPipelines,
@@ -1653,10 +1669,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
                 List.of(() -> !gossipHalted.get(), () -> intakeQueue.size() <= settings.getEventIntakeQueueSize()));
-
-        final SyncPermitProvider outgoingSyncPermitProvider = new SyncPermitProvider(settings.getMaxOutgoingSyncs());
-        final SyncPermitProvider incomingSyncPermitProvider =
-                new SyncPermitProvider(settings.getMaxOutgoingSyncs() + settings.getMaxIncomingSyncsInc());
 
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)

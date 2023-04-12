@@ -36,12 +36,15 @@ public class SyncPermitProvider {
      */
     private final AcquiredOnTry acquired;
 
+    private final int numPermits;
+
     /**
      * Creates a new instance with a maximum number of permits
      *
      * @param numPermits the number of concurrent syncs this provider will allow
      */
     public SyncPermitProvider(final int numPermits) {
+        this.numPermits = numPermits;
         this.syncPermits = new Semaphore(numPermits);
         this.acquired = new AcquiredOnTry(syncPermits::release);
     }
@@ -65,5 +68,10 @@ public class SyncPermitProvider {
             return acquired;
         }
         return MaybeLocked.NOT_ACQUIRED;
+    }
+
+    public void join() {
+        syncPermits.acquireUninterruptibly(numPermits);
+        syncPermits.release(numPermits);
     }
 }
