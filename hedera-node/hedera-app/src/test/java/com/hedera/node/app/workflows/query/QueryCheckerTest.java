@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static utils.TestUtils.randomBytes;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -222,8 +223,9 @@ class QueryCheckerTest {
         // given
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
+        final var signedBytes = Bytes.wrap(randomBytes(32));
         final var onsetResult =
-                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, CRYPTO_TRANSFER);
+                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, signedBytes, CRYPTO_TRANSFER);
         final var transaction = Transaction.newBuilder().build();
         when(transactionChecker.check(transaction)).thenReturn(onsetResult);
 
@@ -259,8 +261,9 @@ class QueryCheckerTest {
         // given
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
+        final var signedBytes = Bytes.wrap(randomBytes(32));
         final var onsetResult =
-                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
+                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, signedBytes, CONSENSUS_CREATE_TOPIC);
         final var transaction = Transaction.newBuilder().build();
         when(transactionChecker.check(transaction)).thenReturn(onsetResult);
         final var checker = new QueryChecker(
@@ -283,8 +286,9 @@ class QueryCheckerTest {
         // given
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
+        final var signedBytes = Bytes.wrap(randomBytes(32));
         final var onsetResult =
-                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, CRYPTO_TRANSFER);
+                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, signedBytes, CRYPTO_TRANSFER);
         final var transaction = Transaction.newBuilder().build();
         when(transactionChecker.check(transaction)).thenReturn(onsetResult);
         doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))

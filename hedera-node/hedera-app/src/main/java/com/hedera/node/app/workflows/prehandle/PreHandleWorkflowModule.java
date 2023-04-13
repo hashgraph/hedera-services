@@ -23,6 +23,8 @@ import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.signature.MonoSignaturePreparer;
 import com.hedera.node.app.signature.SignaturePreparer;
+import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.signature.SignatureVerifierImpl;
 import com.hedera.node.app.state.merkle.MerkleAddressBook;
 import com.hedera.node.app.workflows.handle.AdaptedMonoProcessLogic;
 import dagger.Binds;
@@ -44,6 +46,9 @@ public interface PreHandleWorkflowModule {
 
     @Binds
     SignaturePreparer bindSignaturePreparer(MonoSignaturePreparer signaturePreparer);
+
+    @Binds
+    SignatureVerifier bindSignatureVerifier(SignatureVerifierImpl signatureVerifier);
 
     @Binds
     ProcessLogic bindProcessLogic(AdaptedMonoProcessLogic processLogic);

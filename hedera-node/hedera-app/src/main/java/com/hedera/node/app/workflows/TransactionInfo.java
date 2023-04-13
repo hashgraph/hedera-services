@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -38,10 +39,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *               from the {@link Transaction#signedTransactionBytes()}).
  * @param signatureMap the {@link SignatureMap} (either from {@link Transaction#sigMap()} or
  *                     from {@link SignedTransaction#sigMap()}). Not all transactions require a signature map....
+ * @param signedBytes the bytes to use for signature verification
  * @param functionality the {@link HederaFunctionality} representing the transaction.
  */
 public record TransactionInfo(
         @NonNull Transaction transaction,
         @NonNull TransactionBody txBody,
         @NonNull SignatureMap signatureMap,
-        @NonNull HederaFunctionality functionality) {}
+        @NonNull Bytes signedBytes,
+        @NonNull HederaFunctionality functionality) {
+}

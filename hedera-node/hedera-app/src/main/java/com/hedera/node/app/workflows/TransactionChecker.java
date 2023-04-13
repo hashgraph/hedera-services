@@ -228,7 +228,7 @@ public class TransactionChecker {
         // 4. Return TransactionInfo
         try {
             final var functionality = HapiUtils.functionOf(txBody);
-            return new TransactionInfo(tx, txBody, signatureMap, functionality);
+            return new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality);
         } catch (UnknownHederaFunctionality e) {
             throw new PreCheckException(INVALID_TRANSACTION_BODY);
         }

@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.signature.SignaturePreparer;
+import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -83,13 +84,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private final TransactionChecker transactionChecker;
     /** Dispatches transactions to the appropriate {@link TransactionHandler} based on the type of transaction. */
     private final TransactionDispatcher dispatcher;
-    /**
-     * Given a {@link com.hedera.hapi.node.base.Transaction} and a list of {@link Key}s, prepares the
-     * {@link TransactionSignature}s for submission to the cryptography engine.
-     */
-    private final SignaturePreparer signaturePreparer;
-    /** Verifies the {@link TransactionSignature}s. */
-    private final Cryptography cryptography;
+    /** Verifies signatures */
+    private final SignatureVerifier signatureVerifier;
     /**
      * The {@link ExecutorService} to use for submitting tasks for transaction pre-handling.
      *
@@ -115,9 +111,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * @param dispatcher the {@link TransactionDispatcher} for invoking the {@link TransactionHandler} for each
      *                   transaction.
      * @param transactionChecker the {@link TransactionChecker} for parsing and verifying the transaction
-     * @param signaturePreparer the {@link SignaturePreparer} to convert the {@link Key}s into
-     *                          {@link TransactionSignature}s
-     * @param cryptography the {@link Cryptography} component used to verify signatures
+     * @param signatureVerifier the {@link SignatureVerifier} to verify signatures
      * @param recordCache the {@link RecordCache} used to check if a transaction has already been processed
      * @throws NullPointerException if any of the parameters is {@code null}
      */
@@ -126,14 +120,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final ExecutorService exe,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final TransactionChecker transactionChecker,
-            @NonNull final SignaturePreparer signaturePreparer,
-            @NonNull final Cryptography cryptography,
+            @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final RecordCache recordCache) {
         this.exe = requireNonNull(exe);
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
-        this.signaturePreparer = requireNonNull(signaturePreparer);
-        this.cryptography = requireNonNull(cryptography);
+        this.signatureVerifier = requireNonNull(signatureVerifier);
         this.recordCache = requireNonNull(recordCache);
     }
 
@@ -156,7 +148,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             if (platformTx.isSystem()) continue;
 
             // Submit the task to the executor service and put the resulting Future as the metadata on the transaction
-            final var future = exe.submit(() -> preHandleTransaction(creator, accountStore, cryptography, platformTx));
+            final var future = exe.submit(() -> preHandleTransaction(creator, readableStoreFactory, accountStore, state, platformTx));
             tasks.add(new WorkItem(platformTx, future));
         }
 
@@ -183,8 +175,9 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     // pass the keys and signatures to the platform for verification.
     private PreHandleResult preHandleTransaction(
             @NonNull final AccountID creator,
+            @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final ReadableAccountStore accountStore,
-            @NonNull final Cryptography cryptoEngine,
+            @NonNull final HederaState state,
             @NonNull final Transaction platformTx) {
         // 1. Parse the Transaction and check the syntax
         final var txBytes = Bytes.wrap(platformTx.getContents());
@@ -233,34 +226,19 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // 4. Collect payer TransactionSignatures
         final var payerAccount = accountOptional.get();
-        final var payerSignatureBytes = collectSignatures(
+        final var payerVerificationFuture = signatureVerifier.verifySignatures(
+                txInfo.signedBytes(),
                 txInfo.signatureMap().sigPairOrThrow(),
-                (Key) (Object) payerAccount.getKey().orElseThrow());
-
-        txInfo.signatureMap(); // Yay! A signature map
-        // TODO Update txInfo to have the signed body bytes and set it correctly based on deprected or non deprecated field usage
-
-        // For each key that MUST sign this transaction:
-        //  1. Look through the signature map for the key prefix. If we do not find it, then we already know the
-        //     transaction is not signed, so we can throw (Oh, and by the way, the node becomes the payer again.)
-        //     Oh, and if we had a threshold key or key list, we have multiple signatures to check. If we find that
-        //     there are not the appropriate sigs, then we can bail. If we find we have them all, then check them all.
-
-        cryptoEngine.verifyAsync(data <-- transaction bytes, signature <-- The signature to use, publicKey <-- the full public key);
-        final var payerSig = signaturePreparer.prepareSignature(state, txBytes, txInfo.signatureMap(), payer); // TODO This is wrong, shouldn't take the AccountID
-        cryptoEngine.verifyAsync(payerSig);
+                payerAccount.getKey().orElseThrow());
 
         // If this is a duplicate transaction, then we only want to verify the payer signature,
         // and then we can skip the rest of the pre-handle logic.
-        if (duplicate) {
-            // TODO Sig results should be included in the PreHandleResult
-            payerSig.waitForFuture();
-            return PreHandleResult.preHandleFailure(payer, DUPLICATE_TRANSACTION, txInfo);
-        }
+//        if (duplicate) {
+////            payerSig.waitForFuture();
+//            return PreHandleResult.preHandleFailure(payer, DUPLICATE_TRANSACTION, txInfo);
+//        }
 
         // 5. Call Pre-Transaction Handlers
-        final var storeFactory = new ReadableStoreFactory(state); // TODO This looks out of place
-        final var accountStore = storeFactory.createAccountStore();
         final var context = new PreHandleContext(accountStore, txInfo.txBody(), OK);
         try {
             dispatcher.dispatchPreHandle(storeFactory, context);
@@ -280,134 +258,32 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // Pre-handle is the time for the service to perform semantic checks on the transaction.
             // It is quite possible those semantic checks will fail and throw a PreCheckException.
             // In that case, the payer will end up paying for the transaction.
-            return PreHandleResult.preHandleFailure(payer, preCheck.responseCode(), txInfo);
+            return PreHandleResult.preHandleFailure(payer, payerVerificationFuture, preCheck.responseCode(), txInfo);
         }
 
         // 6. Collection additional TransactionSignatures
         final var nonPayerKeys = context.getRequiredNonPayerKeys();
-        final var signatures = signaturePreparer.prepareSignatures(state, txBytes, txInfo.signatureMap(), nonPayerKeys);
-        // TODO What happens if prepareSignatures throws an exception? Can it?
-        cryptography.verifyAsync(new ArrayList<>(signatures.values()));
+        final var nonPayerFutures = new ArrayList<Future<Boolean>>();
+        for (final var key : nonPayerKeys) {
+            final var future = signatureVerifier.verifySignatures(
+                    txInfo.signedBytes(),
+                    txInfo.signatureMap().sigPairOrThrow(),
+                    key);
+            nonPayerFutures.add(future);
+        }
+
+        // TODO I'd like to have one future that represents ALL the sig checks, and it can delegate to more futures
 
         // 8. Create and return TransactionMetadata
-        // TODO Sig results should be included in the PreHandleResult
-        //                return new PreHandleResult(txInfo, payer, OK, null, null);
         return null;
-        // TODO I did NOT keep a record of what state was accessed during pre-handle, and that was the
-        //  whole point!! That needs to be done.
+
+        // TODO needs to have a generic try/catch so that anything that goes wrong doesn't randomly kill the thread
+        //  but ends up in an orderly death.
     }
 
 
     // TODO Now that we have hollow accounts, if we find that a signature in the sig map is not being used for
     //  anything else and is a 20-byte key, then we assume it is an ethereum key and verify its signature as well?
-
-
-    // NOTE: These methods are particular to what happens when doing sig verification for HAPI. For system contracts,
-    // we want to do something quite the opposite -- reject every key that isn't a contract / delegate contract key.
-
-    private List<Bytes> collectSignatures(
-            @NonNull final List<SignaturePair> signaturePairs,
-            @NonNull final Key key) {
-
-        return switch (key.key().kind()) {
-            // You cannot have a Contract ID key as a required signer on a HAPI transaction
-            case UNSET, DELEGATABLE_CONTRACT_ID, CONTRACT_ID -> Collections.emptyList();
-            case ECDSA_384 -> collectSignature(signaturePairs, key.ecdsa384OrThrow());
-            case ED25519 -> collectSignature(signaturePairs, key.ed25519OrThrow());
-            case RSA_3072 -> collectSignature(signaturePairs, key.rsa3072OrThrow());
-            case ECDSA_SECP256K1 -> collectSignature(signaturePairs, key.ecdsaSecp256k1OrThrow());
-            case KEY_LIST -> collectSignatures(signaturePairs, key.keyListOrThrow());
-            case THRESHOLD_KEY -> collectSignatures(signaturePairs, key.thresholdKeyOrThrow());
-        };
-    }
-
-    @NonNull
-    private List<Bytes> collectSignatures(
-            @NonNull final List<SignaturePair> signatures,
-            @NonNull final KeyList keyList) {
-        // Iterate over all the keys in the list, delegating to collectSignatures for each one
-        if (!keyList.hasKeys()) {
-            // There are no keys in this key list, which means, nothing is authorized.
-            return Collections.emptyList();
-        }
-
-        final var keys = keyList.keysOrThrow();
-        final var collectedSignatures = new ArrayList<Bytes>(keys.size());
-        for (final var key : keys) {
-            // Every key in a KeyList must be valid, so if any of these keys have no associated signature,
-            // then the KeyList as a whole is invalid, and we return an empty list. The KeyList might be
-            // part of a ThresholdKey, so we don't want to presume it fails the whole transaction, but at least
-            // it makes no sense to validate any signatures from this list.
-            final var sigsToAdd = collectSignatures(signatures, key);
-            if (sigsToAdd.isEmpty()) {
-                return Collections.emptyList();
-            }
-            collectedSignatures.addAll(sigsToAdd);
-        }
-        return collectedSignatures;
-    }
-
-    @NonNull
-    private List<Bytes> collectSignatures(
-            @NonNull final List<SignaturePair> signatures,
-            @NonNull final ThresholdKey thresholdKey) {
-        // Iterate over all the keys in the list, delegating to collectSignatures for each one,
-        // and keep track of which signatures were successful and which weren't. The ones that
-        // were not successful, we can ignore. If we do not have enough successful signatures,
-        // then we throw the appropriate exception.
-        if (!thresholdKey.hasKeys()) {
-            // There is no key list, which means, nothing is authorized.
-            return Collections.emptyList();
-        }
-
-        // Iterate over all the keys in the list, delegating to collectSignatures for each one. If they have
-        // signatures, then we accumulate them and increase the `numSuccessfulKeys` by 1 (regardless of how many
-        // signatures they gathered). At the end, if we have exceeded the threshold, then we return ALL of the
-        // signatures we collected. This is really important.
-        //
-        // Suppose a threshold key is 2/4, meaning that 2 of the 4 keys must sign. Suppose the transaction has
-        // 3 signatures on it from 3 of those 4 keys, but only 2 of them are valid signatures, the third being
-        // some nonsense. The transaction should succeed. If we short-circuited this method after collecting 2 of 4
-        // keys, we might have failed the transaction. So the specification should be that if it is possible to
-        // select a set of signatures and keys that would succeed, then a valid consensus node implementation will
-        // select those keys to succeed.
-        var numSuccessfulKeys = 0;
-        final var keyList = thresholdKey.keysOrThrow();
-        final var keys = keyList.keysOrElse(Collections.emptyList());
-        final var collectedSignatures = new ArrayList<Bytes>(keyList.keysOrThrow().size());
-        for (final var key : keys) {
-            final var sigs = collectSignatures(signatures, key);
-            if (!sigs.isEmpty()) {
-                collectedSignatures.addAll(sigs);
-                numSuccessfulKeys++;
-            }
-        }
-
-        // It should be impossible for the threshold to ever be non-positive. But if it were to ever happen,
-        // we will treat it as though the threshold were 1. This allows the user to fix their problem and
-        // set an appropriate threshold. Likewise, if the threshold is greater than the number of keys, then
-        // we clamp to the number of keys. This also shouldn't be possible, but if it happens, we give the
-        // user a chance to fix their account.
-        var threshold = thresholdKey.threshold();
-        if (threshold <= 0) threshold = 1;
-        if (threshold > keys.size()) threshold = keys.size();
-
-        // If we didn't meet the minimum threshold for signers, then we're bad.
-        return (numSuccessfulKeys >= threshold) ? collectedSignatures : Collections.emptyList();
-    }
-
-    @NonNull
-    private List<Bytes> collectSignature(
-            @NonNull final List<SignaturePair> signatures,
-            @NonNull final Bytes keyBytes) {
-
-        for (final var signature : signatures) {
-            if (keyBytes.matchesPrefix(signature.pubKeyPrefix())) {
-                return List.of(signature.signature().as());
-            }
-        }
-        return Collections.emptyList();
-    }
 
     private record WorkItem(
         @NonNull Transaction platformTx,

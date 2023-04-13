@@ -30,6 +30,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Future;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
@@ -78,6 +79,10 @@ public record PreHandleResult(
     }
 
     public static <T> T preHandleFailure(AccountID payer, ResponseCodeEnum responseCodeEnum, TransactionInfo txInfo) {
+        return null;
+    }
+
+    public static <T> T preHandleFailure(AccountID payer, Future<Boolean> payerVerificationFuture, ResponseCodeEnum responseCodeEnum, TransactionInfo txInfo) {
         return null;
     }
 
