@@ -1580,7 +1580,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
         if (basicConfig.syncAsProtocolEnabled()) {
-            // startChatter callback is a no-op, since nothing needs to be done to start sync-as-a-protocol
             reconnectController.set(
                     new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false)));
             startSyncAsProtocolNetwork(connectionManagers);
