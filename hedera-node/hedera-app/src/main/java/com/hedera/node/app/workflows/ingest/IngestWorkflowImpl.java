@@ -100,13 +100,12 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
         // Grab (and reference count) the state, so we have a consistent view of things
         try (final var wrappedState = stateAccessor.get()) {
-            final var state = wrappedState.get();
-
             // 0. Node state pre-checks
             ingestChecker.checkNodeState();
 
             // 1.-6. Parse and check the transaction
             final var tx = transactionChecker.parse(requestBuffer);
+            final var state = wrappedState.get();
             final var transactionInfo = ingestChecker.runAllChecks(state, tx);
 
             // 7. Submit to platform

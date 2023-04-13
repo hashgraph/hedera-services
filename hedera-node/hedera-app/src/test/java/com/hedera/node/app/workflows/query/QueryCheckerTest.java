@@ -24,6 +24,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -139,7 +141,7 @@ class QueryCheckerTest {
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(transactionInfo))
                 .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_TX_FEE);
+                .has(responseCode(INSUFFICIENT_TX_FEE));
     }
 
     @Test
@@ -156,7 +158,7 @@ class QueryCheckerTest {
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(transactionInfo))
                 .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INVALID_ACCOUNT_AMOUNTS);
+                .has(responseCode(INVALID_ACCOUNT_AMOUNTS));
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -218,8 +220,8 @@ class QueryCheckerTest {
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, txBody, fee))
                 .isInstanceOf(InsufficientBalanceException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_PAYER_BALANCE)
-                .hasFieldOrPropertyWithValue("estimatedFee", fee);
+                .has(responseCode(INSUFFICIENT_PAYER_BALANCE))
+                .has(estimatedFee(fee));
     }
 
     @Test
@@ -245,8 +247,8 @@ class QueryCheckerTest {
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, txBody, fee))
                 .isInstanceOf(InsufficientBalanceException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_TX_FEE)
-                .hasFieldOrPropertyWithValue("estimatedFee", fee);
+                .has(responseCode(INSUFFICIENT_TX_FEE))
+                .has(estimatedFee(fee));
     }
 
     @Test
@@ -299,7 +301,7 @@ class QueryCheckerTest {
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, txBody, fee))
                 .isInstanceOf(InsufficientBalanceException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_TX_FEE);
+                .has(responseCode(INSUFFICIENT_TX_FEE));
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -333,6 +335,6 @@ class QueryCheckerTest {
         // then
         assertThatThrownBy(() -> checker.checkPermissions(payer, GET_ACCOUNT_DETAILS))
                 .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", NOT_SUPPORTED);
+                .has(responseCode(NOT_SUPPORTED));
     }
 }

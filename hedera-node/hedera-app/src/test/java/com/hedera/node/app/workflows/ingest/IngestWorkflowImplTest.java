@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -314,18 +315,27 @@ class IngestWorkflowImplTest extends AppTestBase {
     @Nested
     @DisplayName("2.-6. Check the transaction")
     class IngestCheckerTests {
-        @Test
+        public static Stream<Arguments> failureReasons() {
+            return Stream.of(
+                    Arguments.of(INVALID_TRANSACTION),
+                    Arguments.of(INVALID_TRANSACTION_BODY),
+                    Arguments.of(BUSY),
+                    Arguments.of(INVALID_SIGNATURE));
+        }
+
+        @ParameterizedTest(name = "IngestChecker fails with error code {0}")
+        @MethodSource("failureReasons")
         @DisplayName("When ingest checks fail, the transaction should be rejected")
-        void testThrottleFails() throws PreCheckException, IOException {
+        void testIngestChecksFail(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(ingestChecker.runAllChecks(state, transaction)).thenThrow(new PreCheckException(BUSY));
+            when(ingestChecker.runAllChecks(state, transaction)).thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);
 
             // Then the response fails with BUSY
             final TransactionResponse response = parseResponse(responseBuffer);
-            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(BUSY);
+            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(failureReason);
             // The cost *MUST* be zero, it is only non-zero for insufficient balance errors
             assertThat(response.cost()).isZero();
             // And the transaction is not submitted to the platform

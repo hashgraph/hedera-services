@@ -22,7 +22,7 @@ import dagger.Module;
 import javax.inject.Singleton;
 
 @Module
-public interface ThrottleAccumulatorModule {
+public interface ThrottleModule {
     @Binds
     @Singleton
     ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
