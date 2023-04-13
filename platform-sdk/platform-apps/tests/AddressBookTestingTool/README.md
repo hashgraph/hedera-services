@@ -63,7 +63,7 @@ Errors are logged if any of the following conditions are violated.
     * the state saved address book was null
     * the used address book text says `The Configuration Address Book Was Used.`
 
-### Test Scenario 2: Call to SwirldState.updateStake() on Genesis
+### Test Scenario 2: Unforced use of Config Address Book on Genesis
 #### Instructions
 1. Delete `sdk/data/saved` directory if it exists
 2. Ensure settings.txt has the following values
@@ -94,11 +94,11 @@ Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for files
   * usedAddressBook_v1_<date>.txt
-    * **contains the addresses in the config.txt, all with stake 10. (differs from previous section)**
+    * contains the addresses in the config.txt with identical stake
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * the state saved address book was null
-    * **the used address book matches the content of the non-debug .txt file. (differs from previous section)**
+    * the used address book text says `The Configuration Address Book Was Used.`
 
 ## Testing Non-Genesis Behavior, No Software Upgrade
 

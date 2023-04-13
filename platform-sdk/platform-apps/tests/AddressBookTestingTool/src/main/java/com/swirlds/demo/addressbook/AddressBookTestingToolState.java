@@ -296,7 +296,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 case 1:
                     return testScenario1GenesisForceUseOfConfigAddressBook();
                 case 2:
-                    return testScenario2GenesisSwirldStateUpdateStake();
+                    return testScenario2GenesisUnforcedUseOfConfigAddressBook();
                 case 3:
                     return testScenario3NoSoftwareUpdateUseSavedStateAddressBook();
                 case 4:
@@ -385,7 +385,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && equalsAsConfigText(platformAddressBook, updatedAddressBook, false);
     }
 
-    private boolean testScenario2GenesisSwirldStateUpdateStake() throws IOException, ParseException {
+    private boolean testScenario2GenesisUnforcedUseOfConfigAddressBook() throws IOException, ParseException {
         if (!checkTestScenarioConditions(false, 2, 1, 1)) {
             return false;
         }
@@ -395,9 +395,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
 
-        return equalsAsConfigText(platformAddressBook, configAddressBook, false)
+        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
                 && theStateAddressBookWasNull(true);
     }
 
