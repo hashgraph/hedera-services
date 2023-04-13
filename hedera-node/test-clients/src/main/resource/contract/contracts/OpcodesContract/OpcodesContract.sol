@@ -1,14 +1,6 @@
 pragma solidity ^0.8.18;
 
-// to build
-// solc OpcodesContract.sol --ir > OpcodesContract.yul
-// tweak the push 0 yul
-// delete the IR: line
-// solc --strict-assembly OpcodesContract.yul --bin > OpcodesContract.bin
-// solc --strict-assembly OpcodesContract.yul --abi > OpcodesContract.json
-
 contract NewOpcodes {
-
 
     function opShl(uint _one, uint _two) public pure returns (uint _resp){
         assembly {
