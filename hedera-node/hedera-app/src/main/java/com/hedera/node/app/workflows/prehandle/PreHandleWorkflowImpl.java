@@ -18,6 +18,9 @@ package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.SignaturePair;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.signature.SignaturePreparer;
@@ -38,9 +41,11 @@ import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -56,8 +61,11 @@ import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static java.util.Objects.requireNonNull;
 
 /** Implementation of {@link PreHandleWorkflow} */
@@ -224,6 +232,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         }
 
         // 4. Collect payer TransactionSignatures
+        final var payerAccount = accountOptional.get();
+        final var payerSignatureBytes = collectSignatures(
+                txInfo.signatureMap().sigPairOrThrow(),
+                (Key) (Object) payerAccount.getKey().orElseThrow());
 
         txInfo.signatureMap(); // Yay! A signature map
         // TODO Update txInfo to have the signed body bytes and set it correctly based on deprected or non deprecated field usage
@@ -231,9 +243,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // For each key that MUST sign this transaction:
         //  1. Look through the signature map for the key prefix. If we do not find it, then we already know the
         //     transaction is not signed, so we can throw (Oh, and by the way, the node becomes the payer again.)
+        //     Oh, and if we had a threshold key or key list, we have multiple signatures to check. If we find that
+        //     there are not the appropriate sigs, then we can bail. If we find we have them all, then check them all.
 
         cryptoEngine.verifyAsync(data <-- transaction bytes, signature <-- The signature to use, publicKey <-- the full public key);
-        final var payerAccount = accountOptional.get();
         final var payerSig = signaturePreparer.prepareSignature(state, txBytes, txInfo.signatureMap(), payer); // TODO This is wrong, shouldn't take the AccountID
         cryptoEngine.verifyAsync(payerSig);
 
@@ -284,8 +297,120 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         //  whole point!! That needs to be done.
     }
 
-    private static final record WorkItem(
-            @NonNull Transaction platformTx,
-            @NonNull Future<PreHandleResult> future) {
+
+    // TODO Now that we have hollow accounts, if we find that a signature in the sig map is not being used for
+    //  anything else and is a 20-byte key, then we assume it is an ethereum key and verify its signature as well?
+
+
+    // NOTE: These methods are particular to what happens when doing sig verification for HAPI. For system contracts,
+    // we want to do something quite the opposite -- reject every key that isn't a contract / delegate contract key.
+
+    private List<Bytes> collectSignatures(
+            @NonNull final List<SignaturePair> signaturePairs,
+            @NonNull final Key key) {
+
+        return switch (key.key().kind()) {
+            // You cannot have a Contract ID key as a required signer on a HAPI transaction
+            case UNSET, DELEGATABLE_CONTRACT_ID, CONTRACT_ID -> Collections.emptyList();
+            case ECDSA_384 -> collectSignature(signaturePairs, key.ecdsa384OrThrow());
+            case ED25519 -> collectSignature(signaturePairs, key.ed25519OrThrow());
+            case RSA_3072 -> collectSignature(signaturePairs, key.rsa3072OrThrow());
+            case ECDSA_SECP256K1 -> collectSignature(signaturePairs, key.ecdsaSecp256k1OrThrow());
+            case KEY_LIST -> collectSignatures(signaturePairs, key.keyListOrThrow());
+            case THRESHOLD_KEY -> collectSignatures(signaturePairs, key.thresholdKeyOrThrow());
+        };
+    }
+
+    @NonNull
+    private List<Bytes> collectSignatures(
+            @NonNull final List<SignaturePair> signatures,
+            @NonNull final KeyList keyList) {
+        // Iterate over all the keys in the list, delegating to collectSignatures for each one
+        if (!keyList.hasKeys()) {
+            // There are no keys in this key list, which means, nothing is authorized.
+            return Collections.emptyList();
+        }
+
+        final var keys = keyList.keysOrThrow();
+        final var collectedSignatures = new ArrayList<Bytes>(keys.size());
+        for (final var key : keys) {
+            // Every key in a KeyList must be valid, so if any of these keys have no associated signature,
+            // then the KeyList as a whole is invalid, and we return an empty list. The KeyList might be
+            // part of a ThresholdKey, so we don't want to presume it fails the whole transaction, but at least
+            // it makes no sense to validate any signatures from this list.
+            final var sigsToAdd = collectSignatures(signatures, key);
+            if (sigsToAdd.isEmpty()) {
+                return Collections.emptyList();
+            }
+            collectedSignatures.addAll(sigsToAdd);
+        }
+        return collectedSignatures;
+    }
+
+    @NonNull
+    private List<Bytes> collectSignatures(
+            @NonNull final List<SignaturePair> signatures,
+            @NonNull final ThresholdKey thresholdKey) {
+        // Iterate over all the keys in the list, delegating to collectSignatures for each one,
+        // and keep track of which signatures were successful and which weren't. The ones that
+        // were not successful, we can ignore. If we do not have enough successful signatures,
+        // then we throw the appropriate exception.
+        if (!thresholdKey.hasKeys()) {
+            // There is no key list, which means, nothing is authorized.
+            return Collections.emptyList();
+        }
+
+        // Iterate over all the keys in the list, delegating to collectSignatures for each one. If they have
+        // signatures, then we accumulate them and increase the `numSuccessfulKeys` by 1 (regardless of how many
+        // signatures they gathered). At the end, if we have exceeded the threshold, then we return ALL of the
+        // signatures we collected. This is really important.
+        //
+        // Suppose a threshold key is 2/4, meaning that 2 of the 4 keys must sign. Suppose the transaction has
+        // 3 signatures on it from 3 of those 4 keys, but only 2 of them are valid signatures, the third being
+        // some nonsense. The transaction should succeed. If we short-circuited this method after collecting 2 of 4
+        // keys, we might have failed the transaction. So the specification should be that if it is possible to
+        // select a set of signatures and keys that would succeed, then a valid consensus node implementation will
+        // select those keys to succeed.
+        var numSuccessfulKeys = 0;
+        final var keyList = thresholdKey.keysOrThrow();
+        final var keys = keyList.keysOrElse(Collections.emptyList());
+        final var collectedSignatures = new ArrayList<Bytes>(keyList.keysOrThrow().size());
+        for (final var key : keys) {
+            final var sigs = collectSignatures(signatures, key);
+            if (!sigs.isEmpty()) {
+                collectedSignatures.addAll(sigs);
+                numSuccessfulKeys++;
+            }
+        }
+
+        // It should be impossible for the threshold to ever be non-positive. But if it were to ever happen,
+        // we will treat it as though the threshold were 1. This allows the user to fix their problem and
+        // set an appropriate threshold. Likewise, if the threshold is greater than the number of keys, then
+        // we clamp to the number of keys. This also shouldn't be possible, but if it happens, we give the
+        // user a chance to fix their account.
+        var threshold = thresholdKey.threshold();
+        if (threshold <= 0) threshold = 1;
+        if (threshold > keys.size()) threshold = keys.size();
+
+        // If we didn't meet the minimum threshold for signers, then we're bad.
+        return (numSuccessfulKeys >= threshold) ? collectedSignatures : Collections.emptyList();
+    }
+
+    @NonNull
+    private List<Bytes> collectSignature(
+            @NonNull final List<SignaturePair> signatures,
+            @NonNull final Bytes keyBytes) {
+
+        for (final var signature : signatures) {
+            if (keyBytes.matchesPrefix(signature.pubKeyPrefix())) {
+                return List.of(signature.signature().as());
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    private record WorkItem(
+        @NonNull Transaction platformTx,
+        @NonNull Future<PreHandleResult> future) {
     }
 }
