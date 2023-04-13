@@ -148,7 +148,7 @@ public class SigReqAdapterUtils {
                                         .FINITE
                         ? com.hedera.hapi.node.base.TokenSupplyType.FINITE
                         : com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
-                token.autoRenewAccount().num(),
+                token.autoRenewAccount() == null ? 0 : token.autoRenewAccount().num(),
                 token.autoRenewPeriod(),
                 token.expiry(),
                 token.memo(),
