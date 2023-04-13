@@ -20,6 +20,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,7 +52,32 @@ public class WritableStoreFactory {
      */
     @NonNull
     public WritableTopicStore createTopicStore() {
-        final var topicStates = stateAccessor.getHederaState().createWritableStates(ConsensusService.NAME);
+        final var topicStates =
+                stateAccessor.getHederaState().createWritableStates(ConsensusService.NAME);
         return new WritableTopicStore(topicStates);
+    }
+
+    /**
+     * Get a {@link WritableTokenStore} from the {@link HederaState}
+     *
+     * @return a new {@link WritableTokenStore}
+     */
+    @NonNull
+    public WritableTokenStore createTokenStore() {
+        final var tokenStates =
+                stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
+        return new WritableTokenStore(tokenStates);
+    }
+
+    /**
+     * Get a {@link WritableAccountStore} from the {@link HederaState}
+     *
+     * @return a new {@link WritableAccountStore}
+     */
+    @NonNull
+    public WritableAccountStore createAccountStore() {
+        final var tokenStates =
+                stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
+        return new WritableAccountStore(tokenStates);
     }
 }

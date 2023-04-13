@@ -37,8 +37,8 @@ import javax.inject.Singleton;
  * SigRequirements:
  *
  * <ol>
- *   <li>When a missing account is used as a token treasury, fails with {@code INVALID_ACCOUNT_ID}
- *       rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}.
+ *   <li>When a missing account is used as a token treasuryNum, fails with {@code
+ *       INVALID_ACCOUNT_ID} rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}.
  * </ol>
  *
  * * EET expectations may need to be updated accordingly

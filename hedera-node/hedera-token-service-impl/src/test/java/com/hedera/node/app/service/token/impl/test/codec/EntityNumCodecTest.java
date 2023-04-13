@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.serdes;
+package com.hedera.node.app.service.token.impl.test.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,14 +32,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class EntityNumSerdesTest {
+class EntityNumCodecTest {
     private static final EntityNum SOME_NUM = EntityNum.fromLong(666L);
 
-    @Mock
-    private ReadableSequentialData input;
+    @Mock private ReadableSequentialData input;
 
-    @Mock
-    private WritableSequentialData output;
+    @Mock private WritableSequentialData output;
 
     final EntityNumCodec subject = new EntityNumCodec();
 

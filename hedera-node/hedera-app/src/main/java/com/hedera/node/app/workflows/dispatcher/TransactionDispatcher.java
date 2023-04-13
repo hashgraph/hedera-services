@@ -33,6 +33,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
@@ -103,13 +104,22 @@ public class TransactionDispatcher {
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody txn,
             @NonNull final WritableStoreFactory writableStoreFactory) {
-        final var topicStore = writableStoreFactory.createTopicStore();
         switch (function) {
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(
-                    txn.consensusCreateTopicOrThrow(), topicStore, usageLimits);
-            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(txn.consensusUpdateTopicOrThrow(), topicStore);
-            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(txn.consensusDeleteTopicOrThrow(), topicStore);
-            case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(txn, topicStore);
+                    txn.consensusCreateTopicOrThrow(),
+                    writableStoreFactory.createTopicStore(),
+                    usageLimits);
+            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(
+                    txn.consensusUpdateTopicOrThrow(), writableStoreFactory.createTopicStore());
+            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(
+                    txn.consensusDeleteTopicOrThrow(), writableStoreFactory.createTopicStore());
+            case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(
+                    txn, writableStoreFactory.createTopicStore());
+            case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
+            case TOKEN_UNPAUSE -> dispatchTokenUnpause(
+                    txn, writableStoreFactory.createTokenStore());
+            case CRYPTO_CREATE -> dispatchCryptoCreate(
+                    txn, writableStoreFactory.createAccountStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -192,8 +202,10 @@ public class TransactionDispatcher {
                     .preHandle(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
                     .preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(context);
-            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(context);
+            case TOKEN_PAUSE -> handlers.tokenPauseHandler()
+                    .preHandle(context, storeFactory.createTokenStore());
+            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler()
+                    .preHandle(context, storeFactory.createTokenStore());
 
             case UTIL_PRNG -> handlers.utilPrngHandler().preHandle(context);
 
@@ -216,17 +228,18 @@ public class TransactionDispatcher {
         }
     }
 
-    private PreHandleDispatcher setupPreHandleDispatcher(@NonNull final ReadableStoreFactory storeFactory) {
+    private PreHandleDispatcher setupPreHandleDispatcher(
+            @NonNull final ReadableStoreFactory storeFactory) {
         return context -> dispatchPreHandle(storeFactory, context);
     }
 
+    // TODO: In all the below methods, commit will be called in workflow or some other place
+    //  when handle workflow is implemented
     private void dispatchConsensusDeleteTopic(
             @NonNull final ConsensusDeleteTopicTransactionBody topicDeletion,
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusDeleteTopicHandler();
         handler.handle(topicDeletion, topicStore);
-        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
-        // This is temporary solution to make sure that topic is created
         topicStore.commit();
     }
 
@@ -235,8 +248,6 @@ public class TransactionDispatcher {
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusUpdateTopicHandler();
         handler.handle(handleContext, topicUpdate, topicStore);
-        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
-        // This is temporary solution to make sure that topic is created
         topicStore.commit();
     }
 
@@ -256,8 +267,6 @@ public class TransactionDispatcher {
         txnCtx.setCreated(PbjConverter.fromPbj(
                 TopicID.newBuilder().topicNum(recordBuilder.getCreatedTopic()).build()));
         usageLimits.refreshTopics();
-        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
-        // This is temporary solution to make sure that topic is created
         topicStore.commit();
     }
 
@@ -278,8 +287,36 @@ public class TransactionDispatcher {
         topicStore.commit();
     }
 
+    /**
+     * Dispatches the token unpause transaction to the appropriate handler.
+     *
+     * @param tokenUnpause the token unpause transaction
+     * @param tokenStore the token store
+     */
+    private void dispatchTokenUnpause(
+            @NonNull final TransactionBody tokenUnpause,
+            @NonNull final WritableTokenStore tokenStore) {
+        final var handler = handlers.tokenUnpauseHandler();
+        handler.handle(tokenUnpause, tokenStore);
+        tokenStore.commit();
+    }
+
+    /**
+     * Dispatches the token pause transaction to the appropriate handler.
+     *
+     * @param tokenPause the token pause transaction
+     * @param tokenStore the token store
+     */
+    private void dispatchTokenPause(
+            @NonNull final TransactionBody tokenPause,
+            @NonNull final WritableTokenStore tokenStore) {
+        final var handler = handlers.tokenPauseHandler();
+        handler.handle(tokenPause, tokenStore);
+        tokenStore.commit();
+    }
+
     private void dispatchCryptoCreate(
-            @NonNull final CryptoCreateTransactionBody cryptoCreate,
+            @NonNull final TransactionBody cryptoCreate,
             @NonNull final WritableAccountStore accountStore) {
         final var handler = handlers.cryptoCreateHandler();
         handler.handle(
@@ -288,9 +325,6 @@ public class TransactionDispatcher {
                 accountStore,
                 handler.newRecordBuilder(),
                 usageLimits.areCreatableAccounts(1));
-        // TODO: Commit will be called in workflow or some other place when handle workflow is
-        // implemented
-        // This is temporary solution to make sure that topic is created
         accountStore.commit();
     }
 }

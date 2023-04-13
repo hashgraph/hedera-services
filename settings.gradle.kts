@@ -114,8 +114,7 @@ dependencyResolutionManagement {
     // distribution. These libs can be depended on during compilation, or bundled as part of
     // runtime.
     create("libs") {
-      // The HAPI API version to use, this need to match the Hapi protubuf java version from pom.xml
-      // (https://github.com/hashgraph/hedera-protobufs-java.git)
+      // The HAPI API version to use, this need to match the tag set on gitRepositories above
       version("hapi-version", "0.37.0-modularization-SNAPSHOT")
 
       // Definition of version numbers for all libraries

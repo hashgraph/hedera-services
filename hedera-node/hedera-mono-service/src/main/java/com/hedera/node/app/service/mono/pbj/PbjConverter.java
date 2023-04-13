@@ -37,9 +37,11 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
+import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -1267,7 +1269,8 @@ public final class PbjConverter {
         try (final var baos = new ByteArrayOutputStream();
                 final var dos = new WritableStreamingData(baos)) {
             Key.PROTOBUF.write(pbjKey, dos);
-            final var grpcKey = com.hederahashgraph.api.proto.java.Key.parseFrom(baos.toByteArray());
+            final var grpcKey =
+                    com.hederahashgraph.api.proto.java.Key.parseFrom(baos.toByteArray());
             return asHederaKey(grpcKey);
         } catch (final IOException e) {
             // Should be impossible, so just propagate an exception
@@ -1277,14 +1280,28 @@ public final class PbjConverter {
         }
     }
 
-    // Note: this method will throw an exception if <code>b</code>'s length is not representable as an int
+    public static @NonNull CustomFee fromFcCustomFee(@Nullable final FcCustomFee fcFee) {
+        try (final var bais =
+                new ByteArrayInputStream(Objects.requireNonNull(fcFee).asGrpc().toByteArray())) {
+            final var stream = new ReadableStreamingData(bais);
+            stream.limit(bais.available());
+            return CustomFee.PROTOBUF.parse(stream);
+        } catch (final IOException e) {
+            // Should be impossible, so just propagate an exception
+            throw new IllegalStateException("Invalid conversion to PBJ for CustomFee", e);
+        }
+    }
+
+    // Note: this method will throw an exception if <code>b</code>'s length is not representable as
+    // an int
     public static @NonNull byte[] asBytes(@NonNull Bytes b) {
         final var buf = new byte[Math.toIntExact(b.length())];
         b.getBytes(0, buf);
         return buf;
     }
 
-    // Note: this method will throw an exception if <code>b</code>'s length is not representable as an int
+    // Note: this method will throw an exception if <code>b</code>'s length is not representable as
+    // an int
     public static @NonNull byte[] asBytes(@NonNull BufferedData b) {
         final var buf = new byte[Math.toIntExact(b.position())];
         b.readBytes(buf);

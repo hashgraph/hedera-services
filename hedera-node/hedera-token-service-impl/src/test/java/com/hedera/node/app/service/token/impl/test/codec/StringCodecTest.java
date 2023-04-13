@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.serdes;
+package com.hedera.node.app.service.token.impl.test.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -32,25 +33,23 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class StringSerdesTest {
+class StringCodecTest {
     private static final String SOME_STRING = "TestString";
 
-    @Mock
-    private ReadableSequentialData in;
+    @Mock private ReadableSequentialData in;
 
-    @Mock
-    private WritableSequentialData out;
+    @Mock private WritableSequentialData out;
 
     final StringCodec subject = new StringCodec();
 
     @Test
-    void providesFastEquals() throws IOException {
+    void providesFastEquals() {
         given(in.readInt()).willReturn(SOME_STRING.getBytes().length);
-        subject.fastEquals(SOME_STRING, in);
+        assertFalse(subject.fastEquals(SOME_STRING, in));
     }
 
     @Test
-    void measuresInput() throws IOException {
+    void measuresInput() {
         given(in.readInt()).willReturn(SOME_STRING.getBytes().length);
         assertEquals(SOME_STRING.getBytes().length, subject.measure(in));
     }
