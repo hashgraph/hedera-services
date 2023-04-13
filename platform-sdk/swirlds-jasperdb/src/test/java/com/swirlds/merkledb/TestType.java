@@ -53,12 +53,12 @@ public enum TestType {
     /** Parameterizes a test with variable-size complex key and variable-size data. */
     variableComplex_variable();
 
-    public <K extends VirtualKey<? super K>, V extends VirtualValue> DataTypeConfig<K, V> dataType() {
+    public <K extends VirtualKey, V extends VirtualValue> DataTypeConfig<K, V> dataType() {
         return new DataTypeConfig<>(this);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes", "unused"})
-    public static class DataTypeConfig<K extends VirtualKey<? super K>, V extends VirtualValue> {
+    public static class DataTypeConfig<K extends VirtualKey, V extends VirtualValue> {
 
         private final TestType testType;
         private final KeySerializer<? extends VirtualLongKey> keySerializer;

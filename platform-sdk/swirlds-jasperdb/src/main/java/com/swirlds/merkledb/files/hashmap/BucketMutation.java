@@ -25,7 +25,7 @@ import java.util.Objects;
  * @param <K>
  *     The key.
  */
-class BucketMutation<K extends VirtualKey<? super K>> {
+class BucketMutation<K extends VirtualKey> {
     private final K key;
     private long value;
     private BucketMutation<K> next;
@@ -92,7 +92,7 @@ class BucketMutation<K extends VirtualKey<? super K>> {
      * @param <K>
      *     The key.
      */
-    interface MutationCallback<K extends VirtualKey<? super K>> {
+    interface MutationCallback<K extends VirtualKey> {
         void accept(K key, long value);
     }
 }
