@@ -203,7 +203,8 @@ public interface ContractsModule {
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory,
             final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList, infrastructureFactory, precompileDetector);
+        return new HederaMessageCallProcessor(
+                evm, precompiles, hederaPrecompileList, infrastructureFactory, precompileDetector);
     }
 
     @Provides
@@ -242,7 +243,8 @@ public interface ContractsModule {
     @Singleton
     @Named("ExtCodePrecompileDetector")
     static Predicate<Address> provideExtCodePrecompileDetector() {
-        // all addresses between 0-1000 (inclusive) are treated as precompile accounts from the perspective of the ExtCode ops.
+        // all addresses between 0-1000 (inclusive) are treated as precompile accounts from the perspective of the
+        // ExtCode ops.
         return address ->
                 address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 999) <= 0;
     }

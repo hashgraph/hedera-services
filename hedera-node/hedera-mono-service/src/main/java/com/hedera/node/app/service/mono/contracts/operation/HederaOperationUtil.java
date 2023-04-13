@@ -23,7 +23,6 @@ import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
-import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
@@ -35,11 +34,9 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 /** Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.operation.Operation} */
 public final class HederaOperationUtil {
@@ -79,7 +76,8 @@ public final class HederaOperationUtil {
             final BooleanSupplier supplierIsChildStatic) {
         if (precompileDetector.test(address)) {
             // all calls to system addresses are treated as precompile calls;
-            // let them through here, so a frame is created and there is adequate traceability info for the attempted call,
+            // let them through here, so a frame is created and there is adequate traceability info for the attempted
+            // call,
             // and let HederaEvmMessageCallProcessor#start() handle those calls accordingly
             return supplierExecution.get();
         }

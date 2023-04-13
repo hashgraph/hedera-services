@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -79,16 +78,13 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
-import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -339,11 +335,11 @@ public class ContractCallSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS),
                         // call with value to 0x0
                         contractCall(
-                                TEST_CONTRACT,
-                                callSpecificAddressWithValueFunction,
-                                idAsHeadlongAddress(AccountID.newBuilder()
-                                        .setAccountNum(ZERO_ADDRESS)
-                                        .build()))
+                                        TEST_CONTRACT,
+                                        callSpecificAddressWithValueFunction,
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(ZERO_ADDRESS)
+                                                .build()))
                                 .sending(500L)
                                 .via(zeroAddressWithValueTxn)
                                 .hasKnownStatus(SUCCESS),
@@ -356,10 +352,11 @@ public class ContractCallSuite extends HapiSuite {
                                                 .build()))
                                 .via(existingSystemEntityTxn)
                                 .hasKnownStatus(SUCCESS),
-                        // call with value to existing account in the 0-750 range, without precompile collision on the same address
+                        // call with value to existing account in the 0-750 range, without precompile collision on the
+                        // same address
                         contractCall(
                                         TEST_CONTRACT,
-                                callSpecificAddressWithValueFunction,
+                                        callSpecificAddressWithValueFunction,
                                         idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(EXISTING_SYSTEM_ENTITY_NUMBNO_PRECOMPILE_COLLISION)
                                                 .build()))
@@ -378,7 +375,7 @@ public class ContractCallSuite extends HapiSuite {
                         // call with value to existing account in the 0-750 range, WITH precompile collision
                         contractCall(
                                         TEST_CONTRACT,
-                                callSpecificAddressWithValueFunction,
+                                        callSpecificAddressWithValueFunction,
                                         idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(ECREC_NUM)
                                                 .build()))
@@ -448,8 +445,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .setAccountNum(2)
                                                 .build()))
                                 .via(balanceOfSystemAccountTxn)
-                                .hasKnownStatus(SUCCESS)
-                )
+                                .hasKnownStatus(SUCCESS))
                 .then(
                         getTxnRecord(zeroAddressTxn)
                                 .hasPriority(recordWith()
@@ -503,8 +499,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .hasPriority(recordWith()
                                         .contractCallResult(
                                                 resultWith().contractCallResult(() -> Bytes32.repeat((byte) 0))))
-                                .logged()
-                );
+                                .logged());
     }
 
     private HapiSpec depositMoreThanBalanceFailsGracefully() {

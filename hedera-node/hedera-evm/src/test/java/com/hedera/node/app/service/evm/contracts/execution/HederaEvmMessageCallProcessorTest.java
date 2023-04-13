@@ -104,7 +104,10 @@ class HederaEvmMessageCallProcessorTest {
                 evm, precompiles, Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile), address -> false);
 
         subject2 = new HederaEvmMessageCallProcessor(
-                evm, precompiles, Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, evmHTSPrecompiledContract), address -> false);
+                evm,
+                precompiles,
+                Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, evmHTSPrecompiledContract),
+                address -> false);
     }
 
     @Test

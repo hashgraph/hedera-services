@@ -147,8 +147,7 @@ public interface ContractsV_0_34Module {
             final GasCalculator gasCalculator,
             @V_0_34 final BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaCallCodeOperation(
-                sigsVerifier, gasCalculator, addressValidator, precompileDetector);
+        return new HederaCallCodeOperation(sigsVerifier, gasCalculator, addressValidator, precompileDetector);
     }
 
     @Provides
@@ -162,11 +161,7 @@ public interface ContractsV_0_34Module {
             final @Named("PrecompileDetector") Predicate<Address> precompileDetector,
             final GlobalDynamicProperties globalDynamicProperties) {
         return new HederaCallOperationV034(
-                sigsVerifier,
-                gasCalculator,
-                addressValidator,
-                precompileDetector,
-                globalDynamicProperties);
+                sigsVerifier, gasCalculator, addressValidator, precompileDetector, globalDynamicProperties);
     }
 
     @Provides
@@ -177,8 +172,7 @@ public interface ContractsV_0_34Module {
             GasCalculator gasCalculator,
             @V_0_34 BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaDelegateCallOperation(
-                gasCalculator, addressValidator, precompileDetector);
+        return new HederaDelegateCallOperation(gasCalculator, addressValidator, precompileDetector);
     }
 
     @Provides
@@ -189,8 +183,7 @@ public interface ContractsV_0_34Module {
             final GasCalculator gasCalculator,
             @V_0_34 final BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaStaticCallOperation(
-                gasCalculator, addressValidator, precompileDetector);
+        return new HederaStaticCallOperation(gasCalculator, addressValidator, precompileDetector);
     }
 
     @Provides

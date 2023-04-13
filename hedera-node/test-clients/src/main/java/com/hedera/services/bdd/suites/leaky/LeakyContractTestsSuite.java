@@ -1506,7 +1506,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var contract = "SelfDestructCallable";
         final var beneficiary = "beneficiary";
         return defaultHapiSpec("DeletedContractsCannotBeUpdated")
-                .given(uploadInitCode(contract), contractCreate(contract).gas(300_000), cryptoCreate(beneficiary).balance(ONE_HUNDRED_HBARS))
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract).gas(300_000),
+                        cryptoCreate(beneficiary).balance(ONE_HUNDRED_HBARS))
                 .when(contractCall(contract, "destroy").deferStatusResolution().payingWith(beneficiary))
                 .then(contractUpdate(contract).newMemo("Hi there!").hasKnownStatus(INVALID_CONTRACT_ID));
     }

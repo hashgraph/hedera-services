@@ -146,8 +146,7 @@ public interface ContractsV_0_30Module {
             final GasCalculator gasCalculator,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaCallCodeOperation(
-                sigsVerifier, gasCalculator, addressValidator, precompileDetector);
+        return new HederaCallCodeOperation(sigsVerifier, gasCalculator, addressValidator, precompileDetector);
     }
 
     @Provides
@@ -159,8 +158,7 @@ public interface ContractsV_0_30Module {
             final GasCalculator gasCalculator,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaCallOperation(
-                sigsVerifier, gasCalculator, addressValidator, precompileDetector);
+        return new HederaCallOperation(sigsVerifier, gasCalculator, addressValidator, precompileDetector);
     }
 
     @Provides
@@ -171,8 +169,7 @@ public interface ContractsV_0_30Module {
             GasCalculator gasCalculator,
             @V_0_30 BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaDelegateCallOperation(
-                gasCalculator, addressValidator, precompileDetector);
+        return new HederaDelegateCallOperation(gasCalculator, addressValidator, precompileDetector);
     }
 
     @Provides
@@ -183,8 +180,7 @@ public interface ContractsV_0_30Module {
             final GasCalculator gasCalculator,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
             final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaStaticCallOperation(
-                gasCalculator, addressValidator, precompileDetector);
+        return new HederaStaticCallOperation(gasCalculator, addressValidator, precompileDetector);
     }
 
     @Provides
