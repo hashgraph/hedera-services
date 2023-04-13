@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_HRC_DISSOCIATE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.precompiledContract;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.receiver;
@@ -309,9 +308,7 @@ class HRCPrecompilesTest {
         // then:
         Assertions.assertEquals(HTSTestsUtil.successResult, result);
         verify(associateLogic)
-                .associate(
-                        Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId),
-                        Collections.singletonList(HTSTestsUtil.tokenMerkleId));
+                .associate(Id.fromGrpcAccount(sender), Collections.singletonList(HTSTestsUtil.tokenMerkleId));
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
@@ -417,9 +414,7 @@ class HRCPrecompilesTest {
         // then:
         Assertions.assertEquals(HTSTestsUtil.successResult, result);
         verify(dissociateLogic)
-                .dissociate(
-                        Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId),
-                        Collections.singletonList(HTSTestsUtil.tokenMerkleId));
+                .dissociate(Id.fromGrpcAccount(sender), Collections.singletonList(HTSTestsUtil.tokenMerkleId));
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
@@ -487,7 +482,7 @@ class HRCPrecompilesTest {
     }
 
     private Bytes givenFrameContext(final Bytes nestedArg) {
-        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -498,7 +493,7 @@ class HRCPrecompilesTest {
     }
 
     private Bytes givenMinimalFrameContext(final Bytes nestedArg) {
-        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         return Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)), fungibleTokenAddr, nestedArg);
