@@ -17,6 +17,8 @@
 package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * {@link SignedState} utilities.
@@ -31,7 +33,8 @@ public final class SignedStateUtilities {
      * @param signedState the signed state to wrap. Null values are permitted
      * @return an autocloseable wrapper with the state, when closed the state is released
      */
-    public static AutoCloseableWrapper<SignedState> newSignedStateWrapper(final SignedState signedState) {
+    public static @NonNull AutoCloseableWrapper<SignedState> newSignedStateWrapper(
+            @Nullable final SignedState signedState) {
         if (signedState != null) {
             signedState.reserve();
         }
