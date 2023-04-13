@@ -42,8 +42,8 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.config.sources.AliasConfigSource;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
+import com.swirlds.common.config.sources.MappedConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -77,7 +77,7 @@ import com.swirlds.p2p.portforwarding.PortForwarder;
 import com.swirlds.p2p.portforwarding.PortMapping;
 import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.config.ConfigAliases;
+import com.swirlds.platform.config.ConfigMappings;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.legacy.ConfigPropertiesSource;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
@@ -165,9 +165,9 @@ public class Browser {
 
     private static final String STARTUP_MESSAGE =
             """
-              //////////////////////
-             // Node is Starting //
-            //////////////////////""";
+                      //////////////////////
+                     // Node is Starting //
+                    //////////////////////""";
 
     /**
      * Prevent this class from being instantiated.
@@ -181,10 +181,10 @@ public class Browser {
                 Settings.getInstance().getConfigPath());
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
-        final ConfigSource settingsAliasConfigSource = ConfigAliases.addConfigAliases(settingsConfigSource);
+        final ConfigSource settingsAliasConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
         final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
-        final ConfigSource configPropertiesAliasConfigSource = new AliasConfigSource(configPropertiesConfigSource);
+        final ConfigSource configPropertiesAliasConfigSource = new MappedConfigSource(configPropertiesConfigSource);
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
