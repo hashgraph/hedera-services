@@ -39,8 +39,7 @@ import java.util.Objects;
  * @param <V>
  *     Virtual value type
  */
-public final class MerkleDbTableConfig<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements SelfSerializable {
+public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualValue> implements SelfSerializable {
 
     private static final long CLASS_ID = 0xbb41e7eb9fcad23cL;
 

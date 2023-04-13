@@ -25,10 +25,10 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -106,7 +106,7 @@ public class MonoHandleContext implements HandleContext {
             try {
                 optionValidator.attemptDecodeOrThrow(PbjConverter.fromPbj(key));
             } catch (final InvalidTransactionException e) {
-                throw new HandleStatusException(PbjConverter.toPbj(e.getResponseCode()));
+                throw new HandleException(PbjConverter.toPbj(e.getResponseCode()));
             }
         }
 
@@ -114,7 +114,7 @@ public class MonoHandleContext implements HandleContext {
         public void validateMemo(final String memo) {
             final var validity = optionValidator.memoCheck(memo);
             if (validity != OK) {
-                throw new HandleStatusException(PbjConverter.toPbj(validity));
+                throw new HandleException(PbjConverter.toPbj(validity));
             }
         }
     }

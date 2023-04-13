@@ -30,8 +30,8 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
+import com.hedera.node.app.spi.workflows.HandleException;
 import java.time.DateTimeException;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,8 +95,7 @@ class MonoExpiryValidatorTest {
         given(numbers.shard()).willReturn(1L);
         final var newMeta = new ExpiryMeta(aTime, aPeriod, 2L, 2L, anAutoRenewNum);
 
-        final var failure =
-                assertThrows(HandleStatusException.class, () -> subject.resolveCreationAttempt(false, newMeta));
+        final var failure = assertThrows(HandleException.class, () -> subject.resolveCreationAttempt(false, newMeta));
         assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
@@ -106,8 +105,7 @@ class MonoExpiryValidatorTest {
         given(numbers.realm()).willReturn(2L);
         final var newMeta = new ExpiryMeta(aTime, aPeriod, 1L, 3L, anAutoRenewNum);
 
-        final var failure =
-                assertThrows(HandleStatusException.class, () -> subject.resolveCreationAttempt(false, newMeta));
+        final var failure = assertThrows(HandleException.class, () -> subject.resolveCreationAttempt(false, newMeta));
         assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
@@ -285,7 +283,7 @@ class MonoExpiryValidatorTest {
     }
 
     private static void assertFailsWith(final ResponseCodeEnum expected, final Runnable runnable) {
-        final var e = assertThrows(HandleStatusException.class, runnable::run);
+        final var e = assertThrows(HandleException.class, runnable::run);
         assertEquals(expected, e.getStatus());
     }
 }
