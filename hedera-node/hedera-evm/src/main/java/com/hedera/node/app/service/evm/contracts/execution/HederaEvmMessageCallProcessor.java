@@ -34,6 +34,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
@@ -74,14 +75,22 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
                 // we have a non-system-contract call to a system address
                 if (!isNativePrecompile.test(frame.getContractAddress())) {
                     // a call to a system address, on which a native precompile does not exist, should always fail
-                    frame.setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+                    frame.setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+                    operationTracer.tracePostExecution(
+                            frame,
+                            new Operation.OperationResult(
+                                    frame.getRemainingGas(), ExceptionalHaltReason.PRECOMPILE_ERROR));
                     return;
                 } else if (frameHasValue) {
                     // cannot send value to native precompile calls, since there are collisions with system account
                     // and value will be transferred to the system account, which is undesired
                     frame.setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_FEE_SUBMITTED));
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+                    operationTracer.tracePostExecution(
+                            frame,
+                            new Operation.OperationResult(
+                                    frame.getRemainingGas(), HederaExceptionalHaltReason.INVALID_FEE_SUBMITTED));
                     return;
                 }
             } else if (frameHasValue) {
@@ -89,6 +98,10 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
                 if (updater.isTokenAddress(frame.getRecipientAddress())) {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+                    operationTracer.tracePostExecution(
+                            frame,
+                            new Operation.OperationResult(
+                                    frame.getRemainingGas(), ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
                     return;
                 } else if (updater.get(frame.getRecipientAddress()) == null) {
                     executeLazyCreate(frame, operationTracer);

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.contracts.execution;
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ERROR;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
@@ -241,6 +242,7 @@ class HederaMessageCallProcessorTest {
 
         verify(frame).setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
         verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
+        verify(frame).getRemainingGas();
         verify(hederaTracer, never()).tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
         verifyNoMoreInteractions(nonHtsPrecompile, frame);
     }
@@ -420,7 +422,7 @@ class HederaMessageCallProcessorTest {
 
         subject.start(frame, hederaTracer);
 
-        verify(frame).setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+        verify(frame).setExceptionalHaltReason(Optional.of(PRECOMPILE_ERROR));
         verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
     }
 

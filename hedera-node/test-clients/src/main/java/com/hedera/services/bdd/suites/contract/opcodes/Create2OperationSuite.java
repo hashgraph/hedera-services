@@ -610,7 +610,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
                                 .sending(tcValue)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
@@ -627,7 +627,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 /* Cannot repeat CREATE2
                                 with same args without destroying the existing contract */
 
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> getContractInfo(mergedAliasAddr.get())
                                 .has(contractWith()
                                         .numKvPairs(2)

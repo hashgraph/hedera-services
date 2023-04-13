@@ -46,6 +46,7 @@ import org.hyperledger.besu.evm.fluent.SimpleAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -218,6 +219,8 @@ class HederaEvmMessageCallProcessorTest {
 
         verify(frame).setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
         verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
+        verify(frame).getRemainingGas();
+        verify(hederaEvmOperationTracer).tracePostExecution(eq(frame), any(Operation.OperationResult.class));
         verifyNoMoreInteractions(nonHtsPrecompile, frame);
     }
 
@@ -310,7 +313,7 @@ class HederaEvmMessageCallProcessorTest {
 
         subject.start(frame, hederaEvmOperationTracer);
 
-        verify(frame).setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+        verify(frame).setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
         verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
     }
 
