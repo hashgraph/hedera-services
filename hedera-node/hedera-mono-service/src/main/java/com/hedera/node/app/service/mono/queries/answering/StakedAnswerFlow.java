@@ -186,6 +186,6 @@ public final class StakedAnswerFlow implements AnswerFlow {
     }
 
     private long totalOf(final FeeObject costs) {
-        return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
+        return costs.networkFee() + costs.serviceFee() + costs.nodeFee();
     }
 }

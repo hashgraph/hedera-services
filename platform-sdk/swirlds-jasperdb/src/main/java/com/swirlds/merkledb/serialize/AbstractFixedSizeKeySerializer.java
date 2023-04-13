@@ -28,7 +28,7 @@ import java.util.function.Supplier;
  *
  * @param <K> Virtual key type
  */
-public abstract class AbstractFixedSizeKeySerializer<K extends VirtualKey<? super K>> implements KeySerializer<K> {
+public abstract class AbstractFixedSizeKeySerializer<K extends VirtualKey> implements KeySerializer<K> {
 
     private final long classId;
     private final int classVersion;
