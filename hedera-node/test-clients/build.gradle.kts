@@ -50,7 +50,7 @@ dependencies {
   implementation(testLibs.commons.collections4)
   implementation(libs.commons.io)
   implementation(libs.guava)
-  implementation(libs.hapi) { exclude("javax.annotation", "javax.annotation-api") }
+  implementation(project(":hedera-node:hapi")) { exclude("javax.annotation", "javax.annotation-api") }
 
   implementation(libs.grpc.stub)
   implementation(libs.grpc.protobuf)

@@ -210,7 +210,6 @@ dependencyResolutionManagement {
       library("grpc-protobuf", "io.grpc", "grpc-protobuf").versionRef("grpc-version")
       library("grpc-netty", "io.grpc", "grpc-netty").versionRef("grpc-version")
       library("guava", "com.google.guava", "guava").versionRef("guava-version")
-      library("hapi", "com.hedera.hashgraph", "hedera-protobuf-java-api").versionRef("hapi-version")
       library("headlong", "com.esaulpaugh", "headlong").versionRef("headlong-version")
       library("helidon-server", "io.helidon.webserver", "helidon-webserver-http2")
           .versionRef("helidon-version")

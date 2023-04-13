@@ -16,6 +16,7 @@
 
 plugins {
   id("com.hedera.hashgraph.conventions")
+  id("com.google.protobuf").version("0.9.1")
   alias(libs.plugins.pbj)
   `java-test-fixtures`
 }
@@ -28,10 +29,10 @@ dependencies {
   api(libs.spotbugs.annotations)
   implementation(libs.pbj.runtime)
   implementation(libs.bundles.di)
+  implementation("com.google.protobuf:protobuf-java:3.21.12")
   testImplementation(testLibs.bundles.testing)
   // we depend on the protoc compiled hapi during test as we test our pbj generated code against it
   // to make sure it is compatible
-  testImplementation(libs.hapi)
   testFixturesImplementation(libs.pbj.runtime)
 }
 
@@ -39,6 +40,10 @@ dependencies {
 sourceSets {
   main {
     pbj {
+      srcDir("hedera-protobufs/services")
+      srcDir("hedera-protobufs/streams")
+    }
+    proto {
       srcDir("hedera-protobufs/services")
       srcDir("hedera-protobufs/streams")
     }

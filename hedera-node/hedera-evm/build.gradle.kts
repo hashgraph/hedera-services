@@ -47,7 +47,7 @@ dependencies {
   api(libs.besu.secp256k1)
   api(libs.swirlds.common)
   api(libs.besu.datatypes)
-  api(libs.hapi) {
+  api(project(":hedera-node:hapi")) {
     // this is an android version, not a jre version
     exclude("com.google.guava", "guava")
   }
