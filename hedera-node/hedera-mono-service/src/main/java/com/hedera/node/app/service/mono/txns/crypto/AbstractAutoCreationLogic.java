@@ -264,7 +264,7 @@ public abstract class AbstractAutoCreationLogic {
 
         final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
         final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, currentView.get(), txnCtx.consensusTime());
-        return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     private void analyzeTokenTransferCreations(final List<BalanceChange> changes) {

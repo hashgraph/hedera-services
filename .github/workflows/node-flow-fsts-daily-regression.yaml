@@ -39,7 +39,7 @@ jobs:
       ref: ${{ github.event.inputs.ref || github.sha }}
       branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
       workflow-file: node-flow-fsts-daily-interval-01.yaml
-      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-01
+      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-01
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
@@ -52,7 +52,7 @@ jobs:
       ref: ${{ github.event.inputs.ref || github.sha }}
       branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
       workflow-file: node-flow-fsts-daily-interval-02.yaml
-      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-02
+      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-02
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
@@ -65,7 +65,7 @@ jobs:
       ref: ${{ github.event.inputs.ref || github.sha }}
       branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
       workflow-file: node-flow-fsts-daily-interval-03.yaml
-      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-03
+      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-03
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
@@ -78,7 +78,7 @@ jobs:
       ref: ${{ github.event.inputs.ref || github.sha }}
       branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
       workflow-file: node-flow-fsts-daily-interval-04.yaml
-      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-04
+      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-04
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
@@ -91,7 +91,7 @@ jobs:
       ref: ${{ github.event.inputs.ref || github.sha }}
       branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
       workflow-file: node-flow-fsts-daily-interval-05.yaml
-      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-05
+      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-05
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
@@ -104,6 +104,6 @@ jobs:
       ref: ${{ github.event.inputs.ref || github.sha }}
       branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
       workflow-file: node-flow-fsts-daily-interval-06.yaml
-      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-06
+      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-node-flow-fsts-daily-group-06
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}

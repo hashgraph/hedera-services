@@ -224,7 +224,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     }
 
     private long totalFee(final FeeObject costs) {
-        return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
+        return costs.networkFee() + costs.serviceFee() + costs.nodeFee();
     }
 
     private static ResponseHeader createResponseHeader(
