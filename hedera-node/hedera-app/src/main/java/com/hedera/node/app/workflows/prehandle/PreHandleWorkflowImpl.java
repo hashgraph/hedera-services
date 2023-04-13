@@ -17,16 +17,19 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.SessionContext;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.state.HederaAddressBook;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -38,8 +41,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -51,180 +63,229 @@ import static java.util.Objects.requireNonNull;
 /** Implementation of {@link PreHandleWorkflow} */
 @Singleton
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
-
     private static final Logger logger = LogManager.getLogger(PreHandleWorkflowImpl.class);
-
+    /**
+     * Used to verify basic syntactic and semantic validity of a transaction.
+     *
+     * <p>The hashgraph platform gossips {@link Event}s between nodes. Each {@link Event} contains zero or
+     * more transactions. We have to parse the bytes for those transactions, and check their validity both
+     * semantically and syntactically. This is done by the {@link TransactionChecker}. It is possible that
+     * a misbehaving node, or a malicious node, will gossip a transaction that is invalid.
+     */
     private final TransactionChecker transactionChecker;
+    /** Dispatches transactions to the appropriate {@link TransactionHandler} based on the type of transaction. */
     private final TransactionDispatcher dispatcher;
+    /**
+     * Given a {@link com.hedera.hapi.node.base.Transaction} and a list of {@link Key}s, prepares the
+     * {@link TransactionSignature}s for submission to the cryptography engine.
+     */
     private final SignaturePreparer signaturePreparer;
+    /** Verifies the {@link TransactionSignature}s. */
     private final Cryptography cryptography;
+    /**
+     * The {@link ExecutorService} to use for submitting tasks for transaction pre-handling.
+     *
+     * <p>Each transaction is handled in a separate thread. The {@link ExecutorService} is used to buffer up these
+     * tasks and manage a set of threads that will handle the tasks. In the future when the hashgraph platform has
+     * a resource manager, we will use that instead. By supplying this executor service, the code that constructs this
+     * object can control the number of threads that are used to handle transactions. This is useful for testing and
+     * for proper configuration.
+     */
     private final ExecutorService exe;
+    /**
+     * The {@link RecordCache} is used to check if a transaction has already been processed, to avoid processing
+     * the same transaction twice. Each transaction has a {@link TransactionID} that is unique for each transaction.
+     */
     private final RecordCache recordCache;
-    private final AccountAccess accountAccess;
-    private final Function<Long, AccountID> creatorIdToAccountId;
 
     /**
-     * Constructor of {@code PreHandleWorkflowImpl}
+     * Creates a new instance of {@code PreHandleWorkflowImpl}.
      *
-     * @param exe the {@link ExecutorService} to use when submitting new tasks
-     * @param dispatcher the {@link TransactionDispatcher} that will call transaction-specific
-     * {@code preHandle()}-methods
-     * @param transactionChecker the {@link TransactionChecker} that pre-processes the {@link byte[]} of a transaction
-     * @param signaturePreparer the {@link SignaturePreparer} to prepare signatures
+     * @param exe the {@link ExecutorService} for managing submission of pre-handle tasks. This service should be
+     *            configured with a maximum number of threads, and with a maximum blocking queue length. This way,
+     *            back-pressure can be applied to the hashgraph platform if the event intake rate is too high.
+     * @param dispatcher the {@link TransactionDispatcher} for invoking the {@link TransactionHandler} for each
+     *                   transaction.
+     * @param transactionChecker the {@link TransactionChecker} for parsing and verifying the transaction
+     * @param signaturePreparer the {@link SignaturePreparer} to convert the {@link Key}s into
+     *                          {@link TransactionSignature}s
      * @param cryptography the {@link Cryptography} component used to verify signatures
+     * @param recordCache the {@link RecordCache} used to check if a transaction has already been processed
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     @Inject
     public PreHandleWorkflowImpl(
             @NonNull final ExecutorService exe,
-            @NonNull final AccountAccess accountAccess,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final SignaturePreparer signaturePreparer,
             @NonNull final Cryptography cryptography,
-            @NonNull final RecordCache recordCache,
-            @NonNull final Function<Long, AccountID> creatorIdToAccountId) {
-        requireNonNull(exe);
+            @NonNull final RecordCache recordCache) {
+        this.exe = requireNonNull(exe);
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.signaturePreparer = requireNonNull(signaturePreparer);
         this.cryptography = requireNonNull(cryptography);
-        this.exe = requireNonNull(exe);
-        this.creatorIdToAccountId = requireNonNull(creatorIdToAccountId);
         this.recordCache = requireNonNull(recordCache);
-        this.accountAccess = requireNonNull(accountAccess);
     }
-
-    // I have to keep in mind that I also want a synchronous flow because the HandleWorkflowImpl is going
-    // to need a way to call back into the PreHandleWorkflowImpl in case it needs to run pre-handle, and we
-    // cannot call the method with an Event, and we don't want to do it async either.
 
     /** {@inheritDoc} */
     @Override
-    public void start(@NonNull final HederaState state, @NonNull final Event event) {
-        final var creatorId = event.getCreatorId();
-        final var creator = creatorIdToAccountId.apply(creatorId);
-        assert creator != null : "Creator ID " + creatorId + " is not a valid account ID!"; // TODO Maybe use a real interface with @NonNull annotated return.
+    public void preHandle(
+            @NonNull final HederaState state,
+            @NonNull final AccountID creator,
+            @NonNull final Iterator<Transaction> transactions) {
 
-        // Each background thread, processing each transaction, will add to this queue, concurrently, their
-        // TransactionSignatures that need to be verified. At the end, we will dump these into a list,
-        // and pass them as a batch to the platform to verify asynchronously.
-        final var transactionSignatures = new ConcurrentLinkedQueue<TransactionSignature>();
+        // Used for looking up payer account information.
+        final var readableStoreFactory = new ReadableStoreFactory(state);
+        final var accountStore = readableStoreFactory.createAccountStore();
 
         // Using the executor service, submit a task for each transaction in the event.
-        final var itr = event.transactionIterator();
-        while (itr.hasNext()) {
-            // TODO Are we supposed to skip System transactions? I assume so!
-            final var platformTx = itr.next();
+        final var tasks = new ArrayList<WorkItem>(1000); // Some arbitrary number
+        while (transactions.hasNext()) {
+            // Skip platform (system) transactions.
+            final var platformTx = transactions.next();
             if (platformTx.isSystem()) continue;
 
-            platformTx.setMetadata(exe.submit(() -> {
-                // 1. Parse the Transaction and check the syntax
-                final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
-                final var txBytes = Bytes.wrap(platformTx.getContents());
-                final TransactionInfo txInfo;
-                try {
-                    txInfo = transactionChecker.parseAndCheck(ctx, txBytes);
-                } catch (PreCheckException preCheck) {
-                    // The node SHOULD have verified the transaction before it was submitted to the network.
-                    // Since it didn't, it has failed in its due diligence and will be charged accordingly.
-                    return PreHandleResult.nodeDueDiligenceFailure(creator, preCheck.responseCode());
-                } catch (Exception e) {
-                    // If some random exception happened, then we should not charge the node for it. Instead,
-                    // we will just record the exception and try again during handle. Then if we fail again
-                    // at handle, then we will throw away the transaction (hopefully, deterministically!)
-                    return PreHandleResult.unknownFailure(creator, e);
-                }
-
-                // 2. Deduplicate
-                final var txBody = txInfo.txBody();
-                final var txId = txBody.transactionID();
-                assert txId != null : "TransactionID should never be null, transactionChecker forbids it";
-                final var duplicate = recordCache.isReceiptPresent(txId);
-                if (duplicate && creator.equals(txBody.nodeAccountID())) {
-                    // If the transaction is a duplicate, and the node is the payer, then the node has
-                    // failed a due-diligence check. It is trying to send multiple transactions through
-                    // consensus with the same TransactionID! We'll charge the node for this.
-                    return PreHandleResult.nodeDueDiligenceFailure(creator, DUPLICATE_TRANSACTION, txInfo);
-                }
-
-                // 3. Get Payer Account
-                // TODO I don't like AccountAccess because it doesn't let me track what account was accessed
-                //  and it doesn't let me control what state is being used!!
-                final var payer = txId.accountID();
-                assert payer != null : "Payer account cannot be null, transactionChecker forbids it";
-                final var accountOptional = accountAccess.getAccountById(payer);
-                if (accountOptional.isEmpty()) {
-                    // If the payer account does not exist, it may be that the node that submitted this
-                    // transaction didn't know that. Or it may be that the account will be created before
-                    // this transaction is handled. So we will just record the fact that we were unable to
-                    // get the payer account, and try again during handle. If we fail during handle, then
-                    // we have no choice but to charge the node then.
-                    return PreHandleResult.preHandleFailure(creator, PAYER_ACCOUNT_NOT_FOUND, txInfo);
-                }
-
-                // 4. Collect payer TransactionSignatures
-                final var payerAccount = accountOptional.get();
-                final var payerSig = signaturePreparer.prepareSignature(state, txBytes, txInfo.signatureMap(), payer); // TODO This is wrong, shouldn't take the AccountID
-                transactionSignatures.add(payerSig);
-                // TODO What happens if prepareSignature throws an exception? Can it?
-
-                // If this is a duplicate transaction, then we only want to verify the payer signature,
-                // and then we can skip the rest of the pre-handle logic.
-                if (duplicate) {
-                    // TODO Sig results should be included in the PreHandleResult
-                    payerSig.waitForFuture();
-                    return PreHandleResult.preHandleFailure(payer, DUPLICATE_TRANSACTION, txInfo);
-                }
-
-                // 5. Call Pre-Transaction Handlers
-                final var storeFactory = new ReadableStoreFactory(state); // TODO This looks out of place
-                final var accountStore = storeFactory.createAccountStore();
-                final var context = new PreHandleContext(accountStore, txInfo.txBody(), OK);
-                try {
-                    dispatcher.dispatchPreHandle(storeFactory, context);
-
-                    // TODO Deal with potential inner context
-//            final var innerContext = context.getInnerContext();
-//            TransactionMetadata innerMetadata = null;
-//            if (innerContext != null) {
-//                // VERIFY: the txBytes used for inner transactions is the same as the outer transaction
-//                final var innerPayerSignature = verifyPayerSignature(state, innerContext, txBytes, signatureMap);
-//                final var innerOtherSignatures = verifyOtherSignatures(state, innerContext, txBytes, signatureMap);
-//                innerMetadata = createTransactionMetadata(
-//                        innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
-//            }
-
-                } catch (PreCheckException preCheck) {
-                    // Pre-handle is the time for the service to perform semantic checks on the transaction.
-                    // It is quite possible those semantic checks will fail and throw a PreCheckException.
-                    // In that case, the payer will end up paying for the transaction.
-                    return PreHandleResult.preHandleFailure(payer, preCheck.responseCode(), txInfo);
-                }
-
-                // 6. Collection additional TransactionSignatures
-                final var nonPayerKeys = context.getRequiredNonPayerKeys();
-                final var signatures = signaturePreparer.prepareSignatures(state, txBytes, txInfo.signatureMap(), nonPayerKeys);
-                // TODO What happens if prepareSignatures throws an exception? Can it?
-                transactionSignatures.addAll(signatures.values());
-
-                // 7. Block on the TransactionSignatures
-                payerSig.waitForFuture();
-                for (final var sig : signatures.values()) {
-                    sig.waitForFuture();
-                }
-                // TODO What happens if we get an exception from one of these?
-
-                // 8. Create and return TransactionMetadata
-                // TODO Sig results should be included in the PreHandleResult
-                return new PreHandleResult(txInfo, payer, OK, null, null);
-                // TODO I did NOT keep a record of what state was accessed during pre-handle, and that was the
-                //  whole point!! That needs to be done.
-            }));
+            // Submit the task to the executor service and put the resulting Future as the metadata on the transaction
+            final var future = exe.submit(() -> preHandleTransaction(creator, accountStore, cryptography, platformTx));
+            tasks.add(new WorkItem(platformTx, future));
         }
 
-        // Pass these to the platform to verify. Each individual TransactionSignature has its own Future
-        // which is used to determine when the signature verification is completed.
-        cryptography.verifyAsync(new ArrayList<>(transactionSignatures));
+        // Waits for all the background threads to complete their work and stores the resulting PreHandleResult
+        // as the transaction's metadata.
+        for (final var task : tasks) {
+            try {
+                final var result = task.future.get(1, TimeUnit.SECONDS);
+                task.platformTx.setMetadata(result);
+            } catch (InterruptedException e) {
+                // The thread should only ever be interrupted during shutdown, so we can just log the error.
+                logger.error("Interrupted while waiting for a transaction to be pre handled.");
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException e) {
+                logger.error("Unexpected error while pre handling a transaction!", e);
+            } catch (TimeoutException e) {
+                logger.error("Timed out while waiting for a transaction to be pre handled!", e);
+            }
+        }
+    }
+
+    // For each transaction, we will use a background thread to parse the transaction, validate it, lookup the
+    // payer, collect non-payer keys, and warm up the cache. Then, once all the keys have been collected, we will
+    // pass the keys and signatures to the platform for verification.
+    private PreHandleResult preHandleTransaction(
+            @NonNull final AccountID creator,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final Cryptography cryptoEngine,
+            @NonNull final Transaction platformTx) {
+        // 1. Parse the Transaction and check the syntax
+        final var txBytes = Bytes.wrap(platformTx.getContents());
+        final TransactionInfo txInfo;
+        try {
+            txInfo = transactionChecker.parseAndCheck(txBytes);
+        } catch (PreCheckException preCheck) {
+            // The node SHOULD have verified the transaction before it was submitted to the network.
+            // Since it didn't, it has failed in its due diligence and will be charged accordingly.
+            return PreHandleResult.nodeDueDiligenceFailure(creator, preCheck.responseCode());
+        } catch (Throwable th) {
+            // If some random exception happened, then we should not charge the node for it. Instead,
+            // we will just record the exception and try again during handle. Then if we fail again
+            // at handle, then we will throw away the transaction (hopefully, deterministically!)
+            return PreHandleResult.unknownFailure(creator, th);
+        }
+
+        // 2. Deduplicate
+        final var txBody = txInfo.txBody();
+        final var txId = txBody.transactionID();
+        assert txId != null : "TransactionID should never be null, transactionChecker forbids it";
+        final var duplicate = recordCache.isReceiptPresent(txId);
+        if (duplicate) {
+            // If the transaction is a duplicate, then the creator node has failed a due-diligence check.
+            // It is trying to send multiple transactions through consensus with the same TransactionID!
+            // We'll charge the node for this.
+            return PreHandleResult.nodeDueDiligenceFailure(creator, DUPLICATE_TRANSACTION, txInfo);
+        }
+
+        // NOTE: At this point we have completed the due-diligence checks. Any failures from here on out
+        // can be attributed to the transaction itself, and not the node that submitted it. With one exception:
+        // if we fail to get the payer account, then we will charge the node that submitted the transaction
+        // during HANDLE. This is because the node may have submitted the transaction before the payer account
+        // was created, and the node may not have been aware of that.
+
+        // 3. Get Payer Account
+        final var payer = txId.accountID();
+        assert payer != null : "Payer account cannot be null, transactionChecker forbids it";
+        final var accountOptional = accountStore.getAccountById(payer);
+        if (accountOptional.isEmpty()) {
+            // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to
+            // so later during the handle phase. Technically, we could still try to gather and verify the other
+            // signatures, but that might be tricky and complicated with little gain. So just throw.
+            return PreHandleResult.preHandleFailure(creator, PAYER_ACCOUNT_NOT_FOUND, txInfo);
+        }
+
+        // 4. Collect payer TransactionSignatures
+
+        txInfo.signatureMap(); // Yay! A signature map
+        // TODO Update txInfo to have the signed body bytes and set it correctly based on deprected or non deprecated field usage
+
+        // For each key that MUST sign this transaction:
+        //  1. Look through the signature map for the key prefix. If we do not find it, then we already know the
+        //     transaction is not signed, so we can throw (Oh, and by the way, the node becomes the payer again.)
+
+        cryptoEngine.verifyAsync(data <-- transaction bytes, signature <-- The signature to use, publicKey <-- the full public key);
+        final var payerAccount = accountOptional.get();
+        final var payerSig = signaturePreparer.prepareSignature(state, txBytes, txInfo.signatureMap(), payer); // TODO This is wrong, shouldn't take the AccountID
+        cryptoEngine.verifyAsync(payerSig);
+
+        // If this is a duplicate transaction, then we only want to verify the payer signature,
+        // and then we can skip the rest of the pre-handle logic.
+        if (duplicate) {
+            // TODO Sig results should be included in the PreHandleResult
+            payerSig.waitForFuture();
+            return PreHandleResult.preHandleFailure(payer, DUPLICATE_TRANSACTION, txInfo);
+        }
+
+        // 5. Call Pre-Transaction Handlers
+        final var storeFactory = new ReadableStoreFactory(state); // TODO This looks out of place
+        final var accountStore = storeFactory.createAccountStore();
+        final var context = new PreHandleContext(accountStore, txInfo.txBody(), OK);
+        try {
+            dispatcher.dispatchPreHandle(storeFactory, context);
+
+            // TODO Deal with potential inner context
+            //            final var innerContext = context.getInnerContext();
+            //            TransactionMetadata innerMetadata = null;
+            //            if (innerContext != null) {
+            //                // VERIFY: the txBytes used for inner transactions is the same as the outer transaction
+            //                final var innerPayerSignature = verifyPayerSignature(state, innerContext, txBytes, signatureMap);
+            //                final var innerOtherSignatures = verifyOtherSignatures(state, innerContext, txBytes, signatureMap);
+            //                innerMetadata = createTransactionMetadata(
+            //                        innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
+            //            }
+
+        } catch (PreCheckException preCheck) {
+            // Pre-handle is the time for the service to perform semantic checks on the transaction.
+            // It is quite possible those semantic checks will fail and throw a PreCheckException.
+            // In that case, the payer will end up paying for the transaction.
+            return PreHandleResult.preHandleFailure(payer, preCheck.responseCode(), txInfo);
+        }
+
+        // 6. Collection additional TransactionSignatures
+        final var nonPayerKeys = context.getRequiredNonPayerKeys();
+        final var signatures = signaturePreparer.prepareSignatures(state, txBytes, txInfo.signatureMap(), nonPayerKeys);
+        // TODO What happens if prepareSignatures throws an exception? Can it?
+        cryptography.verifyAsync(new ArrayList<>(signatures.values()));
+
+        // 8. Create and return TransactionMetadata
+        // TODO Sig results should be included in the PreHandleResult
+        //                return new PreHandleResult(txInfo, payer, OK, null, null);
+        return null;
+        // TODO I did NOT keep a record of what state was accessed during pre-handle, and that was the
+        //  whole point!! That needs to be done.
+    }
+
+    private static final record WorkItem(
+            @NonNull Transaction platformTx,
+            @NonNull Future<PreHandleResult> future) {
     }
 }

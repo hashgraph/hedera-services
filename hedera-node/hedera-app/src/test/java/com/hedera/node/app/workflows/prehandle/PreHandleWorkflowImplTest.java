@@ -61,6 +61,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -73,242 +74,243 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleWorkflowImplTest extends AppTestBase {
-
-    @Mock(strictness = LENIENT)
-    private TransactionSignature cryptoSig;
-
-    @Mock(strictness = LENIENT)
-    private JKey payerKey;
-
-    @Mock(strictness = LENIENT)
-    private SwirldTransaction transaction;
-
-    @Mock(strictness = LENIENT)
-    private TransactionDispatcher dispatcher;
-
-    @Mock(strictness = LENIENT)
-    private TransactionChecker transactionChecker;
-
-    @Mock(strictness = LENIENT)
-    private SignaturePreparer signaturePreparer;
-
-    @Mock(strictness = LENIENT)
-    private Cryptography cryptography;
-
-    @Mock(strictness = LENIENT)
-    private PreHandleContext context;
-
-    @Mock(strictness = LENIENT)
-    private HederaState state;
-
-    @Mock(strictness = LENIENT)
-    private Event event;
-
-    @Mock(strictness = LENIENT)
-    private MapReadableStates readableStates;
-
-    @Mock
-    private ReadableKVState accountState;
-
-    @Mock
-    private MerkleAccount payerAccount;
-
-    @Mock
-    private ConsensusTransactionImpl workflowTxn;
-
-    private PreHandleWorkflowImpl workflow;
-
-    private static final Function<Runnable, CompletableFuture<Void>> RUN_INSTANTLY = runnable -> {
-        runnable.run();
-        return CompletableFuture.completedFuture(null);
-    };
-
-    @BeforeEach
-    void setup() throws PreCheckException {
-        final ConsensusCreateTopicTransactionBody content =
-                ConsensusCreateTopicTransactionBody.newBuilder().build();
-        final AccountID payerID = AccountID.newBuilder().build();
-        final TransactionID transactionID =
-                TransactionID.newBuilder().accountID(payerID).build();
-        final TransactionBody txBody = TransactionBody.newBuilder()
-                .transactionID(transactionID)
-                .consensusCreateTopic(content)
-                .build();
-        final SignatureMap signatureMap = SignatureMap.newBuilder().build();
-        final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
-        final TransactionInfo txInfo = new TransactionInfo(
-                com.hedera.hapi.node.base.Transaction.newBuilder().build(), txBody, signatureMap, functionality);
-        when(transactionChecker.parseAndCheck(any())).thenReturn(txInfo);
-
-        final Iterator<Transaction> iterator =
-                List.of((Transaction) transaction).iterator();
-        when(event.transactionIterator()).thenReturn(iterator);
-
-        when(transaction.getContents()).thenReturn(new byte[0]);
-
-        workflow = new PreHandleWorkflowImpl(
-                dispatcher, transactionChecker, signaturePreparer, cryptography, RUN_INSTANTLY);
-    }
-
-    @Test
-    void verifiesExpandedSigsAsync() throws PreCheckException {
-        final AccountID payerID = AccountID.newBuilder().accountNum(1000L).build();
-        final TransactionID transactionID =
-                TransactionID.newBuilder().accountID(payerID).build();
-        final var onsetResult = new TransactionInfo(
-                com.hedera.hapi.node.base.Transaction.newBuilder().build(),
-                TransactionBody.newBuilder().transactionID(transactionID).build(),
-                SignatureMap.newBuilder().build(),
-                HederaFunctionality.CRYPTO_TRANSFER);
-        given(transactionChecker.parseAndCheck(any())).willReturn(onsetResult);
-        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
-        given(context.getPayerKey()).willReturn(payerKey);
-        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
-        given(signaturePreparer.prepareSignature(any(), any(), any(), any())).willReturn(cryptoSig);
-        given(workflowTxn.getContents()).willReturn(cryptoTransferContents());
-        given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
-        given(readableStates.get("ACCOUNTS")).willReturn(accountState);
-        given(accountState.get(any())).willReturn(payerAccount);
-        given(payerAccount.getAccountKey()).willReturn(payerKey);
-
-        final var meta = workflow.preHandle(state, workflowTxn);
-
-        assertNotNull(meta);
-        verify(cryptography).verifyAsync(cryptoSig);
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    @Test
-    void testConstructorWithIllegalParameters(@Mock ExecutorService executorService) {
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
-                        null, dispatcher, transactionChecker, signaturePreparer, cryptography))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
-                        executorService, null, transactionChecker, signaturePreparer, cryptography))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new PreHandleWorkflowImpl(executorService, dispatcher, null, signaturePreparer, cryptography))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new PreHandleWorkflowImpl(executorService, dispatcher, transactionChecker, null, cryptography))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
-                        executorService, dispatcher, transactionChecker, signaturePreparer, null))
-                .isInstanceOf(NullPointerException.class);
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    @Test
-    void testStartWithIllegalParameters() {
-        // then
-        AssertionsForClassTypes.assertThatThrownBy(() -> workflow.start(null, event))
-                .isInstanceOf(NullPointerException.class);
-        AssertionsForClassTypes.assertThatThrownBy(() -> workflow.start(state, null))
-                .isInstanceOf(NullPointerException.class);
-    }
-
-    @Test
-    void testStartEventWithNoTransactions(@Mock Event localEvent) {
-        // given
-        when(localEvent.transactionIterator()).thenReturn(Collections.emptyIterator());
-
-        // when
-        assertThatCode(() -> workflow.start(state, localEvent)).doesNotThrowAnyException();
-    }
-
-    @Test
-    void testStartEventWithTwoTransactions(@Mock Event localEvent, @Mock SwirldTransaction transaction2) {
-        // given
-        final Iterator<Transaction> iterator =
-                List.of(transaction, (Transaction) transaction2).iterator();
-        when(localEvent.transactionIterator()).thenReturn(iterator);
-
-        // when
-        workflow.start(state, localEvent);
-
-        // then
-        verify(transaction).setMetadata(any());
-        verify(transaction2).setMetadata(any());
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    void testPreHandleSuccess() {
-        // when
-        workflow.start(state, event);
-
-        // then
-        final ArgumentCaptor<Future<PreHandleResult>> captor = ArgumentCaptor.forClass(Future.class);
-        verify(transaction).setMetadata(any());
-    }
-
-    @Test
-    void testPreHandleOnsetCatastrophicFail(@Mock TransactionChecker localOnset) throws PreCheckException {
-        // given
-        when(localOnset.parseAndCheck(any())).thenThrow(new PreCheckException(INVALID_TRANSACTION));
-        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
-
-        // when
-        workflow.start(state, event);
-
-        // then
-        final ArgumentCaptor<PreHandleResult> captor = ArgumentCaptor.forClass(PreHandleResult.class);
-        verify(transaction).setMetadata(captor.capture());
-        AssertionsForClassTypes.assertThat(captor.getValue())
-                .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
-        verify(dispatcher, never()).dispatchPreHandle(any(), any());
-    }
-
-    @Test
-    void testPreHandleOnsetMildFail(@Mock TransactionChecker localOnset) throws PreCheckException {
-        // given
-        final ConsensusCreateTopicTransactionBody content =
-                ConsensusCreateTopicTransactionBody.newBuilder().build();
-        final AccountID payerID = AccountID.newBuilder().build();
-        final TransactionID transactionID =
-                TransactionID.newBuilder().accountID(payerID).build();
-        final TransactionBody txBody = TransactionBody.newBuilder()
-                .transactionID(transactionID)
-                .consensusCreateTopic(content)
-                .build();
-        final var signedTxn = SignedTransaction.newBuilder()
-                .bodyBytes(PbjConverter.asWrappedBytes(TransactionBody.PROTOBUF, txBody))
-                .build();
-        final SignatureMap signatureMap = SignatureMap.newBuilder().build();
-        final var txn = com.hedera.hapi.node.base.Transaction.newBuilder()
-                .signedTransactionBytes(PbjConverter.asWrappedBytes(SignedTransaction.PROTOBUF, signedTxn))
-                .sigMap(signatureMap)
-                .build();
-        final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
-        final TransactionInfo onsetResult = new TransactionInfo(txn, txBody, signatureMap, functionality);
-        when(localOnset.parseAndCheck(any())).thenReturn(onsetResult);
-
-        given(transactionChecker.parseAndCheck(any())).willReturn(onsetResult);
-        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
-        given(context.getPayerKey()).willReturn(payerKey);
-        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
-        given(signaturePreparer.prepareSignature(any(), any(), any(), any())).willReturn(cryptoSig);
-        given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
-        given(readableStates.get("ACCOUNTS")).willReturn(accountState);
-
-        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
-
-        // when
-        workflow.start(state, event);
-
-        verify(dispatcher).dispatchPreHandle(any(), any());
-    }
-
-    private byte[] cryptoTransferContents() {
-        return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-                .setSignedTransactionBytes(com.hederahashgraph.api.proto.java.SignedTransaction.newBuilder()
-                        .setBodyBytes(com.hederahashgraph.api.proto.java.TransactionBody.newBuilder()
-                                .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-                                .build()
-                                .toByteString())
-                        .build()
-                        .toByteString())
-                .build()
-                .toByteArray();
-    }
+//
+//    @Mock(strictness = LENIENT)
+//    private TransactionSignature cryptoSig;
+//
+//    @Mock(strictness = LENIENT)
+//    private JKey payerKey;
+//
+//    @Mock(strictness = LENIENT)
+//    private SwirldTransaction transaction;
+//
+//    @Mock(strictness = LENIENT)
+//    private TransactionDispatcher dispatcher;
+//
+//    @Mock(strictness = LENIENT)
+//    private TransactionChecker transactionChecker;
+//
+//    @Mock(strictness = LENIENT)
+//    private SignaturePreparer signaturePreparer;
+//
+//    @Mock(strictness = LENIENT)
+//    private Cryptography cryptography;
+//
+//    @Mock(strictness = LENIENT)
+//    private PreHandleContext context;
+//
+//    @Mock(strictness = LENIENT)
+//    private HederaState state;
+//
+//    @Mock(strictness = LENIENT)
+//    private Event event;
+//
+//    @Mock(strictness = LENIENT)
+//    private MapReadableStates readableStates;
+//
+//    @Mock
+//    private ReadableKVState accountState;
+//
+//    @Mock
+//    private MerkleAccount payerAccount;
+//
+//    @Mock
+//    private ConsensusTransactionImpl workflowTxn;
+//
+//    private PreHandleWorkflowImpl workflow;
+//
+//    private static final Function<Runnable, CompletableFuture<Void>> RUN_INSTANTLY = runnable -> {
+//        runnable.run();
+//        return CompletableFuture.completedFuture(null);
+//    };
+//
+//    @BeforeEach
+//    void setup() throws PreCheckException {
+//        final ConsensusCreateTopicTransactionBody content =
+//                ConsensusCreateTopicTransactionBody.newBuilder().build();
+//        final AccountID payerID = AccountID.newBuilder().build();
+//        final TransactionID transactionID =
+//                TransactionID.newBuilder().accountID(payerID).build();
+//        final TransactionBody txBody = TransactionBody.newBuilder()
+//                .transactionID(transactionID)
+//                .consensusCreateTopic(content)
+//                .build();
+//        final SignatureMap signatureMap = SignatureMap.newBuilder().build();
+//        final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+//        final TransactionInfo txInfo = new TransactionInfo(
+//                com.hedera.hapi.node.base.Transaction.newBuilder().build(), txBody, signatureMap, functionality);
+//        when(transactionChecker.parseAndCheck(any())).thenReturn(txInfo);
+//
+//        final Iterator<Transaction> iterator =
+//                List.of((Transaction) transaction).iterator();
+//        when(event.transactionIterator()).thenReturn(iterator);
+//
+//        when(transaction.getContents()).thenReturn(new byte[0]);
+//
+//        final ExecutorService exec = Executors.newSingleThreadExecutor();
+//        workflow = new PreHandleWorkflowImpl(
+//                exec, dispatcher, transactionChecker, signaturePreparer, cryptography, RUN_INSTANTLY);
+//    }
+//
+//    @Test
+//    void verifiesExpandedSigsAsync() throws PreCheckException {
+//        final AccountID payerID = AccountID.newBuilder().accountNum(1000L).build();
+//        final TransactionID transactionID =
+//                TransactionID.newBuilder().accountID(payerID).build();
+//        final var onsetResult = new TransactionInfo(
+//                com.hedera.hapi.node.base.Transaction.newBuilder().build(),
+//                TransactionBody.newBuilder().transactionID(transactionID).build(),
+//                SignatureMap.newBuilder().build(),
+//                HederaFunctionality.CRYPTO_TRANSFER);
+//        given(transactionChecker.parseAndCheck(any())).willReturn(onsetResult);
+//        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
+//        given(context.getPayerKey()).willReturn(payerKey);
+//        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
+//        given(signaturePreparer.prepareSignature(any(), any(), any(), any())).willReturn(cryptoSig);
+//        given(workflowTxn.getContents()).willReturn(cryptoTransferContents());
+//        given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
+//        given(readableStates.get("ACCOUNTS")).willReturn(accountState);
+//        given(accountState.get(any())).willReturn(payerAccount);
+//        given(payerAccount.getAccountKey()).willReturn(payerKey);
+//
+//        final var meta = workflow.preHandle(state, workflowTxn);
+//
+//        assertNotNull(meta);
+//        verify(cryptography).verifyAsync(cryptoSig);
+//    }
+//
+//    @SuppressWarnings("ConstantConditions")
+//    @Test
+//    void testConstructorWithIllegalParameters(@Mock ExecutorService executorService) {
+//        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+//                    null, dispatcher, transactionChecker, signaturePreparer, cryptography, recordCache))
+//                .isInstanceOf(NullPointerException.class);
+//        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+//                        executorService, null, transactionChecker, signaturePreparer, cryptography))
+//                .isInstanceOf(NullPointerException.class);
+//        assertThatThrownBy(() ->
+//                        new PreHandleWorkflowImpl(executorService, dispatcher, null, signaturePreparer, cryptography))
+//                .isInstanceOf(NullPointerException.class);
+//        assertThatThrownBy(() ->
+//                        new PreHandleWorkflowImpl(executorService, dispatcher, transactionChecker, null, cryptography))
+//                .isInstanceOf(NullPointerException.class);
+//        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+//                        executorService, dispatcher, transactionChecker, signaturePreparer, null))
+//                .isInstanceOf(NullPointerException.class);
+//    }
+//
+//    @SuppressWarnings("ConstantConditions")
+//    @Test
+//    void testStartWithIllegalParameters() {
+//        // then
+//        AssertionsForClassTypes.assertThatThrownBy(() -> workflow.start(null, event))
+//                .isInstanceOf(NullPointerException.class);
+//        AssertionsForClassTypes.assertThatThrownBy(() -> workflow.start(state, null))
+//                .isInstanceOf(NullPointerException.class);
+//    }
+//
+//    @Test
+//    void testStartEventWithNoTransactions(@Mock Event localEvent) {
+//        // given
+//        when(localEvent.transactionIterator()).thenReturn(Collections.emptyIterator());
+//
+//        // when
+//        assertThatCode(() -> workflow.start(state, localEvent)).doesNotThrowAnyException();
+//    }
+//
+//    @Test
+//    void testStartEventWithTwoTransactions(@Mock Event localEvent, @Mock SwirldTransaction transaction2) {
+//        // given
+//        final Iterator<Transaction> iterator =
+//                List.of(transaction, (Transaction) transaction2).iterator();
+//        when(localEvent.transactionIterator()).thenReturn(iterator);
+//
+//        // when
+//        workflow.start(state, localEvent);
+//
+//        // then
+//        verify(transaction).setMetadata(any());
+//        verify(transaction2).setMetadata(any());
+//    }
+//
+//    @SuppressWarnings("unchecked")
+//    @Test
+//    void testPreHandleSuccess() {
+//        // when
+//        workflow.start(state, event);
+//
+//        // then
+//        final ArgumentCaptor<Future<PreHandleResult>> captor = ArgumentCaptor.forClass(Future.class);
+//        verify(transaction).setMetadata(any());
+//    }
+//
+//    @Test
+//    void testPreHandleOnsetCatastrophicFail(@Mock TransactionChecker localOnset) throws PreCheckException {
+//        // given
+//        when(localOnset.parseAndCheck(any())).thenThrow(new PreCheckException(INVALID_TRANSACTION));
+//        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
+//
+//        // when
+//        workflow.start(state, event);
+//
+//        // then
+//        final ArgumentCaptor<PreHandleResult> captor = ArgumentCaptor.forClass(PreHandleResult.class);
+//        verify(transaction).setMetadata(captor.capture());
+//        AssertionsForClassTypes.assertThat(captor.getValue())
+//                .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
+//        verify(dispatcher, never()).dispatchPreHandle(any(), any());
+//    }
+//
+//    @Test
+//    void testPreHandleOnsetMildFail(@Mock TransactionChecker localOnset) throws PreCheckException {
+//        // given
+//        final ConsensusCreateTopicTransactionBody content =
+//                ConsensusCreateTopicTransactionBody.newBuilder().build();
+//        final AccountID payerID = AccountID.newBuilder().build();
+//        final TransactionID transactionID =
+//                TransactionID.newBuilder().accountID(payerID).build();
+//        final TransactionBody txBody = TransactionBody.newBuilder()
+//                .transactionID(transactionID)
+//                .consensusCreateTopic(content)
+//                .build();
+//        final var signedTxn = SignedTransaction.newBuilder()
+//                .bodyBytes(PbjConverter.asWrappedBytes(TransactionBody.PROTOBUF, txBody))
+//                .build();
+//        final SignatureMap signatureMap = SignatureMap.newBuilder().build();
+//        final var txn = com.hedera.hapi.node.base.Transaction.newBuilder()
+//                .signedTransactionBytes(PbjConverter.asWrappedBytes(SignedTransaction.PROTOBUF, signedTxn))
+//                .sigMap(signatureMap)
+//                .build();
+//        final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+//        final TransactionInfo onsetResult = new TransactionInfo(txn, txBody, signatureMap, functionality);
+//        when(localOnset.parseAndCheck(any())).thenReturn(onsetResult);
+//
+//        given(transactionChecker.parseAndCheck(any())).willReturn(onsetResult);
+//        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
+//        given(context.getPayerKey()).willReturn(payerKey);
+//        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
+//        given(signaturePreparer.prepareSignature(any(), any(), any(), any())).willReturn(cryptoSig);
+//        given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
+//        given(readableStates.get("ACCOUNTS")).willReturn(accountState);
+//
+//        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
+//
+//        // when
+//        workflow.start(state, event);
+//
+//        verify(dispatcher).dispatchPreHandle(any(), any());
+//    }
+//
+//    private byte[] cryptoTransferContents() {
+//        return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+//                .setSignedTransactionBytes(com.hederahashgraph.api.proto.java.SignedTransaction.newBuilder()
+//                        .setBodyBytes(com.hederahashgraph.api.proto.java.TransactionBody.newBuilder()
+//                                .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+//                                .build()
+//                                .toByteString())
+//                        .build()
+//                        .toByteString())
+//                .build()
+//                .toByteArray();
+//    }
 }

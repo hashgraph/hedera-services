@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -74,6 +75,22 @@ public record PreHandleResult(
 
     public PreHandleResult(@NonNull final ResponseCodeEnum status) {
         this(null, null, null, status, null, Collections.emptyList(), Collections.emptyList(), null);
+    }
+
+    public static <T> T preHandleFailure(AccountID payer, ResponseCodeEnum responseCodeEnum, TransactionInfo txInfo) {
+        return null;
+    }
+
+    public static <T> T nodeDueDiligenceFailure(AccountID creator, ResponseCodeEnum responseCodeEnum, TransactionInfo txInfo) {
+        return null;
+    }
+
+    public static <T> T unknownFailure(AccountID creator, Throwable th) {
+        return null;
+    }
+
+    public static <T> T nodeDueDiligenceFailure(AccountID creator, ResponseCodeEnum responseCodeEnum) {
+        return null;
     }
 
     /**

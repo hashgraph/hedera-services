@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/TransactionMetadataTest.java
-package com.hedera.node.app.workflows;
-========
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -25,29 +22,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
->>>>>>>> develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/prehandle/PreHandleResultTest.java
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/TransactionMetadataTest.java
-import com.hedera.node.app.workflows.prehandle.PreHandleResult;
-========
->>>>>>>> develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/prehandle/PreHandleResultTest.java
 import com.swirlds.common.crypto.TransactionSignature;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import java.util.List;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleResultTest {
@@ -72,19 +58,11 @@ class PreHandleResultTest {
         when(context.getPayerKey()).thenReturn(payerKey);
         when(context.getRequiredNonPayerKeys()).thenReturn(List.of(otherKey));
         final var signatureMap = SignatureMap.newBuilder().build();
-<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/TransactionMetadataTest.java
-        final var innerMetadata = new PreHandleResult(null, null, null, OK, null, null, List.of(), null);
-        final var expectedSigs = List.of(payerSignature, otherSignature);
-
-        // when
-        final var metadata = new PreHandleResult(context, signatureMap, expectedSigs, innerMetadata);
-========
         final var innerResult = new PreHandleResult(null, null, null, OK, null, null, List.of(), null);
         final var expectedSigs = List.of(payerSignature, otherSignature);
 
         // when
         final var metadata = new PreHandleResult(context, signatureMap, expectedSigs, innerResult);
->>>>>>>> develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/prehandle/PreHandleResultTest.java
 
         // then
         assertThat(metadata.txnBody()).isEqualTo(txBody);

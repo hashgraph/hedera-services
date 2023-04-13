@@ -1,9 +1,5 @@
 /*
-<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/annotations/NodeSelfId.java
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
-========
  * Copyright (C) 2023 Hedera Hashgraph, LLC
->>>>>>>> develop:hedera-node/hedera-app-spi/src/main/java/com/hedera/node/app/spi/records/BaseRecordBuilder.java
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +15,6 @@
  */
 
 package com.hedera.node.app.spi.records;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-/**
- * This annotation is used with dependency injection to inject the node's self account ID as an argument to a
- * class constructor.
- */
-@Target({ElementType.METHOD, ElementType.PARAMETER})
-@Qualifier
-@Retention(RUNTIME)
-public @interface NodeSelfId {}
 
 /**
  * Base implementation of a {@code UniversalRecordBuilder} that will track all the

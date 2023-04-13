@@ -138,6 +138,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
 import java.util.function.BiConsumer;
@@ -563,7 +564,7 @@ class TransactionDispatcherTest {
     @ParameterizedTest
     @MethodSource("getDispatchParameters")
     void testPreHandleWithPayer(
-            final TransactionBody txBody, final BiConsumer<TransactionHandlers, PreHandleContext> verification) {
+            final TransactionBody txBody, final BiConsumer<TransactionHandlers, PreHandleContext> verification) throws PreCheckException {
         // given
         final var payer = AccountID.newBuilder().build();
         final var tracker = new ReadableStoreFactory(state);

@@ -21,6 +21,7 @@ import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.state.HederaAddressBook;
 import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
@@ -50,7 +51,7 @@ public class AdaptedMonoEventExpansion {
         this.staticProperties = Objects.requireNonNull(staticProperties);
     }
 
-    public void expand(final Event event, final HederaState state) {
+    public void expand(final Event event, @NonNull final HederaAddressBook addressBook, final HederaState state) {
         final var typesForWorkflows = staticProperties.workflowsEnabled();
         final List<Transaction> forWorkflows = new ArrayList<>();
         event.forEachTransaction(txn -> {
@@ -66,7 +67,9 @@ public class AdaptedMonoEventExpansion {
             }
         });
         if (!forWorkflows.isEmpty()) {
-            forWorkflows.forEach(txn -> ((PreHandleWorkflowImpl) preHandleWorkflow).preHandle(state, txn));
+            final var creatorId = event.getCreatorId();
+            final var creator = addressBook.getNodeOperatorAccountID(creatorId);
+            preHandleWorkflow.preHandle(state, creator, forWorkflows.iterator());
         }
     }
 }

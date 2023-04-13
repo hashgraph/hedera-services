@@ -36,6 +36,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -127,7 +128,7 @@ public class TransactionDispatcher {
      */
     //    @SuppressWarnings("java:S1479") // ignore too many branches warning
     public void dispatchPreHandle(
-            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context) {
+            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(storeFactory);
         requireNonNull(context);
 
@@ -220,7 +221,13 @@ public class TransactionDispatcher {
     }
 
     private PreHandleDispatcher setupPreHandleDispatcher(@NonNull final ReadableStoreFactory storeFactory) {
-        return context -> dispatchPreHandle(storeFactory, context);
+        return context -> {
+            try {
+                dispatchPreHandle(storeFactory, context);
+            } catch (PreCheckException e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 
     private void dispatchConsensusDeleteTopic(
