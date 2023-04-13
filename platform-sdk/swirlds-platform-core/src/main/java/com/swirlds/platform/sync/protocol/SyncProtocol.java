@@ -197,6 +197,14 @@ public class SyncProtocol implements Protocol {
      * {@inheritDoc}
      */
     @Override
+    public void acceptFailed() {
+        closePermit();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean acceptOnSimultaneousInitiate() {
         return true;
     }
