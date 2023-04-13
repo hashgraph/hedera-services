@@ -168,7 +168,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var response = Response.newBuilder().fileGetInfo(fileGetInfo).build();
 
         when(dispatcher.getHandler(query)).thenReturn(handler);
-        when(dispatcher.getResponse(any(), eq(query), eq(responseHeader))).thenReturn(response);
+        when(handler.findResponse(any(), eq(responseHeader))).thenReturn(response);
 
         workflow = new QueryWorkflowImpl(
                 stateAccessor,
@@ -251,8 +251,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testSuccessIfPaymentNotRequired() throws PreCheckException, IOException {
-        given(dispatcher.validate(any(), any())).willReturn(OK);
+    void testSuccessIfPaymentNotRequired() throws IOException {
         // given
         final var responseBuffer = newEmptyBuffer();
         // when
@@ -267,17 +266,15 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testSuccessIfPaymentRequired() throws PreCheckException, IOException {
+    void testSuccessIfPaymentRequired() throws IOException {
         // given
         given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
-        given(dispatcher.validate(any(), any())).willReturn(OK);
-        when(dispatcher.getResponse(any(), any(), any()))
-                .thenReturn(Response.newBuilder()
-                        .fileGetInfo(FileGetInfoResponse.newBuilder()
-                                .header(ResponseHeader.newBuilder().build())
-                                .build())
-                        .build());
+        when(handler.findResponse(any(), any())).thenReturn(Response.newBuilder()
+                .fileGetInfo(FileGetInfoResponse.newBuilder()
+                        .header(ResponseHeader.newBuilder().build())
+                        .build())
+                .build());
         final var responseBuffer = newEmptyBuffer();
 
         // when
@@ -359,10 +356,9 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testSuccess() throws PreCheckException, IOException {
+    void testSuccess() throws IOException {
         // given
         final var responseBuffer = newEmptyBuffer();
-        given(dispatcher.validate(any(), any())).willReturn(OK);
 
         // when
         workflow.handleQuery(requestBuffer, responseBuffer);
@@ -531,8 +527,8 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testQuerySpecificValidationFails() throws PreCheckException, IOException {
         // given
         doThrow(new PreCheckException(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN))
-                .when(dispatcher)
-                .validate(any(), eq(query));
+                .when(handler)
+                .validate(any());
         final var responseBuffer = newEmptyBuffer();
 
         // when

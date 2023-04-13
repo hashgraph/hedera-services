@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
@@ -178,7 +179,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 4. Check validity
-            final var validity = dispatcher.validate(storeFactory, query);
+            final var context = new QueryContextImpl(state, query);
+            handler.validate(context);
 
             // 5. Submit payment to platform
             if (paymentRequired) {
@@ -192,12 +194,12 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
                 fee = feeData.totalFee();
 
-                final var header = createResponseHeader(responseType, validity, fee);
+                final var header = createResponseHeader(responseType, OK, fee);
                 response = handler.createEmptyResponse(header);
             } else {
                 // 6.ii Find response
-                final var header = createResponseHeader(responseType, validity, fee);
-                response = dispatcher.getResponse(storeFactory, query, header);
+                final var header = createResponseHeader(responseType, OK, fee);
+                response = handler.findResponse(context, header);
             }
         } catch (InsufficientBalanceException e) {
             final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
