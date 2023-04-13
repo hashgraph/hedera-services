@@ -48,9 +48,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -81,9 +79,6 @@ class PreHandleWorkflowImplTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
     private JKey payerKey;
-
-    @Mock(strictness = LENIENT)
-    private ReadableStoreFactory storeFactory;
 
     @Mock(strictness = LENIENT)
     private SwirldTransaction transaction;
@@ -143,7 +138,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
         final TransactionInfo txInfo = new TransactionInfo(
                 com.hedera.hapi.node.base.Transaction.newBuilder().build(), txBody, signatureMap, functionality);
-        when(transactionChecker.parseAndCheck(any(), any(Bytes.class))).thenReturn(txInfo);
+        when(transactionChecker.parseAndCheck(any())).thenReturn(txInfo);
 
         final Iterator<Transaction> iterator =
                 List.of((Transaction) transaction).iterator();
@@ -165,7 +160,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
                 TransactionBody.newBuilder().transactionID(transactionID).build(),
                 SignatureMap.newBuilder().build(),
                 HederaFunctionality.CRYPTO_TRANSFER);
-        given(transactionChecker.parseAndCheck(any(), any(Bytes.class))).willReturn(onsetResult);
+        given(transactionChecker.parseAndCheck(any())).willReturn(onsetResult);
         given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
         given(context.getPayerKey()).willReturn(payerKey);
         given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
@@ -247,11 +242,10 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         verify(transaction).setMetadata(any());
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void testPreHandleOnsetCatastrophicFail(@Mock TransactionChecker localOnset) throws PreCheckException {
         // given
-        when(localOnset.parseAndCheck(any(), any(Bytes.class))).thenThrow(new PreCheckException(INVALID_TRANSACTION));
+        when(localOnset.parseAndCheck(any())).thenThrow(new PreCheckException(INVALID_TRANSACTION));
         workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
@@ -287,9 +281,9 @@ class PreHandleWorkflowImplTest extends AppTestBase {
                 .build();
         final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
         final TransactionInfo onsetResult = new TransactionInfo(txn, txBody, signatureMap, functionality);
-        when(localOnset.parseAndCheck(any(), any(Bytes.class))).thenReturn(onsetResult);
+        when(localOnset.parseAndCheck(any())).thenReturn(onsetResult);
 
-        given(transactionChecker.parseAndCheck(any(), any(Bytes.class))).willReturn(onsetResult);
+        given(transactionChecker.parseAndCheck(any())).willReturn(onsetResult);
         given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
         given(context.getPayerKey()).willReturn(payerKey);
         given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());

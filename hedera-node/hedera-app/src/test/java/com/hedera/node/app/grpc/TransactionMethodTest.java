@@ -47,7 +47,7 @@ final class TransactionMethodTest {
     private static final String SERVICE_NAME = "testService";
     private static final String METHOD_NAME = "testMethod";
 
-    private final IngestWorkflow ingestWorkflow = (session, requestBuffer, responseBuffer) -> {};
+    private final IngestWorkflow ingestWorkflow = (requestBuffer, responseBuffer) -> {};
     private final Metrics metrics = TestUtils.metrics();
 
     @Test
@@ -84,7 +84,7 @@ final class TransactionMethodTest {
         final var arr = TestUtils.randomBytes(numBytes);
         final var requestBuffer = BufferedData.wrap(arr);
         final AtomicBoolean called = new AtomicBoolean(false);
-        final IngestWorkflow w = (s, req, res) -> called.set(true);
+        final IngestWorkflow w = (req, res) -> called.set(true);
         final var method = new TransactionMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
 
         // When we invoke the method
@@ -106,7 +106,7 @@ final class TransactionMethodTest {
         // Given a request with data and a workflow that should be called, and a TransactionMethod
         final var requestBuffer = BufferedData.allocate(100);
         final AtomicBoolean called = new AtomicBoolean(false);
-        final IngestWorkflow w = (s, req, res) -> {
+        final IngestWorkflow w = (req, res) -> {
             assertThat(req).isEqualTo(requestBuffer.getBytes(0, requestBuffer.length()));
             called.set(true);
             res.writeBytes(new byte[] {1, 2, 3});
@@ -136,7 +136,7 @@ final class TransactionMethodTest {
     void unexpectedExceptionFromHandler(@Mock final StreamObserver<BufferedData> streamObserver) {
         // Given a request with data and a workflow that will throw, and a TransactionMethod
         final var requestBuffer = BufferedData.allocate(100);
-        final IngestWorkflow w = (s, req, res) -> {
+        final IngestWorkflow w = (req, res) -> {
             throw new RuntimeException("Failing!!");
         };
         final var method = new TransactionMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
@@ -164,7 +164,7 @@ final class TransactionMethodTest {
     void hammer() {
         final var numThreads = 5;
         final var numRequests = 1000;
-        final IngestWorkflow w = (s, req, res) -> res.writeBytes(req);
+        final IngestWorkflow w = (req, res) -> res.writeBytes(req);
         final var method = new TransactionMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
 
         final var futures = new ArrayList<Future<?>>();

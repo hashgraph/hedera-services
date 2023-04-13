@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
  * <p>
  * Keys must implement {@link Comparable}.
  */
-public interface VirtualKey<T extends Comparable<? super T>> extends SelfSerializable, Comparable<T> {
+public interface VirtualKey extends SelfSerializable {
 
     /**
      * This needs to be a very good quality hash code with even spread, or it will be very inefficient when used in
