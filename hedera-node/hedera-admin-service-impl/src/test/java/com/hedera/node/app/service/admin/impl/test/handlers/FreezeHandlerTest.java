@@ -172,7 +172,8 @@ class FreezeHandlerTest {
                             .build())
                     .build();
             final var context = new PreHandleContext(keyLookup, txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+            assertThrowsPreCheck(
+                    () -> subject.preHandle(context, specialFileStore), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
     }
 
