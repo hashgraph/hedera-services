@@ -9,8 +9,12 @@ solc OpcodesContract.sol --ir > OpcodesContract.yul
 sed -E 's/IR://g' OpcodesContract.yul > OpcodesContract.tmp
 sed 's/add(msize(), 0x5f)/add(verbatim_0i_1o(hex"5f"), 0x5f)/g' OpcodesContract.tmp > OpcodesContract.yul
 
-solc --strict-assembly OpcodesContract.yul --bin > OpcodesContract.bin
+solc --strict-assembly OpcodesContract.yul --bin > OpcodesContract.binish
 solc OpcodesContract.sol --combined-json abi | jq '.contracts."OpcodesContract.sol:NewOpcodes".abi' > OpcodesContract.json
+
+cat OpcodesContract.binish | tr "
+" " "  | sed 's/======= OpcodesContract.yul (EVM) =======  Binary representation: //g' | sed 's/ //g' > OpcodesContract.bin
 
 rm OpcodesContract.tmp
 rm OpcodesContract.yul
+rm OpcodesContract.binish
