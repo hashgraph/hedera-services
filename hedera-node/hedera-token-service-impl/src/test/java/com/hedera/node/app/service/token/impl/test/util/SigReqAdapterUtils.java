@@ -123,7 +123,9 @@ public class SigReqAdapterUtils {
                 !token.wipeKey().isEmpty()
                         ? fromGrpcKey(asKeyUnchecked(token.wipeKey().get()))
                         : Key.DEFAULT,
-                !token.supplyKey().isEmpty() ? fromGrpcKey(asKeyUnchecked(token.getSupplyKey())) : Key.DEFAULT,
+                !token.supplyKey().isEmpty()
+                        ? fromGrpcKey(asKeyUnchecked(token.getSupplyKey()))
+                        : Key.DEFAULT,
                 !token.feeScheduleKey().isEmpty()
                         ? fromGrpcKey(asKeyUnchecked(token.feeScheduleKey().get()))
                         : Key.DEFAULT,
@@ -132,13 +134,17 @@ public class SigReqAdapterUtils {
                         : Key.DEFAULT,
                 token.getLastUsedSerialNumber(),
                 token.isDeleted(),
-                token.tokenType() == com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON
+                token.tokenType()
+                                == com.hedera.node.app.service.evm.store.tokens.TokenType
+                                        .FUNGIBLE_COMMON
                         ? com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON
                         : com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE,
-                token.supplyType() == com.hedera.node.app.service.mono.state.enums.TokenSupplyType.FINITE
+                token.supplyType()
+                                == com.hedera.node.app.service.mono.state.enums.TokenSupplyType
+                                        .FINITE
                         ? com.hedera.hapi.node.base.TokenSupplyType.FINITE
                         : com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
-                token.autoRenewAccount().num(),
+                token.autoRenewAccount() != null ? token.autoRenewAccount().num() : 0,
                 token.autoRenewPeriod(),
                 token.expiry(),
                 token.memo(),
