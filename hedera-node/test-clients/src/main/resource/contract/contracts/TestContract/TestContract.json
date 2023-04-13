@@ -43,7 +43,13 @@
       }
     ],
     "name": "callSpecific",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -56,7 +62,13 @@
       }
     ],
     "name": "callSpecificWithValue",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "payable",
     "type": "function"
   },
@@ -69,21 +81,14 @@
       }
     ],
     "name": "delegateCallSpecific",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+    "outputs": [
       {
-        "internalType": "address",
-        "name": "_toCall",
-        "type": "address"
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
-    "name": "delegateCallSpecificWithValue",
-    "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

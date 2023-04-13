@@ -28,6 +28,14 @@ contract TestContract {
         require(success);
     }
 
+    function balanceOf(address _add) public view returns(uint) {
+        return _add.balance;
+    }
+
+    function selfDestructWithBeneficiary(address payable _beneficiary) public {
+        selfdestruct(_beneficiary);
+    }
+
     function lowLevelECRECWithValue() external payable {
         bytes32 hash = bytes32("hash");
         uint8 v = uint8(1);
@@ -38,14 +46,16 @@ contract TestContract {
         require(success);
     }
 
-    function callSpecific(address _toCall) external     {
+    function callSpecific(address _toCall) external returns (bool) {
         (bool success, ) = _toCall.call("boo(uint256)");
-        require(success);
+        // require(success);
+        return success;
     }
 
-    function callSpecificWithValue(address _toCall) external payable {
+    function callSpecificWithValue(address _toCall) external payable returns (bool) {
         (bool success, ) = _toCall.call{value: msg.value}("boo(uint256)");
-        require(success);
+        // require(success);
+        return success;
     }
 
     function delegateCallSpecific(address _toCall) external     {
@@ -56,13 +66,5 @@ contract TestContract {
     function delegateCallSpecificWithValue(address _toCall) external payable {
         (bool success, ) = _toCall.delegatecall("boo(uint256)");
         require(success);
-    }
-
-    function balanceOf(address _add) public view returns(uint) {
-        return _add.balance;
-    }
-
-    function selfDestructWithBeneficiary(address payable _beneficiary) public {
-        selfdestruct(_beneficiary);
     }
 }

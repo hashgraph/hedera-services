@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -78,6 +79,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -112,6 +114,7 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -125,6 +128,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 
@@ -278,14 +282,14 @@ public class ContractCallSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS),
                         contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
                                 .payingWith(somebody)
-                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         cryptoUpdate(account).receiverSigRequired(false).signedBy(GENESIS),
                         contractCall(TEST_CONTRACT, "lowLevelECREC")
                                 .payingWith(somebody)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
                                 .payingWith(somebody)
-                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getAccountBalance(account).hasTinyBars(changeFromSnapshot("start", +0)));
     }
 
@@ -293,18 +297,26 @@ public class ContractCallSuite extends HapiSuite {
         final var TEST_CONTRACT = "TestContract";
         final var ZERO_ADDRESS = 0L;
         final var zeroAddressTxn = "zeroAddressTxn";
+        final var zeroAddressWithValueTxn = "zeroAddressWithValueTxn";
         final var ECREC_NUM = 1L;
+        final var existingNumAndPrecompileDelegateCallTxn = "existingNumAndPrecompileDelegateCallTxn";
         final var existingNumAndPrecompileTxn = "existingNumAndPrecompileTxn";
-        final var EXISTING_SYSTEM_ENTITY_NUM = 50L;
+        final var existingNumAndPrecompileWithValueTxn = "existingNumAndPrecompileWithValueTxn";
+        final var EXISTING_SYSTEM_ENTITY_NUMBNO_PRECOMPILE_COLLISION = 50L;
         final var existingSystemEntityTxn = "existingSystemEntityTxn";
+        final var existingSystemEntityWithValueTxn = "existingSystemEntityWithValueTxn";
         final var NON_EXISTING_SYSTEM_ENTITY_NUM = 345L;
         final var nonExistingSystemEntityTxn = "nonExistingSystemEntityTxn";
+        final var nonExistingSystemEntityWithValueTxn = "nonExistingSystemEntityWithValueTxn";
         final var callSpecificAddressFunction = "callSpecific";
         final var callSpecificAddressWithValueFunction = "callSpecificWithValue";
-        final String selfDestructToSystemAccountTxn = "selfDestructToSystemAccount";
-        final String balanceOfSystemAccountTxn = "balanceTxn";
-        final String delegateCallNonExistingPrecompile = "delegateCallNonExisting";
-        final String delegateCallExistingAccountNonExistingPrecompile = "delegateCallExistingAccountNonExisting";
+        final var selfDestructToSystemAccountTxn = "selfDestructToSystemAccount";
+        final var balanceOfSystemAccountTxn = "balanceTxn";
+        final var delegateCallNonExistingPrecompile = "delegateCallNonExisting";
+        final var delegateCallExistingAccountNonExistingPrecompile = "delegateCallExistingAccountNonExisting";
+        final var failedResult = Bytes32.repeat((byte) 0);
+        final ContractCallResult unsuccessfulResult = () -> failedResult;
+        final ContractCallResult successfulResult = () -> failedResult.or(Bytes.of(1));
         return defaultHapiSpec("callsToSystemEntityNumsAreTreatedAsPrecompileCalls")
                 .given(
                         uploadInitCode(TEST_CONTRACT),
@@ -324,16 +336,55 @@ public class ContractCallSuite extends HapiSuite {
                                                 .setAccountNum(ZERO_ADDRESS)
                                                 .build()))
                                 .via(zeroAddressTxn)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-                        // call to existing account in the 0-750 range
+                                .hasKnownStatus(SUCCESS),
+                        // call with value to 0x0
+                        contractCall(
+                                TEST_CONTRACT,
+                                callSpecificAddressWithValueFunction,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(ZERO_ADDRESS)
+                                        .build()))
+                                .sending(500L)
+                                .via(zeroAddressWithValueTxn)
+                                .hasKnownStatus(SUCCESS),
+                        // call to existing account in the 0-750 range, without precompile collision on the same address
                         contractCall(
                                         TEST_CONTRACT,
                                         callSpecificAddressFunction,
                                         idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(EXISTING_SYSTEM_ENTITY_NUM)
+                                                .setAccountNum(EXISTING_SYSTEM_ENTITY_NUMBNO_PRECOMPILE_COLLISION)
                                                 .build()))
                                 .via(existingSystemEntityTxn)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(SUCCESS),
+                        // call with value to existing account in the 0-750 range, without precompile collision on the same address
+                        contractCall(
+                                        TEST_CONTRACT,
+                                callSpecificAddressWithValueFunction,
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(EXISTING_SYSTEM_ENTITY_NUMBNO_PRECOMPILE_COLLISION)
+                                                .build()))
+                                .via(existingSystemEntityWithValueTxn)
+                                .sending(500L)
+                                .hasKnownStatus(SUCCESS),
+                        // call to existing account in the 0-750 range, WITH precompile collision
+                        contractCall(
+                                        TEST_CONTRACT,
+                                        callSpecificAddressFunction,
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(ECREC_NUM)
+                                                .build()))
+                                .via(existingNumAndPrecompileTxn)
+                                .hasKnownStatus(SUCCESS),
+                        // call with value to existing account in the 0-750 range, WITH precompile collision
+                        contractCall(
+                                        TEST_CONTRACT,
+                                callSpecificAddressWithValueFunction,
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(ECREC_NUM)
+                                                .build()))
+                                .via(existingNumAndPrecompileWithValueTxn)
+                                .sending(500L)
+                                .hasKnownStatus(SUCCESS),
                         // call to non-existing account in the 0-750 range
                         contractCall(
                                         TEST_CONTRACT,
@@ -342,17 +393,26 @@ public class ContractCallSuite extends HapiSuite {
                                                 .setAccountNum(NON_EXISTING_SYSTEM_ENTITY_NUM)
                                                 .build()))
                                 .via(nonExistingSystemEntityTxn)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-                        // call with value to native precompile address
+                                .hasKnownStatus(SUCCESS),
+                        // call with value to non-existing account in the 0-750 range
                         contractCall(
                                         TEST_CONTRACT,
                                         callSpecificAddressWithValueFunction,
                                         idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(NON_EXISTING_SYSTEM_ENTITY_NUM)
+                                                .build()))
+                                .via(nonExistingSystemEntityWithValueTxn)
+                                .sending(500L)
+                                .hasKnownStatus(SUCCESS),
+                        // delegate call to collision address (0.0.1)
+                        contractCall(
+                                        TEST_CONTRACT,
+                                        "delegateCallSpecific",
+                                        idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(ECREC_NUM)
                                                 .build()))
-                                .via(existingNumAndPrecompileTxn)
-                                .sending(500)
-                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+                                .via(existingNumAndPrecompileDelegateCallTxn)
+                                .hasKnownStatus(SUCCESS),
                         // delegate call existing account in the 0-750, but no corresponding precompile at that address
                         contractCall(
                                         TEST_CONTRACT,
@@ -361,7 +421,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .setAccountNum(98)
                                                 .build()))
                                 .via(delegateCallExistingAccountNonExistingPrecompile)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(SUCCESS),
                         // delegate call non-existing address in the 0-750 range
                         contractCall(
                                         TEST_CONTRACT,
@@ -370,7 +430,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .setAccountNum(125)
                                                 .build()))
                                 .via(delegateCallNonExistingPrecompile)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(SUCCESS),
                         // self destruct with beneficiary in the 0-750 range
                         contractCall(
                                         TEST_CONTRACT,
@@ -383,36 +443,57 @@ public class ContractCallSuite extends HapiSuite {
                         // balance operation of an address in the 0-750 range
                         contractCall(
                                         TEST_CONTRACT,
-                                        "balanceOf",
+                                        BALANCE_OF,
                                         idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(2)
                                                 .build()))
                                 .via(balanceOfSystemAccountTxn)
-                                .hasKnownStatus(SUCCESS))
+                                .hasKnownStatus(SUCCESS)
+                )
                 .then(
                         getTxnRecord(zeroAddressTxn)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().error(INVALID_SOLIDITY_ADDRESS.name())))
+                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .logged(),
+                        getTxnRecord(zeroAddressWithValueTxn)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
                                 .logged(),
                         getTxnRecord(existingSystemEntityTxn)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().error(INVALID_SOLIDITY_ADDRESS.name())))
+                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
                                 .logged(),
-                        getTxnRecord(nonExistingSystemEntityTxn)
+                        getTxnRecord(existingSystemEntityWithValueTxn)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().error(INVALID_SOLIDITY_ADDRESS.name())))
+                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
                                 .logged(),
                         getTxnRecord(existingNumAndPrecompileTxn)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().error(INVALID_FEE_SUBMITTED.name())))
+                                        .contractCallResult(resultWith().contractCallResult(successfulResult)))
+                                .logged(),
+                        getTxnRecord(existingNumAndPrecompileWithValueTxn)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .logged(),
+                        getTxnRecord(nonExistingSystemEntityTxn)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .logged(),
+                        getTxnRecord(nonExistingSystemEntityWithValueTxn)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .logged(),
+                        getTxnRecord(existingNumAndPrecompileDelegateCallTxn)
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(delegateCallNonExistingPrecompile)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().error(INVALID_SOLIDITY_ADDRESS.name())))
+                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
                                 .logged(),
                         getTxnRecord(delegateCallExistingAccountNonExistingPrecompile)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().error(INVALID_SOLIDITY_ADDRESS.name())))
+                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
                                 .logged(),
                         getTxnRecord(selfDestructToSystemAccountTxn)
                                 .hasPriority(recordWith()
@@ -422,7 +503,8 @@ public class ContractCallSuite extends HapiSuite {
                                 .hasPriority(recordWith()
                                         .contractCallResult(
                                                 resultWith().contractCallResult(() -> Bytes32.repeat((byte) 0))))
-                                .logged());
+                                .logged()
+                );
     }
 
     private HapiSpec depositMoreThanBalanceFailsGracefully() {
@@ -1331,11 +1413,10 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     HapiSpec callingDestructedContractReturnsStatusDeleted() {
-        final var beneficairy = "beneficiary";
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("CallingDestructedContractReturnsStatusDeleted")
                 .given(
-                        cryptoCreate(beneficairy).exposingCreatedIdTo(accountIDAtomicReference::set),
+                        cryptoCreate(BENEFICIARY).exposingCreatedIdTo(accountIDAtomicReference::set),
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
