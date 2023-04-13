@@ -26,7 +26,7 @@ import java.util.Set;
  * @param <K>
  * 		the type of the key
  */
-public class InMemoryKeySet<K extends VirtualKey<? super K>> implements VirtualKeySet<K> {
+public class InMemoryKeySet<K extends VirtualKey> implements VirtualKeySet<K> {
 
     private final Set<K> set = new HashSet<>();
 

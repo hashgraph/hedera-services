@@ -89,8 +89,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements VirtualDataSource<K, V> {
+public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
 
     private static final Logger logger = LogManager.getLogger(MerkleDbDataSource.class);
 

@@ -38,6 +38,7 @@ dependencies {
 
   testImplementation(project(":swirlds-base"))
   testImplementation(project(":swirlds-merkle"))
+  testImplementation(project(":swirlds-sign-tool")) // TODO: should be removed in future
   testImplementation(libs.commons.collections4)
   testImplementation(libs.classgraph)
   testImplementation(testLibs.bundles.junit)

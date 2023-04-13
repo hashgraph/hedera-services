@@ -112,8 +112,8 @@ import java.util.Objects;
  * @param <V>
  * 		The value. Must be a {@link VirtualValue}.
  */
-public final class VirtualMap<K extends VirtualKey<? super K>, V extends VirtualValue>
-        extends PartialBinaryMerkleInternal implements ExternalSelfSerializable, Labeled, MerkleInternal {
+public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> extends PartialBinaryMerkleInternal
+        implements ExternalSelfSerializable, Labeled, MerkleInternal {
 
     /**
      * Used for serialization.

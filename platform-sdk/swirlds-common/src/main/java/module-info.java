@@ -83,16 +83,13 @@ module com.swirlds.common {
             com.swirlds.platform.test,
             com.swirlds.common.test,
             com.swirlds.jrs,
-            com.swirlds.demo.platform;
+            com.swirlds.demo.platform,
+            com.swirlds.signingtool;
     exports com.swirlds.common.crypto.internal to
             com.swirlds.platform,
             com.swirlds.common.test;
     exports com.swirlds.common.notification.internal to
             com.swirlds.common.test;
-    exports com.swirlds.common.signingtool to
-            com.swirlds.common.test,
-            com.swirlds.demo.platform,
-            com.swirlds.jrs;
     exports com.swirlds.common.crypto.engine to
             com.swirlds.common.test;
 
