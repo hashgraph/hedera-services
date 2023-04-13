@@ -58,7 +58,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
-    /** modify this value to change how updateStake behaves. */
+    /** modify this value to change how updateWeight behaves. */
     private static final int STAKING_PROFILE = 1;
 
     private static class ClassVersion {
@@ -195,9 +195,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @Override
     @NonNull
-    public AddressBook updateStake(@NonNull final AddressBook addressBook) {
+    public AddressBook updateWeight(@NonNull final AddressBook addressBook) {
         Objects.requireNonNull(addressBook, "the address book cannot be null");
-        logger.info("updateStake called in State. Staking Profile: {}", STAKING_PROFILE);
+        logger.info("updateWeight called in State. Staking Profile: {}", STAKING_PROFILE);
         switch (STAKING_PROFILE) {
             case 1:
                 return stakingProfile1(addressBook);
@@ -210,31 +210,31 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     }
 
     /**
-     * All nodes received 10 stake.
+     * All nodes received 10 weight.
      *
      * @param addressBook the address book to update.
      * @return the updated address book.
      */
     @NonNull
     private AddressBook stakingProfile1(@NonNull final AddressBook addressBook) {
-        logger.info(STARTUP.getMarker(), "Staking Profile 1: updating all nodes to have 10 stake.");
+        logger.info(STARTUP.getMarker(), "Staking Profile 1: updating all nodes to have 10 weight.");
         for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateStake(i, 10);
+            addressBook.updateWeight(i, 10);
         }
         return addressBook;
     }
 
     /**
-     * All nodes received stake equal to their nodeId.
+     * All nodes received weight equal to their nodeId.
      *
      * @param addressBook the address book to update.
      * @return the updated address book.
      */
     @NonNull
     private AddressBook stakingProfile2(@NonNull final AddressBook addressBook) {
-        logger.info(STARTUP.getMarker(), "Staking Profile 2: updating all nodes to have stake equal to their nodeId.");
+        logger.info(STARTUP.getMarker(), "Staking Profile 2: updating all nodes to have weight equal to their nodeId.");
         for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateStake(i, i);
+            addressBook.updateWeight(i, i);
         }
         return addressBook;
     }

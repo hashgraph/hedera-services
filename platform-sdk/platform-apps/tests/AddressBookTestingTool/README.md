@@ -53,14 +53,14 @@ AddressBookInitializer: A setting has forced the use of the configuration addres
 
 * check the directory `sdk/data/saved/address_book` for files
   * usedAddressBook_v1_<date>.txt
-    * matches the addresses in the config.txt, including stake value.
+    * matches the addresses in the config.txt, including weight value.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * the state saved address book was null
     * the used address book text says `The Configuration Address Book Was Used.`
 
 
-### Call to SwirldState.updateStake() on Genesis
+### Call to SwirldState.updateWeight() on Genesis
 #### Instructions
 1. Delete `sdk/data/saved` directory if it exists
 2. **Ensure settings.txt has `state.saveStatePeriod,     10` (differs from previous section)**
@@ -72,12 +72,12 @@ AddressBookInitializer: A setting has forced the use of the configuration addres
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: The loaded signed state is null. The candidateAddressBook is set to genesisSwirldState.updateStake(configAddressBook, null).
+AddressBookInitializer: The loaded signed state is null. The candidateAddressBook is set to genesisSwirldState.updateWeight(configAddressBook, null).
 ```
 
 * check the directory `sdk/data/saved/address_book` for files
   * usedAddressBook_v1_<date>.txt
-    * **contains the addresses in the config.txt, all with stake 10. (differs from previous section)**
+    * **contains the addresses in the config.txt, all with weight 10. (differs from previous section)**
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * the state saved address book was null
@@ -96,12 +96,12 @@ AddressBookInitializer: The loaded signed state is null. The candidateAddressBoo
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: No Software Upgrade. Continuing with software version 1 and using the loaded signed state's address book and stake values.
+AddressBookInitializer: No Software Upgrade. Continuing with software version 1 and using the loaded signed state's address book and weight values.
 ```
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * contains the addresses in the config.txt, all with stake 10.
+    * contains the addresses in the config.txt, all with weight 10.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * **the state saved address book matches the content of the non-debug .txt file. (differs from previous section)**
@@ -123,10 +123,10 @@ AddressBookInitializer: A setting has forced the use of the configuration addres
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * **matches the addresses in the config.txt, including stake value. (differs from previous section)**
+    * **matches the addresses in the config.txt, including weight value. (differs from previous section)**
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
-    * **the state saved address book contains the addresses in the config.txt, all with stake 10. (differs from previous section)**
+    * **the state saved address book contains the addresses in the config.txt, all with weight 10. (differs from previous section)**
     * **the used address book has the text `The Configuration Address Book Was Used.` (differs from previous section)**
 
 ### No Software Upgrade, Use Saved State Address Book, Matches Config
@@ -140,12 +140,12 @@ AddressBookInitializer: A setting has forced the use of the configuration addres
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: No Software Upgrade. Continuing with software version 1 and using the loaded signed state's address book and stake values.
+AddressBookInitializer: No Software Upgrade. Continuing with software version 1 and using the loaded signed state's address book and weight values.
 ```
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * matches the addresses in the config.txt, including stake value.
+    * matches the addresses in the config.txt, including weight value.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * **The state saved address book is the same as what is in the config.txt (differs from previous section)**
@@ -167,12 +167,12 @@ AddressBookInitializer: No Software Upgrade. Continuing with software version 1 
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: Software Upgrade from version 1 to 2. The address book stake will be updated by the saved state's SwirldState.
+AddressBookInitializer: Software Upgrade from version 1 to 2. The address book weight will be updated by the saved state's SwirldState.
 ```
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * **matches the addresses in the config.txt, but the stake values incrementally increase starting from 0. (differs from previous section)**
+    * **matches the addresses in the config.txt, but the weight values incrementally increase starting from 0. (differs from previous section)**
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * The state saved address book is the same as what is in config.txt

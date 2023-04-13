@@ -44,9 +44,9 @@ public class ConsensusHashFinder {
     private final Set<Long> reportingNodes = new HashSet<>();
 
     /**
-     * The total stake in the network.
+     * The total weight in the network.
      */
-    private final long totalStake;
+    private final long totalWeight;
 
     /**
      * The current round.
@@ -56,10 +56,10 @@ public class ConsensusHashFinder {
     /**
      * The total state of nodes that have reported their hash for this round.
      */
-    private long hashReportedStake;
+    private long hashReportedWeight;
 
     /**
-     * The partition with the largest stake.
+     * The partition with the largest weight.
      */
     private HashPartition largestPartition;
 
@@ -83,14 +83,14 @@ public class ConsensusHashFinder {
      * 		against the consensus hash
      * @param round
      * 		the current round
-     * @param totalStake
-     * 		the total stake contained within the network for this round
+     * @param totalWeight
+     * 		the total weight contained within the network for this round
      */
     public ConsensusHashFinder(
-            final StateHashValidityTrigger stateHashValidityDispatcher, final long round, final long totalStake) {
+            final StateHashValidityTrigger stateHashValidityDispatcher, final long round, final long totalWeight) {
         this.stateHashValidityDispatcher = stateHashValidityDispatcher;
         this.round = round;
-        this.totalStake = totalStake;
+        this.totalWeight = totalWeight;
     }
 
     /**
@@ -122,12 +122,12 @@ public class ConsensusHashFinder {
      *
      * @param nodeId
      * 		the node that provided the hash
-     * @param nodeStake
-     * 		the stake of the node
+     * @param nodeWeight
+     * 		the weight of the node
      * @param stateHash
      * 		the hash reported by the node
      */
-    public void addHash(final long nodeId, final long nodeStake, final Hash stateHash) {
+    public void addHash(final long nodeId, final long nodeWeight, final Hash stateHash) {
         if (!reportingNodes.add(nodeId)) {
             // Prevent the same node from reporting multiple times in the same round.
             return;
@@ -143,9 +143,9 @@ public class ConsensusHashFinder {
         }
 
         // Add the node to the partition
-        partition.addNodeHash(nodeId, nodeStake);
-        hashReportedStake += nodeStake;
-        if (largestPartition == null || partition.getTotalStake() > largestPartition.getTotalStake()) {
+        partition.addNodeHash(nodeId, nodeWeight);
+        hashReportedWeight += nodeWeight;
+        if (largestPartition == null || partition.getTotalWeight() > largestPartition.getTotalWeight()) {
             largestPartition = partition;
         }
 
@@ -157,14 +157,14 @@ public class ConsensusHashFinder {
         }
 
         // Now, check and see if we are capable of making a decision
-        if (isMajority(largestPartition.getTotalStake(), totalStake)) {
+        if (isMajority(largestPartition.getTotalWeight(), totalWeight)) {
             // There exists a partition with a quorum.
             consensusHash = largestPartition.getHash();
             status = ConsensusHashStatus.DECIDED;
             sendHashValidityDispatchForAllNodes();
         } else {
-            long remainingStake = totalStake - hashReportedStake;
-            if (!isMajority(largestPartition.getTotalStake() + remainingStake, totalStake)) {
+            long remainingWeight = totalWeight - hashReportedWeight;
+            if (!isMajority(largestPartition.getTotalWeight() + remainingWeight, totalWeight)) {
                 // There exists no partition with quorum, and there will never exist a partition with a quorum.
                 // Heaven help us.
                 status = ConsensusHashStatus.CATASTROPHIC_ISS;
@@ -205,17 +205,17 @@ public class ConsensusHashFinder {
     }
 
     /**
-     * Get the total stake in the network.
+     * Get the total weight in the network.
      */
-    public long getTotalStake() {
-        return totalStake;
+    public long getTotalWeight() {
+        return totalWeight;
     }
 
     /**
-     * Get the amount of stake of nodes that have submitted a hash for this round.
+     * Get the amount of weight of nodes that have submitted a hash for this round.
      */
-    public long getHashReportedStake() {
-        return hashReportedStake;
+    public long getHashReportedWeight() {
+        return hashReportedWeight;
     }
 
     /**
@@ -223,10 +223,10 @@ public class ConsensusHashFinder {
      */
     public void writePartitionData(final StringBuilder sb) {
         sb.append("Nodes holding ")
-                .append(hashReportedStake)
+                .append(hashReportedWeight)
                 .append("/")
-                .append(totalStake)
-                .append(" stake have reported a hash for round ")
+                .append(totalWeight)
+                .append(" weight have reported a hash for round ")
                 .append(round)
                 .append(".\n");
         if (consensusHash != null) {
@@ -235,8 +235,8 @@ public class ConsensusHashFinder {
 
         final List<HashPartition> partitions = new ArrayList<>(partitionMap.size());
         partitions.addAll(partitionMap.values());
-        // Sort from highest stake to lowest stake
-        partitions.sort((a, b) -> (int) (b.getTotalStake() - a.getTotalStake()));
+        // Sort from highest weight to lowest weight
+        partitions.sort((a, b) -> (int) (b.getTotalWeight() - a.getTotalWeight()));
 
         for (final HashPartition partition : partitions) {
             sb.append("- node");
@@ -260,7 +260,7 @@ public class ConsensusHashFinder {
             }
             sb.append("\n");
 
-            sb.append("  partition stake: ").append(partition.getTotalStake()).append("\n");
+            sb.append("  partition weight: ").append(partition.getTotalWeight()).append("\n");
             sb.append("  partition hash: ").append(partition.getHash()).append("\n");
         }
     }

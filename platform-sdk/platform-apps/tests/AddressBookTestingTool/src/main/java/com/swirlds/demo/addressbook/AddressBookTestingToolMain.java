@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * <p>
- * An application that updates address book stake weights on version upgrade.
+ * An application that updates address book weight weights on version upgrade.
  * </p>
  *
  * <p>

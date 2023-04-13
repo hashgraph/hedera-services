@@ -51,8 +51,8 @@ public class Address implements SelfSerializable {
     private String selfName;
     /** is this member running on the local computer? */
     private boolean ownHost;
-    /** the member's nonnegative stake, used for weighted voting */
-    private long stake;
+    /** the member's nonnegative weight, used for weighted voting */
+    private long weight;
     /** IP address on the local network (IPv4) */
     private byte[] addressInternalIpv4;
     /** port used on the local network (IPv4) */
@@ -108,7 +108,7 @@ public class Address implements SelfSerializable {
             final long id,
             final String nickname,
             final String selfName,
-            final long stake,
+            final long weight,
             final boolean ownHost,
             final byte[] addressInternalIpv4,
             final int portInternalIpv4,
@@ -119,7 +119,7 @@ public class Address implements SelfSerializable {
                 id,
                 nickname,
                 selfName,
-                stake, // stake
+                weight, // weight
                 ownHost, // ownHost
                 addressInternalIpv4,
                 portInternalIpv4,
@@ -148,7 +148,7 @@ public class Address implements SelfSerializable {
      * @param id                  the ID for that member
      * @param nickname            the name given to that member by the member creating this address
      * @param selfName            the name given to that member by themself
-     * @param stake               the amount of stake (0 if they should have no influence on the consensus)
+     * @param weight               the amount of weight (0 if they should have no influence on the consensus)
      * @param ownHost             is that member running on the same machine as the member creating this address?
      * @param addressInternalIpv4 IPv4 address on the inside of the NATing router
      * @param portInternalIpv4    port for the internal IPv4 address
@@ -169,7 +169,7 @@ public class Address implements SelfSerializable {
             long id,
             String nickname,
             String selfName,
-            long stake,
+            long weight,
             boolean ownHost,
             byte[] addressInternalIpv4,
             int portInternalIpv4,
@@ -187,7 +187,7 @@ public class Address implements SelfSerializable {
                 id,
                 nickname,
                 selfName,
-                stake,
+                weight,
                 ownHost,
                 addressInternalIpv4,
                 portInternalIpv4,
@@ -209,7 +209,7 @@ public class Address implements SelfSerializable {
      * @param id                  the ID for that member
      * @param nickname            the name given to that member by the member creating this address
      * @param selfName            the name given to that member by themself
-     * @param stake               the amount of stake (0 if they should have no influence on the consensus)
+     * @param weight               the amount of weight (0 if they should have no influence on the consensus)
      * @param ownHost             is that member running on the same machine as the member creating this address?
      * @param addressInternalIpv4 IPv4 address on the inside of the NATing router
      * @param portInternalIpv4    port for the internal IPv4 address
@@ -229,7 +229,7 @@ public class Address implements SelfSerializable {
             final long id,
             final String nickname,
             final String selfName,
-            final long stake,
+            final long weight,
             final boolean ownHost,
             final byte[] addressInternalIpv4,
             final int portInternalIpv4,
@@ -246,7 +246,7 @@ public class Address implements SelfSerializable {
         this.id = id;
         this.nickname = nickname;
         this.selfName = selfName;
-        this.stake = stake;
+        this.weight = weight;
         this.ownHost = ownHost;
         this.portInternalIpv4 = portInternalIpv4;
         this.portInternalIpv6 = portInternalIpv6;
@@ -279,21 +279,21 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * The nonnegative stake for this member, which is the voting weight for consensus.
+     * The nonnegative weight for this member, which is the voting weight for consensus.
      *
-     * @return the stake
+     * @return the weight
      */
-    public long getStake() {
-        return stake;
+    public long getWeight() {
+        return weight;
     }
 
     /**
-     * Convenience method to check if this node has zero stake.
+     * Convenience method to check if this node has zero weight.
      *
-     * @return true if this node has zero stake
+     * @return true if this node has zero weight
      */
-    public boolean isZeroStake() {
-        return stake == 0;
+    public boolean isZeroWeight() {
+        return weight == 0;
     }
 
     /**
@@ -491,14 +491,14 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Create a new Address object based this one with different stake.
+     * Create a new Address object based this one with different weight.
      *
-     * @param stake New stake for the created Address.
+     * @param weight New weight for the created Address.
      * @return The new Address.
      */
-    public Address copySetStake(long stake) {
+    public Address copySetWeight(long weight) {
         Address a = copy();
-        a.stake = stake;
+        a.weight = weight;
         return a;
     }
 
@@ -680,7 +680,7 @@ public class Address implements SelfSerializable {
                 id,
                 nickname,
                 selfName,
-                stake,
+                weight,
                 ownHost,
                 addressInternalIpv4,
                 portInternalIpv4,
@@ -733,7 +733,7 @@ public class Address implements SelfSerializable {
         outStream.writeLong(id);
         outStream.writeNormalisedString(nickname);
         outStream.writeNormalisedString(selfName);
-        outStream.writeLong(stake);
+        outStream.writeLong(weight);
         outStream.writeByteArray(addressInternalIpv4);
         outStream.writeInt(portInternalIpv4);
         outStream.writeByteArray(addressExternalIpv4);
@@ -756,7 +756,7 @@ public class Address implements SelfSerializable {
         id = inStream.readLong();
         nickname = inStream.readNormalisedString(STRING_MAX_BYTES);
         selfName = inStream.readNormalisedString(STRING_MAX_BYTES);
-        stake = inStream.readLong();
+        weight = inStream.readLong();
         ownHost = false;
 
         addressInternalIpv4 = inStream.readByteArray(MAX_IP_LENGTH);
@@ -819,17 +819,17 @@ public class Address implements SelfSerializable {
         }
 
         Address address = (Address) o;
-        return equalsWithoutStake(address) && stake == address.stake;
+        return equalsWithoutWeight(address) && weight == address.weight;
     }
 
     /**
-     * Checks for equality with another addresses without checking the equality of stake values.
+     * Checks for equality with another addresses without checking the equality of weight values.
      *
      * @param address The other address to check for equality with this address.
-     * @return true if all values in the other address match this address without consideration of stake, false
+     * @return true if all values in the other address match this address without consideration of weight, false
      * otherwise.
      */
-    public boolean equalsWithoutStake(@NonNull final Address address) {
+    public boolean equalsWithoutWeight(@NonNull final Address address) {
         return id == address.id
                 && ownHost == address.ownHost
                 && portInternalIpv4 == address.portInternalIpv4
@@ -872,7 +872,7 @@ public class Address implements SelfSerializable {
                 .append("nickname", nickname)
                 .append("selfName", selfName)
                 .append("ownHost", ownHost)
-                .append("stake", stake)
+                .append("weight", weight)
                 .append("addressInternalIpv4", Arrays.toString(addressInternalIpv4))
                 .append("portInternalIpv4", portInternalIpv4)
                 .append("addressExternalIpv4", Arrays.toString(addressExternalIpv4))
