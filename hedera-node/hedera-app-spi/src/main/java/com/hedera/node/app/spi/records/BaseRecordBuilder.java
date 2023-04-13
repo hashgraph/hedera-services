@@ -18,15 +18,13 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/annotations/NodeSelfId.java
-package com.hedera.node.app.annotations;
-
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+package com.hedera.node.app.spi.records;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * This annotation is used with dependency injection to inject the node's self account ID as an argument to a
@@ -36,8 +34,6 @@ import javax.inject.Qualifier;
 @Qualifier
 @Retention(RUNTIME)
 public @interface NodeSelfId {}
-========
-package com.hedera.node.app.spi.records;
 
 /**
  * Base implementation of a {@code UniversalRecordBuilder} that will track all the
@@ -53,4 +49,3 @@ public class BaseRecordBuilder<T extends RecordBuilder<T>> extends UniversalReco
         return (T) this;
     }
 }
->>>>>>>> develop:hedera-node/hedera-app-spi/src/main/java/com/hedera/node/app/spi/records/BaseRecordBuilder.java
