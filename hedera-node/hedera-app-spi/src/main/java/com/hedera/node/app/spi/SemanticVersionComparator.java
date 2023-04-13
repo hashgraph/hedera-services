@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi;
 
-import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hedera.hapi.node.base.SemanticVersion;
 import java.util.Comparator;
 
 /**
@@ -26,9 +26,9 @@ import java.util.Comparator;
  * can remove this class.
  */
 public class SemanticVersionComparator {
-    public static final Comparator<SemanticVersion> INSTANCE = Comparator.comparingInt(SemanticVersion::getMajor)
-            .thenComparingInt(SemanticVersion::getMinor)
-            .thenComparingInt(SemanticVersion::getPatch);
+    public static final Comparator<SemanticVersion> INSTANCE = Comparator.comparingInt(SemanticVersion::major)
+            .thenComparingInt(SemanticVersion::minor)
+            .thenComparingInt(SemanticVersion::patch);
 
     private SemanticVersionComparator() {}
 }

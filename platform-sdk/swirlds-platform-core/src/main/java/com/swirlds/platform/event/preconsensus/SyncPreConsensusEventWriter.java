@@ -16,12 +16,16 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
+
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.common.utility.Stoppable;
 import com.swirlds.common.utility.Units;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
@@ -109,11 +113,17 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     /**
      * Create a new PreConsensusEventWriter.
      *
-     * @param config      configuration for preconsensus event streams
+     * @param platformContext the platform context
      * @param fileManager manages all preconsensus event stream files currently on disk
      */
     public SyncPreConsensusEventWriter(
-            final PreConsensusEventStreamConfig config, final PreConsensusEventFileManager fileManager) {
+            @NonNull final PlatformContext platformContext, @NonNull final PreConsensusEventFileManager fileManager) {
+
+        throwArgNull(platformContext, "platformContext");
+        throwArgNull(fileManager, "fileManager");
+
+        final PreConsensusEventStreamConfig config =
+                platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
 
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
 
@@ -130,7 +140,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public synchronized void writeEvent(final EventImpl event) {
+    public synchronized void writeEvent(@NonNull final EventImpl event) {
         validateSequenceNumber(event);
         if (event.getGeneration() >= minimumGenerationNonAncient) {
             writeEventToStream(event);
@@ -143,7 +153,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     /**
      * Make sure that the event has a valid stream sequence number.
      */
-    private static void validateSequenceNumber(final EventImpl event) {
+    private static void validateSequenceNumber(@NonNull final EventImpl event) {
         if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER
                 || event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event must have a valid stream sequence number");
@@ -151,24 +161,30 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     }
 
     /**
-     * Flush the stream if needed. Should be called after each event is written.
+     * Flush the stream if needed.
      */
-    private void flushIfNeeded() {
-        // Remove all events that have already been flushed. This scenario is relevant after a file is closed.
-        while (!flushableEvents.isEmpty() && flushableEvents.peek() < lastWrittenEvent) {
-            flushableEvents.remove();
-        }
-        if (!flushableEvents.isEmpty()) {
+    private synchronized void flushIfNeeded() {
+        while (!flushableEvents.isEmpty()) {
             final long nextFlushableEvent = flushableEvents.peek();
-            if (nextFlushableEvent == lastWrittenEvent) {
-                try {
-                    currentMutableFile.flush();
-                } catch (final IOException e) {
-                    throw new UncheckedIOException("unable to flush", e);
-                }
-                markEventsAsFlushed();
-                flushableEvents.remove();
+
+            if (nextFlushableEvent > lastWrittenEvent) {
+                // We can't flush this until it gets written
+                break;
             }
+
+            flushableEvents.remove();
+
+            if (nextFlushableEvent <= lastFlushedEvent.getCount()) {
+                // This is already flushed
+                continue;
+            }
+
+            try {
+                currentMutableFile.flush();
+            } catch (final IOException e) {
+                throw new UncheckedIOException("unable to flush", e);
+            }
+            markEventsAsFlushed();
         }
     }
 
@@ -177,7 +193,8 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      *
      * @param event the event to write
      */
-    private void writeEventToStream(final EventImpl event) {
+    private void writeEventToStream(@NonNull final EventImpl event) {
+        throwArgNull(event, "event");
         try {
             prepareOutputStream(event);
             currentMutableFile.writeEvent(event);
@@ -213,7 +230,8 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public synchronized boolean isEventDurable(final EventImpl event) {
+    public synchronized boolean isEventDurable(@NonNull final EventImpl event) {
+        throwArgNull(event, "event");
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             // Stale events are not written to disk.
             return false;
@@ -225,11 +243,12 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void waitUntilDurable(final EventImpl event) throws InterruptedException {
+    public void waitUntilDurable(@NonNull final EventImpl event) throws InterruptedException {
+        throwArgNull(event, "event");
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event is stale and will never be durable");
         }
-
+        flushIfNeeded();
         lastFlushedEvent.await(event.getStreamSequenceNumber());
     }
 
@@ -237,11 +256,14 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public boolean waitUntilDurable(final EventImpl event, final Duration timeToWait) throws InterruptedException {
+    public boolean waitUntilDurable(@NonNull final EventImpl event, @NonNull final Duration timeToWait)
+            throws InterruptedException {
+        throwArgNull(event, "event");
+        throwArgNull(timeToWait, "timeToWait");
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event is stale and will never be durable");
         }
-
+        flushIfNeeded();
         return lastFlushedEvent.await(event.getStreamSequenceNumber(), timeToWait);
     }
 
@@ -267,7 +289,8 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public synchronized void requestFlush(final EventImpl event) {
+    public synchronized void requestFlush(@NonNull final EventImpl event) {
+        throwArgNull(event, "event");
         final long eventSequenceNumber = event.getStreamSequenceNumber();
         if (eventSequenceNumber == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             // Stale events are not written to disk.
@@ -279,19 +302,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             return;
         }
 
-        if (lastWrittenEvent < eventSequenceNumber) {
-            // We haven't yet written this event, event will be flushed as soon as it is written.
-            flushableEvents.add(eventSequenceNumber);
-            return;
-        }
-
-        // We have written the event to the stream, flush immediately
-        try {
-            currentMutableFile.flush();
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        markEventsAsFlushed();
+        flushableEvents.add(eventSequenceNumber);
     }
 
     /**
@@ -337,7 +348,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      *
      * @param eventToWrite the event that is about to be written
      */
-    private void prepareOutputStream(final EventImpl eventToWrite) throws IOException {
+    private void prepareOutputStream(@NonNull final EventImpl eventToWrite) throws IOException {
         if (currentMutableFile != null
                 && (!currentMutableFile.canContain(eventToWrite)
                         || currentMutableFile.fileSize() * Units.BYTES_TO_MEBIBYTES >= preferredFileSizeMegabytes)) {

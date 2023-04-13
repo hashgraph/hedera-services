@@ -162,7 +162,8 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             }
 
             if (needsPayment() && !loggingOff) {
-                log.info(spec.logPrefix() + "Paying for " + this + " with " + txnToString(payment));
+                String message = String.format("%sPaying for %s with %s", spec.logPrefix(), this, txnToString(payment));
+                log.info(message);
             }
             timedSubmitWith(spec, payment);
 
@@ -180,7 +181,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             if (permissibleAnswerOnlyPrechecks.get().contains(actualPrecheck)) {
                 answerOnlyPrecheck = Optional.of(actualPrecheck);
             } else {
-                String errMsg = String.format(
+                final String errMsg = String.format(
                         "Answer-only precheck was %s, not one of %s!",
                         actualPrecheck, permissibleAnswerOnlyPrechecks.get());
                 if (!loggingOff) {
@@ -190,7 +191,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             }
         } else {
             if (expectedAnswerOnlyPrecheck() != actualPrecheck) {
-                String errMsg = String.format(
+                final String errMsg = String.format(
                         "Bad answerOnlyPrecheck! expected %s, actual %s", expectedAnswerOnlyPrecheck(), actualPrecheck);
                 if (!loggingOff) {
                     log.error(errMsg);
@@ -245,7 +246,9 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             long initNodePayment = costOnlyNodePayment(spec);
             Transaction payment = finalizedTxn(spec, opDef(spec, initNodePayment), true);
             if (!loggingOff) {
-                log.info(spec.logPrefix() + "Paying for COST_ANSWER of " + this + " with " + txnToString(payment));
+                final String message = String.format(
+                        "%sPaying for COST_ANSWER of %s with %s", spec.logPrefix(), this, txnToString(payment));
+                log.info(message);
             }
             long realNodePayment = timedCostLookupWith(spec, payment);
             if (recordsNodePayment) {
@@ -265,13 +268,15 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             }
             txnSubmitted = payment;
             if (!loggingOff) {
-                log.info(spec.logPrefix() + "--> Node payment for " + this + " is " + realNodePayment + " tinyBars.");
+                final String message = String.format(
+                        "%s--> Node payment for %s is %s tinyBars.", spec.logPrefix(), this, realNodePayment);
+                log.info(message);
             }
             if (expectStrictCostAnswer) {
                 Transaction insufficientPayment = finalizedTxn(spec, opDef(spec, realNodePayment - 1));
                 submitWith(spec, insufficientPayment);
                 if (INSUFFICIENT_TX_FEE != reflectForPrecheck(response)) {
-                    String errMsg = String.format(
+                    final String errMsg = String.format(
                             "Strict cost of answer! suppose to be %s, but get %s",
                             INSUFFICIENT_TX_FEE, reflectForPrecheck(response));
                     log.error(errMsg);

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
+import static com.hedera.node.app.service.mono.grpc.marshalling.FeeAssessor.IS_NOT_FALLBACK_FEE;
 import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fixedFee;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -87,7 +88,7 @@ public class FractionalFeeAssessor {
             if (spec.isNetOfTransfers()) {
                 final var addedFee = fixedFee(
                         assessedAmount, denom.asEntityId(), fee.getFeeCollector(), fee.getAllCollectorsAreExempt());
-                fixedFeeAssessor.assess(payer, feeMeta, addedFee, changeManager, accumulator);
+                fixedFeeAssessor.assess(payer, feeMeta, addedFee, changeManager, accumulator, IS_NOT_FALLBACK_FEE);
             } else {
                 long exemptAmount;
                 try {

@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -43,7 +45,20 @@ class WritableStoreFactoryTest {
     @BeforeEach
     void setUp() {
         workingStateAccessor = new WorkingStateAccessor();
+        workingStateAccessor.setHederaState(state);
         subject = new WritableStoreFactory(workingStateAccessor);
+    }
+
+    @Test
+    void emptyConstructor() {
+        assertDoesNotThrow(() -> new WritableStoreFactory(workingStateAccessor));
+    }
+
+    @Test
+    void createsWritableStore() {
+        given(state.createWritableStates(ConsensusService.NAME)).willReturn(writableStates);
+        subject = new WritableStoreFactory(workingStateAccessor);
+        assertNotNull(subject.createTopicStore());
     }
 
     @Test
@@ -51,6 +66,14 @@ class WritableStoreFactoryTest {
         workingStateAccessor.setHederaState(state);
         given(state.createWritableStates("ConsensusService")).willReturn(writableStates);
         final var store = subject.createTopicStore();
+        assertNotNull(store);
+    }
+
+    @Test
+    void returnsTokenStore() {
+        workingStateAccessor.setHederaState(state);
+        given(state.createWritableStates("TokenService")).willReturn(writableStates);
+        final var store = subject.createTokenStore();
         assertNotNull(store);
     }
 }

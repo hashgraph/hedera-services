@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeF
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -36,7 +37,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSch
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING_FEES_NODE_REWARD_PERCENTAGE;
 import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING_FEES_STAKING_REWARD_PERCENTAGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -55,9 +58,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 public class TargetNetworkPrep extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TargetNetworkPrep.class);
+    public static final int SYSTEM_ENTITY_EXPIRY = 1812637686;
 
     public static void main(String... args) {
         var hero = new TargetNetworkPrep();
@@ -67,7 +72,7 @@ public class TargetNetworkPrep extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(ensureSystemStateAsExpected());
+        return List.of(ensureSystemStateAsExpected(), ensureBlockedAccountIsCreated());
     }
 
     private HapiSpec ensureSystemStateAsExpected() {
@@ -116,8 +121,8 @@ public class TargetNetworkPrep extends HapiSuite {
                                     .logged(),
                             sourcing(() -> getAccountBalance(STAKING_REWARD)
                                     .hasTinyBars(changeFromSnapshot(snapshot800, (long) (ONE_HBAR
-                                            + ((feeObs.get().getNetworkFee()
-                                                            + feeObs.get().getServiceFee())
+                                            + ((feeObs.get().networkFee()
+                                                            + feeObs.get().serviceFee())
                                                     * 0.1))))),
                             balanceSnapshot(snapshot801, NODE_REWARD),
                             cryptoTransfer(tinyBarsFromTo(civilian, NODE_REWARD, ONE_HBAR))
@@ -126,8 +131,8 @@ public class TargetNetworkPrep extends HapiSuite {
                                     .logged(),
                             sourcing(() -> getAccountBalance(NODE_REWARD)
                                     .hasTinyBars(changeFromSnapshot(snapshot801, (long) (ONE_HBAR
-                                            + ((feeObs.get().getNetworkFee()
-                                                            + feeObs.get().getServiceFee())
+                                            + ((feeObs.get().networkFee()
+                                                            + feeObs.get().serviceFee())
                                                     * 0.1))))))
                     .then(
                             getAccountDetails(STAKING_REWARD)
@@ -167,6 +172,29 @@ public class TargetNetworkPrep extends HapiSuite {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private HapiSpec ensureBlockedAccountIsCreated() {
+        final var civilian = "civilian";
+        final var blockedEvmAddressHex = "02f1c4C93AFEd946Cce5Ad7D34354A150bEfCFcF";
+        final var blockedEvmAddress =
+                ByteString.copyFrom(Bytes.fromHexString(blockedEvmAddressHex).toArray());
+        return defaultHapiSpec("EnsureBlockedAccountIsCreated")
+                .given(
+                        cryptoCreate(civilian).balance(10 * ONE_HBAR),
+                        getAliasedAccountInfo(blockedEvmAddress)
+                                .has(AccountInfoAsserts.accountWith()
+                                        .key(GENESIS)
+                                        .receiverSigReq(true)
+                                        .memo("Hedera Local Node address")
+                                        .balance(0L)
+                                        .expiry(SYSTEM_ENTITY_EXPIRY, 0)
+                                        .autoRenew(SYSTEM_ENTITY_EXPIRY)))
+                .when(cryptoTransfer(tinyBarsFromTo(civilian, blockedEvmAddress, ONE_HBAR))
+                        .payingWith(civilian)
+                        .signedBy(civilian)
+                        .hasKnownStatus(INVALID_SIGNATURE))
+                .then();
     }
 
     @Override

@@ -16,34 +16,42 @@
 
 package com.hedera.node.app.workflows.query;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.SessionContext;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
+import com.hedera.node.app.spi.info.CurrentPlatformStatus;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.node.app.workflows.TransactionChecker;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/**
- * This class contains all checks related to instances of {@link com.hederahashgraph.api.proto.java.Query}
- */
+/** This class contains all checks related to instances of {@link Query} */
 @Singleton
 public class QueryChecker {
 
-    private final WorkflowOnset onset;
+    private final NodeInfo nodeInfo;
+    private final CurrentPlatformStatus currentPlatformStatus;
+    private final TransactionChecker transactionChecker;
     private final HederaAccountNumbers accountNumbers;
     private final QueryFeeCheck queryFeeCheck;
     private final Authorizer authorizer;
@@ -52,22 +60,28 @@ public class QueryChecker {
     /**
      * Constructor of {@code QueryChecker}
      *
-     * @param onset the {@link WorkflowOnset} that (eventually) pre-processes the CryptoTransfer
+     * @param nodeInfo the {@link NodeInfo} that contains information about the node
+     * @param currentPlatformStatus the {@link CurrentPlatformStatus} that contains the current status of the platform
+     * @param transactionChecker the {@link TransactionChecker} that (eventually) pre-processes the CryptoTransfer
      * @param accountNumbers the {@link HederaAccountNumbers} that contains a list of special accounts
      * @param queryFeeCheck the {@link QueryFeeCheck} that checks if fees can be paid
      * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
      * @param cryptoTransferHandler the {@link CryptoTransferHandler} that validates a contained
-     * {@link com.hederahashgraph.api.proto.java.CryptoTransfer}
+     *     {@link HederaFunctionality#CRYPTO_TRANSFER}.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
     public QueryChecker(
-            @NonNull final WorkflowOnset onset,
+            @NonNull final NodeInfo nodeInfo,
+            @NonNull final CurrentPlatformStatus currentPlatformStatus,
+            @NonNull final TransactionChecker transactionChecker,
             @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final QueryFeeCheck queryFeeCheck,
             @NonNull final Authorizer authorizer,
             @NonNull final CryptoTransferHandler cryptoTransferHandler) {
-        this.onset = requireNonNull(onset);
+        this.nodeInfo = requireNonNull(nodeInfo);
+        this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
+        this.transactionChecker = requireNonNull(transactionChecker);
         this.accountNumbers = requireNonNull(accountNumbers);
         this.queryFeeCheck = requireNonNull(queryFeeCheck);
         this.authorizer = requireNonNull(authorizer);
@@ -75,20 +89,32 @@ public class QueryChecker {
     }
 
     /**
-     * Validates the {@link com.hederahashgraph.api.proto.java.CryptoTransfer} that is contained in a query
+     * Checks the general state of the node
      *
-     * @param session the {@link SessionContext} with all parsers
+     * @throws PreCheckException if the node is unable to process queries
+     */
+    public void checkNodeState() throws PreCheckException {
+        if (nodeInfo.isSelfZeroStake()) {
+            // Zero stake nodes are currently not supported
+            throw new PreCheckException(INVALID_NODE_ACCOUNT);
+        }
+        if (currentPlatformStatus.get() != ACTIVE) {
+            throw new PreCheckException(PLATFORM_NOT_ACTIVE);
+        }
+    }
+
+    /**
+     * Validates the {@link HederaFunctionality#CRYPTO_TRANSFER} that is contained in a query
+     *
      * @param txn the {@link Transaction} that needs to be checked
      * @return the {@link TransactionBody} that was found in the transaction
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionBody validateCryptoTransfer(@NonNull final SessionContext session, @NonNull final Transaction txn)
-            throws PreCheckException {
-        requireNonNull(session);
+    public TransactionBody validateCryptoTransfer(@NonNull final Transaction txn) throws PreCheckException {
         requireNonNull(txn);
-        final var onsetResult = onset.doParseAndCheck(session, txn);
-        if (onsetResult.functionality() != HederaFunctionality.CryptoTransfer) {
+        final var onsetResult = transactionChecker.check(txn);
+        if (onsetResult.functionality() != CRYPTO_TRANSFER) {
             throw new PreCheckException(INSUFFICIENT_TX_FEE);
         }
         final var txBody = onsetResult.txBody();
@@ -100,7 +126,7 @@ public class QueryChecker {
      * Validates the account balances needed in a query
      *
      * @param payer the {@link AccountID} of the query's payer
-     * @param txBody the {@link TransactionBody} of the {@link com.hederahashgraph.api.proto.java.CryptoTransfer}
+     * @param txBody the {@link TransactionBody} of the {@link HederaFunctionality#CRYPTO_TRANSFER}
      * @param fee the fee that needs to be paid
      * @throws InsufficientBalanceException if validation fails
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -114,17 +140,20 @@ public class QueryChecker {
         // TODO: Migrate functionality from the following call (#4207):
         //  solvencyPrecheck.validate(txBody);
 
-        final var xfersStatus = queryFeeCheck.validateQueryPaymentTransfers(txBody);
+        final var xfersStatus = queryFeeCheck.validateQueryPaymentTransfers2(txBody);
         if (xfersStatus != OK) {
             throw new InsufficientBalanceException(xfersStatus, fee);
         }
 
-        if (accountNumbers.isSuperuser(payer.getAccountNum())) {
+        // A super-user cannot use an alias. Sorry, Clark Kent.
+        if (payer.hasAccountNum() && accountNumbers.isSuperuser(payer.accountNumOrThrow())) {
             return;
         }
 
-        final var xfers = txBody.getCryptoTransfer().getTransfers().getAccountAmountsList();
-        final var feeStatus = queryFeeCheck.nodePaymentValidity(xfers, fee, txBody.getNodeAccountID());
+        final var xfers = txBody.cryptoTransferOrThrow()
+                .transfersOrElse(TransferList.DEFAULT)
+                .accountAmountsOrElse(Collections.emptyList());
+        final var feeStatus = queryFeeCheck.nodePaymentValidity2(xfers, fee, txBody.nodeAccountID());
         if (feeStatus != OK) {
             throw new InsufficientBalanceException(feeStatus, fee);
         }

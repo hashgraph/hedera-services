@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
@@ -36,7 +36,9 @@ import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Startable;
+import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -95,6 +97,16 @@ public class SignedStateFileManager implements Startable {
     private final Time time;
 
     /**
+     * The minimum generation of non-ancient events for the oldest state snapshot on disk.
+     */
+    private long minimumGenerationNonAncientForOldestState = -1;
+
+    /**
+     * This method must be called when the minimum generation non-ancient of the oldest state snapshot on disk changes.
+     */
+    private final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer;
+
+    /**
      * Creates a new instance.
      *
      * @param threadManager responsible for creating and managing threads
@@ -103,14 +115,15 @@ public class SignedStateFileManager implements Startable {
      * @param swirldName    the name of the swirld
      */
     public SignedStateFileManager(
-            final PlatformContext context,
-            final ThreadManager threadManager,
-            final SignedStateMetrics metrics,
-            final Time time,
-            final String mainClassName,
-            final NodeId selfId,
-            final String swirldName,
-            final StateToDiskAttemptConsumer stateToDiskAttemptConsumer) {
+            @NonNull final PlatformContext context,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final SignedStateMetrics metrics,
+            @NonNull final Time time,
+            @NonNull final String mainClassName,
+            @NonNull final NodeId selfId,
+            @NonNull final String swirldName,
+            @NonNull final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
+            @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
 
         this.metrics = throwArgNull(metrics, "metrics");
         this.time = time;
@@ -119,6 +132,8 @@ public class SignedStateFileManager implements Startable {
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
+        this.minimumGenerationNonAncientConsumer =
+                throwArgNull(minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer");
 
         final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
 
@@ -131,6 +146,17 @@ public class SignedStateFileManager implements Startable {
                 .setThreadName("signed-state-file-manager")
                 .setHandler(Runnable::run)
                 .build();
+
+        final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
+        if (savedStates.length > 0) {
+            final Long generationNonAncient =
+                    savedStates[savedStates.length - 1].getMetadata().minimumGenerationNonAncient();
+            if (generationNonAncient != null) {
+                minimumGenerationNonAncientForOldestState = generationNonAncient;
+                minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(
+                        minimumGenerationNonAncientForOldestState);
+            }
+        }
     }
 
     /**
@@ -187,7 +213,7 @@ public class SignedStateFileManager implements Startable {
             final long start = time.nanoTime();
             boolean success = false;
             try {
-                writeSignedStateToDisk(directory, signedState, taskDescription);
+                writeSignedStateToDisk(selfId.getId(), directory, signedState, taskDescription);
                 metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
                 success = true;
@@ -339,7 +365,8 @@ public class SignedStateFileManager implements Startable {
         final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
 
         // States are returned newest to oldest. So delete from the end of the list to delete the oldest states.
-        for (int index = savedStates.length - 1; index >= stateConfig.signedStateDisk(); index--) {
+        int index = savedStates.length - 1;
+        for (; index >= stateConfig.signedStateDisk(); index--) {
 
             final SavedStateInfo savedStateInfo = savedStates[index];
             try {
@@ -348,5 +375,28 @@ public class SignedStateFileManager implements Startable {
                 // Intentionally ignored, deleteDirectoryAndLog will log any exceptions that happen
             }
         }
+
+        // Keep the minimum generation non-ancient for the oldest state up to date
+        if (index >= 0) {
+            final SavedStateMetadata oldestStateMetadata = savedStates[index].getMetadata();
+
+            final long oldestStateMinimumGeneration = oldestStateMetadata.minimumGenerationNonAncient() == null
+                    ? -1L
+                    : oldestStateMetadata.minimumGenerationNonAncient();
+
+            if (minimumGenerationNonAncientForOldestState < oldestStateMinimumGeneration) {
+                minimumGenerationNonAncientForOldestState = oldestStateMinimumGeneration;
+                minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(oldestStateMinimumGeneration);
+            }
+        }
+    }
+
+    /**
+     * Get the minimum generation non-ancient for the oldest state on disk.
+     *
+     * @return the minimum generation non-ancient for the oldest state on disk
+     */
+    public synchronized long getMinimumGenerationNonAncientForOldestState() {
+        return minimumGenerationNonAncientForOldestState;
     }
 }

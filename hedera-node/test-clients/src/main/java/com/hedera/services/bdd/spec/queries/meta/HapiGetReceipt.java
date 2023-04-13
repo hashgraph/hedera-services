@@ -123,12 +123,14 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
         response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTransactionReceipts(query);
         childReceipts = response.getTransactionGetReceipt().getChildTransactionReceiptsList();
         if (verboseLoggingOn) {
-            log.info("Receipt: " + response.getTransactionGetReceipt().getReceipt());
-            log.info(
-                    spec.logPrefix() + "  And {} child receipts{}: {}",
-                    childReceipts.size(),
-                    childReceipts.size() > 1 ? "s" : "",
-                    childReceipts);
+            String message = String.format(
+                    "Receipt: %s", response.getTransactionGetReceipt().getReceipt());
+            log.info(message);
+            String message2 = String.format(
+                    "%s  And %d child receipts%s: %s",
+                    spec.logPrefix(), childReceipts.size(), childReceipts.size() > 1 ? "s" : "", childReceipts);
+
+            log.info(message2);
         }
     }
 

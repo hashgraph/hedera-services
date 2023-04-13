@@ -26,6 +26,7 @@ extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 dependencies {
   // Individual Dependencies
   implementation(project(":swirlds-platform-core"))
+  compileOnly(libs.spotbugs.annotations)
 
   // Test Dependencies
 
@@ -35,6 +36,7 @@ dependencies {
   implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
 
   testImplementation(project(":swirlds-merkle"))
+  testImplementation(project(":swirlds-sign-tool")) // TODO: should be removed in future
   testImplementation(libs.commons.collections4)
   testImplementation(libs.classgraph)
   testImplementation(testLibs.bundles.junit)

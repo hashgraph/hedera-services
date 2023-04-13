@@ -18,7 +18,7 @@ package com.hedera.node.app.spi.records;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import org.junit.jupiter.api.Test;
 
 class UniversalRecordBuilderTest {

@@ -19,7 +19,9 @@ package com.hedera.node.app.service.mono.state.logic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.charging.TxnChargingPolicyAgent;
+import com.hedera.node.app.service.mono.txns.crypto.HollowAccountFinalizationLogic;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -47,6 +49,8 @@ public class TopLevelTransition implements Runnable {
     private final SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
     private final TxnChargingPolicyAgent chargingPolicyAgent;
     private final NetworkUtilization networkUtilization;
+    private final HollowAccountFinalizationLogic hollowFinalizationLogic;
+    private final GlobalDynamicProperties globalDynamicProperties;
 
     @Inject
     public TopLevelTransition(
@@ -56,7 +60,9 @@ public class TopLevelTransition implements Runnable {
             final TransactionContext txnCtx,
             final NonPayerKeysScreen nonPayerKeysScreen,
             final NetworkUtilization networkUtilization,
-            final TxnChargingPolicyAgent chargingPolicyAgent) {
+            final TxnChargingPolicyAgent chargingPolicyAgent,
+            final HollowAccountFinalizationLogic hollowAccountFinalizationLogic,
+            final GlobalDynamicProperties globalDynamicProperties) {
         this.txnCtx = txnCtx;
         this.networkCtxManager = networkCtxManager;
         this.networkUtilization = networkUtilization;
@@ -64,6 +70,8 @@ public class TopLevelTransition implements Runnable {
         this.sigsAndPayerKeyScreen = sigsAndPayerKeyScreen;
         this.nonPayerKeysScreen = nonPayerKeysScreen;
         this.requestedTransition = requestedTransition;
+        this.hollowFinalizationLogic = hollowAccountFinalizationLogic;
+        this.globalDynamicProperties = globalDynamicProperties;
     }
 
     @Override
@@ -89,6 +97,13 @@ public class TopLevelTransition implements Runnable {
         }
         if (!nonPayerKeysScreen.reqKeysAreActiveGiven(sigStatus)) {
             return;
+        }
+        if (globalDynamicProperties.isLazyCreationEnabled()) {
+            final var hollowFinalizationStatus = hollowFinalizationLogic.perform();
+            if (hollowFinalizationStatus != OK) {
+                txnCtx.setStatus(hollowFinalizationStatus);
+                return;
+            }
         }
         if (networkUtilization.screenForAvailableCapacity()) {
             requestedTransition.finishFor(accessor);
