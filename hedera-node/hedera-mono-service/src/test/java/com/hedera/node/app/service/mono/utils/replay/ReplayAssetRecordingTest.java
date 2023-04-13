@@ -58,6 +58,15 @@ class ReplayAssetRecordingTest {
     }
 
     @Test
+    void canRemoveAsset() throws IOException {
+        Files.write(Paths.get(assetDir.toString(), "foo.txt"), List.of("not-a", "not-b"));
+
+        subject.removeReplayAsset("foo.txt");
+
+        assertFalse(Files.exists(Paths.get(assetDir.toString(), "foo.txt")));
+    }
+
+    @Test
     void plaintextAppendRecreatesOnFirstTouchAndFirstTouchOnly() throws IOException {
         Files.write(Paths.get(assetDir.toString(), "foo.txt"), List.of("not-a", "not-b"));
 

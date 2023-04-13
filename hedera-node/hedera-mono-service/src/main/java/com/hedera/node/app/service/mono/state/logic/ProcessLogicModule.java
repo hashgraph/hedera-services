@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
+import com.hedera.node.app.service.mono.state.migration.MigrationManager;
+import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.service.mono.utils.replay.IsFacilityRecordingOn;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
@@ -37,6 +39,19 @@ public interface ProcessLogicModule {
             return new RecordingProcessLogic(standardProcessLogic, assetRecording);
         } else {
             return standardProcessLogic;
+        }
+    }
+
+    @Provides
+    @Singleton
+    static MigrationManager provideMigrationRecordsManager(
+            @NonNull final ReplayAssetRecording assetRecording,
+            @NonNull final MigrationRecordsManager migrationRecordsManager,
+            @IsFacilityRecordingOn @NonNull final BooleanSupplier isRecordingFacilityMocks) {
+        if (isRecordingFacilityMocks.getAsBoolean()) {
+            throw new AssertionError("Not implemented");
+        } else {
+            return migrationRecordsManager;
         }
     }
 }

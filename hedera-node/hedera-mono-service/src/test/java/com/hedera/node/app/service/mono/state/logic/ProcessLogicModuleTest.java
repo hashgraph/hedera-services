@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.logic;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ProcessLogicModuleTest {
     @Mock
     private StandardProcessLogic standardProcessLogic;
+
+    @Mock
+    private MigrationRecordsManager migrationRecordsManager;
 
     @Mock
     private BooleanSupplier isRecordingFacilityMocks;
@@ -53,5 +57,14 @@ class ProcessLogicModuleTest {
                 ProcessLogicModule.provideProcessLogic(assetRecording, standardProcessLogic, isRecordingFacilityMocks);
 
         assertInstanceOf(StandardProcessLogic.class, logic);
+    }
+
+    @Test
+    void usesStandardMigrationManagerIfNotRecordingFacilityMocks() {
+        final var manager =
+                ProcessLogicModule.provideMigrationRecordsManager(
+                        assetRecording, migrationRecordsManager, isRecordingFacilityMocks);
+
+        assertInstanceOf(MigrationRecordsManager.class, manager);
     }
 }

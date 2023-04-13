@@ -103,6 +103,14 @@ public class ReplayAssetRecording {
         }
     }
 
+    public void removeReplayAsset(final String assetFileName) {
+        try {
+            removeAsset(assetFileName);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     private <T> T readJsonValueUnchecked(final String line, final Class<T> type) {
         try {
             return om.readValue(line, type);
@@ -113,10 +121,14 @@ public class ReplayAssetRecording {
 
     private void removeIfFirstUsage(final String assetFileName) throws IOException {
         if (touchedAssets.add(assetFileName)) {
-            final var f = replayPathDirOf(assetFileName).toFile();
-            if (f.exists()) {
-                Files.delete(f.toPath());
-            }
+            removeAsset(assetFileName);
+        }
+    }
+
+    private void removeAsset(final String assetFileName) throws IOException {
+        final var f = replayPathDirOf(assetFileName).toFile();
+        if (f.exists()) {
+            Files.delete(f.toPath());
         }
     }
 

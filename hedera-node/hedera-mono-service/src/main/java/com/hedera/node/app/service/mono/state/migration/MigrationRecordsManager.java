@@ -66,7 +66,7 @@ import org.apache.logging.log4j.Logger;
  * reset, we will <i>also</i> stream these two synthetic creations for mirror node consumption.)
  */
 @Singleton
-public class MigrationRecordsManager {
+public class MigrationRecordsManager implements MigrationManager {
 
     static final String AUTO_RENEW_MEMO_TPL = "Contract 0.0.%d was renewed during 0.30.0 upgrade; new expiry is %d";
     private static final Logger log = LogManager.getLogger(MigrationRecordsManager.class);
