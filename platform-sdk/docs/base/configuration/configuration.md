@@ -341,10 +341,9 @@ following 3 interfaces:
 - `com.swirlds.config.api.converter.ConfigConverter`
 - `com.swirlds.config.api.validation.ConfigValidator`
 
-The `swirlds-config-impl` module contains several implementations of those interfaces that are used for support, such as
-system properties, `BigDecimal` values and constraints annotations for validation.
+The `swirlds-config-impl` module contains several implementations of those interfaces that are used for support, such as system properties, `BigDecimal` values and constraints annotations for validation.
 
-Implementations of all 3 interfaces must be registered before a configuration has been created.
+Implementations of all 3 interfaces must be registered before a configuration has been created. 
 The `swirlds-config-impl` module already does this for several of the internal implementations. Custom implementations
 can easily be registered when creating a `com.swirlds.config.api.Configuration` instance:
 
@@ -475,17 +474,14 @@ API today. For this 2 properties a custom parser exists (see
 
 ### Support for aliases
 
-The platform contains the `com.swirlds.common.config.sources.MappedConfigSource` that will help to migrate all the
-config
+The platform contains the `com.swirlds.common.config.sources.AliasConfigSource` that will help to migrate all the config
 properties to individual config data records. Having the properties separated by topics in records will make the code of
 the platform much cleaner. By doing so configuration property names will change since topic based prefixes will be
 added. If the property `csvOutputFolder` is, for example, only relevant for the metrics module of the platform it should
 be migrated to a `MetricsConfig` record in the metrics module. By doing so the name of the property might change
 to `metrics.csvOutputFolder`. Since such change will affect all installations of the platform we introduced the support
-for aliases. In the `com.swirlds.platform.Browser` class a mapping can be registered. For the given example we can
-create
-the mapping `metrics.csvOutputFolder<->csvOutputFolder`. By doing so the property names in the config files do not need
-to
+for aliases. In the `com.swirlds.platform.Browser` class an alias can be registered. For the given example we can create
+the alias `metrics.csvOutputFolder->csvOutputFolder`. By doing so the property names in the config files do not need to
 be changed directly.
 
 ### Initialization of the config
