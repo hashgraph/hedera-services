@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -104,14 +104,14 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
                 .tokenPause(TokenPauseTransactionBody.newBuilder())
                 .build();
         preHandleContext = new PreHandleContext(accountAccess, txn);
-        assertPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test
     void validatesTokenExistsInPreHandle() throws PreCheckException {
         givenInvalidTokenInTxn();
         preHandleContext = new PreHandleContext(accountAccess, tokenPauseTxn);
-        assertPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -124,7 +124,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     void preHandleSetsStatusWhenTokenMissing() throws PreCheckException {
         givenInvalidTokenInTxn();
         preHandleContext = new PreHandleContext(accountAccess, tokenPauseTxn);
-        assertPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test

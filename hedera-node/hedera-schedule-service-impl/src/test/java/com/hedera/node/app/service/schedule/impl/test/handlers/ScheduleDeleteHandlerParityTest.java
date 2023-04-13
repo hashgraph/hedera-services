@@ -18,7 +18,7 @@ package com.hedera.node.app.service.schedule.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.KNOWN_SCHEDULE_IMMUTABLE_ID;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.KNOWN_SCHEDULE_WITH_ADMIN_ID;
@@ -74,7 +74,7 @@ class ScheduleDeleteHandlerParityTest {
                 999L, ADMIN_KEY, theTxn); // use any schedule id that does not match UNKNOWN_SCHEDULE_ID
         final var context = new PreHandleContext(keyLookup, theTxn);
 
-        assertPreCheck(() -> subject.preHandle(context, scheduleStore), INVALID_SCHEDULE_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), INVALID_SCHEDULE_ID);
     }
 
     @Test
@@ -84,7 +84,7 @@ class ScheduleDeleteHandlerParityTest {
                 IdUtils.asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID).getScheduleNum(), null, theTxn);
         final var context = new PreHandleContext(keyLookup, theTxn);
 
-        assertPreCheck(() -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
     }
 
     @Test

@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
@@ -108,7 +108,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     void cryptoTransferSenderIsMissingAliasScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO);
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -133,7 +133,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     void cryptoTransferTokenToImmutableReceiverScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO);
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(
+        assertThrowsPreCheck(
                 () -> subject.preHandle(context, readableAccountStore, readableTokenStore), ACCOUNT_IS_IMMUTABLE);
     }
 
@@ -141,7 +141,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     void cryptoTransferNftFromMissingSenderScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO);
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -157,7 +157,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     void cryptoTransferNftFromImmutableSenderScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO);
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(
+        assertThrowsPreCheck(
                 () -> subject.preHandle(context, readableAccountStore, readableTokenStore), ACCOUNT_IS_IMMUTABLE);
     }
 
@@ -165,7 +165,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     void cryptoTransferNftToImmutableReceiverScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO);
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(
+        assertThrowsPreCheck(
                 () -> subject.preHandle(context, readableAccountStore, readableTokenStore), ACCOUNT_IS_IMMUTABLE);
     }
 
@@ -173,7 +173,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     void cryptoTransferFromImmutableSenderScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO);
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(
+        assertThrowsPreCheck(
                 () -> subject.preHandle(context, readableAccountStore, readableTokenStore), ACCOUNT_IS_IMMUTABLE);
     }
 
@@ -207,7 +207,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     void cryptoTransferMissingAccountScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -257,7 +257,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     void tokenTransactWithMissingSenders() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -347,21 +347,21 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     void tokenTransactWithOwnershipChangeNoReceiverSigReqAndMissingToken() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN);
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_TOKEN_ID);
     }
 
     @Test
     void tokenTransactWithOwnershipChangeMissingSender() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER);
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
     }
 
     @Test
     void tokenTransactWithOwnershipChangeMissingReceiver() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER);
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableAccountStore, readableTokenStore), INVALID_ACCOUNT_ID);
     }
 
     @Test

@@ -29,7 +29,7 @@ public final class Assertions {
      * @param runnable The runnable which will throw a {@link PreCheckException}.
      * @param expected The expected status code of the exception
      */
-    public static void assertPreCheck(
+    public static void assertThrowsPreCheck(
             @NonNull final PreCheckRunnable runnable, @NonNull final ResponseCodeEnum expected) {
         try {
             runnable.run();
@@ -42,6 +42,7 @@ public final class Assertions {
     }
 
     /** A {@link Runnable} like interface that throws the checked {@link PreCheckException}. */
+    @FunctionalInterface
     public interface PreCheckRunnable {
         void run() throws PreCheckException;
     }

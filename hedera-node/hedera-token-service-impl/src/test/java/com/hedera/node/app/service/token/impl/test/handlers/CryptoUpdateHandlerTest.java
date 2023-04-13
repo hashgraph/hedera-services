@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -107,7 +107,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
         final var context = new PreHandleContext(store, txn);
-        assertPreCheck(() -> subject.preHandle(context, waivers), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, waivers), INVALID_ACCOUNT_ID);
     }
 
     @Test

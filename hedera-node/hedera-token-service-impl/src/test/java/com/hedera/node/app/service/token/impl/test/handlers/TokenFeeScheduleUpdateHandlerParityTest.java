@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.NO_RECEIVER_SIG_KT;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.RECEIVER_SIG_KT;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.TOKEN_FEE_SCHEDULE_KT;
@@ -52,7 +52,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     void tokenFeeScheduleUpdateNonExistingToken() throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        assertPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -130,6 +130,6 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndInvalidFeeCollector() throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        assertPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_CUSTOM_FEE_COLLECTOR);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_CUSTOM_FEE_COLLECTOR);
     }
 }

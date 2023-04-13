@@ -18,7 +18,7 @@ package com.hedera.node.app.service.schedule.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -87,7 +87,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         scheduledTxn = givenSetupForScheduleDelete(txn);
 
         final var context = new PreHandleContext(keyLookup, txn);
-        assertPreCheck(() -> subject.preHandle(context, scheduleStore), INVALID_SCHEDULE_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), INVALID_SCHEDULE_ID);
     }
 
     @Test
@@ -98,7 +98,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         BDDMockito.given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
 
         final var context = new PreHandleContext(keyLookup, txn);
-        assertPreCheck(() -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
     }
 
     private TransactionBody givenSetupForScheduleDelete(TransactionBody txn) throws PreCheckException {

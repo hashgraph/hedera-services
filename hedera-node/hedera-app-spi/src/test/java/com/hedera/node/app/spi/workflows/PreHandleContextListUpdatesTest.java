@@ -19,7 +19,7 @@ package com.hedera.node.app.spi.workflows;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
@@ -183,7 +183,7 @@ class PreHandleContextListUpdatesTest {
         given(accountAccess.getAccountById(payer)).willReturn(null);
 
         // When we create a PreHandleContext, then it fails with INVALID_PAYER_ACCOUNT_ID
-        assertPreCheck(() -> new PreHandleContext(accountAccess, txn), INVALID_PAYER_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> new PreHandleContext(accountAccess, txn), INVALID_PAYER_ACCOUNT_ID);
     }
 
     @Test
@@ -214,7 +214,7 @@ class PreHandleContextListUpdatesTest {
 
         // When we require an accountID that doesn't exist, then we get a PreCheckException
         final var bogus = AccountID.newBuilder().build();
-        assertPreCheck(() -> subject.requireKeyOrThrow(bogus, INVALID_ACCOUNT_ID), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.requireKeyOrThrow(bogus, INVALID_ACCOUNT_ID), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -274,7 +274,7 @@ class PreHandleContextListUpdatesTest {
         given(account.getKey()).willReturn(payerKey);
 
         subject = new PreHandleContext(accountAccess, createAccountTransaction());
-        assertPreCheck(() -> subject.requireKeyOrThrow(alias, INVALID_ACCOUNT_ID), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.requireKeyOrThrow(alias, INVALID_ACCOUNT_ID), INVALID_ACCOUNT_ID);
     }
 
     private TransactionBody createAccountTransaction() {

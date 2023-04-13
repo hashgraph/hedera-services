@@ -26,7 +26,7 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_SCENARIO;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
@@ -128,7 +128,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         readableStore = new ReadableTopicStore(readableStates);
         final var context = new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
 
-        assertPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
     }
 
     @Test
@@ -192,7 +192,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
             final var context = new PreHandleContext(keyLookup, txn);
 
             // when:
-            assertPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
+            assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
         }
     }
 

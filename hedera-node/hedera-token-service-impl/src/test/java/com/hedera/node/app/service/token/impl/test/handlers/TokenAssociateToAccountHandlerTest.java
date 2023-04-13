@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET;
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_KNOWN_TARGET;
@@ -78,7 +78,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -86,6 +86,6 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_MISSING_TARGET);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 }

@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -155,7 +155,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
-        assertPreCheck(() -> new PreHandleContext(store, txn), INVALID_PAYER_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> new PreHandleContext(store, txn), INVALID_PAYER_ACCOUNT_ID);
 
         /* ------ deleteAccount missing, so transferAccount will not be added ------ */
         given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(payerAccount);
@@ -164,7 +164,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
 
         final var context2 = new PreHandleContext(store, txn);
-        assertPreCheck(() -> subject.preHandle(context2), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context2), INVALID_ACCOUNT_ID);
 
         /* ------ transferAccount missing ------ */
         given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
@@ -172,7 +172,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(null);
 
         final var context3 = new PreHandleContext(store, txn);
-        assertPreCheck(() -> subject.preHandle(context3), INVALID_TRANSFER_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context3), INVALID_TRANSFER_ACCOUNT_ID);
     }
 
     @Test

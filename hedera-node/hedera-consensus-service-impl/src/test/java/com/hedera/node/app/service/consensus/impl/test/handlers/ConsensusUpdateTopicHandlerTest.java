@@ -18,7 +18,7 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -413,7 +413,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 OP_BUILDER.topicID(TopicID.newBuilder().topicNum(123L).build()).build();
         final var context = new PreHandleContext(accountAccess, txnWith(op));
 
-        assertPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
     }
 
     @Test
@@ -467,7 +467,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .build();
 
         final var context = new PreHandleContext(accountAccess, txnWith(op));
-        assertPreCheck(() -> subject.preHandle(context, readableStore), INVALID_AUTORENEW_ACCOUNT);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_AUTORENEW_ACCOUNT);
     }
 
     private TransactionBody txnWith(final ConsensusUpdateTopicTransactionBody op) {

@@ -27,7 +27,7 @@ import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
@@ -90,7 +90,7 @@ class FreezeHandlerTest {
                         .build())
                 .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        assertPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -105,7 +105,7 @@ class FreezeHandlerTest {
                             .build())
                     .build();
             final var context = new PreHandleContext(keyLookup, txn);
-            assertPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+            assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
         }
     }
 
@@ -126,7 +126,7 @@ class FreezeHandlerTest {
                             .startTime(Timestamp.newBuilder().seconds(1000).build()))
                     .build();
             final var context = new PreHandleContext(keyLookup, txn);
-            assertPreCheck(() -> subject.preHandle(context, specialFileStore), FREEZE_START_TIME_MUST_BE_FUTURE);
+            assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), FREEZE_START_TIME_MUST_BE_FUTURE);
         }
     }
 
@@ -146,7 +146,7 @@ class FreezeHandlerTest {
                             .startTime(Timestamp.newBuilder().seconds(2000).build()))
                     .build();
             final var context = new PreHandleContext(keyLookup, txn);
-            assertPreCheck(() -> subject.preHandle(context, specialFileStore), FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
+            assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
         }
     }
 
@@ -172,7 +172,7 @@ class FreezeHandlerTest {
                             .build())
                     .build();
             final var context = new PreHandleContext(keyLookup, txn);
-            assertPreCheck(() -> subject.preHandle(context, specialFileStore), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+            assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
     }
 
@@ -264,7 +264,7 @@ class FreezeHandlerTest {
                 .freeze(FreezeTransactionBody.newBuilder().startHour(3).build())
                 .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        assertPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -275,7 +275,7 @@ class FreezeHandlerTest {
                 .freeze(FreezeTransactionBody.newBuilder().startMin(31).build())
                 .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        assertPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -286,7 +286,7 @@ class FreezeHandlerTest {
                 .freeze(FreezeTransactionBody.newBuilder().endHour(3).build())
                 .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        assertPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -297,6 +297,6 @@ class FreezeHandlerTest {
                 .freeze(FreezeTransactionBody.newBuilder().endMin(16).build())
                 .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        assertPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
     }
 }

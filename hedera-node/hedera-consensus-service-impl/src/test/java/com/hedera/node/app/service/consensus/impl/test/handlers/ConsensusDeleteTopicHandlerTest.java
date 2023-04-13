@@ -24,7 +24,7 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.newTopicMeta;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_TOPIC_ADMIN_KT;
@@ -132,7 +132,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, newDeleteTxn());
 
         // when:
-        assertPreCheck(() -> subject.preHandle(context, mockStore), INVALID_TOPIC_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, mockStore), INVALID_TOPIC_ID);
     }
 
     @Test
@@ -144,7 +144,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, newDeleteTxn());
 
         // when:
-        assertPreCheck(() -> subject.preHandle(context, mockStore), UNAUTHORIZED);
+        assertThrowsPreCheck(() -> subject.preHandle(context, mockStore), UNAUTHORIZED);
     }
 
     @Test
@@ -221,7 +221,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
             final var context = new PreHandleContext(keyLookup, txn);
 
             // when:
-            assertPreCheck(() -> subject.preHandle(context, mockStore), UNAUTHORIZED);
+            assertThrowsPreCheck(() -> subject.preHandle(context, mockStore), UNAUTHORIZED);
         }
 
         @Test
@@ -249,7 +249,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
             final var context = new PreHandleContext(keyLookup, txn);
 
             // when:
-            assertPreCheck(() -> subject.preHandle(context, mockStore), INVALID_TOPIC_ID);
+            assertThrowsPreCheck(() -> subject.preHandle(context, mockStore), INVALID_TOPIC_ID);
         }
     }
 

@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLL
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.txnFrom;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_MISSING_ADMIN;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_AND_FREEZE;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_ONLY;
@@ -125,7 +125,7 @@ class TokenCreateHandleParityTest {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_TREASURY);
 
         final var context = new PreHandleContext(accountStore, txn);
-        assertPreCheck(() -> subject.preHandle(context), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
     }
 
     @Test
@@ -144,7 +144,7 @@ class TokenCreateHandleParityTest {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
 
         final var context = new PreHandleContext(accountStore, txn);
-        assertPreCheck(() -> subject.preHandle(context), INVALID_AUTORENEW_ACCOUNT);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_AUTORENEW_ACCOUNT);
     }
 
     @Test
@@ -192,7 +192,7 @@ class TokenCreateHandleParityTest {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_COLLECTOR);
 
         final var context = new PreHandleContext(accountStore, txn);
-        assertPreCheck(() -> subject.preHandle(context), INVALID_CUSTOM_FEE_COLLECTOR);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_CUSTOM_FEE_COLLECTOR);
     }
 
     @Test
@@ -212,7 +212,7 @@ class TokenCreateHandleParityTest {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_INVALID_COLLECTOR);
 
         final var context = new PreHandleContext(accountStore, txn);
-        assertPreCheck(() -> subject.preHandle(context), INVALID_CUSTOM_FEE_COLLECTOR);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_CUSTOM_FEE_COLLECTOR);
     }
 
     @Test

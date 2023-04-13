@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -106,7 +106,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
         final var context = new PreHandleContext(store, txn);
-        assertPreCheck(() -> subject.preHandle(context), INVALID_ALLOWANCE_OWNER_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ALLOWANCE_OWNER_ID);
     }
 
     @Test
@@ -146,7 +146,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
         final var context = new PreHandleContext(store, txn);
-        assertPreCheck(() -> subject.preHandle(context), INVALID_DELEGATING_SPENDER);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_DELEGATING_SPENDER);
     }
 
     @Test

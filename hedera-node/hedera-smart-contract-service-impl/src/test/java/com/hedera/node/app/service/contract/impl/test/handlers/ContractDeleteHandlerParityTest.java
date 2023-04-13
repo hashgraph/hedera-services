@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.DILIGENT_SIGNING_PAYER_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.MISC_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.RECEIVER_SIG_KT;
@@ -56,7 +56,7 @@ class ContractDeleteHandlerParityTest {
     void getsContractDeleteImmutable() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_IMMUTABLE_SCENARIO);
         final var context = new PreHandleContext(keyLookup, theTxn);
-        assertPreCheck(() -> subject.preHandle(context), MODIFYING_IMMUTABLE_CONTRACT);
+        assertThrowsPreCheck(() -> subject.preHandle(context), MODIFYING_IMMUTABLE_CONTRACT);
     }
 
     @Test
@@ -74,14 +74,14 @@ class ContractDeleteHandlerParityTest {
     void getsContractDeleteMissingAccountBeneficiary() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO);
         final var context = new PreHandleContext(keyLookup, theTxn);
-        assertPreCheck(() -> subject.preHandle(context), INVALID_TRANSFER_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TRANSFER_ACCOUNT_ID);
     }
 
     @Test
     void getsContractDeleteMissingContractBeneficiary() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO);
         final var context = new PreHandleContext(keyLookup, theTxn);
-        assertPreCheck(() -> subject.preHandle(context), INVALID_CONTRACT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_CONTRACT_ID);
     }
 
     @Test

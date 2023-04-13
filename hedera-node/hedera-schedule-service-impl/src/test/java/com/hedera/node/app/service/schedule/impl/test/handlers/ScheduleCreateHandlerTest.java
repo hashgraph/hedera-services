@@ -18,7 +18,7 @@ package com.hedera.node.app.service.schedule.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.node.app.service.schedule.impl.test.ScheduledTxnFactory.scheduleCreateTxnWith;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -142,7 +142,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         given(keyLookup.getAccountById(payer)).willReturn(null);
 
         final var context = new PreHandleContext(keyLookup, txn);
-        assertPreCheck(() -> subject.preHandle(context, dispatcher), UNRESOLVABLE_REQUIRED_SIGNERS);
+        assertThrowsPreCheck(() -> subject.preHandle(context, dispatcher), UNRESOLVABLE_REQUIRED_SIGNERS);
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {

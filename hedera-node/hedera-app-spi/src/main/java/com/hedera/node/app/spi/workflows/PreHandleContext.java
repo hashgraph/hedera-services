@@ -31,7 +31,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -39,7 +38,7 @@ import java.util.Set;
  *
  * <p>During pre-handle, each transaction handler needs access to the transaction body data (i.e. the "operation"
  * being performed, colloquially also called the "transaction" and "transaction body" although both are more
- * ore less technically incorrect). The actual {@link TransactionBody} can be accessed from this context. The body
+ * or less technically incorrect). The actual {@link TransactionBody} can be accessed from this context. The body
  * contains the operation, the transaction ID, the originating node, and other information.
  *
  * <p>The main responsibility for a transaction handler during pre-handle is to semantically validate the operation
@@ -115,7 +114,7 @@ public final class PreHandleContext {
     }
 
     /**
-     * Getsthe {@link TransactionBody}
+     * Gets the {@link TransactionBody}
      *
      * @return the {@link TransactionBody} in this context
      */
@@ -137,7 +136,7 @@ public final class PreHandleContext {
     /**
      * Returns an immutable copy of the list of required non-payer keys.
      *
-     * @return the {@link List} with the required non-payer keys
+     * @return the {@link Set} with the required non-payer keys
      */
     public Set<HederaKey> requiredNonPayerKeys() {
         return Collections.unmodifiableSet(requiredNonPayerKeys);

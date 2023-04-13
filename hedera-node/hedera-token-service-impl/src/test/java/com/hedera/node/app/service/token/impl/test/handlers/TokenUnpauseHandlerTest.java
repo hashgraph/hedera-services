@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -105,7 +105,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     void validatesTokenExistsInPreHandle() throws PreCheckException {
         givenInvalidTokenInTxn();
         preHandleContext = new PreHandleContext(accountAccess, tokenUnpauseTxn);
-        assertPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -115,7 +115,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
                 .tokenUnpause(TokenUnpauseTransactionBody.newBuilder())
                 .build();
         preHandleContext = new PreHandleContext(accountAccess, txn);
-        assertPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -129,7 +129,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     void preHandleSetsStatusWhenTokenMissing() throws PreCheckException {
         givenInvalidTokenInTxn();
         preHandleContext = new PreHandleContext(accountAccess, tokenUnpauseTxn);
-        assertPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test

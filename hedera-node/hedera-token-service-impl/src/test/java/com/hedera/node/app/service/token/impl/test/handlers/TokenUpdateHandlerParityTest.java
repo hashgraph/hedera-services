@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_REPLACE_KT;
@@ -108,7 +108,7 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     void tokenUpdateReplacingTreasuryWithNonExistingAccount() throws PreCheckException {
         final var txn = txnFrom(UPDATE_REPLACING_WITH_MISSING_TREASURY);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        assertPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -172,7 +172,7 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     void tokenUpdateMissingToken() throws PreCheckException {
         final var txn = txnFrom(UPDATE_WITH_MISSING_TOKEN);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        assertPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -226,6 +226,6 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     void tokenUpdateTokenWithMissingNewAutoRenewAccount() throws PreCheckException {
         final var txn = txnFrom(TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        assertPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_AUTORENEW_ACCOUNT);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_AUTORENEW_ACCOUNT);
     }
 }

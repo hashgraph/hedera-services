@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.UNFREEZE_WITH_INVALID_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.UNFREEZE_WITH_MISSING_FREEZE_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.VALID_UNFREEZE_WITH_EXTANT_TOKEN;
@@ -68,7 +68,7 @@ class TokenUnfreezeAccountHandlerParityTest {
         final var txn = txnFrom(UNFREEZE_WITH_MISSING_FREEZE_TOKEN);
 
         final var context = new PreHandleContext(accountStore, txn);
-        assertPreCheck(() -> subject.preHandle(context, tokenStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, tokenStore), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -76,6 +76,6 @@ class TokenUnfreezeAccountHandlerParityTest {
         final var txn = txnFrom(UNFREEZE_WITH_INVALID_TOKEN);
 
         final var context = new PreHandleContext(accountStore, txn);
-        assertPreCheck(() -> subject.preHandle(context, tokenStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, tokenStore), INVALID_TOKEN_ID);
     }
 }

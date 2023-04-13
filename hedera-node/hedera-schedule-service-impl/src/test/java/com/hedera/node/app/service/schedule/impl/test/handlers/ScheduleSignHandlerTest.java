@@ -18,7 +18,7 @@ package com.hedera.node.app.service.schedule.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertPreCheck;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -93,7 +93,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(schedulerAccount.getKey()).willReturn(schedulerKey);
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(null);
         final var context = new PreHandleContext(keyLookup, txn);
-        assertPreCheck(() -> subject.preHandle(context, scheduleStore, dispatcher), INVALID_SCHEDULE_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore, dispatcher), INVALID_SCHEDULE_ID);
 
         verify(dispatcher, never()).dispatch(any());
     }
@@ -140,7 +140,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(schedule.hasExplicitPayer()).willReturn(false);
 
         final var context = new PreHandleContext(keyLookup, txn);
-        assertPreCheck(
+        assertThrowsPreCheck(
                 () -> subject.preHandle(context, scheduleStore, dispatcher), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
     }
 
