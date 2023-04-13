@@ -136,7 +136,8 @@ class PreHandleWorkflowImplTest extends AppTestBase {
                 .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
         final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
-        com.hedera.hapi.node.base.Transaction tx = com.hedera.hapi.node.base.Transaction.newBuilder().build();
+        com.hedera.hapi.node.base.Transaction tx =
+                com.hedera.hapi.node.base.Transaction.newBuilder().build();
         when(transactionChecker.parse(any())).thenReturn(tx);
         final TransactionInfo txInfo = new TransactionInfo(tx, txBody, signatureMap, functionality);
         when(transactionChecker.check(any())).thenReturn(txInfo);

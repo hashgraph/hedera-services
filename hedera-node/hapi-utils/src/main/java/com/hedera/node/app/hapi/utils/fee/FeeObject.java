@@ -21,5 +21,4 @@ public record FeeObject(long nodeFee, long networkFee, long serviceFee) {
     public long totalFee() {
         return networkFee() + serviceFee() + nodeFee();
     }
-
 }

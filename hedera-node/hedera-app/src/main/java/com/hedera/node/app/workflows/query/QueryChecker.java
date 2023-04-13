@@ -77,8 +77,7 @@ public class QueryChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void validateCryptoTransfer(@NonNull final TransactionInfo transactionInfo)
-            throws PreCheckException {
+    public void validateCryptoTransfer(@NonNull final TransactionInfo transactionInfo) throws PreCheckException {
         requireNonNull(transactionInfo);
         if (transactionInfo.functionality() != CRYPTO_TRANSFER) {
             throw new PreCheckException(INSUFFICIENT_TX_FEE);

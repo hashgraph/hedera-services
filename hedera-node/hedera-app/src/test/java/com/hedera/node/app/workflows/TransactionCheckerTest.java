@@ -113,8 +113,7 @@ final class TransactionCheckerTest extends AppTestBase {
     }
 
     private SignatureMap.Builder sigMapBuilder() {
-        final var sigPair =
-                SignaturePair.newBuilder().ed25519(randomBytes(64)).build();
+        final var sigPair = SignaturePair.newBuilder().ed25519(randomBytes(64)).build();
         return SignatureMap.newBuilder().sigPair(sigPair);
     }
 
@@ -280,8 +279,7 @@ final class TransactionCheckerTest extends AppTestBase {
         @SuppressWarnings("deprecation")
         void parseAndCheckWithSuperDeprecatedFields() throws PreCheckException {
             // Given a transaction using the super deprecated fields
-            final var sig =
-                    Signature.newBuilder().ed25519(randomBytes(64)).build();
+            final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
             final var localTx = Transaction.newBuilder()
                     .body(txBody)
                     .sigs(SignatureList.newBuilder().sigs(sig).build())
@@ -398,9 +396,7 @@ final class TransactionCheckerTest extends AppTestBase {
             @SuppressWarnings("deprecation")
             void happyWithSuperDeprecatedFields() {
                 // Given a transaction using the super deprecated fields
-                final var sig = Signature.newBuilder()
-                        .ed25519(randomBytes(64))
-                        .build();
+                final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
                 final var localTx = Transaction.newBuilder()
                         .body(txBody)
                         .sigs(SignatureList.newBuilder().sigs(sig).build())
@@ -423,9 +419,7 @@ final class TransactionCheckerTest extends AppTestBase {
             @SuppressWarnings("deprecation")
             void checkWithSuperDeprecatedFieldsAndSignedTransactionBytes() throws PreCheckException {
                 // Given a transaction using the super deprecated fields and signedTransactionBytes
-                final var sig = Signature.newBuilder()
-                        .ed25519(randomBytes(64))
-                        .build();
+                final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
                 final var localTx = Transaction.newBuilder()
                         .body(txBody)
                         .sigs(SignatureList.newBuilder().sigs(sig).build())
@@ -450,9 +444,7 @@ final class TransactionCheckerTest extends AppTestBase {
             @SuppressWarnings("deprecation")
             void checkWithSuperDeprecatedFieldsAndDeprecatedFields() throws PreCheckException {
                 // Given a transaction using the super deprecated fields and signedTransactionBytes
-                final var sig = Signature.newBuilder()
-                        .ed25519(randomBytes(64))
-                        .build();
+                final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
                 final var localTx = Transaction.newBuilder()
                         .body(txBody)
                         .sigs(SignatureList.newBuilder().sigs(sig).build())
@@ -673,7 +665,9 @@ final class TransactionCheckerTest extends AppTestBase {
             @DisplayName("A wrong nodeId in transaction fails")
             void testWrongNodeIdFails() {
                 // Given a transaction with an unknown node ID
-                final var unknownNodeId = AccountID.newBuilder().accountNum(nodeSelfAccountId.accountNumOrElse(0L) + 1L).build();
+                final var unknownNodeId = AccountID.newBuilder()
+                        .accountNum(nodeSelfAccountId.accountNumOrElse(0L) + 1L)
+                        .build();
                 final var body = bodyBuilder(txIdBuilder()).nodeAccountID(unknownNodeId);
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 

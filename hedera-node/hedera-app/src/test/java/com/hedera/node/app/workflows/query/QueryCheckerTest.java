@@ -74,39 +74,19 @@ class QueryCheckerTest {
 
     @BeforeEach
     void setup() {
-        checker = new QueryChecker(
-                accountNumbers,
-                queryFeeCheck,
-                authorizer,
-                cryptoTransferHandler);
+        checker = new QueryChecker(accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
-        assertThatThrownBy(() -> new QueryChecker(
-                        null,
-                        queryFeeCheck,
-                        authorizer,
-                        cryptoTransferHandler))
+        assertThatThrownBy(() -> new QueryChecker(null, queryFeeCheck, authorizer, cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        accountNumbers,
-                        null,
-                        authorizer,
-                        cryptoTransferHandler))
+        assertThatThrownBy(() -> new QueryChecker(accountNumbers, null, authorizer, cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        accountNumbers,
-                        queryFeeCheck,
-                        null,
-                        cryptoTransferHandler))
+        assertThatThrownBy(() -> new QueryChecker(accountNumbers, queryFeeCheck, null, cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        accountNumbers,
-                        queryFeeCheck,
-                        authorizer,
-                        null))
+        assertThatThrownBy(() -> new QueryChecker(accountNumbers, queryFeeCheck, authorizer, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -122,8 +102,7 @@ class QueryCheckerTest {
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo =
-                new TransactionInfo(transaction, txBody, signatureMap, CRYPTO_TRANSFER);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CRYPTO_TRANSFER);
 
         // when
         assertThatCode(() -> checker.validateCryptoTransfer(transactionInfo)).doesNotThrowAnyException();
@@ -135,8 +114,7 @@ class QueryCheckerTest {
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo =
-                new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(transactionInfo))

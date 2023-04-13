@@ -42,6 +42,7 @@ class QueryComponentTest {
 
     @Mock
     private Cryptography cryptography;
+
     @Mock
     private Platform platform;
 

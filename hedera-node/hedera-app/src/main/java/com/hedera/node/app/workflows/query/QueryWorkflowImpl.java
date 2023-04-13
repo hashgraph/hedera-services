@@ -234,7 +234,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
     }
 
-
     private static ResponseHeader createResponseHeader(
             @NonNull final ResponseType type, @NonNull final ResponseCodeEnum responseCode, final long fee) {
         return ResponseHeader.newBuilder()

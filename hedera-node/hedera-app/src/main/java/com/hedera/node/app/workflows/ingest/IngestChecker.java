@@ -104,7 +104,8 @@ public class IngestChecker {
      * @return the {@link TransactionInfo} with the extracted information
      * @throws PreCheckException if a check fails
      */
-    public TransactionInfo runAllChecks(@NonNull final HederaState state, @NonNull final Transaction tx) throws PreCheckException {
+    public TransactionInfo runAllChecks(@NonNull final HederaState state, @NonNull final Transaction tx)
+            throws PreCheckException {
         // 1. Check the syntax
         final var transactionInfo = transactionChecker.check(tx);
         final var txBody = transactionInfo.txBody();

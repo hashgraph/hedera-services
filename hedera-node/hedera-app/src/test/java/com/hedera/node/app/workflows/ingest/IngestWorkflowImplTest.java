@@ -141,51 +141,25 @@ class IngestWorkflowImplTest extends AppTestBase {
         when(ingestChecker.runAllChecks(state, transaction)).thenReturn(transactionInfo);
 
         // Create the workflow we are going to test with
-        workflow = new IngestWorkflowImpl(
-                stateAccessor,
-                transactionChecker,
-                ingestChecker,
-                submissionManager,
-                metrics);
+        workflow = new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, submissionManager, metrics);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        null,
-                        transactionChecker,
-                        ingestChecker,
-                        submissionManager,
-                        metrics))
+        assertThatThrownBy(() ->
+                        new IngestWorkflowImpl(null, transactionChecker, ingestChecker, submissionManager, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, null, ingestChecker, submissionManager, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() ->
+                        new IngestWorkflowImpl(stateAccessor, transactionChecker, null, submissionManager, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () -> new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, null, metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        stateAccessor,
-                        null,
-                        ingestChecker,
-                        submissionManager,
-                        metrics))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        stateAccessor,
-                        transactionChecker,
-                        null,
-                        submissionManager,
-                        metrics))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        stateAccessor,
-                        transactionChecker,
-                        ingestChecker,
-                        null,
-                        metrics))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        stateAccessor,
-                        transactionChecker,
-                        ingestChecker,
-                        submissionManager,
-                        null))
+                        stateAccessor, transactionChecker, ingestChecker, submissionManager, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -213,7 +187,9 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("When the node is zero stake, the transaction should be rejected")
         void testParseAndCheckWithZeroStakeFails() throws IOException, PreCheckException {
             // Given a node that IS zero stake
-            doThrow(new PreCheckException(INVALID_NODE_ACCOUNT)).when(ingestChecker).checkNodeState();
+            doThrow(new PreCheckException(INVALID_NODE_ACCOUNT))
+                    .when(ingestChecker)
+                    .checkNodeState();
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);
@@ -238,7 +214,9 @@ class IngestWorkflowImplTest extends AppTestBase {
             // actually good, I need to skip that one.
             if (status != PlatformStatus.ACTIVE) {
                 // Given a platform that is not ACTIVE
-                doThrow(new PreCheckException(PLATFORM_NOT_ACTIVE)).when(ingestChecker).checkNodeState();
+                doThrow(new PreCheckException(PLATFORM_NOT_ACTIVE))
+                        .when(ingestChecker)
+                        .checkNodeState();
 
                 // When the transaction is submitted
                 workflow.submitTransaction(requestBuffer, responseBuffer);
@@ -277,8 +255,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If the transaction fails WorkflowOnset, a failure response is returned with the right error")
         void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
             // Given a WorkflowOnset that will throw a PreCheckException with the given failure reason
-            when(transactionChecker.parse(any()))
-                    .thenThrow(new PreCheckException(failureReason));
+            when(transactionChecker.parse(any())).thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);
@@ -298,8 +275,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from TransactionChecker, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a WorkflowOnset that will throw a RuntimeException
-            when(transactionChecker.parse(any()))
-                    .thenThrow(new RuntimeException("parseAndCheck exception"));
+            when(transactionChecker.parse(any())).thenThrow(new RuntimeException("parseAndCheck exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))

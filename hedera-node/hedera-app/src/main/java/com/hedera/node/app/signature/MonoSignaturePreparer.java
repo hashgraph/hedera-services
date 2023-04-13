@@ -101,7 +101,7 @@ public class MonoSignaturePreparer implements SignaturePreparer {
     public void syncGetPayerSigStatus(final @NonNull Transaction transaction) throws PreCheckException {
         try {
             final var accessor = SignedTxnAccessor.uncheckedFrom(transaction);
-            if (! precheckVerifier.hasNecessarySignatures(accessor)) {
+            if (!precheckVerifier.hasNecessarySignatures(accessor)) {
                 throw new PreCheckException(INVALID_SIGNATURE);
             }
         } catch (final KeyPrefixMismatchException ignore) {
