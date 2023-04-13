@@ -177,7 +177,8 @@ dependencyResolutionManagement {
               "swirlds-merkle",
               "swirlds-fcqueue",
               "swirlds-jasperdb",
-              "swirlds-virtualmap"))
+              "swirlds-virtualmap",
+              "swirlds-test-framework"))
 
       // Define the individual libraries
       library("pbj-runtime", "com.hedera.pbj", "pbj-runtime").versionRef("pbj-version")
@@ -244,6 +245,8 @@ dependencyResolutionManagement {
       library("swirlds-fcqueue", "com.swirlds", "swirlds-fcqueue").versionRef("swirlds-version")
       library("swirlds-jasperdb", "com.swirlds", "swirlds-jasperdb").versionRef("swirlds-version")
       library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap")
+          .versionRef("swirlds-version")
+      library("swirlds-test-framework", "com.swirlds", "swirlds-test-framework")
           .versionRef("swirlds-version")
       library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
       library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
