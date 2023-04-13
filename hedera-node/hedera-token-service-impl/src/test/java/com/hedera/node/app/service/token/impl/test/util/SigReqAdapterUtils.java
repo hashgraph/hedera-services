@@ -132,7 +132,13 @@ public class SigReqAdapterUtils {
                         : Key.DEFAULT,
                 token.getLastUsedSerialNumber(),
                 token.isDeleted(),
-                token.autoRenewAccount() != null ? token.autoRenewAccount().num() : 0,
+                token.tokenType() == com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON
+                        ? com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON
+                        : com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE,
+                token.supplyType() == com.hedera.node.app.service.mono.state.enums.TokenSupplyType.FINITE
+                        ? com.hedera.hapi.node.base.TokenSupplyType.FINITE
+                        : com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
+                token.autoRenewAccount() == null ? 0 : token.autoRenewAccount().num(),
                 token.autoRenewPeriod(),
                 token.expiry(),
                 token.memo(),
@@ -140,12 +146,6 @@ public class SigReqAdapterUtils {
                 token.isPaused(),
                 token.accountsAreFrozenByDefault(),
                 token.accountsAreFrozenByDefault(),
-                token.tokenType() == com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON
-                        ? com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON
-                        : com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE,
-                token.supplyType() == com.hedera.node.app.service.mono.state.enums.TokenSupplyType.FINITE
-                        ? com.hedera.hapi.node.base.TokenSupplyType.FINITE
-                        : com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
                 pbjFees);
     }
 }
