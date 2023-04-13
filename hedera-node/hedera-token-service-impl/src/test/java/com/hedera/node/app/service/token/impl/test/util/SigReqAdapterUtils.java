@@ -138,14 +138,6 @@ public class SigReqAdapterUtils {
                         : Key.DEFAULT,
                 token.getLastUsedSerialNumber(),
                 token.isDeleted(),
-                token.autoRenewAccount() != null ? token.autoRenewAccount().num() : 0,
-                token.autoRenewPeriod(),
-                token.expiry(),
-                token.memo(),
-                token.maxSupply(),
-                token.isPaused(),
-                token.accountsAreFrozenByDefault(),
-                token.accountsAreFrozenByDefault(),
                 token.tokenType()
                                 == com.hedera.node.app.service.evm.store.tokens.TokenType
                                         .FUNGIBLE_COMMON
@@ -156,6 +148,14 @@ public class SigReqAdapterUtils {
                                         .FINITE
                         ? com.hedera.hapi.node.base.TokenSupplyType.FINITE
                         : com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
+                token.autoRenewAccount().num(),
+                token.autoRenewPeriod(),
+                token.expiry(),
+                token.memo(),
+                token.maxSupply(),
+                token.isPaused(),
+                token.accountsAreFrozenByDefault(),
+                token.accountsAreFrozenByDefault(),
                 pbjFees);
     }
 }

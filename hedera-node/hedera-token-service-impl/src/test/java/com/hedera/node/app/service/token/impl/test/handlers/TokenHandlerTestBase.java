@@ -174,6 +174,8 @@ public class TokenHandlerTestBase {
                         pauseKey,
                         0,
                         deleted,
+                        TokenType.FUNGIBLE_COMMON,
+                        TokenSupplyType.INFINITE,
                         autoRenewAccountNumber,
                         autoRenewSecs,
                         expirationTime,
@@ -182,8 +184,6 @@ public class TokenHandlerTestBase {
                         paused,
                         accountsFrozenByDefault,
                         accountsKycGrantedByDefault,
-                        TokenType.FUNGIBLE_COMMON,
-                        TokenSupplyType.INFINITE,
                         Collections.emptyList());
     }
 
