@@ -41,7 +41,7 @@ import java.util.stream.Stream;
  * will be unable to correctly read files with a different format.
  * </p>
  * <pre>
- * seq[sequence number]-ming[minimum legal generation]-maxg[maximum legal generation]-[Instant.toString().replace(":", "+")].pces
+ * [Instant.toString().replace(":", "+")]-seq[sequence number]-ming[minimum legal generation]-maxg[maximum legal generation].pces
  * </pre>
  * <p>
  * By default, files are stored with the following directory structure. Note that files are not required to be stored
@@ -141,10 +141,10 @@ public record PreConsensusEventFile(
 
         try {
             return new PreConsensusEventFile(
-                    Long.parseLong(elements[0].replace(SEQUENCE_NUMBER_PREFIX, "")),
-                    Long.parseLong(elements[1].replace(MINIMUM_GENERATION_PREFIX, "")),
-                    Long.parseLong(elements[2].replace(MAXIMUM_GENERATION_PREFIX, "")),
-                    parseSanitizedTimestamp(elements[3]),
+                    Long.parseLong(elements[1].replace(SEQUENCE_NUMBER_PREFIX, "")),
+                    Long.parseLong(elements[2].replace(MINIMUM_GENERATION_PREFIX, "")),
+                    Long.parseLong(elements[3].replace(MAXIMUM_GENERATION_PREFIX, "")),
+                    parseSanitizedTimestamp(elements[0]),
                     filePath);
         } catch (final NumberFormatException | DateTimeParseException ex) {
             throw new IOException("unable to parse " + filePath, ex);
@@ -234,7 +234,9 @@ public record PreConsensusEventFile(
             final long maximumGeneration,
             final Instant timestamp) {
 
-        return SEQUENCE_NUMBER_PREFIX
+        return sanitizeTimestamp(timestamp)
+                + EVENT_FILE_SEPARATOR
+                + SEQUENCE_NUMBER_PREFIX
                 + sequenceNumber
                 + EVENT_FILE_SEPARATOR
                 + MINIMUM_GENERATION_PREFIX
@@ -242,8 +244,6 @@ public record PreConsensusEventFile(
                 + EVENT_FILE_SEPARATOR
                 + MAXIMUM_GENERATION_PREFIX
                 + maximumGeneration
-                + EVENT_FILE_SEPARATOR
-                + sanitizeTimestamp(timestamp)
                 + EVENT_FILE_EXTENSION;
     }
 

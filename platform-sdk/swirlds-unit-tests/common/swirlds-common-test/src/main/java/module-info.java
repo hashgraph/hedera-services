@@ -12,6 +12,7 @@ open module com.swirlds.common.test {
     exports com.swirlds.common.test.crypto;
     exports com.swirlds.common.test.fcqueue;
 
+    requires com.swirlds.base;
     requires com.swirlds.test.framework;
     requires com.swirlds.common;
     requires org.bouncycastle.provider;

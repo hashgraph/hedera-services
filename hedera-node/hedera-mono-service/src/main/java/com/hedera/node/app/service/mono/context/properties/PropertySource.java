@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
+import static com.hedera.node.app.service.mono.utils.MiscUtils.csvSet;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
@@ -72,7 +73,7 @@ public interface PropertySource {
                 }
             })
             .collect(toMap(e -> Long.parseLong(e[0]), e -> Long.parseLong(e[1])));
-    Function<String, Object> AS_FUNCTIONS = s -> asEnumSet(HederaFunctionality.class, HederaFunctionality::valueOf, s);
+    Function<String, Object> AS_FUNCTIONS = s -> csvSet(s, HederaFunctionality::valueOf, HederaFunctionality.class);
     Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
 
     Function<String, Object> AS_LEGACY_ACTIVATIONS = LegacyContractIdActivations::from;
@@ -85,6 +86,7 @@ public interface PropertySource {
     Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
     Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
     Function<String, Object> AS_ACCESS_LIST = MapAccessType::csvAccessList;
+    Function<String, Object> AS_CUSTOM_FEES_TYPE = CustomFeeType::csvTypeSet;
     Function<String, Object> AS_SIDECARS = s -> asEnumSet(SidecarType.class, SidecarType::valueOf, s);
     Function<String, Object> AS_RECOMPUTE_TYPES =
             s -> asEnumSet(StakeStartupHelper.RecomputeType.class, StakeStartupHelper.RecomputeType::valueOf, s);
@@ -133,6 +135,11 @@ public interface PropertySource {
 
     @SuppressWarnings("unchecked")
     default Set<EntityType> getTypesProperty(final String name) {
+        return getTypedProperty(Set.class, name);
+    }
+
+    @SuppressWarnings("unchecked")
+    default Set<CustomFeeType> getCustomFeesProperty(String name) {
         return getTypedProperty(Set.class, name);
     }
 

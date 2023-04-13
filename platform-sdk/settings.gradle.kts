@@ -26,6 +26,8 @@ include(":swirlds-logging")
 
 include(":swirlds-common")
 
+include(":swirlds-sign-tool")
+
 include(":swirlds-config-api")
 
 include(":swirlds-config-impl")
@@ -57,6 +59,8 @@ include(":swirlds-platform-apps:demos:HashgraphDemo")
 include(":swirlds-platform-apps:demos:HelloSwirldDemo")
 
 include(":swirlds-platform-apps:demos:StatsDemo")
+
+include(":swirlds-platform-apps:tests:AddressBookTestingTool")
 
 include(":swirlds-platform-apps:tests:ISSTestingTool")
 

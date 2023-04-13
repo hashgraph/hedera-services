@@ -42,7 +42,6 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
@@ -571,9 +570,6 @@ class EventFlowTests {
 
         final ConsensusMetrics consensusMetrics = new NoOpConsensusMetrics();
 
-        final SwirldsPlatform platform = mock(SwirldsPlatform.class);
-        when(platform.getSelfId()).thenReturn(selfNodeId);
-
         final EventStreamManager<EventImpl> eventStreamManager = mock(EventStreamManager.class);
         final RunningHashCalculator runningHashCalculator = new RunningHashCalculator();
 
@@ -628,6 +624,7 @@ class EventFlowTests {
                 consStats,
                 eventStreamManager,
                 signedStateTracker,
+                e -> {},
                 () -> {},
                 (round) -> {},
                 SoftwareVersion.NO_VERSION);

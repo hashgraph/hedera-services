@@ -18,6 +18,7 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.merkledb.files.DataFileCommon.NON_EXISTENT_DATA_LOCATION;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
@@ -45,7 +46,6 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
-import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 /**
@@ -60,7 +60,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
-public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoCloseable, Snapshotable {
+public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Snapshotable {
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
     /** The version number for format of current data files */
@@ -69,8 +69,6 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
     private static final String METADATA_FILENAME_SUFFIX = "_metadata.hdhm";
     /** Bucket index file name suffix with extension */
     private static final String BUCKET_INDEX_FILENAME_SUFFIX = "_bucket_index.ll";
-    /** Each index change includes both a bucket index and bucket location. */
-    private static final int INDEX_CHANGE_COMPONENTS = 2;
     /** Nominal value for value to say please delete from map. */
     protected static final long SPECIAL_DELETE_ME_VALUE = Long.MIN_VALUE;
     /** The amount of data used for storing key hash code */
@@ -416,7 +414,6 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
             //  write to files
             fileCollection.startWriting();
             // for each changed bucket, write the new buckets to file but do not update index yet
-            final LongArrayList indexChanges = new LongArrayList();
             int oldBucketIndex = -1;
             for (IntObjectPair<BucketMutation<K>> keyValue :
                     oneTransactionsData.keyValuesView().toList().sortThis()) {
@@ -438,13 +435,16 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
                     }
                     final Bucket<K> finalBucket = bucket;
                     // for each changed key in bucket, update bucket
-                    bucketMap.forEachKeyValue((k, v) -> finalBucket.putValue(k.hashCode(), k, v));
-                    // save bucket
-                    final long bucketLocation = fileCollection.storeDataItem(bucket);
-
-                    // stash update bucketIndexToBucketLocation
-                    indexChanges.add(bucketIndex);
-                    indexChanges.add(bucketLocation);
+                    bucketMap.forEachKeyValue(finalBucket::putValue);
+                    if (finalBucket.getSize() == 0) {
+                        // bucket is missing or empty, remove it from the index
+                        bucketIndexToBucketLocation.put(bucketIndex, NON_EXISTENT_DATA_LOCATION);
+                    } else {
+                        // save bucket
+                        final long bucketLocation = fileCollection.storeDataItem(bucket);
+                        // update bucketIndexToBucketLocation
+                        bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
+                    }
                 } catch (IllegalStateException e) {
                     printStats();
                     debugDumpTransactionCacheCondensed();
@@ -454,13 +454,6 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
             }
             // close files session
             final DataFileReader<Bucket<K>> dataFileReader = fileCollection.endWriting(0, numOfBuckets);
-            // for each changed bucket update index
-            for (int i = 0; i < indexChanges.size(); i += INDEX_CHANGE_COMPONENTS) {
-                final long bucketIndex = indexChanges.get(i);
-                final long bucketLocation = indexChanges.get(i + 1);
-                // update bucketIndexToBucketLocation
-                bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
-            }
             // we have updated all indexes so the data file can now be included in merges
             dataFileReader.setFileCompleted();
         }

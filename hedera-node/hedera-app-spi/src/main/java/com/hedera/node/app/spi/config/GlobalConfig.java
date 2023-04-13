@@ -18,7 +18,7 @@ package com.hedera.node.app.spi.config;
 
 import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.swirlds.config.api.ConfigProperty;
 import java.util.Set;
 
