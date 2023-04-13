@@ -198,7 +198,7 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     /** {@inheritDoc} */
     @Override
-    protected synchronized void put(final Long chunk, final int subIndex, final long value) {
+    protected synchronized void putToChunk(final Long chunk, final int subIndex, final long value) {
         try {
             final ByteBuffer buf = TEMP_LONG_BUFFER_THREAD_LOCAL.get();
             final long offset = chunk + (long) subIndex * Long.BYTES;
