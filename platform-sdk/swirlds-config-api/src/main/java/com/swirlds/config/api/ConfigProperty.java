@@ -21,7 +21,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
+// # Benign change to test code ownership
 /**
  * Annotation that can be used to annotate properties for a config data object. A config data object is a {@link Record}
  * that provides access to config values in an object-oriented way (see {@link ConfigData} for more information).

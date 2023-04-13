@@ -19,7 +19,7 @@ plugins {
   alias(libs.plugins.pbj)
   `java-test-fixtures`
 }
-
+// # Benign change to test code ownership
 description = "Hedera API"
 
 configurations.all { exclude("javax.annotation", "javax.annotation-api") }

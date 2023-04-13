@@ -19,7 +19,7 @@ package com.swirlds.common.crypto;
 import com.swirlds.common.io.SelfSerializable;
 import java.util.List;
 import java.util.concurrent.Future;
-
+// # Benign change to test code ownership
 public interface Cryptography {
     /** The default value for the setHash argument */
     boolean DEFAULT_SET_HASH = true;

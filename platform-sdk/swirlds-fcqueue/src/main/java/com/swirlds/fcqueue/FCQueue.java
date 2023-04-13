@@ -40,7 +40,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
-
+// # Benign change to test code ownership
 /**
  * A threadsafe fast-copyable queue, each of whose elements is fast-copyable. Elements must always be inserted at the
  * tail and removed from the head. It is not allowed to insert nulls. This is fast copyable. A fast copy of a queue is

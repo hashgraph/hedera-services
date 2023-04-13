@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
+// # Benign change to test code ownership
 /** Protobuf related utilities shared by client and server. */
 public final class ByteStringUtils {
     private static final Logger log = LogManager.getLogger(ByteStringUtils.class);
