@@ -21,11 +21,14 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCES
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -45,14 +48,19 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     protected final Map<Address, PrecompiledContract> hederaPrecompiles;
     protected long gasRequirement;
     protected Bytes output;
+    private final Predicate<Address> isNativePrecompile;
+    private final Predicate<Address> precompileDetector;
 
     public HederaEvmMessageCallProcessor(
             final EVM evm,
             final PrecompileContractRegistry precompiles,
-            final Map<String, PrecompiledContract> hederaPrecompileList) {
+            final Map<String, PrecompiledContract> hederaPrecompileList,
+            final Predicate<Address> precompileDetector) {
         super(evm, precompiles);
         hederaPrecompiles = new HashMap<>();
         hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
+        this.isNativePrecompile = addr -> precompiles.get(addr) != null;
+        this.precompileDetector = precompileDetector;
     }
 
     @Override
@@ -61,8 +69,23 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
         if (hederaPrecompile != null) {
             executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
         } else {
-            // Non-precompile execution flow
-            if (frame.getValue().greaterThan(Wei.ZERO)) {
+            // Non-system-precompile execution flow
+            final var frameHasValue = frame.getValue().greaterThan(Wei.ZERO);
+            if (precompileDetector.test(frame.getContractAddress())) {
+                // we have a non-system-contract call to a system address
+                if (!isNativePrecompile.test(frame.getContractAddress())) {
+                    // a call to a system address, on which a native precompile does not exist, should always fail
+                    frame.setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+                    frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+                    return;
+                } else if (frameHasValue) {
+                    // cannot send value to native precompile calls, since there are collisions with system account
+                    // and value will be transferred to the system account, which is undesired
+                    frame.setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_FEE_SUBMITTED));
+                    frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+                    return;
+                }
+            } else if (frameHasValue) {
                 final var updater = (AbstractLedgerEvmWorldUpdater) frame.getWorldUpdater();
                 if (updater.isTokenAddress(frame.getRecipientAddress())) {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);

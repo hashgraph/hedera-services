@@ -25,12 +25,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import java.util.Map;
@@ -99,10 +101,10 @@ class HederaEvmMessageCallProcessorTest {
     @BeforeEach
     void setup() {
         subject = new HederaEvmMessageCallProcessor(
-                evm, precompiles, Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile));
+                evm, precompiles, Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile), address -> false);
 
         subject2 = new HederaEvmMessageCallProcessor(
-                evm, precompiles, Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, evmHTSPrecompiledContract));
+                evm, precompiles, Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, evmHTSPrecompiledContract), address -> false);
     }
 
     @Test
@@ -294,5 +296,32 @@ class HederaEvmMessageCallProcessorTest {
 
         verify(frame).getState();
         verify(frame, never()).getSenderAddress();
+    }
+
+    @Test
+    void systemAddressCallWithNoNativePrecompileCollisionFails() {
+        subject = new HederaEvmMessageCallProcessor(evm, precompiles, Map.of(), address -> true);
+
+        given(frame.getValue()).willReturn(Wei.ONE);
+        given(frame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
+
+        subject.start(frame, hederaEvmOperationTracer);
+
+        verify(frame).setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+        verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
+    }
+
+    @Test
+    void systemAddressCallWithNativePrecompileCollisionWithValueFails() {
+        subject = new HederaEvmMessageCallProcessor(evm, precompiles, Map.of(), address -> true);
+
+        given(frame.getValue()).willReturn(Wei.ONE);
+        given(frame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
+        given(precompiles.get(Address.ALTBN128_MUL)).willReturn(mock(PrecompiledContract.class));
+
+        subject.start(frame, hederaEvmOperationTracer);
+
+        verify(frame).setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_FEE_SUBMITTED));
+        verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
     }
 }

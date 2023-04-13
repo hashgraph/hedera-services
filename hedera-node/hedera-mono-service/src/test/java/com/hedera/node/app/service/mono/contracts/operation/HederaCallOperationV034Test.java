@@ -84,9 +84,6 @@ class HederaCallOperationV034Test {
     @Mock
     private ContractAliases aliases;
 
-    @Mock
-    private PrecompileContractRegistry precompileContractRegistry;
-
     private final long cost = 100L;
     private HederaCallOperationV034 subject;
 
@@ -97,8 +94,7 @@ class HederaCallOperationV034Test {
                 calc,
                 addressValidator,
                 precompileDetector,
-                globalDynamicProperties,
-                precompileContractRegistry);
+                globalDynamicProperties);
     }
 
     @Test

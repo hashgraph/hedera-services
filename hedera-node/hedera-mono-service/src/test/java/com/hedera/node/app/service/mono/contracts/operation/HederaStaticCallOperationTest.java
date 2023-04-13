@@ -81,23 +81,17 @@ class HederaStaticCallOperationTest {
     private Account acc;
 
     @Mock
-    private EvmSigsVerifier sigsVerifier;
-
-    @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     @Mock
     private Predicate<Address> precompileDetector;
-
-    @Mock
-    private PrecompileContractRegistry precompileContractRegistry;
 
     private final long cost = 100L;
     private HederaStaticCallOperation subject;
 
     @BeforeEach
     void setup() {
-        subject = new HederaStaticCallOperation(calc, addressValidator, precompileDetector, precompileContractRegistry);
+        subject = new HederaStaticCallOperation(calc, addressValidator, precompileDetector);
     }
 
     @Test

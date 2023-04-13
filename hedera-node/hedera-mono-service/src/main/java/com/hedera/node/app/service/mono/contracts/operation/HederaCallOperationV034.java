@@ -48,21 +48,18 @@ public class HederaCallOperationV034 extends CallOperation {
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> precompileDetector;
     private final GlobalDynamicProperties globalDynamicProperties;
-    private final PrecompileContractRegistry precompileContractRegistry;
 
     public HederaCallOperationV034(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final Predicate<Address> precompileDetector,
-            final GlobalDynamicProperties globalDynamicProperties,
-            final PrecompileContractRegistry precompileContractRegistry) {
+            final GlobalDynamicProperties globalDynamicProperties) {
         super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
         this.precompileDetector = precompileDetector;
         this.globalDynamicProperties = globalDynamicProperties;
-        this.precompileContractRegistry = precompileContractRegistry;
     }
 
     @Override
@@ -74,12 +71,10 @@ public class HederaCallOperationV034 extends CallOperation {
                     sigsVerifier,
                     frame,
                     to(frame),
-                    value(frame),
                     () -> cost(frame),
                     () -> super.execute(frame, evm),
                     addressValidator,
                     precompileDetector,
-                    precompileContractRegistry,
                     () -> isStatic(frame));
         }
     }

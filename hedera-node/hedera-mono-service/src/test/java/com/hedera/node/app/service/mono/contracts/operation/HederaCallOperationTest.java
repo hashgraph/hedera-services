@@ -73,16 +73,13 @@ class HederaCallOperationTest {
     @Mock
     private Predicate<Address> precompileDetector;
 
-    @Mock
-    private PrecompileContractRegistry precompileContractRegistry;
-
     private final long cost = 100L;
     private HederaCallOperation subject;
 
     @BeforeEach
     void setup() {
         subject = new HederaCallOperation(
-                sigsVerifier, calc, addressValidator, precompileDetector, precompileContractRegistry);
+                sigsVerifier, calc, addressValidator, precompileDetector);
     }
 
     @Test

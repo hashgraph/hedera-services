@@ -179,8 +179,9 @@ public interface ContractsModule {
     static MessageCallProcessor provideV_0_30MessageCallProcessor(
             final @V_0_30 EVM evm,
             final @V_0_30 PrecompileContractRegistry precompiles,
-            final Map<String, PrecompiledContract> hederaPrecompileList) {
-        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList);
+            final Map<String, PrecompiledContract> hederaPrecompileList,
+            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
+        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList, precompileDetector);
     }
 
     @Provides
@@ -200,8 +201,9 @@ public interface ContractsModule {
             final @V_0_34 EVM evm,
             final @V_0_34 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
-            final InfrastructureFactory infrastructureFactory) {
-        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList, infrastructureFactory);
+            final InfrastructureFactory infrastructureFactory,
+            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
+        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList, infrastructureFactory, precompileDetector);
     }
 
     @Provides
@@ -234,5 +236,14 @@ public interface ContractsModule {
         // all addresses between 0-750 (inclusive) are treated as precompile accounts from the perspective of the EVM.
         return address ->
                 address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 750) <= 0;
+    }
+
+    @Provides
+    @Singleton
+    @Named("ExtCodePrecompileDetector")
+    static Predicate<Address> provideExtCodePrecompileDetector() {
+        // all addresses between 0-1000 (inclusive) are treated as precompile accounts from the perspective of the ExtCode ops.
+        return address ->
+                address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 999) <= 0;
     }
 }

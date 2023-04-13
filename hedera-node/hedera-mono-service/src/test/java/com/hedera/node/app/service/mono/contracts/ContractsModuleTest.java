@@ -209,6 +209,24 @@ class ContractsModuleTest {
     }
 
     @Test
+    void extCodeOpsPrecompileDetectorWorksAsExpected() {
+        final var addressPredicate = ContractsModule.provideExtCodePrecompileDetector();
+
+        assertFalse(addressPredicate.test(
+                Address.fromHexString("0x000000000000000000000000000000000010000"))); // 18th byte is not 0
+        assertTrue(addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000000000000"))); // 0
+        assertTrue(addressPredicate.test(Address.fromHexString("0x00000000000000000000000000000000000002EE"))); // 750
+        assertTrue(addressPredicate.test(Address.fromHexString("0x00000000000000000000000000000000000002EF"))); // 751
+        assertTrue(addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000000000358"))); // 856
+        assertTrue(addressPredicate.test(Address.fromHexString("0x00000000000000000000000000000000000003E7"))); // 999
+        assertFalse(addressPredicate.test(Address.fromHexString("0x00000000000000000000000000000000000003E8"))); // 1000
+        assertTrue(addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000000000001"))); // 1
+        assertTrue(addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000000000020"))); // 32
+        assertFalse(
+                addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000050000011"))); // < 0 int
+    }
+
+    @Test
     void logOperationsAreProvided() {
         for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_34())) {
             Bytes testCode = Bytes.fromHexString("0xA0A1A2A3A4");

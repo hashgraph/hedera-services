@@ -63,16 +63,13 @@ class HederaDelegateCallOperationTest {
     @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
-    @Mock
-    private PrecompileContractRegistry precompileContractRegistry;
-
     private final long cost = 100L;
 
     private HederaDelegateCallOperation subject;
 
     @BeforeEach
     void setup() {
-        subject = new HederaDelegateCallOperation(calc, addressValidator, precompileContractRegistry, a -> false);
+        subject = new HederaDelegateCallOperation(calc, addressValidator, a -> false);
         given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.get(any())).willReturn(acc);
     }
@@ -119,29 +116,8 @@ class HederaDelegateCallOperationTest {
     }
 
     @Test
-    void haltWithInvalidAddrWhenCallingNonExistingPrecompileAddress() {
-        subject = new HederaDelegateCallOperation(calc, addressValidator, precompileContractRegistry, a -> true);
-        given(worldUpdater.get(any())).willReturn(null);
-        given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
-                .willReturn(cost);
-        given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
-        given(precompileContractRegistry.get(any(Address.class))).willReturn(null);
-
-        var opRes = subject.execute(evmMsgFrame, evm);
-
-        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opRes.getHaltReason());
-        assertEquals(cost, opRes.getGasCost());
-    }
-
-    @Test
     void executesPrecompileAsExpected() {
-        subject = new HederaDelegateCallOperation(calc, addressValidator, precompileContractRegistry, a -> true);
+        subject = new HederaDelegateCallOperation(calc, addressValidator, a -> true);
         given(calc.callOperationGasCost(
                         any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
@@ -154,7 +130,6 @@ class HederaDelegateCallOperationTest {
         given(worldUpdater.get(any())).willReturn(acc);
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
-        given(precompileContractRegistry.get(any(Address.class))).willReturn(mock(PrecompiledContract.class));
 
         var opRes = subject.execute(evmMsgFrame, evm);
 

@@ -36,17 +36,14 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 public class HederaStaticCallOperation extends StaticCallOperation {
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> precompileDetector;
-    private final PrecompileContractRegistry precompileContractRegistry;
 
     public HederaStaticCallOperation(
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Predicate<Address> precompileDetector,
-            final PrecompileContractRegistry precompileContractRegistry) {
+            final Predicate<Address> precompileDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
         this.precompileDetector = precompileDetector;
-        this.precompileContractRegistry = precompileContractRegistry;
     }
 
     @Override
@@ -55,12 +52,10 @@ public class HederaStaticCallOperation extends StaticCallOperation {
                 null,
                 frame,
                 to(frame),
-                value(frame),
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
                 precompileDetector,
-                precompileContractRegistry,
                 () -> isStatic(frame));
     }
 }

@@ -65,19 +65,16 @@ public class HederaCallCodeOperation extends CallCodeOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> precompileDetector;
-    private final PrecompileContractRegistry precompileContractRegistry;
 
     public HederaCallCodeOperation(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Predicate<Address> precompileDetector,
-            final PrecompileContractRegistry precompileContractRegistry) {
+            final Predicate<Address> precompileDetector) {
         super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
         this.precompileDetector = precompileDetector;
-        this.precompileContractRegistry = precompileContractRegistry;
     }
 
     @Override
@@ -86,12 +83,10 @@ public class HederaCallCodeOperation extends CallCodeOperation {
                 sigsVerifier,
                 frame,
                 to(frame),
-                value(frame),
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
                 precompileDetector,
-                precompileContractRegistry,
                 () -> isStatic(frame));
     }
 }

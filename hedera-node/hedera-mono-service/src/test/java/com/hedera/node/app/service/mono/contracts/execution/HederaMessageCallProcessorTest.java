@@ -37,6 +37,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
@@ -144,7 +146,8 @@ class HederaMessageCallProcessorTest {
                 Map.of(
                         HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile,
                         HTS_PRECOMPILE_ADDRESS_STRING, htsPrecompile),
-                infrastructureFactory);
+                infrastructureFactory,
+                addr -> false);
     }
 
     @Test
@@ -407,5 +410,32 @@ class HederaMessageCallProcessorTest {
         verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE));
         verifyNoMoreInteractions(autoCreationLogic);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
+    }
+
+    @Test
+    void systemAddressCallWithNoNativePrecompileCollisionFails() {
+        subject = new HederaMessageCallProcessor(evm, precompiles, Map.of(), address -> true);
+
+        given(frame.getValue()).willReturn(Wei.ONE);
+        given(frame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
+
+        subject.start(frame, hederaTracer);
+
+        verify(frame).setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+        verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
+    }
+
+    @Test
+    void systemAddressCallWithNativePrecompileCollisionWithValueFails() {
+        subject = new HederaMessageCallProcessor(evm, precompiles, Map.of(), address -> true);
+
+        given(frame.getValue()).willReturn(Wei.ONE);
+        given(frame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
+        given(precompiles.get(Address.ALTBN128_MUL)).willReturn(mock(PrecompiledContract.class));
+
+        subject.start(frame, hederaTracer);
+
+        verify(frame).setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_FEE_SUBMITTED));
+        verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
     }
 }

@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,28 +37,18 @@ public class HederaDelegateCallOperation extends DelegateCallOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> precompileDetector;
-    private final PrecompileContractRegistry precompileContractRegistry;
 
     public HederaDelegateCallOperation(
             GasCalculator gasCalculator,
             BiPredicate<Address, MessageFrame> addressValidator,
-            PrecompileContractRegistry precompileContractRegistry,
             Predicate<Address> precompileDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
-        this.precompileContractRegistry = precompileContractRegistry;
         this.precompileDetector = precompileDetector;
     }
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
-        final Supplier<OperationResult> precompileSupplierExecution = () -> {
-            // we have an attempted call to a precompile address, but make sure an actual precompile exists at that
-            // address
-            return precompileContractRegistry.get(to(frame)) != null
-                    ? super.execute(frame, evm)
-                    : new OperationResult(cost(frame), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
-        };
         return HederaEvmOperationsUtil.addressCheckExecution(
                 frame,
                 () -> to(frame),
@@ -66,6 +56,6 @@ public class HederaDelegateCallOperation extends DelegateCallOperation {
                 () -> super.execute(frame, evm),
                 addressValidator,
                 precompileDetector,
-                precompileSupplierExecution);
+                () -> super.execute(frame, evm));
     }
 }

@@ -61,12 +61,10 @@ public final class HederaOperationUtil {
      * @param sigsVerifier               The signature
      * @param frame                      The current message frame
      * @param address                    The target address
-     * @param value                      The value to be transferred as part of the call
      * @param supplierHaltGasCost        Supplier for the gas cost
      * @param supplierExecution          Supplier with the execution
      * @param addressValidator           Address validator predicate
      * @param precompileDetector         A predicate that determines if an address is a precompile address
-     * @param precompileContractRegistry A registry of all existing/active precompiled contracts.
      * @param supplierIsChildStatic      Supplier for is child static check
      * @return The operation result of the execution
      */
@@ -74,28 +72,16 @@ public final class HederaOperationUtil {
             final EvmSigsVerifier sigsVerifier,
             final MessageFrame frame,
             final Address address,
-            final Wei value,
             final LongSupplier supplierHaltGasCost,
             final Supplier<Operation.OperationResult> supplierExecution,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final Predicate<Address> precompileDetector,
-            final PrecompileContractRegistry precompileContractRegistry,
             final BooleanSupplier supplierIsChildStatic) {
         if (precompileDetector.test(address)) {
-            // we have a call to a precompile address, but make sure an actual precompile exists at that address
-            if (precompileContractRegistry.get(address) != null) {
-                // value cannot be sent to precompiles (except for the HTSPrecompiledContract)
-                if (value.isZero()
-                        || address.getInt(16) == HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS_INT) {
-                    return supplierExecution.get();
-                } else {
-                    return failingOperationResultFrom(
-                            supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_FEE_SUBMITTED);
-                }
-            } else {
-                return failingOperationResultFrom(
-                        supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
-            }
+            // all calls to system addresses are treated as precompile calls;
+            // let them through here, so a frame is created and there is adequate traceability info for the attempted call,
+            // and let HederaEvmMessageCallProcessor#start() handle those calls accordingly
+            return supplierExecution.get();
         }
         if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
             return failingOperationResultFrom(
