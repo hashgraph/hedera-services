@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.workflows;
+package com.hedera.node.app.spi.exceptions;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 

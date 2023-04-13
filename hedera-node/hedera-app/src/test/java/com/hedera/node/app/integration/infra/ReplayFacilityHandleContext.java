@@ -1,4 +1,4 @@
-package com.hedera.node.app.integration;
+package com.hedera.node.app.integration.infra;
 
 import com.hedera.node.app.integration.facilities.ReplayAdvancingConsensusNow;
 import com.hedera.node.app.integration.facilities.ReplayIds;
@@ -15,16 +15,19 @@ import java.util.function.LongSupplier;
 @Singleton
 public class ReplayFacilityHandleContext implements HandleContext {
     private final ReplayIds replayIds;
+    private final ExpiryValidator expiryValidator;
     private final AttributeValidator attributeValidator;
     private final ReplayAdvancingConsensusNow consensusNow;
 
     @Inject
     public ReplayFacilityHandleContext(
             @NonNull final ReplayIds replayIds,
+            @NonNull final ExpiryValidator expiryValidator,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final ReplayAdvancingConsensusNow consensusNow) {
         this.replayIds = replayIds;
         this.consensusNow = consensusNow;
+        this.expiryValidator = expiryValidator;
         this.attributeValidator = attributeValidator;
     }
 
@@ -45,6 +48,6 @@ public class ReplayFacilityHandleContext implements HandleContext {
 
     @Override
     public ExpiryValidator expiryValidator() {
-        throw new AssertionError("Not implemented");
+        return expiryValidator;
     }
 }

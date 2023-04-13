@@ -1,4 +1,4 @@
-package com.hedera.node.app.integration;
+package com.hedera.node.app.integration.infra;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;

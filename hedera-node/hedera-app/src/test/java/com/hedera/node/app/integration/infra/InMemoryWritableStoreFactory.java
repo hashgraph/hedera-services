@@ -1,4 +1,4 @@
-package com.hedera.node.app.integration;
+package com.hedera.node.app.integration.infra;
 
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
@@ -54,6 +54,10 @@ public class InMemoryWritableStoreFactory implements WritableStoreFactory {
     @Override
     public WritableTopicStore createTopicStore() {
         return new WritableTopicStore(serviceStates.get(ConsensusService.NAME));
+    }
+
+    public Map<String, MapWritableStates> getServiceStates() {
+        return serviceStates;
     }
 
     private MapWritableStates inMemoryStatesFrom(@NonNull final Consumer<SchemaRegistry> cb) {

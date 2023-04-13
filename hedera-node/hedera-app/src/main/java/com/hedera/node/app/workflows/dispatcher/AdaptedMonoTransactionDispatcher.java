@@ -13,6 +13,7 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import static java.util.Objects.requireNonNull;
@@ -22,7 +23,7 @@ public class AdaptedMonoTransactionDispatcher extends TransactionDispatcher {
     private final TransactionContext txnCtx;
     private final UsageLimits usageLimits;
 
-    @Singleton
+    @Inject
     public AdaptedMonoTransactionDispatcher(
             @NonNull HandleContext handleContext,
             @NonNull TransactionContext txnCtx,

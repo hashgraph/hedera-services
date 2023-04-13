@@ -21,6 +21,7 @@ import com.hedera.node.app.service.admin.impl.components.AdminComponent;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.sigs.Expansion;
 import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
@@ -32,12 +33,14 @@ import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
 import com.hedera.node.app.service.token.impl.components.TokenComponent;
 import com.hedera.node.app.service.util.impl.components.UtilComponent;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.app.workflows.dispatcher.WorkingStateWritableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
+import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import dagger.Binds;
@@ -45,6 +48,7 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
@@ -74,6 +78,10 @@ public interface HandleWorkflowModule {
 
     @Binds
     @Singleton
+    AttributeValidator bindAttributeValidator(StandardizedAttributeValidator attributeValidator);
+
+    @Binds
+    @Singleton
     WritableStoreFactory bindWritableStoreFactory(WorkingStateWritableStoreFactory writableStoreFactory);
 
     @Provides
@@ -81,5 +89,11 @@ public interface HandleWorkflowModule {
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
         return () -> (AutoCloseableWrapper) platform.getLatestImmutableState();
+    }
+
+    @Provides
+    @Singleton
+    static LongSupplier provideConsensusSecond(@NonNull final TransactionContext txnCtx) {
+        return () -> txnCtx.consensusTime().getEpochSecond();
     }
 }

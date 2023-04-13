@@ -25,10 +25,10 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
+import com.hedera.node.app.spi.exceptions.HandleException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -52,12 +52,12 @@ public class MonoHandleContext implements HandleContext {
     public MonoHandleContext(
             @NonNull final EntityIdSource ids,
             @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final OptionValidator optionValidator,
+            @NonNull final AttributeValidator attributeValidator,
             @NonNull final TransactionContext txnCtx) {
         this.nums = Objects.requireNonNull(ids)::newAccountNumber;
         this.txnCtx = Objects.requireNonNull(txnCtx);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
-        this.attributeValidator = new MonoAttributeValidator(Objects.requireNonNull(optionValidator));
+        this.attributeValidator = Objects.requireNonNull(attributeValidator);
     }
 
     /**
@@ -90,30 +90,5 @@ public class MonoHandleContext implements HandleContext {
     @Override
     public ExpiryValidator expiryValidator() {
         return expiryValidator;
-    }
-
-    private static final class MonoAttributeValidator implements AttributeValidator {
-        private final OptionValidator optionValidator;
-
-        private MonoAttributeValidator(final OptionValidator optionValidator) {
-            this.optionValidator = optionValidator;
-        }
-
-        @Override
-        public void validateKey(final Key key) {
-            try {
-                optionValidator.attemptDecodeOrThrow(PbjConverter.fromPbj(key));
-            } catch (final InvalidTransactionException e) {
-                throw new HandleException(PbjConverter.toPbj(e.getResponseCode()));
-            }
-        }
-
-        @Override
-        public void validateMemo(final String memo) {
-            final var validity = optionValidator.memoCheck(memo);
-            if (validity != OK) {
-                throw new HandleException(PbjConverter.toPbj(validity));
-            }
-        }
     }
 }

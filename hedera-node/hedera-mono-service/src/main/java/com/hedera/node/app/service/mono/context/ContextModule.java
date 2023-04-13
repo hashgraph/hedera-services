@@ -23,6 +23,7 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 

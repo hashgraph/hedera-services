@@ -17,7 +17,7 @@
 package com.hedera.node.app.spi.validation;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.exceptions.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 
 /**
@@ -40,4 +40,20 @@ public interface AttributeValidator {
      * @throws HandleException if the key is invalid
      */
     void validateMemo(String memo);
+
+    /**
+     * Validates the given expiry.
+     *
+     * @param expiry the expiry to validate
+     * @throws HandleException if the expiry is invalid
+     */
+    void validateExpiry(long expiry);
+
+    /**
+     * Validates the given auto-renew period.
+     *
+     * @param autoRenewPeriod the auto-renew period to validate
+     * @throws HandleException if the auto-renew period is invalid
+     */
+    void validateAutoRenewPeriod(long autoRenewPeriod);
 }

@@ -5,37 +5,53 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.spi.exceptions.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
+import java.util.function.LongSupplier;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator.MAX_NESTED_KEY_LEVELS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 
 @ExtendWith(MockitoExtension.class)
 class StandardizedAttributeValidatorTest {
+    private static final long maxLifetime = 3_000_000L;
     private static final byte[] MOCK_ED25519_KEY = "abcdefghabcdefghabcdefghabcdefgh".getBytes();
 
     @Mock
+    private LongSupplier consensusSecondNow;
+    @Mock
     private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private PropertySource compositeProps;
 
     private StandardizedAttributeValidator subject;
 
     @BeforeEach
     void setUp() {
-        subject = new StandardizedAttributeValidator(dynamicProperties);
+        given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(maxLifetime);
+
+        subject = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
     }
 
     @Test
@@ -48,6 +64,40 @@ class StandardizedAttributeValidatorTest {
         assertDoesNotThrow(() -> subject.validateMemo("OK"));
         assertFailsWith(MEMO_TOO_LONG, () -> subject.validateMemo(new String(aaa)));
         assertFailsWith(INVALID_ZERO_BYTE_IN_STRING, () -> subject.validateMemo("Not s\u0000 ok!"));
+    }
+
+    @Test
+    void rejectsFutureExpiryImplyingSuperMaxLifetime() {
+        assertFailsWith(INVALID_EXPIRATION_TIME, () -> subject.validateExpiry(maxLifetime + 1));
+    }
+
+    @Test
+    void allowsFutureExpiryBeforeMaxLifetime() {
+        final var now = 1_234_567L;
+        given(consensusSecondNow.getAsLong()).willReturn(now);
+        assertDoesNotThrow(() -> subject.validateExpiry(now + 1));
+    }
+
+    @Test
+    void rejectsAnyNonFutureExpiry() {
+        final var now = 1_234_567L;
+        given(consensusSecondNow.getAsLong()).willReturn(now);
+        assertFailsWith(INVALID_EXPIRATION_TIME, () -> subject.validateExpiry(now));
+    }
+
+    @Test
+    void rejectsBriefAutoRenewPeriod() {
+        given(dynamicProperties.minAutoRenewDuration()).willReturn(1_000L);
+
+        assertFailsWith(AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.validateAutoRenewPeriod(55L));
+    }
+
+    @Test
+    void rejectsOverLongAutoRenewPeriod() {
+        given(dynamicProperties.minAutoRenewDuration()).willReturn(1_000L);
+        given(dynamicProperties.maxAutoRenewDuration()).willReturn(10_000L);
+
+        assertFailsWith(AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.validateAutoRenewPeriod(10_001L));
     }
 
     @Test

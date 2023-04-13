@@ -4,6 +4,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.integration.facilities.ReplayAdvancingConsensusNow;
+import com.hedera.node.app.integration.infra.InMemoryWritableStoreFactory;
+import com.hedera.node.app.integration.infra.ReplayFacilityTransactionDispatcher;
 import com.hedera.node.app.service.mono.state.logic.RecordingProcessLogic;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.service.mono.utils.replay.ConsensusTxn;
