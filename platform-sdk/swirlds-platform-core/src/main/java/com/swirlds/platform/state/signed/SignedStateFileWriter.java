@@ -20,10 +20,10 @@ import static com.swirlds.common.io.utility.FileUtils.executeAndRename;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.FILE_VERSION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.STATE_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -144,7 +144,7 @@ public final class SignedStateFileWriter {
      */
     private static void writeStateAddressBookFile(@NonNull final Path directory, @NonNull final AddressBook addressBook)
             throws IOException {
-        final Path addressBookFile = directory.resolve(STATE_ADDRESS_BOOK_FILE_NAME);
+        final Path addressBookFile = directory.resolve(CURRENT_ADDRESS_BOOK_FILE_NAME);
 
         try (final BufferedWriter writer = new BufferedWriter(new FileWriter(addressBookFile.toFile()))) {
             writer.write(addressBook.toConfigText());

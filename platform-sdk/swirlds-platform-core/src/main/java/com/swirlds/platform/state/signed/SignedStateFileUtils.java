@@ -47,7 +47,7 @@ public final class SignedStateFileUtils {
     /**
      * The name of the file that contains the human-readable address book in the saved state
      */
-    public static final String STATE_ADDRESS_BOOK_FILE_NAME = "stateAddressBook.txt";
+    public static final String CURRENT_ADDRESS_BOOK_FILE_NAME = "currentAddressBook.txt";
 
     /**
      * The signed state file was not versioned before, this byte was introduced to mark a versioned file
