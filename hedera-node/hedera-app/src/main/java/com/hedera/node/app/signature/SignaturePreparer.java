@@ -28,6 +28,7 @@ import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface SignaturePreparer {
     ResponseCodeEnum syncGetPayerSigStatus(@NonNull Transaction transaction);
@@ -88,5 +89,5 @@ public interface SignaturePreparer {
             @NonNull HederaState state,
             @NonNull Bytes txBodyBytes,
             @NonNull SignatureMap signatureMap,
-            @NonNull List<HederaKey> keys);
+            @NonNull Set<HederaKey> keys);
 }

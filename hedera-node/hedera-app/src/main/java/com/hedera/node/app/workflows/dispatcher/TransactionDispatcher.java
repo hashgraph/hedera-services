@@ -128,11 +128,12 @@ public class TransactionDispatcher {
      */
     //    @SuppressWarnings("java:S1479") // ignore too many branches warning
     public void dispatchPreHandle(
-            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context) throws PreCheckException {
+            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context)
+            throws PreCheckException {
         requireNonNull(storeFactory);
         requireNonNull(context);
 
-        final var txBody = context.getTxn();
+        final var txBody = context.body();
         switch (txBody.data().kind()) {
             case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler()
                     .preHandle(context);

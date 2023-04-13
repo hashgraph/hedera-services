@@ -55,16 +55,6 @@ public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
-
-    CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedConsensusCreateTopic()
-                    .adminKey(SIMPLE_TOPIC_ADMIN_KEY)
-                    .autoRenewAccountId(CUSTOM_PAYER_ACCOUNT_ID)
-                    .nonPayerKts(SIMPLE_TOPIC_ADMIN_KEY)
-                    .get());
-        }
-    },
     CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(newSignedConsensusCreateTopic()

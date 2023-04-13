@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -128,7 +129,7 @@ public class MonoSignaturePreparer implements SignaturePreparer {
             @NonNull HederaState state,
             @NonNull Bytes txBodyBytes,
             @NonNull SignatureMap signatureMap,
-            @NonNull List<HederaKey> keys) {
+            @NonNull Set<HederaKey> keys) {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

@@ -47,12 +47,12 @@ public class CryptoCreateHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().cryptoCreateAccountOrThrow();
+        final var op = context.body().cryptoCreateAccountOrThrow();
         if (op.hasKey()) {
             final var key = asHederaKey(op.keyOrThrow());
             final var receiverSigReq = op.receiverSigRequired();
             if (receiverSigReq && key.isPresent()) {
-                context.addToReqNonPayerKeys(key.get());
+                context.requireKey(key.get());
             }
         }
     }

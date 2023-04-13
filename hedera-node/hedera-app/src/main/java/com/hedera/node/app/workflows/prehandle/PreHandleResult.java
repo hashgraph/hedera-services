@@ -30,6 +30,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 /**
@@ -50,7 +51,7 @@ public record PreHandleResult(
         @Nullable AccountID payer,
         @NonNull ResponseCodeEnum status,
         @Nullable HederaKey payerKey,
-        @NonNull List<HederaKey> otherPartyKeys,
+        @NonNull Set<HederaKey> otherPartyKeys,
         @Nullable List<TransactionSignature> cryptoSignatures,
         @Nullable PreHandleResult innerResult) {
 
@@ -60,22 +61,23 @@ public record PreHandleResult(
 
     public PreHandleResult(
             @NonNull final PreHandleContext context,
+            @NonNull final ResponseCodeEnum status,
             @NonNull final SignatureMap signatureMap,
             @NonNull final List<TransactionSignature> cryptoSignatures,
             @Nullable final PreHandleResult innerResult) {
         this(
-                requireNonNull(context).getTxn(),
+                requireNonNull(context).body(),
                 requireNonNull(signatureMap),
-                context.getPayer(),
-                context.getStatus(),
-                context.getPayerKey(),
-                context.getRequiredNonPayerKeys(),
+                context.payer(),
+                status,
+                context.payerKey(),
+                context.requiredNonPayerKeys(),
                 requireNonNull(cryptoSignatures),
                 innerResult);
     }
 
     public PreHandleResult(@NonNull final ResponseCodeEnum status) {
-        this(null, null, null, status, null, Collections.emptyList(), Collections.emptyList(), null);
+        this(null, null, null, status, null, Collections.emptySet(), Collections.emptyList(), null);
     }
 
     public static <T> T preHandleFailure(AccountID payer, ResponseCodeEnum responseCodeEnum, TransactionInfo txInfo) {

@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -46,7 +47,7 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
@@ -54,9 +55,10 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.time.Instant;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,7 +73,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
             AccountID.newBuilder().accountNum(4L).build();
 
     @Mock
-    private AccountAccess keyFinder;
+    private AccountAccess accountAccess;
 
     @Mock
     private HandleContext handleContext;
@@ -118,122 +120,94 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     @DisplayName("All non-null key inputs required")
-    void nonNullKeyInputsRequired() {
+    void nonNullKeyInputsRequired() throws PreCheckException {
         // given:
         final var payerKey = mockPayerLookup();
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(adminKey, submitKey, false), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(accountAccess, newCreateTxn(adminKey, submitKey, false));
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
-        assertThat(context.getPayerKey()).isEqualTo(payerKey);
+        assertThat(context.payerKey()).isEqualTo(payerKey);
         final var expectedHederaAdminKey = asHederaKey(adminKey).orElseThrow();
         final var expectedHederaSubmitKey = asHederaKey(submitKey).orElseThrow();
-        assertThat(context.getRequiredNonPayerKeys()).containsExactly(expectedHederaAdminKey);
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(expectedHederaAdminKey);
     }
 
     @Test
     @DisplayName("Non-payer admin key is added")
-    void differentAdminKey() {
+    void differentAdminKey() throws PreCheckException {
         // given:
         final var payerKey = mockPayerLookup();
         final var adminKey = SIMPLE_KEY_A;
 
         // when:
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(adminKey, null, false), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(accountAccess, newCreateTxn(adminKey, null, false));
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
-        assertThat(context.getPayerKey()).isEqualTo(payerKey);
+        assertThat(context.payerKey()).isEqualTo(payerKey);
         final var expectedHederaAdminKey = asHederaKey(adminKey).orElseThrow();
-        assertThat(context.getRequiredNonPayerKeys()).isEqualTo(List.of(expectedHederaAdminKey));
+        assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(expectedHederaAdminKey));
     }
 
     @Test
     @DisplayName("Non-payer submit key is added")
-    void createAddsDifferentSubmitKey() {
+    void createAddsDifferentSubmitKey() throws PreCheckException {
         // given:
         final var payerKey = mockPayerLookup();
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(null, submitKey, false), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(accountAccess, newCreateTxn(null, submitKey, false));
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
-        assertThat(context.getPayerKey()).isEqualTo(payerKey);
-        assertThat(context.getRequiredNonPayerKeys()).isEmpty();
+        assertThat(context.payerKey()).isEqualTo(payerKey);
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
     @DisplayName("Payer key can be added as admin")
-    void createAddsPayerAsAdmin() {
+    void createAddsPayerAsAdmin() throws PreCheckException {
         // given:
         final var protoPayerKey = SIMPLE_KEY_A;
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(protoPayerKey, null, false), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(accountAccess, newCreateTxn(protoPayerKey, null, false));
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
-        assertThat(context.getPayerKey()).isEqualTo(payerKey);
-        assertThat(context.getRequiredNonPayerKeys()).containsExactly(payerKey);
+        assertThat(context.payerKey()).isEqualTo(payerKey);
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
     @DisplayName("Payer key can be added as submitter")
-    void createAddsPayerAsSubmitter() {
+    void createAddsPayerAsSubmitter() throws PreCheckException {
         // given:
         final var protoPayerKey = SIMPLE_KEY_B;
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(null, protoPayerKey, false), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(accountAccess, newCreateTxn(null, protoPayerKey, false));
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
-        assertThat(context.getPayerKey()).isEqualTo(payerKey);
-    }
-
-    @Test
-    @DisplayName("Fails if payer is not found")
-    void createFailsWhenPayerNotFound() {
-        // given:
-        final var missing = AccountID.newBuilder().accountNum(1234).build();
-        given(keyFinder.getKey(missing))
-                .willReturn(KeyOrLookupFailureReason.withFailureReason(
-                        ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
-        final var inputTxn = newCreateTxn(null, null, false);
-
-        // when:
-        final var context = new PreHandleContext(keyFinder, inputTxn, missing);
-        subject.preHandle(context);
-
-        // then:
-        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
-        assertThat(context.failed()).isTrue();
-        assertThat(context.getPayerKey()).isNull();
-        assertThat(context.getRequiredNonPayerKeys()).isEmpty();
+        assertThat(context.payerKey()).isEqualTo(payerKey);
     }
 
     @Test
     @DisplayName("Fails if auto account is returned with a null key")
-    void autoAccountKeyIsNull() {
+    void autoAccountKeyIsNull() throws PreCheckException {
         // given:
         mockPayerLookup();
         final var acct1234 = AccountID.newBuilder().accountNum(1234).build();
-        given(keyFinder.getKey(acct1234))
-                .willReturn(KeyOrLookupFailureReason.withFailureReason(
-                        ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
+        given(accountAccess.getAccountById(acct1234)).willReturn(null);
         final var inputTxn = TransactionBody.newBuilder()
                 .transactionID(
                         TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build())
@@ -243,28 +217,23 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .build();
 
         // when:
-        final var context = new PreHandleContext(keyFinder, inputTxn, ACCOUNT_ID_3);
-        subject.preHandle(context);
-
-        // then:
-        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
-        assertThat(context.failed()).isTrue();
+        final var context = new PreHandleContext(accountAccess, inputTxn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_AUTORENEW_ACCOUNT);
     }
 
     @Test
     @DisplayName("Only payer key is always required")
-    void requiresPayerKey() {
+    void requiresPayerKey() throws PreCheckException {
         // given:
         final var payerKey = mockPayerLookup();
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(null, null, false), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(accountAccess, newCreateTxn(null, null, false));
 
         // when:
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
-        assertThat(context.getPayerKey()).isEqualTo(payerKey);
-        assertThat(context.getRequiredNonPayerKeys()).isEmpty();
+        assertThat(context.payerKey()).isEqualTo(payerKey);
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
@@ -358,11 +327,11 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
-                .willThrow(new HandleException(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT));
+                .willThrow(new HandleException(INVALID_AUTORENEW_ACCOUNT));
 
         final var failure = assertThrows(
                 HandleException.class, () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
-        assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
+        assertEquals(INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
     @Test
@@ -450,13 +419,15 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java
 
-    private HederaKey mockPayerLookup() {
+    private HederaKey mockPayerLookup() throws PreCheckException {
         return mockPayerLookup(A_COMPLEX_KEY);
     }
 
-    private HederaKey mockPayerLookup(Key key) {
+    private HederaKey mockPayerLookup(Key key) throws PreCheckException {
         final var returnKey = asHederaKey(key).orElseThrow();
-        given(keyFinder.getKey(ACCOUNT_ID_3)).willReturn(withKey(returnKey));
+        final var account = mock(Account.class);
+        given(account.getKey()).willReturn(returnKey);
+        given(accountAccess.getAccountById(ACCOUNT_ID_3)).willReturn(account);
         return returnKey;
     }
 }
