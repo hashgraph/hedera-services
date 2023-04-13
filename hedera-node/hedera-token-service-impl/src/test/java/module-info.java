@@ -17,16 +17,18 @@ module com.hedera.node.app.service.token.impl.test {
     requires com.hedera.node.hapi;
     requires com.hedera.pbj.runtime;
     requires com.hedera.node.app.spi.fixtures;
+    requires static com.github.spotbugs.annotations;
 
     opens com.hedera.node.app.service.token.impl.test.entity to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.token.impl.test.util to
             org.junit.platform.commons;
-    opens com.hedera.node.app.service.token.impl.test.handlers to
-            org.junit.platform.commons;
-    opens com.hedera.node.app.service.token.impl.test.serdes to
+    opens com.hedera.node.app.service.token.impl.test.codec to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.token.impl.test to
+            org.junit.platform.commons,
+            org.mockito;
+    opens com.hedera.node.app.service.token.impl.test.handlers to
             org.junit.platform.commons,
             org.mockito;
 }

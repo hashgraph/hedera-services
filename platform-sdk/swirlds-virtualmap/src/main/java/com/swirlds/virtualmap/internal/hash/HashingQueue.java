@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  * @param <V>
  *     The value
  */
-interface HashingQueue<K extends VirtualKey<? super K>, V extends VirtualValue> {
+interface HashingQueue<K extends VirtualKey, V extends VirtualValue> {
     /**
      * Gets the current size of the queue.
      * @return
