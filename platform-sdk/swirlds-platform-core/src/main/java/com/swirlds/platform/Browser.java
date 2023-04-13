@@ -645,12 +645,8 @@ public class Browser {
 
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                        appVersion,
-                        softwareUpgrade,
-                        loadedSignedState,
+                        appVersion, softwareUpgrade, loadedSignedState, addressBook.copy(), addressBookConfig);
 
-                        addressBook.copy(),
-                        addressBookConfig);
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
 
