@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.signingtool.FileSignTool;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.crypto.KeyGeneratingException;
@@ -29,6 +28,7 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
+import com.swirlds.signingtool.FileSignTool;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -111,7 +111,7 @@ class StreamSignTest {
                                         tmpDir.resolve(f.getName()
                                                 .substring(0, f.getName().length() - 5))),
                                 "generated signature file should match expected signature file");
-                    } catch (IOException e) {
+                    } catch (final IOException e) {
                         throw new RuntimeException(e);
                     }
                 });
