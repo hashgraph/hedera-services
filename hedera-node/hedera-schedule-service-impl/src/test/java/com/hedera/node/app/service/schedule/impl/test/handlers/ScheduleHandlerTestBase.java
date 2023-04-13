@@ -21,12 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
+import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -47,6 +47,12 @@ class ScheduleHandlerTestBase {
     protected AccountID payer = AccountID.newBuilder().accountNum(2001L).build();
 
     @Mock
+    protected Account schedulerAccount;
+
+    @Mock
+    protected Account payerAccount;
+
+    @Mock
     protected AccountAccess keyLookup;
 
     @Mock
@@ -61,14 +67,8 @@ class ScheduleHandlerTestBase {
     @Mock
     protected ReadableStates states;
 
-    protected void basicContextAssertions(
-            final PreHandleContext context,
-            final int nonPayerKeysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertEquals(nonPayerKeysSize, context.getRequiredNonPayerKeys().size());
-        assertEquals(failed, context.failed());
-        assertEquals(failureStatus, context.getStatus());
+    protected void basicContextAssertions(final PreHandleContext context, final int nonPayerKeysSize) {
+        assertEquals(nonPayerKeysSize, context.requiredNonPayerKeys().size());
     }
 
     protected TransactionBody scheduleTxnNotRecognized() {
