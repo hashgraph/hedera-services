@@ -18,8 +18,36 @@ but not ERC tokens.
 ## Architecture
 
 The method in which the redirection to proxy contract is implemented is that during the execution of an EVM request, we examine the contract address to see
-if it is an HTS token address and if so we redirect the request to the proxy contract.  This mechanism will be extended to include
-calls to `associate` and `dissociate` functions in the HTSPrecompileContact class method which handles ABI_ID_REDIRECT_FOR_TOKEN function selector.
+if it is an HTS token address and if so we redirect the request to the proxy contract.  
+
+More specifically the algorithm by which we get from (a) the call to the token address to (b) the precompiled contract is a follows:
+1. The EVM encounters a call such as this `tokenAddress.<functionName>(<params>);`
+2. The EVM calls [HederaStackedWorldStateUpdater.get()](https://github.com/hashgraph/hedera-services/blob/29e49604eff059c6bc0c0a4dd2a738f194b32c04/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/HederaStackedWorldStateUpdater.java#L202) and loads the code stored on `tokenAddress`
+3. In [HederaStackedWorldStateUpdater.get()](https://github.com/hashgraph/hedera-services/blob/29e49604eff059c6bc0c0a4dd2a738f194b32c04/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/HederaStackedWorldStateUpdater.java#L202), we intercept the loading of the account code, check if this is actually a contract address, and, if yes, we return an instance of `HederaEvmWorldStateTokenAccount` which wraps the _redirect token bytecode_
+4. The redirect bytecode is obtained by compiling the following contract, which accepts all the inputs the user provided (including function selector and function arguments), precedes the argument list with the token address, and _delegatecalls_ the HTS precompile:
+```
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity 0.5.5;
+contract Assembly {
+	fallback() external {
+		address precompileAddress = address(0x167);
+		assembly {
+			mstore(0, 0xFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFE)
+			calldatacopy(32, 0, calldatasize())
+			let result := delegatecall(gas(), precompileAddress, 8, add(24, calldatasize()), 0, 0)
+			let size := returndatasize()
+			returndatacopy(0, 0, size)
+			switch result
+				case 0 { revert(0, size) }
+				default { return(0, size) }
+		}
+	}
+}
+```
+5. This means that _any_ function can be redirected-to as long as the HTS precompile handles the redirect call [here](https://github.com/hashgraph/hedera-services/blob/29e49604eff059c6bc0c0a4dd2a738f194b32c04/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/precompile/HTSPrecompiledContract.java#L557). 
+
+In particular, the mechanism described above will be extended to include calls to `associate` and `dissociate` functions in the HTSPrecompileContact class method which handles ABI_ID_REDIRECT_FOR_TOKEN function selector.
 
 The following table describes the function selector for the new `associate` and `dissociate` functions and the associated function signatures.
 
