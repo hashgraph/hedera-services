@@ -190,17 +190,17 @@ class FeeBuilderTest {
     @Test
     void assertGetFeeObjectWithMultiplier() {
         var result = FeeBuilder.getFeeObject(feeData, feeMatrices, exchangeRate, 10);
-        assertEquals(100, result.getNodeFee());
-        assertEquals(100, result.getNetworkFee());
-        assertEquals(100, result.getServiceFee());
+        assertEquals(100, result.nodeFee());
+        assertEquals(100, result.networkFee());
+        assertEquals(100, result.serviceFee());
     }
 
     @Test
     void assertGetFeeObject() {
         var result = FeeBuilder.getFeeObject(feeData, feeMatrices, exchangeRate);
-        assertEquals(10, result.getNodeFee());
-        assertEquals(10, result.getNetworkFee());
-        assertEquals(10, result.getServiceFee());
+        assertEquals(10, result.nodeFee());
+        assertEquals(10, result.networkFee());
+        assertEquals(10, result.serviceFee());
     }
 
     @Test

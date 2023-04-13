@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -66,7 +65,7 @@ public interface SignaturePreparer {
     @NonNull
     TransactionSignature prepareSignature(
             @NonNull HederaState state,
-            @NonNull Bytes txBodyBytes,
+            @NonNull byte[] txBodyBytes,
             @NonNull SignatureMap signatureMap,
             @NonNull AccountID accountID);
 
@@ -86,7 +85,7 @@ public interface SignaturePreparer {
     @NonNull
     Map<HederaKey, TransactionSignature> prepareSignatures(
             @NonNull HederaState state,
-            @NonNull Bytes txBodyBytes,
+            @NonNull byte[] txBodyBytes,
             @NonNull SignatureMap signatureMap,
             @NonNull List<HederaKey> keys);
 }

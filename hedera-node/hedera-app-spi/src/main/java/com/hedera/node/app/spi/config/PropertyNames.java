@@ -93,6 +93,10 @@ public class PropertyNames {
     public static final String CONTRACTS_LOCAL_CALL_EST_RET_BYTES = "contracts.localCall.estRetBytes";
     public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";
     public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS = "contracts.allowAutoAssociations";
+
+    public static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+    public static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
+    public static final String CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS = "contracts.withSpecialHapiSigsAccess";
     public static final String CONTRACTS_ENFORCE_CREATION_THROTTLE = "contracts.enforceCreationThrottle";
     public static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
     public static final String CONTRACTS_MAX_KV_PAIRS_AGGREGATE = "contracts.maxKvPairs.aggregate";
@@ -110,6 +114,8 @@ public class PropertyNames {
     public static final String CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS = "contracts.precompile.exportRecordResults";
     public static final String CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE =
             "contracts.precompile.htsEnableTokenCreate";
+    public static final String CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS =
+            "contracts.precompile.unsupportedCustomFeeReceiverDebits";
     public static final String CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED =
             "contracts.precompile.atomicCryptoTransfer.enabled";
     public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
@@ -247,4 +253,6 @@ public class PropertyNames {
     public static final String STATS_SPEEDOMETER_HALF_LIFE_SECS = "stats.speedometerHalfLifeSecs";
     public static final String WORKFLOWS_ENABLED = "hedera.workflows.enabled";
     public static final String VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB = "virtualdatasource.jasperdbToMerkledb";
+    public static final String ACCOUNTS_BLOCKLIST_ENABLED = "accounts.blocklist.enabled";
+    public static final String ACCOUNTS_BLOCKLIST_RESOURCE = "accounts.blocklist.resource";
 }

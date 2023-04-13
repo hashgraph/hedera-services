@@ -26,12 +26,14 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,13 +53,6 @@ import static java.util.Objects.requireNonNull;
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     private static final Logger logger = LogManager.getLogger(PreHandleWorkflowImpl.class);
-
-    /**
-     * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a thread local, because we
-     * do not have control over the thread pool used by the underlying gRPC server.
-     */
-    private static final ThreadLocal<SessionContext> SESSION_CONTEXT_THREAD_LOCAL =
-            ThreadLocal.withInitial(SessionContext::new);
 
     private final TransactionChecker transactionChecker;
     private final TransactionDispatcher dispatcher;

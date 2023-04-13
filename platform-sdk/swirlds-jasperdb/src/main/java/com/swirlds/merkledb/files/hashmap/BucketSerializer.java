@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
  *
  * @param <K> The map key type stored in the buckets
  */
-public class BucketSerializer<K extends VirtualKey<? super K>> implements DataItemSerializer<Bucket<K>> {
+public class BucketSerializer<K extends VirtualKey> implements DataItemSerializer<Bucket<K>> {
     /**
      * Cached thread local buckets for fixed size key serializers.
      *

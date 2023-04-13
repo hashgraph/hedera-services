@@ -32,10 +32,10 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,7 +47,7 @@ import javax.inject.Singleton;
  * handle-transaction requests to the appropriate handler
  *
  * <p>For handle, mostly just supports the limited form of the Consensus Service handlers
- * described in <a href="https://github.com/hashgraph/hedera-services/issues/4945">4945</a>, while still trying to
+ * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to
  * make a bit of progress toward the general implementation.
  */
 @Singleton
@@ -95,20 +95,24 @@ public class TransactionDispatcher {
      *
      * @param function the type of the consensus service transaction
      * @param txn the consensus transaction to be handled
-     * @throws HandleStatusException if the handler fails
+     * @throws HandleException if the handler fails
      * @throws IllegalArgumentException if there is no handler for the given function type
      */
     public void dispatchHandle(
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody txn,
             @NonNull final WritableStoreFactory writableStoreFactory) {
-        final var topicStore = writableStoreFactory.createTopicStore();
         switch (function) {
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(
-                    txn.consensusCreateTopicOrThrow(), topicStore, usageLimits);
-            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(txn.consensusUpdateTopicOrThrow(), topicStore);
-            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(txn.consensusDeleteTopicOrThrow(), topicStore);
-            case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(txn, topicStore);
+                    txn.consensusCreateTopicOrThrow(), writableStoreFactory.createTopicStore(), usageLimits);
+            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(
+                    txn.consensusUpdateTopicOrThrow(), writableStoreFactory.createTopicStore());
+            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(
+                    txn.consensusDeleteTopicOrThrow(), writableStoreFactory.createTopicStore());
+            case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(
+                    txn, writableStoreFactory.createTopicStore());
+            case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
+            case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -123,7 +127,7 @@ public class TransactionDispatcher {
      */
     //    @SuppressWarnings("java:S1479") // ignore too many branches warning
     public void dispatchPreHandle(
-            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context) throws PreCheckException {
+            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context) {
         requireNonNull(storeFactory);
         requireNonNull(context);
 
@@ -162,7 +166,7 @@ public class TransactionDispatcher {
             case FILE_DELETE -> handlers.fileDeleteHandler().preHandle(context);
             case FILE_APPEND -> handlers.fileAppendHandler().preHandle(context);
 
-            case FREEZE -> handlers.freezeHandler().preHandle(context);
+            case FREEZE -> handlers.freezeHandler().preHandle(context, storeFactory.createSpecialFileStore());
 
             case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler().preHandle(context);
 
@@ -191,8 +195,8 @@ public class TransactionDispatcher {
                     .preHandle(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
                     .preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(context);
-            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(context);
+            case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(context, storeFactory.createTokenStore());
+            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(context, storeFactory.createTokenStore());
 
             case UTIL_PRNG -> handlers.utilPrngHandler().preHandle(context);
 
@@ -216,14 +220,7 @@ public class TransactionDispatcher {
     }
 
     private PreHandleDispatcher setupPreHandleDispatcher(@NonNull final ReadableStoreFactory storeFactory) {
-        // TODO Not sure about this try / catch block
-        return context -> {
-            try {
-                dispatchPreHandle(storeFactory, context);
-            } catch (PreCheckException e) {
-                throw new RuntimeException(e);
-            }
-        };
+        return context -> dispatchPreHandle(storeFactory, context);
     }
 
     private void dispatchConsensusDeleteTopic(
@@ -280,5 +277,29 @@ public class TransactionDispatcher {
                 topicStore);
         txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
         topicStore.commit();
+    }
+
+    /**
+     * Dispatches the token unpause transaction to the appropriate handler.
+     * @param tokenUnpause the token unpause transaction
+     * @param tokenStore the token store
+     */
+    private void dispatchTokenUnpause(
+            @NonNull final TransactionBody tokenUnpause, @NonNull final WritableTokenStore tokenStore) {
+        final var handler = handlers.tokenUnpauseHandler();
+        handler.handle(tokenUnpause, tokenStore);
+        tokenStore.commit();
+    }
+
+    /**
+     * Dispatches the token pause transaction to the appropriate handler.
+     * @param tokenPause the token pause transaction
+     * @param tokenStore the token store
+     */
+    private void dispatchTokenPause(
+            @NonNull final TransactionBody tokenPause, @NonNull final WritableTokenStore tokenStore) {
+        final var handler = handlers.tokenPauseHandler();
+        handler.handle(tokenPause, tokenStore);
+        tokenStore.commit();
     }
 }

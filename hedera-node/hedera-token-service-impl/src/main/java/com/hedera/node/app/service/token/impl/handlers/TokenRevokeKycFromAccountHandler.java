@@ -16,9 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -26,7 +27,6 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -43,10 +43,13 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
      * This method is called during the pre-handle workflow.
      *
      * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache.
+     * required keys, and warms the cache.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TokenRevokeKycTransactionBody)}
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @param tokenStore the {@link ReadableTokenStore}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -65,11 +68,12 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * @param tx the transaction to handle
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TokenRevokeKycTransactionBody tx) {
-        requireNonNull(tx);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

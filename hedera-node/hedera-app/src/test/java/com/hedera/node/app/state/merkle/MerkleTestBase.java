@@ -228,7 +228,7 @@ public class MerkleTestBase extends StateTestBase {
                         (short) 1,
                         DataFileCommon.VARIABLE_DATA_SIZE,
                         new OnDiskValueSerializer<>(md),
-                        true));
+                        false));
         return new VirtualMap<>(label, builder);
     }
 

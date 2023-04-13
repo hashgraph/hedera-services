@@ -16,6 +16,14 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
+import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -32,7 +40,7 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.spi.meta.QueryContext;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -40,22 +48,23 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
-import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_GET_TOPIC_INFO}.
  */
 @Singleton
 public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
+
+    private final NetworkInfo networkInfo;
+
     @Inject
     public ConsensusGetTopicInfoHandler() {
-        // Exists for injection
+        // TODO: Not sure how to get the network info here.
+        this.networkInfo = null;
+    }
+
+    public ConsensusGetTopicInfoHandler(@NonNull final NetworkInfo networkInfo) {
+        this.networkInfo = requireNonNull(networkInfo);
     }
 
     @Override
@@ -84,6 +93,9 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * This method is called during the query workflow. It validates the query, but does not
      * determine the response yet.
      *
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
      * @param query the {@link Query} that should be validated
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
@@ -104,17 +116,18 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * This method is called during the query workflow. It determines the requested value(s) and
      * returns the appropriate response.
      *
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
      * @param query        the {@link Query} with the request
      * @param header       the {@link ResponseHeader} that should be used, if the request was successful
-     * @param queryContext context for executing the query
      * @return a {@link Response} with the requested values
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public Response findResponse(
             @NonNull final Query query,
             @NonNull final ResponseHeader header,
-            @NonNull final ReadableTopicStore topicStore,
-            @NonNull final QueryContext queryContext) {
+            @NonNull final ReadableTopicStore topicStore) {
         final var op = query.consensusGetTopicInfoOrThrow();
         final var response = ConsensusGetTopicInfoResponse.newBuilder();
         final var topic = op.topicIDOrElse(TopicID.DEFAULT);
@@ -123,7 +136,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         response.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = infoForTopic(topic, topicStore, queryContext);
+            final var optionalInfo = infoForTopic(topic, topicStore);
             optionalInfo.ifPresent(response::topicInfo);
         }
 
@@ -134,13 +147,10 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * Provides information about a topic.
      * @param topicID the topic to get information about
      * @param topicStore the topic store
-     * @param queryContext context for executing the query
      * @return the information about the topic
      */
     private Optional<ConsensusTopicInfo> infoForTopic(
-            @NonNull final TopicID topicID,
-            @NonNull final ReadableTopicStore topicStore,
-            @NonNull final QueryContext queryContext) {
+            @NonNull final TopicID topicID, @NonNull final ReadableTopicStore topicStore) {
         final var metaOrFailure = topicStore.getTopicMetadata(topicID);
         if (metaOrFailure.failed()) {
             return Optional.empty();
@@ -158,7 +168,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
                     .ifPresent(account ->
                             info.autoRenewAccount(AccountID.newBuilder().accountNum(account)));
 
-            info.ledgerId(queryContext.getLedgerId());
+            info.ledgerId(networkInfo.ledgerId());
             return Optional.of(info.build());
         }
     }

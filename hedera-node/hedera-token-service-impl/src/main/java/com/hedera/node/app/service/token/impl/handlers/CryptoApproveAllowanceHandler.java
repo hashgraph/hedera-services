@@ -16,18 +16,18 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
-import static java.util.Collections.emptyList;
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -44,8 +44,8 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * Pre-handles a {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE} transaction, returning the
      * metadata required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(CryptoApproveAllowanceTransactionBody)}
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
@@ -80,11 +80,12 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * @param tx the transaction to handle
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final CryptoApproveAllowanceTransactionBody tx) {
-        requireNonNull(tx);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

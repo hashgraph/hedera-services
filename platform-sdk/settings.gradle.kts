@@ -26,6 +26,8 @@ include(":swirlds-logging")
 
 include(":swirlds-common")
 
+include(":swirlds-sign-tool")
+
 include(":swirlds-config-api")
 
 include(":swirlds-config-impl")

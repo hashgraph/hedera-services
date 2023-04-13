@@ -16,6 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -37,12 +43,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static java.util.Collections.emptyList;
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -71,8 +71,8 @@ public class CryptoTransferHandler implements TransactionHandler {
      * Pre-handles a {@link HederaFunctionality#CRYPTO_TRANSFER} transaction, returning the metadata
      * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(CryptoTransferTransactionBody)}
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @param accountStore the {@link AccountAccess} to use to resolve keys
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -100,12 +100,13 @@ public class CryptoTransferHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * @param tx the transaction to handle
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final CryptoTransferTransactionBody tx) {
+    public void handle() {
         // TODO : Need to implement this method when we are ready to validate payments for query
-        requireNonNull(tx);
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -163,11 +164,11 @@ public class CryptoTransferHandler implements TransactionHandler {
                 meta.addNonPayerKeyIfReceiverSigRequired(receiverId, INVALID_TRANSFER_ACCOUNT_ID);
             } else if (tokenMeta.metadata().hasRoyaltyWithFallback()
                     && !receivesFungibleValue(nftTransfer.senderAccountID(), op, accountStore)) {
-                // Fallback situation; but we still need to check if the treasury is
+                // Fallback situation; but we still need to check if the treasuryNum is
                 // the sender or receiver, since in neither case will the fallback
                 // fee actually be charged
-                final var treasury = toPbj(tokenMeta.metadata().treasury().toGrpcAccountId());
-                if (!treasury.equals(senderId) && !treasury.equals(receiverId)) {
+                final var treasury = tokenMeta.metadata().treasuryNum();
+                if (treasury != senderId.accountNum() && treasury != receiverId.accountNum()) {
                     meta.addNonPayerKey(receiverId);
                 }
             }

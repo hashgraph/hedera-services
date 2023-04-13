@@ -64,7 +64,7 @@ class AdaptedMonoProcessLogicTest {
     }
 
     @Test
-    void passesThroughNonTransactionMetadata() {
+    void passesThroughNonPreHandleResult() {
         given(platformTxn.getMetadata()).willReturn(accessor);
 
         subject.incorporateConsensusTxn(platformTxn, 1L);
@@ -73,7 +73,7 @@ class AdaptedMonoProcessLogicTest {
     }
 
     @Test
-    void adaptsTransactionMetadataAsPayerAndOthersIfOK() {
+    void adaptsPreHandleResultAsPayerAndOthersIfOK() {
         final ArgumentCaptor<SwirldsTxnAccessor> captor = ArgumentCaptor.forClass(SwirldsTxnAccessor.class);
 
         final var noopTxn = Transaction.newBuilder().build();

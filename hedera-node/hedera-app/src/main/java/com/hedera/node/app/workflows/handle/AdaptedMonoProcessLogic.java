@@ -55,8 +55,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private SwirldsTxnAccessor adaptForMono(
-            final ConsensusTransaction platformTxn, final PreHandleResult metadata) {
+    private SwirldsTxnAccessor adaptForMono(final ConsensusTransaction platformTxn, final PreHandleResult metadata) {
         try {
             final var accessor = PlatformTxnAccessor.from(platformTxn.getContents());
             // TODO - recompute required keys and compare with metadata

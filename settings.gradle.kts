@@ -30,7 +30,7 @@ plugins {
   id("com.gradle.enterprise").version("3.11.4")
   // Use GIT plugin to clone HAPI protobuf files
   // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
-  id("me.champeau.includegit").version("0.1.5")
+  id("me.champeau.includegit").version("0.1.6")
 }
 
 include(":hedera-node")
@@ -98,8 +98,9 @@ gitRepositories {
   include("hedera-protobufs") {
     uri.set("https://github.com/hashgraph/hedera-protobufs.git")
     // choose tag or branch of HAPI you would like to test with
+    // this looks for a tag in hedera-protobufs repo
     // This version needs to match tha HAPI version below in versionCatalogs
-    tag.set("v0.36.0")
+    tag.set("05111-use-pbj-for-token-state")
     // do not load project from repo
     autoInclude.set(false)
   }
@@ -114,10 +115,10 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      version("hapi-version", "0.36.1")
+      version("hapi-version", "0.37.0-modularization-SNAPSHOT")
 
       // Definition of version numbers for all libraries
-      version("pbj-version", "0.5.0")
+      version("pbj-version", "0.5.1")
       version("besu-version", "22.10.1")
       version("besu-native-version", "0.6.1")
       version("bouncycastle-version", "1.70")
@@ -299,7 +300,6 @@ dependencyResolutionManagement {
       library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
       library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter")
           .versionRef("mockito-version")
-      library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
       library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
       library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
       library("testcontainers-core", "org.testcontainers", "testcontainers")

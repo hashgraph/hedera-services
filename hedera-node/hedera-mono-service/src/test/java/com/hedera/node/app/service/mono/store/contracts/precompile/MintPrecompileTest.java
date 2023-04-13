@@ -56,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.never;
@@ -302,7 +303,8 @@ class MintPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveSupplyKey(
+                        true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers, HederaFunctionality.TokenMint))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
@@ -310,7 +312,7 @@ class MintPrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
         given(encoder.encodeMintFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
         given(worldUpdater.aliases()).willReturn(aliases);
@@ -336,7 +338,8 @@ class MintPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveSupplyKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveSupplyKey(
+                        Mockito.anyBoolean(), any(), any(), any(), eq(HederaFunctionality.TokenMint)))
                 .willThrow(new IllegalArgumentException("random error"));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
@@ -344,7 +347,7 @@ class MintPrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID)).willReturn(mockRecordBuilder);
         given(encoder.encodeMintFailure(FAIL_INVALID)).willReturn(failInvalidResult);
         given(worldUpdater.aliases()).willReturn(aliases);
@@ -369,7 +372,8 @@ class MintPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveSupplyKey(
+                        true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers, HederaFunctionality.TokenMint))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -381,7 +385,7 @@ class MintPrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         final var mints = new long[] {
@@ -418,7 +422,8 @@ class MintPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveSupplyKey(
+                        true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers, HederaFunctionality.TokenMint))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -430,7 +435,7 @@ class MintPrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(mintLogic.validateSyntax(any())).willReturn(INVALID_TOKEN_ID);
@@ -464,7 +469,7 @@ class MintPrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(mintLogic.validateSyntax(any())).willReturn(OK);
 
         // when:
@@ -499,7 +504,7 @@ class MintPrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(mintLogic.validateSyntax(any())).willReturn(OK);
 
         subject.prepareFields(frame);
@@ -552,7 +557,7 @@ class MintPrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(mintLogic.validateSyntax(any())).willReturn(OK);
 
         // when:
@@ -697,7 +702,8 @@ class MintPrecompileTest {
     }
 
     private void givenFungibleCollaborators() {
-        given(sigsVerifier.hasActiveSupplyKey(true, fungibleTokenAddr, recipientAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveSupplyKey(
+                        true, fungibleTokenAddr, recipientAddr, wrappedLedgers, HederaFunctionality.TokenMint))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))

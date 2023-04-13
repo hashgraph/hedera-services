@@ -16,9 +16,15 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -27,12 +33,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static java.util.Collections.emptyList;
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -49,10 +49,13 @@ public class TokenCreateHandler implements TransactionHandler {
      * This method is called during the pre-handle workflow.
      *
      * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache.
+     * required keys, and warms the cache.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TokenCreateTransactionBody)}
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
@@ -77,11 +80,12 @@ public class TokenCreateHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * @param tx the transaction to handle
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TokenCreateTransactionBody tx) {
-        requireNonNull(tx);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 

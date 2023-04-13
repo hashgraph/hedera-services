@@ -37,15 +37,18 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
+import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.hederahashgraph.api.proto.java.AccountID.AccountCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
@@ -58,12 +61,14 @@ import java.util.Optional;
 public final class PbjConverter {
     public static @NonNull AccountID toPbj(@NonNull com.hederahashgraph.api.proto.java.AccountID accountID) {
         requireNonNull(accountID);
-        return AccountID.newBuilder()
-                .shardNum(accountID.getShardNum())
-                .realmNum(accountID.getRealmNum())
-                .accountNum(accountID.getAccountNum())
-                .alias(Bytes.wrap(accountID.getAlias().toByteArray()))
-                .build();
+        final var builder =
+                AccountID.newBuilder().shardNum(accountID.getShardNum()).realmNum(accountID.getRealmNum());
+        if (accountID.getAccountCase() == AccountCase.ALIAS) {
+            builder.alias(Bytes.wrap(accountID.getAlias().toByteArray()));
+        } else {
+            builder.accountNum(accountID.getAccountNum());
+        }
+        return builder.build();
     }
 
     public static @NonNull TokenID toPbj(@NonNull com.hederahashgraph.api.proto.java.TokenID tokenID) {
@@ -1240,7 +1245,9 @@ public final class PbjConverter {
     public static @NonNull Key fromGrpcKey(@NonNull final com.hederahashgraph.api.proto.java.Key grpcKey) {
         try (final var bais =
                 new ByteArrayInputStream(Objects.requireNonNull(grpcKey).toByteArray())) {
-            return Key.PROTOBUF.parse(new ReadableStreamingData(bais));
+            final var stream = new ReadableStreamingData(bais);
+            stream.limit(bais.available());
+            return Key.PROTOBUF.parse(stream);
         } catch (final IOException e) {
             // Should be impossible, so just propagate an exception
             throw new IllegalStateException("Invalid conversion to PBJ for Key", e);
@@ -1269,6 +1276,18 @@ public final class PbjConverter {
             throw new IllegalStateException("Invalid conversion from PBJ for Key", e);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static @NonNull CustomFee fromFcCustomFee(@Nullable final FcCustomFee fcFee) {
+        try (final var bais =
+                new ByteArrayInputStream(Objects.requireNonNull(fcFee).asGrpc().toByteArray())) {
+            final var stream = new ReadableStreamingData(bais);
+            stream.limit(bais.available());
+            return CustomFee.PROTOBUF.parse(stream);
+        } catch (final IOException e) {
+            // Should be impossible, so just propagate an exception
+            throw new IllegalStateException("Invalid conversion to PBJ for CustomFee", e);
         }
     }
 

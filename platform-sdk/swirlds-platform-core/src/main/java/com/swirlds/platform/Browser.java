@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -64,7 +65,6 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -84,10 +84,15 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.gui.internal.InfoApp;
 import com.swirlds.platform.gui.internal.InfoMember;
 import com.swirlds.platform.gui.internal.InfoSwirld;
 import com.swirlds.platform.gui.internal.StateHierarchy;
+import com.swirlds.platform.health.OSHealthChecker;
+import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
+import com.swirlds.platform.health.entropy.OSEntropyChecker;
+import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.SavedStateInfo;
@@ -112,13 +117,15 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
@@ -149,9 +156,6 @@ public class Browser {
     // [*] Two members are considered to be on the same LAN if their listed external addresses are the same.
 
     private static Logger logger = LogManager.getLogger(Browser.class);
-
-    /** the thread for each Platform.run */
-    private static Thread[] platformRunThreads;
 
     private static Thread[] appRunThreads;
 
@@ -209,11 +213,12 @@ public class Browser {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
-                .withConfigDataType(WiringConfig.class);
+                .withConfigDataType(WiringConfig.class)
+                .withConfigDataType(PreConsensusEventStreamConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
-            appMains.get(0L).updateConfigurationBuilder(configurationBuilder);
+            appMains.values().iterator().next().updateConfigurationBuilder(configurationBuilder);
         }
 
         this.configuration = configurationBuilder.build();
@@ -223,6 +228,13 @@ public class Browser {
 
         ConfigurationHolder.getInstance().setConfiguration(configuration);
         CryptographyHolder.reset();
+
+        OSHealthChecker.performOSHealthChecks(
+                configuration.getConfigData(OSHealthCheckConfig.class),
+                List.of(
+                        OSClockSpeedSourceChecker::performClockSourceSpeedCheck,
+                        OSEntropyChecker::performEntropyChecks,
+                        OSFileSystemChecker::performFileSystemCheck));
 
         try {
             // discover the inset size and set the look and feel
@@ -348,8 +360,8 @@ public class Browser {
     @NonNull
     private Map<Long, SwirldMain> loadSwirldMains(
             @NonNull final ApplicationDefinition appDefinition, @NonNull final Set<Integer> localNodesToStart) {
-        Objects.requireNonNull(appDefinition, "appDefinition must not be null");
-        Objects.requireNonNull(localNodesToStart, "localNodesToStart must not be null");
+        throwArgNull(appDefinition, "appDefinition must not be null");
+        throwArgNull(localNodesToStart, "localNodesToStart must not be null");
         try {
             // Create the SwirldAppLoader
             final SwirldAppLoader appLoader;
@@ -575,19 +587,21 @@ public class Browser {
         }
     }
 
-    private void createLocalPlatforms(
+    private Collection<SwirldsPlatform> createLocalPlatforms(
             @NonNull final ApplicationDefinition appDefinition,
             @NonNull final Crypto[] crypto,
             @NonNull final InfoSwirld infoSwirld,
             @NonNull final Map<Long, SwirldMain> appMains,
             @NonNull final Configuration configuration,
             @NonNull final MetricsProvider metricsProvider) {
-        Objects.requireNonNull(appDefinition, "the app definition must not be null");
-        Objects.requireNonNull(crypto, "the crypto array must not be null");
-        Objects.requireNonNull(infoSwirld, "the infoSwirld must not be null");
-        Objects.requireNonNull(appMains, "the appMains map must not be null");
-        Objects.requireNonNull(configuration, "the configuration must not be null");
-        Objects.requireNonNull(metricsProvider, "the metricsProvider must not be null");
+        throwArgNull(appDefinition, "the app definition must not be null");
+        throwArgNull(crypto, "the crypto array must not be null");
+        throwArgNull(infoSwirld, "the infoSwirld must not be null");
+        throwArgNull(appMains, "the appMains map must not be null");
+        throwArgNull(configuration, "the configuration must not be null");
+        throwArgNull(metricsProvider, "the metricsProvider must not be null");
+
+        final List<SwirldsPlatform> platforms = new ArrayList<>();
 
         final AddressBook addressBook = appDefinition.getAddressBook();
 
@@ -652,6 +666,7 @@ public class Browser {
                         appMain::newState,
                         loadedSignedState,
                         emergencyRecoveryManager);
+                platforms.add(platform);
 
                 new InfoMember(infoSwirld, i, platform);
 
@@ -665,26 +680,14 @@ public class Browser {
                         .build();
                 appRunThreads[ownHostIndex] = appThread;
 
-                platformRunThreads[ownHostIndex] = new ThreadConfiguration(getStaticThreadManager())
-                        .setDaemon(false)
-                        .setPriority(Settings.getInstance().getThreadPriorityNonSync())
-                        .setNodeId((long) ownHostIndex)
-                        .setComponent(SwirldsPlatform.PLATFORM_THREAD_POOL_NAME)
-                        .setThreadName("platformRun")
-                        .setRunnable(() -> {
-                            platform.run();
-                            // When the SwirldMain quits, end the run() for this platform instance
-                            Uninterruptable.abortAndLogIfInterrupted(
-                                    appThread::join, "interrupted when waiting for app thread to terminate");
-                        })
-                        .build();
-
                 ownHostIndex++;
                 synchronized (getPlatforms()) {
                     getPlatforms().add(platform);
                 }
             }
         }
+
+        return Collections.unmodifiableList(platforms);
     }
 
     /**
@@ -765,7 +768,6 @@ public class Browser {
         // the thread for each Platform.run
         // will create a new thread with a new Platform for each local address
         // general address number addIndex is local address number i
-        platformRunThreads = new Thread[ownHostCount];
         appRunThreads = new Thread[ownHostCount];
         appDefinition.setMasterKey(new byte[CryptoConstants.SYM_KEY_SIZE_BYTES]);
         appDefinition.setSwirldId(new byte[CryptoConstants.HASH_SIZE_BYTES]);
@@ -792,14 +794,15 @@ public class Browser {
         CryptoMetrics.registerMetrics(globalMetrics);
 
         // Create all instances for all nodes that should run locally
-        createLocalPlatforms(appDefinition, crypto, infoSwirld, appMains, configuration, metricsProvider);
+        final Collection<SwirldsPlatform> platforms =
+                createLocalPlatforms(appDefinition, crypto, infoSwirld, appMains, configuration, metricsProvider);
 
         // Write all metrics information to file
         MetricsDocUtils.writeMetricsDocumentToFile(globalMetrics, getPlatforms(), configuration);
 
-        // the platforms need to start after all the initial loading has been done
-        for (int nodeIndex = 0; nodeIndex < platformRunThreads.length; nodeIndex++) {
-            platformRunThreads[nodeIndex].start();
+        platforms.forEach(SwirldsPlatform::start);
+
+        for (int nodeIndex = 0; nodeIndex < appRunThreads.length; nodeIndex++) {
             appRunThreads[nodeIndex].start();
         }
 
@@ -813,15 +816,6 @@ public class Browser {
         metricsProvider.start();
 
         logger.debug(STARTUP.getMarker(), "Done with starting platforms");
-    }
-
-    /**
-     * Wait until all platform main threads are stopped.
-     */
-    public static void join() throws InterruptedException {
-        for (final Thread thread : platformRunThreads) {
-            thread.join();
-        }
     }
 
     public static void main(final String[] args) {

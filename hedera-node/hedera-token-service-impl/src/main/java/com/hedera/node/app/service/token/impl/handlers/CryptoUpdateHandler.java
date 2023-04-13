@@ -16,17 +16,17 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CRYPTO_UPDATE}.
@@ -42,8 +42,8 @@ public class CryptoUpdateHandler implements TransactionHandler {
      * Pre-handles a {@link HederaFunctionality#CRYPTO_UPDATE} transaction, returning the metadata
      * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(CryptoUpdateTransactionBody)}
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final CryptoSignatureWaivers waivers) {
@@ -68,11 +68,12 @@ public class CryptoUpdateHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * @param tx the transaction to handle
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final CryptoUpdateTransactionBody tx) {
-        requireNonNull(tx);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

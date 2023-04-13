@@ -16,50 +16,64 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import static java.util.Objects.requireNonNull;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
  * multiple background threads. Any state read or computed as part of this pre-handle, including any
- * errors, are captured in the TransactionMetadata. This is then made available to the transaction
+ * errors, are captured in the {@link PreHandleResult}. This is then made available to the transaction
  * during the "handle" phase as part of the HandleContext.
  *
- * @param txnInfo Parsed information related to the transaction
- * @param payer payer for the transaction (might be different from the payer in the transaction ID)
+ * @param txnBody Transaction that is being pre-handled
+ * @param payer payer for the transaction
  * @param status {@link ResponseCodeEnum} status of the transaction
- * @param innerMetadata {@link PreHandleResult} of the inner transaction (where appropriate)
- * @param unhandledException If some unexpected exception happened during pre-handle, it is captured here.
+ * @param payerKey payer key required to sign the transaction. It is null if payer is missing
+ * @param innerResult {@link PreHandleResult} of the inner transaction (where appropriate)
  */
 public record PreHandleResult(
-        @Nullable TransactionInfo txnInfo,
+        @Nullable TransactionBody txnBody,
+        @Nullable SignatureMap signatureMap,
         @Nullable AccountID payer,
         @NonNull ResponseCodeEnum status,
-        @Nullable PreHandleResult innerMetadata,
-        @Nullable Exception unhandledException) {
+        @Nullable HederaKey payerKey,
+        @NonNull List<HederaKey> otherPartyKeys,
+        @Nullable List<TransactionSignature> cryptoSignatures,
+        @Nullable PreHandleResult innerResult) {
 
-    public static PreHandleResult nodeDueDiligenceFailure(@NonNull final AccountID creator, @NonNull final ResponseCodeEnum status) {
-        return new PreHandleResult(null, creator, status, null, null);
+    public PreHandleResult {
+        requireNonNull(status);
     }
 
-    public static PreHandleResult nodeDueDiligenceFailure(@NonNull final AccountID creator, @NonNull final ResponseCodeEnum status, @NonNull final TransactionInfo info) {
-        return new PreHandleResult(info, creator, status, null, null);
+    public PreHandleResult(
+            @NonNull final PreHandleContext context,
+            @NonNull final SignatureMap signatureMap,
+            @NonNull final List<TransactionSignature> cryptoSignatures,
+            @Nullable final PreHandleResult innerResult) {
+        this(
+                requireNonNull(context).getTxn(),
+                requireNonNull(signatureMap),
+                context.getPayer(),
+                context.getStatus(),
+                context.getPayerKey(),
+                context.getRequiredNonPayerKeys(),
+                requireNonNull(cryptoSignatures),
+                innerResult);
     }
 
-    public static PreHandleResult preHandleFailure(@NonNull final AccountID payer, @NonNull final ResponseCodeEnum status, @NonNull final TransactionInfo info) {
-        return new PreHandleResult(info, payer, status, null, null);
-    }
-
-    public static PreHandleResult unknownFailure(@NonNull final AccountID creator, @NonNull final Exception e) {
-        return new PreHandleResult(null, creator, ResponseCodeEnum.UNKNOWN, null, e);
-    }
-
-    public static PreHandleResult unknownFailure(@NonNull final AccountID creator, @NonNull final Exception e, @NonNull final TransactionInfo info) {
-        return new PreHandleResult(info, creator, ResponseCodeEnum.UNKNOWN, null, e);
+    public PreHandleResult(@NonNull final ResponseCodeEnum status) {
+        this(null, null, null, status, null, Collections.emptyList(), Collections.emptyList(), null);
     }
 
     /**

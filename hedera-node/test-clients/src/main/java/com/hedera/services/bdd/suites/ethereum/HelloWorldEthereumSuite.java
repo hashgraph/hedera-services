@@ -96,7 +96,8 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 relayerFeeAsExpectedIfSenderCoversGas(),
                 depositSuccess(),
                 badRelayClient(),
-                ethereumCallWithCalldataBiggerThanMaxSucceeds());
+                ethereumCallWithCalldataBiggerThanMaxSucceeds(),
+                createWithSelfDestructInConstructorHasSaneRecord());
     }
 
     List<HapiSpec> ethereumCreates() {
@@ -306,6 +307,27 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                         spec.registry().getBytes(ETH_HASH_KEY)))))),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .has(accountWith().nonce(1L)));
+    }
+
+    HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
+        final var txn = "txn";
+        final var selfDestructingContract = "FactorySelfDestructConstructor";
+        return defaultHapiSpec("CreateWithSelfDestructInConstructorHasSaneRecord")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        uploadInitCode(selfDestructingContract))
+                .when(ethereumContractCreate(selfDestructingContract)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .maxGasAllowance(ONE_HUNDRED_HBARS)
+                        .gasLimit(5_000_000L)
+                        .via(txn))
+                .then(childRecordsCheck(txn, SUCCESS, recordWith(), recordWith().hasMirrorIdInReceipt()));
     }
 
     HapiSpec smallContractCreate() {
