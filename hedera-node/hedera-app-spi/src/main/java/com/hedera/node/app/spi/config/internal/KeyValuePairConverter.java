@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 public class KeyValuePairConverter implements ConfigConverter<KeyValuePair> {
     @Override
     public KeyValuePair convert(final String value) throws IllegalArgumentException, NullPointerException {
-        Objects.requireNonNull(value, "Value cannot be null");
+        Objects.requireNonNull(value, "Parameter 'value' cannot be null");
         final String quote = Pattern.quote(";");
         final String[] split = value.split(quote);
         if (split.length == 1) {
