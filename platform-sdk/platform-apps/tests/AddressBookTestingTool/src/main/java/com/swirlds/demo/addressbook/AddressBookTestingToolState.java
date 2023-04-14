@@ -285,7 +285,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     private AddressBook stakingBehavior2(@NonNull final AddressBook addressBook) {
         if (logStakingBehavior.get()) {
             logger.info(
-                    STARTUP.getMarker(), "Staking Behavior 2: updating all nodes to have weight equal to their nodeId.");
+                    STARTUP.getMarker(),
+                    "Staking Behavior 2: updating all nodes to have weight equal to their nodeId.");
         }
         for (int i = 0; i < addressBook.getSize(); i++) {
             addressBook.updateWeight(i, i);
