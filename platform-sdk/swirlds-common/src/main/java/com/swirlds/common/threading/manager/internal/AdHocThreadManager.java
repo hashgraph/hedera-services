@@ -20,6 +20,7 @@ import com.swirlds.common.threading.framework.config.ExecutorServiceConfiguratio
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadPoolConfiguration;
+import com.swirlds.common.threading.framework.config.ScheduledExecutorServiceConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
@@ -27,9 +28,6 @@ import com.swirlds.common.threading.manager.ExecutorServiceRegistry;
 import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * A simple thread manager. The goal of this implementation is to create threads without complaining about lifecycle.
@@ -68,19 +66,8 @@ public final class AdHocThreadManager extends AbstractThreadManager
      */
     @NonNull
     @Override
-    public ScheduledExecutorService createSingleThreadScheduledExecutor(@NonNull String name) {
-        Objects.requireNonNull(name);
-        return Executors.newSingleThreadScheduledExecutor(buildThreadFactory(name, null));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, final int threadCount) {
-        Objects.requireNonNull(name);
-        return Executors.newScheduledThreadPool(threadCount, buildThreadFactory(name, null));
+    public ScheduledExecutorServiceConfiguration newScheduledExecutorServiceConfiguration(@NonNull String name) {
+        return new ScheduledExecutorServiceConfiguration(this, name);
     }
 
     /**

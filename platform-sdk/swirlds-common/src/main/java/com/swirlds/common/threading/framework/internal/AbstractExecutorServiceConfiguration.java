@@ -98,7 +98,7 @@ public class AbstractExecutorServiceConfiguration<T extends AbstractExecutorServ
      */
     @NonNull
     @SuppressWarnings("unchecked")
-    public T setProfile(@NonNull final ExecutorServiceProfile profile) {
+    protected T setProfile(@NonNull final ExecutorServiceProfile profile) {
         this.profile = profile;
         return (T) this;
     }
@@ -142,7 +142,7 @@ public class AbstractExecutorServiceConfiguration<T extends AbstractExecutorServ
      */
     @NonNull
     @SuppressWarnings("unchecked")
-    public T setMaximumPoolSize(final int maximumPoolSize) {
+    protected T setMaximumPoolSize(final int maximumPoolSize) {
         if (maximumPoolSize < 1) {
             throw new IllegalArgumentException("Thread count must be at least 1");
         }
@@ -165,7 +165,7 @@ public class AbstractExecutorServiceConfiguration<T extends AbstractExecutorServ
      */
     @NonNull
     @SuppressWarnings("unchecked")
-    public T setKeepAliveTime(Duration keepAliveTime) {
+    protected T setKeepAliveTime(@NonNull final Duration keepAliveTime) {
         this.keepAliveTime = keepAliveTime;
         return (T) this;
     }
@@ -179,7 +179,7 @@ public class AbstractExecutorServiceConfiguration<T extends AbstractExecutorServ
      */
     @NonNull
     @SuppressWarnings("unchecked")
-    public T setQueueSize(final int queueSize) {
+    protected T setQueueSize(final int queueSize) {
         if (queueSize < 1 && queueSize != UNLIMITED_QUEUE_SIZE) {
             throw new IllegalArgumentException("Queue size must be at least 1 or unlimited");
         }
@@ -217,7 +217,7 @@ public class AbstractExecutorServiceConfiguration<T extends AbstractExecutorServ
      */
     @NonNull
     @SuppressWarnings("unchecked")
-    public T setQueue(@NonNull final BlockingQueue<Runnable> queue) {
+    protected T setQueue(@NonNull final BlockingQueue<Runnable> queue) {
         this.queue = queue;
         return (T) this;
     }

@@ -493,7 +493,9 @@ class ThreadManagerTests {
 
             final AtomicLong count = new AtomicLong();
 
-            final ScheduledExecutorService executorService = threadManager.createSingleThreadScheduledExecutor("test");
+            final ScheduledExecutorService executorService = threadManager
+                    .newScheduledExecutorServiceConfiguration("test")
+                    .build();
 
             int sum = 0;
             for (int i = 0; i < 100; i++) {
@@ -525,7 +527,10 @@ class ThreadManagerTests {
 
             final AtomicLong count = new AtomicLong();
 
-            final ScheduledExecutorService executorService = threadManager.createScheduledThreadPool("test", 3);
+            final ScheduledExecutorService executorService = threadManager
+                    .newScheduledExecutorServiceConfiguration("test")
+                    .setCorePoolSize(3)
+                    .build();
 
             int sum = 0;
             for (int i = 0; i < 100; i++) {

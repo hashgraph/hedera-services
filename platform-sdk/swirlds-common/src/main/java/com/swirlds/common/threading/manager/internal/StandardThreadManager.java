@@ -20,6 +20,7 @@ import com.swirlds.common.threading.framework.config.ExecutorServiceConfiguratio
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadPoolConfiguration;
+import com.swirlds.common.threading.framework.config.ScheduledExecutorServiceConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
@@ -35,9 +36,6 @@ import com.swirlds.common.utility.Startable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * A standard implementation of a {@link ThreadManager}. Will not permit work to be done on threads until started.
@@ -124,35 +122,8 @@ public final class StandardThreadManager extends AbstractThreadManager
      */
     @NonNull
     @Override
-    public ScheduledExecutorService createSingleThreadScheduledExecutor(final @NonNull String name) {
-        Objects.requireNonNull(name);
-        try (final Locked l = lock.lock()) {
-            throwIfAfterPhase(LifecyclePhase.STARTED);
-            final ManagedScheduledExecutorService service = new ManagedScheduledExecutorService(
-                    Executors.newSingleThreadScheduledExecutor(buildThreadFactory(name, null)));
-            if (phase == LifecyclePhase.NOT_STARTED) {
-                thingsToBeStarted.add(service);
-            }
-            return service;
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, int threadCount) {
-        Objects.requireNonNull(name);
-        try (final Locked l = lock.lock()) {
-            throwIfAfterPhase(LifecyclePhase.STARTED);
-            final ManagedScheduledExecutorService service = new ManagedScheduledExecutorService(
-                    Executors.newScheduledThreadPool(threadCount, buildThreadFactory(name, null)));
-            if (phase == LifecyclePhase.NOT_STARTED) {
-                thingsToBeStarted.add(service);
-            }
-            return service;
-        }
+    public ScheduledExecutorServiceConfiguration newScheduledExecutorServiceConfiguration(@NonNull String name) {
+        return new ScheduledExecutorServiceConfiguration(this, name);
     }
 
     /**

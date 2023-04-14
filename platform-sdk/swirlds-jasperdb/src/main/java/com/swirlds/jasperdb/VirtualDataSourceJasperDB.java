@@ -351,7 +351,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
         COUNT_OF_OPEN_DATABASES.increment();
         // create scheduledThreadPool for executing merges
         mergingExecutor = getStaticThreadManager()
-                .createScheduledThreadPool(JASPER_DB_COMPONENT + ": Merging", NUMBER_OF_MERGING_THREADS);
+                .newScheduledExecutorServiceConfiguration(JASPER_DB_COMPONENT + ": Merging")
+                .setCorePoolSize(NUMBER_OF_MERGING_THREADS)
+                .build();
         // create thread pool storing internal records
         storeInternalExecutor = getStaticThreadManager()
                 .newExecutorServiceConfiguration(JASPER_DB_COMPONENT + ": Store Internal Records")

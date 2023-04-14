@@ -20,11 +20,11 @@ import com.swirlds.common.threading.framework.config.ExecutorServiceConfiguratio
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadPoolConfiguration;
+import com.swirlds.common.threading.framework.config.ScheduledExecutorServiceConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Responsible for managing threading resources.
@@ -32,41 +32,28 @@ import java.util.concurrent.ScheduledExecutorService;
 public interface ThreadManager {
 
     /**
-     * Create configuration for a new executor service. If this thread manager has not yet been started, work
-     * submitted the executor service will be not be handled until after the thread manager has been started (with the
-     * exception of the invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager
-     * being started).
+     * Create configuration for a new executor service. If this thread manager has not yet been started, work submitted
+     * the executor service will be not be handled until after the thread manager has been started (with the exception
+     * of the invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being
+     * started).
      *
      * @param name the name of the thread pool
-     * @return a new cached thread pool
+     * @return a new executor service configuration
      */
     @NonNull
     ExecutorServiceConfiguration newExecutorServiceConfiguration(@NonNull final String name);
 
     /**
-     * Create a new single thread scheduled executor. If this thread manager has not yet been started, work submitted
-     * the executor service will be not be handled until after the thread manager has been started (with the exception
-     * of the scheduleAtFixedRate(), invokeAny(), and invokeAll() methods, which will throw if called prior to the
-     * thread manager being started).
+     * Create configuration for a new scheduled executor service. If this thread manager has not yet been started, work
+     * submitted the executor service will be not be handled until after the thread manager has been started (with the
+     * exception of the invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager
+     * being started).
      *
      * @param name the name of the thread pool
-     * @return a new single thread scheduled executor
+     * @return a new scheduled executor service configuration
      */
     @NonNull
-    ScheduledExecutorService createSingleThreadScheduledExecutor(@NonNull final String name);
-
-    /**
-     * Create a new scheduled thread pool. If this thread manager has not yet been started, work submitted the executor
-     * service will be not be handled until after the thread manager has been started (with the exception of the
-     * scheduleAtFixedRate(), invokeAny() and invokeAll() methods, which will throw if called prior to the thread
-     * manager being started).
-     *
-     * @param name        the name of the thread pool
-     * @param threadCount the number of threads in the pool
-     * @return a new scheduled thread pool
-     */
-    @NonNull
-    ScheduledExecutorService createScheduledThreadPool(@NonNull final String name, final int threadCount);
+    ScheduledExecutorServiceConfiguration newScheduledExecutorServiceConfiguration(@NonNull final String name);
 
     /**
      * Create a new thread configuration.

@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -165,6 +166,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                     .newExecutorServiceConfiguration("virtual-map: cache-cleaner")
                     .setProfile(ExecutorServiceProfile.FIXED_THREAD_POOL)
                     .setCorePoolSize(CACHE_CLEANER_THREAD_COUNT)
+                    .setQueue(new LinkedBlockingQueue<>())
                     .setUncaughtExceptionHandler(
                             (t, ex) -> logger.error("Failed to purge unneeded key/mutationList pairs", ex))
                     .build();

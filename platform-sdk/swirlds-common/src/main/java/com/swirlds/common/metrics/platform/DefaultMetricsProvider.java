@@ -49,8 +49,9 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
     private static final Logger logger = LogManager.getLogger(DefaultMetricsProvider.class);
 
     private final MetricsFactory factory = new DefaultMetricsFactory();
-    private final ScheduledExecutorService executor =
-            getStaticThreadManager().createSingleThreadScheduledExecutor("platform-core: MetricsThread");
+    private final ScheduledExecutorService executor = getStaticThreadManager()
+            .newScheduledExecutorServiceConfiguration("platform-core: MetricsThread")
+            .build();
 
     private final MetricKeyRegistry metricKeyRegistry = new MetricKeyRegistry();
     private final DefaultMetrics globalMetrics;

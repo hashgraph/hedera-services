@@ -21,21 +21,29 @@ import com.swirlds.common.threading.manager.ExecutorServiceRegistry;
 import com.swirlds.common.threading.manager.internal.ManagedExecutorService;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.time.Duration;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Configures and builds an executor service with properties similar to {@link Executors#newCachedThreadPool()}.
+ * Configures and builds an executor service. Executor service is tied to the lifecycle of the thread manager. If work
+ * is submitted to any of the following methods prior to the start of the thread manager, then that work is buffered.
+ * The exception to this rule are the invokeAll() and invokeAny() methods, which will throw if called prior to the
+ * thread manager being started.
  */
 public class ExecutorServiceConfiguration extends AbstractExecutorServiceConfiguration<ExecutorServiceConfiguration> {
 
+    /**
+     * Create a new executor service configuration.
+     *
+     * @param registry the executor service registry
+     * @param name     the name of the executor service
+     */
     public ExecutorServiceConfiguration(final ExecutorServiceRegistry registry, final String name) {
         super(registry, name);
     }
-
-    // TODO document startup behavior
 
     /**
      * {@inheritDoc}
@@ -45,6 +53,51 @@ public class ExecutorServiceConfiguration extends AbstractExecutorServiceConfigu
     public ExecutorServiceConfiguration setUncaughtExceptionHandler(
             @NonNull UncaughtExceptionHandler uncaughtExceptionHandler) {
         return super.setUncaughtExceptionHandler(uncaughtExceptionHandler);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public ExecutorServiceConfiguration setMaximumPoolSize(final int maximumPoolSize) {
+        return super.setMaximumPoolSize(maximumPoolSize);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public ExecutorServiceConfiguration setKeepAliveTime(@NonNull final Duration keepAliveTime) {
+        return super.setKeepAliveTime(keepAliveTime);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public ExecutorServiceConfiguration setQueueSize(final int queueSize) {
+        return super.setQueueSize(queueSize);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public ExecutorServiceConfiguration setQueue(@NonNull BlockingQueue<Runnable> queue) {
+        return super.setQueue(queue);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public ExecutorServiceConfiguration setProfile(@NonNull ExecutorServiceProfile profile) {
+        return super.setProfile(profile);
     }
 
     /**

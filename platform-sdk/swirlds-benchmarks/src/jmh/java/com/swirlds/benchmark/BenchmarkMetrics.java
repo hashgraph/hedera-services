@@ -333,7 +333,9 @@ public final class BenchmarkMetrics {
                 .build();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = new MetricKeyRegistry();
-        metricService = getStaticThreadManager().createSingleThreadScheduledExecutor("benchmark: MetricsWriter");
+        metricService = getStaticThreadManager()
+                .newScheduledExecutorServiceConfiguration("benchmark: MetricsWriter")
+                .build();
         metrics = new DefaultMetrics(null, registry, metricService, new DefaultMetricsFactory(), metricsConfig);
 
         metrics.getOrCreate(TIMESTAMP_CONFIG);

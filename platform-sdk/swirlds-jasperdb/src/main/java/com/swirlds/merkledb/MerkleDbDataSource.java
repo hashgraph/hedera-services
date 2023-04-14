@@ -265,7 +265,9 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
 
         // create scheduledThreadPool for executing merges
         mergingExecutor = getStaticThreadManager()
-                .createScheduledThreadPool(MERKLEDB_COMPONENT + ": Merging", NUMBER_OF_MERGING_THREADS);
+                .newScheduledExecutorServiceConfiguration(MERKLEDB_COMPONENT + ": Merging")
+                .setCorePoolSize(NUMBER_OF_MERGING_THREADS)
+                .build();
         // create thread pool storing internal records
         storeInternalExecutor = getStaticThreadManager()
                 .newExecutorServiceConfiguration(MERKLEDB_COMPONENT + ": Store Internal Records")
