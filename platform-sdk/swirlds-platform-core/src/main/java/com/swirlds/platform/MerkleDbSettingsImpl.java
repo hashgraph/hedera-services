@@ -35,10 +35,12 @@ import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MEDI
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MERGE_ACTIVATE_PERIOD;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MIN_NUMBER_OF_FILES_IN_MERGE;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MOVE_LIST_CHUNK_SIZE;
+import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_PERCENT_HALFDISKHASHMAP_FLUSH_THREADS;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_RECONNECT_KEY_LEAK_MITIGATION_ENABLED;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_SMALL_MERGE_CUTOFF_MB;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_WRITER_OUTPUT_BUFFER_BYTES;
 
+import com.swirlds.merkledb.settings.DefaultMerkleDbSettings;
 import com.swirlds.merkledb.settings.MerkleDbSettings;
 import com.swirlds.platform.internal.SubSetting;
 import java.time.temporal.ChronoUnit;
@@ -76,6 +78,8 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
     public boolean indexRebuildingEnforced = DEFAULT_INDEX_REBUILDING_ENFORCED;
     public int leafRecordCacheSize = DEFAULT_LEAF_RECORD_CACHE_SIZE;
     public int reservedBufferLengthForLeafList = DEFAULT_RESERVED_BUFFER_LENGTH;
+    public double percentHalfDiskHashMapFlushThreads = DEFAULT_PERCENT_HALFDISKHASHMAP_FLUSH_THREADS;
+    public int numHalfDiskHashMapFlushThreads = -1; // by default, calculated based on percentage
 
     /** {@inheritDoc} */
     @Override
@@ -338,5 +342,40 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
 
     public void setReservedBufferLengthForLeafList(final int reservedBufferLengthForLeafList) {
         this.reservedBufferLengthForLeafList = reservedBufferLengthForLeafList;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public double getPercentHalfDiskHashMapFlushThreads() {
+        return percentHalfDiskHashMapFlushThreads;
+    }
+
+    public void setPercentHalfDiskHashMapFlushThreads(final double percentHalfDiskHashMapFlushThreads) {
+        if ((percentHalfDiskHashMapFlushThreads <= 0.0) || (percentHalfDiskHashMapFlushThreads > 100.0)) {
+            throw new IllegalArgumentException(
+                    "Cannot configure percentHalfDiskHashMapFlushThreads=" + percentHalfDiskHashMapFlushThreads);
+        }
+        this.percentHalfDiskHashMapFlushThreads = percentHalfDiskHashMapFlushThreads;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getNumHalfDiskHashMapFlushThreads() {
+        if (numHalfDiskHashMapFlushThreads > 0) {
+            return numHalfDiskHashMapFlushThreads;
+        }
+        return DefaultMerkleDbSettings.getNumHalfDiskHashMapFlushThreads(getPercentHalfDiskHashMapFlushThreads());
+    }
+
+    public void setNumHalfDiskHashMapFlushThreads(final int numHalfDiskHashMapFlushThreads) {
+        if (numHalfDiskHashMapFlushThreads <= 0) {
+            throw new IllegalArgumentException(
+                    "Cannot configure numHalfDiskHashMapFlushThreads=" + numHalfDiskHashMapFlushThreads);
+        }
+        this.numHalfDiskHashMapFlushThreads = numHalfDiskHashMapFlushThreads;
     }
 }

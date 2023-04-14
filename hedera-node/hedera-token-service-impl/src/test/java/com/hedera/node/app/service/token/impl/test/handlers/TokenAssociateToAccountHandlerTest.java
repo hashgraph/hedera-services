@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET;
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_KNOWN_TARGET;
@@ -23,15 +25,12 @@ import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -41,65 +40,52 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     private final TokenAssociateToAccountHandler subject = new TokenAssociateToAccountHandler();
 
     @Test
-    void tokenAssociateWithKnownTargetScenario() {
+    void tokenAssociateWithKnownTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_KNOWN_TARGET);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), Matchers.contains(MISC_ACCOUNT_KT.asKey()));
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), Matchers.contains(MISC_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test
-    void tokenAssociateWithSelfPaidKnownTargetScenario() {
+    void tokenAssociateWithSelfPaidKnownTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(0, context.getRequiredNonPayerKeys().size());
+        assertEquals(0, context.requiredNonPayerKeys().size());
     }
 
     @Test
-    void tokenAssociateWithCustomPaidKnownTargetScenario() {
+    void tokenAssociateWithCustomPaidKnownTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
+        assertEquals(1, context.requiredNonPayerKeys().size());
         assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()), Matchers.contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                Matchers.contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test
-    void tokenAssociateWithImmutableTargetScenario() {
+    void tokenAssociateWithImmutableTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context);
-
-        assertTrue(context.failed());
-        assertEquals(INVALID_ACCOUNT_ID, context.getStatus());
-        assertEquals(0, context.getRequiredNonPayerKeys().size());
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
-    void tokenAssociateWithMissingTargetScenario() {
+    void tokenAssociateWithMissingTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_MISSING_TARGET);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context);
-
-        assertTrue(context.failed());
-        assertEquals(INVALID_ACCOUNT_ID, context.getStatus());
-        assertEquals(0, context.getRequiredNonPayerKeys().size());
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 }

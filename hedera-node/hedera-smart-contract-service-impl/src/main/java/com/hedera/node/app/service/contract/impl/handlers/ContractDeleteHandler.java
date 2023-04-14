@@ -16,50 +16,62 @@
 
 package com.hedera.node.app.service.contract.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ContractDelete}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_DELETE}.
  */
 @Singleton
 public class ContractDeleteHandler implements TransactionHandler {
     @Inject
-    public ContractDeleteHandler() {}
+    public ContractDeleteHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
      *
      * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
+     * required keys, and warms the cache.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().getContractDeleteInstance();
-
-        context.addNonPayerKey(op.getContractID());
-
+        final var op = context.body().contractDeleteInstanceOrThrow();
+        // The contract ID must be present on the transaction
+        final var contractID = op.contractID();
+        mustExist(contractID, INVALID_CONTRACT_ID);
+        // A contract corresponding to that contract ID must exist in state (otherwise we have nothing to delete)
+        final var contract = context.accountAccess().getContractById(contractID);
+        mustExist(contract, INVALID_CONTRACT_ID);
+        // If there is not an admin key, then the contract is immutable. Otherwise, the transaction must
+        // be signed by the admin key.
+        context.requireKeyOrThrow(contract.getKey(), MODIFYING_IMMUTABLE_CONTRACT);
+        // If there is a transfer account ID, and IF that account has receiverSigRequired set, then the transaction
+        // must be signed by that account's key. Same if instead it uses a contract as the transfer target.
         if (op.hasTransferAccountID()) {
-            context.addNonPayerKeyIfReceiverSigRequired(op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+            context.requireKeyIfReceiverSigRequired(op.transferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
         } else if (op.hasTransferContractID()) {
-            context.addNonPayerKeyIfReceiverSigRequired(op.getTransferContractID());
+            context.requireKeyIfReceiverSigRequired(op.transferContractID(), INVALID_CONTRACT_ID);
         }
     }
 
@@ -69,11 +81,9 @@ public class ContractDeleteHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

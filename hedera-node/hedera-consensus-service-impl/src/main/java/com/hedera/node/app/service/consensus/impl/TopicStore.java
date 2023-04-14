@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromPbjKey;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,13 +37,13 @@ public class TopicStore {
                 : OptionalLong.of(topic.autoRenewAccountNumber());
         return new TopicMetadata(
                 Optional.of(topic.memo()),
-                fromPbjKey(topic.adminKey()),
-                fromPbjKey(topic.submitKey()),
+                asHederaKey(topic.adminKey()).orElse(null),
+                asHederaKey(topic.submitKey()).orElse(null),
                 topic.autoRenewPeriod(),
                 maybeAutoRenewNum,
-                Timestamp.newBuilder().setSeconds(topic.expiry()).build(),
+                Timestamp.newBuilder().seconds(topic.expiry()).build(),
                 topic.sequenceNumber(),
-                PbjKeyConverter.unwrapPbj(topic.runningHash()),
+                asBytes(topic.runningHash()),
                 topic.topicNumber(),
                 topic.deleted());
     }
@@ -66,8 +66,8 @@ public class TopicStore {
      */
     public record TopicMetadata(
             Optional<String> memo,
-            Optional<HederaKey> adminKey,
-            Optional<HederaKey> submitKey,
+            HederaKey adminKey,
+            HederaKey submitKey,
             long autoRenewDurationSeconds,
             OptionalLong autoRenewAccountId,
             Timestamp expirationTimestamp,

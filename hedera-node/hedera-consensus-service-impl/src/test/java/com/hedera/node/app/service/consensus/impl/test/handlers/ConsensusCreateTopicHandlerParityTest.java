@@ -16,29 +16,22 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.test.AdapterUtils.*;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertCustomPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.txnFrom;
-import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,195 +42,88 @@ class ConsensusCreateTopicHandlerParityTest {
 
     @BeforeEach
     void setUp() {
-        keyLookup = wellKnownKeyLookupAt();
+        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
     }
 
     @Test
-    void getsConsensusCreateTopicNoAdminKeyOrAutoRenewAccount() {
+    void getsConsensusCreateTopicNoAdminKeyOrAutoRenewAccount() throws PreCheckException {
         // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO);
+        final var txn = CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO.pbjTxnBody();
 
         // when:
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
         assertDefaultPayer(context);
-        Assertions.assertThat(context.getRequiredNonPayerKeys()).isEmpty();
+        Assertions.assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
-    void getsConsensusCreateTopicNoAdminKeyOrAutoRenewAccountWithCustomPayer() {
+    void getsConsensusCreateTopicAdminKey() throws PreCheckException {
         // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO);
+        final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
-        assertCustomPayer(context);
-        Assertions.assertThat(context.getRequiredNonPayerKeys()).isEmpty();
-    }
-
-    @Test
-    void getsConsensusCreateTopicAdminKey() {
-        // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO);
-
-        // when:
-        final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
-        subject.preHandle(context);
-
-        // then:
-        assertOkResponse(context);
         assertDefaultPayer(context);
-        Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
-                .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
+        Assertions.assertThat(sanityRestored(context.requiredNonPayerKeys()))
+                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asKey());
     }
 
     @Test
-    void getsConsensusCreateTopicAdminKeyWithCustomPayer() {
+    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccount() throws PreCheckException {
         // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO);
+        final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
-        assertCustomPayer(context);
-        Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
-                .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
-    }
-
-    @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccount() {
-        // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO);
-
-        // when:
-        final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
-        subject.preHandle(context);
-
-        // then:
-        assertOkResponse(context);
         assertDefaultPayer(context);
-        Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
-                .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey(), MISC_ACCOUNT_KT.asKey());
+        Assertions.assertThat(sanityRestored(context.requiredNonPayerKeys()))
+                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asKey(), MISC_ACCOUNT_KT.asKey());
     }
 
     @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountWithCustomPayer() {
+    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer() throws PreCheckException {
         // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO);
+        final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
-        assertCustomPayer(context);
-        Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
-                .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey(), MISC_ACCOUNT_KT.asKey());
-    }
-
-    @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayer() {
-        // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
-
-        // when:
-        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
-        subject.preHandle(context);
-
-        // then:
-        assertOkResponse(context);
-        Assertions.assertThat(sanityRestored(context.getPayerKey())).isEqualTo(CUSTOM_PAYER_ACCOUNT_KT.asKey());
-        Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
-                .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
-    }
-
-    @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer() {
-        // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO);
-
-        // when:
-        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
-        subject.preHandle(context);
-
-        // then:
-        assertOkResponse(context);
-        assertCustomPayer(context);
+        assertDefaultPayer(context);
         // Note: DEFAULT_PAYER_KT in this case doesn't function as the payer - the payer is
         // CUSTOM_PAYER_ACCOUNT - but instead is in the required keys list because
         // DEFAULT_PAYER_KT is set as the auto-renew account
-        Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
-                .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey(), DEFAULT_PAYER_KT.asKey());
+        Assertions.assertThat(sanityRestored(context.requiredNonPayerKeys()))
+                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asKey());
     }
 
     @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsCustomPayer() {
+    void invalidAutoRenewAccountOnConsensusCreateTopicThrows() throws PreCheckException {
         // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
+        final var txn = CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
-        subject.preHandle(context);
-
-        // then:
-        assertOkResponse(context);
-        assertCustomPayer(context);
-        Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
-                .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
+        final var context = new PreHandleContext(keyLookup, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 
     @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsCustomPayerWithCustomPayer() {
+    void invalidAutoRenewAccountOnConsensusCreateTopicThrowsWithCustomPayer() throws PreCheckException {
         // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
+        final var txn = CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO.pbjTxnBody();
 
         // when:
-        final var result = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
-        subject.preHandle(result);
-
-        // then:
-        assertOkResponse(result);
-        assertCustomPayer(result);
-        Assertions.assertThat(sanityRestored(result.getRequiredNonPayerKeys()))
-                .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
-    }
-
-    @Test
-    void invalidAutoRenewAccountOnConsensusCreateTopicThrows() {
-        // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO);
-
-        // when:
-        final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
-        subject.preHandle(context);
-
-        // then:
-        Assertions.assertThat(context.failed()).isTrue();
-        Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
-    }
-
-    @Test
-    void invalidAutoRenewAccountOnConsensusCreateTopicThrowsWithCustomPayer() {
-        // given:
-        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO);
-
-        // when:
-        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
-        subject.preHandle(context);
-
-        // then:
-        Assertions.assertThat(context.failed()).isTrue();
-        Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 }

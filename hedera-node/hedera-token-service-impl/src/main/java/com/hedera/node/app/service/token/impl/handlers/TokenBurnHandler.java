@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,39 +31,36 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenBurn}.
+ * HederaFunctionality#TOKEN_BURN}.
  */
 @Singleton
 public class TokenBurnHandler implements TransactionHandler {
     @Inject
-    public TokenBurnHandler() {}
+    public TokenBurnHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenBurn}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#TOKEN_BURN} transaction, returning the metadata required to, at minimum,
+     * validate the signatures of all required signing keys.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
+     * <p>Please note: the method signature is just a placeholder which is most likely going to change.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
+            throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().getTokenBurn();
-        final var tokenId = op.getToken();
-        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
-        if (tokenMeta.failed()) {
-            context.status(tokenMeta.failureReason());
-        } else {
-            final var tokenMetadata = tokenMeta.metadata();
-            final var supplyKey = tokenMetadata.supplyKey();
-            // we will fail in handle() if token has no supply key
-            supplyKey.ifPresent(context::addToReqNonPayerKeys);
-        }
+        final var op = context.body().tokenBurnOrThrow();
+        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
+        final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
+        if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
+        final var supplyKey = tokenMetadata.supplyKey();
+        // we will fail in handle() if token has no supply key
+        supplyKey.ifPresent(context::requireKey);
     }
 
     /**
@@ -69,11 +69,9 @@ public class TokenBurnHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

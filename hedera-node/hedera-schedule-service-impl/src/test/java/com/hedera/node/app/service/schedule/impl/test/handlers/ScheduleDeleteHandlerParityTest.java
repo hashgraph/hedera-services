@@ -16,16 +16,23 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
-import static com.hedera.test.factories.scenarios.ContractCreateScenarios.*;
-import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.*;
+import static com.hedera.test.factories.scenarios.ContractCreateScenarios.KNOWN_SCHEDULE_IMMUTABLE_ID;
+import static com.hedera.test.factories.scenarios.ContractCreateScenarios.KNOWN_SCHEDULE_WITH_ADMIN_ID;
+import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE;
+import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_MISSING_SCHEDULE;
+import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
@@ -43,8 +50,6 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.StateKeyAdapter;
 import com.hedera.test.utils.TestFixturesKeyLookup;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
@@ -53,9 +58,8 @@ import org.junit.jupiter.api.Test;
 
 class ScheduleDeleteHandlerParityTest {
     static final KeyTree ADMIN_KEY = KeyTree.withRoot(ed25519());
-
-    private AccountAccess keyLookup;
     private final ScheduleDeleteHandler subject = new ScheduleDeleteHandler();
+    private AccountAccess keyLookup;
     private ReadableScheduleStore scheduleStore;
 
     @BeforeEach
@@ -67,43 +71,36 @@ class ScheduleDeleteHandlerParityTest {
     void getsScheduleDeleteWithMissingSchedule() throws Throwable {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE);
         scheduleStore = AdapterUtils.mockSchedule(
-                999L, ADMIN_KEY); // use any schedule id that does not match UNKNOWN_SCHEDULE_ID
+                999L, ADMIN_KEY, theTxn); // use any schedule id that does not match UNKNOWN_SCHEDULE_ID
         final var context = new PreHandleContext(keyLookup, theTxn);
-        subject.preHandle(context, scheduleStore);
 
-        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
-        assertTrue(context.failed());
-        assertEquals(INVALID_SCHEDULE_ID, context.getStatus());
+        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), INVALID_SCHEDULE_ID);
     }
 
     @Test
     void getsScheduleDeleteWithMissingAdminKey() throws Throwable {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY);
         scheduleStore = AdapterUtils.mockSchedule(
-                IdUtils.asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID).getScheduleNum(), null);
+                IdUtils.asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID).getScheduleNum(), null, theTxn);
         final var context = new PreHandleContext(keyLookup, theTxn);
-        subject.preHandle(context, scheduleStore);
 
-        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
-        assertTrue(context.failed());
-        assertEquals(SCHEDULE_IS_IMMUTABLE, context.getStatus());
+        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
     }
 
     @Test
     void getsScheduleDeleteKnownSchedule() throws Throwable {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE);
         scheduleStore = AdapterUtils.mockSchedule(
-                IdUtils.asSchedule(KNOWN_SCHEDULE_WITH_ADMIN_ID).getScheduleNum(), ADMIN_KEY);
+                IdUtils.asSchedule(KNOWN_SCHEDULE_WITH_ADMIN_ID).getScheduleNum(), ADMIN_KEY, theTxn);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, scheduleStore);
 
-        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).contains(ADMIN_KEY.asKey()));
-        assertEquals(OK, context.getStatus());
+        assertTrue(sanityRestored(context.requiredNonPayerKeys()).contains(ADMIN_KEY.asKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
-            return scenario.platformTxn().getTxn();
+            return PbjConverter.toPbj(scenario.platformTxn().getTxn());
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }
@@ -127,13 +124,12 @@ class AdapterUtils {
     /**
      * Returns the {@link AccountAccess} containing the "well-known" accounts that exist in a
      * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests
-     * of {@link com.hedera.node.app.spi.Tr} implementations that require an {@link
-     * AccountAccess}.
+     * that require an {@link AccountAccess}.
      *
      * @return the well-known account store
      */
     public static AccountAccess wellKnownKeyLookupAt() {
-        return new TestFixturesKeyLookup(mockStates(java.util.Map.of(ACCOUNTS_KEY, wellKnownAccountsState())));
+        return new TestFixturesKeyLookup(mockStates(Map.of(ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -143,11 +139,13 @@ class AdapterUtils {
         return mockStates;
     }
 
-    public static ReadableScheduleStore mockSchedule(Long schedId, KeyTree key) throws DecoderException {
+    public static ReadableScheduleStore mockSchedule(Long schedId, KeyTree key, TransactionBody txnBody)
+            throws DecoderException {
         final ScheduleID scheduleID =
-                ScheduleID.newBuilder().setScheduleNum(schedId).build();
+                ScheduleID.newBuilder().scheduleNum(schedId).build();
         given(schedule.adminKey()).willReturn(key == null ? Optional.empty() : Optional.of(key.asJKey()));
-        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(txnBody));
+        given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
         return new ReadableScheduleStore(new MapReadableStates(Map.of("SCHEDULES_BY_ID", schedulesById)));
     }
 

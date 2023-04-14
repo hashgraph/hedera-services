@@ -58,6 +58,7 @@ import org.apache.logging.log4j.Logger;
 
 public class TargetNetworkPrep extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TargetNetworkPrep.class);
+    public static final int SYSTEM_ENTITY_EXPIRY = 1812637686;
 
     public static void main(String... args) {
         var hero = new TargetNetworkPrep();
@@ -116,8 +117,8 @@ public class TargetNetworkPrep extends HapiSuite {
                                     .logged(),
                             sourcing(() -> getAccountBalance(STAKING_REWARD)
                                     .hasTinyBars(changeFromSnapshot(snapshot800, (long) (ONE_HBAR
-                                            + ((feeObs.get().getNetworkFee()
-                                                            + feeObs.get().getServiceFee())
+                                            + ((feeObs.get().networkFee()
+                                                            + feeObs.get().serviceFee())
                                                     * 0.1))))),
                             balanceSnapshot(snapshot801, NODE_REWARD),
                             cryptoTransfer(tinyBarsFromTo(civilian, NODE_REWARD, ONE_HBAR))
@@ -126,8 +127,8 @@ public class TargetNetworkPrep extends HapiSuite {
                                     .logged(),
                             sourcing(() -> getAccountBalance(NODE_REWARD)
                                     .hasTinyBars(changeFromSnapshot(snapshot801, (long) (ONE_HBAR
-                                            + ((feeObs.get().getNetworkFee()
-                                                            + feeObs.get().getServiceFee())
+                                            + ((feeObs.get().networkFee()
+                                                            + feeObs.get().serviceFee())
                                                     * 0.1))))))
                     .then(
                             getAccountDetails(STAKING_REWARD)

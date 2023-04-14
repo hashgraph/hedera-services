@@ -112,7 +112,7 @@ import org.apache.logging.log4j.Logger;
  * @param <V>
  * 		The type of value used for leaves
  */
-public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends VirtualValue>
+public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue>
         implements FastCopyable, SelfSerializable {
 
     private static final Logger logger = LogManager.getLogger(VirtualNodeCache.class);
@@ -263,7 +263,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * <p>
      * <strong>ONE PER CACHE INSTANCE</strong>.
      */
-    private volatile ConcurrentArray<Mutation<VirtualLeafRecord<K, V>>> dirtyLeaves = new ConcurrentArray<>();
+    private ConcurrentArray<Mutation<VirtualLeafRecord<K, V>>> dirtyLeaves = new ConcurrentArray<>();
 
     /**
      * A set of leaf path changes that occurred in this version of the cache. This is separate
@@ -273,7 +273,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * <p>
      * <strong>ONE PER CACHE INSTANCE</strong>.
      */
-    private volatile ConcurrentArray<Mutation<K>> dirtyLeafPaths = new ConcurrentArray<>();
+    private ConcurrentArray<Mutation<K>> dirtyLeafPaths = new ConcurrentArray<>();
 
     /**
      * A set of all modifications to internal nodes that occurred in this version of the cache.
@@ -283,7 +283,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * <p>
      * <strong>ONE PER CACHE INSTANCE</strong>.
      */
-    private volatile ConcurrentArray<Mutation<VirtualInternalRecord>> dirtyInternals = new ConcurrentArray<>();
+    private ConcurrentArray<Mutation<VirtualInternalRecord>> dirtyInternals = new ConcurrentArray<>();
 
     /**
      * A shared lock that prevents two copies from being merged/released at the same time. For example,
@@ -332,7 +332,6 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * @param source
      * 		Cannot be null and must be the most recent version!
      */
-    @SuppressWarnings("CopyConstructorMissesField")
     private VirtualNodeCache(VirtualNodeCache<K, V> source) {
         // Make sure this version is exactly 1 greater than source
         this.fastCopyVersion.set(source.fastCopyVersion.get() + 1);
@@ -460,7 +459,6 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * 		if there is nothing to merge into, or if both this cache and the one
      * 		it is merging into are not sealed.
      */
-    @SuppressWarnings("NonAtomicOperationOnVolatileField")
     public void merge() {
         releaseLock.lock();
         try {
@@ -472,14 +470,14 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                 throw new IllegalStateException("You can only merge caches that are sealed");
             }
 
-            // Merge the previous (newer) cache's array with mine, and assign the merge result to that cache.
+            // Merge my mutations into the previous (newer) cache's arrays.
             // This operation has a high probability of producing override mutations. That is, two mutations
             // for the same key/path but with different versions. Before returning to a caller a stream of
             // dirty leaves or dirty internals, the stream must be sorted (which we had to do anyway) and
             // deduplicated. But it makes for a _VERY FAST_ merge operation.
-            p.dirtyLeaves = new ConcurrentArray<>(dirtyLeaves, p.dirtyLeaves);
-            p.dirtyLeafPaths = new ConcurrentArray<>(dirtyLeafPaths, p.dirtyLeafPaths);
-            p.dirtyInternals = new ConcurrentArray<>(dirtyInternals, p.dirtyInternals);
+            p.dirtyLeaves.merge(dirtyLeaves);
+            p.dirtyLeafPaths.merge(dirtyLeafPaths);
+            p.dirtyInternals.merge(dirtyInternals);
 
             // Remove this cache from the chain and wire the prev and next caches together.
             // This will allow this cache to be garbage collected.

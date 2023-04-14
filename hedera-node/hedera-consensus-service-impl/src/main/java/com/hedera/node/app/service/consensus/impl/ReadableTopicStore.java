@@ -16,18 +16,15 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
-import static com.hedera.node.app.service.consensus.impl.ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason;
-import static com.hedera.node.app.service.consensus.impl.ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -60,37 +57,12 @@ public class ReadableTopicStore extends TopicStore {
      * @return topic's metadata
      */
     // TODO : Change to return Topic instead of TopicMetadata
-    public TopicMetaOrLookupFailureReason getTopicMetadata(@NonNull final TopicID id) {
-        requireNonNull(id);
-
+    public TopicMetadata getTopicMetadata(@Nullable final TopicID id) {
         final var topic = getTopicLeaf(id);
-
-        if (topic.isEmpty()) {
-            return withFailureReason(INVALID_TOPIC_ID);
-        }
-        return withTopicMeta(topicMetaFrom(topic.get()));
+        return topic.map(TopicStore::topicMetaFrom).orElse(null);
     }
 
     public Optional<Topic> getTopicLeaf(TopicID id) {
         return Optional.ofNullable(Objects.requireNonNull(topicState).get(EntityNum.fromTopicId(id)));
-    }
-
-    /**
-     * Returns the topics metadata if the topic exists. If the topic doesn't exist returns failure reason.
-     * @param metadata topic's metadata
-     * @param failureReason failure reason if the topic doesn't exist
-     */
-    public record TopicMetaOrLookupFailureReason(TopicMetadata metadata, ResponseCodeEnum failureReason) {
-        public boolean failed() {
-            return failureReason != null;
-        }
-
-        public static TopicMetaOrLookupFailureReason withFailureReason(final ResponseCodeEnum response) {
-            return new TopicMetaOrLookupFailureReason(null, response);
-        }
-
-        public static TopicMetaOrLookupFailureReason withTopicMeta(final TopicMetadata meta) {
-            return new TopicMetaOrLookupFailureReason(meta, null);
-        }
     }
 }

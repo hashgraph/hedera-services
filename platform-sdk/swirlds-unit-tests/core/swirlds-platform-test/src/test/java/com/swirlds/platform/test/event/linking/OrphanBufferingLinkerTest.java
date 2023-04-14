@@ -18,6 +18,7 @@ package com.swirlds.platform.test.event.linking;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.test.RandomUtils;
@@ -26,6 +27,9 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.PlatformData;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.sync.Generations;
 import com.swirlds.platform.test.event.GossipEventBuilder;
@@ -261,9 +265,19 @@ class OrphanBufferingLinkerTest {
                 .mapToObj((l) -> new MinGenInfo(l, l))
                 .toList();
         final SignedState signedState = Mockito.mock(SignedState.class);
-        Mockito.when(signedState.getRound()).thenReturn(roundGenEnd);
-        Mockito.when(signedState.getMinGenInfo()).thenReturn(minGenInfos);
-        Mockito.when(signedState.getMinGen(Mockito.anyLong())).thenCallRealMethod();
+        final State state = Mockito.mock(State.class);
+        final PlatformState platformState = Mockito.mock(PlatformState.class);
+        final PlatformData platformData = Mockito.mock(PlatformData.class);
+        when(signedState.getState()).thenReturn(state);
+        when(state.getPlatformState()).thenReturn(platformState);
+        when(platformState.getPlatformData()).thenReturn(platformData);
+        when(platformData.getRound()).thenReturn(roundGenStart);
+        when(platformData.getMinGen(Mockito.anyLong())).thenCallRealMethod();
+        when(platformData.getMinGenInfo()).thenReturn(minGenInfos);
+        when(signedState.getRound()).thenReturn(roundGenEnd);
+        when(signedState.getMinGenInfo()).thenReturn(minGenInfos);
+        when(signedState.getMinGen(Mockito.anyLong())).thenCallRealMethod();
+
         orphanBuffer.loadFromSignedState(signedState);
 
         // now we create an ancient events and insert it

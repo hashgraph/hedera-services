@@ -17,6 +17,8 @@
 package com.swirlds.common.system;
 
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * To implement a swirld, create a class that implements SwirldMain. Its constructor should have no
@@ -30,7 +32,17 @@ public interface SwirldMain extends Runnable {
      * @param configuration
      * 		configuration for this node
      */
-    default void setConfiguration(final Configuration configuration) {
+    default void setConfiguration(@NonNull final Configuration configuration) {
+        // override if needed
+    }
+
+    /**
+     * Update the configuration builder with any additional configuration that is required by this swirld.
+     *
+     * @param configurationBuilder
+     * 		the configuration builder to update
+     */
+    default void updateConfigurationBuilder(@NonNull final ConfigurationBuilder configurationBuilder) {
         // override if needed
     }
 
@@ -50,7 +62,7 @@ public interface SwirldMain extends Runnable {
      * @param selfId
      * 		the ID number for this member (myself)
      */
-    void init(Platform platform, NodeId selfId);
+    void init(@NonNull final Platform platform, @NonNull final NodeId selfId);
 
     /**
      * This is where the app manages the screen and I/O, and creates transactions as needed. It should

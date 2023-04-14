@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.records;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 
 /**
  * Tracks side-effects and metadata for a transaction. Is little more than a

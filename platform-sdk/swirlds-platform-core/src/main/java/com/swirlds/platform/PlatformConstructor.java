@@ -18,6 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.functions.ThrowingConsumer;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -199,23 +200,25 @@ final class PlatformConstructor {
      * @param consensusHandlingMetrics    the class that records stats relating to {@link SwirldStateManager}
      * @param eventStreamManager          the instance that streams consensus events to disk
      * @param stateHashSignQueue          the queue for signed states that need signatures collected
+     * @param waitForEventDurability a method that blocks until an event becomes durable.
      * @param enterFreezePeriod           a runnable executed when a freeze is entered
      * @param roundAppliedToStateConsumer the consumer to invoke when a round has just been applied to the state
      * @param softwareVersion             the software version of the application
      * @return the newly constructed instance of {@link ConsensusRoundHandler}
      */
     static ConsensusRoundHandler consensusHandler(
-            final PlatformContext platformContext,
-            final ThreadManager threadManager,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
             final long selfId,
-            final SettingsProvider settingsProvider,
-            final SwirldStateManager swirldStateManager,
-            final ConsensusHandlingMetrics consensusHandlingMetrics,
-            final EventStreamManager<EventImpl> eventStreamManager,
-            final BlockingQueue<SignedState> stateHashSignQueue,
-            final Runnable enterFreezePeriod,
-            final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
-            final SoftwareVersion softwareVersion) {
+            @NonNull final SettingsProvider settingsProvider,
+            @NonNull final SwirldStateManager swirldStateManager,
+            @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
+            @NonNull final EventStreamManager<EventImpl> eventStreamManager,
+            @NonNull final BlockingQueue<SignedState> stateHashSignQueue,
+            @NonNull final ThrowingConsumer<EventImpl, InterruptedException> waitForEventDurability,
+            @NonNull final Runnable enterFreezePeriod,
+            @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
+            @NonNull final SoftwareVersion softwareVersion) {
 
         return new ConsensusRoundHandler(
                 platformContext,
@@ -226,6 +229,7 @@ final class PlatformConstructor {
                 consensusHandlingMetrics,
                 eventStreamManager,
                 stateHashSignQueue,
+                waitForEventDurability,
                 enterFreezePeriod,
                 roundAppliedToStateConsumer,
                 softwareVersion);

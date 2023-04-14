@@ -23,6 +23,8 @@ import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
+import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
@@ -82,11 +84,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements VirtualDataSource<K, V> {
+public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
 
     private static final Logger logger = LogManager.getLogger(MerkleDbDataSource.class);
 
@@ -96,9 +98,6 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * holder will have been configured by the time this static initializer runs.
      */
     private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
-
-    /** Label for database component used in logging, stats, etc. */
-    private static final String MERKLEDB_COMPONENT = "merkledb";
 
     /** Count of open database instances */
     private static final LongAdder COUNT_OF_OPEN_DATABASES = new LongAdder();
@@ -299,7 +298,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                         (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during snapshots", ex))
                 .buildFactory());
 
-        final Path storageDir = database.getTableDir(tableName);
+        final Path storageDir = database.getTableDir(tableName, tableId);
         dbPaths = new MerkleDbPaths(storageDir);
 
         // check if we are loading an existing database or creating a new one
@@ -822,7 +821,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         try {
             close();
         } finally {
-            database.removeDataSource(tableName);
+            database.removeTable(tableId);
         }
     }
 
@@ -954,34 +953,21 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     /** toString for debugging */
     @Override
     public String toString() {
-        return "MerkleDbDataSource{"
-                + "maxNumberOfKeys="
-                + tableConfig.getMaxNumberOfKeys()
-                + ", preferDiskBasedIndexes="
-                + tableConfig.isPreferDiskBasedIndices()
-                + ", isLongKeyMode="
-                + isLongKeyMode
-                + ", pathToDiskLocationInternalNodes.size="
-                + pathToDiskLocationInternalNodes.size()
-                + ", pathToDiskLocationLeafNodes.size="
-                + pathToDiskLocationLeafNodes.size()
-                + ", internalHashesRamToDiskThreshold"
-                + tableConfig.getInternalHashesRamToDiskThreshold()
-                + ", internalHashStoreRam.size="
-                + (internalHashStoreRam == null ? null : internalHashStoreRam.size())
-                + ", internalHashStoreDisk="
-                + internalHashStoreDisk
-                + ", hasDiskStoreForInternalHashes="
-                + hasDiskStoreForInternalHashes
-                + ", longKeyToPath.size="
-                + (longKeyToPath == null ? null : longKeyToPath.size())
-                + ", objectKeyToPath="
-                + objectKeyToPath
-                + ", pathToHashKeyValue="
-                + pathToHashKeyValue
-                + ", snapshotInProgress="
-                + snapshotInProgress.get()
-                + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("maxNumberOfKeys", tableConfig.getMaxNumberOfKeys())
+                .append("preferDiskBasedIndexes", tableConfig.isPreferDiskBasedIndices())
+                .append("isLongKeyMode", isLongKeyMode)
+                .append("pathToDiskLocationInternalNodes.size", pathToDiskLocationInternalNodes.size())
+                .append("pathToDiskLocationLeafNodes.size", pathToDiskLocationLeafNodes.size())
+                .append("internalHashesRamToDiskThreshold", tableConfig.getInternalHashesRamToDiskThreshold())
+                .append("internalHashStoreRam.size", internalHashStoreRam == null ? null : internalHashStoreRam.size())
+                .append("internalHashStoreDisk", internalHashStoreDisk)
+                .append("hasDiskStoreForInternalHashes", hasDiskStoreForInternalHashes)
+                .append("longKeyToPath.size", longKeyToPath == null ? null : longKeyToPath.size())
+                .append("objectKeyToPath", objectKeyToPath)
+                .append("pathToHashKeyValue", pathToHashKeyValue)
+                .append("snapshotInProgress", snapshotInProgress.get())
+                .toString();
     }
 
     /**
@@ -1203,7 +1189,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         }
 
         if (hasDiskStoreForInternalHashes) {
-            internalHashStoreDisk.startWriting();
+            internalHashStoreDisk.startWriting(0, firstLeafPath - 1);
         }
 
         final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
@@ -1223,7 +1209,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         });
 
         if (hasDiskStoreForInternalHashes) {
-            internalHashStoreDisk.endWriting(0, firstLeafPath - 1);
+            internalHashStoreDisk.endWriting();
         }
     }
 
@@ -1240,7 +1226,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         }
 
         // start writing
-        pathToHashKeyValue.startWriting();
+        pathToHashKeyValue.startWriting(firstLeafPath, lastLeafPath);
         if (!isLongKeyMode) {
             objectKeyToPath.startWriting();
         }
@@ -1291,7 +1277,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         });
 
         // end writing
-        pathToHashKeyValue.endWriting(firstLeafPath, lastLeafPath);
+        pathToHashKeyValue.endWriting();
         if (!isLongKeyMode) {
             objectKeyToPath.endWriting();
         }
@@ -1484,5 +1470,24 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      */
     boolean isLongKeyMode() {
         return isLongKeyMode;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(database, tableId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof MerkleDbDataSource<?, ?> other)) {
+            return false;
+        }
+        return Objects.equals(database, other.database) && Objects.equals(tableId, other.tableId);
     }
 }

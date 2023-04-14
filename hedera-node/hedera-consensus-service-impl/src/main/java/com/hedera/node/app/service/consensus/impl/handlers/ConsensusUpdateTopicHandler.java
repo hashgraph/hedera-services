@@ -16,50 +16,51 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromGrpcKey;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateFalse;
-import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateTrue;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.UpdateTopicRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusUpdateTopic}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_UPDATE_TOPIC}.
  */
 @Singleton
 public class ConsensusUpdateTopicHandler implements TransactionHandler {
     @Inject
-    public ConsensusUpdateTopicHandler() {}
+    public ConsensusUpdateTopicHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
      *
      * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
+     * required keys, and warms the cache.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
@@ -68,34 +69,38 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
      *                passed to {@code #handle()}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
+            throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().getConsensusUpdateTopic();
+        final var op = context.body().consensusUpdateTopicOrThrow();
 
+        // The topic ID must be present on the transaction and the topic must exist.
+        final var topic = topicStore.getTopicMetadata(op.topicID());
+        mustExist(topic, INVALID_TOPIC_ID);
+
+        // Extending the expiry is the *only* update operation permitted without an admin key. So if that is the
+        // only thing this transaction is doing, then we don't need to worry about checking any additional keys.
         if (onlyExtendsExpiry(op)) {
             return;
         }
 
-        final var topicMeta = topicStore.getTopicMetadata(op.getTopicID());
-        if (topicMeta.failed()) {
-            context.status(ResponseCodeEnum.INVALID_TOPIC_ID);
-            return;
-        }
+        // Any other modifications on this topic require the admin key.
+        context.requireKeyOrThrow(topic.adminKey(), UNAUTHORIZED);
 
-        final var adminKey = topicMeta.metadata().adminKey();
-        if (adminKey.isPresent()) {
-            context.addToReqNonPayerKeys(adminKey.get());
-        }
-
+        // If the transaction is setting a new admin key, then the transaction must also be signed by that new key
         if (op.hasAdminKey()) {
-            asHederaKey(op.getAdminKey()).ifPresent(context::addToReqNonPayerKeys);
+            asHederaKey(op.adminKeyOrThrow()).ifPresent(context::requireKey);
         }
-        if (op.hasAutoRenewAccount() && !AccountID.getDefaultInstance().equals(op.getAutoRenewAccount())) {
-            context.addNonPayerKey(op.getAutoRenewAccount(), ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+
+        // If the transaction is setting a new account for auto-renewals, then that account must also
+        // have signed the transaction
+        if (op.hasAutoRenewAccount()) {
+            final var autoRenewAccountID = op.autoRenewAccountOrThrow();
+            context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
         }
     }
 
-    private boolean onlyExtendsExpiry(final ConsensusUpdateTopicTransactionBody op) {
+    private boolean onlyExtendsExpiry(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.hasExpirationTime()
                 && !op.hasMemo()
                 && !op.hasAdminKey()
@@ -116,8 +121,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final HandleContext handleContext,
             @NonNull final ConsensusUpdateTopicTransactionBody topicUpdate,
             @NonNull final WritableTopicStore topicStore) {
-        final var maybeTopic =
-                requireNonNull(topicStore).get(topicUpdate.getTopicID().getTopicNum());
+        final var maybeTopic = requireNonNull(topicStore)
+                .get(topicUpdate.topicIDOrElse(TopicID.DEFAULT).topicNum());
         validateTrue(maybeTopic.isPresent(), INVALID_TOPIC_ID);
         final var topic = maybeTopic.get();
         validateFalse(topic.deleted(), INVALID_TOPIC_ID);
@@ -139,22 +144,22 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void resolveMutableBuilderAttributes(
-            final ExpiryValidator expiryValidator,
-            final ConsensusUpdateTopicTransactionBody op,
-            final Topic.Builder builder,
-            final Topic topic) {
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op,
+            @NonNull final Topic.Builder builder,
+            @NonNull final Topic topic) {
         if (op.hasAdminKey()) {
-            builder.adminKey(fromGrpcKey(op.getAdminKey()));
+            builder.adminKey(op.adminKey());
         } else {
             builder.adminKey(topic.adminKey());
         }
         if (op.hasSubmitKey()) {
-            builder.submitKey(fromGrpcKey(op.getSubmitKey()));
+            builder.submitKey(op.submitKey());
         } else {
             builder.submitKey(topic.submitKey());
         }
         if (op.hasMemo()) {
-            builder.memo(op.getMemo().getValue());
+            builder.memo(op.memo());
         } else {
             builder.memo(topic.memo());
         }
@@ -165,7 +170,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void validateMaybeNewAttributes(
-            final HandleContext handleContext, final ConsensusUpdateTopicTransactionBody op, final Topic topic) {
+            @NonNull final HandleContext handleContext,
+            @NonNull final ConsensusUpdateTopicTransactionBody op,
+            @NonNull final Topic topic) {
         validateMaybeNewAdminKey(handleContext.attributeValidator(), op);
         validateMaybeNewSubmitKey(handleContext.attributeValidator(), op);
         validateMaybeNewMemo(handleContext.attributeValidator(), op);
@@ -173,45 +180,75 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void validateMaybeNewExpiry(
-            final ExpiryValidator expiryValidator, final ConsensusUpdateTopicTransactionBody op, final Topic topic) {
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op,
+            @NonNull final Topic topic) {
         resolvedUpdateMetaFrom(expiryValidator, op, topic);
     }
 
     private ExpiryMeta resolvedUpdateMetaFrom(
-            final ExpiryValidator expiryValidator, final ConsensusUpdateTopicTransactionBody op, final Topic topic) {
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op,
+            @NonNull final Topic topic) {
         final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountNumber());
-        if (op.hasExpirationTime() || op.hasAutoRenewPeriod() || op.hasAutoRenewAccount()) {
+        if (updatesExpiryMeta(op)) {
             final var updateMeta = new ExpiryMeta(
-                    op.hasExpirationTime() ? op.getExpirationTime().getSeconds() : NA,
-                    op.hasAutoRenewPeriod() ? op.getAutoRenewPeriod().getSeconds() : NA,
-                    // Shard and realm will be ignored if num is NA
-                    op.getAutoRenewAccount().getShardNum(),
-                    op.getAutoRenewAccount().getRealmNum(),
-                    op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA);
+                    effExpiryOf(op),
+                    effAutoRenewPeriodOf(op),
+                    effAutoRenewShardOf(op),
+                    effAutoRenewRealmOf(op),
+                    effAutoRenewNumOf(op));
             return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
         } else {
             return currentMeta;
         }
     }
 
+    private long effExpiryOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
+        return op.hasExpirationTime() ? op.expirationTimeOrThrow().seconds() : NA;
+    }
+
+    private long effAutoRenewPeriodOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
+        return op.hasAutoRenewPeriod() ? op.autoRenewPeriodOrThrow().seconds() : NA;
+    }
+
+    private long effAutoRenewShardOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
+        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().shardNum() : NA;
+    }
+
+    private long effAutoRenewRealmOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
+        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().realmNum() : NA;
+    }
+
+    private long effAutoRenewNumOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
+        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().accountNumOrElse(NA) : NA;
+    }
+
+    private boolean updatesExpiryMeta(@NonNull final ConsensusUpdateTopicTransactionBody op) {
+        return op.expirationTime() != null || op.autoRenewPeriod() != null || op.autoRenewAccount() != null;
+    }
+
     private void validateMaybeNewMemo(
-            final AttributeValidator attributeValidator, final ConsensusUpdateTopicTransactionBody op) {
+            @NonNull final AttributeValidator attributeValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op) {
         if (op.hasMemo()) {
-            attributeValidator.validateMemo(op.getMemo().getValue());
+            attributeValidator.validateMemo(op.memo());
         }
     }
 
     private void validateMaybeNewAdminKey(
-            final AttributeValidator attributeValidator, final ConsensusUpdateTopicTransactionBody op) {
+            @NonNull final AttributeValidator attributeValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op) {
         if (op.hasAdminKey()) {
-            attributeValidator.validateKey(op.getAdminKey());
+            attributeValidator.validateKey(op.adminKey());
         }
     }
 
     private void validateMaybeNewSubmitKey(
-            final AttributeValidator attributeValidator, final ConsensusUpdateTopicTransactionBody op) {
+            @NonNull final AttributeValidator attributeValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op) {
         if (op.hasSubmitKey()) {
-            attributeValidator.validateKey(op.getSubmitKey());
+            attributeValidator.validateKey(op.submitKey());
         }
     }
 
@@ -220,7 +257,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         return new UpdateTopicRecordBuilder();
     }
 
-    public static boolean wantsToMutateNonExpiryField(final ConsensusUpdateTopicTransactionBody op) {
+    public static boolean wantsToMutateNonExpiryField(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.hasMemo()
                 || op.hasAdminKey()
                 || op.hasSubmitKey()

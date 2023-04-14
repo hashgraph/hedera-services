@@ -99,7 +99,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     private static final String CONTRACT_KEY = "ContractKey";
     private static final String MULTI_KEY = "purpose";
 
-    private static final String MINT_CONTRACT = "MintContract";
+    public static final String MINT_CONTRACT = "MintContract";
     private static final String MINT_NFT_CONTRACT = "MintNFTContract";
     private static final String NESTED_MINT_CONTRACT = "NestedMint";
     private static final String HELLO_WORLD_MINT = "HelloWorldMint";
@@ -113,6 +113,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     private static final String TEST_METADATA_2 = "Test metadata 2";
     private static final String RECIPIENT = "recipient";
     private static final String MINT_FUNGIBLE_TOKEN = "mintFungibleToken";
+    public static final String MINT_FUNGIBLE_TOKEN_WITH_EVENT = "mintFungibleTokenWithEvent";
 
     public static void main(final String... args) {
         new ContractMintHTSSuite().runSuiteAsync();
@@ -166,8 +167,9 @@ public class ContractMintHTSSuite extends HapiSuite {
                         sourcing(() -> contractCreate(
                                 MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get())))))
                 .when(
-                        contractCall(MINT_CONTRACT, "mintFungibleTokenWithEvent", BigInteger.valueOf(amount))
+                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN_WITH_EVENT, BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
+                                .gas(GAS_TO_OFFER)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged())
@@ -314,8 +316,9 @@ public class ContractMintHTSSuite extends HapiSuite {
                         sourcing(() -> contractCreate(
                                 MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get())))))
                 .when(
-                        contractCall(MINT_CONTRACT, "mintFungibleTokenWithEvent", BigInteger.valueOf(10))
+                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN_WITH_EVENT, BigInteger.valueOf(10))
                                 .via(FIRST_MINT_TXN)
+                                .gas(GAS_TO_OFFER)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
@@ -469,7 +472,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                                     .withStatus(SUCCESS)
                                                                     .withTotalSupply(1L)
                                                                     .withSerialNumbers(1L))
-                                                            .gas(3_838_738L)
+                                                            .gas(3_837_920L)
                                                             .amount(0L)
                                                             .functionParameters(functionParameters()
                                                                     .forFunction(
@@ -535,6 +538,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         20L)
                                 .payingWith(GENESIS)
                                 .via(failedMintTxn)
+                                .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTxnRecord(failedMintTxn).andAllChildRecords().logged())))
                 .then(

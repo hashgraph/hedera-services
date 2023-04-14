@@ -9,10 +9,12 @@ open module com.swirlds.virtualmap {
     exports com.swirlds.virtualmap.config;
 
     requires com.swirlds.common;
+    requires com.swirlds.base;
     requires com.swirlds.logging;
     requires org.apache.logging.log4j;
     requires java.sql;
     requires java.management; // Test dependency
     requires org.apache.commons.lang3;
     requires com.swirlds.config;
+    requires static com.github.spotbugs.annotations;
 }

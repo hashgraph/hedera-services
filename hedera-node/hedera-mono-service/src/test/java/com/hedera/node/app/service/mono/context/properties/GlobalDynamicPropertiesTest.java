@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertySource.AS_EVM_ADDRESSES;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_MAX_NUM;
 import static com.hedera.node.app.spi.config.PropertyNames.AUTO_CREATION_ENABLED;
@@ -35,6 +36,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_CREATE2;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
@@ -49,7 +51,9 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_GAS_PER
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_AGGREGATE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
@@ -60,6 +64,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_TH
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
@@ -151,6 +156,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -179,6 +185,8 @@ class GlobalDynamicPropertiesTest {
     private final ScaleFactor evenFactor = ScaleFactor.from("7:2");
     private final LegacyContractIdActivations contractIdActivations =
             LegacyContractIdActivations.from("1058134by[1062784]");
+    private Set<Address> permittedDelegateCallers = (Set<Address>) AS_EVM_ADDRESSES.apply("1062787,1461860");
+    private Set<Address> specialHapiSigsAccess = (Set<Address>) AS_EVM_ADDRESSES.apply("1062789");
     private GlobalDynamicProperties subject;
 
     @BeforeEach
@@ -335,6 +343,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(asTypedEvmAddress(accountWith(1L, 2L, 7L)), subject.fundingAccountAddress());
         assertEquals(balanceExportPaths[1], subject.pathToBalancesExportDir());
         assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
+        assertEquals(Set.of(HederaFunctionality.TokenDelete), subject.systemContractsWithTopLevelSigsAccess());
         assertEquals(oddCongestion, subject.congestionMultipliers());
         assertEquals(upgradeArtifactLocs[1], subject.upgradeArtifactsLoc());
         assertEquals(Set.of(SidecarType.CONTRACT_STATE_CHANGE), subject.enabledSidecars());
@@ -342,6 +351,9 @@ class GlobalDynamicPropertiesTest {
         assertEquals(ContractStoragePriceTiers.from("0til100M,2000til450M", 88, 53L, 87L), subject.storagePriceTiers());
         assertEquals(evmVersions[1], subject.evmVersion());
         assertEquals(contractIdActivations, subject.legacyContractIdActivations());
+        assertEquals(permittedDelegateCallers, subject.permittedDelegateCallers());
+        assertEquals(specialHapiSigsAccess, subject.contractsWithSpecialHapiSigsAccess());
+        assertEquals(94L, subject.maxNumWithHapiSigsAccess());
         assertEquals(entityScaleFactors, subject.entityScaleFactors());
     }
 
@@ -528,6 +540,9 @@ class GlobalDynamicPropertiesTest {
                         i % 2 == 0
                                 ? Set.of(HederaFunctionality.CryptoCreate)
                                 : Set.of(HederaFunctionality.CryptoTransfer));
+        given(properties.getFunctionsProperty(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS))
+                .willReturn(
+                        i % 2 == 0 ? Set.of(HederaFunctionality.TokenCreate) : Set.of(HederaFunctionality.TokenDelete));
         given(properties.getCongestionMultiplierProperty(FEES_PERCENT_CONGESTION_MULTIPLIERS))
                 .willReturn(i % 2 == 0 ? evenCongestion : oddCongestion);
         given(properties.getIntProperty(FEES_MIN_CONGESTION_PERIOD)).willReturn(i + 29);
@@ -640,6 +655,11 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(entityScaleFactors);
         given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE))
                 .willReturn((i + 91) % 2 == 0);
+        given(properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS)).willReturn(permittedDelegateCallers);
+        given(properties.getEvmAddresses(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS))
+                .willReturn(specialHapiSigsAccess);
+        given(properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS))
+                .willReturn(i + 93L);
     }
 
     private Set<EntityType> typesFor(final int i) {

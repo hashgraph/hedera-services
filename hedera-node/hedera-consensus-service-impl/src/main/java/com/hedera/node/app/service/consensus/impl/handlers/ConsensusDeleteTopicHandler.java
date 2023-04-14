@@ -16,32 +16,36 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.DeleteTopicRecordBuilder;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusDeleteTopic}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_DELETE_TOPIC}.
  */
 @Singleton
 public class ConsensusDeleteTopicHandler implements TransactionHandler {
     @Inject
-    public ConsensusDeleteTopicHandler() {}
+    public ConsensusDeleteTopicHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -53,24 +57,18 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
      * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
      * @throws NullPointerException if any of the arguments are {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
+            throws PreCheckException {
         requireNonNull(context);
         requireNonNull(topicStore);
 
-        final var op = context.getTxn().getConsensusDeleteTopic();
-        final var topicMeta = topicStore.getTopicMetadata(op.getTopicID());
-        if (topicMeta.failed()) {
-            context.status(ResponseCodeEnum.INVALID_TOPIC_ID);
-            return;
-        }
-
-        final var adminKey = topicMeta.metadata().adminKey();
-        if (adminKey.isEmpty()) {
-            context.status(ResponseCodeEnum.UNAUTHORIZED);
-            return;
-        }
-
-        context.addToReqNonPayerKeys(adminKey.get());
+        final var op = context.body().consensusDeleteTopicOrThrow();
+        // The topic ID must be present on the transaction and the topic must exist.
+        final var topic = topicStore.getTopicMetadata(op.topicID());
+        mustExist(topic, INVALID_TOPIC_ID);
+        // To delete a topic, the transaction must be signed by the admin key. If there is no admin
+        // key, then it is impossible to delete the topic.
+        context.requireKeyOrThrow(topic.adminKey(), UNAUTHORIZED);
     }
 
     /**
@@ -82,19 +80,19 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
      */
     public void handle(
             @NonNull final ConsensusDeleteTopicTransactionBody op, @NonNull final WritableTopicStore topicStore) {
-        var topicId = op.getTopicID();
+        var topicId = op.topicIDOrElse(TopicID.DEFAULT);
 
-        var optionalTopic = topicStore.get(topicId.getTopicNum());
+        var optionalTopic = topicStore.get(topicId.topicNum());
 
         /* If the topic doesn't exist, return INVALID_TOPIC_ID */
         if (optionalTopic.isEmpty()) {
-            throw new HandleStatusException(INVALID_TOPIC_ID);
+            throw new HandleException(INVALID_TOPIC_ID);
         }
         final var topic = optionalTopic.get();
 
         /* Topics without adminKeys can't be deleted.*/
         if (topic.adminKey() == null) {
-            throw new HandleStatusException(UNAUTHORIZED);
+            throw new HandleException(UNAUTHORIZED);
         }
 
         /* Copy all the fields from existing topic and change deleted flag */

@@ -16,17 +16,23 @@
 
 package com.hedera.node.app.service.consensus.impl.test;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.TopicStore.TopicMetadata;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.Optional;
 import java.util.OptionalLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,44 +47,39 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    void getsTopicMetadataIfTopicExists() {
+    void getsTopicMetadataIfTopicExists() throws PreCheckException {
         givenValidTopic();
-        final var topicMeta = subject.getTopicMetadata(topicId);
+        final var topicMeta = subject.getTopicMetadata(WELL_KNOWN_TOPIC_ID);
 
         assertNotNull(topicMeta);
-        assertNotNull(topicMeta.metadata());
-        assertFalse(topicMeta.failed());
-        assertNull(topicMeta.failureReason());
 
-        final var meta = topicMeta.metadata();
-        assertEquals(topicEntityNum.longValue(), meta.key());
-        assertEquals(adminKey.toString(), meta.adminKey().map(Object::toString).orElse("N/A"));
-        assertEquals(adminKey.toString(), meta.submitKey().map(Object::toString).orElse("N/A"));
-        assertEquals(topic.sequenceNumber(), meta.sequenceNumber());
-        assertEquals(topic.autoRenewPeriod(), meta.autoRenewDurationSeconds());
-        assertEquals(OptionalLong.of(autoRenewId.getAccountNum()), meta.autoRenewAccountId());
-        assertEquals(Optional.of(memo), meta.memo());
-        assertFalse(meta.isDeleted());
-        assertArrayEquals(runningHash, meta.runningHash());
+        assertEquals(topicEntityNum.longValue(), topicMeta.key());
+        assertEquals(adminKey.toString(), topicMeta.adminKey().toString());
+        assertEquals(adminKey.toString(), topicMeta.submitKey().toString());
+        assertEquals(topic.sequenceNumber(), topicMeta.sequenceNumber());
+        assertEquals(topic.autoRenewPeriod(), topicMeta.autoRenewDurationSeconds());
+        assertEquals(OptionalLong.of(autoRenewId.accountNum()), topicMeta.autoRenewAccountId());
+        assertEquals(Optional.of(memo), topicMeta.memo());
+        assertFalse(topicMeta.isDeleted());
+        assertArrayEquals(runningHash, topicMeta.runningHash());
     }
 
     @Test
     void objectMethodsWorks() {
         final var meta = new TopicMetadata(
                 Optional.of(memo),
-                Optional.of(adminKey),
-                Optional.of(adminKey),
+                adminKey,
+                adminKey,
                 100L,
-                OptionalLong.of(autoRenewId.getAccountNum()),
-                Timestamp.newBuilder().setSeconds(100L).build(),
+                OptionalLong.of(autoRenewId.accountNum()),
+                Timestamp.newBuilder().seconds(100L).build(),
                 1L,
                 new byte[48],
                 topicEntityNum.longValue(),
                 false);
 
         final var expectedString =
-                "TopicMetadata{memo=Optional[test memo], adminKey=Optional[<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>], submitKey=Optional[<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>], autoRenewDurationSeconds=100, autoRenewAccountId=OptionalLong[4], expirationTimestamp=seconds: 100\n"
-                        + ", sequenceNumber=1, runningHash=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], key=1, isDeleted=false}";
+                "TopicMetadata{memo=Optional[test memo], adminKey=<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>, submitKey=<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>, autoRenewDurationSeconds=100, autoRenewAccountId=OptionalLong[4], expirationTimestamp=Timestamp[seconds=100, nanos=0], sequenceNumber=1, runningHash=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], key=1, isDeleted=false}";
         assertEquals(expectedString, meta.toString());
 
         final var metaCopy = meta;
@@ -87,11 +88,11 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
 
         final var meta2 = new TopicMetadata(
                 Optional.of(memo),
-                Optional.of(adminKey),
-                Optional.of(adminKey),
+                adminKey,
+                adminKey,
                 100L,
-                OptionalLong.of(autoRenewId.getAccountNum()),
-                Timestamp.newBuilder().setSeconds(100L).build(),
+                OptionalLong.of(autoRenewId.accountNum()),
+                WELL_KNOWN_EXPIRY,
                 1L,
                 new byte[48],
                 topicEntityNum.longValue(),
@@ -101,7 +102,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    void getsTopicMetadataIfTopicExistsWithNoAutoRenewAccount() {
+    void getsTopicMetadataIfTopicExistsWithNoAutoRenewAccount() throws PreCheckException {
         givenValidTopic(0L);
         readableTopicState = readableTopicState();
         given(readableStates.<EntityNum, com.hedera.hapi.node.state.consensus.Topic>get(TOPICS))
@@ -109,39 +110,30 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
         readableStore = new ReadableTopicStore(readableStates);
         subject = new ReadableTopicStore(readableStates);
 
-        final var topicMeta = subject.getTopicMetadata(topicId);
+        final var topicMeta = subject.getTopicMetadata(WELL_KNOWN_TOPIC_ID);
 
         assertNotNull(topicMeta);
-        assertNotNull(topicMeta.metadata());
-        assertFalse(topicMeta.failed());
-        assertNull(topicMeta.failureReason());
 
-        final var meta = topicMeta.metadata();
-        assertEquals(topicEntityNum.longValue(), meta.key());
-        assertEquals(adminKey.toString(), meta.adminKey().map(Object::toString).orElse("N/A"));
-        assertEquals(adminKey.toString(), meta.submitKey().map(Object::toString).orElse("N/A"));
-        assertEquals(topic.sequenceNumber(), meta.sequenceNumber());
-        assertEquals(topic.autoRenewPeriod(), meta.autoRenewDurationSeconds());
-        assertEquals(OptionalLong.empty(), meta.autoRenewAccountId());
-        assertEquals(Optional.of(memo), meta.memo());
-        assertFalse(meta.isDeleted());
-        assertArrayEquals(runningHash, meta.runningHash());
+        assertEquals(topicEntityNum.longValue(), topicMeta.key());
+        assertEquals(adminKey.toString(), topicMeta.adminKey().toString());
+        assertEquals(adminKey.toString(), topicMeta.submitKey().toString());
+        assertEquals(topic.sequenceNumber(), topicMeta.sequenceNumber());
+        assertEquals(topic.autoRenewPeriod(), topicMeta.autoRenewDurationSeconds());
+        assertEquals(OptionalLong.empty(), topicMeta.autoRenewAccountId());
+        assertEquals(Optional.of(memo), topicMeta.memo());
+        assertFalse(topicMeta.isDeleted());
+        assertArrayEquals(runningHash, topicMeta.runningHash());
     }
 
     @Test
-    void failsIfTopicDoesntExist() {
+    void missingTopicIsNull() {
         readableTopicState.reset();
         final var state =
                 MapReadableKVState.<Long, MerkleTopic>builder("TOPICS").build();
         given(readableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(state);
         subject = new ReadableTopicStore(readableStates);
 
-        final var topicMeta = subject.getTopicMetadata(topicId);
-
-        assertNotNull(topicMeta);
-        assertNull(topicMeta.metadata());
-        assertTrue(topicMeta.failed());
-        assertEquals(INVALID_TOPIC_ID, topicMeta.failureReason());
+        assertThat(subject.getTopicMetadata(WELL_KNOWN_TOPIC_ID)).isNull();
     }
 
     @Test
@@ -153,6 +145,5 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
     @Test
     void nullArgsFail() {
         assertThrows(NullPointerException.class, () -> new ReadableTopicStore(null));
-        assertThrows(NullPointerException.class, () -> subject.getTopicMetadata(null));
     }
 }

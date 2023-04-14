@@ -19,10 +19,17 @@ package com.hedera.node.app.state.merkle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.SemanticVersionComparator;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.state.*;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableSingletonState;
+import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -121,8 +128,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName(
-                "Registering two schemas that are different but have the same version number, the" + " second is used")
+        @DisplayName("Registering two schemas that are different but have the same version number, the second is used")
         void registerSameVersionDifferentInstances() {
             // Given two schemas which do different things but have the same version
             final var schema1 = Mockito.spy(new TestSchema(10));
@@ -141,7 +147,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         /** Utility method that migrates from version 9 to 10 */
         void migrateFromV9ToV10() {
             schemaRegistry.migrate(
-                    new MerkleHederaState(tree -> {}, (e, m, p) -> {}, (round, state, dualState, metadata) -> {}),
+                    new MerkleHederaState(
+                            (tree, state) -> {}, (e, m, s) -> {}, (state, platform, dualState, trigger, version) -> {}),
                     version(9, 0, 0),
                     version(10, 0, 0));
         }
@@ -155,7 +162,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            merkleTree = new MerkleHederaState(tree -> {}, (e, m, p) -> {}, (r, s, ds, m) -> {});
+            merkleTree = new MerkleHederaState((tree, state) -> {}, (e, m, s) -> {}, (s, p, ds, t, dv) -> {});
 
             // Let the first version[0] be null, and all others have a number
             versions = new SemanticVersion[10];
@@ -206,18 +213,18 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @CsvSource(
                 textBlock =
                         """
-                0, 1
-                0, 2
-                0, 3
-                0, 4
-                1, 2
-                1, 3
-                1, 4
-                2, 3
-                2, 4
-                3, 4
-                0, 9
-                """)
+                    0, 1
+                    0, 2
+                    0, 3
+                    0, 4
+                    1, 2
+                    1, 3
+                    1, 4
+                    2, 3
+                    2, 4
+                    3, 4
+                    0, 9
+                    """)
         @DisplayName("Migration applies to all versions up to and including the currentVersion")
         void migrate(int firstVersion, int lastVersion) {
             // We will place into this list each schema as it is called
@@ -301,7 +308,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @Override
                     @SuppressWarnings("rawtypes")
                     public Set<StateDefinition> statesToCreate() {
-                        final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES);
+                        final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC);
                         return Set.of(fruitDef);
                     }
 
@@ -323,9 +330,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @Override
                     @SuppressWarnings("rawtypes")
                     public Set<StateDefinition> statesToCreate() {
-                        final var animalDef =
-                                StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100);
-                        final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES);
+                        final var animalDef = StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC, 100);
+                        final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC);
                         return Set.of(animalDef, countryDef);
                     }
 

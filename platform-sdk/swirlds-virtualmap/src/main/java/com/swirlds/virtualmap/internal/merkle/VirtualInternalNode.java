@@ -20,6 +20,7 @@ import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 import static com.swirlds.virtualmap.internal.Path.getLeftChildPath;
 import static com.swirlds.virtualmap.internal.Path.getRightChildPath;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -35,13 +36,14 @@ import com.swirlds.virtualmap.internal.Path;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Represents a virtual internal merkle node.
  */
 @ConstructableIgnored
-public final class VirtualInternalNode<K extends VirtualKey<? super K>, V extends VirtualValue>
-        extends PartialBinaryMerkleInternal implements MerkleInternal, VirtualNode<VirtualInternalRecord> {
+public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualValue> extends PartialBinaryMerkleInternal
+        implements MerkleInternal, VirtualNode<VirtualInternalRecord> {
 
     private static final int NUMBER_OF_CHILDREN = 2;
 
@@ -248,7 +250,9 @@ public final class VirtualInternalNode<K extends VirtualKey<? super K>, V extend
      */
     @Override
     public String toString() {
-        return "VirtualInternalNode{" + virtualRecord + "}";
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append(virtualRecord)
+                .toString();
     }
 
     /**

@@ -16,6 +16,7 @@
 
 package com.swirlds.common.test;
 
+import static com.swirlds.common.system.address.AddressBookUtils.parseAddressBookConfigText;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,9 +39,11 @@ import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -115,6 +118,32 @@ class AddressBookTests {
             assertTrue(addressBook.contains(nodeId), "address book does not have address for node");
             assertEquals(expectedAddresses.get(nodeId), addressBook.getAddress(nodeId), "address should match");
         }
+    }
+
+    @Test
+    @DisplayName("Address Book Update Stake Test")
+    void validateAddressBookUpdateStakeTest() {
+        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed()).setSize(10);
+        final AddressBook addressBook = generator.build();
+        final Address address = addressBook.getAddress(addressBook.getId(0));
+        final long totalStake = addressBook.getTotalStake();
+        final long newStake = address.getStake() + 1;
+
+        addressBook.updateStake(address.getId(), newStake);
+
+        final Address updatedAddress = addressBook.getAddress(addressBook.getId(0));
+        assertEquals(newStake, updatedAddress.getStake(), "stake should be updated");
+        assertEquals(totalStake + 1, addressBook.getTotalStake(), "total stake should be updated by 1");
+        final Address reverted = updatedAddress.copySetStake(newStake - 1);
+        assertEquals(address, reverted, "reverted address should be equal to original");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> addressBook.updateStake(address.getId(), -1),
+                "should not be able to set negative stake");
+        assertThrows(
+                NoSuchElementException.class,
+                () -> addressBook.updateStake(addressBook.getNextNodeId(), 1),
+                "should not be able to set stake for non-existent node");
     }
 
     @Test
@@ -287,7 +316,7 @@ class AddressBookTests {
 
     @Test
     @DisplayName("toString() Test")
-    void toStringSanityTest() {
+    void atoStringSanityTest() {
         final AddressBook addressBook = new RandomAddressBookGenerator(getRandomPrintSeed()).build();
 
         // Basic sanity check, make sure this doesn't throw an exception
@@ -421,5 +450,55 @@ class AddressBookTests {
                 IllegalArgumentException.class,
                 () -> addressBook.setNextNodeId(0),
                 "node ID shouldn't be able to be set to a value less than an existing address book");
+    }
+
+    @Test
+    @DisplayName("Roundtrip address book serialization and deserialization compatible with config.txt")
+    void roundTripSerializeAndDeserializeCompatibleWithConfigTxt() throws ParseException {
+        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed());
+        final AddressBook addressBook = generator.build();
+        final String addressBookText = addressBook.toConfigText();
+        final Map<Long, Long> posToId = new HashMap<>();
+        long pos = 0;
+        for (Address address : addressBook) {
+            posToId.put(pos, address.getId());
+            pos++;
+        }
+        final AddressBook parsedAddressBook =
+                parseAddressBookConfigText(addressBookText, posToId::get, ip -> false, id -> "");
+        // Equality done on toConfigText() strings since the randomly generated address book has public key data.
+        assertEquals(addressBookText, parsedAddressBook.toConfigText(), "The AddressBooks are not equal.");
+    }
+
+    @Test
+    @DisplayName("Testing exceptions in parsing address books used in config.txt")
+    void parseExceptionTestsInParsingAddressBookConfigText() {
+        // not enough parts to make an address line
+        validateParseException("address", 1);
+        validateParseException("address, nickname", 2);
+        validateParseException("address, nickname, selfname", 3);
+        validateParseException("address, nickname, selfname, 10", 4);
+        validateParseException("address, nickname, selfname, 10, 192.168.0.1", 5);
+        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000", 6);
+        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8", 7);
+
+        // Too many parts
+        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, extra", 9);
+
+        // bad parsing of parts.
+        validateParseException("not an address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000", 0);
+        validateParseException("address, nickname, selfname, not a stake, 192.168.0.1, 5000, 8.8.8.8, 5000", 3);
+        validateParseException("address, nickname, selfname, 10, 192.168.0.1, not a port, 8.8.8.8, 5000", 5);
+        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, not a port", 7);
+    }
+
+    private void validateParseException(String addressBook, int part) {
+        assertThrows(
+                ParseException.class, () -> parseAddressBookConfigText(addressBook, pos -> pos, ip -> false, id -> ""));
+        try {
+            parseAddressBookConfigText(addressBook, pos -> pos, ip -> false, id -> "");
+        } catch (ParseException e) {
+            assertEquals(part, e.getErrorOffset(), "The part number is wrong in the exception: " + e.getMessage());
+        }
     }
 }

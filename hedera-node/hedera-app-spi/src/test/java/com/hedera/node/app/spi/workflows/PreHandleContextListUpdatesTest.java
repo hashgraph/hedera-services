@@ -16,37 +16,31 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ThresholdKey;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -54,30 +48,30 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleContextListUpdatesTest {
-    public static final com.hederahashgraph.api.proto.java.Key A_COMPLEX_KEY =
-            com.hederahashgraph.api.proto.java.Key.newBuilder()
-                    .setThresholdKey(ThresholdKey.newBuilder()
-                            .setThreshold(2)
-                            .setKeys(KeyList.newBuilder()
-                                    .addKeys(com.hederahashgraph.api.proto.java.Key.newBuilder()
-                                            .setEd25519(
-                                                    ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes())))
-                                    .addKeys(com.hederahashgraph.api.proto.java.Key.newBuilder()
-                                            .setEd25519(ByteString.copyFrom(
-                                                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes())))))
-                    .build();
+    public static final Key A_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    Key.newBuilder()
+                                            .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+                                            .build(),
+                                    Key.newBuilder()
+                                            .ed25519(Bytes.wrap("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
+                                            .build())))
+            .build();
     private Timestamp consensusTimestamp =
-            Timestamp.newBuilder().setSeconds(1_234_567L).build();
+            Timestamp.newBuilder().seconds(1_234_567L).build();
     private Key key = A_COMPLEX_KEY;
-    private AccountID payer = AccountID.newBuilder().setAccountNum(3L).build();
+    private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
+    private Long payerNum = 3L;
 
     @Mock
     private HederaKey payerKey;
 
-    final AccountID otherAccountId =
-            AccountID.newBuilder().setAccountNum(12345L).build();
+    final AccountID otherAccountId = AccountID.newBuilder().accountNum(12345L).build();
     final ContractID otherContractId =
-            ContractID.newBuilder().setContractNum(123456L).build();
+            ContractID.newBuilder().contractNum(123456L).build();
 
     @Mock
     private HederaKey otherKey;
@@ -85,348 +79,214 @@ class PreHandleContextListUpdatesTest {
     @Mock
     private AccountAccess accountAccess;
 
+    @Mock
+    private Account account;
+
+    @Mock
+    private Account otherAccount;
+
+    @Mock
+    private Account contractAccount;
+
     private PreHandleContext subject;
 
-    @BeforeEach
-    void setUp() {}
-
     @Test
-    void gettersWorkAsExpectedWhenOnlyPayerKeyExist() {
+    void gettersWorkAsExpectedWhenOnlyPayerKeyExist() throws PreCheckException {
+        // Given an account with a key, and a transaction using that account as the payer
+        given(accountAccess.getAccountById(payer)).willReturn(account);
+        given(account.getKey()).willReturn(payerKey);
         final var txn = createAccountTransaction();
-        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
+        // When we create a PreHandleContext
+        subject = new PreHandleContext(accountAccess, createAccountTransaction());
 
-        assertFalse(subject.failed());
-        assertEquals(txn, subject.getTxn());
-        assertEquals(payerKey, subject.getPayerKey());
-        assertEquals(List.of(), subject.getRequiredNonPayerKeys());
+        // Then the body, payer, and required keys are as expected
+        assertEquals(txn, subject.body());
+        assertEquals(payerKey, subject.payerKey());
+        assertEquals(Set.of(), subject.requiredNonPayerKeys());
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    void nullInputToBuilderArgumentsThrows() {
-        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
-        final var subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
-        assertThrows(NullPointerException.class, () -> new PreHandleContext(null, createAccountTransaction(), payer));
-        assertThrows(NullPointerException.class, () -> new PreHandleContext(accountAccess, null, payer));
-        assertThrows(
-                NullPointerException.class,
-                () -> new PreHandleContext(accountAccess, createAccountTransaction(), (AccountID) null));
-        assertThrows(NullPointerException.class, () -> subject.status(null));
-        assertThrows(NullPointerException.class, () -> subject.addNonPayerKey((AccountID) null));
-        assertThrows(NullPointerException.class, () -> subject.addNonPayerKeyIfReceiverSigRequired(null, null));
-        assertDoesNotThrow(() -> subject.addNonPayerKey(payer, null));
-        assertDoesNotThrow(() -> subject.addNonPayerKeyIfReceiverSigRequired(payer, null));
+    void nullInputToBuilderArgumentsThrows() throws PreCheckException {
+        // Given an account with a key, and a transaction using that account as the payer
+        given(accountAccess.getAccountById(payer)).willReturn(account);
+        given(account.getKey()).willReturn(payerKey);
+
+        // When we create a PreHandleContext by passing null as either argument
+        // Then we get a null pointer exception
+        assertThrows(NullPointerException.class, () -> new PreHandleContext(null, createAccountTransaction()));
+        assertThrows(NullPointerException.class, () -> new PreHandleContext(accountAccess, null));
+
+        // When we pass null to requireKeyOrThrow for the account ID then we get a PreCheckException
+        final var subject = new PreHandleContext(accountAccess, createAccountTransaction());
+        assertThrows(PreCheckException.class, () -> subject.requireKeyOrThrow((AccountID) null, INVALID_ACCOUNT_ID));
+        // When we pass null to requireKeyOrThrow for the response code then we get a null pointer exception
+        assertThrows(NullPointerException.class, () -> subject.requireKeyOrThrow(payer, null));
+        // When we pass a null to requireKeyIfReceiverSigRequired for the account ID then nothing happens
+        assertDoesNotThrow(() -> subject.requireKeyIfReceiverSigRequired((AccountID) null, INVALID_ACCOUNT_ID));
+        // When we pass a null to requireKeyIfReceiverSigRequired for the response code then we get a null pointer
+        // exception
+        assertThrows(NullPointerException.class, () -> subject.requireKeyIfReceiverSigRequired(payer, null));
+        // When we pass non-null to requireKeyOrThrow or requireKeyIfReceiverSigRequired, then it succeeds
+        assertDoesNotThrow(() -> subject.requireKeyOrThrow(payer, INVALID_ACCOUNT_ID));
+        assertDoesNotThrow(() -> subject.requireKeyIfReceiverSigRequired(payer, INVALID_ACCOUNT_ID));
     }
 
     @Test
-    void gettersWorkAsExpectedWhenPayerIsSet() {
+    void requireSomeOtherKey() throws PreCheckException {
+        // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
+        given(accountAccess.getAccountById(payer)).willReturn(account);
+        given(account.getKey()).willReturn(payerKey);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction());
+
+        // When we require some other key on the context
+        subject.requireKey(otherKey);
+
+        // Then the requiredNonPayerKeys includes that other key
+        assertEquals(Set.of(otherKey), subject.requiredNonPayerKeys());
+    }
+
+    @Test
+    void requireSomeOtherKeyTwice() throws PreCheckException {
+        // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
+        given(accountAccess.getAccountById(payer)).willReturn(account);
+        given(account.getKey()).willReturn(payerKey);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction());
+
+        // When we require some other key on the context more than once
+        subject.requireKey(otherKey);
+        subject.requireKey(otherKey);
+
+        // Then the requiredNonPayerKeys only includes the key once
+        assertEquals(Set.of(otherKey), subject.requiredNonPayerKeys());
+    }
+
+    @Test
+    void payerIsIgnoredWhenRequired() throws PreCheckException {
+        // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
+        given(accountAccess.getAccountById(payer)).willReturn(account);
+        given(account.getKey()).willReturn(payerKey);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction());
+
+        // When we require the payer key on the context
+        subject.requireKey(payerKey);
+
+        // Then the call is ignored and the payerKey is not added to requiredNonPayerKeys
+        assertEquals(Set.of(), subject.requiredNonPayerKeys());
+    }
+
+    @Test
+    void failsWhenPayerKeyDoesntExist() throws PreCheckException {
+        // Given an account ID that does not exist
         final var txn = createAccountTransaction();
-        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer)
-                .addAllReqKeys(List.of(payerKey, otherKey));
+        given(accountAccess.getAccountById(payer)).willReturn(null);
 
-        assertFalse(subject.failed());
-        assertEquals(txn, subject.getTxn());
-        assertEquals(payerKey, subject.getPayerKey());
-        assertEquals(List.of(payerKey, otherKey), subject.getRequiredNonPayerKeys());
-        assertEquals(payer, subject.getPayer());
+        // When we create a PreHandleContext, then it fails with INVALID_PAYER_ACCOUNT_ID
+        assertThrowsPreCheck(() -> new PreHandleContext(accountAccess, txn), INVALID_PAYER_ACCOUNT_ID);
     }
 
     @Test
-    void gettersWorkAsExpectedWhenOtherSigsExist() {
-        final var txn = createAccountTransaction();
-        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
+    void returnsIfGivenKeyIsPayer() throws PreCheckException {
+        // Given an account with a key, and a transaction using that account as the payer and a PreHandleContext
+        given(accountAccess.getAccountById(payer)).willReturn(account);
+        given(account.getKey()).willReturn(payerKey);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction());
 
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer).addToReqNonPayerKeys(payerKey);
+        // When we require the payer to exist (or throw INVALID_ACCOUNT_ID)
+        subject.requireKeyOrThrow(payer, INVALID_ACCOUNT_ID);
 
-        assertFalse(subject.failed());
-        assertEquals(txn, subject.getTxn());
-        assertEquals(payerKey, subject.getPayerKey());
-        assertEquals(List.of(payerKey), subject.getRequiredNonPayerKeys());
+        // Then the call succeeds, although the payer key is not added to requiredNonPayerKeys
+        assertEquals(payerKey, subject.payerKey());
+        assertIterableEquals(List.of(), subject.requiredNonPayerKeys());
+
+        // And when we try with requireKeyIfReceiverSigRequired, it also succeeds in the same way
+        subject.requireKeyIfReceiverSigRequired(payer, INVALID_ACCOUNT_ID);
+        assertIterableEquals(List.of(), subject.requiredNonPayerKeys());
     }
 
     @Test
-    void failsWhenPayerKeyDoesntExist() {
-        final var txn = createAccountTransaction();
-        given(accountAccess.getKey(payer)).willReturn(withFailureReason(INVALID_PAYER_ACCOUNT_ID));
+    void returnsIfGivenKeyIsInvalidAccountId() throws PreCheckException {
+        // Given an account with a key, and a transaction using that account as the payer and a PreHandleContext
+        given(accountAccess.getAccountById(payer)).willReturn(account);
+        given(account.getKey()).willReturn(payerKey);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction());
 
-        subject = new PreHandleContext(accountAccess, txn, payer).addToReqNonPayerKeys(payerKey);
-
-        assertTrue(subject.failed());
-        assertNull(subject.getPayerKey());
-        assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.getStatus());
-
-        assertEquals(txn, subject.getTxn());
-        assertEquals(List.of(), subject.getRequiredNonPayerKeys()); // No other keys are added when payerKey is not
-        // added
+        // When we require an accountID that doesn't exist, then we get a PreCheckException
+        final var bogus = AccountID.newBuilder().build();
+        assertThrowsPreCheck(() -> subject.requireKeyOrThrow(bogus, INVALID_ACCOUNT_ID), INVALID_ACCOUNT_ID);
     }
 
     @Test
-    void doesntAddToReqKeysIfStatus() {
-        given(accountAccess.getKey(payer)).willReturn(withFailureReason(INVALID_PAYER_ACCOUNT_ID));
+    void addsContractIdKey() throws PreCheckException {
+        // Given an account with a key, and a transaction using that account as the payer,
+        // and a contract account with a key, and a PreHandleContext
+        given(accountAccess.getAccountById(payer)).willReturn(account);
+        given(account.getKey()).willReturn(payerKey);
+        given(accountAccess.getContractById(otherContractId)).willReturn(contractAccount);
+        given(contractAccount.getKey()).willReturn(otherKey);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction());
 
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
-        subject.addToReqNonPayerKeys(payerKey);
+        // When we require the contract account's key,
+        subject.requireKeyOrThrow(otherContractId, INVALID_CONTRACT_ID);
 
-        assertEquals(0, subject.getRequiredNonPayerKeys().size());
-        assertNull(subject.getPayerKey());
-        assertFalse(subject.getRequiredNonPayerKeys().contains(payerKey));
+        // Then the contract account's key is included in the required non-payer keys
+        assertIterableEquals(List.of(otherKey), subject.requiredNonPayerKeys());
     }
 
     @Test
-    void addsToReqKeysCorrectly() {
-        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
+    void doesntFailForAliasedAccount() throws PreCheckException {
+        // Given an account that can be looked up by number or alias and a PreHandleContext
+        final var alias = AccountID.newBuilder().alias(Bytes.wrap("test")).build();
+        given(accountAccess.getAccountById(alias)).willReturn(account);
+        given(accountAccess.getAccountById(payer)).willReturn(account);
+        given(account.getKey()).willReturn(payerKey);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction());
 
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
+        // When we require the account by alias
+        subject.requireKeyOrThrow(alias, INVALID_ACCOUNT_ID);
 
-        assertEquals(0, subject.getRequiredNonPayerKeys().size());
-        assertEquals(payerKey, subject.getPayerKey());
-
-        subject.addToReqNonPayerKeys(otherKey);
-        assertEquals(1, subject.getRequiredNonPayerKeys().size());
-        assertEquals(payerKey, subject.getPayerKey());
-        assertTrue(subject.getRequiredNonPayerKeys().contains(otherKey));
+        // Then it isn't added to the list of keys because the key is already the payer key
+        assertEquals(payerKey, subject.payerKey());
+        assertIterableEquals(List.of(), subject.requiredNonPayerKeys());
     }
 
     @Test
-    void settersWorkCorrectly() {
-        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
+    void doesntFailForAliasedContract() throws PreCheckException {
+        final var alias = ContractID.newBuilder().evmAddress(Bytes.wrap("test")).build();
+        given(accountAccess.getContractById(alias)).willReturn(contractAccount);
+        given(contractAccount.getKey()).willReturn(otherKey);
+        given(accountAccess.getAccountById(payer)).willReturn(account);
+        given(account.getKey()).willReturn(payerKey);
 
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer).status(INVALID_ACCOUNT_ID);
-        assertEquals(INVALID_ACCOUNT_ID, subject.getStatus());
+        subject = new PreHandleContext(accountAccess, createAccountTransaction())
+                .requireKeyOrThrow(alias, INVALID_CONTRACT_ID);
+
+        assertEquals(payerKey, subject.payerKey());
+        assertIterableEquals(List.of(otherKey), subject.requiredNonPayerKeys());
     }
 
     @Test
-    void returnsIfGivenKeyIsPayer() {
-        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+    void failsForInvalidAlias() throws PreCheckException {
+        final var alias = AccountID.newBuilder().alias(Bytes.wrap("test")).build();
+        given(accountAccess.getAccountById(alias)).willReturn(null);
+        given(accountAccess.getAccountById(payer)).willReturn(account);
+        given(account.getKey()).willReturn(payerKey);
 
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-
-        subject.addNonPayerKey(payer);
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-
-        subject.addNonPayerKeyIfReceiverSigRequired(payer, INVALID_ACCOUNT_ID);
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-    }
-
-    @Test
-    void returnsIfGivenKeyIsInvalidAccountId() {
-        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
-
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-
-        subject.addNonPayerKey(AccountID.getDefaultInstance());
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-
-        subject.addNonPayerKeyIfReceiverSigRequired(AccountID.getDefaultInstance(), INVALID_ACCOUNT_ID);
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-
-        subject.addNonPayerKey(AccountID.getDefaultInstance());
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-
-        subject.addNonPayerKeyIfReceiverSigRequired(AccountID.getDefaultInstance(), INVALID_ACCOUNT_ID);
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-    }
-
-    @Test
-    void addsContractIdKey() {
-        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-        given(accountAccess.getKey(otherContractId)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
-        given(accountAccess.getKeyIfReceiverSigRequired(otherContractId))
-                .willReturn(new KeyOrLookupFailureReason(otherKey, null));
-
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
-
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-
-        subject.addNonPayerKey(otherContractId);
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(otherKey), subject.getRequiredNonPayerKeys());
-
-        subject.addNonPayerKeyIfReceiverSigRequired(otherContractId);
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(otherKey, otherKey), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-    }
-
-    @Test
-    void doesntLookupIfMetaIsFailedAlready() {
-        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
-
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        subject.status(INVALID_ACCOUNT_ID);
-
-        subject.addNonPayerKey(otherAccountId);
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        subject.status(INVALID_ACCOUNT_ID);
-
-        subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        subject.status(INVALID_ACCOUNT_ID);
-
-        subject.addNonPayerKey(otherContractId);
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        subject.status(INVALID_CONTRACT_ID);
-
-        subject.addNonPayerKeyIfReceiverSigRequired(otherContractId);
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        subject.status(INVALID_CONTRACT_ID);
-    }
-
-    @Test
-    void looksUpOtherKeysIfMetaIsNotFailedAlready() {
-        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-
-        given(accountAccess.getKey(otherAccountId)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
-
-        subject.addNonPayerKey(otherAccountId);
-        assertIterableEquals(List.of(otherKey), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-
-        given(accountAccess.getKeyIfReceiverSigRequired(otherAccountId))
-                .willReturn(new KeyOrLookupFailureReason(otherKey, null));
-        subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(otherKey, otherKey), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-    }
-
-    @Test
-    void doesntFailForInvalidAccount() {
-        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer)
-                .addNonPayerKey(AccountID.newBuilder().setAccountNum(0L).build());
-
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-    }
-
-    @Test
-    void doesntFailForInvalidContract() {
-        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
-
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-    }
-
-    @Test
-    void doesntFailForAliasedAccount() {
-        final var alias =
-                AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("test")).build();
-        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-        given(accountAccess.getKey(alias)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer).addNonPayerKey(alias);
-
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(payerKey), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-    }
-
-    @Test
-    void doesntFailForAliasedContract() {
-        final var alias = ContractID.newBuilder()
-                .setEvmAddress(ByteString.copyFromUtf8("test"))
-                .build();
-        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-        given(accountAccess.getKey(alias)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
-
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer).addNonPayerKey(alias);
-
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(otherKey), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-    }
-
-    @Test
-    void failsForInvalidAlias() {
-        final var alias =
-                AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("test")).build();
-        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-        given(accountAccess.getKey(alias)).willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
-
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer).addNonPayerKey(alias);
-
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(INVALID_ACCOUNT_ID, subject.getStatus());
-    }
-
-    @Test
-    void setsDefaultFailureStatusIfFailedStatusIsNull() {
-        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-
-        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
-        assertEquals(payerKey, subject.getPayerKey());
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(OK, subject.getStatus());
-
-        given(accountAccess.getKey(otherAccountId)).willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
-        subject.addNonPayerKey(otherAccountId);
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(INVALID_ACCOUNT_ID, subject.getStatus());
-
-        // only for testing , resetting the status to OK
-        subject.status(OK);
-        given(accountAccess.getKeyIfReceiverSigRequired(otherAccountId))
-                .willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
-        subject.addNonPayerKey(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.getStatus());
-
-        // only for testing , resetting the status to OK
-        subject.status(OK);
-        subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, null);
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(INVALID_ACCOUNT_ID, subject.getStatus());
-
-        // only for testing , resetting the status to OK
-        subject.status(OK);
-        subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
-        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
-        assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.getStatus());
+        subject = new PreHandleContext(accountAccess, createAccountTransaction());
+        assertThrowsPreCheck(() -> subject.requireKeyOrThrow(alias, INVALID_ACCOUNT_ID), INVALID_ACCOUNT_ID);
     }
 
     private TransactionBody createAccountTransaction() {
-        final var transactionID =
-                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
-                .setKey(key)
-                .setReceiverSigRequired(true)
-                .setMemo("Create Account")
+                .key(key)
+                .receiverSigRequired(true)
+                .memo("Create Account")
                 .build();
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoCreateAccount(createTxnBody)
+                .transactionID(transactionID)
+                .cryptoCreateAccount(createTxnBody)
                 .build();
     }
 }

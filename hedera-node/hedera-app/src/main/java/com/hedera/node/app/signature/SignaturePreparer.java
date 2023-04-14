@@ -16,17 +16,18 @@
 
 package com.hedera.node.app.signature;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.state.HederaState;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface SignaturePreparer {
     ResponseCodeEnum syncGetPayerSigStatus(@NonNull Transaction transaction);
@@ -87,5 +88,5 @@ public interface SignaturePreparer {
             @NonNull HederaState state,
             @NonNull byte[] txBodyBytes,
             @NonNull SignatureMap signatureMap,
-            @NonNull List<HederaKey> keys);
+            @NonNull Set<HederaKey> keys);
 }

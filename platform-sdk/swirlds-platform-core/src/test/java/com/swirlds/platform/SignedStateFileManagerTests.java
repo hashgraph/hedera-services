@@ -53,6 +53,7 @@ import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
+import com.swirlds.platform.state.signed.SavedStateMetadata;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -74,6 +75,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -197,7 +199,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                consumer);
+                consumer,
+                x -> {});
         manager.start();
 
         manager.saveSignedStateToDisk(signedState);
@@ -244,7 +247,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                consumer);
+                consumer,
+                x -> {});
         manager.start();
 
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
@@ -295,7 +299,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                consumer);
+                consumer,
+                x -> {});
         manager.start();
 
         manager.dumpState(signedState, "iss", false);
@@ -391,7 +396,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                consumer);
+                consumer,
+                x -> {});
         manager.start();
 
         final List<SignedState> states = new ArrayList<>();
@@ -452,6 +458,8 @@ class SignedStateFileManagerTests {
         final int averageTimeBetweenStates = 10;
         final double standardDeviationTimeBetweenStates = 0.5;
 
+        final AtomicLong minimumGenerationNonAncientSetByCallback = new AtomicLong();
+
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context,
                 getStaticThreadManager(),
@@ -460,7 +468,11 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ssw, path, success) -> ssw.release());
+                (ssw, path, success) -> ssw.release(),
+                x -> {
+                    assertTrue(x > minimumGenerationNonAncientSetByCallback.get());
+                    minimumGenerationNonAncientSetByCallback.set(x);
+                });
         manager.start();
 
         Instant timestamp;
@@ -470,7 +482,7 @@ class SignedStateFileManagerTests {
 
         if (startAtGenesis) {
             timestamp = Instant.EPOCH;
-            firstRound = 0;
+            firstRound = 1;
             nextBoundary = null;
         } else {
             firstRound = random.nextInt(1000);
@@ -497,6 +509,8 @@ class SignedStateFileManagerTests {
             final SignedState signedState = new RandomSignedStateGenerator(random)
                     .setConsensusTimestamp(timestamp)
                     .setRound(round)
+                    //                    .setMinimumGenerationNonAncient(random.nextLong((round + 1) * 100, (round + 1)
+                    // * 101)) // TODO
                     .build();
 
             manager.determineIfStateShouldBeSaved(signedState);
@@ -515,6 +529,16 @@ class SignedStateFileManagerTests {
 
                             final SavedStateInfo[] currentStatesOnDisk =
                                     SignedStateFileReader.getSavedStateFiles(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+
+                            final SavedStateMetadata oldestMetadata =
+                                    currentStatesOnDisk[currentStatesOnDisk.length - 1].getMetadata();
+
+                            assertEquals(
+                                    oldestMetadata.minimumGenerationNonAncient(),
+                                    manager.getMinimumGenerationNonAncientForOldestState());
+                            assertEquals(
+                                    minimumGenerationNonAncientSetByCallback.get(),
+                                    manager.getMinimumGenerationNonAncientForOldestState());
 
                             assertTrue(
                                     currentStatesOnDisk.length <= statesOnDisk,
@@ -577,7 +601,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ssw, path, success) -> ssw.release());
+                (ssw, path, success) -> ssw.release(),
+                x -> {});
         manager.start();
 
         final Path statesDirectory =
@@ -612,14 +637,14 @@ class SignedStateFileManagerTests {
 
         // Save a bunch of states. After each time, check the states that are still on disk.
         final List<SignedState> states = new ArrayList<>();
-        for (int round = 0; round < count; round++) {
+        for (int round = 1; round <= count; round++) {
             final SignedState signedState =
                     new RandomSignedStateGenerator(random).setRound(round).build();
             states.add(signedState);
             manager.saveSignedStateToDisk(signedState);
 
             // Verify that the states we want to be on disk are still on disk
-            for (int i = 0; i < statesOnDisk; i++) {
+            for (int i = 1; i <= statesOnDisk; i++) {
                 final int roundToValidate = round - i;
                 if (roundToValidate < 0) {
                     continue;
@@ -639,7 +664,7 @@ class SignedStateFileManagerTests {
 
             // Verify that old states are properly deleted
             assertEventuallyEquals(
-                    Math.min(statesOnDisk, round + 1),
+                    Math.min(statesOnDisk, round),
                     () -> {
                         try {
                             return (int) Files.list(statesDirectory).count();

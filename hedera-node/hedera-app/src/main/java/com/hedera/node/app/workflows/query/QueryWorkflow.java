@@ -16,9 +16,10 @@
 
 package com.hedera.node.app.workflows.query;
 
-import com.hedera.node.app.SessionContext;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 
 /** A workflow for processing queries. */
 public interface QueryWorkflow {
@@ -26,11 +27,8 @@ public interface QueryWorkflow {
     /**
      * Called to handle a single query.
      *
-     * @param session The per-request {@link SessionContext}.
-     * @param requestBuffer The raw protobuf query bytes. Must be a {@link com.hederahashgraph.api.proto.java.Query}
-     * object.
+     * @param requestBuffer The raw protobuf query bytes. Must be a {@link Query} object.
      * @param responseBuffer The raw protobuf response bytes.
      */
-    void handleQuery(
-            @NonNull SessionContext session, @NonNull ByteBuffer requestBuffer, @NonNull ByteBuffer responseBuffer);
+    void handleQuery(@NonNull Bytes requestBuffer, @NonNull BufferedData responseBuffer);
 }

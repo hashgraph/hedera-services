@@ -16,14 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,27 +31,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCallHandlerTest extends ContractHandlerTestBase {
-    private ContractCallHandler subject = new ContractCallHandler();
+    private final ContractCallHandler subject = new ContractCallHandler();
 
     @Test
     @DisplayName("Succeeds for valid payer account")
-    void validPayer() {
+    void validPayer() throws PreCheckException {
         final var txn = contractCallTransaction();
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
-        basicMetaAssertions(context, 0, false, OK);
-        assertThat(context.getPayerKey()).isEqualTo(payerKey);
+        basicMetaAssertions(context, 0);
+        assertThat(context.payerKey()).isEqualTo(payerKey);
     }
 
     private TransactionBody contractCallTransaction() {
-        final var transactionID =
-                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setGas(1_234)
-                        .setAmount(1_234L)
-                        .setContractID(targetContract))
+                .transactionID(transactionID)
+                .contractCall(ContractCallTransactionBody.newBuilder()
+                        .gas(1_234)
+                        .amount(1_234L)
+                        .contractID(targetContract))
                 .build();
     }
 }

@@ -17,12 +17,14 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
@@ -30,14 +32,9 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -48,11 +45,11 @@ public class CryptoHandlerTestBase {
     protected static final String ACCOUNTS = "ACCOUNTS";
     protected static final String ALIASES = "ALIASES";
     protected final Key key = A_COMPLEX_KEY;
-    protected final AccountID payer = asAccount("0.0.3");
+    protected final AccountID payer = AccountID.newBuilder().accountNum(3).build();
     protected final Timestamp consensusTimestamp =
-            Timestamp.newBuilder().setSeconds(1_234_567L).build();
+            Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
-    protected final Long payerNum = payer.getAccountNum();
+    protected final Long payerNum = payer.accountNum();
 
     @Mock
     protected ReadableKVState<String, EntityNumValue> aliases;
@@ -69,9 +66,6 @@ public class CryptoHandlerTestBase {
     @Mock
     protected CryptoSignatureWaiversImpl waivers;
 
-    @Mock
-    protected TransactionMetadata metaToHandle;
-
     protected ReadableAccountStore store;
 
     @BeforeEach
@@ -82,14 +76,8 @@ public class CryptoHandlerTestBase {
         setUpPayer();
     }
 
-    protected void basicMetaAssertions(
-            final PreHandleContext context,
-            final int keysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertThat(context.getRequiredNonPayerKeys()).hasSize(keysSize);
-        assertThat(context.failed()).isEqualTo(failed);
-        assertThat(context.getStatus()).isEqualTo(failureStatus);
+    protected void basicMetaAssertions(final PreHandleContext context, final int keysSize) {
+        assertThat(context.requiredNonPayerKeys()).hasSize(keysSize);
     }
 
     protected void setUpPayer() {

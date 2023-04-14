@@ -16,11 +16,15 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -29,21 +33,21 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_SIGN}.
  */
 @Singleton
 public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
     @Inject
-    public ScheduleSignHandler() {}
+    public ScheduleSignHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#SCHEDULE_SIGN} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @param scheduleStore the {@link ReadableScheduleStore} to use for schedule resolution
      * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
      *     txn
@@ -52,24 +56,24 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
     public void preHandle(
             @NonNull final PreHandleContext context,
             @NonNull final ReadableScheduleStore scheduleStore,
-            @NonNull final PreHandleDispatcher dispatcher) {
+            @NonNull final PreHandleDispatcher dispatcher)
+            throws PreCheckException {
         requireNonNull(context);
         requireNonNull(scheduleStore);
         requireNonNull(dispatcher);
-        final var txn = context.getTxn();
-        final var op = txn.getScheduleSign();
-        final var id = op.getScheduleID();
+        final var txn = context.body();
+        final var op = txn.scheduleSignOrThrow();
+        final var id = op.scheduleIDOrElse(ScheduleID.DEFAULT);
 
         final var scheduleLookupResult = scheduleStore.get(id);
         if (scheduleLookupResult.isEmpty()) {
-            context.status(INVALID_SCHEDULE_ID);
-            return;
+            throw new PreCheckException(INVALID_SCHEDULE_ID);
         }
 
         final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
         final var optionalPayer = scheduleLookupResult.get().designatedPayer();
-        final var payerForNested =
-                optionalPayer.orElse(scheduledTxn.getTransactionID().getAccountID());
+        final var payerForNested = optionalPayer.orElse(
+                scheduledTxn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
 
         preHandleScheduledTxn(context, scheduledTxn, payerForNested, dispatcher);
     }
@@ -80,11 +84,9 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

@@ -24,6 +24,7 @@ import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesCons
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 
 /**
  * A factory capable of creating instances of {@link StateManagementComponent}.
@@ -85,6 +86,13 @@ public interface StateManagementComponentFactory {
      * @return this
      */
     StateManagementComponentFactory fatalErrorConsumer(FatalErrorConsumer consumer);
+
+    /**
+     * Set the preconsensus event writer.
+     * @param preConsensusEventWriter the preconsensus event writer
+     * @return this
+     */
+    StateManagementComponentFactory setPreConsensusEventWriter(PreConsensusEventWriter preConsensusEventWriter);
 
     /**
      * Builds a new {@link StateManagementComponent} with the provided inputs.
