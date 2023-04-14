@@ -26,10 +26,12 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
  */
+@Singleton
 public class WorkingStateWritableStoreFactory implements WritableStoreFactory {
     private final WorkingStateAccessor stateAccessor;
 

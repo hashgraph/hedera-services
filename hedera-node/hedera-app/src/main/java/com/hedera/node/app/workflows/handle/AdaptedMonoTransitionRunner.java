@@ -28,7 +28,7 @@ import com.hedera.node.app.service.mono.txns.TransitionRunner;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WorkingStateWritableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Set;
@@ -44,7 +44,7 @@ import javax.inject.Singleton;
 public class AdaptedMonoTransitionRunner extends TransitionRunner {
     private final TransactionDispatcher dispatcher;
     private final Set<HederaFunctionality> functionsToDispatch;
-    private final WorkingStateWritableStoreFactory writableStoreFactory;
+    private final WritableStoreFactory writableStoreFactory;
 
     @Inject
     public AdaptedMonoTransitionRunner(
@@ -53,7 +53,7 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final TransitionLogicLookup lookup,
             @NonNull final GlobalStaticProperties staticProperties,
-            @NonNull final WorkingStateWritableStoreFactory storeFactory) {
+            @NonNull final WritableStoreFactory storeFactory) {
         super(ids, txnCtx, lookup);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.functionsToDispatch = Objects.requireNonNull(staticProperties).workflowsEnabled().stream()

@@ -32,6 +32,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * A {@link TransactionDispatcher} subclass that supports use of the {@code mono-service} workflow
+ * in end-to-end tests (EETs) that run with {@code workflows.enabled}.
+ *
+ * <p>This mostly means a "premature" call to {@code topicStore.commit()}; but also requires
+ * transferring information from the {@code recordBuilder} to the {@code txnCtx} for transactions
+ * of type {@code topicCreate} and {@code submitMessage}.
+ */
 @Singleton
 public class MonoTransactionDispatcher extends TransactionDispatcher {
     private final TransactionContext txnCtx;

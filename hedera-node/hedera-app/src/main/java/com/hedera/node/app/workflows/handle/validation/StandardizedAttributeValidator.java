@@ -37,6 +37,10 @@ import java.util.function.LongSupplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * An implementation of {@link AttributeValidator} that encapsulates the current policies for
+ * validating attributes of entities, <i>without</i> any use of {@code mono-service} code.
+ */
 @Singleton
 public class StandardizedAttributeValidator implements AttributeValidator {
     public static final int MAX_NESTED_KEY_LEVELS = 15;
@@ -112,6 +116,12 @@ public class StandardizedAttributeValidator implements AttributeValidator {
         }
     }
 
+    /**
+     * Current behavior is to only invalidate a simple key structure if it has no explicit type. Other validations,
+     * like on the number of bytes in the public key; or on the size of the threshold key; are done elsewhere.
+     *
+     * @param key the key to validate
+     */
     private void validateSimple(@NonNull final Key key) {
         if (key.key().kind() == Key.KeyOneOfType.UNSET) {
             throw new HandleException(BAD_ENCODING);
