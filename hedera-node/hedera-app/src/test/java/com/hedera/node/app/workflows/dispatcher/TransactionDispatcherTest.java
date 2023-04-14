@@ -543,7 +543,8 @@ class TransactionDispatcherTest {
     void dispatchesTokenGrantKycAsExpected() {
         given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
 
-        dispatcher.dispatchHandle(HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(
+                HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT, transactionBody, writableStoreFactory);
 
         verify(writableTokenRelStore).commit();
     }
