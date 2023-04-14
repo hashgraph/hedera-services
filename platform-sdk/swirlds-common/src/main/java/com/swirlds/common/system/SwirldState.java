@@ -106,8 +106,7 @@ public interface SwirldState extends MerkleNode {
 
     /**
      * Implementations of the SwirldState should always override this method in production.  The AddressBook returned
-     * should have the same Adddress entries as the configuration AddressBook, but with the stake values updated. The
-     * AddressBook previously saved in the state, if it exists, is provided for reference.
+     * should have the same Adddress entries as the configuration AddressBook, but with the stake values updated.
      * <p>
      * The default implementation of this method is provided for use in testing and to prevent compilation failure of
      * implementing classes that have not yet implemented this method.
