@@ -59,6 +59,7 @@ class QueryComponentTest {
         PlatformContext platformContext = mock(PlatformContext.class);
         when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
+        when(platformContext.getCryptography()).thenReturn(cryptography);
         app = DaggerHederaApp.builder()
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
