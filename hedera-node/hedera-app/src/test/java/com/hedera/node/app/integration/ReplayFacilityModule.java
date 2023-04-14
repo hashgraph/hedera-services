@@ -18,18 +18,20 @@ package com.hedera.node.app.integration;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording.REPLAY_ASSETS_DIR;
 import static com.hedera.node.app.spi.exceptions.HandleException.validateFalse;
 import static com.hedera.node.app.spi.exceptions.HandleException.validateTrue;
 
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.integration.facilities.ReplayAdvancingConsensusNow;
 import com.hedera.node.app.integration.infra.InMemoryWritableStoreFactory;
 import com.hedera.node.app.integration.infra.ReplayFacilityHandleContext;
 import com.hedera.node.app.integration.infra.ReplayFacilityTransactionDispatcher;
+import com.hedera.node.app.integration.infra.RecordingName;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import com.hedera.node.app.service.token.TokenService;
@@ -46,15 +48,13 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.File;
+
 import java.nio.file.Paths;
-import java.util.Optional;
 import java.util.function.LongSupplier;
 import javax.inject.Singleton;
 
 @Module
 public interface ReplayFacilityModule {
-    String REPLAY_ASSETS_DIR = "src/test/resources/replay-assets";
 
     @Binds
     @Singleton
@@ -76,9 +76,11 @@ public interface ReplayFacilityModule {
 
     @Provides
     @Singleton
-    static ReplayAssetRecording provideAssetRecording() {
-        final var recordingName = Optional.ofNullable(System.getProperty("recording.name")).orElse("default");
-        return new ReplayAssetRecording(Paths.get(REPLAY_ASSETS_DIR, recordingName).toFile());
+    static ReplayAssetRecording provideAssetRecording(@NonNull final @RecordingName String recordingName) {
+        final var baseAssetDir = Paths.get(REPLAY_ASSETS_DIR, recordingName);
+        // Skip the hedera-node/ prefix, since we're already running a hedera-app/ unit test
+        final var testAssetDir = baseAssetDir.subpath(1, baseAssetDir.getNameCount());
+        return new ReplayAssetRecording(testAssetDir.toFile());
     }
 
     @Provides
@@ -106,10 +108,10 @@ public interface ReplayFacilityModule {
                     final var accounts = storeFactory
                             .getServiceStates()
                             .get(TokenService.NAME)
-                            .<EntityNum, MerkleAccount>get(TokenServiceImpl.ACCOUNTS_KEY);
+                            .<EntityNum, Account>get(TokenServiceImpl.ACCOUNTS_KEY);
                     final var autoRenewAccount = accounts.get(id.asEntityNum());
                     validateTrue(autoRenewAccount != null, INVALID_AUTORENEW_ACCOUNT);
-                    validateFalse(autoRenewAccount.isDeleted(), ACCOUNT_DELETED);
+                    validateFalse(autoRenewAccount.deleted(), ACCOUNT_DELETED);
                 },
                 attributeValidator,
                 consensusSecondNow,

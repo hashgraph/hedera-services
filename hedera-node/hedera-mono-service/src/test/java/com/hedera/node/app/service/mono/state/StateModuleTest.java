@@ -30,7 +30,10 @@ import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.ledger.ids.SeqNoEntityIdSource;
+import com.hedera.node.app.service.mono.state.logic.ProcessLogicModule;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
+import com.hedera.node.app.service.mono.state.migration.RecordingMigrationManager;
 import com.hedera.node.app.service.mono.state.submerkle.RecordingSequenceNumber;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
@@ -46,6 +49,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StateModuleTest {
+    @Mock
+    private MigrationRecordsManager migrationRecordsManager;
+
+    @Mock
+    private MutableStateChildren stateChildren;
 
     @Mock
     private ScheduleStore scheduleStore;
@@ -141,5 +149,23 @@ class StateModuleTest {
 
         final var keySupplier = StateModule.provideSystemFileKey(properties);
         assertThrows(IllegalStateException.class, keySupplier::get);
+    }
+
+    @Test
+    void usesStandardMigrationManagerIfNotRecordingFacilityMocks() {
+        final var manager = StateModule.provideMigrationRecordsManager(
+                stateChildren, assetRecording, migrationRecordsManager, isRecordingFacilityMocks);
+
+        assertInstanceOf(MigrationRecordsManager.class, manager);
+    }
+
+    @Test
+    void usesRecordingMigrationManagerIfRecordingFacilityMocks() {
+        given(isRecordingFacilityMocks.getAsBoolean()).willReturn(true);
+
+        final var manager = StateModule.provideMigrationRecordsManager(
+                stateChildren, assetRecording, migrationRecordsManager, isRecordingFacilityMocks);
+
+        assertInstanceOf(RecordingMigrationManager.class, manager);
     }
 }

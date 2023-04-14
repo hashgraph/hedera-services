@@ -28,7 +28,7 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.annotations.RunTopLevelTransition;
 import com.hedera.node.app.service.mono.state.annotations.RunTriggeredTransition;
 import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
-import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
+import com.hedera.node.app.service.mono.state.migration.MigrationManager;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.config.PropertyNames;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,7 +52,7 @@ public class ServicesTxnManager {
     private final TransactionContext txnCtx;
     private final SigImpactHistorian sigImpactHistorian;
     private final RecordsHistorian recordsHistorian;
-    private final MigrationRecordsManager migrationRecordsManager;
+    private final MigrationManager migrationManager;
     private final RecordStreaming recordStreaming;
     private final BlockManager blockManager;
     private final RewardCalculator rewardCalculator;
@@ -68,7 +68,7 @@ public class ServicesTxnManager {
             final TransactionContext txnCtx,
             final SigImpactHistorian sigImpactHistorian,
             final RecordsHistorian recordsHistorian,
-            final MigrationRecordsManager migrationRecordsManager,
+            final MigrationManager migrationManager,
             final RecordStreaming recordStreaming,
             final BlockManager blockManager,
             final RewardCalculator rewardCalculator,
@@ -81,7 +81,7 @@ public class ServicesTxnManager {
         this.recordsHistorian = recordsHistorian;
         this.scopedProcessing = scopedProcessing;
         this.sigImpactHistorian = sigImpactHistorian;
-        this.migrationRecordsManager = migrationRecordsManager;
+        this.migrationManager = migrationManager;
         this.scopedTriggeredProcessing = scopedTriggeredProcessing;
         this.blockManager = blockManager;
         this.rewardCalculator = rewardCalculator;
@@ -112,7 +112,7 @@ public class ServicesTxnManager {
                 // The manager will only publish migration records if the MerkleNetworkContext (in
                 // state) shows that it needs to do so; our responsibility here is just to give it
                 // the opportunity
-                migrationRecordsManager.publishMigrationRecords(consensusTime);
+                migrationManager.publishMigrationRecords(consensusTime);
                 needToPublishMigrationRecords = false;
             }
             if (accessor.isTriggeredTxn()) {

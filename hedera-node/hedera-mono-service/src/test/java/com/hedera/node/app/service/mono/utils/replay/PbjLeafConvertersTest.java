@@ -36,8 +36,10 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.fcqueue.FCQueue;
@@ -67,11 +69,13 @@ class PbjLeafConvertersTest {
         assertTrue(pbjTopic.memo().isEmpty());
         assertFalse(pbjTopic.hasAdminKey());
         assertFalse(pbjTopic.hasSubmitKey());
+        assertEquals(ExpiryMeta.NA, pbjTopic.autoRenewAccountNumber());
     }
 
     @Test
     void canConvertTopicWithAllOptionalFields() {
         final var memo = "Some memo text";
+        final var autoRenewId = new EntityId(0, 0, 1234);
         final var adminKey = new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes());
         final var submitKey = new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes());
 
@@ -80,12 +84,14 @@ class PbjLeafConvertersTest {
         topic.setMemo(memo);
         topic.setAdminKey(adminKey);
         topic.setSubmitKey(submitKey);
+        topic.setAutoRenewAccountId(autoRenewId);
 
         final var pbjTopic = PbjLeafConverters.topicFromMerkle(topic);
         assertRequiredFieldsAsExpected(pbjTopic);
         assertEquals(memo, pbjTopic.memo());
         assertEquals(toPbj(adminKey), pbjTopic.adminKey());
         assertEquals(toPbj(submitKey), pbjTopic.submitKey());
+        assertEquals(autoRenewId.num(), pbjTopic.autoRenewAccountNumber());
     }
 
     @Test

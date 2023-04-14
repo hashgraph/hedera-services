@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state;
 
+import static com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording.REPLAY_ASSETS_DIR;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 
 import com.google.protobuf.ByteString;
@@ -55,6 +56,9 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.MigrationManager;
+import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
+import com.hedera.node.app.service.mono.state.migration.RecordingMigrationManager;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
@@ -98,6 +102,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
@@ -119,7 +124,8 @@ public interface StateModule {
     @Provides
     @Singleton
     static ReplayAssetRecording provideReplayAssetRecording() {
-        return new ReplayAssetRecording(new File(ReplayAssetRecording.DEFAULT_REPLAY_ASSETS_DIR));
+        final var recordingName = Optional.ofNullable(System.getProperty("recording.name")).orElse("default");
+        return new ReplayAssetRecording(Paths.get(REPLAY_ASSETS_DIR, recordingName).toFile());
     }
 
     @Provides
@@ -133,6 +139,21 @@ public interface StateModule {
             return new RecordingStatusChangeListener(stateChildren, assetRecording, statusChangeListener);
         } else {
             return statusChangeListener;
+        }
+    }
+
+
+    @Provides
+    @Singleton
+    static MigrationManager provideMigrationRecordsManager(
+            @NonNull final MutableStateChildren stateChildren,
+            @NonNull final ReplayAssetRecording assetRecording,
+            @NonNull final MigrationRecordsManager migrationRecordsManager,
+            @IsFacilityRecordingOn @NonNull final BooleanSupplier isRecordingFacilityMocks) {
+        if (isRecordingFacilityMocks.getAsBoolean()) {
+            return new RecordingMigrationManager(migrationRecordsManager, stateChildren, assetRecording);
+        } else {
+            return migrationRecordsManager;
         }
     }
 

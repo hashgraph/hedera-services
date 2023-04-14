@@ -905,6 +905,7 @@ public final class MiscUtils {
     }
 
     public static boolean isFacilityRecordingOn() {
-        return Objects.equals("true", System.getProperty("recording.mockFacilities"));
+        final var recordingProperty = System.getProperty("recording.mockFacilities");
+        return Objects.equals("true", recordingProperty);
     }
 }

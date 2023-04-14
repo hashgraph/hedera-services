@@ -44,18 +44,4 @@ public interface ProcessLogicModule {
             return standardProcessLogic;
         }
     }
-
-    @Provides
-    @Singleton
-    static MigrationManager provideMigrationRecordsManager(
-            @NonNull final MutableStateChildren stateChildren,
-            @NonNull final ReplayAssetRecording assetRecording,
-            @NonNull final MigrationRecordsManager migrationRecordsManager,
-            @IsFacilityRecordingOn @NonNull final BooleanSupplier isRecordingFacilityMocks) {
-        if (isRecordingFacilityMocks.getAsBoolean()) {
-            return new RecordingMigrationManager(migrationRecordsManager, stateChildren, assetRecording);
-        } else {
-            return migrationRecordsManager;
-        }
-    }
 }

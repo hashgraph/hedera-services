@@ -18,11 +18,15 @@ package com.hedera.node.app.integration;
 
 import com.hedera.node.app.integration.facilities.ReplayAdvancingConsensusNow;
 import com.hedera.node.app.integration.infra.InMemoryWritableStoreFactory;
+import com.hedera.node.app.integration.infra.RecordingName;
 import com.hedera.node.app.integration.infra.ReplayFacilityTransactionDispatcher;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.workflows.handle.HandlersModule;
+import dagger.BindsInstance;
 import dagger.Component;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import javax.inject.Singleton;
 
 @Singleton
@@ -35,7 +39,7 @@ import javax.inject.Singleton;
 public interface ReplayFacilityComponent {
     @Component.Factory
     interface Factory {
-        ReplayFacilityComponent create();
+        ReplayFacilityComponent create(@BindsInstance @RecordingName @NonNull final String recordingName);
     }
 
     ReplayAssetRecording assetRecording();

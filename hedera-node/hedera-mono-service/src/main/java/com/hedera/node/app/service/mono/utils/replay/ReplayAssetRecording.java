@@ -21,6 +21,8 @@ import static java.nio.file.StandardOpenOption.CREATE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +30,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,7 +49,7 @@ import java.util.Set;
  * impossible).
  */
 public class ReplayAssetRecording {
-    public static final String DEFAULT_REPLAY_ASSETS_DIR = "hedera-node/hedera-app/src/test/resources/replay-assets";
+    public static final String REPLAY_ASSETS_DIR = "hedera-app/src/test/resources/replay-assets";
     private final File assetDir;
     private final Set<String> touchedAssets = new HashSet<>();
     private final ObjectMapper om = new ObjectMapper();
@@ -92,14 +95,33 @@ public class ReplayAssetRecording {
         }
     }
 
+    public <T extends Record> List<T> readPbjEncodingsFromReplayAsset(
+            @NonNull final String assetFileName,
+            @NonNull final Codec<T> codec) {
+        try {
+            final var assetPath = replayPathDirOf(assetFileName);
+            try (final var lines = Files.lines(assetPath)) {
+                return lines.map(line -> {
+                    try {
+                        return codec.parse(BufferedData.wrap(Base64.getDecoder().decode(line)));
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                }).toList();
+            }
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public List<String> readPlaintextLinesFromReplayAsset(@NonNull final String assetFileName) {
         try {
             final var assetPath = replayPathDirOf(assetFileName);
             try (final var lines = Files.lines(assetPath)) {
                 return lines.toList();
             }
-        } catch (final Exception e) {
-            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 

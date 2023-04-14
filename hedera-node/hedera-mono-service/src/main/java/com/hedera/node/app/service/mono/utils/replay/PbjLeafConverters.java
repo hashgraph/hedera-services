@@ -27,12 +27,15 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 
 public class PbjLeafConverters {
     private PbjLeafConverters() {
@@ -55,6 +58,11 @@ public class PbjLeafConverters {
         }
         if (topic.hasSubmitKey()) {
             builder.submitKey(PbjConverter.toPbj(topic.getSubmitKey()));
+        }
+        if (topic.hasAutoRenewAccountId()) {
+            builder.autoRenewAccountNumber(topic.getAutoRenewAccountId().num());
+        } else {
+            builder.autoRenewAccountNumber(NA);
         }
         return builder.build();
     }

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.service.mono.utils.replay.ConsensusTxn;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
@@ -25,6 +26,8 @@ import java.util.Base64;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import static com.hedera.node.app.service.mono.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 /**
  * A version of {@link ProcessLogic} that records all observed consensus transactions to a
@@ -49,7 +52,10 @@ public class RecordingProcessLogic implements ProcessLogic {
         final var next = new ConsensusTxn();
         next.setB64Transaction(Base64.getEncoder().encodeToString(platformTxn.getContents()));
         next.setMemberId(submittingMember);
-        next.setConsensusTimestamp(platformTxn.getConsensusTimestamp().toString());
+        final var nominalConsensusTime = platformTxn.getConsensusTimestamp()
+                .minusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS)
+                .plusNanos(3);
+        next.setConsensusTimestamp(nominalConsensusTime.toString());
         assetRecording.appendJsonToAsset(REPLAY_TRANSACTIONS_ASSET, next);
         delegate.incorporateConsensusTxn(platformTxn, submittingMember);
     }

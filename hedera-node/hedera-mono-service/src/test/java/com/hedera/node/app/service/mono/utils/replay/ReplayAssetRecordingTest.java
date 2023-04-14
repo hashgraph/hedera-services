@@ -16,13 +16,16 @@
 
 package com.hedera.node.app.service.mono.utils.replay;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toB64Encoding;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hapi.node.state.consensus.Topic;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,14 +73,22 @@ class ReplayAssetRecordingTest {
     void plaintextAppendRecreatesOnFirstTouchAndFirstTouchOnly() throws IOException {
         Files.write(Paths.get(assetDir.toString(), "foo.txt"), List.of("not-a", "not-b"));
 
-        subject.appendPlaintextToAsset("foo.txt", "a");
-        subject.appendPlaintextToAsset("foo.txt", "b");
+        final var a = Topic.newBuilder().memo("a").build();
+        final var b = Topic.newBuilder().memo("b").build();
 
-        final var foos = subject.readPlaintextLinesFromReplayAsset("foo.txt");
+        subject.appendPlaintextToAsset("foo.txt", toB64Encoding(a, Topic.class));
+        subject.appendPlaintextToAsset("foo.txt", toB64Encoding(b, Topic.class));
+
+        final var encodedFoos = subject.readPlaintextLinesFromReplayAsset("foo.txt");
+        final var foos = subject.readPbjEncodingsFromReplayAsset("foo.txt", Topic.PROTOBUF);
+
+        assertEquals(2, encodedFoos.size());
+        assertEquals("QgFh", encodedFoos.get(0));
+        assertEquals("QgFi", encodedFoos.get(1));
 
         assertEquals(2, foos.size());
-        assertEquals("a", foos.get(0));
-        assertEquals("b", foos.get(1));
+        assertEquals(a, foos.get(0));
+        assertEquals(b, foos.get(1));
     }
 
     private static class Foo {
