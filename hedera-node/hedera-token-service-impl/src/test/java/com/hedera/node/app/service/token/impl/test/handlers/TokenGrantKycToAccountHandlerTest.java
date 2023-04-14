@@ -203,7 +203,6 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
             subject.handle(txnBody, tokenRelStore);
 
             verify(tokenRelStore).put(newTokenRelationBuilder().kycGranted(true).build());
-            verify(tokenRelStore).commit();
         }
 
         private TokenRelation.Builder newTokenRelationBuilder() {
