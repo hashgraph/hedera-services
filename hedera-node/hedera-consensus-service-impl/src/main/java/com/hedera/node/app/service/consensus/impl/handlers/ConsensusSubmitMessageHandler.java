@@ -24,11 +24,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
@@ -41,6 +41,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessage
 import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -76,19 +77,22 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore) {
+    public void preHandle(
+            @NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
+            throws PreCheckException {
         requireNonNull(context);
         requireNonNull(topicStore);
 
-        final var op = context.getTxn().consensusSubmitMessageOrThrow();
-        final var topicMeta = topicStore.getTopicMetadata(op.topicIDOrElse(TopicID.DEFAULT));
-        if (topicMeta.failed()) {
-            context.status(ResponseCodeEnum.INVALID_TOPIC_ID);
-            return;
-        }
-
-        final var submitKey = topicMeta.metadata().submitKey();
-        submitKey.ifPresent(context::addToReqNonPayerKeys);
+        final var op = context.body().consensusSubmitMessageOrThrow();
+        // The topic ID must be present on the transaction and the topic must exist.
+        final var topic = topicStore.getTopicMetadata(op.topicID());
+        mustExist(topic, INVALID_TOPIC_ID);
+        // If a submit key is specified on the topic, then only those transactions signed by that
+        // key can be
+        // submitted to the topic. If there is no submit key, then it is not required on the
+        // transaction.
+        final var submitKey = topic.submitKey();
+        if (submitKey != null) context.requireKey(submitKey);
     }
 
     /**

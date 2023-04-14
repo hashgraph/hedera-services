@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.schedule.impl.Utils.asOrdinary;
 import static java.util.Objects.requireNonNull;
 
@@ -24,6 +23,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -49,24 +49,26 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      * metadata required to, at minimum, validate the signatures of all required signing keys.
      *
      * @param context the {@link PreHandleContext} which collects all information
-     *
      * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
      *     txn
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final PreHandleDispatcher dispatcher) {
+    public void preHandle(
+            @NonNull final PreHandleContext context, @NonNull final PreHandleDispatcher dispatcher)
+            throws PreCheckException {
         requireNonNull(context);
-        final var txn = context.getTxn();
+        final var txn = context.body();
         final var op = txn.scheduleCreateOrThrow();
 
+        // If there is an admin key, then it must have signed the transaction
         if (op.hasAdminKey()) {
-            final var key = asHederaKey(op.adminKeyOrThrow());
-            key.ifPresent(context::addToReqNonPayerKeys);
+            context.requireKey(op.adminKeyOrThrow());
         }
 
-        final var scheduledTxn = asOrdinary(
-                op.scheduledTransactionBodyOrElse(SchedulableTransactionBody.DEFAULT),
-                txn.transactionIDOrElse(TransactionID.DEFAULT));
+        final var scheduledTxn =
+                asOrdinary(
+                        op.scheduledTransactionBodyOrElse(SchedulableTransactionBody.DEFAULT),
+                        txn.transactionIDOrElse(TransactionID.DEFAULT));
 
         /* We need to always add the custom payer to the sig requirements even if it equals the to level transaction
         payer. It is still part of the "other" parties, and we need to know to store it's key with the

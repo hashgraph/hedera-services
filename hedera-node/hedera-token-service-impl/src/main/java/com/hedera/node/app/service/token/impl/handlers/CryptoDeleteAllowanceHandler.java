@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,15 +45,15 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
      * metadata required to, at minimum, validate the signatures of all required signing keys.
      *
      * @param context the {@link PreHandleContext} which collects all information
-     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().cryptoDeleteAllowanceOrThrow();
+        final var op = context.body().cryptoDeleteAllowanceOrThrow();
         // Every owner whose allowances are being removed should sign, if the owner is not payer
         for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
-            context.addNonPayerKey(allowance.ownerOrElse(AccountID.DEFAULT), INVALID_ALLOWANCE_OWNER_ID);
+            context.requireKeyOrThrow(
+                    allowance.ownerOrElse(AccountID.DEFAULT), INVALID_ALLOWANCE_OWNER_ID);
         }
     }
 

@@ -16,16 +16,15 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.test.factories.scenarios.TokenUnpauseScenarios.VALID_UNPAUSE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,17 +39,13 @@ class TokenUnpauseHandlerParityTest extends ParityTestBase {
     }
 
     @Test
-    void tokenUnpauseWithValidExtantTokenScenario() {
+    void tokenUnpauseWithValidExtantTokenScenario() throws PreCheckException {
         final var theTxn = txnFrom(VALID_UNPAUSE_WITH_EXTANT_TOKEN);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_PAUSE_KT.asPbjKey()));
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(context.requiredNonPayerKeys(), containsInAnyOrder(TOKEN_PAUSE_KT.asPbjKey()));
     }
 }

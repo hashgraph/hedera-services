@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,22 +52,21 @@ public class ContractUpdateHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information
-     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().contractUpdateInstanceOrThrow();
+        final var op = context.body().contractUpdateInstanceOrThrow();
 
         if (isAdminSigRequired(op)) {
-            context.addNonPayerKey(op.contractIDOrElse(ContractID.DEFAULT));
+            context.requireKeyOrThrow(op.contractIDOrElse(ContractID.DEFAULT), INVALID_CONTRACT_ID);
         }
         if (hasCryptoAdminKey(op)) {
-            final var key = asHederaKey(op.adminKeyOrThrow());
-            key.ifPresent(context::addToReqNonPayerKeys);
+            context.requireKey(op.adminKeyOrThrow());
         }
-        if (op.hasAutoRenewAccountId() && !op.autoRenewAccountIdOrThrow().equals(AccountID.DEFAULT)) {
-            context.addNonPayerKey(op.autoRenewAccountIdOrThrow(), INVALID_AUTORENEW_ACCOUNT);
+        if (op.hasAutoRenewAccountId()
+                && !op.autoRenewAccountIdOrThrow().equals(AccountID.DEFAULT)) {
+            context.requireKeyOrThrow(op.autoRenewAccountIdOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
     }
 

@@ -27,6 +27,7 @@ import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface SignaturePreparer {
     ResponseCodeEnum syncGetPayerSigStatus(@NonNull Transaction transaction);
@@ -75,11 +76,11 @@ public interface SignaturePreparer {
      * <p>Please note: The parameter list is preliminary and very likely to change once we implement
      * the real {@link SignaturePreparer}.
      *
-     * @param state        the {@link HederaState} that should be used to read the state
-     * @param txBodyBytes  the {@code byte[]} of the {@link
-     *                     com.hederahashgraph.api.proto.java.TransactionBody}
+     * @param state the {@link HederaState} that should be used to read the state
+     * @param txBodyBytes the {@code byte[]} of the {@link
+     *     com.hederahashgraph.api.proto.java.TransactionBody}
      * @param signatureMap the {@link SignatureMap} that is included in the transaction
-     * @param keys         the list of {@link HederaKey}s for which the signature data needs to be prepared
+     * @param keys the list of {@link HederaKey}s for which the signature data needs to be prepared
      * @return a {@link Map} from the provided keys to their respective {@link TransactionSignature}
      */
     @NonNull
@@ -87,5 +88,5 @@ public interface SignaturePreparer {
             @NonNull HederaState state,
             @NonNull byte[] txBodyBytes,
             @NonNull SignatureMap signatureMap,
-            @NonNull List<HederaKey> keys);
+            @NonNull Set<HederaKey> keys);
 }

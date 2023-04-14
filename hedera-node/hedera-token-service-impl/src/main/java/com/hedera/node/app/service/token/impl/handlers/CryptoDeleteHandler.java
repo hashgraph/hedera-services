@@ -16,11 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,16 +45,15 @@ public class CryptoDeleteHandler implements TransactionHandler {
      * required to, at minimum, validate the signatures of all required signing keys.
      *
      * @param context the {@link PreHandleContext} which collects all information
-     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().cryptoDeleteOrThrow();
+        final var op = context.body().cryptoDeleteOrThrow();
         final var deleteAccountId = op.deleteAccountIDOrElse(AccountID.DEFAULT);
         final var transferAccountId = op.transferAccountIDOrElse(AccountID.DEFAULT);
-        context.addNonPayerKey(deleteAccountId)
-                .addNonPayerKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
+        context.requireKeyOrThrow(deleteAccountId, INVALID_ACCOUNT_ID)
+                .requireKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
     }
 
     /**

@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromGrpcKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
@@ -39,6 +38,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.test.handlers.TokenHandlerTestBase;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,40 +69,29 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void getsMerkleTokenIfTokenIdPresent() {
+    void getsMerkleTokenIfTokenIdPresent() throws PreCheckException {
         given(tokens.get(tokenEntityNum)).willReturn(token);
 
-        final var result = subject.getTokenMeta(tokenId);
-
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-
-        final var meta = result.metadata();
-        assertEquals(adminKey, fromGrpcKey(asKeyUnchecked((JKey) meta.adminKey().get())));
-        assertEquals(kycKey, fromGrpcKey(asKeyUnchecked((JKey) meta.kycKey().get())));
-        assertEquals(wipeKey, fromGrpcKey(asKeyUnchecked((JKey) meta.wipeKey().get())));
-        assertEquals(freezeKey, fromGrpcKey(asKeyUnchecked((JKey) meta.freezeKey().get())));
-        assertEquals(supplyKey, fromGrpcKey(asKeyUnchecked((JKey) meta.supplyKey().get())));
-        assertEquals(
-                feeScheduleKey, fromGrpcKey(asKeyUnchecked((JKey) meta.feeScheduleKey().get())));
-        assertEquals(pauseKey, fromGrpcKey(asKeyUnchecked((JKey) meta.pauseKey().get())));
+        final var meta = subject.getTokenMeta(tokenId);
+        assertEquals(adminKey, meta.adminKey());
+        assertEquals(kycKey, meta.kycKey());
+        assertEquals(wipeKey, meta.wipeKey());
+        assertEquals(freezeKey, meta.freezeKey());
+        assertEquals(supplyKey, meta.supplyKey());
+        assertEquals(feeScheduleKey, meta.feeScheduleKey());
+        assertEquals(pauseKey, meta.pauseKey());
         assertFalse(meta.hasRoyaltyWithFallback());
         assertEquals(treasury.accountNum(), meta.treasuryNum());
     }
 
     @Test
-    void getsNullKeyIfMissingAccount() {
+    void getsNullKeyIfMissingAccount() throws PreCheckException {
         given(tokens.get(tokenEntityNum)).willReturn(null);
-
-        final var result = subject.getTokenMeta(tokenId);
-
-        assertTrue(result.failed());
-        assertEquals(INVALID_TOKEN_ID, result.failureReason());
-        assertNull(result.metadata());
+        assertNull(subject.getTokenMeta(tokenId));
     }
 
     @Test
-    void classifiesRoyaltyWithFallback() {
+    void classifiesRoyaltyWithFallback() throws PreCheckException {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
         copy.customFees(
@@ -112,16 +101,14 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
 
         given(tokens.get(tokenEntityNum)).willReturn(copy.build());
 
-        final var result = subject.getTokenMeta(tokenId);
+        final var meta = subject.getTokenMeta(tokenId);
 
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-        assertTrue(result.metadata().hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), result.metadata().treasuryNum());
+        assertTrue(meta.hasRoyaltyWithFallback());
+        assertSame(treasury.accountNum(), meta.treasuryNum());
     }
 
     @Test
-    void classifiesRoyaltyWithNoFallback() {
+    void classifiesRoyaltyWithNoFallback() throws PreCheckException {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
         copy.customFees(
@@ -130,11 +117,9 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
 
         given(tokens.get(tokenEntityNum)).willReturn(copy.build());
 
-        final var result = subject.getTokenMeta(tokenId);
+        final var meta = subject.getTokenMeta(tokenId);
 
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-        assertFalse(result.metadata().hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), result.metadata().treasuryNum());
+        assertFalse(meta.hasRoyaltyWithFallback());
+        assertSame(treasury.accountNum(), meta.treasuryNum());
     }
 }

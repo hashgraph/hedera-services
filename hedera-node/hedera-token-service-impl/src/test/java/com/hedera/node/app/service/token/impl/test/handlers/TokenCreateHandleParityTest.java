@@ -16,8 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.txnFrom;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_MISSING_ADMIN;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_AND_FREEZE;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_ONLY;
@@ -54,13 +58,14 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREA
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,350 +81,340 @@ class TokenCreateHandleParityTest {
     }
 
     @Test
-    void tokenCreateWithAdminKey() {
+    void tokenCreateWithAdminKey() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ADMIN_ONLY);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), TOKEN_ADMIN_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), TOKEN_ADMIN_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateWithAdminKeyAndFreeze() {
+    void tokenCreateWithAdminKeyAndFreeze() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ADMIN_AND_FREEZE);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), TOKEN_ADMIN_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), TOKEN_ADMIN_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateMissingAdminKey() {
+    void tokenCreateMissingAdminKey() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_MISSING_ADMIN);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_TREASURY_KT.asPbjKey()));
+        basicContextAssertions(context, 1);
     }
 
     @Test
-    void tokenCreateMissingTreasuryKey() {
+    void tokenCreateMissingTreasuryKey() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_TREASURY);
 
         final var context = new PreHandleContext(accountStore, txn);
-        subject.preHandle(context);
-
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        basicContextAssertions(context, 0, true, ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
     }
 
     @Test
-    void tokenCreateTreasuryAsPayer() {
+    void tokenCreateTreasuryAsPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_TREASURY_AS_PAYER);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        basicContextAssertions(context, 0, false, ResponseCodeEnum.OK);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        basicContextAssertions(context, 0);
     }
 
     @Test
-    void tokenCreateMissingAutoRenew() {
+    void tokenCreateMissingAutoRenew() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
 
         final var context = new PreHandleContext(accountStore, txn);
-        subject.preHandle(context);
-
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        basicContextAssertions(context, 1, true, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_AUTORENEW_ACCOUNT);
     }
 
     @Test
-    void tokenCreateWithAutoRenew() {
+    void tokenCreateWithAutoRenew() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), MISC_ACCOUNT_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), MISC_ACCOUNT_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateWithAutoRenewAsPayer() {
+    void tokenCreateWithAutoRenewAsPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW_AS_PAYER);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_TREASURY_KT.asPbjKey()));
+        basicContextAssertions(context, 1);
     }
 
     @Test
-    void tokenCreateWithAutoRenewAsCustomPayer() {
+    void tokenCreateWithAutoRenewAsCustomPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW_AS_CUSTOM_PAYER);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(
+                        TOKEN_TREASURY_KT.asPbjKey(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateCustomFeeAndCollectorMissing() {
+    void tokenCreateCustomFeeAndCollectorMissing() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_COLLECTOR);
 
         final var context = new PreHandleContext(accountStore, txn);
-        subject.preHandle(context);
-
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
-        basicContextAssertions(context, 1, true, ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_CUSTOM_FEE_COLLECTOR);
     }
 
     @Test
-    void tokenCreateCustomFixedFeeNoCollectorSigReq() {
+    void tokenCreateCustomFixedFeeNoCollectorSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertTrue(sanityRestoredToPbj(context.getRequiredNonPayerKeys()).contains(TOKEN_TREASURY_KT.asPbjKey()));
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().contains(TOKEN_TREASURY_KT.asPbjKey()));
+        basicContextAssertions(context, 1);
     }
 
     @Test
-    void tokenCreateCustomFixedFeeInvalidCollector() {
+    void tokenCreateCustomFixedFeeInvalidCollector() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_INVALID_COLLECTOR);
 
         final var context = new PreHandleContext(accountStore, txn);
-        subject.preHandle(context);
-
-        basicContextAssertions(context, 1, true, ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR);
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_CUSTOM_FEE_COLLECTOR);
     }
 
     @Test
-    void tokenCreateCustomFixedFeeAndCollectorSigReq() {
+    void tokenCreateCustomFixedFeeAndCollectorSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateCustomFixedFeeNoCollectorSigReqButDenomWildcard() {
-        final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM);
+    void tokenCreateCustomFixedFeeNoCollectorSigReqButDenomWildcard() throws PreCheckException {
+        final var txn =
+                txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), NO_RECEIVER_SIG_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), NO_RECEIVER_SIG_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateCustomFixedFeeCollectorSigReqAndDenomWildcard() {
+    void tokenCreateCustomFixedFeeCollectorSigReqAndDenomWildcard() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_USING_WILDCARD_DENOM);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateCustomFractionalFeeNoCollectorSigReq() {
+    void tokenCreateCustomFractionalFeeNoCollectorSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), NO_RECEIVER_SIG_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), NO_RECEIVER_SIG_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateCustomRoyaltyFeeFallbackNoWildcardButSigReq() {
-        final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ);
+    void tokenCreateCustomRoyaltyFeeFallbackNoWildcardButSigReq() throws PreCheckException {
+        final var txn =
+                txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateCustomRoyaltyFeeFallbackWildcardNoSigReq() {
-        final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ);
+    void tokenCreateCustomRoyaltyFeeFallbackWildcardNoSigReq() throws PreCheckException {
+        final var txn =
+                txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), NO_RECEIVER_SIG_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), NO_RECEIVER_SIG_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateCustomRoyaltyFeeFallbackWildcardAndSigReq() {
-        final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_SIG_REQ);
+    void tokenCreateCustomRoyaltyFeeFallbackWildcardAndSigReq() throws PreCheckException {
+        final var txn =
+                txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateCustomRoyaltyFeeNoFallbackAndNoCollectorSigReq() {
+    void tokenCreateCustomRoyaltyFeeNoFallbackAndNoCollectorSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertTrue(sanityRestoredToPbj(context.getRequiredNonPayerKeys()).contains(TOKEN_TREASURY_KT.asPbjKey()));
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().contains(TOKEN_TREASURY_KT.asPbjKey()));
+        basicContextAssertions(context, 1);
     }
 
     @Test
-    void tokenCreateCustomRoyaltyFeeNoFallbackButSigReq() {
+    void tokenCreateCustomRoyaltyFeeNoFallbackButSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateTreasuryAsCustomPayer() {
+    void tokenCreateTreasuryAsCustomPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
+        basicContextAssertions(context, 1);
     }
 
     @Test
-    void tokenCreateCustomFixedFeeAndCollectorSigReqAndAsPayer() {
+    void tokenCreateCustomFixedFeeAndCollectorSigReqAndAsPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_TREASURY_KT.asPbjKey()));
+        basicContextAssertions(context, 1);
     }
 
     @Test
-    void tokenCreateCustomFixedFeeNoSigRequiredWithPositiveDenom() {
+    void tokenCreateCustomFixedFeeNoSigRequiredWithPositiveDenom() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_DENOMINATION_AND_NO_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_TREASURY_KT.asPbjKey()));
+        basicContextAssertions(context, 1);
     }
 
     @Test
-    void tokenCreateCustomFixedNoDenomWithSigRequired() {
+    void tokenCreateCustomFixedNoDenomWithSigRequired() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
-        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
+        basicContextAssertions(context, 2);
     }
 
     @Test
-    void tokenCreateCustomFixedNoDenomNoSigRequired() {
+    void tokenCreateCustomFixedNoDenomNoSigRequired() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_NO_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertTrue(sanityRestoredToPbj(context.getRequiredNonPayerKeys()).contains(TOKEN_TREASURY_KT.asPbjKey()));
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().contains(TOKEN_TREASURY_KT.asPbjKey()));
+        basicContextAssertions(context, 1);
     }
 
     @Test
-    void tokenCreateCustomRoyaltyFeeNoSigRequiredWithPositiveDenom() {
+    void tokenCreateCustomRoyaltyFeeNoSigRequiredWithPositiveDenom() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_NO_FALLBACK_AND_NO_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_TREASURY_KT.asPbjKey()));
+        basicContextAssertions(context, 1);
     }
 }

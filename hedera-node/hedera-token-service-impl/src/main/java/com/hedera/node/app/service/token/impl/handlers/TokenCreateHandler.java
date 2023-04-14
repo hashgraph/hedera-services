@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,23 +56,21 @@ public class TokenCreateHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information
-     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var tokenCreateTxnBody = context.getTxn().tokenCreationOrThrow();
+        final var tokenCreateTxnBody = context.body().tokenCreationOrThrow();
         if (tokenCreateTxnBody.hasTreasury()) {
             final var treasuryId = tokenCreateTxnBody.treasuryOrThrow();
-            context.addNonPayerKey(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+            context.requireKeyOrThrow(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         }
         if (tokenCreateTxnBody.hasAutoRenewAccount()) {
             final var autoRenewalAccountId = tokenCreateTxnBody.autoRenewAccountOrThrow();
-            context.addNonPayerKey(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
+            context.requireKeyOrThrow(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
         }
         if (tokenCreateTxnBody.hasAdminKey()) {
-            final var adminKey = asHederaKey(tokenCreateTxnBody.adminKeyOrThrow());
-            adminKey.ifPresent(context::addToReqNonPayerKeys);
+            context.requireKey(tokenCreateTxnBody.adminKeyOrThrow());
         }
         final var customFees = tokenCreateTxnBody.customFeesOrElse(emptyList());
         addCustomFeeCollectorKeys(context, customFees);
@@ -98,7 +97,8 @@ public class TokenCreateHandler implements TransactionHandler {
      * @param customFeesList list with the custom fees
      */
     private void addCustomFeeCollectorKeys(
-            @NonNull final PreHandleContext context, @NonNull final List<CustomFee> customFeesList) {
+            @NonNull final PreHandleContext context, @NonNull final List<CustomFee> customFeesList)
+            throws PreCheckException {
 
         for (final var customFee : customFeesList) {
             final var collector = customFee.feeCollectorAccountIdOrElse(AccountID.DEFAULT);
@@ -108,11 +108,12 @@ public class TokenCreateHandler implements TransactionHandler {
             since these are automatically associated to the newly created token. */
             if (customFee.hasFixedFee()) {
                 final var fixedFee = customFee.fixedFeeOrThrow();
-                final var alwaysAdd = fixedFee.hasDenominatingTokenId()
-                        && fixedFee.denominatingTokenIdOrThrow().tokenNum() == 0L;
+                final var alwaysAdd =
+                        fixedFee.hasDenominatingTokenId()
+                                && fixedFee.denominatingTokenIdOrThrow().tokenNum() == 0L;
                 addAccount(context, collector, alwaysAdd);
             } else if (customFee.hasFractionalFee()) {
-                context.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
+                context.requireKeyOrThrow(collector, INVALID_CUSTOM_FEE_COLLECTOR);
             } else {
                 // TODO: Need to validate if this is actually needed
                 final var royaltyFee = customFee.royaltyFeeOrThrow();
@@ -134,11 +135,13 @@ public class TokenCreateHandler implements TransactionHandler {
      * @param collector the ID of the collector
      * @param alwaysAdd if true, will always add the key
      */
-    private void addAccount(final PreHandleContext context, final AccountID collector, final boolean alwaysAdd) {
+    private void addAccount(
+            final PreHandleContext context, final AccountID collector, final boolean alwaysAdd)
+            throws PreCheckException {
         if (alwaysAdd) {
-            context.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
+            context.requireKeyOrThrow(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         } else {
-            context.addNonPayerKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
+            context.requireKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         }
     }
 }

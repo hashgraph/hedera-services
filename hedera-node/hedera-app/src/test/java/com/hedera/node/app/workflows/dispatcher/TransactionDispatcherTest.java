@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -31,6 +32,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
@@ -50,6 +52,7 @@ import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoAddLiveHashTransactionBody;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -134,14 +137,12 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
-import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -293,14 +294,11 @@ class TransactionDispatcherTest {
     @Mock
     private TokenPauseHandler tokenPauseHandler;
 
-    @Mock
-    private TokenUnpauseHandler tokenUnpauseHandler;
+    @Mock private TokenUnpauseHandler tokenUnpauseHandler;
 
-    @Mock
-    private UtilPrngHandler utilPrngHandler;
+    @Mock private UtilPrngHandler utilPrngHandler;
 
-    @Mock
-    private HederaAccountNumbers accountNumbers;
+    @Mock private HederaAccountNumbers accountNumbers;
 
     @Mock private GlobalDynamicProperties dynamicProperties;
 
@@ -309,6 +307,7 @@ class TransactionDispatcherTest {
     @Mock private WritableTopicStore writableTopicStore;
 
     @Mock private WritableTokenStore writableTokenStore;
+
     @Mock private WritableAccountStore writableAccountStore;
 
     @Mock private UsageLimits usageLimits;
@@ -317,67 +316,422 @@ class TransactionDispatcherTest {
 
     @Mock private TransactionContext txnCtx;
 
-    @Mock
-    private TransactionBody transactionBody;
+    @Mock private TransactionBody transactionBody;
+
+    @Mock private Account account;
 
     private TransactionHandlers handlers;
     private TransactionDispatcher dispatcher;
 
-    @BeforeEach
-    void setup(@Mock final ReadableStates readableStates, @Mock HederaKey payerKey) {
-        when(state.createReadableStates(any())).thenReturn(readableStates);
-        when(accountStore.getKey(any(AccountID.class))).thenReturn(KeyOrLookupFailureReason.withKey(payerKey));
+    private static Stream<Arguments> getDispatchParameters() {
+        return Stream.of(
+                // consensus
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .consensusCreateTopic(ConsensusCreateTopicTransactionBody.DEFAULT)
+                                .build(),
+                        (DispatchToHandler)
+                                (handlers, meta) ->
+                                        verify(handlers.consensusCreateTopicHandler())
+                                                .preHandle(meta)),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .consensusUpdateTopic(ConsensusUpdateTopicTransactionBody.DEFAULT)
+                                .build(),
+                        (DispatchToHandler)
+                                (handlers, meta) ->
+                                        verify(handlers.consensusUpdateTopicHandler())
+                                                .preHandle(eq(meta), any()),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .consensusDeleteTopic(
+                                                ConsensusDeleteTopicTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.consensusDeleteTopicHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .consensusSubmitMessage(
+                                                ConsensusSubmitMessageTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.consensusSubmitMessageHandler())
+                                                        .preHandle(eq(meta), any())),
 
-        handlers = new TransactionHandlers(
-                consensusCreateTopicHandler,
-                consensusUpdateTopicHandler,
-                consensusDeleteTopicHandler,
-                consensusSubmitMessageHandler,
-                contractCreateHandler,
-                contractUpdateHandler,
-                contractCallHandler,
-                contractDeleteHandler,
-                contractSystemDeleteHandler,
-                contractSystemUndeleteHandler,
-                etherumTransactionHandler,
-                cryptoCreateHandler,
-                cryptoUpdateHandler,
-                cryptoTransferHandler,
-                cryptoDeleteHandler,
-                cryptoApproveAllowanceHandler,
-                cryptoDeleteAllowanceHandler,
-                cryptoAddLiveHashHandler,
-                cryptoDeleteLiveHashHandler,
-                fileCreateHandler,
-                fileUpdateHandler,
-                fileDeleteHandler,
-                fileAppendHandler,
-                fileSystemDeleteHandler,
-                fileSystemUndeleteHandler,
-                freezeHandler,
-                networkUncheckedSubmitHandler,
-                scheduleCreateHandler,
-                scheduleSignHandler,
-                scheduleDeleteHandler,
-                tokenCreateHandler,
-                tokenUpdateHandler,
-                tokenMintHandler,
-                tokenBurnHandler,
-                tokenDeleteHandler,
-                tokenAccountWipeHandler,
-                tokenFreezeAccountHandler,
-                tokenUnfreezeAccountHandler,
-                tokenGrantKycToAccountHandler,
-                tokenRevokeKycFromAccountHandler,
-                tokenAssociateToAccountHandler,
-                tokenDissociateFromAccountHandler,
-                tokenFeeScheduleUpdateHandler,
-                tokenPauseHandler,
-                tokenUnpauseHandler,
-                utilPrngHandler);
+                        // contract
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .contractCreateInstance(
+                                                ContractCreateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.contractCreateHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .contractUpdateInstance(
+                                                ContractUpdateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.contractUpdateHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .contractCall(ContractCallTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.contractCallHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .contractDeleteInstance(
+                                                ContractDeleteTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.contractDeleteHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .ethereumTransaction(EthereumTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.etherumTransactionHandler())
+                                                        .preHandle(meta)),
 
-        dispatcher = new TransactionDispatcher(
-                handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits);
+                        // crypto
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.cryptoCreateHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .cryptoUpdateAccount(CryptoUpdateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.cryptoUpdateHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.cryptoTransferHandler())
+                                                        .preHandle(eq(meta), any(), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .cryptoDelete(CryptoDeleteTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.cryptoDeleteHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .cryptoApproveAllowance(
+                                                CryptoApproveAllowanceTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.cryptoApproveAllowanceHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .cryptoDeleteAllowance(
+                                                CryptoDeleteAllowanceTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.cryptoDeleteAllowanceHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .cryptoAddLiveHash(CryptoAddLiveHashTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.cryptoAddLiveHashHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .cryptoDeleteLiveHash(
+                                                CryptoDeleteLiveHashTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.cryptoDeleteLiveHashHandler())
+                                                        .preHandle(meta)),
+
+                        // file
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .fileCreate(FileCreateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.fileCreateHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .fileUpdate(FileUpdateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.fileUpdateHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .fileDelete(FileDeleteTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.fileDeleteHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .fileAppend(FileAppendTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.fileAppendHandler())
+                                                        .preHandle(meta)),
+
+                        // freeze
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .freeze(FreezeTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.freezeHandler())
+                                                        .preHandle(meta, any())),
+
+                        // network
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .uncheckedSubmit(UncheckedSubmitBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.networkUncheckedSubmitHandler())
+                                                        .preHandle(meta)),
+
+                        // schedule
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .scheduleCreate(ScheduleCreateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.scheduleCreateHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .scheduleSign(ScheduleSignTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.scheduleSignHandler())
+                                                        .preHandle(eq(meta), any(), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .scheduleCreate(ScheduleCreateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.scheduleDeleteHandler())
+                                                        .preHandle(eq(meta), any())),
+
+                        // token
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenCreation(TokenCreateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenCreateHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenUpdate(TokenUpdateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenUpdateHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenMint(TokenMintTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenMintHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenBurn(TokenBurnTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenBurnHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenDeletion(TokenDeleteTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenDeleteHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenWipe(TokenWipeAccountTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenAccountWipeHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenFreeze(TokenFreezeAccountTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenFreezeAccountHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenUnfreeze(TokenUnfreezeAccountTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenUnfreezeAccountHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenGrantKyc(TokenGrantKycTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenGrantKycToAccountHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenRevokeKyc(TokenRevokeKycTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenRevokeKycFromAccountHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenAssociate(TokenAssociateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenAssociateToAccountHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenDissociate(TokenDissociateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenDissociateFromAccountHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenFeeScheduleUpdate(
+                                                TokenFeeScheduleUpdateTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenFeeScheduleUpdateHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenPause(TokenPauseTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenPauseHandler())
+                                                        .preHandle(eq(meta), any())),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .tokenUnpause(TokenUnpauseTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.tokenUnpauseHandler())
+                                                        .preHandle(eq(meta), any())),
+
+                        // util
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .utilPrng(UtilPrngTransactionBody.DEFAULT)
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.utilPrngHandler()).preHandle(meta)),
+
+                        // mixed
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .systemDelete(
+                                                SystemDeleteTransactionBody.newBuilder()
+                                                        .contractID(ContractID.DEFAULT)
+                                                        .build())
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.contractSystemDeleteHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .systemDelete(
+                                                SystemDeleteTransactionBody.newBuilder()
+                                                        .fileID(FileID.DEFAULT)
+                                                        .build())
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.fileSystemDeleteHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .systemUndelete(
+                                                SystemUndeleteTransactionBody.newBuilder()
+                                                        .contractID(ContractID.DEFAULT)
+                                                        .build())
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.contractSystemUndeleteHandler())
+                                                        .preHandle(meta)),
+                        Arguments.of(
+                                TransactionBody.newBuilder()
+                                        .systemUndelete(
+                                                SystemUndeleteTransactionBody.newBuilder()
+                                                        .fileID(FileID.DEFAULT)
+                                                        .build())
+                                        .build(),
+                                (DispatchToHandler)
+                                        (handlers, meta) ->
+                                                verify(handlers.fileSystemUndeleteHandler())
+                                                        .preHandle(meta))));
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -403,31 +757,89 @@ class TransactionDispatcherTest {
                 .isInstanceOf(NullPointerException.class);
     }
 
+    @BeforeEach
+    void setup(@Mock final ReadableStates readableStates, @Mock Key payerKey) {
+        when(state.createReadableStates(any())).thenReturn(readableStates);
+        when(accountStore.getAccountById(any(AccountID.class))).thenReturn(account);
+        lenient().when(account.key()).thenReturn(payerKey);
+
+        handlers =
+                new TransactionHandlers(
+                        consensusCreateTopicHandler,
+                        consensusUpdateTopicHandler,
+                        consensusDeleteTopicHandler,
+                        consensusSubmitMessageHandler,
+                        contractCreateHandler,
+                        contractUpdateHandler,
+                        contractCallHandler,
+                        contractDeleteHandler,
+                        contractSystemDeleteHandler,
+                        contractSystemUndeleteHandler,
+                        etherumTransactionHandler,
+                        cryptoCreateHandler,
+                        cryptoUpdateHandler,
+                        cryptoTransferHandler,
+                        cryptoDeleteHandler,
+                        cryptoApproveAllowanceHandler,
+                        cryptoDeleteAllowanceHandler,
+                        cryptoAddLiveHashHandler,
+                        cryptoDeleteLiveHashHandler,
+                        fileCreateHandler,
+                        fileUpdateHandler,
+                        fileDeleteHandler,
+                        fileAppendHandler,
+                        fileSystemDeleteHandler,
+                        fileSystemUndeleteHandler,
+                        freezeHandler,
+                        networkUncheckedSubmitHandler,
+                        scheduleCreateHandler,
+                        scheduleSignHandler,
+                        scheduleDeleteHandler,
+                        tokenCreateHandler,
+                        tokenUpdateHandler,
+                        tokenMintHandler,
+                        tokenBurnHandler,
+                        tokenDeleteHandler,
+                        tokenAccountWipeHandler,
+                        tokenFreezeAccountHandler,
+                        tokenUnfreezeAccountHandler,
+                        tokenGrantKycToAccountHandler,
+                        tokenRevokeKycFromAccountHandler,
+                        tokenAssociateToAccountHandler,
+                        tokenDissociateFromAccountHandler,
+                        tokenFeeScheduleUpdateHandler,
+                        tokenPauseHandler,
+                        tokenUnpauseHandler,
+                        utilPrngHandler);
+
+        dispatcher = new TransactionDispatcher(
+                handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits);
+    }
+
     @SuppressWarnings("ConstantConditions")
     @Test
-    void testDispatchWithIllegalParameters() {
+    void testDispatchWithIllegalParameters() throws PreCheckException {
         // given
         final var payer = AccountID.newBuilder().build();
         final var tracker = new ReadableStoreFactory(state);
-        final var validContext = new PreHandleContext(
-                accountStore,
-                TransactionBody.newBuilder()
-                        .fileCreate(FileCreateTransactionBody.newBuilder().build())
-                        .build(),
-                payer);
-        final var invalidSystemDelete = new PreHandleContext(
-                accountStore,
-                TransactionBody.newBuilder()
-                        .systemDelete(SystemDeleteTransactionBody.newBuilder().build())
-                        .build(),
-                payer);
-        final var invalidSystemUndelete = new PreHandleContext(
-                accountStore,
-                TransactionBody.newBuilder()
-                        .systemUndelete(
-                                SystemUndeleteTransactionBody.newBuilder().build())
-                        .build(),
-                payer);
+        final var validContext =
+                new PreHandleContext(
+                        accountStore,
+                        TransactionBody.newBuilder()
+                                .fileCreate(FileCreateTransactionBody.newBuilder().build())
+                                .build());
+        final var invalidSystemDelete =
+                new PreHandleContext(
+                        accountStore,
+                        TransactionBody.newBuilder()
+                                .systemDelete(SystemDeleteTransactionBody.newBuilder().build())
+                                .build());
+        final var invalidSystemUndelete =
+                new PreHandleContext(
+                        accountStore,
+                        TransactionBody.newBuilder()
+                                .systemUndelete(SystemUndeleteTransactionBody.newBuilder().build())
+                                .build());
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null, validContext))
@@ -441,27 +853,11 @@ class TransactionDispatcherTest {
     }
 
     @Test
-    void testDataNotSetFails() {
+    void testDataNotSetFails() throws PreCheckException {
         // given
         final var txBody = TransactionBody.newBuilder().build();
-        final var payer = AccountID.newBuilder().build();
         final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody, payer);
-
-        // then
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
-                .isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    @Test
-    void testNodeStakeUpdateFails() {
-        // given
-        final var txBody = TransactionBody.newBuilder()
-                .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder().build())
-                .build();
-        final var payer = AccountID.newBuilder().build();
-        final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody, payer);
+        final var context = new PreHandleContext(accountStore, txBody);
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
@@ -496,423 +892,28 @@ class TransactionDispatcherTest {
     }
 
     @Test
+    void testNodeStakeUpdateFails() throws PreCheckException {
+        // given
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder())
+                        .build();
+        final var tracker = new ReadableStoreFactory(state);
+        final var context = new PreHandleContext(accountStore, txBody);
+
+        // then
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
     void dispatchesDeleteTopicAsExpected() {
         given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
 
-        dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_DELETE_TOPIC, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(
+                HederaFunctionality.CONSENSUS_DELETE_TOPIC, transactionBody, writableStoreFactory);
 
         verifyNoInteractions(txnCtx);
-    }
-
-    private static Stream<Arguments> getDispatchParameters() {
-        return Stream.of(
-                // consensus
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .consensusCreateTopic(ConsensusCreateTopicTransactionBody.DEFAULT)
-                                .build(),
-                        (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                (handlers, meta) ->
-                                        verify(handlers.consensusCreateTopicHandler())
-                                                .preHandle(meta)),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .consensusUpdateTopic(ConsensusUpdateTopicTransactionBody.DEFAULT)
-                                .build(),
-                        (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                (handlers, meta) ->
-                                        verify(handlers.consensusUpdateTopicHandler())
-                                                .preHandle(eq(meta), any()),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .consensusDeleteTopic(
-                                                ConsensusDeleteTopicTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.consensusDeleteTopicHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .consensusSubmitMessage(
-                                                ConsensusSubmitMessageTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.consensusSubmitMessageHandler())
-                                                        .preHandle(eq(meta), any())),
-
-                        // contract
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .contractCreateInstance(
-                                                ContractCreateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.contractCreateHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .contractUpdateInstance(
-                                                ContractUpdateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.contractUpdateHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .contractCall(ContractCallTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.contractCallHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .contractDeleteInstance(
-                                                ContractDeleteTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.contractDeleteHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .ethereumTransaction(EthereumTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.etherumTransactionHandler())
-                                                        .preHandle(meta)),
-
-                        // crypto
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.cryptoCreateHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .cryptoUpdateAccount(CryptoUpdateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.cryptoUpdateHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.cryptoTransferHandler())
-                                                        .preHandle(eq(meta), any(), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .cryptoDelete(CryptoDeleteTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.cryptoDeleteHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .cryptoApproveAllowance(
-                                                CryptoApproveAllowanceTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.cryptoApproveAllowanceHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .cryptoDeleteAllowance(
-                                                CryptoDeleteAllowanceTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.cryptoDeleteAllowanceHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .cryptoAddLiveHash(CryptoAddLiveHashTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.cryptoAddLiveHashHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .cryptoDeleteLiveHash(
-                                                CryptoDeleteLiveHashTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.cryptoDeleteLiveHashHandler())
-                                                        .preHandle(meta)),
-
-                        // file
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .fileCreate(FileCreateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.fileCreateHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .fileUpdate(FileUpdateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.fileUpdateHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .fileDelete(FileDeleteTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.fileDeleteHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .fileAppend(FileAppendTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.fileAppendHandler())
-                                                        .preHandle(meta)),
-
-                        // freeze
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .freeze(FreezeTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.freezeHandler())
-                                                        .preHandle(meta, any())),
-
-                        // network
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .uncheckedSubmit(UncheckedSubmitBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.networkUncheckedSubmitHandler())
-                                                        .preHandle(meta)),
-
-                        // schedule
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .scheduleCreate(ScheduleCreateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.scheduleCreateHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .scheduleSign(ScheduleSignTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.scheduleSignHandler())
-                                                        .preHandle(eq(meta), any(), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .scheduleCreate(ScheduleCreateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.scheduleDeleteHandler())
-                                                        .preHandle(eq(meta), any())),
-
-                        // token
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenCreation(TokenCreateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenCreateHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenUpdate(TokenUpdateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenUpdateHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenMint(TokenMintTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenMintHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenBurn(TokenBurnTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenBurnHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenDeletion(TokenDeleteTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenDeleteHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenWipe(TokenWipeAccountTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenAccountWipeHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenFreeze(TokenFreezeAccountTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenFreezeAccountHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenUnfreeze(TokenUnfreezeAccountTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenUnfreezeAccountHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenGrantKyc(TokenGrantKycTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenGrantKycToAccountHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenRevokeKyc(TokenRevokeKycTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenRevokeKycFromAccountHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenAssociate(TokenAssociateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenAssociateToAccountHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenDissociate(TokenDissociateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenDissociateFromAccountHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenFeeScheduleUpdate(
-                                                TokenFeeScheduleUpdateTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenFeeScheduleUpdateHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenPause(TokenPauseTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenPauseHandler())
-                                                        .preHandle(eq(meta), any())),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .tokenUnpause(TokenUnpauseTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.tokenUnpauseHandler())
-                                                        .preHandle(eq(meta), any())),
-
-                        // util
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .utilPrng(UtilPrngTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.utilPrngHandler()).preHandle(meta)),
-
-                        // mixed
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .systemDelete(
-                                                SystemDeleteTransactionBody.newBuilder()
-                                                        .contractID(ContractID.DEFAULT)
-                                                        .build())
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.contractSystemDeleteHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .systemDelete(
-                                                SystemDeleteTransactionBody.newBuilder()
-                                                        .fileID(FileID.DEFAULT)
-                                                        .build())
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.fileSystemDeleteHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .systemUndelete(
-                                                SystemUndeleteTransactionBody.newBuilder()
-                                                        .contractID(ContractID.DEFAULT)
-                                                        .build())
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.contractSystemUndeleteHandler())
-                                                        .preHandle(meta)),
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .systemUndelete(
-                                                SystemUndeleteTransactionBody.newBuilder()
-                                                        .fileID(FileID.DEFAULT)
-                                                        .build())
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>)
-                                        (handlers, meta) ->
-                                                verify(handlers.fileSystemUndeleteHandler())
-                                                        .preHandle(meta))));
     }
 
     @Test
@@ -967,16 +968,6 @@ class TransactionDispatcherTest {
     }
 
     @Test
-    void dispatchesCryptoCreateAsExpected() {
-        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
-
-        dispatcher.dispatchHandle(
-                HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory);
-
-        verify(writableAccountStore).commit();
-    }
-
-    @Test
     void cannotDispatchUnsupportedOperations() {
         assertThatThrownBy(
                         () ->
@@ -989,18 +980,21 @@ class TransactionDispatcherTest {
 
     @ParameterizedTest
     @MethodSource("getDispatchParameters")
-    void testPreHandleWithPayer(
-            final TransactionBody txBody,
-            final BiConsumer<TransactionHandlers, PreHandleContext> verification) {
+    void testPreHandleWithPayer(final TransactionBody txBody, final DispatchToHandler verification)
+            throws PreCheckException {
         // given
-        final var payer = AccountID.newBuilder().build();
         final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody, payer);
+        final var context = new PreHandleContext(accountStore, txBody);
 
         // when
         dispatcher.dispatchPreHandle(tracker, context);
 
         // then
-        verification.accept(this.handlers, context);
+        verification.dispatchTo(this.handlers, context);
+    }
+
+    private interface DispatchToHandler {
+        void dispatchTo(TransactionHandlers handlers, PreHandleContext meta)
+                throws PreCheckException;
     }
 }

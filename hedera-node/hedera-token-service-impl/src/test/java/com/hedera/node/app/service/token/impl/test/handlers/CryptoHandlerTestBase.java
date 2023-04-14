@@ -26,7 +26,6 @@ import static org.mockito.Mockito.lenient;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
@@ -96,14 +95,8 @@ public class CryptoHandlerTestBase {
         refreshStoresWithCurrentTokenOnlyInReadable();
     }
 
-    protected void basicMetaAssertions(
-            final PreHandleContext context,
-            final int keysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertThat(context.getRequiredNonPayerKeys()).hasSize(keysSize);
-        assertThat(context.failed()).isEqualTo(failed);
-        assertThat(context.getStatus()).isEqualTo(failureStatus);
+    protected void basicMetaAssertions(final PreHandleContext context, final int keysSize) {
+        assertThat(context.requiredNonPayerKeys()).hasSize(keysSize);
     }
 
     protected void refreshStoresWithCurrentTokenOnlyInReadable() {
@@ -176,7 +169,7 @@ public class CryptoHandlerTestBase {
                 .build();
     }
 
-    private void givenValidaAccount() {
+    private void givenValidAccount() {
         account =
                 new Account(
                         accountNum,

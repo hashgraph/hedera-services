@@ -49,14 +49,15 @@ class AdaptedMonoTransitionRunnerTest {
     //    @BeforeEach
     //    void setUp() {
     //        given(staticProperties.workflowsEnabled()).willReturn(Set.of(ConsensusCreateTopic));
-    //        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup, staticProperties,
+    //        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup,
+    // staticProperties,
     // storeFactory);
     //    }
     //
     //    @Test
     //    void delegatesConsensusCreateAndTracksSuccess() {
     //        given(accessor.getFunction()).willReturn(ConsensusCreateTopic);
-    //        given(accessor.getTxn()).willReturn(mockTxn);
+    //        given(accessor.body()).willReturn(mockTxn);
     //
     //        subject.tryTransition(accessor);
     //
@@ -67,7 +68,7 @@ class AdaptedMonoTransitionRunnerTest {
     //    @Test
     //    void delegatesConsensusCreateAndTracksFailureIfThrows() {
     //        given(accessor.getFunction()).willReturn(ConsensusCreateTopic);
-    //        given(accessor.getTxn()).willReturn(mockTxn);
+    //        given(accessor.body()).willReturn(mockTxn);
     //        willThrow(new HandleStatusException(INVALID_EXPIRATION_TIME))
     //                .given(dispatcher)
     //                .dispatchHandle(ConsensusCreateTopic, mockTxn, storeFactory);
@@ -81,7 +82,7 @@ class AdaptedMonoTransitionRunnerTest {
     //    @Test
     //    void doesNotDelegateOthers() {
     //        given(accessor.getFunction()).willReturn(CryptoTransfer);
-    //        given(accessor.getTxn()).willReturn(mockTxn);
+    //        given(accessor.body()).willReturn(mockTxn);
     //        given(lookup.lookupFor(CryptoTransfer, mockTxn)).willReturn(Optional.empty());
     //
     //        assertFalse(subject.tryTransition(accessor));

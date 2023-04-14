@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapKey;
+import static java.util.stream.Collectors.toSet;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.commons.codec.DecoderException;
 
 // This class should not exist. Right now we have code that needs to map from a JKey to a
@@ -62,5 +64,22 @@ public class Utils {
         } catch (DecoderException ignore) {
             return Optional.empty();
         }
+    }
+    /**
+     * Converts a set of {@link com.hedera.hapi.node.base.Key} to a set of {@link HederaKey}
+     *
+     * @param requiredNonPayerKeys
+     * @return
+     */
+    public static Set<HederaKey> asHederaKeys(
+            Set<com.hedera.hapi.node.base.Key> requiredNonPayerKeys) {
+        if (requiredNonPayerKeys == null) {
+            return Set.of();
+        }
+        return requiredNonPayerKeys.stream()
+                .map(Utils::asHederaKey)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(toSet());
     }
 }

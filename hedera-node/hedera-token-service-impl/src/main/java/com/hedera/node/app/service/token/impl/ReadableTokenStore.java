@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
@@ -29,6 +28,7 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
@@ -52,26 +52,18 @@ public class ReadableTokenStore {
     }
 
     /**
-     * Returns the token metadata needed for signing requirements. If the token doesn't exist
-     * returns failureReason. If the token exists , the failure reason will be null.
+     * Returns the token metadata needed for signing requirements.
      *
      * @param id token id being looked up
      * @return token's metadata
      */
-    public TokenMetaOrLookupFailureReason getTokenMeta(@NonNull final TokenID id) {
+    public TokenMetadata getTokenMeta(@NonNull final TokenID id) throws PreCheckException {
         requireNonNull(id);
         final var token = getTokenLeaf(id.tokenNum());
-        return token.map(t -> new TokenMetaOrLookupFailureReason(tokenMetaFrom(t), null))
-                .orElseGet(
-                        () ->
-                                new TokenMetaOrLookupFailureReason(
-                                        null, ResponseCodeEnum.INVALID_TOKEN_ID));
-    }
-
-    public record TokenMetaOrLookupFailureReason(TokenMetadata metadata, ResponseCodeEnum failureReason) {
-        public boolean failed() {
-            return failureReason != null;
+        if (token.isEmpty()) {
+            return null;
         }
+        return tokenMetaFrom(token.get());
     }
 
     private TokenMetadata tokenMetaFrom(final Token token) {
@@ -86,16 +78,27 @@ public class ReadableTokenStore {
             }
         }
         return new TokenMetadata(
-                asHederaKey(token.adminKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.kycKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.wipeKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.freezeKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.supplyKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.feeScheduleKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.pauseKeyOrElse(Key.DEFAULT)),
+                token.adminKeyOrElse(Key.DEFAULT),
+                token.kycKeyOrElse(Key.DEFAULT),
+                token.wipeKeyOrElse(Key.DEFAULT),
+                token.freezeKeyOrElse(Key.DEFAULT),
+                token.supplyKeyOrElse(Key.DEFAULT),
+                token.feeScheduleKeyOrElse(Key.DEFAULT),
+                token.pauseKeyOrElse(Key.DEFAULT),
                 hasRoyaltyWithFallback,
                 token.treasuryAccountNumber()); // remove this and make it a long
     }
+
+    public record TokenMetadata(
+            Key adminKey,
+            Key kycKey,
+            Key wipeKey,
+            Key freezeKey,
+            Key supplyKey,
+            Key feeScheduleKey,
+            Key pauseKey,
+            boolean hasRoyaltyWithFallback,
+            long treasuryNum) {}
 
     private boolean isRoyaltyWithFallback(final CustomFee fee) {
         return fee.fee().kind() == ROYALTY_FEE && fee.royaltyFee().hasFallbackFee();
@@ -112,15 +115,4 @@ public class ReadableTokenStore {
         final var token = tokenState.get(EntityNum.fromLong(tokenNum));
         return Optional.ofNullable(token);
     }
-
-    public record TokenMetadata(
-            Optional<HederaKey> adminKey,
-            Optional<HederaKey> kycKey,
-            Optional<HederaKey> wipeKey,
-            Optional<HederaKey> freezeKey,
-            Optional<HederaKey> supplyKey,
-            Optional<HederaKey> feeScheduleKey,
-            Optional<HederaKey> pauseKey,
-            boolean hasRoyaltyWithFallback,
-            long treasuryNum) {}
 }

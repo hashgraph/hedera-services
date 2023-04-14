@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.Utils.asHederaKeys;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -29,12 +31,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
  * multiple background threads. Any state read or computed as part of this pre-handle, including any
- * errors, are captured in the {@link PreHandleResult}. This is then made available to the transaction
- * during the "handle" phase as part of the HandleContext.
+ * errors, are captured in the {@link PreHandleResult}. This is then made available to the
+ * transaction during the "handle" phase as part of the HandleContext.
  *
  * @param txnBody Transaction that is being pre-handled
  * @param payer payer for the transaction
@@ -48,7 +51,7 @@ public record PreHandleResult(
         @Nullable AccountID payer,
         @NonNull ResponseCodeEnum status,
         @Nullable HederaKey payerKey,
-        @NonNull List<HederaKey> otherPartyKeys,
+        @NonNull Set<HederaKey> otherPartyKeys,
         @Nullable List<TransactionSignature> cryptoSignatures,
         @Nullable PreHandleResult innerResult) {
 
@@ -58,22 +61,23 @@ public record PreHandleResult(
 
     public PreHandleResult(
             @NonNull final PreHandleContext context,
+            @NonNull final ResponseCodeEnum status,
             @NonNull final SignatureMap signatureMap,
             @NonNull final List<TransactionSignature> cryptoSignatures,
             @Nullable final PreHandleResult innerResult) {
         this(
-                requireNonNull(context).getTxn(),
+                requireNonNull(context).body(),
                 requireNonNull(signatureMap),
-                context.getPayer(),
-                context.getStatus(),
-                context.getPayerKey(),
-                context.getRequiredNonPayerKeys(),
+                context.payer(),
+                status,
+                asHederaKey(context.payerKey()).get(),
+                asHederaKeys(context.requiredNonPayerKeys()),
                 requireNonNull(cryptoSignatures),
                 innerResult);
     }
 
     public PreHandleResult(@NonNull final ResponseCodeEnum status) {
-        this(null, null, null, status, null, Collections.emptyList(), Collections.emptyList(), null);
+        this(null, null, null, status, null, Collections.emptySet(), Collections.emptyList(), null);
     }
 
     /**

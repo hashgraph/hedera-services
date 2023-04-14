@@ -16,19 +16,17 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
@@ -39,45 +37,40 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleHandlerTestBase {
-    protected static final Key TEST_KEY = Key.newBuilder()
-            .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-            .build();
-    protected HederaKey adminKey = asHederaKey(TEST_KEY).get();
+    protected static final Key TEST_KEY =
+            Key.newBuilder().ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).build();
+    protected Key adminKey = TEST_KEY;
     protected AccountID scheduler = AccountID.newBuilder().accountNum(1001L).build();
     protected AccountID payer = AccountID.newBuilder().accountNum(2001L).build();
 
-    @Mock
-    protected AccountAccess keyLookup;
+    @Mock protected Account schedulerAccount;
 
-    @Mock
-    protected HederaKey payerKey;
+    @Mock protected Account payerAccount;
 
-    @Mock
-    protected HederaKey schedulerKey;
+    @Mock protected AccountAccess keyLookup;
 
-    @Mock
-    protected PreHandleDispatcher dispatcher;
+    @Mock protected Key payerKey;
 
-    @Mock
-    protected ReadableStates states;
+    @Mock protected Key schedulerKey;
+
+    @Mock protected PreHandleDispatcher dispatcher;
+
+    @Mock protected ReadableStates states;
 
     protected void basicContextAssertions(
-            final PreHandleContext context,
-            final int nonPayerKeysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertEquals(nonPayerKeysSize, context.getRequiredNonPayerKeys().size());
-        assertEquals(failed, context.failed());
-        assertEquals(failureStatus, context.getStatus());
+            final PreHandleContext context, final int nonPayerKeysSize) {
+        assertEquals(nonPayerKeysSize, context.requiredNonPayerKeys().size());
     }
 
     protected TransactionBody scheduleTxnNotRecognized() {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(scheduler))
-                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-                        .scheduledTransactionBody(SchedulableTransactionBody.newBuilder()
-                                .utilPrng(UtilPrngTransactionBody.DEFAULT)
-                                .build()))
+                .scheduleCreate(
+                        ScheduleCreateTransactionBody.newBuilder()
+                                .scheduledTransactionBody(
+                                        SchedulableTransactionBody.newBuilder()
+                                                .utilPrng(UtilPrngTransactionBody.DEFAULT)
+                                                .build()))
                 .build();
     }
 }

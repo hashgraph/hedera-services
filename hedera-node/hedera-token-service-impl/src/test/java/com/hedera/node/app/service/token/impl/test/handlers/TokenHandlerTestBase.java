@@ -49,7 +49,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class TokenHandlerTestBase {
     protected static final String TOKENS = "TOKENS";
-    protected static final HederaKey payerHederaKey = asHederaKey(A_COMPLEX_KEY).get();
+    protected static final Key payerKey = A_COMPLEX_KEY;
+    protected static final HederaKey payerHederaKey = asHederaKey(payerKey).get();
     protected final Key adminKey = A_COMPLEX_KEY;
     protected final Key pauseKey = A_COMPLEX_KEY;
     protected final Key wipeKey = A_COMPLEX_KEY;
@@ -57,7 +58,6 @@ public class TokenHandlerTestBase {
     protected final Key feeScheduleKey = A_COMPLEX_KEY;
     protected final Key supplyKey = A_COMPLEX_KEY;
     protected final Key freezeKey = A_COMPLEX_KEY;
-    protected final Key payerKey = A_COMPLEX_KEY;
     protected final AccountID payerId = protoToPbj(asAccount("0.0.3"), AccountID.class);
     protected final AccountID treasury = protoToPbj(asAccount("0.0.100"), AccountID.class);
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();

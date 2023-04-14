@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
+
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,13 +60,21 @@ public class ReadableScheduleStore {
      */
     public Optional<ScheduleMetadata> get(final ScheduleID id) {
         final var schedule = schedulesById.get(id.scheduleNum());
+        final Key adminKey;
+        if (schedule.hasAdminKey()) {
+            adminKey = sanityRestoredToPbj(schedule.adminKey().get());
+        } else {
+            adminKey = null;
+        }
         return Optional.ofNullable(schedule)
-                .map(s -> new ScheduleMetadata(
-                        schedule.adminKey(),
-                        PbjConverter.toPbj(schedule.ordinaryViewOfScheduledTxn()),
-                        schedule.hasExplicitPayer()
-                                ? Optional.of(schedule.payer().toPbjAccountId())
-                                : Optional.empty()));
+                .map(
+                        s ->
+                                new ScheduleMetadata(
+                                        adminKey,
+                                        toPbj(schedule.ordinaryViewOfScheduledTxn()),
+                                        schedule.hasExplicitPayer()
+                                                ? Optional.of(schedule.payer().toPbjAccountId())
+                                                : Optional.empty()));
     }
 
     /**
@@ -76,7 +86,5 @@ public class ReadableScheduleStore {
      *     returns {@link Optional#empty()}.
      */
     public record ScheduleMetadata(
-            Optional<? extends HederaKey> adminKey,
-            TransactionBody scheduledTxn,
-            Optional<AccountID> designatedPayer) {}
+            Key adminKey, TransactionBody scheduledTxn, Optional<AccountID> designatedPayer) {}
 }

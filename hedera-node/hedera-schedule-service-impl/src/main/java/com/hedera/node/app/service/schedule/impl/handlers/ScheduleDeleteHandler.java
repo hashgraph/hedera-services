@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,21 +50,22 @@ public class ScheduleDeleteHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information
-     *
      * @param scheduleStore the {@link ReadableScheduleStore} that contains all scheduled-data
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableScheduleStore scheduleStore) {
+    public void preHandle(
+            @NonNull final PreHandleContext context,
+            @NonNull final ReadableScheduleStore scheduleStore)
+            throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().scheduleDeleteOrThrow();
+        final var op = context.body().scheduleDeleteOrThrow();
         final var id = op.scheduleIDOrElse(ScheduleID.DEFAULT);
 
         // check for a missing schedule. A schedule with this id could have never existed,
         // or it could have already been executed or deleted
         final var scheduleLookupResult = scheduleStore.get(id);
         if (scheduleLookupResult.isEmpty()) {
-            context.status(INVALID_SCHEDULE_ID);
-            return;
+            throw new PreCheckException(INVALID_SCHEDULE_ID);
         }
 
         // No need to check for SCHEDULE_PENDING_EXPIRATION, SCHEDULE_ALREADY_DELETED,
@@ -73,14 +75,13 @@ public class ScheduleDeleteHandler implements TransactionHandler {
         // check whether schedule was created with an admin key
         // if it wasn't, the schedule can't be deleted
         final var adminKey = scheduleLookupResult.get().adminKey();
-        if (adminKey.isEmpty()) {
-            context.status(SCHEDULE_IS_IMMUTABLE);
-            return;
+        if (adminKey == null) {
+            throw new PreCheckException(SCHEDULE_IS_IMMUTABLE);
         }
 
         // add admin key of the original ScheduleCreate tx
         // to the list of keys required to execute this ScheduleDelete tx
-        context.addToReqNonPayerKeys(adminKey.get());
+        context.requireKey(adminKey);
     }
 
     /**
