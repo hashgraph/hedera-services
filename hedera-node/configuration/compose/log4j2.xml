@@ -11,6 +11,10 @@
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
       </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+        <TimeBasedTriggeringPolicy/>
+      </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
           <IfFileName glob="*/hgcaa-*.log.gz">
@@ -18,10 +22,6 @@
           </IfFileName>
         </Delete>
       </DefaultRolloverStrategy>
-      <Policies>
-        <TimeBasedTriggeringPolicy/>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
-      </Policies>
     </RollingFile>
 
     <RollingFile name="QueriesRollingFile" fileName="output/queries.log"
@@ -30,6 +30,10 @@
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
       </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+        <TimeBasedTriggeringPolicy/>
+      </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
           <IfFileName glob="*/queries-*.log.gz">
@@ -37,10 +41,6 @@
           </IfFileName>
         </Delete>
       </DefaultRolloverStrategy>
-      <Policies>
-        <TimeBasedTriggeringPolicy/>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
-      </Policies>
     </RollingFile>
 
     <RollingFile name="fileLog" fileName="output/swirlds.log"
@@ -48,6 +48,10 @@
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+        <TimeBasedTriggeringPolicy/>
+      </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
           <IfFileName glob="*/swirlds-sdk-*.log.gz">
@@ -55,14 +59,17 @@
           </IfFileName>
         </Delete>
       </DefaultRolloverStrategy>
-      <Policies>
-        <TimeBasedTriggeringPolicy/>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
-      </Policies>
     </RollingFile>
 
     <RollingFile fileName="output/swirlds-vmap.log" filePattern="output/swirlds-vmap-%d{yyyy-MM-dd}-%i.log.gz"
       name="vMapLog">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
           <IfFileName glob="*/swirlds-vmap-*.log.gz">
@@ -70,13 +77,6 @@
           </IfFileName>
         </Delete>
       </DefaultRolloverStrategy>
-      <PatternLayout>
-        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
-      </PatternLayout>
-      <Policies>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
-        <TimeBasedTriggeringPolicy/>
-      </Policies>
     </RollingFile>
 
     <!-- Platform hash stream logs -->
@@ -85,6 +85,10 @@
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+        <TimeBasedTriggeringPolicy/>
+      </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
           <IfFileName glob="*/swirlds-hashstream/swirlds-hashstream-*.log.gz">
@@ -92,10 +96,6 @@
           </IfFileName>
         </Delete>
       </DefaultRolloverStrategy>
-      <Policies>
-        <TimeBasedTriggeringPolicy/>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
-      </Policies>
     </RollingFile>
 
   </Appenders>
@@ -203,13 +203,13 @@
         <MarkerFilter marker="STATE_HASH" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <!-- Beta Mirror -->
-        <MarkerFilter marker="BETA_MIRROR_NODE"       onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="BETA_MIRROR_NODE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <!-- FCMap -->
-        <MarkerFilter marker="FCM_COPY"               onMatch="DENY"   onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="FCM_COPY_FROM"          onMatch="DENY"   onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="FCM_COPY_TO"            onMatch="DENY"   onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="FCM_DEMO"               onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY" onMatch="DENY" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY_FROM" onMatch="DENY" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY_TO" onMatch="DENY" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_DEMO" onMatch="DENY" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="FCM_COPY_FROM_DIFF" onMatch="DENY" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="FCM_COPY_TO_DIFF" onMatch="DENY" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="FC_SERIALIZATION" onMatch="DENY" onMismatch="NEUTRAL"/>
