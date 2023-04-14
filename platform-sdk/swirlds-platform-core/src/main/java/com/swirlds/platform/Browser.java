@@ -181,10 +181,10 @@ public class Browser {
                 Settings.getInstance().getConfigPath());
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
-        final ConfigSource settingsAliasConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
+        final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
         final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
-        final ConfigSource configPropertiesAliasConfigSource = new MappedConfigSource(configPropertiesConfigSource);
+        final ConfigSource mappedConfigPropertiesConfigSource = new MappedConfigSource(configPropertiesConfigSource);
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
@@ -195,8 +195,8 @@ public class Browser {
 
         // Load Configuration Definitions
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
-                .withSource(settingsAliasConfigSource)
-                .withSource(configPropertiesAliasConfigSource)
+                .withSource(mappedSettingsConfigSource)
+                .withSource(mappedConfigPropertiesConfigSource)
                 .withConfigDataType(BasicConfig.class)
                 .withConfigDataType(StateConfig.class)
                 .withConfigDataType(CryptoConfig.class)
@@ -328,7 +328,7 @@ public class Browser {
                                     address.getPortInternalIpv4(),
                                     address.getPortExternalIpv4(), // internal port
                                     PortForwarder.Protocol.TCP // transport protocol
-                                    );
+                            );
                             portsToBeMapped.add(pm);
                         }
                     }
