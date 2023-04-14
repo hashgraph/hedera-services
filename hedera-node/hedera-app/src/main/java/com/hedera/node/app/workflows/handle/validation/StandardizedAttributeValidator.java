@@ -56,7 +56,7 @@ public class StandardizedAttributeValidator implements AttributeValidator {
     }
 
     /**
-     * {@inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public void validateKey(@NonNull final Key key) {
@@ -64,7 +64,7 @@ public class StandardizedAttributeValidator implements AttributeValidator {
     }
 
     /**
-     * {@inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public void validateExpiry(long expiry) {
@@ -74,7 +74,7 @@ public class StandardizedAttributeValidator implements AttributeValidator {
     }
 
     /**
-     * {@inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public void validateAutoRenewPeriod(long autoRenewPeriod) {
@@ -85,7 +85,7 @@ public class StandardizedAttributeValidator implements AttributeValidator {
     }
 
     /**
-     * {@inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public void validateMemo(@NonNull final String memo) {
