@@ -27,6 +27,7 @@ module com.hedera.node.app.hapi.utils {
     requires org.apache.commons.codec;
     requires com.sun.jna;
     requires org.apache.commons.lang3;
-    requires net.i2p.crypto.eddsa;
     requires javax.inject;
+    requires com.hedera.node.hapi;
+    requires net.i2p.crypto.eddsa;
 }

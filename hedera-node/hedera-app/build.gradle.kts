@@ -26,8 +26,8 @@ configurations.all {
 
   exclude("io.grpc", "grpc-core")
   exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
+//  exclude("io.grpc", "grpc-api")
+//  exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
@@ -48,8 +48,10 @@ dependencies {
   implementation(project(":hedera-node:hedera-evm"))
   implementation(libs.bundles.di)
   implementation(libs.bundles.swirlds)
-  implementation(libs.bundles.helidon)
-  implementation(libs.helidon.grpc.server)
+//  implementation(libs.bundles.helidon)
+  implementation(libs.grpc.stub)
+  implementation(libs.grpc.netty)
+//  implementation(libs.helidon.grpc.server)
   implementation(libs.pbj.runtime)
 
   itestImplementation(project(":hedera-node:hapi"))

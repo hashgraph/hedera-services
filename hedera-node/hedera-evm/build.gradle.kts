@@ -47,10 +47,7 @@ dependencies {
   api(libs.besu.secp256k1)
   api(libs.swirlds.common)
   api(libs.besu.datatypes)
-  api(project(":hedera-node:hapi")) {
-    // this is an android version, not a jre version
-    exclude("com.google.guava", "guava")
-  }
+  api(project(":hedera-node:hapi"))
   api(libs.guava) // TODO: we should remove the internal usage of guava
 
   implementation(libs.jna)

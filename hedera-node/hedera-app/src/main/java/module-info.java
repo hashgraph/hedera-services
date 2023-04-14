@@ -27,8 +27,8 @@ module com.hedera.node.app {
     requires com.swirlds.merkle;
     requires com.swirlds.jasperdb;
     requires com.swirlds.virtualmap;
-    requires io.helidon.grpc.core;
-    requires io.helidon.grpc.server;
+//    requires io.helidon.grpc.core;
+//    requires io.helidon.grpc.server;
     requires grpc.stub;
     requires org.slf4j;
     requires dagger;
@@ -37,7 +37,6 @@ module com.hedera.node.app {
     requires org.apache.commons.lang3;
     requires com.google.common;
     requires com.github.spotbugs.annotations;
-    requires com.hedera.hashgraph.protobuf.java.api;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.hapi;
 

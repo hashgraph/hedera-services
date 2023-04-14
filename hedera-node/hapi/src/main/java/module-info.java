@@ -1,6 +1,17 @@
+@SuppressWarnings("requires-transitive-automatic")
 module com.hedera.node.hapi {
+    requires com.github.spotbugs.annotations;
     requires com.hedera.pbj.runtime;
+    requires transitive com.google.protobuf;
+    requires grpc.stub;
+    requires grpc.protobuf;
 
+    // Export protoc generated classes
+    exports com.hedera.services.stream.proto;
+    exports com.hederahashgraph.api.proto.java;
+    exports com.hederahashgraph.service.proto.java;
+
+    // Export pbj generated classes
     exports com.hedera.hapi.node.base;
     exports com.hedera.hapi.node.base.codec;
     exports com.hedera.hapi.node.base.schema;
@@ -34,9 +45,6 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.streams;
     exports com.hedera.hapi.streams.codec;
     exports com.hedera.hapi.streams.schema;
-
-    requires com.github.spotbugs.annotations;
-
     exports com.hedera.hapi.node.state.consensus.codec;
     exports com.hedera.hapi.node.state.consensus;
     exports com.hedera.hapi.node.state.token;

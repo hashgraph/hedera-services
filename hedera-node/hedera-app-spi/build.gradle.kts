@@ -38,7 +38,6 @@ dependencies {
   implementation(libs.swirlds.jasperdb)
   implementation(libs.swirlds.common)
   api(libs.pbj.runtime)
-  api(project(":hedera-node:hapi"))
   api(libs.jsr305.annotation)
   api(project(":hedera-node:hapi"))
   compileOnlyApi(libs.spotbugs.annotations)

@@ -4,7 +4,6 @@ module com.hedera.node.app.service.evm {
     requires org.hyperledger.besu.evm;
     requires org.hyperledger.besu.datatypes;
     requires org.hyperledger.besu.secp256k1;
-    requires com.hedera.hashgraph.protobuf.java.api;
     requires tuweni.bytes;
     requires tuweni.units;
     requires com.github.benmanes.caffeine;
@@ -16,6 +15,7 @@ module com.hedera.node.app.service.evm {
     requires headlong;
     requires javax.inject;
     requires com.github.spotbugs.annotations;
+    requires com.hedera.node.hapi;
 
     exports com.hedera.node.app.service.evm.store.contracts.utils;
     exports com.hedera.node.app.service.evm.contracts.execution;

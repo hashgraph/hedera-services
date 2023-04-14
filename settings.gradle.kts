@@ -130,7 +130,7 @@ dependencyResolutionManagement {
       version("commons-lang3-version", "3.12.0")
       version("dagger-version", "2.42")
       version("eddsa-version", "0.3.0")
-      version("grpc-version", "1.50.2")
+      version("grpc-version", "1.54.0")
       version("guava-version", "31.1-jre")
       version("headlong-version", "6.1.1")
       version("helidon-version", "3.0.2")
@@ -140,7 +140,6 @@ dependencyResolutionManagement {
       version("jetbrains-annotation-version", "16.0.2")
       version("log4j-version", "2.17.2")
       version("netty-version", "4.1.66.Final")
-      version("protobuf-java-version", "3.19.4")
       version("slf4j-version", "2.0.3")
       version("swirlds-version", "0.37.0-adhoc.xc76224af")
       version("tuweni-version", "2.2.0")
@@ -148,8 +147,12 @@ dependencyResolutionManagement {
       version("jsr305-version", "3.0.2")
       version("spotbugs-version", "4.7.3")
       version("helidon-grpc-version", "3.0.2")
+      version("protobuf-java-version", "3.21.12")
+      version("protobuf-plugin-version", "0.9.2")
+      version("protoc-gen-grpc-java-version", "1.54.0")
 
       plugin("pbj", "com.hedera.pbj.pbj-compiler").versionRef("pbj-version")
+      plugin("protobuf", "com.google.protobuf").versionRef("protobuf-plugin-version")
 
       // List of bundles provided for us. When applicable, favor using these over individual
       // libraries.

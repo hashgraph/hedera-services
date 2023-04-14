@@ -247,7 +247,6 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.sigs.sourcing;
 
     requires com.github.spotbugs.annotations;
-    requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
     requires dagger;
     requires javax.inject;
@@ -282,9 +281,7 @@ module com.hedera.node.app.service.mono {
     requires commons.collections4;
     requires org.eclipse.collections.impl;
     requires org.apache.commons.io;
-    requires io.grpc;
     requires grpc.stub;
     requires org.eclipse.collections.api;
-    requires grpc.netty;
     requires io.netty.transport.epoll;
 }

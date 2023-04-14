@@ -1,3 +1,5 @@
+import com.google.protobuf.gradle.*
+
 /*
  * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
@@ -16,24 +18,64 @@
 
 plugins {
   id("com.hedera.hashgraph.conventions")
-  id("com.google.protobuf").version("0.9.1")
   alias(libs.plugins.pbj)
+  alias(libs.plugins.protobuf)
   `java-test-fixtures`
 }
 
 description = "Hedera API"
 
-configurations.all { exclude("javax.annotation", "javax.annotation-api") }
+configurations.all {
+  exclude("com.google.code.findbugs", "jsr305")
+//  exclude("javax.annotation", "javax.annotation-api")
+
+//  exclude("io.grpc", "grpc-core")
+  exclude("io.grpc", "grpc-context")
+//  exclude("io.grpc", "grpc-api")
+//  exclude("io.grpc", "grpc-testing")
+}
 
 dependencies {
   api(libs.spotbugs.annotations)
+  api(libs.protobuf.java)
   implementation(libs.pbj.runtime)
   implementation(libs.bundles.di)
-  implementation("com.google.protobuf:protobuf-java:3.21.12")
   testImplementation(testLibs.bundles.testing)
-  // we depend on the protoc compiled hapi during test as we test our pbj generated code against it
-  // to make sure it is compatible
   testFixturesImplementation(libs.pbj.runtime)
+
+
+  compileOnly(libs.javax.annotation)
+//  compileOnly(libs.jsr305.annotation)
+//  runtimeOnly("io.grpc:grpc-netty-shaded:1.54.0")
+//  implementation("io.grpc:grpc-protobuf:1.54.0")
+//  implementation("io.grpc:grpc-stub:1.54.0")
+  implementation(libs.grpc.protobuf)
+  implementation(libs.grpc.stub)
+  implementation(libs.helidon.io.grpc)
+//  implementation(libs.grpc.protobuf)
+//  implementation(libs.grpc.stub)
+//  implementation(libs.grpc.netty)
+//  compileOnly("org.apache.tomcat:annotations-api:6.0.53")
+}
+
+// Configure Protobuf Plugin to download protoc executable rather than using local installed version
+protobuf {
+  protoc {
+    artifact = "com.google.protobuf:protoc:" + libs.versions.protobuf.java.version.get()
+  }
+  plugins {
+    // Add GRPC plugin as we need to generate GRPC services
+    id("grpc") {
+      artifact = "io.grpc:protoc-gen-grpc-java:" + libs.versions.protoc.gen.grpc.java.version.get()
+    }
+  }
+  generateProtoTasks {
+    ofSourceSet("main").forEach {
+      it.plugins {
+        id("grpc")
+      }
+    }
+  }
 }
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them

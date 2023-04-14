@@ -22,4 +22,5 @@ module com.hedera.node.app.hapi.fees {
     requires com.google.protobuf;
     requires org.apache.commons.lang3;
     requires com.google.common;
+    requires com.hedera.node.hapi;
 }
