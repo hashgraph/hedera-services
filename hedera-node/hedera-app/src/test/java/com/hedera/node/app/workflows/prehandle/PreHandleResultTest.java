@@ -30,6 +30,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -52,23 +53,21 @@ class PreHandleResultTest {
             @Mock TransactionSignature payerSignature,
             @Mock TransactionSignature otherSignature) {
         // given
-        when(context.getTxn()).thenReturn(txBody);
-        when(context.getPayer()).thenReturn(payer);
-        when(context.getStatus()).thenReturn(OK);
-        when(context.getPayerKey()).thenReturn(payerKey);
-        when(context.getRequiredNonPayerKeys()).thenReturn(List.of(otherKey));
+        when(context.body()).thenReturn(txBody);
+        when(context.payer()).thenReturn(payer);
+        when(context.payerKey()).thenReturn(payerKey);
+        when(context.requiredNonPayerKeys()).thenReturn(Set.of(otherKey));
         final var signatureMap = SignatureMap.newBuilder().build();
         final var innerResult = new PreHandleResult(null, null, null, OK, null, null, List.of(), null);
         final var expectedSigs = List.of(payerSignature, otherSignature);
 
         // when
-        final var metadata = new PreHandleResult(context, signatureMap, expectedSigs, innerResult);
+        final var metadata = new PreHandleResult(context, OK, signatureMap, expectedSigs, innerResult);
 
         // then
         assertThat(metadata.txnBody()).isEqualTo(txBody);
         assertThat(metadata.payer()).isEqualTo(payer);
         assertThat(metadata.signatureMap()).isEqualTo(signatureMap);
-        assertThat(metadata.status()).isEqualTo(OK);
         assertThat(metadata.payerKey()).isEqualTo(payerKey);
         assertThat(metadata.cryptoSignatures()).isEqualTo(expectedSigs);
     }
@@ -77,20 +76,21 @@ class PreHandleResultTest {
     @Test
     void testPreHandleContextConstructorWithIllegalArguments(@Mock PreHandleContext context) {
         // given
-        when(context.getTxn()).thenReturn(txBody);
-        when(context.getPayer()).thenReturn(payer);
-        when(context.getStatus()).thenReturn(OK);
+        when(context.body()).thenReturn(txBody);
+        when(context.payer()).thenReturn(payer);
         final var signatureMap = SignatureMap.newBuilder().build();
         final List<TransactionSignature> signatures = List.of();
 
         // then
-        assertThatCode(() -> new PreHandleResult(context, signatureMap, signatures, null))
+        assertThatCode(() -> new PreHandleResult(context, OK, signatureMap, signatures, null))
                 .doesNotThrowAnyException();
-        assertThatThrownBy(() -> new PreHandleResult(null, signatureMap, signatures, null))
+        assertThatThrownBy(() -> new PreHandleResult(null, OK, signatureMap, signatures, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleResult(context, null, signatures, null))
+        assertThatThrownBy(() -> new PreHandleResult(context, null, signatureMap, signatures, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleResult(context, signatureMap, null, null))
+        assertThatThrownBy(() -> new PreHandleResult(context, OK, null, signatures, null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleResult(context, OK, signatureMap, null, null))
                 .isInstanceOf(NullPointerException.class);
     }
 

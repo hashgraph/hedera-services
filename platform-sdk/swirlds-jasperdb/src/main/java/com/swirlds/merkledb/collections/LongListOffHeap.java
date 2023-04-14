@@ -129,7 +129,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
 
     /** {@inheritDoc} */
     @Override
-    protected void put(ByteBuffer chunk, int subIndex, long value) {
+    protected void putToChunk(ByteBuffer chunk, int subIndex, long value) {
         /* The remaining lines below are equivalent to a chunk.put(subIndex, value) call
         on a heap byte buffer. Since we have instead a direct buffer, we need to, first,
         get its native memory address from the Buffer.address field; and, second, store

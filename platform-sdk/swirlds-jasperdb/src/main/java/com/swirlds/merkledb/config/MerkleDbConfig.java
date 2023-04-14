@@ -109,6 +109,12 @@ import java.time.temporal.ChronoUnit;
  * @param indexRebuildingEnforced
  * 		Configuration used to avoid reading stored indexes from a saved state and enforce rebuilding those indexes from
  * 		data files.
+ * @param percentHalfDiskHashMapFlushThreads
+ *      Percentage, from 0.0 to 100.0, of available processors to use for half disk hash map background flushing
+ *      threads.
+ * @param numHalfDiskHashMapFlushThreads
+ *      Number of threads to use for half disk hash map background flushing. If set to a negative value, the number of
+ *      threads to use is calculated based on {@link #percentHalfDiskHashMapFlushThreads}
  */
 @ConfigData("merkleDb")
 public record MerkleDbConfig(
@@ -134,7 +140,9 @@ public record MerkleDbConfig(
         @ConfigProperty(defaultValue = "2147483648") long keySetBloomFilterSizeInBytes,
         @ConfigProperty(defaultValue = "1000000000") long keySetHalfDiskHashMapSize,
         @ConfigProperty(defaultValue = "1000000") int keySetHalfDiskHashMapBuffer,
-        @ConfigProperty(defaultValue = "false") boolean indexRebuildingEnforced) {
+        @ConfigProperty(defaultValue = "false") boolean indexRebuildingEnforced,
+        @ConfigProperty(defaultValue = "50.0") double percentHalfDiskHashMapFlushThreads,
+        @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads) {
 
     public ConfigViolation maxNumberOfFilesInMergeValidation(final Configuration configuration) {
         final long maxNumberOfFilesInMerge =
