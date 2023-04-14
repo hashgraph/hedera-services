@@ -285,9 +285,9 @@ public class TransactionDispatcher {
     }
 
     /**
-     * Dispatches the token unpause transaction to the appropriate handler.
+     * Dispatches the token grant KYC transaction to the appropriate handler.
      *
-     * @param tokenGrantKyc the token unpause transaction
+     * @param tokenGrantKyc the token grant KYC transaction
      * @param tokenRelStore the token relation store
      */
     private void dispatchTokenGrantKycToAccount(
