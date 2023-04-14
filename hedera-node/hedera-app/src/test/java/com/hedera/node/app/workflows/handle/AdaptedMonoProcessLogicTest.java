@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -159,7 +160,7 @@ class AdaptedMonoProcessLogicTest {
     }
 
     private static final JKey PAYER_KEY = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
-    private static final List<HederaKey> OTHER_PARTY_KEYS = List.of(
+    private static final Set<HederaKey> OTHER_PARTY_KEYS = Set.of(
             new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()),
             new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes()));
 }

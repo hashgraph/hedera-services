@@ -19,7 +19,6 @@ package com.hedera.node.app.service.consensus.impl;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -38,8 +37,8 @@ public class TopicStore {
                 : OptionalLong.of(topic.autoRenewAccountNumber());
         return new TopicMetadata(
                 Optional.of(topic.memo()),
-                asHederaKey(topic.adminKeyOrElse(Key.DEFAULT)),
-                asHederaKey(topic.submitKeyOrElse(Key.DEFAULT)),
+                asHederaKey(topic.adminKey()).orElse(null),
+                asHederaKey(topic.submitKey()).orElse(null),
                 topic.autoRenewPeriod(),
                 maybeAutoRenewNum,
                 Timestamp.newBuilder().seconds(topic.expiry()).build(),
@@ -67,8 +66,8 @@ public class TopicStore {
      */
     public record TopicMetadata(
             Optional<String> memo,
-            Optional<HederaKey> adminKey,
-            Optional<HederaKey> submitKey,
+            HederaKey adminKey,
+            HederaKey submitKey,
             long autoRenewDurationSeconds,
             OptionalLong autoRenewAccountId,
             Timestamp expirationTimestamp,

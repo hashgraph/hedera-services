@@ -20,7 +20,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookValidator;
 import com.swirlds.platform.config.AddressBookConfig;
@@ -37,7 +36,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,9 +67,6 @@ public class AddressBookInitializer {
     /** The current version of the application from config.txt. */
     @NonNull
     private final SoftwareVersion currentVersion;
-    /** The SwirldState to use at genesis. */
-    @NonNull
-    private final Supplier<SwirldState> genesisSupplier;
     /** The SignedState loaded from disk. May be null. */
     @Nullable
     private final SignedState loadedSignedState;
@@ -93,24 +88,20 @@ public class AddressBookInitializer {
     private final boolean useConfigAddressBook;
 
     /**
-     * Constructs an AddressBookInitializer to initialize an address book from the swirld application state, config.txt,
-     * and the saved state from disk.
+     * Constructs an AddressBookInitializer to initialize an address book from config.txt,
+     * the saved state from disk, or the SwirldState on upgrade.
      *
-     * @param currentVersion       The current version of the application. Must not be null.
-     * @param signedState          The signed state loaded from disk.  May be null.
-     * @param genesisSupplier      The swirld application state in genesis start. Must not be null.
-     * @param configAddressBook    The address book derived from config.txt. Must not be null.
-     * @param addressBookConfig    The configuration settings for AddressBooks.
+     * @param currentVersion    The current version of the application. Must not be null.
+     * @param signedState       The signed state loaded from disk.  May be null.
+     * @param configAddressBook The address book derived from config.txt. Must not be null.
+     * @param addressBookConfig The configuration settings for AddressBooks.
      */
     public AddressBookInitializer(
             @NonNull final SoftwareVersion currentVersion,
             @Nullable final SignedState signedState,
-            @NonNull final Supplier<SwirldState> genesisSupplier,
             @NonNull final AddressBook configAddressBook,
             @NonNull final AddressBookConfig addressBookConfig) {
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
-        this.genesisSupplier =
-                Objects.requireNonNull(genesisSupplier, "The genesis swirldState supplier must not be null.");
         this.configAddressBook = Objects.requireNonNull(configAddressBook, "The configAddressBook must not be null.");
         Objects.requireNonNull(addressBookConfig, "The addressBookConfig must not be null.");
         this.loadedSignedState = signedState;
@@ -162,11 +153,8 @@ public class AddressBookInitializer {
             logger.info(
                     STARTUP.getMarker(),
                     "The loaded signed state is null. The candidateAddressBook is set to "
-                            + "genesisSwirldState.updateStake(configAddressBook, null).");
-            final SwirldState genesisState = genesisSupplier.get();
-            candidateAddressBook =
-                    genesisState.updateStake(configAddressBook.copy()).copy();
-            genesisState.release();
+                            + "the address book from config.txt.");
+            candidateAddressBook = configAddressBook;
         } else {
             final SoftwareVersion loadedSoftwareVersion = loadedSignedState
                     .getState()
