@@ -16,6 +16,9 @@
 
 package com.swirlds.common.config.sources;
 
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -77,10 +80,9 @@ class MappedConfigSourceTest {
 
         // when
         mappedConfigSource.addMapping("b", "a");
-        mappedConfigSource.addMapping("c", "a");
 
         // then
-        Assertions.assertThrows(IllegalArgumentException.class, mappedConfigSource::getProperties);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> mappedConfigSource.addMapping("c", "a"));
     }
 
     @Test
@@ -93,7 +95,8 @@ class MappedConfigSourceTest {
         mappedConfigSource.addMapping("b", "not-available");
 
         // then
-        Assertions.assertThrows(IllegalArgumentException.class, mappedConfigSource::getProperties);
+        Assertions.assertEquals(1, mappedConfigSource.getProperties().size());
+        Assertions.assertEquals(Set.of("a"), mappedConfigSource.getPropertyNames());
     }
 
     @Test
@@ -104,22 +107,80 @@ class MappedConfigSourceTest {
 
         // when
         mappedConfigSource.addMapping("c", "a");
-        mappedConfigSource.addMapping("c", "b");
 
         // then
-        Assertions.assertThrows(IllegalArgumentException.class, mappedConfigSource::getProperties);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> mappedConfigSource.addMapping("c", "b"));
     }
 
     @Test
-    void testAliasesWithSameNameAsProperty() {
+    void testWithConfiguration() {
         // given
-        final var configSource = new SimpleConfigSource("a", "1").withValue("b", "2");
+        final var configSource = new SimpleConfigSource("a", "1");
+        final var mappedConfigSource = new MappedConfigSource(configSource);
+
+        mappedConfigSource.addMapping("foo.a", "a");
+
+        final var config =
+                new TestConfigBuilder().withSource(mappedConfigSource).getOrCreateConfig();
+
+        // when
+        final var valueFromOldName = config.getValue("a");
+        final var valueFromNewName = config.getValue("foo.a");
+
+        // then
+        Assertions.assertEquals(valueFromOldName, valueFromNewName);
+    }
+
+    @Test
+    void testNoMappingForEmptySource() {
+        // given
+        final var configSource = new SimpleConfigSource();
+        final var mappedConfigSource = new MappedConfigSource(configSource);
+
+        mappedConfigSource.addMapping("foo.a", "a");
+
+        // when
+        final var config =
+                new TestConfigBuilder().withSource(mappedConfigSource).getOrCreateConfig();
+
+        // then
+        Assertions.assertThrows(NoSuchElementException.class, () -> config.getValue("a"));
+        Assertions.assertThrows(NoSuchElementException.class, () -> config.getValue("foo.a"));
+    }
+
+    @Test
+    void testDefaultValuesForEmptySource() {
+        // given
+        final var configSource = new SimpleConfigSource();
+        final var mappedConfigSource = new MappedConfigSource(configSource);
+        mappedConfigSource.addMapping("foo.a", "a");
+
+        final var config =
+                new TestConfigBuilder().withSource(mappedConfigSource).getOrCreateConfig();
+
+        // when
+        final var oldName = config.getValue("a", "1");
+        final var newName = config.getValue("foo.a", "2");
+
+        // then
+        Assertions.assertEquals("1", oldName);
+        Assertions.assertEquals("2", newName);
+    }
+
+    @Test
+    void testNoMappingIfAlreadyInSource() {
+        // given
+        final var configSource = new SimpleConfigSource("a", "1").withValue("foo.a", "2");
         final var mappedConfigSource = new MappedConfigSource(configSource);
 
         // when
-        mappedConfigSource.addMapping("b", "a");
+        mappedConfigSource.addMapping("foo.a", "a");
+        final var properties = mappedConfigSource.getProperties();
 
         // then
-        Assertions.assertThrows(IllegalArgumentException.class, mappedConfigSource::getProperties);
+        Assertions.assertNotNull(properties);
+        Assertions.assertEquals(2, properties.keySet().size());
+        Assertions.assertEquals("1", properties.get("a"));
+        Assertions.assertEquals("2", properties.get("foo.a"));
     }
 }

@@ -23,10 +23,9 @@ import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -95,6 +94,20 @@ public class MappedConfigSource extends AbstractConfigSource {
      * @param configMapping defined mapping
      */
     public void addMapping(@NonNull final ConfigMapping configMapping) {
+        ArgumentUtils.throwArgNull(configMapping, "configMapping");
+
+        if (configMappings.stream()
+                .map(ConfigMapping::mappedName)
+                .anyMatch(m -> Objects.equals(m, configMapping.mappedName()))) {
+            throw new IllegalArgumentException(PROPERTY_ALREADY_DEFINED.formatted(configMapping.mappedName()));
+        }
+
+        if (configMappings.stream()
+                .map(ConfigMapping::originalName)
+                .anyMatch(o -> Objects.equals(o, configMapping.originalName()))) {
+            throw new IllegalArgumentException(PROPERTY_ALREADY_MAPPED.formatted(configMapping.originalName()));
+        }
+
         configMappings.add(configMapping);
     }
 
@@ -104,24 +117,19 @@ public class MappedConfigSource extends AbstractConfigSource {
         if (properties.isEmpty()) {
             final Map<String, String> internalProperties = wrappedSource.getProperties();
             final Map<String, String> mappedProperties = new HashMap<>();
-            final Set<String> originals = new HashSet<>();
 
             configMappings.forEach(configMapping -> {
                 if (internalProperties.containsKey(configMapping.mappedName())) {
-                    throw new IllegalArgumentException(DUPLICATE_PROPERTY.formatted(configMapping.mappedName()));
-                } else if (mappedProperties.containsKey(configMapping.mappedName())) {
-                    throw new IllegalArgumentException(PROPERTY_ALREADY_DEFINED.formatted(configMapping.mappedName()));
+                    logger.info(DUPLICATE_PROPERTY.formatted(configMapping.mappedName()));
                 } else if (!internalProperties.containsKey(configMapping.originalName())) {
-                    throw new IllegalArgumentException(PROPERTY_NOT_FOUND.formatted(configMapping.originalName()));
-                } else if (originals.contains(configMapping.originalName())) {
-                    throw new IllegalArgumentException(PROPERTY_ALREADY_MAPPED.formatted(configMapping.originalName()));
+                    logger.info(PROPERTY_NOT_FOUND.formatted(configMapping.originalName()));
                 } else {
                     mappedProperties.put(
                             configMapping.mappedName(), internalProperties.get(configMapping.originalName()));
-                    originals.add(configMapping.originalName());
                     logger.debug(CONFIG.getMarker(), "Added config mapping: {}", configMapping);
                 }
             });
+
             properties.putAll(internalProperties);
             properties.putAll(mappedProperties);
         }
