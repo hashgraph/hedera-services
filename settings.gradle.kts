@@ -116,7 +116,7 @@ dependencyResolutionManagement {
     create("libs") {
       // The HAPI API version to use, this need to match the Hapi protubuf java version from pom.xml
       // (https://github.com/hashgraph/hedera-protobufs-java.git)
-      version("hapi-version", "0.37.0-SNAPSHOT")
+      version("hapi-version", "0.37.0")
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.3.0")
