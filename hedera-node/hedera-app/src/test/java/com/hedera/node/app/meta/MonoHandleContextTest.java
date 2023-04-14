@@ -16,30 +16,21 @@
 
 package com.hedera.node.app.meta;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
+import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hederahashgraph.api.proto.java.Key;
-import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class MonoHandleContextTest {
@@ -52,7 +43,7 @@ class MonoHandleContextTest {
     private ExpiryValidator expiryValidator;
 
     @Mock
-    private OptionValidator optionValidator;
+    private AttributeValidator attributeValidator;
 
     @Mock
     private TransactionContext txnCtx;
@@ -61,7 +52,7 @@ class MonoHandleContextTest {
 
     @BeforeEach
     void setup() {
-        subject = new MonoHandleContext(ids, expiryValidator, optionValidator, txnCtx);
+        subject = new MonoHandleContext(ids, expiryValidator, attributeValidator, txnCtx);
     }
 
     @Test
@@ -82,53 +73,7 @@ class MonoHandleContextTest {
     }
 
     @Test
-    void delegatesKeyValidationToOptionValidatorAndTranslatesFailure() {
-        given(optionValidator.attemptDecodeOrThrow(any()))
-                .willThrow(new InvalidTransactionException(PbjConverter.fromPbj(ResponseCodeEnum.BAD_ENCODING)));
-
-        final var attributeValidator = subject.attributeValidator();
-
-        assertFailsWith(
-                ResponseCodeEnum.BAD_ENCODING,
-                () -> attributeValidator.validateKey(com.hedera.hapi.node.base.Key.DEFAULT));
-    }
-
-    @Test
-    void delegatesKeyValidationToOptionValidatorHappyPath() {
-        final var attributeValidator = subject.attributeValidator();
-
-        attributeValidator.validateKey(com.hedera.hapi.node.base.Key.DEFAULT);
-
-        verify(optionValidator).attemptDecodeOrThrow(Key.getDefaultInstance());
-    }
-
-    @Test
-    void delegatesMemoValidationToOptionValidatorHappyPath() {
-        final var memo = "A memo";
-        final var attributeValidator = subject.attributeValidator();
-
-        given(optionValidator.memoCheck(memo)).willReturn(PbjConverter.fromPbj(ResponseCodeEnum.OK));
-
-        assertDoesNotThrow(() -> attributeValidator.validateMemo(memo));
-    }
-
-    @Test
-    void delegatesMemoValidationToOptionValidatorAndTranslatesFailure() {
-        final var memo = "A memo";
-        final var attributeValidator = subject.attributeValidator();
-
-        given(optionValidator.memoCheck(memo)).willReturn(PbjConverter.fromPbj(INVALID_ZERO_BYTE_IN_STRING));
-
-        assertFailsWith(INVALID_ZERO_BYTE_IN_STRING, () -> attributeValidator.validateMemo(memo));
-    }
-
-    @Test
     void returnsExpiryValidatorAsExpected() {
         assertSame(expiryValidator, subject.expiryValidator());
-    }
-
-    private static void assertFailsWith(final ResponseCodeEnum expected, final Runnable runnable) {
-        final var e = assertThrows(HandleException.class, runnable::run);
-        assertEquals(expected, e.getStatus());
     }
 }

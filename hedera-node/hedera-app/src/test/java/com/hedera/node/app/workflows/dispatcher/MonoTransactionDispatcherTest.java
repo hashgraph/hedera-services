@@ -153,7 +153,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TransactionDispatcherTest {
+class MonoTransactionDispatcherTest {
 
     @Mock(strictness = LENIENT)
     private HederaState state;
@@ -386,30 +386,30 @@ class TransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new TransactionDispatcher(
+        dispatcher = new MonoTransactionDispatcher(
                 handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new TransactionDispatcher(
-                        null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, null, handlers, accountNumbers, dynamicProperties, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                handleContext, null, handlers, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -523,10 +523,10 @@ class TransactionDispatcherTest {
         given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
 
         doAnswer(invocation -> {
-                    final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
-                    builder.setNewTopicMetadata(newRunningHash, 2, 3L);
-                    return null;
-                })
+            final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
+            builder.setNewTopicMetadata(newRunningHash, 2, 3L);
+            return null;
+        })
                 .when(consensusSubmitMessageHandler)
                 .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any(), any());
 
@@ -556,7 +556,7 @@ class TransactionDispatcherTest {
     @Test
     void cannotDispatchUnsupportedOperations() {
         assertThatThrownBy(() -> dispatcher.dispatchHandle(
-                        HederaFunctionality.CRYPTO_TRANSFER, transactionBody, writableStoreFactory))
+                HederaFunctionality.CRYPTO_TRANSFER, transactionBody, writableStoreFactory))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

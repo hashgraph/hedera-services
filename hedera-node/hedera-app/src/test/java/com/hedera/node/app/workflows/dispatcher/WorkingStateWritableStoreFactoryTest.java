@@ -31,8 +31,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableStoreFactoryTest {
-    private WritableStoreFactory subject;
+class WorkingStateWritableStoreFactoryTest {
+    private WorkingStateWritableStoreFactory subject;
 
     @Mock
     private HederaState state;
@@ -46,18 +46,18 @@ class WritableStoreFactoryTest {
     void setUp() {
         workingStateAccessor = new WorkingStateAccessor();
         workingStateAccessor.setHederaState(state);
-        subject = new WritableStoreFactory(workingStateAccessor);
+        subject = new WorkingStateWritableStoreFactory(workingStateAccessor);
     }
 
     @Test
     void emptyConstructor() {
-        assertDoesNotThrow(() -> new WritableStoreFactory(workingStateAccessor));
+        assertDoesNotThrow(() -> new WorkingStateWritableStoreFactory(workingStateAccessor));
     }
 
     @Test
     void createsWritableStore() {
         given(state.createWritableStates(ConsensusService.NAME)).willReturn(writableStates);
-        subject = new WritableStoreFactory(workingStateAccessor);
+        subject = new WorkingStateWritableStoreFactory(workingStateAccessor);
         assertNotNull(subject.createTopicStore());
     }
 
