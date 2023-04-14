@@ -24,6 +24,7 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
@@ -136,7 +137,7 @@ class ConfigDataFactory {
                 ConfigReflectionUtils.getSingleGenericTypeArgument((ParameterizedType) component.getGenericType());
     }
 
-    @NonNull
+    @Nullable
     private <T> Set<T> getDefaultValueSet(@NonNull final RecordComponent component) {
         CommonUtils.throwArgNull(component, "component");
         final Class<?> type = getGenericSetType(component);
