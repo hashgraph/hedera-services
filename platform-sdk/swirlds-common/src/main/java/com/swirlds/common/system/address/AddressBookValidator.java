@@ -176,7 +176,7 @@ public final class AddressBookValidator {
                         logger.error(EXCEPTION.getMarker(), "Address at index {} is null when accessed in order.", i);
                         throw new IllegalStateException("Address at index " + i + " is null.");
                     }
-                    final boolean equal = address1.equalsWithoutWeight(address2);
+                    final boolean equal = address1.equalsWithoutWeightAndOwnHost(address2);
                     if (!equal) {
                         logger.error(
                                 EXCEPTION.getMarker(),

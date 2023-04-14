@@ -819,19 +819,18 @@ public class Address implements SelfSerializable {
         }
 
         Address address = (Address) o;
-        return equalsWithoutWeight(address) && weight == address.weight;
+        return equalsWithoutWeightAndOwnHost(address) && ownHost == address.ownHost && weight == address.weight;
     }
 
     /**
-     * Checks for equality with another addresses without checking the equality of weight values.
+     * Checks for equality with another addresses without checking the equality of weight or ownHost values.
      *
      * @param address The other address to check for equality with this address.
-     * @return true if all values in the other address match this address without consideration of weight, false
-     * otherwise.
+     * @return true if all values in the other address match this address without consideration of weight or ownHost
+     * values, false otherwise.
      */
-    public boolean equalsWithoutWeight(@NonNull final Address address) {
+    public boolean equalsWithoutWeightAndOwnHost(@NonNull final Address address) {
         return id == address.id
-                && ownHost == address.ownHost
                 && portInternalIpv4 == address.portInternalIpv4
                 && portExternalIpv4 == address.portExternalIpv4
                 && portInternalIpv6 == address.portInternalIpv6

@@ -24,6 +24,8 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.SecureRandom;
 import java.util.Objects;
@@ -48,8 +50,8 @@ public class AddressBookTestingToolMain implements SwirldMain {
     /** The logger for this class. */
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolMain.class);
 
-    /** The default software version of this application. */
-    private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
+    /** The software version of this application.  If not configured, defaults to 0 */
+    private BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(0);
 
     /** The platform. */
     private Platform platform;
@@ -59,6 +61,18 @@ public class AddressBookTestingToolMain implements SwirldMain {
 
     public AddressBookTestingToolMain() {
         logger.info(STARTUP.getMarker(), "constructor called in Main.");
+    }
+
+    @Override
+    public void updateConfigurationBuilder(@NonNull final ConfigurationBuilder configurationBuilder) {
+        configurationBuilder.withConfigDataType(AddressBookTestingToolConfig.class);
+    }
+
+    @Override
+    public void setConfiguration(@NonNull final Configuration configuration) {
+        final int softVersion =
+                configuration.getConfigData(AddressBookTestingToolConfig.class).softwareVersion();
+        this.softwareVersion = new BasicSoftwareVersion(softVersion);
     }
 
     /**

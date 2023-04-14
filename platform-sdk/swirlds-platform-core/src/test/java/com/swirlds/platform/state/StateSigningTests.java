@@ -36,7 +36,6 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
@@ -65,7 +64,9 @@ class StateSigningTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking ? WeightDistributionStrategy.BALANCED : WeightDistributionStrategy.GAUSSIAN)
+                        evenStaking
+                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
@@ -164,7 +165,9 @@ class StateSigningTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking ? WeightDistributionStrategy.BALANCED : WeightDistributionStrategy.GAUSSIAN)
+                        evenStaking
+                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
@@ -256,7 +259,9 @@ class StateSigningTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking ? WeightDistributionStrategy.BALANCED : WeightDistributionStrategy.GAUSSIAN)
+                        evenStaking
+                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
@@ -336,7 +341,9 @@ class StateSigningTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking ? WeightDistributionStrategy.BALANCED : WeightDistributionStrategy.GAUSSIAN)
+                        evenStaking
+                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
@@ -386,7 +393,9 @@ class StateSigningTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking ? WeightDistributionStrategy.BALANCED : WeightDistributionStrategy.GAUSSIAN)
+                        evenStaking
+                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
@@ -443,7 +452,9 @@ class StateSigningTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking ? WeightDistributionStrategy.BALANCED : WeightDistributionStrategy.GAUSSIAN)
+                        evenStaking
+                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
@@ -483,7 +494,7 @@ class StateSigningTests {
         int i = 0;
         for (final Address address : addressBook) {
             newAddressBook.add(address.copySetWeight(0));
-            assertTrue(address.equalsWithoutWeight(newAddressBook.getAddress(newAddressBook.getId(i))));
+            assertTrue(address.equalsWithoutWeightAndOwnHost(newAddressBook.getAddress(newAddressBook.getId(i))));
             i++;
         }
 
