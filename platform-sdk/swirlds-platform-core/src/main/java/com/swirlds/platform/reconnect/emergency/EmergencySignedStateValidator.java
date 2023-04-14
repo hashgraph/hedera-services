@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Validates the signed state received by the learner in an emergency reconnect. If the received state has the exact
  * round and hash requested, it does not need to be fully signed. If the state is for a later round, it must be signed
- * by at least half the network Weight to be considered valid. The emergency reconnect scenario is described in
+ * by at least half the network weight to be considered valid. The emergency reconnect scenario is described in
  * disaster-recovery.md.
  */
 public class EmergencySignedStateValidator implements SignedStateValidator {
