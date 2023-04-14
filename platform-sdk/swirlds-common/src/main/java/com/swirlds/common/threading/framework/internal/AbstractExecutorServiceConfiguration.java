@@ -172,7 +172,7 @@ public class AbstractExecutorServiceConfiguration<T extends AbstractExecutorServ
 
     /**
      * Set the maximum queue size for work waiting to be processed. Default unlimited. Ignored if queue implementation
-     * is provided via TODO
+     * is provided via {@link #setQueue(BlockingQueue)}.
      *
      * @param queueSize the maximum queue size, or {@link #UNLIMITED_QUEUE_SIZE} if there should be no limit.
      * @return this object
