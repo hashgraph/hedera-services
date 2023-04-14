@@ -118,7 +118,6 @@ dependencyResolutionManagement {
       // (https://github.com/hashgraph/hedera-protobufs-java.git)
       version("hapi-version", "0.37.0")
 
-
       // Definition of version numbers for all libraries
       version("pbj-version", "0.3.0")
       version("besu-version", "22.10.1")
