@@ -16,19 +16,25 @@
 
 package com.swirlds.config.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.validation.ConfigViolationException;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ConfigApiRecordsTests {
+class ConfigApiRecordsTests {
 
     @Test
-    public void getConfigProxy() {
+    void getConfigProxy() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("network.port", 8080))
@@ -39,36 +45,36 @@ public class ConfigApiRecordsTests {
         final NetworkConfig networkConfig = configuration.getConfigData(NetworkConfig.class);
 
         // then
-        Assertions.assertEquals(8080, networkConfig.port(), "Config data objects should be configured correctly");
+        assertEquals(8080, networkConfig.port(), "Config data objects should be configured correctly");
     }
 
     @Test
-    public void getNotRegisteredDataObject() {
+    void getNotRegisteredDataObject() {
         // given
         final ConfigurationBuilder configurationBuilder =
                 ConfigurationBuilder.create().withConfigDataType(NetworkConfig.class);
 
         // then
-        Assertions.assertThrows(
+        assertThrows(
                 IllegalStateException.class,
                 () -> configurationBuilder.build(),
                 "It should not be possible to create a config data object with undefined values");
     }
 
     @Test
-    public void getConfigProxyUndefinedValue() {
+    void getConfigProxyUndefinedValue() {
         // given
         final Configuration configuration = ConfigurationBuilder.create().build();
 
         // then
-        Assertions.assertThrows(
+        assertThrows(
                 IllegalArgumentException.class,
                 () -> configuration.getConfigData(NetworkConfig.class),
                 "It should not be possible to create an object of a not registered config data type");
     }
 
     @Test
-    public void getConfigProxyDefaultValue() {
+    void getConfigProxyDefaultValue() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("network.port", "8080"))
@@ -79,12 +85,11 @@ public class ConfigApiRecordsTests {
         final NetworkConfig networkConfig = configuration.getConfigData(NetworkConfig.class);
 
         // then
-        Assertions.assertEquals(
-                "localhost", networkConfig.server(), "Default values of config data objects should be used");
+        assertEquals("localhost", networkConfig.server(), "Default values of config data objects should be used");
     }
 
     @Test
-    public void getConfigProxyDefaultValuesList() {
+    void getConfigProxyDefaultValuesList() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("network.port", "8080"))
@@ -97,25 +102,24 @@ public class ConfigApiRecordsTests {
         final Set<Long> errorCodeSet = networkConfig.errorCodeSet();
 
         // then
-        Assertions.assertNotNull(errorCodes, "Default values of config data objects should be used");
-        Assertions.assertEquals(
-                2, errorCodes.size(), "List values should be supported for default values in config data objects");
-        Assertions.assertTrue(
+        assertNotNull(errorCodes, "Default values of config data objects should be used");
+        assertEquals(2, errorCodes.size(), "List values should be supported for default values in config data objects");
+        assertTrue(
                 errorCodes.contains(404), "List values should be supported for default values in config data objects");
-        Assertions.assertTrue(
+        assertTrue(
                 errorCodes.contains(500), "List values should be supported for default values in config data objects");
-        Assertions.assertEquals(
+        assertEquals(
                 2, errorCodeSet.size(), "Set values should be supported for default values in config data objects");
-        Assertions.assertTrue(
+        assertTrue(
                 errorCodeSet.contains(404L),
                 "Set values should be supported for default values in config data objects");
-        Assertions.assertTrue(
+        assertTrue(
                 errorCodeSet.contains(500L),
                 "Set values should be supported for default values in config data objects");
     }
 
     @Test
-    public void getConfigProxyValuesList() {
+    void getConfigProxyValuesList() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("network.port", "8080"))
@@ -129,32 +133,32 @@ public class ConfigApiRecordsTests {
         final Set<Long> errorCodeSet = networkConfig.errorCodeSet();
 
         // then
-        Assertions.assertNotNull(errorCodes, "List values should be supported in config data objects");
-        Assertions.assertEquals(3, errorCodes.size(), "List values should be supported in config data objects");
-        Assertions.assertTrue(errorCodes.contains(1), "List values should be supported in config data objects");
-        Assertions.assertTrue(errorCodes.contains(2), "List values should be supported in config data objects");
-        Assertions.assertTrue(errorCodes.contains(3), "List values should be supported in config data objects");
-        Assertions.assertEquals(3, errorCodeSet.size(), "Set values should be supported in config data objects");
-        Assertions.assertTrue(errorCodeSet.contains(1L), "Set values should be supported in config data objects");
-        Assertions.assertTrue(errorCodeSet.contains(2L), "Set values should be supported in config data objects");
-        Assertions.assertTrue(errorCodeSet.contains(3L), "Set values should be supported in config data objects");
+        assertNotNull(errorCodes, "List values should be supported in config data objects");
+        assertEquals(3, errorCodes.size(), "List values should be supported in config data objects");
+        assertTrue(errorCodes.contains(1), "List values should be supported in config data objects");
+        assertTrue(errorCodes.contains(2), "List values should be supported in config data objects");
+        assertTrue(errorCodes.contains(3), "List values should be supported in config data objects");
+        assertEquals(3, errorCodeSet.size(), "Set values should be supported in config data objects");
+        assertTrue(errorCodeSet.contains(1L), "Set values should be supported in config data objects");
+        assertTrue(errorCodeSet.contains(2L), "Set values should be supported in config data objects");
+        assertTrue(errorCodeSet.contains(3L), "Set values should be supported in config data objects");
     }
 
     @Test
-    public void invalidDataRecordWillFailInit() {
+    void invalidDataRecordWillFailInit() {
         // given
         final ConfigurationBuilder configurationBuilder =
                 ConfigurationBuilder.create().withConfigDataType(NetworkConfig.class);
 
         // then
-        Assertions.assertThrows(
+        assertThrows(
                 IllegalStateException.class,
                 () -> configurationBuilder.build(),
                 "values must be defined for all properties that are defined by registered config data types");
     }
 
     @Test
-    public void getConfigProxyOverwrittenDefaultValue() {
+    void getConfigProxyOverwrittenDefaultValue() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("network.port", "8080"))
@@ -166,36 +170,35 @@ public class ConfigApiRecordsTests {
         final NetworkConfig networkConfig = configuration.getConfigData(NetworkConfig.class);
 
         // then
-        Assertions.assertEquals(
+        assertEquals(
                 "example.net",
                 networkConfig.server(),
                 "It must be possible to overwrite default values in object data types");
     }
 
     @Test
-    public void testMinConstrainAnnotation() {
+    void testMinConstrainAnnotation() {
         // given
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSources(new SimpleConfigSource("network.port", "-1"))
                 .withConfigDataType(NetworkConfig.class);
 
         // when
-        final ConfigViolationException exception = Assertions.assertThrows(
+        final ConfigViolationException exception = assertThrows(
                 ConfigViolationException.class,
                 () -> configurationBuilder.build(),
                 "Check for @Min annotation in NetworkConfig should end in violation");
 
         // then
-        Assertions.assertEquals(1, exception.getViolations().size());
-        Assertions.assertTrue(exception.getViolations().get(0).propertyExists());
-        Assertions.assertEquals("network.port", exception.getViolations().get(0).getPropertyName());
-        Assertions.assertEquals("-1", exception.getViolations().get(0).getPropertyValue());
-        Assertions.assertEquals(
-                "Value must be >= 1", exception.getViolations().get(0).getMessage());
+        assertEquals(1, exception.getViolations().size());
+        assertTrue(exception.getViolations().get(0).propertyExists());
+        assertEquals("network.port", exception.getViolations().get(0).getPropertyName());
+        assertEquals("-1", exception.getViolations().get(0).getPropertyValue());
+        assertEquals("Value must be >= 1", exception.getViolations().get(0).getMessage());
     }
 
     @Test
-    public void testConstrainAnnotation() {
+    void testConstrainAnnotation() {
         // given
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSources(new SimpleConfigSource("network.port", "8080"))
@@ -203,23 +206,22 @@ public class ConfigApiRecordsTests {
                 .withConfigDataType(NetworkConfig.class);
 
         // when
-        final ConfigViolationException exception = Assertions.assertThrows(
+        final ConfigViolationException exception = assertThrows(
                 ConfigViolationException.class,
                 () -> configurationBuilder.build(),
                 "Check for @Constraint annotation in NetworkConfig should end in violation");
 
         // then
-        Assertions.assertEquals(1, exception.getViolations().size());
-        Assertions.assertTrue(exception.getViolations().get(0).propertyExists());
-        Assertions.assertEquals(
-                "network.server", exception.getViolations().get(0).getPropertyName());
-        Assertions.assertEquals("invalid", exception.getViolations().get(0).getPropertyValue());
-        Assertions.assertEquals(
+        assertEquals(1, exception.getViolations().size());
+        assertTrue(exception.getViolations().get(0).propertyExists());
+        assertEquals("network.server", exception.getViolations().get(0).getPropertyName());
+        assertEquals("invalid", exception.getViolations().get(0).getPropertyValue());
+        assertEquals(
                 "server must not be invalid", exception.getViolations().get(0).getMessage());
     }
 
     @Test
-    public void testMultipleConstrainAnnotationsFail() {
+    void testMultipleConstrainAnnotationsFail() {
         // given
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSources(new SimpleConfigSource("network.port", "-1"))
@@ -227,17 +229,17 @@ public class ConfigApiRecordsTests {
                 .withConfigDataType(NetworkConfig.class);
 
         // when
-        final ConfigViolationException exception = Assertions.assertThrows(
+        final ConfigViolationException exception = assertThrows(
                 ConfigViolationException.class,
                 () -> configurationBuilder.build(),
                 "Check for @Constraint annotation in NetworkConfig should end in violation");
 
         // then
-        Assertions.assertEquals(2, exception.getViolations().size());
+        assertEquals(2, exception.getViolations().size());
     }
 
     @Test
-    public void testNullDefaultsInConfigDataRecord() {
+    void testNullDefaultsInConfigDataRecord() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConfigDataType(NullConfig.class)
@@ -249,13 +251,13 @@ public class ConfigApiRecordsTests {
         final Set<Integer> set = configuration.getConfigData(NullConfig.class).set();
 
         // then
-        Assertions.assertNull(value);
-        Assertions.assertNull(list);
-        Assertions.assertNull(set);
+        assertNull(value);
+        assertNull(list);
+        assertNull(set);
     }
 
     @Test
-    public void testEmptyCollectionsInConfigDataRecord() {
+    void testEmptyCollectionsInConfigDataRecord() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConfigDataType(EmptyCollectionConfig.class)
@@ -268,7 +270,7 @@ public class ConfigApiRecordsTests {
                 configuration.getConfigData(EmptyCollectionConfig.class).set();
 
         // then
-        Assertions.assertIterableEquals(List.of(), list);
-        Assertions.assertIterableEquals(Set.of(), set);
+        assertIterableEquals(List.of(), list);
+        assertIterableEquals(Set.of(), set);
     }
 }

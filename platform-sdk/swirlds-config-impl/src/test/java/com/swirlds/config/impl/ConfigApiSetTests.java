@@ -16,19 +16,23 @@
 
 package com.swirlds.config.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ConfigApiSetTests {
+class ConfigApiSetTests {
 
     @Test
-    public void readSetProperty() {
+    void readSetProperty() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource().withIntegerValues("testNumbers", List.of(1, 2, 3)))
@@ -38,17 +42,14 @@ public class ConfigApiSetTests {
         final Set<Integer> values = configuration.getValueSet("testNumbers", Integer.class);
 
         // then
-        Assertions.assertEquals(3, values.size(), "A property that is defined as set should be parsed correctly");
-        Assertions.assertTrue(
-                values.contains(1), "A property that is defined as set should contain the defined values");
-        Assertions.assertTrue(
-                values.contains(2), "A property that is defined as set should contain the defined values");
-        Assertions.assertTrue(
-                values.contains(3), "A property that is defined as set should contain the defined values");
+        assertEquals(3, values.size(), "A property that is defined as set should be parsed correctly");
+        assertTrue(values.contains(1), "A property that is defined as set should contain the defined values");
+        assertTrue(values.contains(2), "A property that is defined as set should contain the defined values");
+        assertTrue(values.contains(3), "A property that is defined as set should contain the defined values");
     }
 
     @Test
-    public void readSetPropertyWithOneEntry() {
+    void readSetPropertyWithOneEntry() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("testNumbers", 123))
@@ -58,27 +59,26 @@ public class ConfigApiSetTests {
         final Set<Integer> values = configuration.getValueSet("testNumbers", Integer.class);
 
         // then
-        Assertions.assertEquals(1, values.size(), "A property that is defined as set should be parsed correctly");
-        Assertions.assertTrue(
-                values.contains(123), "A property that is defined as set should contain the defined values");
+        assertEquals(1, values.size(), "A property that is defined as set should be parsed correctly");
+        assertTrue(values.contains(123), "A property that is defined as set should contain the defined values");
     }
 
     @Test
-    public void readBadSetProperty() {
+    void readBadSetProperty() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("testNumbers", "1,2,   3,4"))
                 .build();
 
         // then
-        Assertions.assertThrows(
+        assertThrows(
                 IllegalArgumentException.class,
                 () -> configuration.getValueSet("testNumbers", Integer.class),
                 "given set property should not be parsed correctly");
     }
 
     @Test
-    public void readDefaultSetProperty() {
+    void readDefaultSetProperty() {
         // given
         final Configuration configuration = ConfigurationBuilder.create().build();
 
@@ -86,15 +86,14 @@ public class ConfigApiSetTests {
         final Set<Integer> values = configuration.getValueSet("testNumbers", Integer.class, Set.of(6, 7, 8));
 
         // then
-        Assertions.assertEquals(
-                3, values.size(), "The default value should be used since no value is defined by the config");
-        Assertions.assertTrue(values.contains(6), "Should be part of the set since it is part of the default");
-        Assertions.assertTrue(values.contains(7), "Should be part of the set since it is part of the default");
-        Assertions.assertTrue(values.contains(8), "Should be part of the set since it is part of the default");
+        assertEquals(3, values.size(), "The default value should be used since no value is defined by the config");
+        assertTrue(values.contains(6), "Should be part of the set since it is part of the default");
+        assertTrue(values.contains(7), "Should be part of the set since it is part of the default");
+        assertTrue(values.contains(8), "Should be part of the set since it is part of the default");
     }
 
     @Test
-    public void readNullDefaultSetProperty() {
+    void readNullDefaultSetProperty() {
         // given
         final Configuration configuration = ConfigurationBuilder.create().build();
 
@@ -102,11 +101,11 @@ public class ConfigApiSetTests {
         final Set<Integer> values = configuration.getValueSet("testNumbers", Integer.class, null);
 
         // then
-        Assertions.assertNull(values, "Null should be a valid default value");
+        assertNull(values, "Null should be a valid default value");
     }
 
     @Test
-    public void checkSetPropertyImmutable() {
+    void checkSetPropertyImmutable() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("testNumbers", "1,2,3"))
@@ -116,20 +115,18 @@ public class ConfigApiSetTests {
         final Set<Integer> values = configuration.getValueSet("testNumbers", Integer.class);
 
         // then
-        Assertions.assertThrows(
+        assertThrows(
                 UnsupportedOperationException.class, () -> values.add(10), "Set properties should always be immutable");
     }
 
     @Test
-    public void testNotDefinedEmptySet() {
+    void testNotDefinedEmptySet() {
         // given
         final Configuration configuration = ConfigurationBuilder.create().build();
 
         // then
-        Assertions.assertThrows(NoSuchElementException.class, () -> configuration.getValueSet("sample.list"));
-        Assertions.assertThrows(
-                NoSuchElementException.class, () -> configuration.getValueSet("sample.list", String.class));
-        Assertions.assertThrows(
-                NoSuchElementException.class, () -> configuration.getValueSet("sample.list", Integer.class));
+        assertThrows(NoSuchElementException.class, () -> configuration.getValueSet("sample.list"));
+        assertThrows(NoSuchElementException.class, () -> configuration.getValueSet("sample.list", String.class));
+        assertThrows(NoSuchElementException.class, () -> configuration.getValueSet("sample.list", Integer.class));
     }
 }
