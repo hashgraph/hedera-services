@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -97,8 +98,10 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         final var topicStore = context.createStore(ReadableTopicStore.class);
         final ConsensusGetTopicInfoQuery op = query.consensusGetTopicInfoOrThrow();
         if (op.hasTopicID()) {
-            final var topicMetadata = topicStore.getTopicMetadata(op.topicIDOrElse(TopicID.DEFAULT));
-            if (topicMetadata.failed() || topicMetadata.metadata().isDeleted()) {
+            // The topic must exist
+            final var topic = topicStore.getTopicMetadata(op.topicID());
+            mustExist(topic, INVALID_TOPIC_ID);
+            if (topic.isDeleted()) {
                 throw new PreCheckException(INVALID_TOPIC_ID);
             }
         }
@@ -133,18 +136,17 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      */
     private Optional<ConsensusTopicInfo> infoForTopic(
             @NonNull final TopicID topicID, @NonNull final ReadableTopicStore topicStore) {
-        final var metaOrFailure = topicStore.getTopicMetadata(topicID);
-        if (metaOrFailure.failed()) {
+        final var meta = topicStore.getTopicMetadata(topicID);
+        if (meta == null) {
             return Optional.empty();
         } else {
             final var info = ConsensusTopicInfo.newBuilder();
-            final var meta = metaOrFailure.metadata();
             meta.memo().ifPresent(info::memo);
             info.runningHash(Bytes.wrap(meta.runningHash()));
             info.sequenceNumber(meta.sequenceNumber());
             info.expirationTime(meta.expirationTimestamp());
-            meta.adminKey().ifPresent(key -> info.adminKey(PbjConverter.toPbj(asKeyUnchecked((JKey) key))));
-            meta.submitKey().ifPresent(key -> info.submitKey(PbjConverter.toPbj(asKeyUnchecked((JKey) key))));
+            if (meta.adminKey() != null) info.adminKey(PbjConverter.toPbj(asKeyUnchecked((JKey) meta.adminKey())));
+            if (meta.submitKey() != null) info.submitKey(PbjConverter.toPbj(asKeyUnchecked((JKey) meta.submitKey())));
             info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewDurationSeconds()));
             meta.autoRenewAccountId()
                     .ifPresent(account ->

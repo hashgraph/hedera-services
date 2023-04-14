@@ -27,6 +27,7 @@ import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface SignaturePreparer {
 
@@ -94,5 +95,5 @@ public interface SignaturePreparer {
             @NonNull HederaState state,
             @NonNull byte[] txBodyBytes,
             @NonNull SignatureMap signatureMap,
-            @NonNull List<HederaKey> keys);
+            @NonNull Set<HederaKey> keys);
 }
