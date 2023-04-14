@@ -266,7 +266,7 @@ public abstract class AbstractLongList<C> implements LongList {
         }
         final int chunkIndex = toIntExact(index / numLongsPerChunk);
         final long subIndex = index % numLongsPerChunk;
-        C chunk = chunkList.get(chunkIndex);
+        final C chunk = chunkList.get(chunkIndex);
         if (chunk == null) {
             return defaultValue;
         }
@@ -284,12 +284,26 @@ public abstract class AbstractLongList<C> implements LongList {
      */
     @Override
     public final void put(long index, long value) {
-        checkValueAndIndex(index, value);
+        checkIndex(index);
+        checkValue(value);
+        putImpl(index, value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final void remove(final long index) {
+        checkIndex(index);
+        putImpl(index, IMPERMISSIBLE_VALUE);
+    }
+
+    private void putImpl(final long index, final long value) {
         assert index >= minValidIndex.get()
                 : String.format("Index %d is less than min valid index %d", index, minValidIndex.get());
         final C chunk = createOrGetChunk(index);
         final int subIndex = toIntExact(index % numLongsPerChunk);
-        put(chunk, subIndex, value);
+        putToChunk(chunk, subIndex, value);
     }
 
     /**
@@ -298,7 +312,7 @@ public abstract class AbstractLongList<C> implements LongList {
      * @param subIndex the subIndex to use
      * @param value the long to store
      */
-    protected abstract void put(C chunk, int subIndex, long value);
+    protected abstract void putToChunk(C chunk, int subIndex, long value);
 
     /**
      * Stores a long at the given index, on the condition that the current long therein has a given
@@ -313,7 +327,8 @@ public abstract class AbstractLongList<C> implements LongList {
      */
     @Override
     public final boolean putIfEqual(long index, long oldValue, long newValue) {
-        checkValueAndIndex(index, newValue);
+        checkIndex(index);
+        checkValue(newValue);
         final int chunkIndex = toIntExact(index / numLongsPerChunk);
         final C chunk = chunkList.get(chunkIndex);
         if (chunk == null) {
@@ -585,17 +600,24 @@ public abstract class AbstractLongList<C> implements LongList {
     }
 
     /**
-     * Checks if the value may be put into a LongList at a certain index, given a max capacity.
+     * Checks if a value may be put into a LongList at a certain index, given a max capacity.
      *
      * @param index the index to check
-     * @param value the value to check
-     * @throws IllegalArgumentException  if the value is impermissible
      * @throws IndexOutOfBoundsException if the index is out-of-bounds
      */
-    protected final void checkValueAndIndex(final long index, final long value) {
+    private void checkIndex(final long index) {
         if (index < 0 || index >= maxLongs) {
             throw new IndexOutOfBoundsException("Index " + index + " is out-of-bounds given capacity " + maxLongs);
         }
+    }
+
+    /**
+     * Checks if the value may be put into a LongList.
+     *
+     * @param value the value to check
+     * @throws IllegalArgumentException  if the value is impermissible
+     */
+    private void checkValue(final long value) {
         if (value == IMPERMISSIBLE_VALUE) {
             throw new IllegalArgumentException("Cannot put " + IMPERMISSIBLE_VALUE + " into a LongList");
         }
