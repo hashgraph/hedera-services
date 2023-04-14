@@ -187,7 +187,7 @@ class AddressBookInitializerTest {
     }
 
     @Test
-    @DisplayName("Version upgrade, SwirldState set 0 Weight.")
+    @DisplayName("Version upgrade, SwirldState set 0 weight.")
     void versionUpgradeSwirldStateZeroWeight() throws IOException {
         clearTestDirectory();
         final SignedState signedState = getMockSignedState(2, 0);
