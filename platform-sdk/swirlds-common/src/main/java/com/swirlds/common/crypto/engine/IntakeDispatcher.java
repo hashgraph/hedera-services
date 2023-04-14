@@ -19,6 +19,7 @@ package com.swirlds.common.crypto.engine;
 import static com.swirlds.common.crypto.engine.CryptoEngine.THREAD_COMPONENT_NAME;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.List;
 import java.util.Queue;
@@ -98,10 +99,13 @@ public class IntakeDispatcher<Element, Provider extends OperationProvider, Handl
         this.provider = provider;
         this.handlerSupplier = handlerSupplier;
 
-        this.executorService = threadManager.createFixedThreadPool(
-                String.format("%s: %s tp worker", THREAD_COMPONENT_NAME, elementType.getSimpleName()),
-                parallelism,
-                this::handleThreadException);
+        this.executorService = threadManager
+                .newExecutorServiceConfiguration(
+                        "%s: %s tp worker".formatted(THREAD_COMPONENT_NAME, elementType.getSimpleName()))
+                .setProfile(ExecutorServiceProfile.FIXED_THREAD_POOL)
+                .setCorePoolSize(parallelism)
+                .setUncaughtExceptionHandler(this::handleThreadException)
+                .build();
 
         this.worker = threadManager
                 .newThreadConfiguration()

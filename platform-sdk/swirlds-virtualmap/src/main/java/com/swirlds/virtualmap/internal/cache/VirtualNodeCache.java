@@ -26,6 +26,7 @@ import com.swirlds.common.exceptions.PlatformException;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
@@ -161,10 +162,12 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
     private static final Executor CLEANING_POOL = Boolean.getBoolean("syncCleaningPool")
             ? Runnable::run
             : getStaticThreadManager()
-                    .createFixedThreadPool(
-                            "virtual-map: cache-cleaner",
-                            CACHE_CLEANER_THREAD_COUNT,
-                            (t, ex) -> logger.error("Failed to purge unneeded key/mutationList pairs", ex));
+                    .newExecutorServiceConfiguration("virtual-map: cache-cleaner")
+                    .setProfile(ExecutorServiceProfile.FIXED_THREAD_POOL)
+                    .setCorePoolSize(CACHE_CLEANER_THREAD_COUNT)
+                    .setUncaughtExceptionHandler(
+                            (t, ex) -> logger.error("Failed to purge unneeded key/mutationList pairs", ex))
+                    .build();
 
     /**
      * The fast-copyable version of the cache. This version number is auto-incrementing and set

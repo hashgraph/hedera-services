@@ -22,8 +22,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
@@ -61,15 +59,5 @@ public abstract class AbstractThreadManager implements ThreadManager {
             }
             return thread;
         };
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ExecutorService createFixedThreadPool(@NonNull final String name, final int threadCount) {
-        Objects.requireNonNull(name);
-        return createFixedThreadPool(name, threadCount, defaultExceptionHandler);
     }
 }

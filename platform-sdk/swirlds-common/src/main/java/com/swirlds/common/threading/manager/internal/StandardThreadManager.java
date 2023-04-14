@@ -33,11 +33,9 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.LifecyclePhase;
 import com.swirlds.common.utility.Startable;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -119,48 +117,6 @@ public final class StandardThreadManager extends AbstractThreadManager
     @Override
     public ExecutorServiceConfiguration newExecutorServiceConfiguration(final @NonNull String name) {
         return new ExecutorServiceConfiguration(this, name);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ExecutorService createSingleThreadExecutor(
-            @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(uncaughtExceptionHandler);
-        try (final Locked l = lock.lock()) {
-            throwIfAfterPhase(LifecyclePhase.STARTED);
-            final ManagedExecutorService service = new ManagedExecutorService(
-                    Executors.newSingleThreadExecutor(buildThreadFactory(name, uncaughtExceptionHandler)));
-            if (phase == LifecyclePhase.NOT_STARTED) {
-                thingsToBeStarted.add(service);
-            }
-            return service;
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ExecutorService createFixedThreadPool(
-            @NonNull final String name,
-            int threadCount,
-            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(uncaughtExceptionHandler);
-        try (final Locked l = lock.lock()) {
-            throwIfAfterPhase(LifecyclePhase.STARTED);
-            final ManagedExecutorService service = new ManagedExecutorService(
-                    Executors.newFixedThreadPool(threadCount, buildThreadFactory(name, uncaughtExceptionHandler)));
-            if (phase == LifecyclePhase.NOT_STARTED) {
-                thingsToBeStarted.add(service);
-            }
-            return service;
-        }
     }
 
     /**

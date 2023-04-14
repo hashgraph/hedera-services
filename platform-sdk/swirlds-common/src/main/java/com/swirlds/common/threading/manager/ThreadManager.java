@@ -24,8 +24,6 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -44,47 +42,6 @@ public interface ThreadManager {
      */
     @NonNull
     ExecutorServiceConfiguration newExecutorServiceConfiguration(@NonNull final String name);
-
-    /**
-     * Create a new single thread executor. If this thread manager has not yet been started, work submitted the executor
-     * service will be not be handled until after the thread manager has been started (with the exception of the
-     * invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being started).
-     *
-     * @param name                     the name of the thread pool
-     * @param uncaughtExceptionHandler handles uncaught exceptions
-     * @return a new single thread executor
-     */
-    @NonNull
-    ExecutorService createSingleThreadExecutor(
-            @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler);
-
-    /**
-     * Create a new fixed thread pool. If this thread manager has not yet been started, work submitted the executor
-     * service will be not be handled until after the thread manager has been started (with the exception of the
-     * invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being started).
-     *
-     * @param name        the name of the thread pool
-     * @param threadCount the number of threads in the pool
-     * @return a new fixed thread pool
-     */
-    @NonNull
-    ExecutorService createFixedThreadPool(@NonNull final String name, final int threadCount);
-
-    /**
-     * Create a new fixed thread pool. If this thread manager has not yet been started, work submitted the executor
-     * service will be not be handled until after the thread manager has been started (with the exception of the
-     * invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being started).
-     *
-     * @param name                     the name of the thread pool
-     * @param threadCount              the number of threads in the pool
-     * @param uncaughtExceptionHandler handles uncaught exceptions
-     * @return a new fixed thread pool
-     */
-    @NonNull
-    ExecutorService createFixedThreadPool(
-            @NonNull final String name,
-            final int threadCount,
-            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler);
 
     /**
      * Create a new single thread scheduled executor. If this thread manager has not yet been started, work submitted

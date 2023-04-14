@@ -413,7 +413,11 @@ class ThreadManagerTests {
 
             final AtomicLong count = new AtomicLong();
 
-            final ExecutorService executorService = threadManager.createFixedThreadPool("test", 3);
+            final ExecutorService executorService = threadManager
+                    .newExecutorServiceConfiguration("test")
+                    .setProfile(ExecutorServiceProfile.FIXED_THREAD_POOL)
+                    .setCorePoolSize(3)
+                    .build();
 
             int sum = 0;
             for (int i = 0; i < 100; i++) {
@@ -446,8 +450,12 @@ class ThreadManagerTests {
             final AtomicLong count = new AtomicLong();
             final AtomicBoolean exceptionObserved = new AtomicBoolean(false);
 
-            final ExecutorService executorService =
-                    threadManager.createFixedThreadPool("test", 3, (t, e) -> exceptionObserved.set(true));
+            final ExecutorService executorService = threadManager
+                    .newExecutorServiceConfiguration("test")
+                    .setProfile(ExecutorServiceProfile.FIXED_THREAD_POOL)
+                    .setCorePoolSize(3)
+                    .setUncaughtExceptionHandler((t, e) -> exceptionObserved.set(true))
+                    .build();
 
             int sum = 0;
             for (int i = 0; i < 100; i++) {

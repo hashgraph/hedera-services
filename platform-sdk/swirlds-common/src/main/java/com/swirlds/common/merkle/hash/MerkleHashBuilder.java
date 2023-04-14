@@ -26,6 +26,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.Iterator;
@@ -68,11 +69,13 @@ public class MerkleHashBuilder {
         this.cryptography = cryptography;
         this.cpuThreadCount = cpuThreadCount;
 
-        this.threadPool = threadManager.createFixedThreadPool(
-                THREAD_COMPONENT_NAME + ": merkle hash",
-                cpuThreadCount,
-                (t, ex) ->
-                        logger.error(EXCEPTION.getMarker(), "Uncaught exception in MerkleHashBuilder thread pool", ex));
+        this.threadPool = threadManager
+                .newExecutorServiceConfiguration(THREAD_COMPONENT_NAME + ": merkle hash")
+                .setProfile(ExecutorServiceProfile.FIXED_THREAD_POOL)
+                .setCorePoolSize(cpuThreadCount)
+                .setUncaughtExceptionHandler((t, ex) ->
+                        logger.error(EXCEPTION.getMarker(), "Uncaught exception in MerkleHashBuilder thread pool", ex))
+                .build();
     }
 
     /**
