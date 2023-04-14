@@ -16,6 +16,7 @@
 
 package com.swirlds.common.threading.manager.internal;
 
+import com.swirlds.common.threading.framework.config.ExecutorServiceConfiguration;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadPoolConfiguration;
@@ -25,6 +26,7 @@ import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
+import com.swirlds.common.threading.manager.ExecutorServiceRegistry;
 import com.swirlds.common.threading.manager.StartableThreadManager;
 import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -43,7 +45,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * A standard implementation of a {@link ThreadManager}. Will not permit work to be done on threads until started.
  */
 public final class StandardThreadManager extends AbstractThreadManager
-        implements StartableThreadManager, ThreadBuilder {
+        implements StartableThreadManager, ThreadBuilder, ExecutorServiceRegistry {
 
     private LifecyclePhase phase = LifecyclePhase.NOT_STARTED;
     private final List<Startable> thingsToBeStarted = new ArrayList<>();
@@ -97,21 +99,26 @@ public final class StandardThreadManager extends AbstractThreadManager
     /**
      * {@inheritDoc}
      */
-    @NonNull
     @Override
-    public ExecutorService createCachedThreadPool(
-            @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(uncaughtExceptionHandler);
+    public void registerExecutorService(@NonNull ManagedExecutorService executorService) {
         try (final Locked l = lock.lock()) {
             throwIfAfterPhase(LifecyclePhase.STARTED);
-            final ManagedExecutorService service = new ManagedExecutorService(
-                    Executors.newCachedThreadPool(buildThreadFactory(name, uncaughtExceptionHandler)));
+
             if (phase == LifecyclePhase.NOT_STARTED) {
-                thingsToBeStarted.add(service);
+                thingsToBeStarted.add(executorService);
+            } else {
+                executorService.start();
             }
-            return service;
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public ExecutorServiceConfiguration newExecutorServiceConfiguration(final @NonNull String name) {
+        return new ExecutorServiceConfiguration(this, name);
     }
 
     /**

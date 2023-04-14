@@ -20,6 +20,7 @@ import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStati
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.io.IOException;
@@ -70,8 +71,10 @@ public abstract class VirtualMapBench extends BaseBench {
     private final AtomicLong snapshotTime = new AtomicLong(0L);
     /* Asynchronous hasher */
     private final ExecutorService hasher = getStaticThreadManager()
-            .createSingleThreadExecutor(
-                    "benchmark: hasher", (t, ex) -> logger.error("Uncaught exception during hashing", ex));
+            .newExecutorServiceConfiguration("benchmark: hasher")
+            .setProfile(ExecutorServiceProfile.SINGLE_THREAD_EXECUTOR)
+            .setUncaughtExceptionHandler((t, ex) -> logger.error("Uncaught exception during hashing", ex))
+            .build();
 
     @TearDown
     public void destroyLocal() throws IOException {

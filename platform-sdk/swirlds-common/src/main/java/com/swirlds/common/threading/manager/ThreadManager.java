@@ -16,6 +16,7 @@
 
 package com.swirlds.common.threading.manager;
 
+import com.swirlds.common.threading.framework.config.ExecutorServiceConfiguration;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadPoolConfiguration;
@@ -33,39 +34,16 @@ import java.util.concurrent.ScheduledExecutorService;
 public interface ThreadManager {
 
     /**
-     * Create a new cached thread pool. If this thread manager has not yet been started, work submitted the executor
-     * service will be not be handled until after the thread manager has been started (with the exception of the
-     * invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being started).
+     * Create configuration for a new executor service. If this thread manager has not yet been started, work
+     * submitted the executor service will be not be handled until after the thread manager has been started (with the
+     * exception of the invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager
+     * being started).
      *
      * @param name the name of the thread pool
      * @return a new cached thread pool
      */
     @NonNull
-    ExecutorService createCachedThreadPool(@NonNull final String name);
-
-    /**
-     * Create a new cached thread pool. If this thread manager has not yet been started, work submitted the executor
-     * service will be not be handled until after the thread manager has been started (with the exception of the
-     * invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being started).
-     *
-     * @param name                     the name of the thread pool
-     * @param uncaughtExceptionHandler handles uncaught exceptions
-     * @return a new cached thread pool
-     */
-    @NonNull
-    ExecutorService createCachedThreadPool(
-            @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler);
-
-    /**
-     * Create a new single thread executor. If this thread manager has not yet been started, work submitted the executor
-     * service will be not be handled until after the thread manager has been started (with the exception of the
-     * invokeAny() and invokeAll() methods, which will throw if called prior to the thread manager being started).
-     *
-     * @param name the name of the thread pool
-     * @return a new single thread executor
-     */
-    @NonNull
-    ExecutorService createSingleThreadExecutor(@NonNull final String name);
+    ExecutorServiceConfiguration newExecutorServiceConfiguration(@NonNull final String name);
 
     /**
      * Create a new single thread executor. If this thread manager has not yet been started, work submitted the executor

@@ -28,6 +28,7 @@ import static com.swirlds.virtualmap.internal.Path.getSiblingPath;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapSettingsFactory;
@@ -76,9 +77,11 @@ public final class VirtualHasher<K extends VirtualKey<? super K>, V extends Virt
      * that in the future we will want to have a fixed thread pool to better manage compute resources.
      */
     private static final ExecutorService HASHING_POOL = getStaticThreadManager()
-            .createCachedThreadPool(
-                    "virtual-map: hasher",
-                    (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during hashing", ex));
+            .newExecutorServiceConfiguration("virtual-map: hasher")
+            .setProfile(ExecutorServiceProfile.CACHED_THREAD_POOL)
+            .setUncaughtExceptionHandler(
+                    (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during hashing", ex))
+            .build();
 
     /**
      * This thread-local gets a HashBuilder that can be used for hashing on a per-thread basis.

@@ -28,6 +28,7 @@ import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.common.utility.Units;
 import com.swirlds.merkledb.collections.HashList;
 import com.swirlds.merkledb.collections.HashListByteBuffer;
@@ -267,24 +268,25 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 .createScheduledThreadPool(MERKLEDB_COMPONENT + ": Merging", NUMBER_OF_MERGING_THREADS);
         // create thread pool storing internal records
         storeInternalExecutor = getStaticThreadManager()
-                .createSingleThreadExecutor(
-                        MERKLEDB_COMPONENT + ": Store Internal Records",
-                        (t, ex) -> logger.error(
-                                EXCEPTION.getMarker(), "[{}] Uncaught exception during storing", tableName, ex));
+                .newExecutorServiceConfiguration(MERKLEDB_COMPONENT + ": Store Internal Records")
+                .setProfile(ExecutorServiceProfile.SINGLE_THREAD_EXECUTOR)
+                .setUncaughtExceptionHandler((t, ex) ->
+                        logger.error(EXCEPTION.getMarker(), "[{}] Uncaught exception during storing", tableName, ex))
+                .build();
         // create thread pool storing key-to-path mappings
         storeKeyToPathExecutor = getStaticThreadManager()
-                .createSingleThreadExecutor(
-                        MERKLEDB_COMPONENT + ": Store Key to Path",
-                        (t, ex) -> logger.error(
-                                EXCEPTION.getMarker(),
-                                "[{}] Uncaught exception during storing" + " keys",
-                                tableName,
-                                ex));
+                .newExecutorServiceConfiguration(MERKLEDB_COMPONENT + ": Store Key to Path")
+                .setProfile(ExecutorServiceProfile.SINGLE_THREAD_EXECUTOR)
+                .setUncaughtExceptionHandler((t, ex) -> logger.error(
+                        EXCEPTION.getMarker(), "[{}] Uncaught exception during storing" + " keys", tableName, ex))
+                .build();
         // thread pool creating snapshots, it is unbounded in threads, but we use at most 7
         snapshotExecutor = getStaticThreadManager()
-                .createCachedThreadPool(
-                        MERKLEDB_COMPONENT + ": Snapshot",
-                        (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during snapshots", ex));
+                .newExecutorServiceConfiguration(MERKLEDB_COMPONENT + ": Snapshot")
+                .setProfile(ExecutorServiceProfile.CACHED_THREAD_POOL)
+                .setUncaughtExceptionHandler(
+                        (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during snapshots", ex))
+                .build();
 
         final Path storageDir = database.getTableDir(tableName, tableId);
         dbPaths = new MerkleDbPaths(storageDir);

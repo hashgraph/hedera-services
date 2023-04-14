@@ -30,7 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Boilerplate code for thread managers.
+ * Boilerplate code for thread managers. TODO delete this class
  */
 public abstract class AbstractThreadManager implements ThreadManager {
 
@@ -61,26 +61,6 @@ public abstract class AbstractThreadManager implements ThreadManager {
             }
             return thread;
         };
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ExecutorService createCachedThreadPool(@NonNull final String name) {
-        Objects.requireNonNull(name);
-        return createCachedThreadPool(name, defaultExceptionHandler);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ExecutorService createSingleThreadExecutor(@NonNull final String name) {
-        Objects.requireNonNull(name);
-        return createSingleThreadExecutor(name, defaultExceptionHandler);
     }
 
     /**

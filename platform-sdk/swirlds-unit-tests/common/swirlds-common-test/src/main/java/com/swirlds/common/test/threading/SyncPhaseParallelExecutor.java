@@ -16,6 +16,7 @@
 
 package com.swirlds.common.test.threading;
 
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -76,7 +77,10 @@ public class SyncPhaseParallelExecutor implements ParallelExecutor {
         this.beforePhase3 = noopIfNull(beforePhase3);
         this.waitForSecondThread = waitForSecondThread;
 
-        executor = threadManager.createCachedThreadPool("SyncPhase");
+        executor = threadManager
+                .newExecutorServiceConfiguration("SyncPhase")
+                .setProfile(ExecutorServiceProfile.CACHED_THREAD_POOL)
+                .build();
         threadStatus = new AtomicReference<>(ThreadStatus.WAITING_FOR_FIRST_THREAD);
         phase = PHASE_1;
     }

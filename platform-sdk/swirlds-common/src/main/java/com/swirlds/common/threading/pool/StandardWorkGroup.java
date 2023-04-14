@@ -18,6 +18,7 @@ package com.swirlds.common.threading.pool;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.common.threading.futures.ConcurrentFuturePool;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.concurrent.ExecutorService;
@@ -71,9 +72,11 @@ public class StandardWorkGroup {
 
         this.onException = abortAction;
 
-        this.executorService = threadManager.createCachedThreadPool(
-                "work group " + groupName + ": " + DEFAULT_TASK_NAME,
-                (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception ", ex));
+        this.executorService = threadManager
+                .newExecutorServiceConfiguration("work group " + groupName + ": " + DEFAULT_TASK_NAME)
+                .setProfile(ExecutorServiceProfile.CACHED_THREAD_POOL)
+                .setUncaughtExceptionHandler((t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception ", ex))
+                .build();
     }
 
     public void shutdown() {

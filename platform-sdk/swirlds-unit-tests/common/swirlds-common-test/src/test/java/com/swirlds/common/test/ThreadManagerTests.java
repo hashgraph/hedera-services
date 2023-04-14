@@ -28,6 +28,7 @@ import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.QueueThreadPool;
 import com.swirlds.common.threading.framework.StoppableThread;
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.common.threading.manager.StartableThreadManager;
 import com.swirlds.common.threading.manager.ThreadManagerFactory;
 import com.swirlds.common.utility.LifecycleException;
@@ -256,7 +257,10 @@ class ThreadManagerTests {
 
             final AtomicLong count = new AtomicLong();
 
-            final ExecutorService executorService = threadManager.createCachedThreadPool("test");
+            final ExecutorService executorService = threadManager
+                    .newExecutorServiceConfiguration("test")
+                    .setProfile(ExecutorServiceProfile.CACHED_THREAD_POOL)
+                    .build();
 
             int sum = 0;
             for (int i = 0; i < 100; i++) {
@@ -289,8 +293,11 @@ class ThreadManagerTests {
             final AtomicLong count = new AtomicLong();
             final AtomicBoolean exceptionObserved = new AtomicBoolean(false);
 
-            final ExecutorService executorService =
-                    threadManager.createCachedThreadPool("test", (t, e) -> exceptionObserved.set(true));
+            final ExecutorService executorService = threadManager
+                    .newExecutorServiceConfiguration("test")
+                    .setProfile(ExecutorServiceProfile.CACHED_THREAD_POOL)
+                    .setUncaughtExceptionHandler((t, e) -> exceptionObserved.set(true))
+                    .build();
 
             int sum = 0;
             for (int i = 0; i < 100; i++) {
@@ -328,7 +335,10 @@ class ThreadManagerTests {
 
             final AtomicLong count = new AtomicLong();
 
-            final ExecutorService executorService = threadManager.createSingleThreadExecutor("test");
+            final ExecutorService executorService = threadManager
+                    .newExecutorServiceConfiguration("test")
+                    .setProfile(ExecutorServiceProfile.SINGLE_THREAD_EXECUTOR)
+                    .build();
 
             int sum = 0;
             for (int i = 0; i < 100; i++) {
@@ -361,8 +371,11 @@ class ThreadManagerTests {
             final AtomicLong count = new AtomicLong();
             final AtomicBoolean exceptionObserved = new AtomicBoolean(false);
 
-            final ExecutorService executorService =
-                    threadManager.createSingleThreadExecutor("test", (t, e) -> exceptionObserved.set(true));
+            final ExecutorService executorService = threadManager
+                    .newExecutorServiceConfiguration("test")
+                    .setProfile(ExecutorServiceProfile.SINGLE_THREAD_EXECUTOR)
+                    .setUncaughtExceptionHandler((t, e) -> exceptionObserved.set(true))
+                    .build();
 
             int sum = 0;
             for (int i = 0; i < 100; i++) {

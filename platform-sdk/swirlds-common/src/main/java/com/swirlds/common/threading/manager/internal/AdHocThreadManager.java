@@ -16,12 +16,14 @@
 
 package com.swirlds.common.threading.manager.internal;
 
+import com.swirlds.common.threading.framework.config.ExecutorServiceConfiguration;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadPoolConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
+import com.swirlds.common.threading.manager.ExecutorServiceRegistry;
 import com.swirlds.common.threading.manager.ThreadBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,7 +37,8 @@ import java.util.concurrent.ScheduledExecutorService;
  * A simple thread manager. The goal of this implementation is to create threads without complaining about lifecycle.
  * Eventually, this implementation should not be used in production code.
  */
-public final class AdHocThreadManager extends AbstractThreadManager implements ThreadBuilder, ThreadManager {
+public final class AdHocThreadManager extends AbstractThreadManager
+        implements ExecutorServiceRegistry, ThreadBuilder, ThreadManager {
 
     /**
      * {@inheritDoc}
@@ -48,13 +51,18 @@ public final class AdHocThreadManager extends AbstractThreadManager implements T
     /**
      * {@inheritDoc}
      */
+    @Override
+    public void registerExecutorService(final @NonNull ManagedExecutorService executorService) {
+        executorService.start();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
-    public ExecutorService createCachedThreadPool(
-            @NonNull final String name, @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(uncaughtExceptionHandler);
-        return Executors.newCachedThreadPool(buildThreadFactory(name, uncaughtExceptionHandler));
+    public ExecutorServiceConfiguration newExecutorServiceConfiguration(@NonNull String name) {
+        return new ExecutorServiceConfiguration(this, name);
     }
 
     /**

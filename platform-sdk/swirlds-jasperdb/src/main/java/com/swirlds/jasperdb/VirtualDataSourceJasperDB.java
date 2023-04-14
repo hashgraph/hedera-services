@@ -26,6 +26,7 @@ import static com.swirlds.logging.LogMarker.JASPER_DB;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.common.utility.Units;
 import com.swirlds.jasperdb.collections.HashList;
 import com.swirlds.jasperdb.collections.HashListByteBuffer;
@@ -353,21 +354,25 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                 .createScheduledThreadPool(JASPER_DB_COMPONENT + ": Merging", NUMBER_OF_MERGING_THREADS);
         // create thread pool storing internal records
         storeInternalExecutor = getStaticThreadManager()
-                .createSingleThreadExecutor(
-                        JASPER_DB_COMPONENT + ": Store Internal Records",
-                        (t, ex) -> logger.error(
-                                EXCEPTION.getMarker(), "[{}] Uncaught exception during storing", label, ex));
+                .newExecutorServiceConfiguration(JASPER_DB_COMPONENT + ": Store Internal Records")
+                .setProfile(ExecutorServiceProfile.SINGLE_THREAD_EXECUTOR)
+                .setUncaughtExceptionHandler((t, ex) ->
+                        logger.error(EXCEPTION.getMarker(), "[{}] Uncaught exception during storing", label, ex))
+                .build();
         // create thread pool storing key-to-path mappings
         storeKeyToPathExecutor = getStaticThreadManager()
-                .createSingleThreadExecutor(
-                        JASPER_DB_COMPONENT + ": Store Key to Path",
-                        (t, ex) -> logger.error(
-                                EXCEPTION.getMarker(), "[{}] Uncaught exception during storing keys", label, ex));
+                .newExecutorServiceConfiguration(JASPER_DB_COMPONENT + ": Store Key to Path")
+                .setProfile(ExecutorServiceProfile.SINGLE_THREAD_EXECUTOR)
+                .setUncaughtExceptionHandler((t, ex) ->
+                        logger.error(EXCEPTION.getMarker(), "[{}] Uncaught exception during storing keys", label, ex))
+                .build();
         // thread pool creating snapshots, it is unbounded in threads, but we use at most 7
         snapshotExecutor = getStaticThreadManager()
-                .createCachedThreadPool(
-                        JASPER_DB_COMPONENT + ": Snapshot",
-                        (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during snapshots", ex));
+                .newExecutorServiceConfiguration(JASPER_DB_COMPONENT + ": Snapshot")
+                .setProfile(ExecutorServiceProfile.CACHED_THREAD_POOL)
+                .setUncaughtExceptionHandler(
+                        (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during snapshots", ex))
+                .build();
         // build paths and file names
         this.dbPaths = new JasperDbPaths(storageDir);
         // check if we are loading an existing database or creating a new one

@@ -19,6 +19,7 @@ package com.swirlds.benchmark;
 import static com.swirlds.common.threading.manager.ThreadManagerFactory.getStaticThreadManager;
 
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -200,8 +201,10 @@ public abstract class CryptoBench extends VirtualMapBench {
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
 
         final ExecutorService prefetchPool = getStaticThreadManager()
-                .createCachedThreadPool(
-                        "benchmark: prefetch", (t, ex) -> logger.error("Uncaught exception during prefetching", ex));
+                .newExecutorServiceConfiguration("benchmark: prefetch")
+                .setProfile(ExecutorServiceProfile.CACHED_THREAD_POOL)
+                .setUncaughtExceptionHandler((t, ex) -> logger.error("Uncaught exception during prefetching", ex))
+                .build();
 
         tps = BenchmarkMetrics.registerTPS();
 
@@ -296,8 +299,10 @@ public abstract class CryptoBench extends VirtualMapBench {
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
 
         final ExecutorService prefetchPool = getStaticThreadManager()
-                .createCachedThreadPool(
-                        "benchmark: prefetch", (t, ex) -> logger.error("Uncaught exception during prefetching", ex));
+                .newExecutorServiceConfiguration("benchmark: prefetch")
+                .setProfile(ExecutorServiceProfile.CACHED_THREAD_POOL)
+                .setUncaughtExceptionHandler((t, ex) -> logger.error("Uncaught exception during prefetching", ex))
+                .build();
 
         tps = BenchmarkMetrics.registerTPS();
 

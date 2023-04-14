@@ -18,6 +18,7 @@ package com.swirlds.platform.network.connectivity;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.io.IOException;
@@ -74,7 +75,10 @@ public class ConnectionServer implements InterruptableRunnable {
         this.port = port;
         this.newConnectionHandler = newConnectionHandler;
         this.socketFactory = socketFactory;
-        this.incomingConnPool = threadManager.createCachedThreadPool("sync_server");
+        this.incomingConnPool = threadManager
+                .newExecutorServiceConfiguration("sync_server")
+                .setProfile(ExecutorServiceProfile.CACHED_THREAD_POOL)
+                .build();
     }
 
     @Override

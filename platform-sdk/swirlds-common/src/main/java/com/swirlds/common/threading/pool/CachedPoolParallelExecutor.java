@@ -16,6 +16,7 @@
 
 package com.swirlds.common.threading.pool;
 
+import com.swirlds.common.threading.framework.config.ExecutorServiceProfile;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -42,7 +43,10 @@ public class CachedPoolParallelExecutor implements ParallelExecutor {
      * 		the name given to the threads in the pool
      */
     public CachedPoolParallelExecutor(final ThreadManager threadManager, final String name) {
-        threadPool = threadManager.createCachedThreadPool("parallel-executor: " + name);
+        threadPool = threadManager
+                .newExecutorServiceConfiguration("parallel-executor: " + name)
+                .setProfile(ExecutorServiceProfile.CACHED_THREAD_POOL)
+                .build();
     }
 
     /**
