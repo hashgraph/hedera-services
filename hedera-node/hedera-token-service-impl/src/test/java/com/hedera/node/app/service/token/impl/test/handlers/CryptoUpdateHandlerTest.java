@@ -50,59 +50,59 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoUpdateVanilla() {
-        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
+        final var txn = cryptoUpdateTransaction(id, updateAccountId);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
                 .willReturn(updateAccount);
         given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
-        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
-        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 2, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
+        assertEquals(accountHederaKey, context.getPayerKey());
         assertTrue(context.getRequiredNonPayerKeys().contains(updateAccountKey));
     }
 
     @Test
     void cryptoUpdateNewSignatureKeyWaivedVanilla() {
-        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
+        final var txn = cryptoUpdateTransaction(id, updateAccountId);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
                 .willReturn(updateAccount);
         given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
-        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
-        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(true);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 1, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
+        assertEquals(accountHederaKey, context.getPayerKey());
         assertIterableEquals(List.of(updateAccountKey), context.getRequiredNonPayerKeys());
     }
 
     @Test
     void cryptoUpdateTargetSignatureKeyWaivedVanilla() {
-        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
-        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(true);
+        final var txn = cryptoUpdateTransaction(id, updateAccountId);
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(true);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 1, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
+        assertEquals(accountHederaKey, context.getPayerKey());
         assertFalse(context.getRequiredNonPayerKeys().contains(updateAccountKey));
     }
 
     @Test
     void cryptoUpdatePayerMissingFails() {
         final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
-        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
                 .willReturn(null);
 
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        final var context = new PreHandleContext(store, txn, updateAccountId);
+        final var context = new PreHandleContext(readableStore, txn, updateAccountId);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertNull(context.getPayerKey());
@@ -111,13 +111,13 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdatePayerMissingFailsWhenNoOtherSigsRequired() {
         final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
-        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
                 .willReturn(null);
 
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        final var context = new PreHandleContext(store, txn, updateAccountId);
+        final var context = new PreHandleContext(readableStore, txn, updateAccountId);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertNull(context.getPayerKey());
@@ -125,17 +125,17 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoUpdateUpdateAccountMissingFails() {
-        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
+        final var txn = cryptoUpdateTransaction(id, updateAccountId);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
                 .willReturn(null);
 
-        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
-        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(true);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 0, true, INVALID_ACCOUNT_ID);
-        assertEquals(payerKey, context.getPayerKey());
+        assertEquals(accountHederaKey, context.getPayerKey());
     }
 
     @Test
@@ -144,7 +144,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     }
 
     private TransactionBody cryptoUpdateTransaction(final AccountID payerId, final AccountID accountToUpdate) {
-        if (payerId.equals(payer)) {
+        if (payerId.equals(id)) {
             setUpPayer();
         }
         final var transactionID =

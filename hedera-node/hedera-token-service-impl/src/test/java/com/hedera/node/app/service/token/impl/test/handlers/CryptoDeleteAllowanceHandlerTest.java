@@ -55,24 +55,26 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoDeleteAllowanceVanilla() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
+                .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
-        final var txn = cryptoDeleteAllowanceTransaction(payer);
-        final var context = new PreHandleContext(store, txn, payer);
+        final var txn = cryptoDeleteAllowanceTransaction(id);
+        final var context = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context);
         basicMetaAssertions(context, 1, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
+        assertEquals(accountHederaKey, context.getPayerKey());
         assertIterableEquals(List.of(ownerKey), context.getRequiredNonPayerKeys());
     }
 
     @Test
     void cryptoDeleteAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
+                .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(owner);
-        final var context = new PreHandleContext(store, txn, owner);
+        final var context = new PreHandleContext(readableStore, txn, owner);
         subject.preHandle(context);
         basicMetaAssertions(context, 0, false, OK);
         assertEquals(ownerKey, context.getPayerKey());
@@ -82,19 +84,20 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoDeleteAllowanceFailsIfPayerOrOwnerNotExist() {
         var txn = cryptoDeleteAllowanceTransaction(owner);
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(null);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
+                .willReturn(null);
 
-        final var context1 = new PreHandleContext(store, txn, owner);
+        final var context1 = new PreHandleContext(readableStore, txn, owner);
         subject.preHandle(context1);
         basicMetaAssertions(context1, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertNull(context1.getPayerKey());
         assertIterableEquals(List.of(), context1.getRequiredNonPayerKeys());
 
-        txn = cryptoDeleteAllowanceTransaction(payer);
-        final var context2 = new PreHandleContext(store, txn, payer);
+        txn = cryptoDeleteAllowanceTransaction(id);
+        final var context2 = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context2);
         basicMetaAssertions(context2, 0, true, INVALID_ALLOWANCE_OWNER_ID);
-        assertEquals(payerKey, context2.getPayerKey());
+        assertEquals(accountHederaKey, context2.getPayerKey());
         assertIterableEquals(List.of(), context2.getRequiredNonPayerKeys());
     }
 

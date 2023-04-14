@@ -86,6 +86,7 @@ public class WritableAccountStore extends ReadableAccountStore {
     /** Commits the changes to the underlying data storage. */
     public void commit() {
         ((WritableKVStateBase) accountState).commit();
+        ((WritableKVStateBase) aliases).commit();
     }
 
     /**
@@ -136,12 +137,23 @@ public class WritableAccountStore extends ReadableAccountStore {
     }
 
     /**
-     * Returns the number of accounts in the state.
+     * Returns the number of accounts in the state. It also includes modifications in the {@link
+     * WritableKVState}.
      *
      * @return the number of accounts in the state.
      */
     public long sizeOfAccountState() {
         return accountState.size();
+    }
+
+    /**
+     * Returns the number of aliases in the state. It also includes modifications in the {@link
+     * WritableKVState}.
+     *
+     * @return the number of aliases in the state.
+     */
+    public long sizeOfAliasesState() {
+        return aliases.size();
     }
 
     /**

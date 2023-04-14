@@ -108,6 +108,7 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
@@ -308,6 +309,7 @@ class TransactionDispatcherTest {
     @Mock private WritableTopicStore writableTopicStore;
 
     @Mock private WritableTokenStore writableTokenStore;
+    @Mock private WritableAccountStore writableAccountStore;
 
     @Mock private UsageLimits usageLimits;
 
@@ -962,6 +964,16 @@ class TransactionDispatcherTest {
                 HederaFunctionality.TOKEN_UNPAUSE, transactionBody, writableStoreFactory);
 
         verify(writableTokenStore).commit();
+    }
+
+    @Test
+    void dispatchesCryptoCreateAsExpected() {
+        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+
+        dispatcher.dispatchHandle(
+                HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory);
+
+        verify(writableAccountStore).commit();
     }
 
     @Test

@@ -86,36 +86,40 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceVanilla() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
+                .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
-        final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var context = new PreHandleContext(store, txn, payer);
+        final var txn = cryptoApproveAllowanceTransaction(id, false);
+        final var context = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context);
         basicMetaAssertions(context, 3, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
-        assertIterableEquals(List.of(ownerKey, ownerKey, ownerKey), context.getRequiredNonPayerKeys());
+        assertEquals(accountHederaKey, context.getPayerKey());
+        assertIterableEquals(
+                List.of(ownerKey, ownerKey, ownerKey), context.getRequiredNonPayerKeys());
     }
 
     @Test
     void cryptoApproveAllowanceFailsWithInvalidOwner() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(null);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
+                .willReturn(null);
 
-        final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var context = new PreHandleContext(store, txn, payer);
+        final var txn = cryptoApproveAllowanceTransaction(id, false);
+        final var context = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context);
         basicMetaAssertions(context, 0, true, INVALID_ALLOWANCE_OWNER_ID);
-        assertEquals(payerKey, context.getPayerKey());
+        assertEquals(accountHederaKey, context.getPayerKey());
         assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
     }
 
     @Test
     void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
+                .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
-        final var context = new PreHandleContext(store, txn, owner);
+        final var context = new PreHandleContext(readableStore, txn, owner);
         subject.preHandle(context);
         basicMetaAssertions(context, 0, false, OK);
         assertEquals(ownerKey, context.getPayerKey());
@@ -124,30 +128,33 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceAddsDelegatingSpender() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
+                .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum())))
-                .willReturn(payerAccount);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum())))
+                .willReturn(account);
 
-        final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var context = new PreHandleContext(store, txn, payer);
+        final var txn = cryptoApproveAllowanceTransaction(id, true);
+        final var context = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context);
         basicMetaAssertions(context, 3, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
-        assertIterableEquals(List.of(ownerKey, ownerKey, payerKey), context.getRequiredNonPayerKeys());
+        assertEquals(accountHederaKey, context.getPayerKey());
+        assertIterableEquals(
+                List.of(ownerKey, ownerKey, accountHederaKey), context.getRequiredNonPayerKeys());
     }
 
     @Test
     void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
+                .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum())))
+        given(readableAccounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum())))
                 .willReturn(null);
 
-        final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var context = new PreHandleContext(store, txn, payer);
+        final var txn = cryptoApproveAllowanceTransaction(id, true);
+        final var context = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context);
-        assertEquals(payerKey, context.getPayerKey());
+        assertEquals(accountHederaKey, context.getPayerKey());
         basicMetaAssertions(context, 2, true, INVALID_DELEGATING_SPENDER);
         assertIterableEquals(List.of(ownerKey, ownerKey), context.getRequiredNonPayerKeys());
     }

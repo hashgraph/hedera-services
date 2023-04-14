@@ -34,27 +34,27 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void preHandleCryptoCreateVanilla() {
         final var txn = createAccountTransaction(true);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context);
 
         assertEquals(txn, context.getTxn());
         basicMetaAssertions(context, 1, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
+        assertEquals(accountHederaKey, context.getPayerKey());
     }
 
     @Test
     void noReceiverSigRequiredPreHandleCryptoCreate() {
         final var txn = createAccountTransaction(false);
-        final var expected = new PreHandleContext(store, txn, payer);
+        final var expected = new PreHandleContext(readableStore, txn, id);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn, id);
         subject.preHandle(context);
 
         assertEquals(expected.getTxn(), context.getTxn());
-        assertFalse(context.getRequiredNonPayerKeys().contains(payerKey));
+        assertFalse(context.getRequiredNonPayerKeys().contains(accountHederaKey));
         basicMetaAssertions(context, 0, expected.failed(), OK);
         assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
-        assertEquals(payerKey, context.getPayerKey());
+        assertEquals(accountHederaKey, context.getPayerKey());
     }
 
     @Test
@@ -63,12 +63,14 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     }
 
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
-        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
-        final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
-                .key(key)
-                .receiverSigRequired(receiverSigReq)
-                .memo("Create Account")
-                .build();
+        final var transactionID =
+                TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
+        final var createTxnBody =
+                CryptoCreateTransactionBody.newBuilder()
+                        .key(key)
+                        .receiverSigRequired(receiverSigReq)
+                        .memo("Create Account")
+                        .build();
 
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)

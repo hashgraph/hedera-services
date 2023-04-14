@@ -28,84 +28,49 @@ import static org.mockito.Mockito.mock;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.service.token.impl.test.handlers.CryptoHandlerTestBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.test.utils.KeyUtils;
-import com.swirlds.common.utility.CommonUtils;
 import java.util.Optional;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 // FUTURE: Once we have protobuf generated object need to replace all JKeys.
 @ExtendWith(MockitoExtension.class)
-class ReadableAccountStoreTest {
-    @Mock
-    private ReadableKVState aliases;
-
-    @Mock
-    private ReadableKVState accounts;
-
-    @Mock
-    private MerkleAccount account;
-
-    @Mock
-    private ReadableStates states;
-
-    private final Key payerKey = KeyUtils.A_COMPLEX_KEY;
-    private final Key contractKey = KeyUtils.A_COMPLEX_KEY;
-    private final HederaKey payerHederaKey = asHederaKey(payerKey).get();
-    private final HederaKey contractHederaKey = asHederaKey(contractKey).get();
-    private final AccountID payerAlias =
-            AccountID.newBuilder().alias(Bytes.wrap("testAlias")).build();
-    private final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
-    private final ContractID contractAlias =
-            ContractID.newBuilder().evmAddress(Bytes.wrap(evmAddress)).build();
-    private final ContractID contract =
-            ContractID.newBuilder().contractNum(1234).build();
-    private final AccountID payer = AccountID.newBuilder().accountNum(3).build();
-    private final Long payerNum = 3L;
-    private static final String ACCOUNTS = "ACCOUNTS";
-    private static final String ALIASES = "ALIASES";
-
+class ReadableAccountStoreTest extends CryptoHandlerTestBase {
     private ReadableAccountStore subject;
 
     @BeforeEach
     public void setUp() {
-        given(states.get(ACCOUNTS)).willReturn(accounts);
-        given(states.get(ALIASES)).willReturn(aliases);
-        subject = new ReadableAccountStore(states);
+        super.setUp();
+        subject = readableStore;
     }
 
     @Test
     void getsKeyIfAlias() {
-        given(aliases.get(payerAlias.alias().asUtf8String())).willReturn(new EntityNumValue(payerNum));
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
+        given(aliases.get(payerAlias.alias().asUtf8String()))
+                .willReturn(new EntityNumValue(accountNum));
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) accountHederaKey);
 
         final var result = subject.getKey(payerAlias);
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
-        assertEquals(payerHederaKey, result.key());
+        assertEquals(accountHederaKey, result.key());
     }
 
     @Test
@@ -199,14 +164,14 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsKeyIfAccount() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) accountHederaKey);
 
-        final var result = subject.getKey(payer);
+        final var result = subject.getKey(id);
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
-        assertEquals(payerHederaKey, result.key());
+        assertEquals(accountHederaKey, result.key());
     }
 
     @Test
@@ -222,9 +187,9 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyIfMissingAccount() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(null);
 
-        final var result = subject.getKey(payer);
+        final var result = subject.getKey(id);
 
         assertTrue(result.failed());
         assertEquals(INVALID_ACCOUNT_ID, result.failureReason());
@@ -233,31 +198,30 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsMirrorAddress() {
-        final var num = EntityNum.fromLong(payerNum);
+        final var num = EntityNum.fromLong(accountNum);
         final Address mirrorAddress = num.toEvmAddress();
-        final var mirrorAccount = AccountID.newBuilder()
-                .alias(Bytes.wrap(mirrorAddress.toArrayUnsafe()))
-                .build();
+        final var mirrorAccount =
+                AccountID.newBuilder().alias(Bytes.wrap(mirrorAddress.toArrayUnsafe())).build();
 
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) accountHederaKey);
 
         final var result = subject.getKey(mirrorAccount);
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
-        assertEquals(payerHederaKey, result.key());
+        assertEquals(accountHederaKey, result.key());
     }
 
     @Test
     void failsIfMirrorAddressDoesntExist() {
-        final var num = EntityNum.fromLong(payerNum);
+        final var num = EntityNum.fromLong(accountNum);
         final Address mirrorAddress = num.toEvmAddress();
         final var mirrorAccount = AccountID.newBuilder()
                 .alias(Bytes.wrap(mirrorAddress.toArrayUnsafe()))
                 .build();
 
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(null);
 
         final var result = subject.getKey(mirrorAccount);
 
@@ -311,29 +275,30 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsKeyIfPayerAliasAndReceiverSigRequired() {
-        given(aliases.get(payerAlias.alias().asUtf8String())).willReturn(new EntityNumValue(payerNum));
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
+        given(aliases.get(payerAlias.alias().asUtf8String()))
+                .willReturn(new EntityNumValue(accountNum));
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) accountHederaKey);
         given(account.isReceiverSigRequired()).willReturn(true);
 
         final var result = subject.getKeyIfReceiverSigRequired(payerAlias);
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
-        assertEquals(payerHederaKey, result.key());
+        assertEquals(accountHederaKey, result.key());
     }
 
     @Test
     void getsKeyIfPayerAccountAndReceiverSigRequired() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) accountHederaKey);
         given(account.isReceiverSigRequired()).willReturn(true);
 
-        final var result = subject.getKeyIfReceiverSigRequired(payer);
+        final var result = subject.getKeyIfReceiverSigRequired(id);
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
-        assertEquals(payerHederaKey, result.key());
+        assertEquals(accountHederaKey, result.key());
     }
 
     @Test
@@ -349,9 +314,9 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyFromReceiverSigRequiredIfMissingAccount() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(null);
 
-        final var result = subject.getKeyIfReceiverSigRequired(payer);
+        final var result = subject.getKeyIfReceiverSigRequired(id);
 
         assertTrue(result.failed());
         assertEquals(INVALID_ACCOUNT_ID, result.failureReason());
@@ -360,9 +325,10 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyIfAndReceiverSigNotRequired() {
-        given(aliases.get(payerAlias.alias().asUtf8String())).willReturn(new EntityNumValue(payerNum));
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
+        given(aliases.get(payerAlias.alias().asUtf8String()))
+                .willReturn(new EntityNumValue(accountNum));
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) accountHederaKey);
         given(account.isReceiverSigRequired()).willReturn(false);
 
         final var result = subject.getKeyIfReceiverSigRequired(payerAlias);
@@ -374,11 +340,11 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyFromAccountIfReceiverKeyNotRequired() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) accountHederaKey);
         given(account.isReceiverSigRequired()).willReturn(false);
 
-        final var result = subject.getKeyIfReceiverSigRequired(payer);
+        final var result = subject.getKeyIfReceiverSigRequired(id);
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
@@ -473,15 +439,15 @@ class ReadableAccountStoreTest {
 
     @Test
     void failsKeyValidationWhenKeyReturnedIsNull() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
         given(account.getAccountKey()).willReturn(null);
 
-        var result = subject.getKey(payer);
+        var result = subject.getKey(id);
         assertTrue(result.failed());
         assertEquals(ACCOUNT_IS_IMMUTABLE, result.failureReason());
         assertNull(result.key());
 
-        result = subject.getKeyIfReceiverSigRequired(payer);
+        result = subject.getKeyIfReceiverSigRequired(id);
         assertTrue(result.failed());
         assertEquals(ACCOUNT_IS_IMMUTABLE, result.failureReason());
         assertNull(result.key());
@@ -489,16 +455,16 @@ class ReadableAccountStoreTest {
 
     @Test
     void failsKeyValidationWhenKeyReturnedIsEmpty() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
         given(account.getAccountKey()).willReturn(new JKeyList());
 
-        var result = subject.getKey(payer);
+        var result = subject.getKey(id);
 
         assertTrue(result.failed());
         assertEquals(ACCOUNT_IS_IMMUTABLE, result.failureReason());
         assertNull(result.key());
 
-        result = subject.getKeyIfReceiverSigRequired(payer);
+        result = subject.getKeyIfReceiverSigRequired(id);
 
         assertTrue(result.failed());
         assertEquals(ACCOUNT_IS_IMMUTABLE, result.failureReason());
@@ -509,9 +475,9 @@ class ReadableAccountStoreTest {
     @Test
     void getAccount() {
         // given
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
         given(account.getMemo()).willReturn("");
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
+        given(account.getAccountKey()).willReturn((JKey) accountHederaKey);
         given(account.getExpiry()).willReturn(5L);
         given(account.getBalance()).willReturn(7L * HBARS_TO_TINYBARS);
         given(account.getMemo()).willReturn("Hello World");
@@ -533,12 +499,12 @@ class ReadableAccountStoreTest {
         given(account.isSmartContract()).willReturn(true);
 
         // when
-        final var result = subject.getAccountById(payer);
+        final var result = subject.getAccountById(id);
 
         // then
         assertThat(result).isNotEmpty();
         final var mappedAccount = result.get();
-        assertEquals(payerHederaKey, mappedAccount.key());
+        assertEquals(accountHederaKey, mappedAccount.key());
         assertThat(mappedAccount.expiry()).isEqualTo(5L);
         assertThat(mappedAccount.tinybarBalance()).isEqualTo(7L);
         assertThat(mappedAccount.tinybarBalance()).isEqualTo(7L * HBARS_TO_TINYBARS);
@@ -558,7 +524,7 @@ class ReadableAccountStoreTest {
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isEqualTo(37L);
         assertThat(mappedAccount.autoRenewAccountNumber()).isEqualTo(53L);
         assertThat(mappedAccount.autoRenewSecs()).isEqualTo(59L);
-        assertThat(mappedAccount.accountNumber()).isEqualTo(payer.accountNum());
+        assertThat(mappedAccount.accountNumber()).isEqualTo(id.accountNum());
         assertEquals(Bytes.wrap(new byte[] {1, 2, 3}), mappedAccount.alias());
         assertThat(mappedAccount.smartContract()).isTrue();
     }
@@ -567,17 +533,17 @@ class ReadableAccountStoreTest {
     @Test
     void getsEmptyAccount() {
         // given
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
-        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) accountHederaKey);
         given(account.getMemo()).willReturn("");
 
         // when
-        final var result = subject.getAccountById(payer);
+        final var result = subject.getAccountById(id);
 
         // then
         assertThat(result).isNotEmpty();
         final var mappedAccount = result.get();
-        assertEquals(payerHederaKey, mappedAccount.key());
+        assertEquals(accountHederaKey, mappedAccount.key());
         assertThat(mappedAccount.expiry()).isZero();
         assertThat(mappedAccount.tinybarBalance()).isZero();
         assertThat(mappedAccount.tinybarBalance()).isZero();
@@ -597,7 +563,7 @@ class ReadableAccountStoreTest {
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isZero();
         assertThat(mappedAccount.autoRenewAccountNumber()).isZero();
         assertThat(mappedAccount.autoRenewSecs()).isZero();
-        assertThat(mappedAccount.accountNumber()).isEqualTo(payer.accountNum());
+        assertThat(mappedAccount.accountNumber()).isEqualTo(id.accountNum());
         assertEquals(Bytes.EMPTY, mappedAccount.alias());
         assertThat(mappedAccount.smartContract()).isFalse();
     }
@@ -605,9 +571,9 @@ class ReadableAccountStoreTest {
     @SuppressWarnings("unchecked")
     @Test
     void getsEmptyOptionalIfMissingAccount() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(null);
 
-        final Optional<Account> result = subject.getAccountById(payer);
+        final Optional<Account> result = subject.getAccountById(id);
 
         assertThat(result).isEmpty();
     }
