@@ -57,8 +57,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
      * @param context the {@link PreHandleContext} which collects all information
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
             throws PreCheckException {
         requireNonNull(context);
         requireNonNull(tokenStore);
@@ -82,8 +81,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
      * @param tokenStore the {@link WritableTokenStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(
-            @NonNull final TransactionBody txn, @NonNull final WritableTokenStore tokenStore) {
+    public void handle(@NonNull final TransactionBody txn, @NonNull final WritableTokenStore tokenStore) {
         requireNonNull(txn);
         requireNonNull(tokenStore);
 

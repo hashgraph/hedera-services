@@ -51,13 +51,17 @@ public class ContractHandlerTestBase implements TransactionFactory {
     protected final Key autoRenewKey = A_COMPLEX_KEY;
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
-    protected final ContractID targetContract = ContractID.newBuilder().contractNum(9_999L).build();
+    protected final ContractID targetContract =
+            ContractID.newBuilder().contractNum(9_999L).build();
 
-    @Mock protected MerkleAccount payerMerkleAccount;
+    @Mock
+    protected MerkleAccount payerMerkleAccount;
 
-    @Mock protected Account payerAccount;
+    @Mock
+    protected Account payerAccount;
 
-    @Mock protected AccountAccess keyLookup;
+    @Mock
+    protected AccountAccess keyLookup;
 
     @BeforeEach
     void commonSetUp() {

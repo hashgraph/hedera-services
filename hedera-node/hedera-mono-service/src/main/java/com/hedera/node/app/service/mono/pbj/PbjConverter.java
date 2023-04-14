@@ -1269,8 +1269,7 @@ public final class PbjConverter {
         try (final var baos = new ByteArrayOutputStream();
                 final var dos = new WritableStreamingData(baos)) {
             Key.PROTOBUF.write(pbjKey, dos);
-            final var grpcKey =
-                    com.hederahashgraph.api.proto.java.Key.parseFrom(baos.toByteArray());
+            final var grpcKey = com.hederahashgraph.api.proto.java.Key.parseFrom(baos.toByteArray());
             return asHederaKey(grpcKey);
         } catch (final IOException e) {
             // Should be impossible, so just propagate an exception

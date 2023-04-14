@@ -57,8 +57,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
      * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
      * @throws NullPointerException if any of the arguments are {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
             throws PreCheckException {
         requireNonNull(context);
         requireNonNull(topicStore);

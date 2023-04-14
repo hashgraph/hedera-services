@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -60,14 +59,12 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     }
 
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
-        final var transactionID =
-                TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
-        final var createTxnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .key(key)
-                        .receiverSigRequired(receiverSigReq)
-                        .memo("Create Account")
-                        .build();
+        final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
+        final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
+                .key(key)
+                .receiverSigRequired(receiverSigReq)
+                .memo("Create Account")
+                .build();
 
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)

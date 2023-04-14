@@ -83,8 +83,7 @@ public final class PreHandleContext {
      * @param txn the transaction body
      * @throws PreCheckException if the payer account ID is invalid or the key is null
      */
-    public PreHandleContext(
-            @NonNull final AccountAccess accountAccess, @NonNull final TransactionBody txn)
+    public PreHandleContext(@NonNull final AccountAccess accountAccess, @NonNull final TransactionBody txn)
             throws PreCheckException {
         this(
                 accountAccess,
@@ -189,8 +188,7 @@ public final class PreHandleContext {
      * @throws PreCheckException if the key is null or empty
      */
     @NonNull
-    public PreHandleContext requireKeyOrThrow(
-            @Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
+    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
         requireNonNull(responseCode);
         if (key == null || key.key().kind().equals(KeyOneOfType.UNSET)) {
@@ -229,10 +227,8 @@ public final class PreHandleContext {
 
         final var key = account.getKey();
         if (key == null
-                || key.key().kind()
-                        == KeyOneOfType
-                                .UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
-                                          // Or a KeyList with no
+                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
@@ -266,10 +262,8 @@ public final class PreHandleContext {
 
         final var key = account.getKey();
         if (key == null
-                || key.key().kind()
-                        == KeyOneOfType
-                                .UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
-                                          // Or a KeyList with no
+                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
@@ -314,10 +308,8 @@ public final class PreHandleContext {
         // code.
         final var key = account.getKey();
         if (key == null
-                || key.key().kind()
-                        == KeyOneOfType
-                                .UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
-                                          // Or a KeyList with no
+                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
@@ -360,10 +352,8 @@ public final class PreHandleContext {
         // code.
         final var key = account.key();
         if (key == null
-                || key.key().kind()
-                        == KeyOneOfType
-                                .UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
-                                          // Or a KeyList with no
+                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
@@ -388,8 +378,7 @@ public final class PreHandleContext {
             @NonNull final AccountID payerForNested,
             @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
-        this.innerContext =
-                new PreHandleContext(accountAccess, nestedTxn, payerForNested, responseCode);
+        this.innerContext = new PreHandleContext(accountAccess, nestedTxn, payerForNested, responseCode);
         return this.innerContext;
     }
 

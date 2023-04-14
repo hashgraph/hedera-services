@@ -17,8 +17,6 @@
 package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromGrpcKey;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -28,7 +26,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
@@ -48,11 +45,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ReadableTokenStoreTest extends TokenHandlerTestBase {
     private final EntityNum tokenEntityNum = EntityNum.fromLong(2000);
-    @Mock private ReadableKVState<EntityNum, Token> tokens;
+
+    @Mock
+    private ReadableKVState<EntityNum, Token> tokens;
 
     private static final String TOKENS = "TOKENS";
     private final TokenID tokenId = TokenID.newBuilder().tokenNum(2000).build();
-    @Mock private ReadableStates states;
+
+    @Mock
+    private ReadableStates states;
+
     private Token token;
 
     private ReadableTokenStore subject;
@@ -94,10 +96,8 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
     void classifiesRoyaltyWithFallback() throws PreCheckException {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
-        copy.customFees(
-                PbjConverter.fromFcCustomFee(
-                        FcCustomFee.royaltyFee(
-                                1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
+        copy.customFees(PbjConverter.fromFcCustomFee(
+                FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
 
         given(tokens.get(tokenEntityNum)).willReturn(copy.build());
 
@@ -111,9 +111,7 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
     void classifiesRoyaltyWithNoFallback() throws PreCheckException {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
-        copy.customFees(
-                PbjConverter.fromFcCustomFee(
-                        FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
+        copy.customFees(PbjConverter.fromFcCustomFee(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
 
         given(tokens.get(tokenEntityNum)).willReturn(copy.build());
 

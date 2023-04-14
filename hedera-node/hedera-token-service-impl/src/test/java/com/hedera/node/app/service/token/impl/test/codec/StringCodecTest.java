@@ -36,9 +36,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class StringCodecTest {
     private static final String SOME_STRING = "TestString";
 
-    @Mock private ReadableSequentialData in;
+    @Mock
+    private ReadableSequentialData in;
 
-    @Mock private WritableSequentialData out;
+    @Mock
+    private WritableSequentialData out;
 
     final StringCodec subject = new StringCodec();
 

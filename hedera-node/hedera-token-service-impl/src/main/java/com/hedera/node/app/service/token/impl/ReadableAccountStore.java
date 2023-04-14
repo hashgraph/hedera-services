@@ -34,10 +34,8 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Optional;
 
 /**
@@ -98,9 +96,7 @@ public class ReadableAccountStore implements AccountAccess {
                             yield fromMirror(alias);
                         } else {
                             final var entityNum = aliases.get(alias.asUtf8String());
-                            yield entityNum == null
-                                    ? EntityNumValue.DEFAULT.num()
-                                    : entityNum.num();
+                            yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
                         }
                     }
                     case UNSET -> EntityNumValue.DEFAULT.num();
@@ -157,10 +153,8 @@ public class ReadableAccountStore implements AccountAccess {
                             // address from it and look it up
                             final var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
                             if (evmKeyAliasAddress != null) {
-                                entityNum =
-                                        aliases.get(
-                                                ByteString.copyFrom(evmKeyAliasAddress)
-                                                        .toStringUtf8());
+                                entityNum = aliases.get(
+                                        ByteString.copyFrom(evmKeyAliasAddress).toStringUtf8());
                             }
                         }
                         yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
@@ -168,9 +162,7 @@ public class ReadableAccountStore implements AccountAccess {
                     case UNSET -> EntityNumValue.DEFAULT.num();
                 };
 
-        return contractNum == null
-                ? null
-                : accountState.get(EntityNumVirtualKey.fromLong(contractNum));
+        return contractNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(contractNum));
     }
 
     private static long numFromEvmAddress(final Bytes bytes) {

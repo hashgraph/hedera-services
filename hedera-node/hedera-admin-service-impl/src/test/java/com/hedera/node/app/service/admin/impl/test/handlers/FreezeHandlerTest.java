@@ -57,16 +57,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
     private final HederaKey nonAdminKey = asHederaKey(key).get();
-    @Mock ReadableSpecialFileStore specialFileStore;
-    @Mock private AccountAccess keyLookup;
 
-    private final Key key =
-            Key.newBuilder()
-                    .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
-                    .build();
-    @Mock private Account account;
+    @Mock
+    ReadableSpecialFileStore specialFileStore;
 
-    private final AccountID nonAdminAccount = AccountID.newBuilder().accountNum(9999L).build();
+    @Mock
+    private AccountAccess keyLookup;
+
+    private final Key key = Key.newBuilder()
+            .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
+            .build();
+
+    @Mock
+    private Account account;
+
+    private final AccountID nonAdminAccount =
+            AccountID.newBuilder().accountNum(9999L).build();
 
     private final FreezeHandler subject = new FreezeHandler();
 
@@ -78,18 +84,14 @@ class FreezeHandlerTest {
 
     @Test
     void rejectIfUnknownFreezeType() throws PreCheckException {
-        TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
-                        .freeze(
-                                FreezeTransactionBody.newBuilder()
-                                        .freezeType(UNKNOWN_FREEZE_TYPE)
-                                        .build())
-                        .build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .freeze(FreezeTransactionBody.newBuilder()
+                        .freezeType(UNKNOWN_FREEZE_TYPE)
+                        .build())
+                .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, specialFileStore),
-                INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -97,18 +99,14 @@ class FreezeHandlerTest {
         // when using these freeze types, it is required to set start time
         FreezeType[] freezeTypes = {FREEZE_ONLY, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
         for (FreezeType freezeType : freezeTypes) {
-            TransactionBody txn =
-                    TransactionBody.newBuilder()
-                            .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
-                            .freeze(
-                                    FreezeTransactionBody.newBuilder()
-                                            .freezeType(freezeType)
-                                            .build())
-                            .build();
+            TransactionBody txn = TransactionBody.newBuilder()
+                    .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                    .freeze(FreezeTransactionBody.newBuilder()
+                            .freezeType(freezeType)
+                            .build())
+                    .build();
             final var context = new PreHandleContext(keyLookup, txn);
-            assertThrowsPreCheck(
-                    () -> subject.preHandle(context, specialFileStore),
-                    INVALID_FREEZE_TRANSACTION_BODY);
+            assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
         }
     }
 
@@ -119,24 +117,18 @@ class FreezeHandlerTest {
         FreezeType[] freezeTypes = {FREEZE_ONLY, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
         for (FreezeType freezeType : freezeTypes) {
-            TransactionID txnId =
-                    TransactionID.newBuilder()
-                            .accountID(nonAdminAccount)
-                            .transactionValidStart(Timestamp.newBuilder().seconds(2000).build())
-                            .build();
-            TransactionBody txn =
-                    TransactionBody.newBuilder()
-                            .transactionID(txnId)
-                            .freeze(
-                                    FreezeTransactionBody.newBuilder()
-                                            .freezeType(freezeType)
-                                            .startTime(
-                                                    Timestamp.newBuilder().seconds(1000).build()))
-                            .build();
+            TransactionID txnId = TransactionID.newBuilder()
+                    .accountID(nonAdminAccount)
+                    .transactionValidStart(Timestamp.newBuilder().seconds(2000).build())
+                    .build();
+            TransactionBody txn = TransactionBody.newBuilder()
+                    .transactionID(txnId)
+                    .freeze(FreezeTransactionBody.newBuilder()
+                            .freezeType(freezeType)
+                            .startTime(Timestamp.newBuilder().seconds(1000).build()))
+                    .build();
             final var context = new PreHandleContext(keyLookup, txn);
-            assertThrowsPreCheck(
-                    () -> subject.preHandle(context, specialFileStore),
-                    FREEZE_START_TIME_MUST_BE_FUTURE);
+            assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), FREEZE_START_TIME_MUST_BE_FUTURE);
         }
     }
 
@@ -145,24 +137,18 @@ class FreezeHandlerTest {
         // when using these freeze types, it is required to set an update file
         FreezeType[] freezeTypes = {PREPARE_UPGRADE, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
         for (FreezeType freezeType : freezeTypes) {
-            TransactionID txnId =
-                    TransactionID.newBuilder()
-                            .accountID(nonAdminAccount)
-                            .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
-                            .build();
-            TransactionBody txn =
-                    TransactionBody.newBuilder()
-                            .transactionID(txnId)
-                            .freeze(
-                                    FreezeTransactionBody.newBuilder()
-                                            .freezeType(freezeType)
-                                            .startTime(
-                                                    Timestamp.newBuilder().seconds(2000).build()))
-                            .build();
+            TransactionID txnId = TransactionID.newBuilder()
+                    .accountID(nonAdminAccount)
+                    .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                    .build();
+            TransactionBody txn = TransactionBody.newBuilder()
+                    .transactionID(txnId)
+                    .freeze(FreezeTransactionBody.newBuilder()
+                            .freezeType(freezeType)
+                            .startTime(Timestamp.newBuilder().seconds(2000).build()))
+                    .build();
             final var context = new PreHandleContext(keyLookup, txn);
-            assertThrowsPreCheck(
-                    () -> subject.preHandle(context, specialFileStore),
-                    FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
+            assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
         }
     }
 
@@ -175,36 +161,33 @@ class FreezeHandlerTest {
         given(specialFileStore.get(1234L)).willReturn(Optional.of(new byte[0]));
 
         for (FreezeType freezeType : freezeTypes) {
-            TransactionID txnId =
-                    TransactionID.newBuilder()
-                            .accountID(nonAdminAccount)
-                            .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
-                            .build();
-            TransactionBody txn =
-                    TransactionBody.newBuilder()
-                            .transactionID(txnId)
-                            .freeze(
-                                    FreezeTransactionBody.newBuilder()
-                                            .freezeType(freezeType)
-                                            .startTime(Timestamp.newBuilder().seconds(2000).build())
-                                            .updateFile(fileId)
-                                            .build())
-                            .build();
+            TransactionID txnId = TransactionID.newBuilder()
+                    .accountID(nonAdminAccount)
+                    .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                    .build();
+            TransactionBody txn = TransactionBody.newBuilder()
+                    .transactionID(txnId)
+                    .freeze(FreezeTransactionBody.newBuilder()
+                            .freezeType(freezeType)
+                            .startTime(Timestamp.newBuilder().seconds(2000).build())
+                            .updateFile(fileId)
+                            .build())
+                    .build();
             final var context = new PreHandleContext(keyLookup, txn);
             assertThrowsPreCheck(
-                    () -> subject.preHandle(context, specialFileStore),
-                    FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+                    () -> subject.preHandle(context, specialFileStore), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
     }
 
     @Test
     void happyPathFreezeAbort() throws PreCheckException {
         // freeze_abort always returns OK, to allow the node to send multiple commands to abort
-        TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
-                        .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_ABORT).build())
-                        .build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .freeze(FreezeTransactionBody.newBuilder()
+                        .freezeType(FREEZE_ABORT)
+                        .build())
+                .build();
         final var context = new PreHandleContext(keyLookup, txn);
         assertDoesNotThrow(() -> subject.preHandle(context, specialFileStore));
     }
@@ -219,11 +202,10 @@ class FreezeHandlerTest {
         FileID fileId = FileID.newBuilder().fileNum(1234L).build();
         given(specialFileStore.get(1234L)).willReturn(Optional.of(new byte[0]));
         for (FreezeType freezeType : freezeTypes) {
-            TransactionID txnId =
-                    TransactionID.newBuilder()
-                            .accountID(nonAdminAccount)
-                            .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
-                            .build();
+            TransactionID txnId = TransactionID.newBuilder()
+                    .accountID(nonAdminAccount)
+                    .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                    .build();
             TransactionBody txn = TransactionBody.newBuilder()
                     .transactionID(txnId)
                     .freeze(FreezeTransactionBody.newBuilder()
@@ -246,17 +228,16 @@ class FreezeHandlerTest {
 
         FileID fileId = FileID.newBuilder().fileNum(1234L).build();
         given(specialFileStore.get(1234L)).willReturn(Optional.of(new byte[0]));
-        TransactionID txnId = TransactionID.newBuilder().accountID(nonAdminAccount).build();
-        TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .transactionID(txnId)
-                        .freeze(
-                                FreezeTransactionBody.newBuilder()
-                                        .freezeType(PREPARE_UPGRADE)
-                                        .updateFile(fileId)
-                                        .fileHash(Bytes.wrap(new byte[48]))
-                                        .build())
-                        .build();
+        TransactionID txnId =
+                TransactionID.newBuilder().accountID(nonAdminAccount).build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .freeze(FreezeTransactionBody.newBuilder()
+                        .freezeType(PREPARE_UPGRADE)
+                        .updateFile(fileId)
+                        .fileHash(Bytes.wrap(new byte[48]))
+                        .build())
+                .build();
         final var context = new PreHandleContext(keyLookup, txn);
         assertDoesNotThrow(() -> subject.preHandle(context, specialFileStore));
     }
@@ -265,20 +246,17 @@ class FreezeHandlerTest {
     void happyPathFreezeOnly() throws PreCheckException {
         // for FREEZE_ONLY, start time is required and it must be in the future
 
-        TransactionID txnId =
-                TransactionID.newBuilder()
-                        .accountID(nonAdminAccount)
-                        .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
-                        .build();
-        TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .transactionID(txnId)
-                        .freeze(
-                                FreezeTransactionBody.newBuilder()
-                                        .freezeType(FREEZE_ONLY)
-                                        .startTime(Timestamp.newBuilder().seconds(2000).build())
-                                        .build())
-                        .build();
+        TransactionID txnId = TransactionID.newBuilder()
+                .accountID(nonAdminAccount)
+                .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                .build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .freeze(FreezeTransactionBody.newBuilder()
+                        .freezeType(FREEZE_ONLY)
+                        .startTime(Timestamp.newBuilder().seconds(2000).build())
+                        .build())
+                .build();
         final var context = new PreHandleContext(keyLookup, txn);
         assertDoesNotThrow(() -> subject.preHandle(context, specialFileStore));
     }
@@ -286,56 +264,44 @@ class FreezeHandlerTest {
     @Test
     void rejectIfStartHourSet() throws PreCheckException {
         // start hour is not supported
-        TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
-                        .freeze(FreezeTransactionBody.newBuilder().startHour(3).build())
-                        .build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .freeze(FreezeTransactionBody.newBuilder().startHour(3).build())
+                .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, specialFileStore),
-                INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
     void rejectIfStartMinSet() throws PreCheckException {
         // start min is not supported
-        TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
-                        .freeze(FreezeTransactionBody.newBuilder().startMin(31).build())
-                        .build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .freeze(FreezeTransactionBody.newBuilder().startMin(31).build())
+                .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, specialFileStore),
-                INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
     void rejectIfEndHourSet() throws PreCheckException {
         // end hour is not supported
-        TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
-                        .freeze(FreezeTransactionBody.newBuilder().endHour(3).build())
-                        .build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .freeze(FreezeTransactionBody.newBuilder().endHour(3).build())
+                .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, specialFileStore),
-                INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
     void rejectIfEndMinSet() throws PreCheckException {
         // end min is not supported
-        TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
-                        .freeze(FreezeTransactionBody.newBuilder().endMin(16).build())
-                        .build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .freeze(FreezeTransactionBody.newBuilder().endMin(16).build())
+                .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, specialFileStore),
-                INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
     }
 }

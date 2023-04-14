@@ -55,9 +55,11 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     private TransactionBody tokenPauseTxn;
     private PreHandleContext preHandleContext;
 
-    @Mock private Account account;
+    @Mock
+    private Account account;
 
-    @Mock private AccountAccess accountAccess;
+    @Mock
+    private AccountAccess accountAccess;
 
     @BeforeEach
     void setUp() throws PreCheckException {
@@ -86,9 +88,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     void pauseTokenFailsIfInvalidToken() {
         givenInvalidTokenInTxn();
 
-        final var msg =
-                assertThrows(
-                        HandleException.class, () -> subject.handle(tokenPauseTxn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(tokenPauseTxn, writableStore));
         assertEquals(INVALID_TOKEN_ID, msg.getStatus());
     }
 
@@ -100,22 +100,19 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
 
     @Test
     void failsInPrecheckIfTxnBodyHasNoToken() throws PreCheckException {
-        final var txn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(payerId).build())
-                        .tokenPause(TokenPauseTransactionBody.newBuilder())
-                        .build();
+        final var txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerId).build())
+                .tokenPause(TokenPauseTransactionBody.newBuilder())
+                .build();
         preHandleContext = new PreHandleContext(accountAccess, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test
     void validatesTokenExistsInPreHandle() throws PreCheckException {
         givenInvalidTokenInTxn();
         preHandleContext = new PreHandleContext(accountAccess, tokenPauseTxn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -128,17 +125,15 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     void preHandleSetsStatusWhenTokenMissing() throws PreCheckException {
         givenInvalidTokenInTxn();
         preHandleContext = new PreHandleContext(accountAccess, tokenPauseTxn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test
     void doesntAddAnyKeyIfPauseKeyMissing() throws PreCheckException {
         final var copy = token.copyBuilder().pauseKey(Key.DEFAULT).build();
-        readableTokenState =
-                MapReadableKVState.<EntityNum, Token>builder(TOKENS)
-                        .value(tokenEntityNum, copy)
-                        .build();
+        readableTokenState = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
+                .value(tokenEntityNum, copy)
+                .build();
         given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
         readableStore = new ReadableTokenStore(readableStates);
 
@@ -153,26 +148,27 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     }
 
     private void givenValidTxn() {
-        tokenPauseTxn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(payerId).build())
-                        .tokenPause(TokenPauseTransactionBody.newBuilder().token(tokenId))
-                        .build();
+        tokenPauseTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerId).build())
+                .tokenPause(TokenPauseTransactionBody.newBuilder().token(tokenId))
+                .build();
     }
 
     private void givenInvalidTokenInTxn() {
-        tokenPauseTxn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(payerId).build())
-                        .tokenPause(
-                                TokenPauseTransactionBody.newBuilder()
-                                        .token(TokenID.newBuilder().tokenNum(2).build()))
-                        .build();
+        tokenPauseTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerId).build())
+                .tokenPause(TokenPauseTransactionBody.newBuilder()
+                        .token(TokenID.newBuilder().tokenNum(2).build()))
+                .build();
     }
 
     private void unPauseKnownToken() {
-        final var token =
-                writableStore.get(tokenId.tokenNum()).get().copyBuilder().paused(false).build();
+        final var token = writableStore
+                .get(tokenId.tokenNum())
+                .get()
+                .copyBuilder()
+                .paused(false)
+                .build();
         writableStore.put(token);
     }
 }

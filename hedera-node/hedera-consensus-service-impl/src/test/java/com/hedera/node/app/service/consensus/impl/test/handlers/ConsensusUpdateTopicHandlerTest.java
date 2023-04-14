@@ -65,16 +65,23 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     private final ExpiryMeta currentExpiryMeta =
             new ExpiryMeta(expirationTime, autoRenewSecs, autoRenewId.accountNum());
 
-    @Mock private HandleContext handleContext;
+    @Mock
+    private HandleContext handleContext;
 
-    @Mock private AccountAccess accountAccess;
+    @Mock
+    private AccountAccess accountAccess;
 
-    @Mock private Account account;
-    @Mock private Account autoRenewAccount;
+    @Mock
+    private Account account;
 
-    @Mock private ExpiryValidator expiryValidator;
+    @Mock
+    private Account autoRenewAccount;
 
-    @Mock private AttributeValidator attributeValidator;
+    @Mock
+    private ExpiryValidator expiryValidator;
+
+    @Mock
+    private AttributeValidator attributeValidator;
 
     private ConsensusUpdateTopicHandler subject = new ConsensusUpdateTopicHandler();
 
@@ -297,8 +304,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
 
         // expect:
-        assertFailsWith(
-                INVALID_AUTORENEW_ACCOUNT, () -> subject.handle(handleContext, op, writableStore));
+        assertFailsWith(INVALID_AUTORENEW_ACCOUNT, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -385,11 +391,12 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(accountAccess.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
-        final var op =
-                OP_BUILDER
-                        .expirationTime(Timestamp.newBuilder().build())
-                        .topicID(TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build())
-                        .build();
+        final var op = OP_BUILDER
+                .expirationTime(Timestamp.newBuilder().build())
+                .topicID(TopicID.newBuilder()
+                        .topicNum(topicEntityNum.longValue())
+                        .build())
+                .build();
         final var context = new PreHandleContext(accountAccess, txnWith(op));
 
         subject.preHandle(context, readableStore);
@@ -403,7 +410,8 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(accountAccess.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
-        final var op = OP_BUILDER.topicID(TopicID.newBuilder().topicNum(123L).build()).build();
+        final var op =
+                OP_BUILDER.topicID(TopicID.newBuilder().topicNum(123L).build()).build();
         final var context = new PreHandleContext(accountAccess, txnWith(op));
 
         assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
@@ -414,8 +422,10 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(accountAccess.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
-        final var op =
-                OP_BUILDER.adminKey(key).topicID(TopicID.newBuilder().topicNum(1L).build()).build();
+        final var op = OP_BUILDER
+                .adminKey(key)
+                .topicID(TopicID.newBuilder().topicNum(1L).build())
+                .build();
         final var context = new PreHandleContext(accountAccess, txnWith(op));
 
         subject.preHandle(context, readableStore);
@@ -433,8 +443,10 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(accountAccess.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
-        final var op =
-                OP_BUILDER.autoRenewAccount(autoRenewId).topicID(WELL_KNOWN_TOPIC_ID).build();
+        final var op = OP_BUILDER
+                .autoRenewAccount(autoRenewId)
+                .topicID(WELL_KNOWN_TOPIC_ID)
+                .build();
         final var context = new PreHandleContext(accountAccess, txnWith(op));
 
         subject.preHandle(context, readableStore);
@@ -450,15 +462,13 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(accountAccess.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
-        final var op =
-                OP_BUILDER
-                        .autoRenewAccount(autoRenewId)
-                        .topicID(TopicID.newBuilder().topicNum(1L).build())
-                        .build();
+        final var op = OP_BUILDER
+                .autoRenewAccount(autoRenewId)
+                .topicID(TopicID.newBuilder().topicNum(1L).build())
+                .build();
 
         final var context = new PreHandleContext(accountAccess, txnWith(op));
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, readableStore), INVALID_AUTORENEW_ACCOUNT);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_AUTORENEW_ACCOUNT);
     }
 
     private TransactionBody txnWith(final ConsensusUpdateTopicTransactionBody op) {

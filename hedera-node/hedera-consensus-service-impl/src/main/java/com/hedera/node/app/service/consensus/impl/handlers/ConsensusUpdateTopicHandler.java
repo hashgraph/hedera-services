@@ -68,8 +68,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
      *     passed to {@code #handle()}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
             throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().consensusUpdateTopicOrThrow();

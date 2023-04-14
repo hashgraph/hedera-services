@@ -42,7 +42,6 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WI
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -108,8 +107,7 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     void tokenUpdateReplacingTreasuryWithNonExistingAccount() throws PreCheckException {
         final var txn = txnFrom(UPDATE_REPLACING_WITH_MISSING_TREASURY);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, readableTokenStore), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -173,8 +171,7 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     void tokenUpdateMissingToken() throws PreCheckException {
         final var txn = txnFrom(UPDATE_WITH_MISSING_TOKEN);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -228,7 +225,6 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     void tokenUpdateTokenWithMissingNewAutoRenewAccount() throws PreCheckException {
         final var txn = txnFrom(TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, readableTokenStore), INVALID_AUTORENEW_ACCOUNT);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_AUTORENEW_ACCOUNT);
     }
 }

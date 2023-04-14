@@ -56,9 +56,7 @@ public interface AccountAccess {
         // account, then
         // we return null (we didn't find a contract with that ID).
         final var builder =
-                AccountID.newBuilder()
-                        .shardNum(contractID.shardNum())
-                        .realmNum(contractID.realmNum());
+                AccountID.newBuilder().shardNum(contractID.shardNum()).realmNum(contractID.realmNum());
 
         if (contractID.hasEvmAddress()) {
             builder.alias(contractID.evmAddressOrThrow());

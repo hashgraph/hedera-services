@@ -72,8 +72,7 @@ public class ContractDeleteHandler implements TransactionHandler {
         // must be signed by that account's key. Same if instead it uses a contract as the transfer
         // target.
         if (op.hasTransferAccountID()) {
-            context.requireKeyIfReceiverSigRequired(
-                    op.transferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+            context.requireKeyIfReceiverSigRequired(op.transferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
         } else if (op.hasTransferContractID()) {
             context.requireKeyIfReceiverSigRequired(op.transferContractID(), INVALID_CONTRACT_ID);
         }

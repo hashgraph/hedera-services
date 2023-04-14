@@ -25,12 +25,6 @@ import static com.hedera.test.factories.scenarios.ContractCreateScenarios.KNOWN_
 import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE;
 import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_MISSING_SCHEDULE;
 import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY;
-import static com.hedera.test.factories.scenarios.ContractCreateScenarios.KNOWN_SCHEDULE_IMMUTABLE_ID;
-import static com.hedera.test.factories.scenarios.ContractCreateScenarios.KNOWN_SCHEDULE_WITH_ADMIN_ID;
-import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE;
-import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_MISSING_SCHEDULE;
-import static com.hedera.test.factories.scenarios.ScheduleDeleteScenarios.SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -89,8 +83,7 @@ class ScheduleDeleteHandlerParityTest {
                 IdUtils.asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID).getScheduleNum(), null, theTxn);
         final var context = new PreHandleContext(keyLookup, theTxn);
 
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
     }
 
     @Test

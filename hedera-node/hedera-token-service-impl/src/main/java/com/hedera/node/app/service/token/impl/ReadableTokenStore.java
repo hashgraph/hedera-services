@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.hapi.node.transaction.CustomFee.FeeOneOfType.ROYALTY_FEE;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;

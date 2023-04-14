@@ -66,12 +66,11 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
                 if (preHandleStatus != ResponseCodeEnum.OK) {
                     accessor.setSigMeta(forPayerOnly((JKey) payerKey, metadata.cryptoSignatures(), accessor));
                 } else {
-                    accessor.setSigMeta(
-                            forPayerAndOthers(
-                                    (JKey) payerKey,
-                                    (List) (metadata.otherPartyKeys().stream().toList()),
-                                    metadata.cryptoSignatures(),
-                                    accessor));
+                    accessor.setSigMeta(forPayerAndOthers(
+                            (JKey) payerKey,
+                            (List) (metadata.otherPartyKeys().stream().toList()),
+                            metadata.cryptoSignatures(),
+                            accessor));
                 }
             } else {
                 accessor.setSigMeta(noneAvailable());

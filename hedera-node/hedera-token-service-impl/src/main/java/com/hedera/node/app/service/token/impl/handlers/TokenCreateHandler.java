@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -108,9 +107,8 @@ public class TokenCreateHandler implements TransactionHandler {
             since these are automatically associated to the newly created token. */
             if (customFee.hasFixedFee()) {
                 final var fixedFee = customFee.fixedFeeOrThrow();
-                final var alwaysAdd =
-                        fixedFee.hasDenominatingTokenId()
-                                && fixedFee.denominatingTokenIdOrThrow().tokenNum() == 0L;
+                final var alwaysAdd = fixedFee.hasDenominatingTokenId()
+                        && fixedFee.denominatingTokenIdOrThrow().tokenNum() == 0L;
                 addAccount(context, collector, alwaysAdd);
             } else if (customFee.hasFractionalFee()) {
                 context.requireKeyOrThrow(collector, INVALID_CUSTOM_FEE_COLLECTOR);
@@ -135,8 +133,7 @@ public class TokenCreateHandler implements TransactionHandler {
      * @param collector the ID of the collector
      * @param alwaysAdd if true, will always add the key
      */
-    private void addAccount(
-            final PreHandleContext context, final AccountID collector, final boolean alwaysAdd)
+    private void addAccount(final PreHandleContext context, final AccountID collector, final boolean alwaysAdd)
             throws PreCheckException {
         if (alwaysAdd) {
             context.requireKeyOrThrow(collector, INVALID_CUSTOM_FEE_COLLECTOR);

@@ -46,9 +46,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private final Long deleteAccountNum = deleteAccountId.accountNum();
     private final Long transferAccountNum = transferAccountId.accountNum();
 
-    @Mock private Account deleteAccount;
+    @Mock
+    private Account deleteAccount;
 
-    @Mock private Account transferAccount;
+    @Mock
+    private Account transferAccount;
 
     private CryptoDeleteHandler subject = new CryptoDeleteHandler();
 
@@ -143,8 +145,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 .willReturn(transferAccount);
         given(deleteAccount.key()).willReturn(accountKey);
 
-        assertThrowsPreCheck(
-                () -> new PreHandleContext(readableStore, txn), INVALID_PAYER_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> new PreHandleContext(readableStore, txn), INVALID_PAYER_ACCOUNT_ID);
 
         /* ------ deleteAccount missing, so transferAccount will not be added ------ */
         given(readableAccounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
@@ -193,12 +194,10 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     private TransactionBody deleteAccountTransaction(
             final AccountID deleteAccountId, final AccountID transferAccountId) {
-        final var transactionID =
-                TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
-        final var deleteTxBody =
-                CryptoDeleteTransactionBody.newBuilder()
-                        .deleteAccountID(deleteAccountId)
-                        .transferAccountID(transferAccountId);
+        final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
+        final var deleteTxBody = CryptoDeleteTransactionBody.newBuilder()
+                .deleteAccountID(deleteAccountId)
+                .transferAccountID(transferAccountId);
 
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)

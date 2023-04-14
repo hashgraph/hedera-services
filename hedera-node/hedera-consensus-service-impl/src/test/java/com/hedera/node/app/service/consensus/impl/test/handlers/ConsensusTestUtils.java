@@ -41,22 +41,19 @@ import org.assertj.core.api.Assertions;
 
 public final class ConsensusTestUtils {
 
-    static final Key SIMPLE_KEY_A =
-            Key.newBuilder()
-                    .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
-                    .build();
-    static final Key SIMPLE_KEY_B =
-            Key.newBuilder()
-                    .ed25519(Bytes.wrap("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()))
-                    .build();
+    static final Key SIMPLE_KEY_A = Key.newBuilder()
+            .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
+            .build();
+    static final Key SIMPLE_KEY_B = Key.newBuilder()
+            .ed25519(Bytes.wrap("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()))
+            .build();
     static final HederaKey A_NONNULL_KEY = () -> false;
 
     private ConsensusTestUtils() {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    static HederaKey mockPayerLookup(Key key, AccountID accountId, AccountAccess keyLookup)
-            throws PreCheckException {
+    static HederaKey mockPayerLookup(Key key, AccountID accountId, AccountAccess keyLookup) throws PreCheckException {
         final var returnKey = Utils.asHederaKey(key).orElseThrow();
         final var account = mock(Account.class);
         given(keyLookup.getAccountById(accountId)).willReturn(account);
@@ -76,13 +73,11 @@ public final class ConsensusTestUtils {
         Assertions.assertThat(sanityRestoredToPbj(context.payerKey())).isEqualTo(expected);
     }
 
-    static void mockTopicLookup(Key adminKey, Key submitKey, ReadableTopicStore topicStore)
-            throws PreCheckException {
+    static void mockTopicLookup(Key adminKey, Key submitKey, ReadableTopicStore topicStore) throws PreCheckException {
         given(topicStore.getTopicMetadata(notNull()))
-                .willReturn(
-                        newTopicMeta(
-                                adminKey != null ? Utils.asHederaKey(adminKey).get() : null,
-                                submitKey != null ? Utils.asHederaKey(submitKey).get() : null));
+                .willReturn(newTopicMeta(
+                        adminKey != null ? Utils.asHederaKey(adminKey).get() : null,
+                        submitKey != null ? Utils.asHederaKey(submitKey).get() : null));
     }
 
     static ReadableTopicStore.TopicMetadata newTopicMeta(Key admin, Key submit) {

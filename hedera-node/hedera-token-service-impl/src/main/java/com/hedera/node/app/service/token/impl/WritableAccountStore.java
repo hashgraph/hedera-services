@@ -26,9 +26,7 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -67,9 +65,7 @@ public class WritableAccountStore extends ReadableAccountStore {
      */
     public void put(@NonNull final Account account) {
         Objects.requireNonNull(account);
-        accountState.put(
-                EntityNumVirtualKey.fromLong(account.accountNumber()),
-                Objects.requireNonNull(account));
+        accountState.put(EntityNumVirtualKey.fromLong(account.accountNumber()), Objects.requireNonNull(account));
     }
 
     /**
@@ -98,7 +94,8 @@ public class WritableAccountStore extends ReadableAccountStore {
     @NonNull
     public Optional<Account> get(final long accountNum) {
         requireNonNull(accountNum);
-        final var account = getAccountLeaf(AccountID.newBuilder().accountNum(accountNum).build());
+        final var account =
+                getAccountLeaf(AccountID.newBuilder().accountNum(accountNum).build());
         return Optional.ofNullable(account);
     }
 
@@ -122,9 +119,7 @@ public class WritableAccountStore extends ReadableAccountStore {
                             yield fromMirror(alias);
                         } else {
                             final var entityNum = aliases.getForModify(alias.asUtf8String());
-                            yield entityNum == null
-                                    ? EntityNumValue.DEFAULT.num()
-                                    : entityNum.num();
+                            yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
                         }
                     }
                     case UNSET -> EntityNumValue.DEFAULT.num();
@@ -132,8 +127,7 @@ public class WritableAccountStore extends ReadableAccountStore {
 
         return accountNum == null
                 ? null
-                : Optional.ofNullable(
-                        accountState.getForModify(EntityNumVirtualKey.fromLong(accountNum)));
+                : Optional.ofNullable(accountState.getForModify(EntityNumVirtualKey.fromLong(accountNum)));
     }
 
     /**

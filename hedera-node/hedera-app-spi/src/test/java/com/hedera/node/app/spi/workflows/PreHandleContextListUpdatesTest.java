@@ -65,19 +65,28 @@ class PreHandleContextListUpdatesTest {
     private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
     private Long payerNum = 3L;
 
-    final ContractID otherContractId = ContractID.newBuilder().contractNum(123456L).build();
+    final ContractID otherContractId =
+            ContractID.newBuilder().contractNum(123456L).build();
 
     final AccountID otherAccountId = AccountID.newBuilder().accountNum(12345L).build();
-    @Mock private Key payerKey;
-    @Mock private Key otherKey;
 
-    @Mock private AccountAccess accountAccess;
+    @Mock
+    private Key payerKey;
 
-    @Mock private Account account;
+    @Mock
+    private Key otherKey;
 
-    @Mock private Account otherAccount;
+    @Mock
+    private AccountAccess accountAccess;
 
-    @Mock private Account contractAccount;
+    @Mock
+    private Account account;
+
+    @Mock
+    private Account otherAccount;
+
+    @Mock
+    private Account contractAccount;
 
     private PreHandleContext subject;
 
@@ -106,36 +115,26 @@ class PreHandleContextListUpdatesTest {
 
         // When we create a PreHandleContext by passing null as either argument
         // Then we get a null pointer exception
-        assertThrows(
-                NullPointerException.class,
-                () -> new PreHandleContext(null, createAccountTransaction()));
+        assertThrows(NullPointerException.class, () -> new PreHandleContext(null, createAccountTransaction()));
         assertThrows(NullPointerException.class, () -> new PreHandleContext(accountAccess, null));
 
         // When we pass null to requireKeyOrThrow for the account ID then we get a PreCheckException
         final var subject = new PreHandleContext(accountAccess, createAccountTransaction());
-        assertThrows(
-                PreCheckException.class,
-                () -> subject.requireKeyOrThrow((AccountID) null, INVALID_ACCOUNT_ID));
+        assertThrows(PreCheckException.class, () -> subject.requireKeyOrThrow((AccountID) null, INVALID_ACCOUNT_ID));
         // When we pass null to requireKeyOrThrow for the response code then we get a null pointer
         // exception
         assertThrows(NullPointerException.class, () -> subject.requireKeyOrThrow(payer, null));
         // When we pass a null to requireKeyIfReceiverSigRequired for the account ID then nothing
         // happens
-        assertDoesNotThrow(
-                () ->
-                        subject.requireKeyIfReceiverSigRequired(
-                                (AccountID) null, INVALID_ACCOUNT_ID));
+        assertDoesNotThrow(() -> subject.requireKeyIfReceiverSigRequired((AccountID) null, INVALID_ACCOUNT_ID));
         // When we pass a null to requireKeyIfReceiverSigRequired for the response code then we get
         // a null pointer
         // exception
-        assertThrows(
-                NullPointerException.class,
-                () -> subject.requireKeyIfReceiverSigRequired(payer, null));
+        assertThrows(NullPointerException.class, () -> subject.requireKeyIfReceiverSigRequired(payer, null));
         // When we pass non-null to requireKeyOrThrow or requireKeyIfReceiverSigRequired, then it
         // succeeds
         assertDoesNotThrow(() -> subject.requireKeyOrThrow(payer, INVALID_ACCOUNT_ID));
-        assertDoesNotThrow(
-                () -> subject.requireKeyIfReceiverSigRequired(payer, INVALID_ACCOUNT_ID));
+        assertDoesNotThrow(() -> subject.requireKeyIfReceiverSigRequired(payer, INVALID_ACCOUNT_ID));
     }
 
     @Test
@@ -191,8 +190,7 @@ class PreHandleContextListUpdatesTest {
         given(accountAccess.getAccountById(payer)).willReturn(null);
 
         // When we create a PreHandleContext, then it fails with INVALID_PAYER_ACCOUNT_ID
-        assertThrowsPreCheck(
-                () -> new PreHandleContext(accountAccess, txn), INVALID_PAYER_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> new PreHandleContext(accountAccess, txn), INVALID_PAYER_ACCOUNT_ID);
     }
 
     @Test
@@ -225,8 +223,7 @@ class PreHandleContextListUpdatesTest {
 
         // When we require an accountID that doesn't exist, then we get a PreCheckException
         final var bogus = AccountID.newBuilder().build();
-        assertThrowsPreCheck(
-                () -> subject.requireKeyOrThrow(bogus, INVALID_ACCOUNT_ID), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.requireKeyOrThrow(bogus, INVALID_ACCOUNT_ID), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -271,9 +268,8 @@ class PreHandleContextListUpdatesTest {
         given(accountAccess.getAccountById(payer)).willReturn(account);
         given(account.key()).willReturn(payerKey);
 
-        subject =
-                new PreHandleContext(accountAccess, createAccountTransaction())
-                        .requireKeyOrThrow(alias, INVALID_CONTRACT_ID);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction())
+                .requireKeyOrThrow(alias, INVALID_CONTRACT_ID);
 
         assertEquals(payerKey, subject.payerKey());
         assertIterableEquals(List.of(otherKey), subject.requiredNonPayerKeys());
@@ -287,8 +283,7 @@ class PreHandleContextListUpdatesTest {
         given(account.key()).willReturn(payerKey);
 
         subject = new PreHandleContext(accountAccess, createAccountTransaction());
-        assertThrowsPreCheck(
-                () -> subject.requireKeyOrThrow(alias, INVALID_ACCOUNT_ID), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.requireKeyOrThrow(alias, INVALID_ACCOUNT_ID), INVALID_ACCOUNT_ID);
     }
 
     private TransactionBody createAccountTransaction() {

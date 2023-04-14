@@ -56,7 +56,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_S
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -183,8 +182,7 @@ class TokenCreateHandleParityTest {
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
                 context.requiredNonPayerKeys(),
-                containsInAnyOrder(
-                        TOKEN_TREASURY_KT.asPbjKey(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
+                containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
 
@@ -232,8 +230,7 @@ class TokenCreateHandleParityTest {
 
     @Test
     void tokenCreateCustomFixedFeeNoCollectorSigReqButDenomWildcard() throws PreCheckException {
-        final var txn =
-                txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM);
+        final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
@@ -275,8 +272,7 @@ class TokenCreateHandleParityTest {
 
     @Test
     void tokenCreateCustomRoyaltyFeeFallbackNoWildcardButSigReq() throws PreCheckException {
-        final var txn =
-                txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ);
+        final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
@@ -290,8 +286,7 @@ class TokenCreateHandleParityTest {
 
     @Test
     void tokenCreateCustomRoyaltyFeeFallbackWildcardNoSigReq() throws PreCheckException {
-        final var txn =
-                txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ);
+        final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
@@ -305,8 +300,7 @@ class TokenCreateHandleParityTest {
 
     @Test
     void tokenCreateCustomRoyaltyFeeFallbackWildcardAndSigReq() throws PreCheckException {
-        final var txn =
-                txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_SIG_REQ);
+        final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_SIG_REQ);
 
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);

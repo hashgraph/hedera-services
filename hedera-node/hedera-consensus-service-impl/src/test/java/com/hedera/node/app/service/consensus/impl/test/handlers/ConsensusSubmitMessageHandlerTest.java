@@ -110,8 +110,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         // given:
         final var payerKey = mockPayerLookup();
         mockTopicLookup(SIMPLE_KEY_A);
-        final var context =
-                new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
+        final var context = new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
 
         // when:
         subject.preHandle(context, readableStore);
@@ -119,8 +118,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
         final var expectedHederaAdminKey = SIMPLE_KEY_A;
-        assertThat(context.requiredNonPayerKeys())
-                .containsExactlyInAnyOrder(expectedHederaAdminKey);
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(expectedHederaAdminKey);
     }
 
     @Test
@@ -130,8 +128,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         readableTopicState = emptyReadableTopicState();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStore(readableStates);
-        final var context =
-                new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
+        final var context = new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
 
         assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
     }
@@ -142,8 +139,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         readableStore = mock(ReadableTopicStore.class);
         mockPayerLookup();
         mockTopicLookup(null);
-        final var context =
-                new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
+        final var context = new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
 
         // when:
         assertDoesNotThrow(() -> subject.preHandle(context, readableStore));
@@ -374,13 +370,14 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         }
     }
 
-    private TransactionBody newSubmitMessageTxn(
-            final EntityNum topicEntityNum, final String message) {
-        final var txnId = TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
-        final var submitMessageBuilder =
-                ConsensusSubmitMessageTransactionBody.newBuilder()
-                        .topicID(TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build())
-                        .message(Bytes.wrap(message));
+    private TransactionBody newSubmitMessageTxn(final EntityNum topicEntityNum, final String message) {
+        final var txnId =
+                TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
+        final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .topicID(TopicID.newBuilder()
+                        .topicNum(topicEntityNum.longValue())
+                        .build())
+                .message(Bytes.wrap(message));
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusSubmitMessage(submitMessageBuilder.build())
@@ -398,18 +395,18 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
             final int currentChunk,
             final int totalChunk,
             final TransactionID initialTxnId) {
-        final var txnId = TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
-        final var submitMessageBuilder =
-                ConsensusSubmitMessageTransactionBody.newBuilder()
-                        .topicID(TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build())
-                        .chunkInfo(
-                                ConsensusMessageChunkInfo.newBuilder()
-                                        .initialTransactionID(
-                                                initialTxnId != null ? initialTxnId : txnId)
-                                        .number(currentChunk)
-                                        .total(totalChunk)
-                                        .build())
-                        .message(Bytes.wrap("test"));
+        final var txnId =
+                TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
+        final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .topicID(TopicID.newBuilder()
+                        .topicNum(topicEntityNum.longValue())
+                        .build())
+                .chunkInfo(ConsensusMessageChunkInfo.newBuilder()
+                        .initialTransactionID(initialTxnId != null ? initialTxnId : txnId)
+                        .number(currentChunk)
+                        .total(totalChunk)
+                        .build())
+                .message(Bytes.wrap("test"));
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusSubmitMessage(submitMessageBuilder.build())

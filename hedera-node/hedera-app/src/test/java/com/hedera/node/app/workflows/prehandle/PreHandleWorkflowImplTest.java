@@ -157,13 +157,13 @@ class PreHandleWorkflowImplTest extends AppTestBase {
     @Test
     void verifiesExpandedSigsAsync() throws PreCheckException {
         final AccountID payerID = AccountID.newBuilder().accountNum(1000L).build();
-        final TransactionID transactionID = TransactionID.newBuilder().accountID(payerID).build();
-        final var onsetResult =
-                new TransactionInfo(
-                        com.hedera.hapi.node.base.Transaction.newBuilder().build(),
-                        TransactionBody.newBuilder().transactionID(transactionID).build(),
-                        SignatureMap.newBuilder().build(),
-                        HederaFunctionality.CRYPTO_TRANSFER);
+        final TransactionID transactionID =
+                TransactionID.newBuilder().accountID(payerID).build();
+        final var onsetResult = new TransactionInfo(
+                com.hedera.hapi.node.base.Transaction.newBuilder().build(),
+                TransactionBody.newBuilder().transactionID(transactionID).build(),
+                SignatureMap.newBuilder().build(),
+                HederaFunctionality.CRYPTO_TRANSFER);
         given(transactionChecker.parseAndCheck(any())).willReturn(onsetResult);
         given(context.payerKey()).willReturn(payerKey);
         given(context.requiredNonPayerKeys()).willReturn(Collections.emptySet());
@@ -269,7 +269,8 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         final ConsensusCreateTopicTransactionBody content =
                 ConsensusCreateTopicTransactionBody.newBuilder().build();
         final AccountID payerID = AccountID.newBuilder().accountNum(1001).build();
-        final TransactionID transactionID = TransactionID.newBuilder().accountID(payerID).build();
+        final TransactionID transactionID =
+                TransactionID.newBuilder().accountID(payerID).build();
         final TransactionBody txBody = TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .consensusCreateTopic(content)
@@ -278,15 +279,12 @@ class PreHandleWorkflowImplTest extends AppTestBase {
                 .bodyBytes(PbjConverter.asWrappedBytes(TransactionBody.PROTOBUF, txBody))
                 .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
-        final var txn =
-                com.hedera.hapi.node.base.Transaction.newBuilder()
-                        .signedTransactionBytes(
-                                PbjConverter.asWrappedBytes(SignedTransaction.PROTOBUF, signedTxn))
-                        .sigMap(signatureMap)
-                        .build();
+        final var txn = com.hedera.hapi.node.base.Transaction.newBuilder()
+                .signedTransactionBytes(PbjConverter.asWrappedBytes(SignedTransaction.PROTOBUF, signedTxn))
+                .sigMap(signatureMap)
+                .build();
         final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
-        final TransactionInfo onsetResult =
-                new TransactionInfo(txn, txBody, signatureMap, functionality);
+        final TransactionInfo onsetResult = new TransactionInfo(txn, txBody, signatureMap, functionality);
         when(localOnset.parseAndCheck(any())).thenReturn(onsetResult);
 
         given(transactionChecker.parseAndCheck(any())).willReturn(onsetResult);
@@ -299,9 +297,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         given(payerAccount.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(payerAccount.getMemo()).willReturn("");
 
-        workflow =
-                new PreHandleWorkflowImpl(
-                        dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
+        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
         workflow.start(state, event);

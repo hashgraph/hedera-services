@@ -91,8 +91,7 @@ class ContractDeleteHandlerParityTest {
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asKey());
         assertThat(context.requiredNonPayerKeys())
-                .containsExactlyInAnyOrder(
-                        MISC_ADMIN_KT.asPbjKey(), DILIGENT_SIGNING_PAYER_KT.asPbjKey());
+                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asPbjKey(), DILIGENT_SIGNING_PAYER_KT.asPbjKey());
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

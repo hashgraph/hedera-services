@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -47,8 +46,7 @@ public class CryptoUpdateHandler implements TransactionHandler {
      * @param context the {@link PreHandleContext} which collects all information
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final CryptoSignatureWaivers waivers)
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final CryptoSignatureWaivers waivers)
             throws PreCheckException {
         requireNonNull(context);
         requireNonNull(waivers);

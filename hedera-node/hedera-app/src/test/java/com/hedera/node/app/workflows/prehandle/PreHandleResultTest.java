@@ -38,9 +38,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleResultTest {
-    @Mock private Key payerKey;
+    @Mock
+    private Key payerKey;
 
-    @Mock private Key otherKey;
+    @Mock
+    private Key otherKey;
 
     private final TransactionBody txBody = TransactionBody.newBuilder().build();
     private final AccountID payer = AccountID.newBuilder().accountNum(42L).build();
@@ -56,13 +58,11 @@ class PreHandleResultTest {
         when(context.payerKey()).thenReturn(payerKey);
         when(context.requiredNonPayerKeys()).thenReturn(Set.of(otherKey));
         final var signatureMap = SignatureMap.newBuilder().build();
-        final var innerResult =
-                new PreHandleResult(null, null, null, OK, null, null, List.of(), null);
+        final var innerResult = new PreHandleResult(null, null, null, OK, null, null, List.of(), null);
         final var expectedSigs = List.of(payerSignature, otherSignature);
 
         // when
-        final var metadata =
-                new PreHandleResult(context, OK, signatureMap, expectedSigs, innerResult);
+        final var metadata = new PreHandleResult(context, OK, signatureMap, expectedSigs, innerResult);
 
         // then
         assertThat(metadata.txnBody()).isEqualTo(txBody);

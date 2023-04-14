@@ -42,8 +42,7 @@ abstract class AbstractScheduleHandler {
             final PreHandleDispatcher dispatcher)
             throws PreCheckException {
         final var innerContext =
-                context.createNestedContext(
-                        scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
+                context.createNestedContext(scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
         final HederaFunctionality scheduledFunction;
         try {
             scheduledFunction = functionOf(scheduledTxn);

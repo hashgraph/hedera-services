@@ -95,8 +95,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
         final var expectedHederaAdminKey = Utils.asHederaKey(SIMPLE_KEY_A).orElseThrow();
-        assertThat(context.requiredNonPayerKeys())
-                .containsExactlyInAnyOrder(expectedHederaAdminKey);
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(expectedHederaAdminKey);
     }
 
     @Test
@@ -210,7 +209,8 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     private TransactionBody newDeleteTxn() {
-        final var txnId = TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
+        final var txnId =
+                TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
         final var deleteTopicBuilder =
                 ConsensusDeleteTopicTransactionBody.newBuilder().topicID(WELL_KNOWN_TOPIC_ID);
         return TransactionBody.newBuilder()
@@ -228,7 +228,8 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     private TransactionBody newDeleteTxn() {
-        final var txnId = TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
+        final var txnId =
+                TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
         final var deleteTopicBuilder =
                 ConsensusDeleteTopicTransactionBody.newBuilder().topicID(WELL_KNOWN_TOPIC_ID);
         return TransactionBody.newBuilder()

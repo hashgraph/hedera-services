@@ -90,18 +90,11 @@ public class CryptoTransferHandler implements TransactionHandler {
         for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
             if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-            checkFungibleTokenTransfers(
-                    transfers.transfersOrElse(emptyList()), context, accountStore, false);
-            checkNftTransfers(
-                    transfers.nftTransfersOrElse(emptyList()),
-                    context,
-                    tokenMeta,
-                    op,
-                    accountStore);
+            checkFungibleTokenTransfers(transfers.transfersOrElse(emptyList()), context, accountStore, false);
+            checkNftTransfers(transfers.nftTransfersOrElse(emptyList()), context, tokenMeta, op, accountStore);
         }
 
-        final var hbarTransfers =
-                op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
+        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
         checkFungibleTokenTransfers(hbarTransfers, context, accountStore, true);
     }
 
@@ -141,8 +134,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // single account.
         for (final var accountAmount : transfers) {
             // Given an accountId, we need to look up the associated account.
-            final var accountId =
-                    validateAccountID(accountAmount.accountIDOrElse(AccountID.DEFAULT));
+            final var accountId = validateAccountID(accountAmount.accountIDOrElse(AccountID.DEFAULT));
             final var account = accountStore.getAccountById(accountId);
             final var isCredit = accountAmount.amount() > 0;
             final var isDebit = accountAmount.amount() < 0;
@@ -159,8 +151,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // DOES NOT require
                 // a key, unless `receiverSigRequired` is true.
                 final var accountKey = account.getKey();
-                if ((accountKey == null || accountKey.isEmpty())
-                        && (isDebit || isCredit && !hbarTransfer)) {
+                if ((accountKey == null || accountKey.isEmpty()) && (isDebit || isCredit && !hbarTransfer)) {
                     throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
                 }
 
@@ -258,8 +249,7 @@ public class CryptoTransferHandler implements TransactionHandler {
             // handled,
             // so the receiver key does not need to sign.
             final var treasury = tokenMeta.treasuryNum();
-            if (treasury != senderId.accountNumOrThrow()
-                    && treasury != receiverId.accountNumOrThrow()) {
+            if (treasury != senderId.accountNumOrThrow() && treasury != receiverId.accountNumOrThrow()) {
                 meta.requireKeyOrThrow(receiverId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
             }
         }
@@ -290,10 +280,8 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private boolean receivesFungibleValue(
             final AccountID target, final CryptoTransferTransactionBody op, final ReadableAccountStore accountStore) {
-        for (final var adjust :
-                op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
-            final var unaliasedAccount =
-                    accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
+        for (final var adjust : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
+            final var unaliasedAccount = accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
             final var unaliasedTarget = accountStore.getAccountById(target);
             if (unaliasedAccount != null
                     && unaliasedTarget != null
@@ -304,8 +292,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
         for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
             for (final var adjust : transfers.transfersOrElse(emptyList())) {
-                final var unaliasedAccount =
-                        accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
+                final var unaliasedAccount = accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
                 final var unaliasedTarget = accountStore.getAccountById(target);
                 if (unaliasedAccount != null
                         && unaliasedTarget != null

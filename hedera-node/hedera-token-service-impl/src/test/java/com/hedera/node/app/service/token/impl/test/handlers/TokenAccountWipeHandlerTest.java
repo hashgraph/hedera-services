@@ -23,7 +23,6 @@ import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_FOR_TO
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,8 +51,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
         final var theTxn = txnFrom(WIPE_WITH_MISSING_TOKEN);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
     }
 
     @Test

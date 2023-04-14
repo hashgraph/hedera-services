@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -67,9 +66,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         subject.preHandle(context);
 
         assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(
-                context.requiredNonPayerKeys(),
-                Matchers.contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
+        assertThat(context.requiredNonPayerKeys(), Matchers.contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test

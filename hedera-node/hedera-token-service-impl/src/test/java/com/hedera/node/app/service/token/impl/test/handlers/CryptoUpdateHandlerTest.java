@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,11 +32,8 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
@@ -45,9 +41,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
-    private final AccountID updateAccountId = AccountID.newBuilder().accountNum(32132).build();
+    private final AccountID updateAccountId =
+            AccountID.newBuilder().accountNum(32132).build();
     private final Key updateAccountKey = A_COMPLEX_KEY;
-    @Mock private Account updateAccount;
+
+    @Mock
+    private Account updateAccount;
 
     private CryptoUpdateHandler subject = new CryptoUpdateHandler();
 

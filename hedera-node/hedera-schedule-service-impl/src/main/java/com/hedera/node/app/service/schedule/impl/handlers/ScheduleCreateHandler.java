@@ -53,8 +53,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      *     txn
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final PreHandleDispatcher dispatcher)
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final PreHandleDispatcher dispatcher)
             throws PreCheckException {
         requireNonNull(context);
         final var txn = context.body();
@@ -65,10 +64,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             context.requireKey(op.adminKeyOrThrow());
         }
 
-        final var scheduledTxn =
-                asOrdinary(
-                        op.scheduledTransactionBodyOrElse(SchedulableTransactionBody.DEFAULT),
-                        txn.transactionIDOrElse(TransactionID.DEFAULT));
+        final var scheduledTxn = asOrdinary(
+                op.scheduledTransactionBodyOrElse(SchedulableTransactionBody.DEFAULT),
+                txn.transactionIDOrElse(TransactionID.DEFAULT));
 
         /* We need to always add the custom payer to the sig requirements even if it equals the to level transaction
         payer. It is still part of the "other" parties, and we need to know to store it's key with the

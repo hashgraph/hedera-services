@@ -31,7 +31,6 @@ import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenario
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -52,8 +51,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     void tokenFeeScheduleUpdateNonExistingToken() throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -92,9 +90,8 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     }
 
     @Test
-    void
-            tokenFeeScheduleUpdateWithFeeScheduleKeyAndOneSigReqFeeCollectorAndAnotherSigNonReqFeeCollector()
-                    throws PreCheckException {
+    void tokenFeeScheduleUpdateWithFeeScheduleKeyAndOneSigReqFeeCollectorAndAnotherSigNonReqFeeCollector()
+            throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
@@ -107,10 +104,8 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     }
 
     @Test
-    void tokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerAndSigReq()
-            throws PreCheckException {
-        final var txn =
-                txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
+    void tokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerAndSigReq() throws PreCheckException {
+        final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
@@ -121,9 +116,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
 
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayer() throws PreCheckException {
-        final var txn =
-                txnFrom(
-                        UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
+        final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
@@ -136,7 +129,6 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndInvalidFeeCollector() throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, readableTokenStore), INVALID_CUSTOM_FEE_COLLECTOR);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_CUSTOM_FEE_COLLECTOR);
     }
 }

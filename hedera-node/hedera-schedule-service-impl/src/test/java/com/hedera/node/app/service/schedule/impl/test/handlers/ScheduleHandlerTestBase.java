@@ -38,40 +38,45 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleHandlerTestBase {
-    protected static final Key TEST_KEY =
-            Key.newBuilder().ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).build();
+    protected static final Key TEST_KEY = Key.newBuilder()
+            .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .build();
     protected Key adminKey = TEST_KEY;
     protected AccountID scheduler = AccountID.newBuilder().accountNum(1001L).build();
     protected AccountID payer = AccountID.newBuilder().accountNum(2001L).build();
 
-    @Mock protected Account schedulerAccount;
+    @Mock
+    protected Account schedulerAccount;
 
-    @Mock protected Account payerAccount;
+    @Mock
+    protected Account payerAccount;
 
-    @Mock protected AccountAccess keyLookup;
+    @Mock
+    protected AccountAccess keyLookup;
 
-    @Mock protected Key payerKey;
+    @Mock
+    protected Key payerKey;
 
-    @Mock protected Key schedulerKey;
+    @Mock
+    protected Key schedulerKey;
 
-    @Mock protected PreHandleDispatcher dispatcher;
+    @Mock
+    protected PreHandleDispatcher dispatcher;
 
-    @Mock protected ReadableStates states;
+    @Mock
+    protected ReadableStates states;
 
-    protected void basicContextAssertions(
-            final PreHandleContext context, final int nonPayerKeysSize) {
+    protected void basicContextAssertions(final PreHandleContext context, final int nonPayerKeysSize) {
         assertEquals(nonPayerKeysSize, context.requiredNonPayerKeys().size());
     }
 
     protected TransactionBody scheduleTxnNotRecognized() {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(scheduler))
-                .scheduleCreate(
-                        ScheduleCreateTransactionBody.newBuilder()
-                                .scheduledTransactionBody(
-                                        SchedulableTransactionBody.newBuilder()
-                                                .utilPrng(UtilPrngTransactionBody.DEFAULT)
-                                                .build()))
+                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder()
+                        .scheduledTransactionBody(SchedulableTransactionBody.newBuilder()
+                                .utilPrng(UtilPrngTransactionBody.DEFAULT)
+                                .build()))
                 .build();
     }
 }

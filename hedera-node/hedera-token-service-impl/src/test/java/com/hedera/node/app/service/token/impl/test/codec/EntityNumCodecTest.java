@@ -35,9 +35,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class EntityNumCodecTest {
     private static final EntityNum SOME_NUM = EntityNum.fromLong(666L);
 
-    @Mock private ReadableSequentialData input;
+    @Mock
+    private ReadableSequentialData input;
 
-    @Mock private WritableSequentialData output;
+    @Mock
+    private WritableSequentialData output;
 
     final EntityNumCodec subject = new EntityNumCodec();
 

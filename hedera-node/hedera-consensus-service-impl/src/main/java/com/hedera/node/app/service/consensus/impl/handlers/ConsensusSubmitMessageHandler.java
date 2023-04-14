@@ -77,8 +77,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
             throws PreCheckException {
         requireNonNull(context);
         requireNonNull(topicStore);

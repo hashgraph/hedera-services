@@ -23,7 +23,6 @@ import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_M
 import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_SUPPLY_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,8 +52,7 @@ public class TokenBurnHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(BURN_WITH_MISSING_TOKEN);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
     }
 
     @Test

@@ -51,8 +51,7 @@ public class TokenMintHandler implements TransactionHandler {
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
             throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenMintOrThrow();

@@ -76,8 +76,7 @@ class ConsensusCreateTopicHandlerParityTest {
     @Test
     void getsConsensusCreateTopicAdminKeyAndAutoRenewAccount() throws PreCheckException {
         // given:
-        final var txn =
-                CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO.pbjTxnBody();
+        final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO.pbjTxnBody();
 
         // when:
         final var context = new PreHandleContext(keyLookup, txn);
@@ -86,17 +85,13 @@ class ConsensusCreateTopicHandlerParityTest {
         // then:
         assertDefaultPayer(context);
         Assertions.assertThat(context.requiredNonPayerKeys())
-                .containsExactlyInAnyOrder(
-                        SIMPLE_TOPIC_ADMIN_KEY.asPbjKey(), MISC_ACCOUNT_KT.asPbjKey());
+                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asPbjKey(), MISC_ACCOUNT_KT.asPbjKey());
     }
 
     @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer()
-            throws PreCheckException {
+    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer() throws PreCheckException {
         // given:
-        final var txn =
-                CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO
-                        .pbjTxnBody();
+        final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO.pbjTxnBody();
 
         // when:
         final var context = new PreHandleContext(keyLookup, txn);
@@ -105,17 +100,13 @@ class ConsensusCreateTopicHandlerParityTest {
         // then:
         assertDefaultPayer(context);
         Assertions.assertThat(context.requiredNonPayerKeys())
-                .containsExactlyInAnyOrder(
-                        SIMPLE_TOPIC_ADMIN_KEY.asPbjKey(), MISC_ACCOUNT_KT.asPbjKey());
+                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asPbjKey(), MISC_ACCOUNT_KT.asPbjKey());
     }
 
     @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer()
-            throws PreCheckException {
+    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer() throws PreCheckException {
         // given:
-        final var txn =
-                CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO
-                        .pbjTxnBody();
+        final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO.pbjTxnBody();
 
         // when:
         final var context = new PreHandleContext(keyLookup, txn);
@@ -137,19 +128,16 @@ class ConsensusCreateTopicHandlerParityTest {
 
         // when:
         final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 
     @Test
-    void invalidAutoRenewAccountOnConsensusCreateTopicThrowsWithCustomPayer()
-            throws PreCheckException {
+    void invalidAutoRenewAccountOnConsensusCreateTopicThrowsWithCustomPayer() throws PreCheckException {
         // given:
         final var txn = CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO.pbjTxnBody();
 
         // when:
         final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 }

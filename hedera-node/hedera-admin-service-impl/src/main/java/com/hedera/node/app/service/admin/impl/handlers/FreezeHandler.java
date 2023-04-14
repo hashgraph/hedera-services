@@ -64,8 +64,7 @@ public class FreezeHandler implements TransactionHandler {
     // deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     public void preHandle(
-            @NonNull final PreHandleContext context,
-            @NonNull final ReadableSpecialFileStore specialFileStore)
+            @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore)
             throws PreCheckException {
         requireNonNull(context);
 
@@ -87,8 +86,7 @@ public class FreezeHandler implements TransactionHandler {
                 // default value for freezeType is UNKNOWN_FREEZE_TYPE
                 // reject any freeze transactions that do not set freezeType or set it to
                 // UNKNOWN_FREEZE_TYPE
-            case UNKNOWN_FREEZE_TYPE -> throw new PreCheckException(
-                    INVALID_FREEZE_TRANSACTION_BODY);
+            case UNKNOWN_FREEZE_TYPE -> throw new PreCheckException(INVALID_FREEZE_TRANSACTION_BODY);
 
                 // FREEZE_ONLY requires a valid start_time
             case FREEZE_ONLY -> verifyFreezeStartTimeIsInFuture(

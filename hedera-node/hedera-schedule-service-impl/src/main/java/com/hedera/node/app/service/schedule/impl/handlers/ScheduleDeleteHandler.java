@@ -53,9 +53,7 @@ public class ScheduleDeleteHandler implements TransactionHandler {
      * @param scheduleStore the {@link ReadableScheduleStore} that contains all scheduled-data
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context,
-            @NonNull final ReadableScheduleStore scheduleStore)
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableScheduleStore scheduleStore)
             throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().scheduleDeleteOrThrow();

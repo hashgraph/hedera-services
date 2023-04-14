@@ -131,16 +131,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
         while (itr.hasNext()) {
             final var platformTx = itr.next();
-            final var future =
-                    runner.apply(
-                            () -> {
-                                try {
-                                    final var metadata = securePreHandle(state, platformTx);
-                                    platformTx.setMetadata(metadata);
-                                } catch (final PreCheckException e) {
-                                    platformTx.setMetadata(createInvalidResult(e.responseCode()));
-                                }
-                            });
+            final var future = runner.apply(() -> {
+                try {
+                    final var metadata = securePreHandle(state, platformTx);
+                    platformTx.setMetadata(metadata);
+                } catch (final PreCheckException e) {
+                    platformTx.setMetadata(createInvalidResult(e.responseCode()));
+                }
+            });
             futures.add(future);
         }
 
@@ -150,8 +148,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     private PreHandleResult securePreHandle(
-            final HederaState state,
-            final com.swirlds.common.system.transaction.Transaction platformTx)
+            final HederaState state, final com.swirlds.common.system.transaction.Transaction platformTx)
             throws PreCheckException {
         try {
             return preHandle(state, platformTx);
@@ -223,8 +220,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         }
 
         final var payerSignature =
-                signaturePreparer.prepareSignature(
-                        state, PbjConverter.asBytes(bytes), signatureMap, context.payer());
+                signaturePreparer.prepareSignature(state, PbjConverter.asBytes(bytes), signatureMap, context.payer());
         cryptography.verifyAsync(payerSignature);
         return payerSignature;
     }
@@ -246,8 +242,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     @NonNull
-    private static PreHandleResult createInvalidResult(
-            @NonNull final ResponseCodeEnum responseCode) {
+    private static PreHandleResult createInvalidResult(@NonNull final ResponseCodeEnum responseCode) {
         return new PreHandleResult(responseCode);
     }
 
@@ -257,12 +252,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final PreHandleContext context,
             @NonNull final Bytes txBodyBytes,
             @NonNull final SignatureMap signatureMap) {
-        final var otherSignatures =
-                signaturePreparer.prepareSignatures(
-                        state,
-                        PbjConverter.asBytes(txBodyBytes),
-                        signatureMap,
-                        context.requiredNonPayerKeys());
+        final var otherSignatures = signaturePreparer.prepareSignatures(
+                state, PbjConverter.asBytes(txBodyBytes), signatureMap, context.requiredNonPayerKeys());
         cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
         return otherSignatures;
     }

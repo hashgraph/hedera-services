@@ -64,8 +64,7 @@ public class ContractUpdateHandler implements TransactionHandler {
         if (hasCryptoAdminKey(op)) {
             context.requireKey(op.adminKeyOrThrow());
         }
-        if (op.hasAutoRenewAccountId()
-                && !op.autoRenewAccountIdOrThrow().equals(AccountID.DEFAULT)) {
+        if (op.hasAutoRenewAccountId() && !op.autoRenewAccountIdOrThrow().equals(AccountID.DEFAULT)) {
             context.requireKeyOrThrow(op.autoRenewAccountIdOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
     }

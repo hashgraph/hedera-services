@@ -71,8 +71,7 @@ public class Utils {
      * @param requiredNonPayerKeys
      * @return
      */
-    public static Set<HederaKey> asHederaKeys(
-            Set<com.hedera.hapi.node.base.Key> requiredNonPayerKeys) {
+    public static Set<HederaKey> asHederaKeys(Set<com.hedera.hapi.node.base.Key> requiredNonPayerKeys) {
         if (requiredNonPayerKeys == null) {
             return Set.of();
         }

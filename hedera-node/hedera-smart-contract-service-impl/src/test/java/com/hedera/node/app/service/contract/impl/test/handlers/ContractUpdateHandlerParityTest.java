@@ -61,8 +61,7 @@ class ContractUpdateHandlerParityTest {
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(context.requiredNonPayerKeys())
-                .containsExactlyInAnyOrder(
-                        MISC_ADMIN_KT.asPbjKey(), SIMPLE_NEW_ADMIN_KT.asPbjKey());
+                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asPbjKey(), SIMPLE_NEW_ADMIN_KT.asPbjKey());
     }
 
     @Test
@@ -77,8 +76,7 @@ class ContractUpdateHandlerParityTest {
 
     @Test
     void getsContractUpdateWithDeprecatedAdminKey() throws PreCheckException {
-        final var theTxn =
-                txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_DEPRECATED_CID_ADMIN_KEY_SCENARIO);
+        final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_DEPRECATED_CID_ADMIN_KEY_SCENARIO);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
@@ -94,8 +92,7 @@ class ContractUpdateHandlerParityTest {
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(context.requiredNonPayerKeys())
-                .containsExactlyInAnyOrder(
-                        MISC_ADMIN_KT.asPbjKey(), SIMPLE_NEW_ADMIN_KT.asPbjKey());
+                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asPbjKey(), SIMPLE_NEW_ADMIN_KT.asPbjKey());
     }
 
     @Test

@@ -106,9 +106,7 @@ public class TransactionDispatcher {
             @NonNull final WritableStoreFactory writableStoreFactory) {
         switch (function) {
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(
-                    txn.consensusCreateTopicOrThrow(),
-                    writableStoreFactory.createTopicStore(),
-                    usageLimits);
+                    txn.consensusCreateTopicOrThrow(), writableStoreFactory.createTopicStore(), usageLimits);
             case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(
                     txn.consensusUpdateTopicOrThrow(), writableStoreFactory.createTopicStore());
             case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(
@@ -116,10 +114,8 @@ public class TransactionDispatcher {
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(
                     txn, writableStoreFactory.createTopicStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
-            case TOKEN_UNPAUSE -> dispatchTokenUnpause(
-                    txn, writableStoreFactory.createTokenStore());
-            case CRYPTO_CREATE -> dispatchCryptoCreate(
-                    txn, writableStoreFactory.createAccountStore());
+            case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
+            case CRYPTO_CREATE -> dispatchCryptoCreate(txn, writableStoreFactory.createAccountStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -134,8 +130,7 @@ public class TransactionDispatcher {
      */
     //    @SuppressWarnings("java:S1479") // ignore too many branches warning
     public void dispatchPreHandle(
-            @NonNull final ReadableStoreFactory storeFactory,
-            @NonNull final PreHandleContext context)
+            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context)
             throws PreCheckException {
         requireNonNull(storeFactory);
         requireNonNull(context);
@@ -204,10 +199,8 @@ public class TransactionDispatcher {
                     .preHandle(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
                     .preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_PAUSE -> handlers.tokenPauseHandler()
-                    .preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler()
-                    .preHandle(context, storeFactory.createTokenStore());
+            case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(context, storeFactory.createTokenStore());
+            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(context, storeFactory.createTokenStore());
 
             case UTIL_PRNG -> handlers.utilPrngHandler().preHandle(context);
 
@@ -230,8 +223,7 @@ public class TransactionDispatcher {
         }
     }
 
-    private PreHandleDispatcher setupPreHandleDispatcher(
-            @NonNull final ReadableStoreFactory storeFactory) {
+    private PreHandleDispatcher setupPreHandleDispatcher(@NonNull final ReadableStoreFactory storeFactory) {
         return context -> dispatchPreHandle(storeFactory, context);
     }
 
@@ -280,12 +272,10 @@ public class TransactionDispatcher {
                 handleContext,
                 messageSubmission,
                 new ConsensusServiceConfig(
-                        dynamicProperties.maxNumTopics(),
-                        dynamicProperties.messageMaxBytesAllowed()),
+                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
                 recordBuilder,
                 topicStore);
-        txnCtx.setTopicRunningHash(
-                recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
+        txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
         topicStore.commit();
     }
 
@@ -296,8 +286,7 @@ public class TransactionDispatcher {
      * @param tokenStore the token store
      */
     private void dispatchTokenUnpause(
-            @NonNull final TransactionBody tokenUnpause,
-            @NonNull final WritableTokenStore tokenStore) {
+            @NonNull final TransactionBody tokenUnpause, @NonNull final WritableTokenStore tokenStore) {
         final var handler = handlers.tokenUnpauseHandler();
         handler.handle(tokenUnpause, tokenStore);
         tokenStore.commit();
@@ -310,16 +299,14 @@ public class TransactionDispatcher {
      * @param tokenStore the token store
      */
     private void dispatchTokenPause(
-            @NonNull final TransactionBody tokenPause,
-            @NonNull final WritableTokenStore tokenStore) {
+            @NonNull final TransactionBody tokenPause, @NonNull final WritableTokenStore tokenStore) {
         final var handler = handlers.tokenPauseHandler();
         handler.handle(tokenPause, tokenStore);
         tokenStore.commit();
     }
 
     private void dispatchCryptoCreate(
-            @NonNull final TransactionBody cryptoCreate,
-            @NonNull final WritableAccountStore accountStore) {
+            @NonNull final TransactionBody cryptoCreate, @NonNull final WritableAccountStore accountStore) {
         final var handler = handlers.cryptoCreateHandler();
         handler.handle(
                 handleContext,

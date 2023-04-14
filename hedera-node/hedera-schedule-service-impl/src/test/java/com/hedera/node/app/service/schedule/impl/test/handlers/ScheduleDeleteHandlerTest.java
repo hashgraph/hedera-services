@@ -98,22 +98,17 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         BDDMockito.given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
 
         final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
     }
 
-    private TransactionBody givenSetupForScheduleDelete(TransactionBody txn)
-            throws PreCheckException {
-        final TransactionBody scheduledTxn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
-                        .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
-                        .build();
+    private TransactionBody givenSetupForScheduleDelete(TransactionBody txn) throws PreCheckException {
+        final TransactionBody scheduledTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
+                .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
+                .build();
         // must be lenient here, because Mockito is a bit too sensitive, and not setting this causes
         // NPE's
-        BDDMockito.lenient()
-                .when(schedule.ordinaryViewOfScheduledTxn())
-                .thenReturn(PbjConverter.fromPbj(scheduledTxn));
+        BDDMockito.lenient().when(schedule.ordinaryViewOfScheduledTxn()).thenReturn(PbjConverter.fromPbj(scheduledTxn));
         given(keyLookup.getAccountById(scheduleDeleter)).willReturn(payerAccount);
         given(payerAccount.key()).willReturn(adminKey);
         return scheduledTxn;

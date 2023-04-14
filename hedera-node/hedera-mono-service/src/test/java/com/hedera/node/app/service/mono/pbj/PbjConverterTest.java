@@ -31,15 +31,16 @@ import org.junit.jupiter.api.Test;
 class PbjConverterTest {
     @Test
     void convertsFcCustomFeeToPbjCustomFee() {
-        final var fcFee =
-                FcCustomFee.royaltyFee(
-                        1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false);
+        final var fcFee = FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false);
         final var pbjFee = PbjConverter.fromFcCustomFee(fcFee);
 
         assertEquals(FeeOneOfType.ROYALTY_FEE, pbjFee.fee().kind());
-        assertEquals(fcFee.getFeeCollector().num(), pbjFee.feeCollectorAccountId().accountNum());
-        assertEquals(fcFee.getFeeCollector().shard(), pbjFee.feeCollectorAccountId().shardNum());
-        assertEquals(fcFee.getFeeCollector().realm(), pbjFee.feeCollectorAccountId().realmNum());
+        assertEquals(
+                fcFee.getFeeCollector().num(), pbjFee.feeCollectorAccountId().accountNum());
+        assertEquals(
+                fcFee.getFeeCollector().shard(), pbjFee.feeCollectorAccountId().shardNum());
+        assertEquals(
+                fcFee.getFeeCollector().realm(), pbjFee.feeCollectorAccountId().realmNum());
         assertFalse(pbjFee.allCollectorsAreExempt());
 
         final var value = (RoyaltyFee) pbjFee.fee().value();

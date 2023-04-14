@@ -36,7 +36,6 @@ import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -50,20 +49,25 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
     private final TokenID nft = TokenID.newBuilder().tokenNum(56789).build();
     private final TokenID token = TokenID.newBuilder().tokenNum(6789).build();
     private final AccountID spender = AccountID.newBuilder().accountNum(12345).build();
-    private final AccountID delegatingSpender = AccountID.newBuilder().accountNum(1234567).build();
+    private final AccountID delegatingSpender =
+            AccountID.newBuilder().accountNum(1234567).build();
     private final AccountID owner = AccountID.newBuilder().accountNum(123456).build();
     private final Key ownerKey = A_COMPLEX_KEY;
     private final HederaKey ownerHederaKey = asHederaKey(ownerKey).get();
-    private final CryptoAllowance cryptoAllowance =
-            CryptoAllowance.newBuilder().spender(spender).owner(owner).amount(10L).build();
-    private final TokenAllowance tokenAllowance =
-            TokenAllowance.newBuilder()
-                    .spender(spender)
-                    .amount(10L)
-                    .tokenId(token)
-                    .owner(owner)
-                    .build();
-    @Mock private Account ownerAccount;
+    private final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
+            .spender(spender)
+            .owner(owner)
+            .amount(10L)
+            .build();
+    private final TokenAllowance tokenAllowance = TokenAllowance.newBuilder()
+            .spender(spender)
+            .amount(10L)
+            .tokenId(token)
+            .owner(owner)
+            .build();
+
+    @Mock
+    private Account ownerAccount;
 
     private final NftAllowance nftAllowance = NftAllowance.newBuilder()
             .spender(spender)

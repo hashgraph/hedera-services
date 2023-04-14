@@ -52,8 +52,7 @@ public class WritableStoreFactory {
      */
     @NonNull
     public WritableTopicStore createTopicStore() {
-        final var topicStates =
-                stateAccessor.getHederaState().createWritableStates(ConsensusService.NAME);
+        final var topicStates = stateAccessor.getHederaState().createWritableStates(ConsensusService.NAME);
         return new WritableTopicStore(topicStates);
     }
 
@@ -64,8 +63,7 @@ public class WritableStoreFactory {
      */
     @NonNull
     public WritableTokenStore createTokenStore() {
-        final var tokenStates =
-                stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
+        final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
         return new WritableTokenStore(tokenStates);
     }
 
@@ -76,8 +74,7 @@ public class WritableStoreFactory {
      */
     @NonNull
     public WritableAccountStore createAccountStore() {
-        final var tokenStates =
-                stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
+        final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
         return new WritableAccountStore(tokenStates);
     }
 }

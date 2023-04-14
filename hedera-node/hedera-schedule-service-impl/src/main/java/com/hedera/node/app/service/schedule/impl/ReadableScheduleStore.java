@@ -67,14 +67,12 @@ public class ReadableScheduleStore {
             adminKey = null;
         }
         return Optional.ofNullable(schedule)
-                .map(
-                        s ->
-                                new ScheduleMetadata(
-                                        adminKey,
-                                        toPbj(schedule.ordinaryViewOfScheduledTxn()),
-                                        schedule.hasExplicitPayer()
-                                                ? Optional.of(schedule.payer().toPbjAccountId())
-                                                : Optional.empty()));
+                .map(s -> new ScheduleMetadata(
+                        adminKey,
+                        toPbj(schedule.ordinaryViewOfScheduledTxn()),
+                        schedule.hasExplicitPayer()
+                                ? Optional.of(schedule.payer().toPbjAccountId())
+                                : Optional.empty()));
     }
 
     /**
@@ -85,6 +83,5 @@ public class ReadableScheduleStore {
      * @param designatedPayer payer for the schedule execution.If there is no explicit payer,
      *     returns {@link Optional#empty()}.
      */
-    public record ScheduleMetadata(
-            Key adminKey, TransactionBody scheduledTxn, Optional<AccountID> designatedPayer) {}
+    public record ScheduleMetadata(Key adminKey, TransactionBody scheduledTxn, Optional<AccountID> designatedPayer) {}
 }

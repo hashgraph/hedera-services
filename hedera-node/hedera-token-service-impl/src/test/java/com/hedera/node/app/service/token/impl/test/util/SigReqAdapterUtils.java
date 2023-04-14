@@ -73,11 +73,7 @@ public class SigReqAdapterUtils {
                         toPbj(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK),
                         toPbj(KNOWN_TOKEN_WITH_SUPPLY),
                         toPbj(KNOWN_TOKEN_WITH_WIPE))
-                .forEach(
-                        id ->
-                                destination.put(
-                                        EntityNum.fromLong(id.tokenNum()),
-                                        asToken(source.get(fromPbj(id)))));
+                .forEach(id -> destination.put(EntityNum.fromLong(id.tokenNum()), asToken(source.get(fromPbj(id)))));
         final var wrappedState = new MapReadableKVState<>("TOKENS", destination);
         final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
         return new ReadableTokenStore(mockStates(Map.of(TOKENS_KEY, state)));
@@ -127,9 +123,7 @@ public class SigReqAdapterUtils {
                 !token.wipeKey().isEmpty()
                         ? fromGrpcKey(asKeyUnchecked(token.wipeKey().get()))
                         : Key.DEFAULT,
-                !token.supplyKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.getSupplyKey()))
-                        : Key.DEFAULT,
+                !token.supplyKey().isEmpty() ? fromGrpcKey(asKeyUnchecked(token.getSupplyKey())) : Key.DEFAULT,
                 !token.feeScheduleKey().isEmpty()
                         ? fromGrpcKey(asKeyUnchecked(token.feeScheduleKey().get()))
                         : Key.DEFAULT,
@@ -138,14 +132,10 @@ public class SigReqAdapterUtils {
                         : Key.DEFAULT,
                 token.getLastUsedSerialNumber(),
                 token.isDeleted(),
-                token.tokenType()
-                                == com.hedera.node.app.service.evm.store.tokens.TokenType
-                                        .FUNGIBLE_COMMON
+                token.tokenType() == com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON
                         ? com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON
                         : com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE,
-                token.supplyType()
-                                == com.hedera.node.app.service.mono.state.enums.TokenSupplyType
-                                        .FINITE
+                token.supplyType() == com.hedera.node.app.service.mono.state.enums.TokenSupplyType.FINITE
                         ? com.hedera.hapi.node.base.TokenSupplyType.FINITE
                         : com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
                 token.autoRenewAccount() == null ? 0 : token.autoRenewAccount().num(),

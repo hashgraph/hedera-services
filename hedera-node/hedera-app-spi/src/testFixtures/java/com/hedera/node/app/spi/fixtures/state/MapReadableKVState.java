@@ -37,8 +37,7 @@ import java.util.Objects;
  * @param <K> The key type
  * @param <V> The value type
  */
-public class MapReadableKVState<K extends Comparable<? super K>, V>
-        extends ReadableKVStateBase<K, V> {
+public class MapReadableKVState<K extends Comparable<? super K>, V> extends ReadableKVStateBase<K, V> {
     /** Represents the backing storage for this state */
     private final Map<K, V> backingStore;
 
@@ -50,8 +49,7 @@ public class MapReadableKVState<K extends Comparable<? super K>, V>
      * @param stateKey The state key for this state
      * @param backingStore The backing store to use
      */
-    public MapReadableKVState(
-            @NonNull final String stateKey, @NonNull final Map<K, V> backingStore) {
+    public MapReadableKVState(@NonNull final String stateKey, @NonNull final Map<K, V> backingStore) {
         super(stateKey);
         this.backingStore = Objects.requireNonNull(backingStore);
     }
@@ -84,8 +82,7 @@ public class MapReadableKVState<K extends Comparable<? super K>, V>
      * @param <V> The value type
      */
     @NonNull
-    public static <K extends Comparable<? super K>, V> Builder<K, V> builder(
-            @NonNull final String stateKey) {
+    public static <K extends Comparable<? super K>, V> Builder<K, V> builder(@NonNull final String stateKey) {
         return new Builder<>(stateKey);
     }
 

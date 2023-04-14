@@ -72,13 +72,17 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     private static final AccountID AUTO_RENEW_ACCOUNT =
             AccountID.newBuilder().accountNum(4L).build();
 
-    @Mock private AccountAccess accountAccess;
+    @Mock
+    private AccountAccess accountAccess;
 
-    @Mock private HandleContext handleContext;
+    @Mock
+    private HandleContext handleContext;
 
-    @Mock private AttributeValidator validator;
+    @Mock
+    private AttributeValidator validator;
 
-    @Mock private ExpiryValidator expiryValidator;
+    @Mock
+    private ExpiryValidator expiryValidator;
 
     private ConsensusCreateTopicRecordBuilder recordBuilder;
     private ConsensusServiceConfig config;
@@ -123,15 +127,13 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var context =
-                new PreHandleContext(accountAccess, newCreateTxn(adminKey, submitKey, false));
+        final var context = new PreHandleContext(accountAccess, newCreateTxn(adminKey, submitKey, false));
         subject.preHandle(context);
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
         final var expectedHederaAdminKey = asHederaKey(adminKey).orElseThrow();
-        assertThat(context.requiredNonPayerKeys())
-                .containsExactlyInAnyOrder(expectedHederaAdminKey);
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(expectedHederaAdminKey);
     }
 
     @Test
@@ -142,8 +144,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var adminKey = SIMPLE_KEY_A;
 
         // when:
-        final var context =
-                new PreHandleContext(accountAccess, newCreateTxn(adminKey, null, false));
+        final var context = new PreHandleContext(accountAccess, newCreateTxn(adminKey, null, false));
         subject.preHandle(context);
 
         // then:
@@ -160,8 +161,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var context =
-                new PreHandleContext(accountAccess, newCreateTxn(null, submitKey, false));
+        final var context = new PreHandleContext(accountAccess, newCreateTxn(null, submitKey, false));
         subject.preHandle(context);
 
         // then:
@@ -177,8 +177,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var context =
-                new PreHandleContext(accountAccess, newCreateTxn(protoPayerKey, null, false));
+        final var context = new PreHandleContext(accountAccess, newCreateTxn(protoPayerKey, null, false));
         subject.preHandle(context);
 
         // then:
@@ -194,8 +193,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var context =
-                new PreHandleContext(accountAccess, newCreateTxn(null, protoPayerKey, false));
+        final var context = new PreHandleContext(accountAccess, newCreateTxn(null, protoPayerKey, false));
         subject.preHandle(context);
 
         // then:
@@ -209,14 +207,13 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         mockPayerLookup();
         final var acct1234 = AccountID.newBuilder().accountNum(1234).build();
         given(accountAccess.getAccountById(acct1234)).willReturn(null);
-        final var inputTxn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build())
-                        .consensusCreateTopic(
-                                ConsensusCreateTopicTransactionBody.newBuilder()
-                                        .autoRenewAccount(acct1234)
-                                        .build())
-                        .build();
+        final var inputTxn = TransactionBody.newBuilder()
+                .transactionID(
+                        TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build())
+                .consensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder()
+                        .autoRenewAccount(acct1234)
+                        .build())
+                .build();
 
         // when:
         final var context = new PreHandleContext(accountAccess, inputTxn);

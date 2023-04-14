@@ -84,13 +84,16 @@ public class TokenHandlerTestBase {
     protected final long sequenceNumber = 1L;
     protected final long autoRenewSecs = 100L;
     protected final Instant consensusTimestamp = Instant.ofEpochSecond(1_234_567L);
-    protected final AccountID TEST_DEFAULT_PAYER = AccountID.newBuilder().accountNum(13257).build();
+    protected final AccountID TEST_DEFAULT_PAYER =
+            AccountID.newBuilder().accountNum(13257).build();
 
     protected Token token;
 
-    @Mock protected ReadableStates readableStates;
+    @Mock
+    protected ReadableStates readableStates;
 
-    @Mock protected WritableStates writableStates;
+    @Mock
+    protected WritableStates writableStates;
 
     protected MapReadableKVState<EntityNum, Token> readableTokenState;
     protected MapWritableKVState<EntityNum, Token> writableTokenState;
@@ -157,34 +160,33 @@ public class TokenHandlerTestBase {
             boolean accountsKycGrantedByDefault,
             boolean withAdminKey,
             boolean withSubmitKey) {
-        token =
-                new Token(
-                        tokenId.tokenNum(),
-                        tokenName,
-                        tokenSymbol,
-                        1000,
-                        1000,
-                        treasury.accountNum(),
-                        adminKey,
-                        kycKey,
-                        freezeKey,
-                        wipeKey,
-                        supplyKey,
-                        feeScheduleKey,
-                        pauseKey,
-                        0,
-                        deleted,
-                        TokenType.FUNGIBLE_COMMON,
-                        TokenSupplyType.INFINITE,
-                        autoRenewAccountNumber,
-                        autoRenewSecs,
-                        expirationTime,
-                        memo,
-                        100000,
-                        paused,
-                        accountsFrozenByDefault,
-                        accountsKycGrantedByDefault,
-                        Collections.emptyList());
+        token = new Token(
+                tokenId.tokenNum(),
+                tokenName,
+                tokenSymbol,
+                1000,
+                1000,
+                treasury.accountNum(),
+                adminKey,
+                kycKey,
+                freezeKey,
+                wipeKey,
+                supplyKey,
+                feeScheduleKey,
+                pauseKey,
+                0,
+                deleted,
+                TokenType.FUNGIBLE_COMMON,
+                TokenSupplyType.INFINITE,
+                autoRenewAccountNumber,
+                autoRenewSecs,
+                expirationTime,
+                memo,
+                100000,
+                paused,
+                accountsFrozenByDefault,
+                accountsKycGrantedByDefault,
+                Collections.emptyList());
     }
 
     protected Token createToken() {

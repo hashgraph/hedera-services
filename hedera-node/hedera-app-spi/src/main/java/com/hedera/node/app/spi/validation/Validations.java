@@ -61,8 +61,7 @@ public final class Validations {
      * @throws PreCheckException If the account ID is not valid, {@link
      *     ResponseCodeEnum#INVALID_ACCOUNT_ID} will be thrown.
      */
-    public static AccountID validateAccountID(@Nullable final AccountID subject)
-            throws PreCheckException {
+    public static AccountID validateAccountID(@Nullable final AccountID subject) throws PreCheckException {
         // Cannot be null
         if (subject == null) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);

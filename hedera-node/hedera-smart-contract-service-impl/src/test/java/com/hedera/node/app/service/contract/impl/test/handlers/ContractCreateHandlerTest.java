@@ -97,14 +97,10 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         // meta.requiredNonPayerKeys());
     }
 
-    private TransactionBody contractCreateTransaction(
-            final Key adminKey, final AccountID autoRenewId) throws PreCheckException {
-        final var transactionID =
-                TransactionID.newBuilder()
-                        .accountID(payer)
-                        .transactionValidStart(consensusTimestamp);
-        final var createTxnBody =
-                ContractCreateTransactionBody.newBuilder().memo("Create Contract");
+    private TransactionBody contractCreateTransaction(final Key adminKey, final AccountID autoRenewId)
+            throws PreCheckException {
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        final var createTxnBody = ContractCreateTransactionBody.newBuilder().memo("Create Contract");
         if (adminKey != null) {
             createTxnBody.adminKey(adminKey);
         }

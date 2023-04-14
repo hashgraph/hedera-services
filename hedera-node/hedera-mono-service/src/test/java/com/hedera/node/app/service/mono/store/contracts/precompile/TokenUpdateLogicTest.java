@@ -107,8 +107,7 @@ class TokenUpdateLogicTest {
     void callsWithInvalidTokenIdFail() {
         givenTokenUpdateLogic(true);
         op = TokenUpdateTransactionBody.newBuilder().setToken(MISSING_TOKEN).build();
-        assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+        assertThrows(InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -117,16 +116,14 @@ class TokenUpdateLogicTest {
         op = TokenUpdateTransactionBody.newBuilder().setToken(fungible).build();
         given(store.get(fungible)).willReturn(merkleToken);
         given(merkleToken.isDeleted()).willReturn(true);
-        assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+        assertThrows(InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
     void callsWithInvalidExpiry() {
         givenTokenUpdateLogic(true);
         givenValidTransactionBody(true, true);
-        assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+        assertThrows(InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -187,9 +184,7 @@ class TokenUpdateLogicTest {
         given(ledgers.nfts()).willReturn(nfts);
         // then
         assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.updateToken(op, CONSENSUS_TIME),
-                FAIL_INVALID.name());
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
     }
 
     @Test
@@ -200,8 +195,7 @@ class TokenUpdateLogicTest {
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
         given(store.get(fungible)).willReturn(merkleToken);
         // then
-        assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+        assertThrows(InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -316,9 +310,7 @@ class TokenUpdateLogicTest {
 
         // then
         assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.updateToken(op, CONSENSUS_TIME),
-                FAIL_INVALID.name());
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
     }
 
     @Test
@@ -355,8 +347,7 @@ class TokenUpdateLogicTest {
         subject.validate(transactionBody);
         // then
 
-        assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+        assertThrows(InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -415,9 +406,7 @@ class TokenUpdateLogicTest {
         given(store.get(nonFungible)).willReturn(merkleToken);
         given(store.update(op, CONSENSUS_TIME)).willReturn(FAIL_INVALID);
         // then
-        assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.updateTokenKeys(op, CONSENSUS_TIME));
+        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenKeys(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -460,9 +449,7 @@ class TokenUpdateLogicTest {
         // then
 
         assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.updateToken(op, CONSENSUS_TIME),
-                FAIL_INVALID.name());
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
     }
 
     @Test

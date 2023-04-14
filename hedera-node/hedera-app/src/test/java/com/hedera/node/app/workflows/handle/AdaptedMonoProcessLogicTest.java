@@ -150,29 +150,17 @@ class AdaptedMonoProcessLogicTest {
                 .setSignedTransactionBytes(ByteString.copyFrom("NONSENSE".getBytes()))
                 .build();
         final var cryptoSigs = List.of(signature);
-        final var meta =
-                new PreHandleResult(
-                        null,
-                        null,
-                        null,
-                        ResponseCodeEnum.INVALID_ACCOUNT_ID,
-                        null,
-                        OTHER_PARTY_KEYS,
-                        cryptoSigs,
-                        null);
+        final var meta = new PreHandleResult(
+                null, null, null, ResponseCodeEnum.INVALID_ACCOUNT_ID, null, OTHER_PARTY_KEYS, cryptoSigs, null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(nonsenseTxn.toByteArray());
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.incorporateConsensusTxn(platformTxn, 1L));
+        assertThrows(IllegalStateException.class, () -> subject.incorporateConsensusTxn(platformTxn, 1L));
     }
 
-    private static final JKey PAYER_KEY =
-            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
-    private static final Set<HederaKey> OTHER_PARTY_KEYS =
-            Set.of(
-                    new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()),
-                    new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes()));
+    private static final JKey PAYER_KEY = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+    private static final Set<HederaKey> OTHER_PARTY_KEYS = Set.of(
+            new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()),
+            new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes()));
 }

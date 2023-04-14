@@ -93,8 +93,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(schedulerAccount.key()).willReturn(schedulerKey);
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(null);
         final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, scheduleStore, dispatcher), INVALID_SCHEDULE_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore, dispatcher), INVALID_SCHEDULE_ID);
 
         verify(dispatcher, never()).dispatch(any());
     }
@@ -128,11 +127,10 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     void scheduleSignForNotSchedulableFails() throws PreCheckException {
         final var txn = scheduleSignTransaction();
 
-        scheduledTxn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(scheduler))
-                        .scheduleCreate(ScheduleCreateTransactionBody.newBuilder().build())
-                        .build();
+        scheduledTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(scheduler))
+                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder().build())
+                .build();
 
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
@@ -143,19 +141,17 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
 
         final var context = new PreHandleContext(keyLookup, txn);
         assertThrowsPreCheck(
-                () -> subject.preHandle(context, scheduleStore, dispatcher),
-                SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+                () -> subject.preHandle(context, scheduleStore, dispatcher), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
     }
 
     // @todo Need to create a valid test for "schedule sign with key not in whitelist"
     //       (the prior test just checked for a missing key, which throws NPE now)
 
     private TransactionBody givenSetupForScheduleSign() {
-        final TransactionBody scheduledTxn =
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
-                        .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
-                        .build();
+        final TransactionBody scheduledTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
+                .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
+                .build();
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);

@@ -63,9 +63,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     @Test
     void preHandleScheduleCreateVanillaNoAdmin() throws PreCheckException {
         final var subject = new ScheduleCreateHandler();
-        final var txn =
-                scheduleCreateTxnWith(
-                        null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
+        final var txn = scheduleCreateTxnWith(
+                null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
 
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);
@@ -144,8 +143,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         given(keyLookup.getAccountById(payer)).willReturn(null);
 
         final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, dispatcher), UNRESOLVABLE_REQUIRED_SIGNERS);
+        assertThrowsPreCheck(() -> subject.preHandle(context, dispatcher), UNRESOLVABLE_REQUIRED_SIGNERS);
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {

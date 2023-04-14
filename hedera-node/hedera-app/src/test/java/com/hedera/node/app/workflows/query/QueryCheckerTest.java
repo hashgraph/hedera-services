@@ -246,8 +246,7 @@ class QueryCheckerTest {
                 cryptoTransferHandler);
 
         // then
-        assertThrowsPreCheck(
-                () -> checker.validateCryptoTransfer(transaction), INVALID_TRANSACTION);
+        assertThrowsPreCheck(() -> checker.validateCryptoTransfer(transaction), INVALID_TRANSACTION);
     }
 
     @Test
@@ -269,8 +268,7 @@ class QueryCheckerTest {
                 cryptoTransferHandler);
 
         // then
-        assertThrowsPreCheck(
-                () -> checker.validateCryptoTransfer(transaction), INSUFFICIENT_TX_FEE);
+        assertThrowsPreCheck(() -> checker.validateCryptoTransfer(transaction), INSUFFICIENT_TX_FEE);
     }
 
     @Test
@@ -295,8 +293,7 @@ class QueryCheckerTest {
                 cryptoTransferHandler);
 
         // then
-        assertThrowsPreCheck(
-                () -> checker.validateCryptoTransfer(transaction), INVALID_ACCOUNT_AMOUNTS);
+        assertThrowsPreCheck(() -> checker.validateCryptoTransfer(transaction), INVALID_ACCOUNT_AMOUNTS);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -471,7 +468,6 @@ class QueryCheckerTest {
         when(authorizer.isAuthorized(payer, GET_ACCOUNT_DETAILS)).thenReturn(false);
 
         // then
-        assertThrowsPreCheck(
-                () -> checker.checkPermissions(payer, GET_ACCOUNT_DETAILS), NOT_SUPPORTED);
+        assertThrowsPreCheck(() -> checker.checkPermissions(payer, GET_ACCOUNT_DETAILS), NOT_SUPPORTED);
     }
 }
