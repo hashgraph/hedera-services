@@ -149,6 +149,10 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         assertDoesNotThrow(() -> subject.preHandle(context, readableStore));
     }
 
+    private static ReadableTopicStore.TopicMetadata newTopicMeta(HederaKey submit) {
+        return ConsensusTestUtils.newTopicMeta(null, submit);
+    }
+
     @Test
     @DisplayName("Correct RecordBuilder type returned")
     void returnsExpectedRecordBuilderType() {
@@ -303,12 +307,71 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
     /* ----------------- Helper Methods ------------------- */
 
-    private Key mockPayerLookup() throws PreCheckException {
+    private HederaKey mockPayerLookup() throws PreCheckException {
         return ConsensusTestUtils.mockPayerLookup(A_COMPLEX_KEY, PARITY_DEFAULT_PAYER, keyLookup);
     }
 
     private void mockTopicLookup(Key submitKey) throws PreCheckException {
         ConsensusTestUtils.mockTopicLookup(null, submitKey, readableStore);
+    }
+
+    private TransactionBody newDefaultSubmitMessageTxn(final EntityNum topicEntityNum) {
+        return newSubmitMessageTxn(
+                topicEntityNum,
+                "Message for test-" + Instant.now() + "." + Instant.now().getNano());
+    }
+
+    @Nested
+    class ConsensusSubmitMessageHandlerParityTest {
+        @BeforeEach
+        void setUp() {
+            readableStore = mock(ReadableTopicStore.class);
+            keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        }
+
+        @Test
+        void getsConsensusSubmitMessageNoSubmitKey() throws PreCheckException {
+            final var txn = CONSENSUS_SUBMIT_MESSAGE_SCENARIO.pbjTxnBody();
+
+            var topicMeta = newTopicMeta(null);
+            given(readableStore.getTopicMetadata(notNull())).willReturn(topicMeta);
+            final var context = new PreHandleContext(keyLookup, txn);
+
+            // when:
+            subject.preHandle(context, readableStore);
+
+            // then:
+            assertDefaultPayer(context);
+            assertThat(context.requiredNonPayerKeys()).isEmpty();
+        }
+
+        @Test
+        void getsConsensusSubmitMessageWithSubmitKey() throws PreCheckException {
+            final var txn = CONSENSUS_SUBMIT_MESSAGE_SCENARIO.pbjTxnBody();
+
+            var topicMeta = newTopicMeta(A_NONNULL_KEY);
+            given(readableStore.getTopicMetadata(notNull())).willReturn(topicMeta);
+            final var context = new PreHandleContext(keyLookup, txn);
+
+            // when:
+            subject.preHandle(context, readableStore);
+
+            // then:
+            ConsensusTestUtils.assertDefaultPayer(context);
+            Assertions.assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(A_NONNULL_KEY));
+        }
+
+        @Test
+        void reportsConsensusSubmitMessageMissingTopic() throws PreCheckException {
+            // given:
+            final var txn = CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO.pbjTxnBody();
+
+            given(readableStore.getTopicMetadata(notNull())).willReturn(null);
+            final var context = new PreHandleContext(keyLookup, txn);
+
+            // when:
+            assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
+        }
     }
 
     private TransactionBody newSubmitMessageTxn(

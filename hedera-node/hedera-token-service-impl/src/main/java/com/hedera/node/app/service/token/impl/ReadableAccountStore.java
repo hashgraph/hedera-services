@@ -72,9 +72,11 @@ public class ReadableAccountStore implements AccountAccess {
         this.aliases = states.get("ALIASES");
     }
 
-    static boolean isMirror(final Bytes bytes) {
+    private static boolean isMirror(final Bytes bytes) {
         return bytes.matchesPrefix(MIRROR_PREFIX);
     }
+
+    /* Helper methods */
 
     /**
      * Returns the account leaf for the given account id. If the account doesn't exist, returns
@@ -105,6 +107,20 @@ public class ReadableAccountStore implements AccountAccess {
                 };
 
         return accountNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(accountNum));
+    }
+
+    /**
+     * Returns the {@link Account} for a given {@link AccountID}
+     *
+     * @param accountID the {@code AccountID} which {@code Account is requested}
+     * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
+     *     Optional} otherwise
+     */
+    @Override
+    @Nullable
+    public Account getAccountById(@NonNull final AccountID accountID) {
+        final var account = getAccountLeaf(accountID);
+        return account == null ? null : account;
     }
 
     /**
@@ -178,20 +194,6 @@ public class ReadableAccountStore implements AccountAccess {
         final var buf = new byte[Math.toIntExact(alias.length())];
         alias.getBytes(0, buf);
         return AliasManager.keyAliasToEVMAddress(ByteString.copyFrom(buf));
-    }
-
-    /**
-     * Returns the {@link Account} for a given {@link AccountID}
-     *
-     * @param accountID the {@code AccountID} which {@code Account is requested}
-     * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
-     *     Optional} otherwise
-     */
-    @Override
-    @Nullable
-    public Account getAccountById(@NonNull final AccountID accountID) {
-        final var account = getAccountLeaf(accountID);
-        return account;
     }
 
     @NonNull

@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
-import static com.hedera.node.app.service.mono.Utils.asHederaKeys;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -231,6 +230,28 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     @NonNull
+    private static PreHandleResult createResult(
+            @NonNull final PreHandleContext context,
+            @NonNull final SignatureMap signatureMap,
+            @Nullable final TransactionSignature payerSignature,
+            @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
+            @Nullable final PreHandleResult innerResult) {
+        final var otherSigs = otherSignatures.values();
+        final var allSigs = new ArrayList<TransactionSignature>(otherSigs.size() + 1);
+        if (payerSignature != null) {
+            allSigs.add(payerSignature);
+        }
+        allSigs.addAll(otherSigs);
+        return new PreHandleResult(context, OK, signatureMap, allSigs, innerResult);
+    }
+
+    @NonNull
+    private static PreHandleResult createInvalidResult(
+            @NonNull final ResponseCodeEnum responseCode) {
+        return new PreHandleResult(responseCode);
+    }
+
+    @NonNull
     private Map<HederaKey, TransactionSignature> verifyOtherSignatures(
             @NonNull final HederaState state,
             @NonNull final PreHandleContext context,
@@ -241,13 +262,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                         state,
                         PbjConverter.asBytes(txBodyBytes),
                         signatureMap,
-                        asHederaKeys(context.requiredNonPayerKeys()));
+                        context.requiredNonPayerKeys());
         cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
         return otherSignatures;
-    }
-
-    @NonNull
-    private static PreHandleResult createInvalidResult(@NonNull final ResponseCodeEnum responseCode) {
-        return new PreHandleResult(responseCode);
     }
 }

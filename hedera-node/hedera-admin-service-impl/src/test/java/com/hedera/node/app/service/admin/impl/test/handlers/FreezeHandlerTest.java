@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
@@ -42,6 +43,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -54,14 +56,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
+    private final HederaKey nonAdminKey = asHederaKey(key).get();
+    @Mock ReadableSpecialFileStore specialFileStore;
+    @Mock private AccountAccess keyLookup;
+
     private final Key key =
             Key.newBuilder()
                     .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
                     .build();
-    private final AccountID nonAdminAccount = AccountID.newBuilder().accountNum(9999L).build();
-    @Mock ReadableSpecialFileStore specialFileStore;
-    @Mock private AccountAccess keyLookup;
     @Mock private Account account;
+
+    private final AccountID nonAdminAccount = AccountID.newBuilder().accountNum(9999L).build();
 
     private final FreezeHandler subject = new FreezeHandler();
 

@@ -43,6 +43,8 @@ class PreHandleContextTest {
     @Mock private Key payerKey;
     @Mock private Key otherKey;
 
+    @Mock Account account;
+
     private PreHandleContext subject;
 
     @Test

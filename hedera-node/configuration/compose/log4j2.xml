@@ -12,8 +12,8 @@
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
         <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
@@ -31,8 +31,8 @@
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
         <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
@@ -49,8 +49,8 @@
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
         <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
@@ -86,8 +86,8 @@
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
         <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
@@ -198,8 +198,8 @@
         <MarkerFilter marker="FREEZE"                 onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <!-- Saved States -->
-        <MarkerFilter marker="SNAPSHOT_MANAGER"       onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="STATE_TO_DISK"          onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_HASH" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <!-- Beta Mirror -->

@@ -48,6 +48,7 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -73,14 +74,11 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Mock private AccountAccess accountAccess;
 
-    @Mock
-    private HandleContext handleContext;
+    @Mock private HandleContext handleContext;
 
-    @Mock
-    private AttributeValidator validator;
+    @Mock private AttributeValidator validator;
 
-    @Mock
-    private ExpiryValidator expiryValidator;
+    @Mock private ExpiryValidator expiryValidator;
 
     private ConsensusCreateTopicRecordBuilder recordBuilder;
     private ConsensusServiceConfig config;
@@ -131,7 +129,9 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(adminKey);
+        final var expectedHederaAdminKey = asHederaKey(adminKey).orElseThrow();
+        assertThat(context.requiredNonPayerKeys())
+                .containsExactlyInAnyOrder(expectedHederaAdminKey);
     }
 
     @Test
@@ -421,14 +421,15 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java
 
-    private Key mockPayerLookup() throws PreCheckException {
+    private HederaKey mockPayerLookup() throws PreCheckException {
         return mockPayerLookup(A_COMPLEX_KEY);
     }
 
-    private Key mockPayerLookup(Key key) throws PreCheckException {
+    private HederaKey mockPayerLookup(Key key) throws PreCheckException {
+        final var returnKey = asHederaKey(key).orElseThrow();
         final var account = mock(Account.class);
-        given(account.key()).willReturn(key);
+        given(account.key()).willReturn(returnKey);
         given(accountAccess.getAccountById(ACCOUNT_ID_3)).willReturn(account);
-        return key;
+        return returnKey;
     }
 }

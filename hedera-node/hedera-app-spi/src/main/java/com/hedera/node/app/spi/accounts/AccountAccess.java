@@ -18,7 +18,6 @@ package com.hedera.node.app.spi.accounts;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -68,6 +67,6 @@ public interface AccountAccess {
         }
 
         final var account = getAccountById(builder.build());
-        return account == null || !account.smartContract() ? null : account;
+        return account == null || !account.isSmartContract() ? null : account;
     }
 }

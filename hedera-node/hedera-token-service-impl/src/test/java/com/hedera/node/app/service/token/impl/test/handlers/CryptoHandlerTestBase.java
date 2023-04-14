@@ -141,6 +141,7 @@ public class CryptoHandlerTestBase {
                 .build();
     }
 
+
     @NonNull
     protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccountState() {
         return MapReadableKVState.<EntityNumVirtualKey, Account>builder(ACCOUNTS)
@@ -203,12 +204,5 @@ public class CryptoHandlerTestBase {
                         Collections.emptyList(),
                         2,
                         false);
-    }
-
-    protected void setUpPayer() {
-        lenient()
-                .when(readableAccounts.get(EntityNumVirtualKey.fromLong(accountNum)))
-                .thenReturn(account);
-        lenient().when(account.key()).thenReturn(accountKey);
     }
 }

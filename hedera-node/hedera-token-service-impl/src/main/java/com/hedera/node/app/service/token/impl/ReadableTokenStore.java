@@ -51,6 +51,17 @@ public class ReadableTokenStore {
         this.tokenState = states.get("TOKENS");
     }
 
+    public record TokenMetadata(
+            Optional<HederaKey> adminKey,
+            Optional<HederaKey> kycKey,
+            Optional<HederaKey> wipeKey,
+            Optional<HederaKey> freezeKey,
+            Optional<HederaKey> supplyKey,
+            Optional<HederaKey> feeScheduleKey,
+            Optional<HederaKey> pauseKey,
+            boolean hasRoyaltyWithFallback,
+            long treasuryNum) {}
+
     /**
      * Returns the token metadata needed for signing requirements.
      *
@@ -88,17 +99,6 @@ public class ReadableTokenStore {
                 hasRoyaltyWithFallback,
                 token.treasuryAccountNumber()); // remove this and make it a long
     }
-
-    public record TokenMetadata(
-            Key adminKey,
-            Key kycKey,
-            Key wipeKey,
-            Key freezeKey,
-            Key supplyKey,
-            Key feeScheduleKey,
-            Key pauseKey,
-            boolean hasRoyaltyWithFallback,
-            long treasuryNum) {}
 
     private boolean isRoyaltyWithFallback(final CustomFee fee) {
         return fee.fee().kind() == ROYALTY_FEE && fee.royaltyFee().hasFallbackFee();

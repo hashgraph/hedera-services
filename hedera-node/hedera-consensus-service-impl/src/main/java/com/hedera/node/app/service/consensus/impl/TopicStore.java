@@ -18,7 +18,6 @@ package com.hedera.node.app.service.consensus.impl;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.consensus.Topic;
 import java.util.Arrays;

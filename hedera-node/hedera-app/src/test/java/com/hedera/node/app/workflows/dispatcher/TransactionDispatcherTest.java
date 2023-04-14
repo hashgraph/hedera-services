@@ -137,6 +137,8 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -320,8 +322,319 @@ class TransactionDispatcherTest {
 
     @Mock private Account account;
 
+    @Mock private Account account;
+
     private TransactionHandlers handlers;
     private TransactionDispatcher dispatcher;
+
+    @BeforeEach
+    void setup(@Mock final ReadableStates readableStates, @Mock HederaKey payerKey) {
+        when(state.createReadableStates(any())).thenReturn(readableStates);
+        when(accountStore.getAccountById(any(AccountID.class))).thenReturn(account);
+        lenient().when(account.getKey()).thenReturn(payerKey);
+
+        handlers =
+                new TransactionHandlers(
+                        consensusCreateTopicHandler,
+                        consensusUpdateTopicHandler,
+                        consensusDeleteTopicHandler,
+                        consensusSubmitMessageHandler,
+                        contractCreateHandler,
+                        contractUpdateHandler,
+                        contractCallHandler,
+                        contractDeleteHandler,
+                        contractSystemDeleteHandler,
+                        contractSystemUndeleteHandler,
+                        etherumTransactionHandler,
+                        cryptoCreateHandler,
+                        cryptoUpdateHandler,
+                        cryptoTransferHandler,
+                        cryptoDeleteHandler,
+                        cryptoApproveAllowanceHandler,
+                        cryptoDeleteAllowanceHandler,
+                        cryptoAddLiveHashHandler,
+                        cryptoDeleteLiveHashHandler,
+                        fileCreateHandler,
+                        fileUpdateHandler,
+                        fileDeleteHandler,
+                        fileAppendHandler,
+                        fileSystemDeleteHandler,
+                        fileSystemUndeleteHandler,
+                        freezeHandler,
+                        networkUncheckedSubmitHandler,
+                        scheduleCreateHandler,
+                        scheduleSignHandler,
+                        scheduleDeleteHandler,
+                        tokenCreateHandler,
+                        tokenUpdateHandler,
+                        tokenMintHandler,
+                        tokenBurnHandler,
+                        tokenDeleteHandler,
+                        tokenAccountWipeHandler,
+                        tokenFreezeAccountHandler,
+                        tokenUnfreezeAccountHandler,
+                        tokenGrantKycToAccountHandler,
+                        tokenRevokeKycFromAccountHandler,
+                        tokenAssociateToAccountHandler,
+                        tokenDissociateFromAccountHandler,
+                        tokenFeeScheduleUpdateHandler,
+                        tokenPauseHandler,
+                        tokenUnpauseHandler,
+                        utilPrngHandler);
+
+        dispatcher =
+                new TransactionDispatcher(
+                        handleContext,
+                        txnCtx,
+                        handlers,
+                        accountNumbers,
+                        dynamicProperties,
+                        usageLimits);
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void testConstructorWithIllegalParameters() {
+        assertThatThrownBy(
+                        () ->
+                                new TransactionDispatcher(
+                                        null,
+                                        txnCtx,
+                                        handlers,
+                                        accountNumbers,
+                                        dynamicProperties,
+                                        usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new TransactionDispatcher(
+                                        handleContext,
+                                        null,
+                                        handlers,
+                                        accountNumbers,
+                                        dynamicProperties,
+                                        usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new TransactionDispatcher(
+                                        handleContext,
+                                        txnCtx,
+                                        null,
+                                        accountNumbers,
+                                        dynamicProperties,
+                                        usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new TransactionDispatcher(
+                                        handleContext,
+                                        txnCtx,
+                                        handlers,
+                                        null,
+                                        dynamicProperties,
+                                        usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new TransactionDispatcher(
+                                        handleContext,
+                                        txnCtx,
+                                        handlers,
+                                        accountNumbers,
+                                        null,
+                                        usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new TransactionDispatcher(
+                                        handleContext,
+                                        txnCtx,
+                                        handlers,
+                                        accountNumbers,
+                                        dynamicProperties,
+                                        null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void testDispatchWithIllegalParameters() throws PreCheckException {
+        // given
+        final var payer = AccountID.newBuilder().build();
+        final var tracker = new ReadableStoreFactory(state);
+        final var validContext =
+                new PreHandleContext(
+                        accountStore,
+                        TransactionBody.newBuilder()
+                                .fileCreate(FileCreateTransactionBody.newBuilder().build())
+                                .build());
+        final var invalidSystemDelete =
+                new PreHandleContext(
+                        accountStore,
+                        TransactionBody.newBuilder()
+                                .systemDelete(SystemDeleteTransactionBody.newBuilder().build())
+                                .build());
+        final var invalidSystemUndelete =
+                new PreHandleContext(
+                        accountStore,
+                        TransactionBody.newBuilder()
+                                .systemUndelete(SystemUndeleteTransactionBody.newBuilder().build())
+                                .build());
+
+        // then
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null, validContext))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, null))
+                .isInstanceOf(NullPointerException.class);
+
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, invalidSystemDelete))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, invalidSystemUndelete))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void testDataNotSetFails() throws PreCheckException {
+        // given
+        final var txBody = TransactionBody.newBuilder().build();
+        final var tracker = new ReadableStoreFactory(state);
+        final var context = new PreHandleContext(accountStore, txBody);
+
+        // then
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void testNodeStakeUpdateFails() throws PreCheckException {
+        // given
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder())
+                        .build();
+        final var tracker = new ReadableStoreFactory(state);
+        final var context = new PreHandleContext(accountStore, txBody);
+
+        // then
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void dispatchesCreateTopicAsExpected() {
+        final var createBuilder = mock(ConsensusCreateTopicRecordBuilder.class);
+
+        given(consensusCreateTopicHandler.newRecordBuilder()).willReturn(createBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        given(createBuilder.getCreatedTopic()).willReturn(666L);
+        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
+
+        dispatcher.dispatchHandle(
+                HederaFunctionality.CONSENSUS_CREATE_TOPIC, transactionBody, writableStoreFactory);
+
+        verify(txnCtx)
+                .setCreated(PbjConverter.fromPbj(TopicID.newBuilder().topicNum(666L).build()));
+        verify(writableTopicStore).commit();
+    }
+
+    @Test
+    void dispatchesUpdateTopicAsExpected() {
+        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
+
+        dispatcher.dispatchHandle(
+                HederaFunctionality.CONSENSUS_UPDATE_TOPIC, transactionBody, writableStoreFactory);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
+    void dispatchesDeleteTopicAsExpected() {
+        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
+
+        dispatcher.dispatchHandle(
+                HederaFunctionality.CONSENSUS_DELETE_TOPIC, transactionBody, writableStoreFactory);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
+    void dispatchesSubmitMessageAsExpected() {
+        final var newRunningHash = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        final var submitBuilder = mock(SubmitMessageRecordBuilder.class);
+
+        given(consensusSubmitMessageHandler.newRecordBuilder()).willReturn(submitBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        given(submitBuilder.getNewTopicRunningHash()).willReturn(newRunningHash);
+        given(submitBuilder.getNewTopicSequenceNumber()).willReturn(2L);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
+
+        doAnswer(
+                        invocation -> {
+                            final var builder =
+                                    (SubmitMessageRecordBuilder) invocation.getArguments()[3];
+                            builder.setNewTopicMetadata(newRunningHash, 2, 3L);
+                            return null;
+                        })
+                .when(consensusSubmitMessageHandler)
+                .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any(), any());
+
+        dispatcher.dispatchHandle(
+                HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE,
+                transactionBody,
+                writableStoreFactory);
+
+        verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
+    }
+
+    @Test
+    void dispatchesTokenPauseAsExpected() {
+        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
+
+        dispatcher.dispatchHandle(
+                HederaFunctionality.TOKEN_PAUSE, transactionBody, writableStoreFactory);
+
+        verify(writableTokenStore).commit();
+    }
+
+    @Test
+    void dispatchesTokenUnpauseAsExpected() {
+        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
+
+        dispatcher.dispatchHandle(
+                HederaFunctionality.TOKEN_UNPAUSE, transactionBody, writableStoreFactory);
+
+        verify(writableTokenStore).commit();
+    }
+
+    @Test
+    void cannotDispatchUnsupportedOperations() {
+        assertThatThrownBy(
+                        () ->
+                                dispatcher.dispatchHandle(
+                                        HederaFunctionality.CRYPTO_TRANSFER,
+                                        transactionBody,
+                                        writableStoreFactory))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @ParameterizedTest
+    @MethodSource("getDispatchParameters")
+    void testPreHandleWithPayer(final TransactionBody txBody, final DispatchToHandler verification)
+            throws PreCheckException {
+        // given
+        final var tracker = new ReadableStoreFactory(state);
+        final var context = new PreHandleContext(accountStore, txBody);
+
+        // when
+        dispatcher.dispatchPreHandle(tracker, context);
+
+        // then
+        verification.dispatchTo(this.handlers, context);
+    }
 
     private static Stream<Arguments> getDispatchParameters() {
         return Stream.of(
@@ -732,265 +1045,6 @@ class TransactionDispatcherTest {
                                         (handlers, meta) ->
                                                 verify(handlers.fileSystemUndeleteHandler())
                                                         .preHandle(meta))));
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    @Test
-    void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new TransactionDispatcher(
-                        null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, null, handlers, accountNumbers, dynamicProperties, usageLimits))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
-                .isInstanceOf(NullPointerException.class);
-    }
-
-    @BeforeEach
-    void setup(@Mock final ReadableStates readableStates, @Mock Key payerKey) {
-        when(state.createReadableStates(any())).thenReturn(readableStates);
-        when(accountStore.getAccountById(any(AccountID.class))).thenReturn(account);
-        lenient().when(account.key()).thenReturn(payerKey);
-
-        handlers =
-                new TransactionHandlers(
-                        consensusCreateTopicHandler,
-                        consensusUpdateTopicHandler,
-                        consensusDeleteTopicHandler,
-                        consensusSubmitMessageHandler,
-                        contractCreateHandler,
-                        contractUpdateHandler,
-                        contractCallHandler,
-                        contractDeleteHandler,
-                        contractSystemDeleteHandler,
-                        contractSystemUndeleteHandler,
-                        etherumTransactionHandler,
-                        cryptoCreateHandler,
-                        cryptoUpdateHandler,
-                        cryptoTransferHandler,
-                        cryptoDeleteHandler,
-                        cryptoApproveAllowanceHandler,
-                        cryptoDeleteAllowanceHandler,
-                        cryptoAddLiveHashHandler,
-                        cryptoDeleteLiveHashHandler,
-                        fileCreateHandler,
-                        fileUpdateHandler,
-                        fileDeleteHandler,
-                        fileAppendHandler,
-                        fileSystemDeleteHandler,
-                        fileSystemUndeleteHandler,
-                        freezeHandler,
-                        networkUncheckedSubmitHandler,
-                        scheduleCreateHandler,
-                        scheduleSignHandler,
-                        scheduleDeleteHandler,
-                        tokenCreateHandler,
-                        tokenUpdateHandler,
-                        tokenMintHandler,
-                        tokenBurnHandler,
-                        tokenDeleteHandler,
-                        tokenAccountWipeHandler,
-                        tokenFreezeAccountHandler,
-                        tokenUnfreezeAccountHandler,
-                        tokenGrantKycToAccountHandler,
-                        tokenRevokeKycFromAccountHandler,
-                        tokenAssociateToAccountHandler,
-                        tokenDissociateFromAccountHandler,
-                        tokenFeeScheduleUpdateHandler,
-                        tokenPauseHandler,
-                        tokenUnpauseHandler,
-                        utilPrngHandler);
-
-        dispatcher = new TransactionDispatcher(
-                handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits);
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    @Test
-    void testDispatchWithIllegalParameters() throws PreCheckException {
-        // given
-        final var payer = AccountID.newBuilder().build();
-        final var tracker = new ReadableStoreFactory(state);
-        final var validContext =
-                new PreHandleContext(
-                        accountStore,
-                        TransactionBody.newBuilder()
-                                .fileCreate(FileCreateTransactionBody.newBuilder().build())
-                                .build());
-        final var invalidSystemDelete =
-                new PreHandleContext(
-                        accountStore,
-                        TransactionBody.newBuilder()
-                                .systemDelete(SystemDeleteTransactionBody.newBuilder().build())
-                                .build());
-        final var invalidSystemUndelete =
-                new PreHandleContext(
-                        accountStore,
-                        TransactionBody.newBuilder()
-                                .systemUndelete(SystemUndeleteTransactionBody.newBuilder().build())
-                                .build());
-
-        // then
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null, validContext))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, null)).isInstanceOf(NullPointerException.class);
-
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, invalidSystemDelete))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, invalidSystemUndelete))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    void testDataNotSetFails() throws PreCheckException {
-        // given
-        final var txBody = TransactionBody.newBuilder().build();
-        final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody);
-
-        // then
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
-                .isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    @Test
-    void dispatchesCreateTopicAsExpected() {
-        final var createBuilder = mock(ConsensusCreateTopicRecordBuilder.class);
-
-        given(consensusCreateTopicHandler.newRecordBuilder()).willReturn(createBuilder);
-        given(dynamicProperties.maxNumTopics()).willReturn(123L);
-        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
-        given(createBuilder.getCreatedTopic()).willReturn(666L);
-        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
-
-        dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, transactionBody, writableStoreFactory);
-
-        verify(txnCtx)
-                .setCreated(
-                        PbjConverter.fromPbj(TopicID.newBuilder().topicNum(666L).build()));
-        verify(writableTopicStore).commit();
-    }
-
-    @Test
-    void dispatchesUpdateTopicAsExpected() {
-        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
-
-        dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_UPDATE_TOPIC, transactionBody, writableStoreFactory);
-
-        verifyNoInteractions(txnCtx);
-    }
-
-    @Test
-    void testNodeStakeUpdateFails() throws PreCheckException {
-        // given
-        final var txBody =
-                TransactionBody.newBuilder()
-                        .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder())
-                        .build();
-        final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody);
-
-        // then
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
-                .isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    @Test
-    void dispatchesDeleteTopicAsExpected() {
-        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
-
-        dispatcher.dispatchHandle(
-                HederaFunctionality.CONSENSUS_DELETE_TOPIC, transactionBody, writableStoreFactory);
-
-        verifyNoInteractions(txnCtx);
-    }
-
-    @Test
-    void dispatchesSubmitMessageAsExpected() {
-        final var newRunningHash = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        final var submitBuilder = mock(SubmitMessageRecordBuilder.class);
-
-        given(consensusSubmitMessageHandler.newRecordBuilder()).willReturn(submitBuilder);
-        given(dynamicProperties.maxNumTopics()).willReturn(123L);
-        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
-        given(submitBuilder.getNewTopicRunningHash()).willReturn(newRunningHash);
-        given(submitBuilder.getNewTopicSequenceNumber()).willReturn(2L);
-        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
-        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
-
-        doAnswer(
-                        invocation -> {
-                            final var builder =
-                                    (SubmitMessageRecordBuilder) invocation.getArguments()[3];
-                            builder.setNewTopicMetadata(newRunningHash, 2, 3L);
-                            return null;
-                        })
-                .when(consensusSubmitMessageHandler)
-                .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any(), any());
-
-        dispatcher.dispatchHandle(
-                HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE,
-                transactionBody,
-                writableStoreFactory);
-
-        verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
-    }
-
-    @Test
-    void dispatchesTokenPauseAsExpected() {
-        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
-
-        dispatcher.dispatchHandle(
-                HederaFunctionality.TOKEN_PAUSE, transactionBody, writableStoreFactory);
-
-        verify(writableTokenStore).commit();
-    }
-
-    @Test
-    void dispatchesTokenUnpauseAsExpected() {
-        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
-
-        dispatcher.dispatchHandle(
-                HederaFunctionality.TOKEN_UNPAUSE, transactionBody, writableStoreFactory);
-
-        verify(writableTokenStore).commit();
-    }
-
-    @Test
-    void cannotDispatchUnsupportedOperations() {
-        assertThatThrownBy(
-                        () ->
-                                dispatcher.dispatchHandle(
-                                        HederaFunctionality.CRYPTO_TRANSFER,
-                                        transactionBody,
-                                        writableStoreFactory))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @ParameterizedTest
-    @MethodSource("getDispatchParameters")
-    void testPreHandleWithPayer(final TransactionBody txBody, final DispatchToHandler verification)
-            throws PreCheckException {
-        // given
-        final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody);
-
-        // when
-        dispatcher.dispatchPreHandle(tracker, context);
-
-        // then
-        verification.dispatchTo(this.handlers, context);
     }
 
     private interface DispatchToHandler {
