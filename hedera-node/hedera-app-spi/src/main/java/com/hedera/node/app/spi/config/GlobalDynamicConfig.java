@@ -22,6 +22,10 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.system.address.Address;
 import java.util.Set;
 
+/**
+ * This class contains the properties that are part of the {@code GlobalDynamicProperties} class in the mono-service
+ * module.
+ */
 public record GlobalDynamicConfig(
         int maxNftMetadataBytes,
         int maxBatchSizeBurn,
@@ -143,4 +147,5 @@ public record GlobalDynamicConfig(
         // EntityScaleFactors entityScaleFactors,
         long maxNumWithHapiSigsAccess,
         // LegacyContractIdActivations legacyContractIdActivations,
-        Set<Address> contractsWithSpecialHapiSigsAccess) {}
+        Set<Address> contractsWithSpecialHapiSigsAccess) {
+}

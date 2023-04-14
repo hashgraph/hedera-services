@@ -18,6 +18,10 @@ package com.hedera.node.app.spi.config;
 
 import com.swirlds.config.api.Configuration;
 
+/**
+ * The ConfigProvider interface is used to provide the configuration. This interface can be seen as the "config
+ * facility".
+ */
 public interface ConfigProvider {
 
     Configuration getConfiguration();
