@@ -21,7 +21,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -67,7 +69,22 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle() {
-        throw new UnsupportedOperationException("Not implemented");
+    public void handle(@NonNull final TransactionBody txnBody, @NonNull WritableTokenRelationStore tokenRelStore) {
+        requireNonNull(txnBody);
+        requireNonNull(tokenRelStore);
+
+        final var op = txnBody.tokenGrantKycOrThrow();
+
+        /* --- Do the business logic --- */
+        final var targetTokenId = op.tokenOrThrow();
+        final var targetAccountId = op.accountOrThrow();
+        final var tokenRelation =
+                tokenRelStore.getForModify(targetTokenId.tokenNum(), targetAccountId.accountNumOrThrow());
+
+        /* --- Persist the updated models --- */
+        final var tokenRelBuilder = tokenRelation.orElseThrow().copyBuilder();
+        tokenRelBuilder.kycGranted(true);
+        tokenRelStore.put(tokenRelBuilder.build());
+        tokenRelStore.commit();
     }
 }
