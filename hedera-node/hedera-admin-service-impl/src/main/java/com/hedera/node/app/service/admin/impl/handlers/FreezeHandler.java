@@ -63,9 +63,8 @@ public class FreezeHandler implements TransactionHandler {
     // it is necessary to check getStartHour, getStartMin, getEndHour, getEndMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore)
+            @NonNull final PreHandleContext context, @NonNull final ReadableUpgradeFileStore specialFileStore)
             throws PreCheckException {
-            @NonNull final PreHandleContext context, @NonNull final ReadableUpgradeFileStore specialFileStore) {
         requireNonNull(context);
 
         FreezeTransactionBody freezeTxn = context.body().freeze();
