@@ -52,8 +52,7 @@ class EmulatesMapValidatorTest {
         final Stream<ConfigViolation> validate = validator.validate(configuration);
 
         // then
-        assertThat(validate).isNotNull();
-        assertThat(validate).isEmpty();
+        assertThat(validate).isNotNull().isEmpty();
     }
 
     @Test
@@ -70,8 +69,7 @@ class EmulatesMapValidatorTest {
         final Stream<ConfigViolation> violations = validator.validate(configuration);
 
         // then
-        assertThat(violations).isNotNull();
-        assertThat(violations).isEmpty();
+        assertThat(violations).isNotNull().isEmpty();
     }
 
     @Test
@@ -89,9 +87,9 @@ class EmulatesMapValidatorTest {
                 validator.validate(configuration).collect(Collectors.toList());
 
         // then
-        assertThat(violations).isNotNull();
-        assertThat(violations).hasSize(1);
-        assertThat(violations).allMatch(violation -> violation.getPropertyName().equals("dataMap"));
+        assertThat(violations).isNotNull().hasSize(1).allMatch(violation -> violation
+                .getPropertyName()
+                .equals("dataMap"));
     }
 
     @Test
@@ -110,9 +108,10 @@ class EmulatesMapValidatorTest {
                 validator.validate(configuration).collect(Collectors.toList());
 
         // then
-        assertThat(violations).isNotNull();
-        assertThat(violations).hasSize(2);
-        assertThat(violations).anyMatch(violation -> violation.getPropertyName().equals("pair"));
-        assertThat(violations).anyMatch(violation -> violation.getPropertyName().equals("data"));
+        assertThat(violations)
+                .isNotNull()
+                .hasSize(2)
+                .anyMatch(violation -> violation.getPropertyName().equals("pair"))
+                .anyMatch(violation -> violation.getPropertyName().equals("data"));
     }
 }

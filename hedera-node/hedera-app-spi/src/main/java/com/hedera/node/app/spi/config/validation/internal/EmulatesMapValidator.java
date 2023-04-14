@@ -46,7 +46,7 @@ public class EmulatesMapValidator implements ConfigValidator {
         Objects.requireNonNull(configuration, "Configuration cannot be null");
         return ConfigReflectionUtils.getAllMatchingPropertiesForConstraintAnnotation(EmulatesMap.class, configuration)
                 .stream()
-                .map(property -> convert(property))
+                .map(this::convert)
                 .filter(Optional::isPresent)
                 .map(Optional::get);
     }
@@ -74,8 +74,7 @@ public class EmulatesMapValidator implements ConfigValidator {
                     create(property, "Property is annotated with @EmulatesMap but is not a Collection of KeyValuePair");
             return Optional.of(violation);
         }
-        final AnnotatedProperty<EmulatesMap, Collection<KeyValuePair>> typedValue =
-                (AnnotatedProperty<EmulatesMap, Collection<KeyValuePair>>) property;
+        final var typedValue = (AnnotatedProperty<EmulatesMap, Collection<KeyValuePair>>) property;
 
         final int uniqueKeyCount = typedValue.propertyValue().stream()
                 .map(KeyValuePair::key)

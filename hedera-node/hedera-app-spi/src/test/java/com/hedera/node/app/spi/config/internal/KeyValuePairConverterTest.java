@@ -105,8 +105,7 @@ class KeyValuePairConverterTest {
         final List<KeyValuePair> values = configuration.getValues("key", KeyValuePair.class);
 
         // then
-        assertThat(values).isNotNull();
-        assertThat(values).hasSize(1);
+        assertThat(values).isNotNull().hasSize(1);
         assertThat(values.get(0).key()).isEqualTo("key");
         assertThat(values.get(0).value()).isEqualTo("value");
     }
@@ -123,8 +122,7 @@ class KeyValuePairConverterTest {
         final List<KeyValuePair> values = configuration.getValues("key", KeyValuePair.class);
 
         // then
-        assertThat(values).isNotNull();
-        assertThat(values).hasSize(3);
+        assertThat(values).isNotNull().hasSize(3);
         assertThat(values.get(0).key()).isEqualTo("key1");
         assertThat(values.get(0).value()).isEqualTo("value1");
         assertThat(values.get(1).key()).isEqualTo("key2");
