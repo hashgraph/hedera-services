@@ -18,10 +18,10 @@ package com.swirlds.platform;
 
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.base.functions.ThrowingConsumer;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -143,27 +143,27 @@ final class PlatformConstructor {
      * Creates a new instance of {@link SwirldStateManager}.
      *
      * @param selfId                                this node's id
+     * @param platformContext                       the platform context
      * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
      * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
-     * @param metrics                               reference to the metrics-system
      * @param settings                              static settings provider
      * @param initialState                          the initial state
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
             final NodeId selfId,
+            final PlatformContext platformContext,
             final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
             final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
-            final Metrics metrics,
             final SettingsProvider settings,
             final BooleanSupplier inFreezeChecker,
             final State initialState) {
-
+        ArgumentUtils.throwArgNull(platformContext, "platformContext");
         return new SwirldStateManagerImpl(
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
-                new SwirldStateMetrics(metrics),
+                new SwirldStateMetrics(platformContext.getMetrics()),
                 settings,
                 inFreezeChecker,
                 initialState);
@@ -193,6 +193,7 @@ final class PlatformConstructor {
     /**
      * Constructs a new {@link ConsensusRoundHandler}.
      *
+     * @param platformContext             the context of the platform
      * @param threadManager               responsible for creating and managing threads
      * @param selfId                      this node's id
      * @param settingsProvider            a static settings provider
@@ -200,7 +201,7 @@ final class PlatformConstructor {
      * @param consensusHandlingMetrics    the class that records stats relating to {@link SwirldStateManager}
      * @param eventStreamManager          the instance that streams consensus events to disk
      * @param stateHashSignQueue          the queue for signed states that need signatures collected
-     * @param waitForEventDurability a method that blocks until an event becomes durable.
+     * @param waitForEventDurability      a method that blocks until an event becomes durable.
      * @param enterFreezePeriod           a runnable executed when a freeze is entered
      * @param roundAppliedToStateConsumer the consumer to invoke when a round has just been applied to the state
      * @param softwareVersion             the software version of the application

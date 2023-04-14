@@ -442,7 +442,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
 
-        DispatchBuilder dispatchBuilder =
+        final DispatchBuilder dispatchBuilder =
                 new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
         components = new PlatformComponents(dispatchBuilder);
@@ -739,7 +739,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
          * The previous version of the software that was run. Null if this is the first time running, or if the previous
          * version ran before the concept of application software versioning was introduced.
          */
-        SoftwareVersion previousSoftwareVersion = signedStateFromDisk
+        final SoftwareVersion previousSoftwareVersion = signedStateFromDisk
                 .getState()
                 .getPlatformState()
                 .getPlatformData()
@@ -1174,7 +1174,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 platformContext,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
-                metrics,
                 PlatformConstructor.settingsProvider(),
                 freezeManager::isFreezeStarted,
                 state);
