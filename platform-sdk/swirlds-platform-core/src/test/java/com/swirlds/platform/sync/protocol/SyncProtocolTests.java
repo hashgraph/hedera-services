@@ -32,8 +32,8 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.sync.FallenBehindManager;
 import com.swirlds.platform.sync.ShadowGraphSynchronizer;
+import java.time.Duration;
 import java.util.List;
-import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ class SyncProtocolTests {
     private SyncPermitProvider incomingPermitProvider;
     private CriticalQuorum criticalQuorum;
     private PeerAgnosticSyncChecks peerAgnosticSyncChecks;
-    private LongSupplier sleepAfterSyncSupplier;
+    private Duration sleepAfterSync;
     private SyncMetrics syncMetrics;
 
     @BeforeEach
@@ -62,7 +62,7 @@ class SyncProtocolTests {
         outgoingPermitProvider = new SyncPermitProvider(1);
         incomingPermitProvider = new SyncPermitProvider(2);
         criticalQuorum = mock(CriticalQuorum.class);
-        sleepAfterSyncSupplier = () -> 0;
+        sleepAfterSync = Duration.ofMillis(0);
         syncMetrics = mock(SyncMetrics.class);
 
         // Set reasonable defaults. Special cases to be configured in individual tests
@@ -88,7 +88,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
@@ -107,7 +107,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
@@ -132,7 +132,7 @@ class SyncProtocolTests {
                 criticalQuorum,
                 // peer agnostic checks fail
                 new PeerAgnosticSyncChecks(List.of(() -> false)),
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
@@ -154,7 +154,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
@@ -177,7 +177,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
@@ -200,7 +200,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
@@ -220,7 +220,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
@@ -245,7 +245,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertTrue(protocol.shouldAccept());
@@ -273,7 +273,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertFalse(protocol.shouldAccept());
@@ -292,7 +292,7 @@ class SyncProtocolTests {
                 criticalQuorum,
                 // peer agnostic checks fail
                 new PeerAgnosticSyncChecks(List.of(() -> false)),
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(2, incomingPermitProvider.getNumAvailable());
@@ -314,7 +314,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(2, incomingPermitProvider.getNumAvailable());
@@ -333,7 +333,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
@@ -354,7 +354,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(1, outgoingPermitProvider.getNumAvailable());
@@ -375,7 +375,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertEquals(2, incomingPermitProvider.getNumAvailable());
@@ -396,7 +396,7 @@ class SyncProtocolTests {
                 incomingPermitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
-                sleepAfterSyncSupplier,
+                sleepAfterSync,
                 syncMetrics);
 
         assertThrows(NetworkProtocolException.class, () -> protocol.runProtocol(mock(Connection.class)));

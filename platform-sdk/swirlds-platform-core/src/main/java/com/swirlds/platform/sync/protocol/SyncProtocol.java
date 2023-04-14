@@ -33,8 +33,9 @@ import com.swirlds.platform.sync.ShadowGraphSynchronizer;
 import com.swirlds.platform.sync.SyncException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
-import java.util.function.LongSupplier;
 
 /**
  * Executes the sync protocol where events are exchanged with a peer and all events are sent and received in topological
@@ -69,11 +70,6 @@ public class SyncProtocol implements Protocol {
     private final PeerAgnosticSyncChecks peerAgnosticSyncChecks;
 
     /**
-     * Supplier for the amount of time to sleep after a sync
-     */
-    private final LongSupplier sleepAfterSyncSupplier;
-
-    /**
      * Metrics tracking syncing
      */
     private final SyncMetrics syncMetrics;
@@ -92,6 +88,10 @@ public class SyncProtocol implements Protocol {
      * A permit to sync, which may or may not be acquired
      */
     private MaybeLocked permit = MaybeLocked.NOT_ACQUIRED;
+
+    private Instant lastSyncTime = Instant.MIN;
+
+    private final Duration sleepAfterSync;
 
     /**
      * Constructs a new sync protocol
@@ -113,7 +113,7 @@ public class SyncProtocol implements Protocol {
             @NonNull final SyncPermitProvider incomingSyncPermitProvider,
             @NonNull final CriticalQuorum criticalQuorum,
             @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
-            @NonNull final LongSupplier sleepAfterSyncSupplier,
+            @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics) {
 
         this.peerId = throwArgNull(peerId, "peerId");
@@ -123,7 +123,7 @@ public class SyncProtocol implements Protocol {
         this.incomingPermitProvider = throwArgNull(incomingSyncPermitProvider, "incomingSyncPermitProvider");
         this.criticalQuorum = throwArgNull(criticalQuorum, "criticalQuorum");
         this.peerAgnosticSyncChecks = throwArgNull(peerAgnosticSyncChecks, "peerAgnosticSyncCheck");
-        this.sleepAfterSyncSupplier = throwArgNull(sleepAfterSyncSupplier, "sleepAfterSyncSupplier");
+        this.sleepAfterSync = throwArgNull(sleepAfterSync, "sleepAfterSync");
         this.syncMetrics = throwArgNull(syncMetrics, "syncMetrics");
     }
 
@@ -138,13 +138,17 @@ public class SyncProtocol implements Protocol {
         return neededForFallenBehind != null && neededForFallenBehind.contains(peerId.getId());
     }
 
+    private boolean syncCooldownComplete() {
+        return Duration.between(lastSyncTime, Instant.now()).compareTo(sleepAfterSync) > 0;
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public boolean shouldInitiate() {
         // are there any reasons not to initiate?
-        if (permit.isLockAcquired() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
+        if (!syncCooldownComplete() || permit.isLockAcquired() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
             return false;
         }
 
@@ -164,7 +168,7 @@ public class SyncProtocol implements Protocol {
     @Override
     public boolean shouldAccept() {
         // are there any reasons not to accept?
-        if (permit.isLockAcquired() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
+        if (!syncCooldownComplete() || permit.isLockAcquired() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
             syncMetrics.updateRejectedSyncRatio(true);
             return false;
         }
@@ -233,10 +237,7 @@ public class SyncProtocol implements Protocol {
         } finally {
             closePermit();
 
-            final long sleepAfterSyncDuration = sleepAfterSyncSupplier.getAsLong();
-            if (sleepAfterSyncDuration > 0) {
-                Thread.sleep(sleepAfterSyncDuration);
-            }
+            lastSyncTime = Instant.now();
         }
     }
 }
