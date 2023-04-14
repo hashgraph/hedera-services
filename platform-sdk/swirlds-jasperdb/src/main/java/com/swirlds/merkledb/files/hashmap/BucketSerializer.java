@@ -29,18 +29,8 @@ import java.nio.ByteBuffer;
  * @param <K> The map key type stored in the buckets
  */
 public class BucketSerializer<K extends VirtualKey> implements DataItemSerializer<Bucket<K>> {
-    /**
-     * Cached thread local buckets for fixed size key serializers.
-     *
-     * An open question is if there should be one static temporary bucket for all
-     * serializers, or one bucket per serializer. For now, let's have just two: one for all
-     * fixed size serializers, and another one for variable size ones.
-     */
-    @SuppressWarnings("rawtypes")
-    private static final ThreadLocal<Bucket> REUSABLE_FIXEDSIZE_BUCKET = new ThreadLocal<>();
-    /** Similar thread local buckets to the above, but for variable size key serializers. */
-    @SuppressWarnings("rawtypes")
-    private static final ThreadLocal<Bucket> REUSABLE_VARSIZE_BUCKET = new ThreadLocal<>();
+    /** Bucket pool used by this serializer */
+    private final ReusableBucketPool<K> reusableBucketPool;
 
     /**
      * How many of the low-order bytes in the serialization version are devoted to non-key
@@ -65,6 +55,7 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
         currentSerializationVersion =
                 (keySerializer.getCurrentDataVersion() << LOW_ORDER_BYTES_FOR_NON_KEY_SERIALIZATION_VERSION)
                         | BUCKET_SERIALIZATION_VERSION;
+        reusableBucketPool = new ReusableBucketPool<>(this);
     }
 
     /**
@@ -76,26 +67,13 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
         return keySerializer;
     }
 
-    /** Get a reusable bucket for current thread, cleared as an empty bucket */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public Bucket<K> getReusableEmptyBucket() {
-        final boolean isVarSizeKeySerializer = keySerializer.isVariableSize();
-        Bucket reusableBucket =
-                isVarSizeKeySerializer ? REUSABLE_VARSIZE_BUCKET.get() : REUSABLE_FIXEDSIZE_BUCKET.get();
-        Bucket<K> bucket;
-        if (reusableBucket == null) {
-            bucket = new Bucket<>(keySerializer);
-            if (isVarSizeKeySerializer) {
-                REUSABLE_VARSIZE_BUCKET.set(bucket);
-            } else {
-                REUSABLE_FIXEDSIZE_BUCKET.set(bucket);
-            }
-        } else {
-            bucket = reusableBucket;
-            bucket.setKeySerializer(keySerializer);
-            bucket.clear();
-        }
-        return bucket;
+    /**
+     * Reusable bucket pool for this bucket serializer.
+     *
+     * @return This serializer's reusable bucket pool.
+     */
+    public ReusableBucketPool<K> getBucketPool() {
+        return reusableBucketPool;
     }
 
     /**
@@ -141,7 +119,8 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
     }
 
     /**
-     * Deserialize a data item from a byte buffer, that was written with given data version
+     * Deserialize a data item from a byte buffer, that was written with given data version. The
+     * resulting bucket, if not null, must be closed by the caller.
      *
      * @param buffer The buffer to read from
      * @param dataVersion The serialization version the data item was written with
@@ -149,7 +128,7 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
      */
     @Override
     public Bucket<K> deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        Bucket<K> bucket = getReusableEmptyBucket();
+        final Bucket<K> bucket = reusableBucketPool.getBucket();
         bucket.putAllData(buffer);
         // split bucketSerializationVersion
         bucket.setKeySerializationVersion((int) (dataVersion >> LOW_ORDER_BYTES_FOR_NON_KEY_SERIALIZATION_VERSION));
