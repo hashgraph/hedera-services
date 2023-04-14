@@ -18,10 +18,10 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
@@ -30,6 +30,7 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.DeleteTopicRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -56,24 +57,18 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
      * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
      * @throws NullPointerException if any of the arguments are {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
+            throws PreCheckException {
         requireNonNull(context);
         requireNonNull(topicStore);
 
-        final var op = context.getTxn().consensusDeleteTopicOrThrow();
-        final var topicMeta = topicStore.getTopicMetadata(op.topicIDOrElse(TopicID.DEFAULT));
-        if (topicMeta.failed()) {
-            context.status(ResponseCodeEnum.INVALID_TOPIC_ID);
-            return;
-        }
-
-        final var adminKey = topicMeta.metadata().adminKey();
-        if (adminKey.isEmpty()) {
-            context.status(ResponseCodeEnum.UNAUTHORIZED);
-            return;
-        }
-
-        context.addToReqNonPayerKeys(adminKey.get());
+        final var op = context.body().consensusDeleteTopicOrThrow();
+        // The topic ID must be present on the transaction and the topic must exist.
+        final var topic = topicStore.getTopicMetadata(op.topicID());
+        mustExist(topic, INVALID_TOPIC_ID);
+        // To delete a topic, the transaction must be signed by the admin key. If there is no admin
+        // key, then it is impossible to delete the topic.
+        context.requireKeyOrThrow(topic.adminKey(), UNAUTHORIZED);
     }
 
     /**

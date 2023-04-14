@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 
 /**
  * Boilerplate implementation for SignedStateManager tests.
@@ -54,21 +53,21 @@ public class AbstractSignedStateManagerTest {
     protected final AtomicLong highestRound = new AtomicLong(-1);
     protected final int roundsToKeepForSigning = 5;
     protected final int futureStateSignatureRounds = 16;
-    protected StateConfig stateConfig;
+    protected int roundsToKeepAfterSigning = 0;
 
     /**
      * true if an error occurs on a notification thread
      */
     protected final AtomicBoolean error = new AtomicBoolean(false);
 
-    @BeforeEach
-    protected void beforeEach() {
+    protected StateConfig buildStateConfig() {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("state.roundsToKeepForSigning", roundsToKeepForSigning)
                 .withValue("state.maxAgeOfFutureStateSignatures", futureStateSignatureRounds)
+                .withValue("state.roundsToKeepAfterSigning", roundsToKeepAfterSigning)
                 .getOrCreateConfig();
 
-        stateConfig = configuration.getConfigData(StateConfig.class);
+        return configuration.getConfigData(StateConfig.class);
     }
 
     @AfterEach
