@@ -108,6 +108,7 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
@@ -310,6 +311,9 @@ class AdaptedMonoTransactionDispatcherTest {
     private WritableTopicStore writableTopicStore;
 
     @Mock
+    private WritableTokenStore writableTokenStore;
+
+    @Mock
     private UsageLimits usageLimits;
 
     @Mock
@@ -396,8 +400,8 @@ class AdaptedMonoTransactionDispatcherTest {
         assertThatThrownBy(() -> new AdaptedMonoTransactionDispatcher(
                         handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new AdaptedMonoTransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
+        assertThatThrownBy(() -> new AdaptedMonoTransactionDispatcher(
+                        handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new AdaptedMonoTransactionDispatcher(
                         handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
@@ -529,6 +533,24 @@ class AdaptedMonoTransactionDispatcherTest {
         dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE, transactionBody, writableStoreFactory);
 
         verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
+    }
+
+    @Test
+    void dispatchesTokenPauseAsExpected() {
+        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
+
+        dispatcher.dispatchHandle(HederaFunctionality.TOKEN_PAUSE, transactionBody, writableStoreFactory);
+
+        verify(writableTokenStore).commit();
+    }
+
+    @Test
+    void dispatchesTokenUnpauseAsExpected() {
+        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
+
+        dispatcher.dispatchHandle(HederaFunctionality.TOKEN_UNPAUSE, transactionBody, writableStoreFactory);
+
+        verify(writableTokenStore).commit();
     }
 
     @Test
@@ -826,13 +848,13 @@ class AdaptedMonoTransactionDispatcherTest {
                                         .tokenPause(TokenPauseTransactionBody.DEFAULT)
                                         .build(),
                                 (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                        verify(handlers.tokenPauseHandler()).preHandle(meta)),
+                                        verify(handlers.tokenPauseHandler()).preHandle(eq(meta), any())),
                         Arguments.of(
                                 TransactionBody.newBuilder()
                                         .tokenUnpause(TokenUnpauseTransactionBody.DEFAULT)
                                         .build(),
                                 (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                        verify(handlers.tokenUnpauseHandler()).preHandle(meta)),
+                                        verify(handlers.tokenUnpauseHandler()).preHandle(eq(meta), any())),
 
                         // util
                         Arguments.of(

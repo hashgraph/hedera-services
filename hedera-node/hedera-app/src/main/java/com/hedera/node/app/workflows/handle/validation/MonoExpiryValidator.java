@@ -16,19 +16,12 @@
 
 package com.hedera.node.app.workflows.handle.validation;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hedera.node.app.spi.exceptions.HandleException.validateFalse;
-import static com.hedera.node.app.spi.exceptions.HandleException.validateTrue;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
-import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.store.AccountStore;
-import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.spi.exceptions.HandleException;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -51,12 +44,16 @@ public class MonoExpiryValidator extends StandardizedExpiryValidator {
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final LongSupplier consensusSecondNow,
             @NonNull final HederaNumbers numbers) {
-        super(id -> {
-            try {
-                accountStore.loadAccountOrFailWith(id, PbjConverter.fromPbj(INVALID_AUTORENEW_ACCOUNT));
-            } catch (final InvalidTransactionException e) {
-                throw new HandleException(PbjConverter.toPbj(e.getResponseCode()));
-            }
-        }, attributeValidator, consensusSecondNow, numbers);
+        super(
+                id -> {
+                    try {
+                        accountStore.loadAccountOrFailWith(id, PbjConverter.fromPbj(INVALID_AUTORENEW_ACCOUNT));
+                    } catch (final InvalidTransactionException e) {
+                        throw new HandleException(PbjConverter.toPbj(e.getResponseCode()));
+                    }
+                },
+                attributeValidator,
+                consensusSecondNow,
+                numbers);
     }
 }

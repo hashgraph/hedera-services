@@ -19,6 +19,8 @@ package com.hedera.node.app.service.token.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.mono.state.codec.CodecFactory;
 import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -56,29 +58,52 @@ public class TokenServiceImpl implements TokenService {
     public static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
 
     @Override
-    public void registerSchemas(final @NonNull SchemaRegistry registry) {
+    public void registerMonoAdapterSchemas(final @NonNull SchemaRegistry registry) {
         requireNonNull(registry);
+        registry.register(adaptedTokenSchema());
+    }
+
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(tokenSchema());
     }
 
     private Schema tokenSchema() {
+        // Just what is needed for initial replay facility work for ConsensusService
+        return new Schema(CURRENT_VERSION) {
+            @NonNull
+            @Override
+            public Set<StateDefinition> statesToCreate() {
+                return Set.of(accountsDef());
+            }
+        };
+    }
+
+    private Schema adaptedTokenSchema() {
         // Everything on disk that can be
         return new Schema(CURRENT_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
                 return Set.of(
-                        tokensDef(),
-                        onDiskAccountsDef(),
-                        onDiskAliasesDef(),
-                        onDiskNftsDef(),
-                        onDiskTokenRelsDef(),
-                        payerRecordsDef());
+                        adaptedTokensDef(),
+                        adaptedOnDiskAccountsDef(),
+                        adaptedOnDiskAliasesDef(),
+                        adaptedOnDiskNftsDef(),
+                        adaptedOnDiskTokenRelsDef(),
+                        adaptedPayerRecordsDef());
             }
         };
     }
 
-    private StateDefinition<EntityNumVirtualKey, OnDiskAccount> onDiskAccountsDef() {
+    private StateDefinition<EntityNum, Account> accountsDef() {
+        return StateDefinition.inMemory(
+                ACCOUNTS_KEY,
+                new EntityNumCodec(),
+                CodecFactory.newInMemoryCodec(Account.PROTOBUF::parse, Account.PROTOBUF::write));
+    }
+
+    private StateDefinition<EntityNumVirtualKey, OnDiskAccount> adaptedOnDiskAccountsDef() {
         final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
         final var valueSerdes =
@@ -86,28 +111,28 @@ public class TokenServiceImpl implements TokenService {
         return StateDefinition.onDisk(ACCOUNTS_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
     }
 
-    private StateDefinition<String, EntityNumValue> onDiskAliasesDef() {
+    private StateDefinition<String, EntityNumValue> adaptedOnDiskAliasesDef() {
         final var keySerdes = new StringCodec();
         final var valueSerdes =
                 MonoMapCodecAdapter.codecForVirtualValue(EntityNumValue.CURRENT_VERSION, EntityNumValue::new);
         return StateDefinition.onDisk(ALIASES_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
     }
 
-    private StateDefinition<EntityNum, MerklePayerRecords> payerRecordsDef() {
+    private StateDefinition<EntityNum, MerklePayerRecords> adaptedPayerRecordsDef() {
         final var keySerdes = new EntityNumCodec();
         final var valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
                 MerklePayerRecords.CURRENT_VERSION, MerklePayerRecords::new);
         return StateDefinition.inMemory(PAYER_RECORDS_KEY, keySerdes, valueSerdes);
     }
 
-    private StateDefinition<EntityNum, MerkleToken> tokensDef() {
+    private StateDefinition<EntityNum, MerkleToken> adaptedTokensDef() {
         final var keySerdes = new EntityNumCodec();
         final var valueSerdes =
                 MonoMapCodecAdapter.codecForSelfSerializable(MerkleToken.CURRENT_VERSION, MerkleToken::new);
         return StateDefinition.inMemory(TOKENS_KEY, keySerdes, valueSerdes);
     }
 
-    private StateDefinition<EntityNumVirtualKey, OnDiskTokenRel> onDiskTokenRelsDef() {
+    private StateDefinition<EntityNumVirtualKey, OnDiskTokenRel> adaptedOnDiskTokenRelsDef() {
         final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
         final var valueSerdes =
@@ -115,7 +140,7 @@ public class TokenServiceImpl implements TokenService {
         return StateDefinition.onDisk(TOKEN_RELS_KEY, keySerdes, valueSerdes, MAX_TOKEN_RELS);
     }
 
-    private StateDefinition<UniqueTokenKey, UniqueTokenValue> onDiskNftsDef() {
+    private StateDefinition<UniqueTokenKey, UniqueTokenValue> adaptedOnDiskNftsDef() {
         final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 UniqueTokenKey.CURRENT_VERSION, UniqueTokenKey::new, new UniqueTokenKeySerializer());
         final var valueSerdes =

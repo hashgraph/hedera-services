@@ -20,14 +20,15 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
- * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
+ * Factory for all writable stores implemented using a {@link HederaState}.
  */
 public class WorkingStateWritableStoreFactory implements WritableStoreFactory {
     private final WorkingStateAccessor stateAccessor;
@@ -44,14 +45,22 @@ public class WorkingStateWritableStoreFactory implements WritableStoreFactory {
     }
 
     /**
-     * Get a {@link WritableTopicStore} from the {@link HederaState}
-     *
-     * @return a new {@link WritableTopicStore}
+     * {@inheritDoc}
      */
     @NonNull
     @Override
     public WritableTopicStore createTopicStore() {
         final var topicStates = stateAccessor.getHederaState().createWritableStates(ConsensusService.NAME);
         return new WritableTopicStore(topicStates);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public WritableTokenStore createTokenStore() {
+        final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
+        return new WritableTokenStore(tokenStates);
     }
 }

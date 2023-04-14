@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -380,15 +379,14 @@ public class ContractCreateSuite extends HapiSuite {
                         uploadInitCode(justSendContract, sendInternalAndDelegateContract),
                         contractCreate(justSendContract).gas(300_000L),
                         newKeyNamed(nonSelfIdKey).shape(CONTRACT.signedWith(justSendContract)))
-                .when(
-                        contractCreate(sendInternalAndDelegateContract)
-                                .gas(300_000L)
-                                .adminKey(nonSelfIdKey)
-                                .signedBy(DEFAULT_PAYER))
+                .when(contractCreate(sendInternalAndDelegateContract)
+                        .gas(300_000L)
+                        .adminKey(nonSelfIdKey)
+                        .signedBy(DEFAULT_PAYER))
                 .then(
                         newKeyNamed(selfIdKey).shape(CONTRACT.signedWith(sendInternalAndDelegateContract)),
-                        getContractInfo(sendInternalAndDelegateContract).has(contractWith()
-                                .adminKey(selfIdKey)));
+                        getContractInfo(sendInternalAndDelegateContract)
+                                .has(contractWith().adminKey(selfIdKey)));
     }
 
     private HapiSpec delegateContractIdRequiredForTransferInDelegateCall() {

@@ -61,7 +61,7 @@ class ReplayAssetRecordingTest {
     void canRemoveAsset() throws IOException {
         Files.write(Paths.get(assetDir.toString(), "foo.txt"), List.of("not-a", "not-b"));
 
-        subject.removeReplayAsset("foo.txt");
+        subject.restartReplayAsset("foo.txt");
 
         assertFalse(Files.exists(Paths.get(assetDir.toString(), "foo.txt")));
     }

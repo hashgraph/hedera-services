@@ -1,25 +1,20 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle.validation;
-
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.spi.exceptions.HandleException;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.function.Executable;
-import org.mockito.BDDMockito;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Arrays;
-import java.util.function.LongSupplier;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
@@ -30,8 +25,23 @@ import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME
 import static com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator.MAX_NESTED_KEY_LEVELS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.spi.exceptions.HandleException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Arrays;
+import java.util.function.LongSupplier;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StandardizedAttributeValidatorTest {
@@ -40,8 +50,10 @@ class StandardizedAttributeValidatorTest {
 
     @Mock
     private LongSupplier consensusSecondNow;
+
     @Mock
     private GlobalDynamicProperties dynamicProperties;
+
     @Mock
     private PropertySource compositeProps;
 
@@ -102,8 +114,10 @@ class StandardizedAttributeValidatorTest {
 
     @Test
     void rejectsOverlyNestedKey() {
-        final var acceptablyNested = nestKeys(Key.newBuilder(), MAX_NESTED_KEY_LEVELS - 1).build();
-        final var overlyNested = nestKeys(Key.newBuilder(), MAX_NESTED_KEY_LEVELS).build();
+        final var acceptablyNested =
+                nestKeys(Key.newBuilder(), MAX_NESTED_KEY_LEVELS - 1).build();
+        final var overlyNested =
+                nestKeys(Key.newBuilder(), MAX_NESTED_KEY_LEVELS).build();
         assertDoesNotThrow(() -> subject.validateKey(acceptablyNested));
         assertFailsWith(BAD_ENCODING, () -> subject.validateKey(overlyNested));
     }
@@ -119,9 +133,7 @@ class StandardizedAttributeValidatorTest {
         assertEquals(expected, e.getStatus());
     }
 
-    private static Key.Builder nestKeys(
-            final Key.Builder builder,
-            final int additionalLevels) {
+    private static Key.Builder nestKeys(final Key.Builder builder, final int additionalLevels) {
         if (additionalLevels == 0) {
             builder.ed25519(Bytes.wrap(MOCK_ED25519_KEY));
             return builder;

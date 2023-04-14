@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.ingest;
 
 import com.hedera.node.app.components.IngestComponent;
-import com.hedera.node.app.components.QueryComponent;
 import dagger.Binds;
 import dagger.Module;
 

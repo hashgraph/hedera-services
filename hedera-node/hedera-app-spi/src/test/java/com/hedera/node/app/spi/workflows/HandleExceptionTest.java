@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
-class HandleStatusExceptionTest {
+class HandleExceptionTest {
     @Test
     void reportsItsGivenStatus() {
         final var ex = new HandleException(MEMO_TOO_LONG);

@@ -46,7 +46,7 @@ import java.util.Set;
  * impossible).
  */
 public class ReplayAssetRecording {
-    public static final String DEFAULT_REPLAY_ASSETS_DIR = "replay-assets";
+    public static final String DEFAULT_REPLAY_ASSETS_DIR = "hedera-node/hedera-app/src/test/resources/replay-assets";
     private final File assetDir;
     private final Set<String> touchedAssets = new HashSet<>();
     private final ObjectMapper om = new ObjectMapper();
@@ -103,7 +103,7 @@ public class ReplayAssetRecording {
         }
     }
 
-    public void removeReplayAsset(final String assetFileName) {
+    public void restartReplayAsset(final String assetFileName) {
         try {
             removeAsset(assetFileName);
         } catch (IOException e) {

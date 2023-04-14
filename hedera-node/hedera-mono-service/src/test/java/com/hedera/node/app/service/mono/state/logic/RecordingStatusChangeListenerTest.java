@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.state.logic;
 import static com.hedera.node.app.service.mono.state.logic.RecordingStatusChangeListener.FINAL_TOPICS_ASSET;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -34,10 +33,8 @@ import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
-
-import java.util.SplittableRandom;
-
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.SplittableRandom;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RecordingStatusChangeListenerTest {
     private static final int NUM_MOCK_TOPICS = 10;
+
     @Mock
     private StateChildren stateChildren;
 
@@ -87,8 +85,8 @@ class RecordingStatusChangeListenerTest {
         verify(delegate).notify(platformStatusChangeNotification);
         for (int i = 0; i < NUM_MOCK_TOPICS; i++) {
             final var topic = topics.get(EntityNum.fromLong(i));
-            final var encodedTopic = PbjConverter.toB64Encoding(PbjLeafConverters.leafFromMerkle(topic), Topic.class);
-            verify(assetRecording).appendJsonToAsset(FINAL_TOPICS_ASSET, encodedTopic);
+            final var encodedTopic = PbjConverter.toB64Encoding(PbjLeafConverters.topicFromMerkle(topic), Topic.class);
+            verify(assetRecording).appendPlaintextToAsset(FINAL_TOPICS_ASSET, encodedTopic);
         }
     }
 

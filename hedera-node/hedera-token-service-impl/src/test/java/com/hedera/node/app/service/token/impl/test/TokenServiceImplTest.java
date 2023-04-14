@@ -61,6 +61,24 @@ class TokenServiceImplTest {
         final var schema = schemaCaptor.getValue();
 
         final var statesToCreate = schema.statesToCreate();
+        assertEquals(1, statesToCreate.size());
+        final var iter =
+                statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
+        assertEquals(TokenServiceImpl.ACCOUNTS_KEY, iter.next());
+    }
+
+    @Test
+    void registersExpectedAdapterSchema() {
+        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
+
+        final var subject = TokenService.getInstance();
+
+        subject.registerMonoAdapterSchemas(registry);
+        verify(registry).register(schemaCaptor.capture());
+
+        final var schema = schemaCaptor.getValue();
+
+        final var statesToCreate = schema.statesToCreate();
         assertEquals(6, statesToCreate.size());
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();

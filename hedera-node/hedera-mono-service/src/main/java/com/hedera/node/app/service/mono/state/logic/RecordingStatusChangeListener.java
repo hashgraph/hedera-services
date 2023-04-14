@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toB64Encoding;
+
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.utils.replay.PbjLeafConverters;
@@ -26,8 +28,6 @@ import com.swirlds.common.system.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toB64Encoding;
 
 public class RecordingStatusChangeListener implements PlatformStatusChangeListener {
     public static final String FINAL_TOPICS_ASSET = "final-topics.txt";
@@ -58,8 +58,8 @@ public class RecordingStatusChangeListener implements PlatformStatusChangeListen
     private void recordTopics() {
         final var topics = stateChildren.topics();
         topics.forEach((num, topic) -> {
-            final var pbjTopic = PbjLeafConverters.leafFromMerkle(topic);
-            assetRecording.appendJsonToAsset(FINAL_TOPICS_ASSET, toB64Encoding(pbjTopic, Topic.class));
+            final var pbjTopic = PbjLeafConverters.topicFromMerkle(topic);
+            assetRecording.appendPlaintextToAsset(FINAL_TOPICS_ASSET, toB64Encoding(pbjTopic, Topic.class));
         });
     }
 }
