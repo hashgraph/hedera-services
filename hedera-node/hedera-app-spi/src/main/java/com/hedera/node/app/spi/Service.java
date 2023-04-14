@@ -35,9 +35,13 @@ public interface Service {
 
     /**
      * Registers the schemas this service uses when running with {@code mono-service} adapters
-     * with the given {@link SchemaRegistry}.
+     * with the given {@link SchemaRegistry}. We can remove this method once we are no longer
+     * relying on EET's with {@code workflows.enabled} to validate behavior.
+     *
+     * @deprecated because this method is only used when running with {@code mono-service} adapters
+     * @param registry the registry to register the schemas with
      * */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry);
 
     /**
