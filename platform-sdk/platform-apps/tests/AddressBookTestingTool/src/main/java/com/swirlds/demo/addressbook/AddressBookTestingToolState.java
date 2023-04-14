@@ -35,7 +35,6 @@ import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_HEA
 import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
 import static com.swirlds.platform.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -80,10 +79,12 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     /** the suffix for the debug address book */
     private static String DEBUG = "debug";
 
-    private final AddressBookTestingToolConfig testingToolConfig =
-            ConfigurationHolder.getConfigData(AddressBookTestingToolConfig.class);
+    /** the suffix for the test address book */
+    private static AddressBookTestingToolConfig testingToolConfig;
     /** the address book configuration */
-    private final AddressBookConfig addressBookConfig = ConfigurationHolder.getConfigData(AddressBookConfig.class);
+    private static AddressBookConfig addressBookConfig;
+    /** flag indicating if staking behavior has been logged. */
+    private static AtomicBoolean logStakingBehavior = new AtomicBoolean(true);
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -140,6 +141,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(platform, "the platform cannot be null");
         Objects.requireNonNull(swirldDualState, "the swirld dual state cannot be null");
         Objects.requireNonNull(trigger, "the init trigger cannot be null");
+        addressBookConfig = platform.getContext().getConfiguration().getConfigData(AddressBookConfig.class);
+        testingToolConfig = platform.getContext().getConfiguration().getConfigData(AddressBookTestingToolConfig.class);
 
         this.platform = platform;
 
@@ -263,7 +266,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @NonNull
     private AddressBook stakingBehavior1(@NonNull final AddressBook addressBook) {
-        logger.info(STARTUP.getMarker(), "Staking Behavior 1: updating all nodes to have 10 stake.");
+        if (logStakingBehavior.get()) {
+            logger.info(STARTUP.getMarker(), "Staking Behavior 1: updating all nodes to have 10 stake.");
+        }
         for (int i = 0; i < addressBook.getSize(); i++) {
             addressBook.updateStake(i, 10);
         }
@@ -278,7 +283,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @NonNull
     private AddressBook stakingBehavior2(@NonNull final AddressBook addressBook) {
-        logger.info(STARTUP.getMarker(), "Staking Behavior 2: updating all nodes to have stake equal to their nodeId.");
+        if (logStakingBehavior.get()) {
+            logger.info(
+                    STARTUP.getMarker(), "Staking Behavior 2: updating all nodes to have stake equal to their nodeId.");
+        }
         for (int i = 0; i < addressBook.getSize(); i++) {
             addressBook.updateStake(i, i);
         }
@@ -289,6 +297,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         if (platform == null) {
             throw new IllegalStateException("platform is null, init has not been called.");
         }
+        logStakingBehavior.set(false);
         final int testScenario = testingToolConfig.testScenario();
         try {
             logger.info(DEMO_INFO.getMarker(), "Validating test scenario {}.", testScenario);
