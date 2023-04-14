@@ -18,7 +18,7 @@ package com.hedera.node.app.workflows.query;
 
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.impl.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
@@ -44,8 +44,8 @@ public class QueryContextImpl implements QueryContext {
             ReadableTokenStore.class, s -> new ReadableTokenStore(s.createReadableStates(TokenService.NAME)),
             ReadableTopicStore.class, s -> new ReadableTopicStore(s.createReadableStates(ConsensusService.NAME)),
             ReadableScheduleStore.class, s -> new ReadableScheduleStore(s.createReadableStates(ScheduleService.NAME)),
-            ReadableSpecialFileStore.class,
-                    s -> new ReadableSpecialFileStore(s.createReadableStates(FreezeService.NAME)));
+            ReadableUpgradeFileStore.class,
+                    s -> new ReadableUpgradeFileStore(s.createReadableStates(FreezeService.NAME)));
 
     private final HederaState state;
     private final Query query;

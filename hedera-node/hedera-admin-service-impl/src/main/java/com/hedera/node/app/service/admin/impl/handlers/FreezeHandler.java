@@ -63,7 +63,7 @@ public class FreezeHandler implements TransactionHandler {
     // it is necessary to check getStartHour, getStartMin, getEndHour, getEndMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore)
+            @NonNull final PreHandleContext context, @NonNull final ReadableUpgradeFileStore upgradeFileStore)
             throws PreCheckException {
         requireNonNull(context);
 
@@ -90,7 +90,7 @@ public class FreezeHandler implements TransactionHandler {
                     freezeTxn, context.body().transactionID().transactionValidStart());
 
                 // PREPARE_UPGRADE requires valid update_file and file_hash values
-            case PREPARE_UPGRADE -> verifyUpdateFileAndHash(freezeTxn, specialFileStore);
+            case PREPARE_UPGRADE -> verifyUpdateFileAndHash(freezeTxn, upgradeFileStore);
 
                 // FREEZE_UPGRADE and TELEMETRY_UPGRADE require a valid start_time and valid update_file and
                 // file_hash values
@@ -102,7 +102,7 @@ public class FreezeHandler implements TransactionHandler {
                 // but specs aren't very clear
                 // current code in FreezeTransitionLogic checks for the file in specialFiles
                 // so we will do the same
-                verifyUpdateFileAndHash(freezeTxn, specialFileStore);
+                verifyUpdateFileAndHash(freezeTxn, upgradeFileStore);
             }
 
                 // FREEZE_ABORT does not require any additional checks
