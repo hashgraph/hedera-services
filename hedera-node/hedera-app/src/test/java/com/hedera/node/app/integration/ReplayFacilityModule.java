@@ -19,8 +19,8 @@ package com.hedera.node.app.integration;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording.REPLAY_ASSETS_DIR;
-import static com.hedera.node.app.spi.exceptions.HandleException.validateFalse;
-import static com.hedera.node.app.spi.exceptions.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.integration.facilities.ReplayAdvancingConsensusNow;

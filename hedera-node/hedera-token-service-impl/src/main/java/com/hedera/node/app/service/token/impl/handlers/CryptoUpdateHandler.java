@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,22 +48,23 @@ public class CryptoUpdateHandler implements TransactionHandler {
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final CryptoSignatureWaivers waivers) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final CryptoSignatureWaivers waivers)
+            throws PreCheckException {
         requireNonNull(context);
         requireNonNull(waivers);
-        final var txn = context.getTxn();
-        final var payer = context.getPayer();
+        final var txn = context.body();
+        final var payer = context.payer();
         final var op = txn.cryptoUpdateAccountOrThrow();
         final var updateAccountId = op.accountIDToUpdateOrElse(AccountID.DEFAULT);
 
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
         if (targetAccountKeyMustSign) {
-            context.addNonPayerKey(updateAccountId);
+            context.requireKeyOrThrow(updateAccountId, INVALID_ACCOUNT_ID);
         }
         if (newAccountKeyMustSign && op.hasKey()) {
             final var candidate = asHederaKey(op.keyOrThrow());
-            candidate.ifPresent(context::addToReqNonPayerKeys);
+            candidate.ifPresent(context::requireKey);
         }
     }
 

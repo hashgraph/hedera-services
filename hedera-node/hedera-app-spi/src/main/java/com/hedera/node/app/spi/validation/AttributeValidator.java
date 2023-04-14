@@ -17,7 +17,7 @@
 package com.hedera.node.app.spi.validation;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.spi.exceptions.HandleException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 
 /**

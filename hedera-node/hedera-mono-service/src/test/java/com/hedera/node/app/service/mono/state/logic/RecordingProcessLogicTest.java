@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.state.logic.RecordingProcessLogic.REPLAY_TRANSACTIONS_ASSET;
+import static com.hedera.node.app.service.mono.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -69,7 +70,9 @@ class RecordingProcessLogicTest {
 
         final var observed = captor.getValue();
         assertEquals(memberId, observed.getMemberId());
-        assertEquals(consensusTimestamp, observed.getConsensusTimestamp());
+        final var nominalConsTime = consensusTimestamp
+                .minusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS - 3);
+        assertEquals(nominalConsTime, Instant.parse(observed.getConsensusTimestamp()));
         assertEquals(encodedContents, observed.getB64Transaction());
     }
 }
