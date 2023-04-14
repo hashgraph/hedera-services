@@ -28,7 +28,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * This class represents the key to find an account that is being
  * stored inside a {@link com.swirlds.virtualmap.VirtualMap} instance.
  */
-public class AccountVirtualMapKey implements VirtualKey<AccountVirtualMapKey> {
+public class AccountVirtualMapKey implements VirtualKey {
     private static final long CLASS_ID = 0xff95b64a8d311cdaL;
 
     private static final class ClassVersion {
@@ -107,24 +107,6 @@ public class AccountVirtualMapKey implements VirtualKey<AccountVirtualMapKey> {
 
     public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
         return realmID == buffer.getLong() && shardId == buffer.getLong() && accountID == buffer.getLong();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int compareTo(final AccountVirtualMapKey other) {
-        int order = Long.compare(realmID, other.realmID);
-        if (order != 0) {
-            return order;
-        }
-
-        order = Long.compare(shardId, other.shardId);
-        if (order != 0) {
-            return order;
-        }
-
-        return Long.compare(accountID, other.accountID);
     }
 
     /**

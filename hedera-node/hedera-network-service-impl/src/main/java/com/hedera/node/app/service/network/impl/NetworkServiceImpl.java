@@ -24,7 +24,6 @@ import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.network.impl.serdes.EntityNumCodec;
 import com.hedera.node.app.service.network.impl.serdes.MonoContextAdapterCodec;
 import com.hedera.node.app.service.network.impl.serdes.MonoRunningHashesAdapterCodec;
-import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterCodec;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -37,7 +36,6 @@ import java.util.Set;
 public final class NetworkServiceImpl implements NetworkService {
     public static final String CONTEXT_KEY = "CONTEXT";
     public static final String STAKING_KEY = "STAKING";
-    public static final String SPECIAL_FILES_KEY = "SPECIAL_FILES";
     public static final String RUNNING_HASHES_KEY = "RUNNING_HASHES";
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().minor(34).build();
@@ -55,7 +53,6 @@ public final class NetworkServiceImpl implements NetworkService {
                 return Set.of(
                         stakingDef(),
                         StateDefinition.singleton(CONTEXT_KEY, new MonoContextAdapterCodec()),
-                        StateDefinition.singleton(SPECIAL_FILES_KEY, new MonoSpecialFilesAdapterCodec()),
                         StateDefinition.singleton(RUNNING_HASHES_KEY, new MonoRunningHashesAdapterCodec()));
             }
         };

@@ -16,10 +16,18 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.token.TokenPauseTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.records.BaseRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,20 +58,57 @@ public class TokenPauseHandler implements TransactionHandler {
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
+            throws PreCheckException {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        requireNonNull(tokenStore);
+        preCheck(context);
+        final var op = context.body().tokenPause();
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
+        if (tokenMeta == null) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
+        }
+        tokenMeta.pauseKey().ifPresent(context::requireKey);
     }
 
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
+     * @param txn the {@link TokenPauseTransactionBody} of the active transaction
+     * @param tokenStore the {@link WritableTokenStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle() {
-        throw new UnsupportedOperationException("Not implemented");
+    public void handle(@NonNull final TransactionBody txn, @NonNull final WritableTokenStore tokenStore) {
+        requireNonNull(txn);
+        requireNonNull(tokenStore);
+
+        var op = txn.tokenPause();
+        var token = tokenStore.get(op.token().tokenNum());
+        if (token.isEmpty()) {
+            throw new HandleException(INVALID_TOKEN_ID);
+        }
+
+        final var copyBuilder = token.get().copyBuilder();
+        copyBuilder.paused(true);
+        tokenStore.put(copyBuilder.build());
+    }
+
+    /**
+     * Validate semantics for the given transaction body.
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *                passed to {@link #handle}
+     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws PreCheckException if the transaction body is invalid
+     */
+    private void preCheck(@NonNull final PreHandleContext context) throws PreCheckException {
+        final var op = context.body().tokenPause();
+        if (!op.hasToken()) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
+        }
+    }
+
+    @Override
+    public BaseRecordBuilder newRecordBuilder() {
+        return new BaseRecordBuilder<>();
     }
 }

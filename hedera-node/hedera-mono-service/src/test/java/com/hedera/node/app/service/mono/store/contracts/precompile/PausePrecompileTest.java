@@ -258,7 +258,7 @@ class PausePrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(expirableTxnRecordBuilder);
         given(pauseLogic.validateSyntax(any())).willReturn(OK);

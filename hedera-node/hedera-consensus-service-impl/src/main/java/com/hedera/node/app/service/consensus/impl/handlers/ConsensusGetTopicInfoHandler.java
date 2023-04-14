@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -40,7 +41,7 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.spi.meta.QueryContext;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -54,9 +55,17 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
+
+    private final NetworkInfo networkInfo;
+
     @Inject
     public ConsensusGetTopicInfoHandler() {
-        // Exists for injection
+        // TODO: Not sure how to get the network info here.
+        this.networkInfo = null;
+    }
+
+    public ConsensusGetTopicInfoHandler(@NonNull final NetworkInfo networkInfo) {
+        this.networkInfo = requireNonNull(networkInfo);
     }
 
     @Override
@@ -96,8 +105,10 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             throws PreCheckException {
         final ConsensusGetTopicInfoQuery op = query.consensusGetTopicInfoOrThrow();
         if (op.hasTopicID()) {
-            final var topicMetadata = topicStore.getTopicMetadata(op.topicIDOrElse(TopicID.DEFAULT));
-            if (topicMetadata.failed() || topicMetadata.metadata().isDeleted()) {
+            // The topic must exist
+            final var topic = topicStore.getTopicMetadata(op.topicID());
+            mustExist(topic, INVALID_TOPIC_ID);
+            if (topic.isDeleted()) {
                 return INVALID_TOPIC_ID;
             }
         }
@@ -113,15 +124,13 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      *
      * @param query        the {@link Query} with the request
      * @param header       the {@link ResponseHeader} that should be used, if the request was successful
-     * @param queryContext context for executing the query
      * @return a {@link Response} with the requested values
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public Response findResponse(
             @NonNull final Query query,
             @NonNull final ResponseHeader header,
-            @NonNull final ReadableTopicStore topicStore,
-            @NonNull final QueryContext queryContext) {
+            @NonNull final ReadableTopicStore topicStore) {
         final var op = query.consensusGetTopicInfoOrThrow();
         final var response = ConsensusGetTopicInfoResponse.newBuilder();
         final var topic = op.topicIDOrElse(TopicID.DEFAULT);
@@ -130,7 +139,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         response.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = infoForTopic(topic, topicStore, queryContext);
+            final var optionalInfo = infoForTopic(topic, topicStore);
             optionalInfo.ifPresent(response::topicInfo);
         }
 
@@ -141,31 +150,27 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * Provides information about a topic.
      * @param topicID the topic to get information about
      * @param topicStore the topic store
-     * @param queryContext context for executing the query
      * @return the information about the topic
      */
     private Optional<ConsensusTopicInfo> infoForTopic(
-            @NonNull final TopicID topicID,
-            @NonNull final ReadableTopicStore topicStore,
-            @NonNull final QueryContext queryContext) {
-        final var metaOrFailure = topicStore.getTopicMetadata(topicID);
-        if (metaOrFailure.failed()) {
+            @NonNull final TopicID topicID, @NonNull final ReadableTopicStore topicStore) {
+        final var meta = topicStore.getTopicMetadata(topicID);
+        if (meta == null) {
             return Optional.empty();
         } else {
             final var info = ConsensusTopicInfo.newBuilder();
-            final var meta = metaOrFailure.metadata();
             meta.memo().ifPresent(info::memo);
             info.runningHash(Bytes.wrap(meta.runningHash()));
             info.sequenceNumber(meta.sequenceNumber());
             info.expirationTime(meta.expirationTimestamp());
-            meta.adminKey().ifPresent(key -> info.adminKey(PbjConverter.toPbj(asKeyUnchecked((JKey) key))));
-            meta.submitKey().ifPresent(key -> info.submitKey(PbjConverter.toPbj(asKeyUnchecked((JKey) key))));
+            if (meta.adminKey() != null) info.adminKey(PbjConverter.toPbj(asKeyUnchecked((JKey) meta.adminKey())));
+            if (meta.submitKey() != null) info.submitKey(PbjConverter.toPbj(asKeyUnchecked((JKey) meta.submitKey())));
             info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewDurationSeconds()));
             meta.autoRenewAccountId()
                     .ifPresent(account ->
                             info.autoRenewAccount(AccountID.newBuilder().accountNum(account)));
 
-            info.ledgerId(queryContext.getLedgerId());
+            info.ledgerId(networkInfo.ledgerId());
             return Optional.of(info.build());
         }
     }

@@ -409,9 +409,9 @@ class HTSPrecompiledContractTest {
                         HederaFunctionality.ContractCall,
                         Timestamp.newBuilder().setSeconds(viewTimestamp).build()))
                 .willReturn(1L);
-        given(mockFeeObject.getNodeFee()).willReturn(1L);
-        given(mockFeeObject.getNetworkFee()).willReturn(1L);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.nodeFee()).willReturn(1L);
+        given(mockFeeObject.networkFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
 
@@ -461,9 +461,9 @@ class HTSPrecompiledContractTest {
                             HederaFunctionality.ContractCall,
                             Timestamp.newBuilder().setSeconds(viewTimestamp).build()))
                     .willReturn(1L);
-            given(mockFeeObject.getNodeFee()).willReturn(1L);
-            given(mockFeeObject.getNetworkFee()).willReturn(1L);
-            given(mockFeeObject.getServiceFee()).willReturn(1L);
+            given(mockFeeObject.nodeFee()).willReturn(1L);
+            given(mockFeeObject.networkFee()).willReturn(1L);
+            given(mockFeeObject.serviceFee()).willReturn(1L);
 
             given(stateView.getNetworkInfo()).willReturn(networkInfo);
             given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
@@ -1039,7 +1039,7 @@ class HTSPrecompiledContractTest {
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 

@@ -90,12 +90,6 @@ public class BenchmarkKey implements VirtualLongKey {
     }
 
     @Override
-    public int compareTo(VirtualLongKey o) {
-        BenchmarkKey that = (BenchmarkKey) o;
-        return Arrays.compare(this.keyBytes, that.keyBytes);
-    }
-
-    @Override
     public int hashCode() {
         return Arrays.hashCode(keyBytes);
     }
