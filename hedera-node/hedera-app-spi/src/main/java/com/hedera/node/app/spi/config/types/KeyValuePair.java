@@ -17,16 +17,23 @@
 package com.hedera.node.app.spi.config.types;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
  * A simple key-value pair. This record is used to create {@link java.util.Map} like structures for config data
  * properties. See {@link com.hedera.node.app.spi.config.validation.EmulatesMap} for more details.
  */
-public record KeyValuePair(@NonNull String key, @Nullable String value) {
+public record KeyValuePair(@NonNull String key, @NonNull String value) {
 
+    /**
+     * Creates a new {@link KeyValuePair} instance.
+     *
+     * @param key   the key
+     * @param value the value
+     * @throws NullPointerException if either key or value is null
+     */
     public KeyValuePair {
-        Objects.requireNonNull(key, "Key cannot be null");
+        Objects.requireNonNull(key, "key cannot be null");
+        Objects.requireNonNull(value, "value cannot be null");
     }
 }

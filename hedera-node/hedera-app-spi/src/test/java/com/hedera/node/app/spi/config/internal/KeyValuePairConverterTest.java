@@ -81,11 +81,11 @@ class KeyValuePairConverterTest {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new KeyValuePairConverter())
-                .withSource(new SimpleConfigSource("key", "key;value"))
+                .withSource(new SimpleConfigSource("testProperty", "key;value"))
                 .build();
 
         // when
-        final KeyValuePair value = configuration.getValue("key", KeyValuePair.class);
+        final KeyValuePair value = configuration.getValue("testProperty", KeyValuePair.class);
 
         // then
         assertThat(value).isNotNull();
@@ -98,11 +98,11 @@ class KeyValuePairConverterTest {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new KeyValuePairConverter())
-                .withSource(new SimpleConfigSource("key", "key;value"))
+                .withSource(new SimpleConfigSource("testProperty", "key;value"))
                 .build();
 
         // when
-        final List<KeyValuePair> values = configuration.getValues("key", KeyValuePair.class);
+        final List<KeyValuePair> values = configuration.getValues("testProperty", KeyValuePair.class);
 
         // then
         assertThat(values).isNotNull().hasSize(1);
@@ -115,11 +115,11 @@ class KeyValuePairConverterTest {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new KeyValuePairConverter())
-                .withSource(new SimpleConfigSource("key", "key1;value1,key2;value2,key3;value3"))
+                .withSource(new SimpleConfigSource("testProperty", "key1;value1,key2;value2,key3;value3"))
                 .build();
 
         // when
-        final List<KeyValuePair> values = configuration.getValues("key", KeyValuePair.class);
+        final List<KeyValuePair> values = configuration.getValues("testProperty", KeyValuePair.class);
 
         // then
         assertThat(values).isNotNull().hasSize(3);

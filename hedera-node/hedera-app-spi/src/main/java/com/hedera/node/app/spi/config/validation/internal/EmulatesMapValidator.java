@@ -20,6 +20,7 @@ import com.hedera.node.app.spi.config.types.KeyValuePair;
 import com.hedera.node.app.spi.config.validation.EmulatesMap;
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
 import com.swirlds.common.config.reflection.ConfigReflectionUtils.AnnotatedProperty;
+import com.swirlds.common.config.validators.DefaultConfigViolation;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.config.api.validation.ConfigViolation;
@@ -35,8 +36,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A {@link ConfigValidator} that validates that any property annotated with {@link EmulatesMap}. See {@link
- * EmulatesMap} for more details.
+ * A {@link ConfigValidator} that validates any property annotated with {@link EmulatesMap}. See {@link EmulatesMap} for
+ * more details.
  */
 public class EmulatesMapValidator implements ConfigValidator {
 
@@ -92,27 +93,6 @@ public class EmulatesMapValidator implements ConfigValidator {
             @NonNull final AnnotatedProperty<EmulatesMap, ?> property, @NonNull final String message) {
         Objects.requireNonNull(property, "AnnotatedProperty cannot be null");
         Objects.requireNonNull(message, "Message cannot be null");
-        return new ConfigViolation() {
-            @Override
-            public String getPropertyName() {
-                return property.propertyName();
-            }
-
-            @Override
-            public String getMessage() {
-                return message;
-            }
-
-            @Override
-            public String getPropertyValue() {
-                return "VALUE_NOT_AVAILABLE"; // We need access to the raw value (see
-                // https://github.com/hashgraph/hedera-services/issues/6032)
-            }
-
-            @Override
-            public boolean propertyExists() {
-                return true;
-            }
-        };
+        return new DefaultConfigViolation(property.propertyName(), "VALUE_NOT_AVAILABLE", true, message);
     }
 }
