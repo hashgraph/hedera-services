@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hapi.utils.fee;
+package com.hedera.node.app.throttle;
 
-public record FeeObject(long nodeFee, long networkFee, long serviceFee) {
+import dagger.Binds;
+import dagger.Module;
+import javax.inject.Singleton;
 
-    public long totalFee() {
-        return networkFee() + serviceFee() + nodeFee();
-    }
+@Module
+public interface ThrottleModule {
+    @Binds
+    @Singleton
+    ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
 }
