@@ -133,7 +133,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
         logger.info(
                 SIGNED_STATE.getMarker(),
                 "Emergency recovery signed state is for round later than requested. "
-                        + "Validating that the state is signed by a majority Weight.");
+                        + "Validating that the state is signed by a majority weight.");
 
         // must be fully signed
         checkSignatures(signedState, addressBook);
