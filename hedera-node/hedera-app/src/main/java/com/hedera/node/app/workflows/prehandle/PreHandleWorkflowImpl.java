@@ -169,8 +169,9 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final var txBytes = Bytes.wrap(platformTx.getContents());
 
             // 1. Parse the Transaction and check the syntax
-            final var onsetResult = transactionChecker.parseAndCheck(txBytes);
-            txBody = onsetResult.txBody();
+            final var tx = transactionChecker.parse(txBytes);
+            final var transactionInfo = transactionChecker.check(tx);
+            txBody = transactionInfo.txBody();
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
@@ -180,8 +181,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             dispatcher.dispatchPreHandle(storeFactory, context);
 
             // 3. Prepare and verify signature-data
-            final var signatureMap = onsetResult.signatureMap();
-            final var txBodyBytes = onsetResult.transaction().bodyBytes();
+            final var signatureMap = transactionInfo.signatureMap();
+            final var txBodyBytes = transactionInfo.transaction().bodyBytes();
             final var payerSignature = verifyPayerSignature(state, context, txBodyBytes, signatureMap);
             final var otherSignatures = verifyOtherSignatures(state, context, txBodyBytes, signatureMap);
 

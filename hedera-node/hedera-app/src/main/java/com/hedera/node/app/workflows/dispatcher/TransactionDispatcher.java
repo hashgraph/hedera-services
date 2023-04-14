@@ -32,7 +32,6 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
@@ -115,7 +114,6 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTopicStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
-            case CRYPTO_CREATE -> dispatchCryptoCreate(txn, writableStoreFactory.createAccountStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -303,17 +301,5 @@ public class TransactionDispatcher {
         final var handler = handlers.tokenPauseHandler();
         handler.handle(tokenPause, tokenStore);
         tokenStore.commit();
-    }
-
-    private void dispatchCryptoCreate(
-            @NonNull final TransactionBody cryptoCreate, @NonNull final WritableAccountStore accountStore) {
-        final var handler = handlers.cryptoCreateHandler();
-        handler.handle(
-                handleContext,
-                cryptoCreate,
-                accountStore,
-                handler.newRecordBuilder(),
-                usageLimits.areCreatableAccounts(1));
-        accountStore.commit();
     }
 }

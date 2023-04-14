@@ -30,7 +30,6 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -71,7 +70,6 @@ public class CryptoHandlerTestBase {
     protected MapWritableKVState<EntityNumVirtualKey, Account> writableAccounts;
     protected Account account;
     protected ReadableAccountStore readableStore;
-    protected WritableAccountStore writableStore;
 
     @Mock
     protected ReadableStates readableStates;
@@ -102,7 +100,6 @@ public class CryptoHandlerTestBase {
         given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<String, EntityNumValue>get(ALIASES)).willReturn(writableAliases);
         readableStore = new ReadableAccountStore(readableStates);
-        writableStore = new WritableAccountStore(writableStates);
     }
 
     protected void refreshStoresWithCurrentTokenInWritable() {
@@ -115,7 +112,6 @@ public class CryptoHandlerTestBase {
         given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<String, EntityNumValue>get(ALIASES)).willReturn(writableAliases);
         readableStore = new ReadableAccountStore(readableStates);
-        writableStore = new WritableAccountStore(writableStates);
     }
 
     @NonNull
