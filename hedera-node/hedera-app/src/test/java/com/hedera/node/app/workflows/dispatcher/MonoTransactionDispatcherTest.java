@@ -394,22 +394,22 @@ class MonoTransactionDispatcherTest {
     @Test
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new MonoTransactionDispatcher(
-                null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits))
+                        null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new MonoTransactionDispatcher(
-                handleContext, null, handlers, accountNumbers, dynamicProperties, usageLimits))
+                        handleContext, null, handlers, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new MonoTransactionDispatcher(
-                handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
+                        handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new MonoTransactionDispatcher(
-                handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
+                        handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new MonoTransactionDispatcher(
-                handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
+                        handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new MonoTransactionDispatcher(
-                handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
+                        handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -523,10 +523,10 @@ class MonoTransactionDispatcherTest {
         given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
 
         doAnswer(invocation -> {
-            final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
-            builder.setNewTopicMetadata(newRunningHash, 2, 3L);
-            return null;
-        })
+                    final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
+                    builder.setNewTopicMetadata(newRunningHash, 2, 3L);
+                    return null;
+                })
                 .when(consensusSubmitMessageHandler)
                 .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any(), any());
 
@@ -556,7 +556,7 @@ class MonoTransactionDispatcherTest {
     @Test
     void cannotDispatchUnsupportedOperations() {
         assertThatThrownBy(() -> dispatcher.dispatchHandle(
-                HederaFunctionality.CRYPTO_TRANSFER, transactionBody, writableStoreFactory))
+                        HederaFunctionality.CRYPTO_TRANSFER, transactionBody, writableStoreFactory))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

@@ -16,24 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.validation;
 
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.function.Executable;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Arrays;
-import java.util.function.LongSupplier;
-
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -45,6 +27,23 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Arrays;
+import java.util.function.LongSupplier;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StandardizedAttributeValidatorTest {

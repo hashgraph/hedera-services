@@ -16,19 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.validation;
 
-import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.workflows.HandleException;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.nio.charset.StandardCharsets;
-import java.util.function.LongSupplier;
-
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -37,6 +24,18 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.Key;
+import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.workflows.HandleException;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.charset.StandardCharsets;
+import java.util.function.LongSupplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class StandardizedAttributeValidator implements AttributeValidator {

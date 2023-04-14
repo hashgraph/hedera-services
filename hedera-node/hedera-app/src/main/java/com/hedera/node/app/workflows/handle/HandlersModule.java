@@ -28,7 +28,6 @@ import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import javax.inject.Singleton;
 
 @Module

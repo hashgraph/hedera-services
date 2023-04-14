@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.components;
 
-import com.hedera.node.app.workflows.ingest.IngestModule;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import dagger.Subcomponent;
 

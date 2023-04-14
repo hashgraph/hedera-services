@@ -40,7 +40,6 @@ public interface Service {
     @Deprecated
     void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry);
 
-
     /**
      * Registers the schemas this service really uses with the given {@link SchemaRegistry}.
      *
