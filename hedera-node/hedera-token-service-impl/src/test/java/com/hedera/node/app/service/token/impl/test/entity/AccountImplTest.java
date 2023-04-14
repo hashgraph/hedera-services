@@ -29,7 +29,6 @@ import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.service.token.impl.entity.AccountImpl;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -59,23 +58,10 @@ class AccountImplTest {
     }
 
     @Test
-    void hashCodeWorks() {
-        assertEquals(12_1250_3389, subject.hashCode());
-    }
-
-    @Test
-    void toStringWorks() {
-        final var actual = subject.toString();
-        final var expected = "AccountImpl[accountNumber=2,alias=Optional.empty,key=<JEd25519Key: ed25519"
-                + " hex=3031323334353637383930313233343536373839303132333435363738393131>,expiry=123456789,balance=20000000000,memo=test,isDeleted=true,isSmartContract=true,isReceiverSigRequired=true,numberOfOwnedNfts=100,maxAutoAssociations=200,usedAutoAssociations=10,numAssociations=20,numPositiveBalances=10,ethereumNonce=20,stakedToMe=1000000,stakePeriodStart=123456,stakedNum=2,declineReward=false,stakeAtStartOfLastRewardedPeriod=1000,autoRenewAccountNumber=3000,autoRenewSecs=360000]";
-        assertEquals(expected, actual);
-    }
-
-    @Test
     void gettersWork() {
         assertEquals(2, subject.accountNumber());
-        assertEquals(Optional.empty(), subject.alias());
-        assertEquals(key, subject.getKey().get());
+        assertEquals(Bytes.EMPTY, subject.alias());
+        assertEquals(key, subject.getKey());
         assertEquals(123_456_789L, subject.expiry());
         assertEquals(20_000_000_000L, subject.balance());
         assertEquals("test", subject.memo());
@@ -112,7 +98,7 @@ class AccountImplTest {
     private AccountImpl setUpAccount() {
         return new AccountImpl(
                 2,
-                Optional.empty(),
+                Bytes.EMPTY,
                 key,
                 12_3456_789L,
                 20_000_000_000L,

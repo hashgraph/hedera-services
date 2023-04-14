@@ -29,7 +29,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -65,7 +65,6 @@ import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -157,7 +156,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
         // The account store will always return the same mocked account.
         // TODO I don't like this, because we should test flows where the account doesn't exist, etc.
-        when(accountStore.getAccountById(any())).thenReturn(Optional.of(account));
+        when(accountStore.getAccountById(any())).thenReturn(account);
         // TODO Mock out the metrics to return objects we can inspect later
         when(metrics.getOrCreate(any())).thenReturn(countSubmitted);
 
@@ -458,7 +457,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If the payer account is not found, the transaction should be rejected")
         void noSuchPayerAccount() throws PreCheckException, IOException {
             // Given an account store that is not able to find the account
-            when(accountStore.getAccountById(any())).thenReturn(Optional.empty());
+            when(accountStore.getAccountById(any())).thenReturn(null);
             doThrow(new PreCheckException(PAYER_ACCOUNT_NOT_FOUND))
                     .when(checker)
                     .checkPayerSignature(any(), any(), any(), any());

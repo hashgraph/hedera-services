@@ -18,8 +18,11 @@ package com.swirlds.platform.state.manager;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -29,10 +32,8 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Sequential Signatures Test")
@@ -50,8 +51,6 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
             .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
             .setSequentialIds(true)
             .build();
-
-    private final long selfId = addressBook.getId(0);
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.
@@ -81,9 +80,9 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
 
     @Test
     @DisplayName("Sequential Signatures Test")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void sequentialSignaturesTest() throws InterruptedException {
-        final SignedStateManager manager = new SignedStateManagerBuilder(addressBook, stateConfig, selfId)
+        this.roundsToKeepAfterSigning = 4;
+        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -100,7 +99,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addUnsignedState(signedState);
+            manager.addState(signedState);
 
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
@@ -127,8 +126,34 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
             validateCallbackCounts(0, Math.max(0, round - roundAgeToSign + 1));
         }
 
+        final long lastCompletedRound;
+        try (final AutoCloseableWrapper<SignedState> wrapper = manager.getLatestSignedState()) {
+            lastCompletedRound = wrapper.get().getRound();
+        }
+
+        for (int round = 0; round < count; round++) {
+            final long finalRound = round;
+            try (final AutoCloseableWrapper<SignedState> wrapper =
+                    manager.find(state -> state.getRound() == finalRound)) {
+
+                final SignedState foundState = wrapper.get();
+
+                if (round < count - roundsToKeepAfterSigning - 1) {
+                    assertNull(foundState);
+                    continue;
+                }
+                assertNotNull(foundState);
+
+                if (foundState.getRound() <= lastCompletedRound) {
+                    assertTrue(foundState.isComplete());
+                } else {
+                    assertFalse(foundState.isComplete());
+                }
+            }
+        }
+
         // Check reservation counts.
-        validateReservationCounts(round -> round < signedStates.size() - roundAgeToSign - 1);
+        validateReservationCounts(round -> round < signedStates.size() - roundsToKeepAfterSigning - 1);
 
         // We don't expect any further callbacks. But wait a little while longer in case there is something unexpected.
         SECONDS.sleep(1);

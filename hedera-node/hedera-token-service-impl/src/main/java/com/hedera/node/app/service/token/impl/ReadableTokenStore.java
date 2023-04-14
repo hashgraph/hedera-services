@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
@@ -29,6 +28,7 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
@@ -62,24 +62,19 @@ public class ReadableTokenStore {
             boolean hasRoyaltyWithFallback,
             long treasuryNum) {}
 
-    public record TokenMetaOrLookupFailureReason(TokenMetadata metadata, ResponseCodeEnum failureReason) {
-        public boolean failed() {
-            return failureReason != null;
-        }
-    }
-
     /**
-     * Returns the token metadata needed for signing requirements. If the token doesn't exist
-     * returns failureReason. If the token exists , the failure reason will be null.
+     * Returns the token metadata needed for signing requirements.
      *
      * @param id token id being looked up
      * @return token's metadata
      */
-    public TokenMetaOrLookupFailureReason getTokenMeta(@NonNull final TokenID id) {
+    public TokenMetadata getTokenMeta(@NonNull final TokenID id) throws PreCheckException {
         requireNonNull(id);
         final var token = getTokenLeaf(id.tokenNum());
-        return token.map(t -> new TokenMetaOrLookupFailureReason(tokenMetaFrom(t), null))
-                .orElseGet(() -> new TokenMetaOrLookupFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID));
+        if (token.isEmpty()) {
+            return null;
+        }
+        return tokenMetaFrom(token.get());
     }
 
     private TokenMetadata tokenMetaFrom(final Token token) {
