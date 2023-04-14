@@ -169,8 +169,7 @@ class ConfigDataFactory {
         if (rawDefaultValue.isEmpty()) {
             throw new IllegalArgumentException("Default value not defined for parameter");
         }
-        final String rawValue = rawDefaultValue.get();
-        return rawValue;
+        return rawDefaultValue.get();
     }
 
     private static <T extends Record> String getNamePrefix(final Class<T> type) {
