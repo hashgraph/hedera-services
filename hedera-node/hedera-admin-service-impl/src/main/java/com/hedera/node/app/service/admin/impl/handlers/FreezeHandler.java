@@ -56,12 +56,10 @@ public class FreezeHandler implements TransactionHandler {
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *     passed to {@code handle()}
-     * @see <a href="https://hashgraph.github.io/hedera-protobufs/#freeze.proto">Protobuf freeze
-     *     documentation</a>
+     * @see <a href="https://hashgraph.github.io/hedera-protobufs/#freeze.proto">Protobuf freeze documentation</a>
      */
     @SuppressWarnings("java:S1874") // disable the warnings for use of deprecated code
-    // it is necessary to check getStartHour, getStartMin, getEndHour, getEndMin, all of which are
-    // deprecated
+    // it is necessary to check getStartHour, getStartMin, getEndHour, getEndMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     public void preHandle(
             @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore)
@@ -70,8 +68,7 @@ public class FreezeHandler implements TransactionHandler {
 
         FreezeTransactionBody freezeTxn = context.body().freeze();
 
-        // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the
-        // protobuf
+        // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the protobuf
         // reject any freeze transactions that set these properties
         if (freezeTxn == null
                 || freezeTxn.startHour() != 0
@@ -84,8 +81,7 @@ public class FreezeHandler implements TransactionHandler {
         final FreezeType freezeType = freezeTxn.freezeType();
         switch (freezeType) {
                 // default value for freezeType is UNKNOWN_FREEZE_TYPE
-                // reject any freeze transactions that do not set freezeType or set it to
-                // UNKNOWN_FREEZE_TYPE
+                // reject any freeze transactions that do not set freezeType or set it to UNKNOWN_FREEZE_TYPE
             case UNKNOWN_FREEZE_TYPE -> throw new PreCheckException(INVALID_FREEZE_TRANSACTION_BODY);
 
                 // FREEZE_ONLY requires a valid start_time
@@ -95,15 +91,13 @@ public class FreezeHandler implements TransactionHandler {
                 // PREPARE_UPGRADE requires valid update_file and file_hash values
             case PREPARE_UPGRADE -> verifyUpdateFileAndHash(freezeTxn, specialFileStore);
 
-                // FREEZE_UPGRADE and TELEMETRY_UPGRADE require a valid start_time and valid
-                // update_file and
+                // FREEZE_UPGRADE and TELEMETRY_UPGRADE require a valid start_time and valid update_file and
                 // file_hash values
             case FREEZE_UPGRADE, TELEMETRY_UPGRADE -> {
                 verifyFreezeStartTimeIsInFuture(
                         freezeTxn, context.body().transactionID().transactionValidStart());
 
-                // from proto specs, it looks like update file not required for FREEZE_UPGRADE and
-                // TELEMETRY_UPGRADE
+                // from proto specs, it looks like update file not required for FREEZE_UPGRADE and TELEMETRY_UPGRADE
                 // but specs aren't very clear
                 // current code in FreezeTransitionLogic checks for the file in specialFiles
                 // so we will do the same
@@ -116,10 +110,8 @@ public class FreezeHandler implements TransactionHandler {
             }
         }
 
-        // no need to add any keys to the context because this transaction does not require any
-        // signatures
-        // it must be submitted by an account with superuser privileges, that is checked during
-        // ingest
+        // no need to add any keys to the context because this transaction does not require any signatures
+        // it must be submitted by an account with superuser privileges, that is checked during ingest
     }
 
     /**

@@ -50,7 +50,7 @@ import java.util.Set;
  * add any additional required signing keys. Several convenience methods have been created for this
  * purpose.
  *
- * <p>{@link #requireKey(HederaKey)} is used to add a required non-payer signing key (remember, the
+ * <p>{@link #requireKey(Key)} is used to add a required non-payer signing key (remember, the
  * payer signing key was added when the context was created). Some basic validation is performed
  * (the key cannot be null or empty).
  */
@@ -225,7 +225,7 @@ public final class PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
-        final var key = account.getKey();
+        final var key = account.key();
         if (key == null
                 || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
@@ -260,7 +260,7 @@ public final class PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
-        final var key = account.getKey();
+        final var key = account.key();
         if (key == null
                 || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
@@ -306,7 +306,7 @@ public final class PreHandleContext {
 
         // We will require the key. If the key isn't present, then we will throw the given response
         // code.
-        final var key = account.getKey();
+        final var key = account.key();
         if (key == null
                 || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no

@@ -12,8 +12,8 @@
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
         <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
@@ -31,8 +31,8 @@
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
         <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
@@ -49,8 +49,8 @@
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
         <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
@@ -67,8 +67,8 @@
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
         <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
@@ -86,8 +86,8 @@
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <SizeBasedTriggeringPolicy size="100 MB"/>
         <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="20">
         <Delete basePath="output" maxDepth="1">
@@ -281,7 +281,7 @@
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger additivity="false" level="info" name="com.hedera.services.legacy.config">
+  	<Logger name="com.hedera.services.legacy.config" level="info" additivity="false">
       <AppenderRef ref="RollingFile"/>
       <AppenderRef ref="Console"/>
     </Logger>

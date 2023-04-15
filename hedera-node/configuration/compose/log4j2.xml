@@ -61,8 +61,8 @@
       </DefaultRolloverStrategy>
     </RollingFile>
 
-    <RollingFile fileName="output/swirlds-vmap.log" filePattern="output/swirlds-vmap-%d{yyyy-MM-dd}-%i.log.gz"
-      name="vMapLog">
+    <RollingFile name="vMapLog" fileName="output/swirlds-vmap.log"
+      filePattern="output/swirlds-vmap-%d{yyyy-MM-dd}-%i.log.gz">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
@@ -109,28 +109,28 @@
       <AppenderRef ref="fileLog">
         <Filters>
           <!-- JasperDB / MerkleDb & Virtual Merkle -->
-          <MarkerFilter marker="JASPER_DB" onMatch="DENY" onMismatch="NEUTRAL"/>
-          <MarkerFilter marker="MERKLE_DB" onMatch="DENY" onMismatch="NEUTRAL"/>
-          <MarkerFilter marker="VIRTUAL_MERKLE_STATS" onMatch="DENY" onMismatch="NEUTRAL"/>
-          <MarkerFilter marker="STATE_HASH" onMatch="DENY" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="JASPER_DB"              onMatch="DENY" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="MERKLE_DB"              onMatch="DENY" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="DENY" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="STATE_HASH"             onMatch="DENY" onMismatch="NEUTRAL"/>
         </Filters>
       </AppenderRef>
 
       <AppenderRef ref="vMapLog">
         <Filters>
           <!-- JasperDB / MerkleDb & Virtual Merkle -->
-          <MarkerFilter marker="JASPER_DB" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-          <MarkerFilter marker="MERKLE_DB" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-          <MarkerFilter marker="VIRTUAL_MERKLE_STATS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-          <MarkerFilter marker="DISABLED" onMatch="DENY" onMismatch="DENY"/>
+          <MarkerFilter marker="JASPER_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="MERKLE_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />
         </Filters>
       </AppenderRef>
 
       <AppenderRef ref="swirldsHashStream">
         <Filters>
           <!-- Hash stream log -->
-          <MarkerFilter marker="STATE_HASH" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-          <MarkerFilter marker="DISABLED" onMatch="DENY" onMismatch="DENY"/>
+          <MarkerFilter marker="STATE_HASH"             onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="DISABLED"               onMatch="DENY"    onMismatch="DENY" />
         </Filters>
       </AppenderRef>
 
@@ -198,34 +198,34 @@
         <MarkerFilter marker="FREEZE"                 onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <!-- Saved States -->
-        <MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="STATE_HASH" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="SNAPSHOT_MANAGER"       onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="STATE_TO_DISK"          onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="STATE_HASH"             onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <!-- Beta Mirror -->
-        <MarkerFilter marker="BETA_MIRROR_NODE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="BETA_MIRROR_NODE"       onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <!-- FCMap -->
-        <MarkerFilter marker="FCM_COPY" onMatch="DENY" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="FCM_COPY_FROM" onMatch="DENY" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="FCM_COPY_TO" onMatch="DENY" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="FCM_DEMO" onMatch="DENY" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="FCM_COPY_FROM_DIFF" onMatch="DENY" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="FCM_COPY_TO_DIFF" onMatch="DENY" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="FC_SERIALIZATION" onMatch="DENY" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY"               onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY_FROM"          onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY_TO"            onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_DEMO"               onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY_FROM_DIFF"     onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY_TO_DIFF"       onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FC_SERIALIZATION"       onMatch="DENY"   onMismatch="NEUTRAL"/>
 
         <!-- Merkle Trees & Hashing -->
-        <MarkerFilter marker="MERKLE_FORCE_FLUSH" onMatch="DENY" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="MERKLE_HASHING" onMatch="DENY" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="MERKLE_GENERATION" onMatch="DENY" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="MERKLE_LOCKS" onMatch="DENY" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="MERKLE_FORCE_FLUSH"     onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="MERKLE_HASHING"         onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="MERKLE_GENERATION"      onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="MERKLE_LOCKS"           onMatch="DENY"   onMismatch="NEUTRAL"/>
 
         <!-- JasperDB / MerkleDb & Virtual Merkle -->
-        <MarkerFilter marker="JASPER_DB" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="MERKLE_DB" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="VIRTUAL_MERKLE_STATS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="JASPER_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="MERKLE_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
-        <MarkerFilter marker="DISABLED" onMatch="DENY" onMismatch="DENY"/>
+        <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />
       </Filters>
     </Logger>
 
@@ -281,7 +281,7 @@
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger additivity="false" level="info" name="com.hedera.services.legacy.config">
+  	<Logger name="com.hedera.services.legacy.config" level="info" additivity="false">
       <AppenderRef ref="RollingFile"/>
       <AppenderRef ref="Console"/>
     </Logger>

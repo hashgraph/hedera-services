@@ -56,24 +56,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
-    private final HederaKey nonAdminKey = asHederaKey(key).get();
-
     @Mock
     ReadableSpecialFileStore specialFileStore;
-
     @Mock
     private AccountAccess keyLookup;
+    @Mock
+    private Account account;
 
     private final Key key = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
-
-    @Mock
-    private Account account;
-
     private final AccountID nonAdminAccount =
             AccountID.newBuilder().accountNum(9999L).build();
-
     private final FreezeHandler subject = new FreezeHandler();
 
     @BeforeEach
