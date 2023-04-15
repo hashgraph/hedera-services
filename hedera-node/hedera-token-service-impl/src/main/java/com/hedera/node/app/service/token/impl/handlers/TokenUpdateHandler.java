@@ -39,8 +39,8 @@ import javax.inject.Singleton;
  * SigRequirements:
  *
  * <ol>
- *   <li>When a missing account is used as a token treasuryNum, fails with {@code
- *       INVALID_ACCOUNT_ID} rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}.
+ *   <li>When a missing account is used as a token treasuryNum, fails with {@code INVALID_ACCOUNT_ID}
+ *       rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}.
  * </ol>
  *
  * * EET expectations may need to be updated accordingly
@@ -53,13 +53,15 @@ public class TokenUpdateHandler implements TransactionHandler {
     }
 
     /**
-     * Pre-handles a {@link HederaFunctionality#TOKEN_UPDATE} transaction, returning the metadata
-     * required to, at minimum, validate the signatures of all required signing keys.
+     * Pre-handles a {@link HederaFunctionality#TOKEN_UPDATE}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information
+     *
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */

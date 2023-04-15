@@ -76,8 +76,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             context.requireKey(op.adminKeyOrThrow());
         }
 
-        // If an account is to be used for auto-renewal, then the account must exist and the
-        // transaction
+        // If an account is to be used for auto-renewal, then the account must exist and the transaction
         // must be signed with that account's key.
         if (op.hasAutoRenewAccount()) {
             final var autoRenewAccountID = op.autoRenewAccountOrThrow();

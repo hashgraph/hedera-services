@@ -23,8 +23,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A utility class, similar in concept {@link java.util.Objects#requireNonNull(Object)}, to validate
- * or throw exceptions.
+ * A utility class, similar in concept {@link java.util.Objects#requireNonNull(Object)}, to validate or throw
+ * exceptions.
  */
 public final class Validations {
 
@@ -32,15 +32,15 @@ public final class Validations {
     private Validations() {}
 
     /**
-     * Checks that the given subject is not null. If it is, then a {@link PreCheckException} is
-     * thrown with the given {@link ResponseCodeEnum}.
+     * Checks that the given subject is not null. If it is, then a {@link PreCheckException} is thrown with the
+     * given {@link ResponseCodeEnum}.
      *
      * @param subject The object to check.
      * @param code The {@link ResponseCodeEnum} to use if the subject is null.
      * @return The subject if it is not null.
      * @param <T> The type of the subject.
-     * @throws PreCheckException If the subject is null, a {@link PreCheckException} is thrown with
-     *     the given {@link ResponseCodeEnum}.
+     * @throws PreCheckException If the subject is null, a {@link PreCheckException} is thrown with the given
+     * {@link ResponseCodeEnum}.
      */
     public static <T> T mustExist(@Nullable final T subject, @NonNull final ResponseCodeEnum code)
             throws PreCheckException {
@@ -52,14 +52,14 @@ public final class Validations {
     }
 
     /**
-     * Common validation of an {@link AccountID} that it is internally consistent. A valid ID must
-     * not be null, must have either an alias or an account number, and if it has an account number,
-     * it must be positive. And if there is an alias, it must have at least one byte.
+     * Common validation of an {@link AccountID} that it is internally consistent. A valid ID must not be null,
+     * must have either an alias or an account number, and if it has an account number, it must be positive. And
+     * if there is an alias, it must have at least one byte.
      *
      * @param subject The {@link AccountID} to validate.
      * @return The {@link AccountID} if valid.
-     * @throws PreCheckException If the account ID is not valid, {@link
-     *     ResponseCodeEnum#INVALID_ACCOUNT_ID} will be thrown.
+     * @throws PreCheckException If the account ID is not valid, {@link ResponseCodeEnum#INVALID_ACCOUNT_ID} will
+     * be thrown.
      */
     public static AccountID validateAccountID(@Nullable final AccountID subject) throws PreCheckException {
         // Cannot be null

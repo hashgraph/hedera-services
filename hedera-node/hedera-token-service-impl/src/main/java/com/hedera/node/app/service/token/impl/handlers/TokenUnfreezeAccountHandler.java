@@ -51,6 +51,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information
+     *
      * @param tokenStore the {@link ReadableTokenStore}
      * @throws NullPointerException if one of the arguments is {@code null}
      */

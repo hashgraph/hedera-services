@@ -23,8 +23,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /** A convenience class for testing with Hedera specific assertions */
 public final class Assertions {
     /**
-     * Asserts that the given {@code runnable}, when run, throws a {@link PreCheckException} with
-     * the given expected {@link ResponseCodeEnum}.
+     * Asserts that the given {@code runnable}, when run, throws a {@link PreCheckException} with the given
+     * expected {@link ResponseCodeEnum}.
      *
      * @param runnable The runnable which will throw a {@link PreCheckException}.
      * @param expected The expected status code of the exception

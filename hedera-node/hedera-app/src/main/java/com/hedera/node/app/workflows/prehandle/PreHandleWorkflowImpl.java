@@ -107,22 +107,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         preHandle(requireNonNull(event).transactionIterator(), requireNonNull(state));
     }
 
-    @NonNull
-    private static PreHandleResult createResult(
-            @NonNull final PreHandleContext context,
-            @NonNull final SignatureMap signatureMap,
-            @Nullable final TransactionSignature payerSignature,
-            @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
-            @Nullable final PreHandleResult innerResult) {
-        final var otherSigs = otherSignatures.values();
-        final var allSigs = new ArrayList<TransactionSignature>(otherSigs.size() + 1);
-        if (payerSignature != null) {
-            allSigs.add(payerSignature);
-        }
-        allSigs.addAll(otherSigs);
-        return new PreHandleResult(context, OK, signatureMap, allSigs, innerResult);
-    }
-
     public void preHandle(@NonNull final Iterator<Transaction> itr, @NonNull final HederaState state) {
         // Each transaction in the event will go through pre-handle using a background thread
         // from the executor service. The Future representing that work is stored on the
@@ -227,6 +211,18 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     @NonNull
+    private Map<HederaKey, TransactionSignature> verifyOtherSignatures(
+            @NonNull final HederaState state,
+            @NonNull final PreHandleContext context,
+            @NonNull final Bytes txBodyBytes,
+            @NonNull final SignatureMap signatureMap) {
+        final var otherSignatures = signaturePreparer.prepareSignatures(
+                state, PbjConverter.asBytes(txBodyBytes), signatureMap, context.requiredNonPayerKeys());
+        cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
+        return otherSignatures;
+    }
+
+    @NonNull
     private static PreHandleResult createResult(
             @NonNull final PreHandleContext context,
             @NonNull final SignatureMap signatureMap,
@@ -245,17 +241,5 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     @NonNull
     private static PreHandleResult createInvalidResult(@NonNull final ResponseCodeEnum responseCode) {
         return new PreHandleResult(responseCode);
-    }
-
-    @NonNull
-    private Map<HederaKey, TransactionSignature> verifyOtherSignatures(
-            @NonNull final HederaState state,
-            @NonNull final PreHandleContext context,
-            @NonNull final Bytes txBodyBytes,
-            @NonNull final SignatureMap signatureMap) {
-        final var otherSignatures = signaturePreparer.prepareSignatures(
-                state, PbjConverter.asBytes(txBodyBytes), signatureMap, context.requiredNonPayerKeys());
-        cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
-        return otherSignatures;
     }
 }

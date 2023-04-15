@@ -35,7 +35,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.records.BaseRecordBuilder;
@@ -56,9 +55,6 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
 
     @Mock
     private AccountAccess accountAccess;
-
-    @Mock
-    private Account account;
 
     @Mock
     private Account account;

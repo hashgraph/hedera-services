@@ -86,10 +86,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         // The topic ID must be present on the transaction and the topic must exist.
         final var topic = topicStore.getTopicMetadata(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);
-        // If a submit key is specified on the topic, then only those transactions signed by that
-        // key can be
-        // submitted to the topic. If there is no submit key, then it is not required on the
-        // transaction.
+        // If a submit key is specified on the topic, then only those transactions signed by that key can be
+        // submitted to the topic. If there is no submit key, then it is not required on the transaction.
         final var submitKey = topic.submitKey();
         if (submitKey != null) context.requireKey(submitKey);
     }

@@ -24,8 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 @FunctionalInterface
 public interface PreHandleDispatcher {
     /**
-     * Dispatch a request. It is forwarded to the correct handler, which takes care of the specific
-     * functionality
+     * Dispatch a request. It is forwarded to the correct handler, which takes care of the specific functionality
      *
      * @param context the {@link PreHandleContext} for the dispatched transaction
      * @throws NullPointerException if {@code transactionBody} is {@code null}

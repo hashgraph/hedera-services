@@ -94,7 +94,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        final var expectedHederaAdminKey = Utils.asHederaKey(SIMPLE_KEY_A).orElseThrow();
+        final var expectedHederaAdminKey = SIMPLE_KEY_A;
         assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(expectedHederaAdminKey);
     }
 
@@ -116,7 +116,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        final var unwantedHederaSubmitKey = Utils.asHederaKey(SIMPLE_KEY_B).orElseThrow();
+        final var unwantedHederaSubmitKey = SIMPLE_KEY_B;
         assertThat(context.requiredNonPayerKeys()).doesNotContain(unwantedHederaSubmitKey);
     }
 
@@ -200,44 +200,6 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         assertTrue(changedTopic.get().deleted());
     }
 
-    private Key mockPayerLookup() {
-        return ConsensusTestUtils.mockPayerLookup(A_COMPLEX_KEY, PARITY_DEFAULT_PAYER, keyLookup);
-    }
-
-    private void mockTopicLookup(final Key adminKey, final Key submitKey) throws PreCheckException {
-        ConsensusTestUtils.mockTopicLookup(adminKey, submitKey, mockStore);
-    }
-
-    private TransactionBody newDeleteTxn() {
-        final var txnId =
-                TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
-        final var deleteTopicBuilder =
-                ConsensusDeleteTopicTransactionBody.newBuilder().topicID(WELL_KNOWN_TOPIC_ID);
-        return TransactionBody.newBuilder()
-                .transactionID(txnId)
-                .consensusDeleteTopic(deleteTopicBuilder.build())
-                .build();
-    }
-
-    private HederaKey mockPayerLookup() throws PreCheckException {
-        return ConsensusTestUtils.mockPayerLookup(A_COMPLEX_KEY, PARITY_DEFAULT_PAYER, keyLookup);
-    }
-
-    private void mockTopicLookup(final Key adminKey, final Key submitKey) throws PreCheckException {
-        ConsensusTestUtils.mockTopicLookup(adminKey, submitKey, mockStore);
-    }
-
-    private TransactionBody newDeleteTxn() {
-        final var txnId =
-                TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
-        final var deleteTopicBuilder =
-                ConsensusDeleteTopicTransactionBody.newBuilder().topicID(WELL_KNOWN_TOPIC_ID);
-        return TransactionBody.newBuilder()
-                .transactionID(txnId)
-                .consensusDeleteTopic(deleteTopicBuilder.build())
-                .build();
-    }
-
     @Nested
     class ConsensusDeleteTopicHandlerParityTest {
         @BeforeEach
@@ -263,7 +225,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         void getsConsensusDeleteTopicWithAdminKey() throws Throwable {
             // given:
             final var txn = CONSENSUS_DELETE_TOPIC_SCENARIO.pbjTxnBody();
-            var topicMeta = newTopicMeta(MISC_TOPIC_ADMIN_KT.asJKey(), null); // any submit key
+            var topicMeta = newTopicMeta(MISC_TOPIC_ADMIN_KT.asPbjKey(), null); // any submit key
             given(mockStore.getTopicMetadata(notNull())).willReturn(topicMeta);
             final var context = new PreHandleContext(keyLookup, txn);
 
@@ -272,8 +234,8 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
 
             // then:
             assertDefaultPayer(context);
-            Assertions.assertThat(sanityRestored(context.requiredNonPayerKeys()))
-                    .containsExactly(MISC_TOPIC_ADMIN_KT.asKey());
+            Assertions.assertThat(context.requiredNonPayerKeys())
+                    .containsExactly(MISC_TOPIC_ADMIN_KT.asPbjKey());
         }
 
         @Test
@@ -286,5 +248,24 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
             // when:
             assertThrowsPreCheck(() -> subject.preHandle(context, mockStore), INVALID_TOPIC_ID);
         }
+    }
+
+    private Key mockPayerLookup() throws PreCheckException {
+        return ConsensusTestUtils.mockPayerLookup(A_COMPLEX_KEY, PARITY_DEFAULT_PAYER, keyLookup);
+    }
+
+    private void mockTopicLookup(final Key adminKey, final Key submitKey) throws PreCheckException {
+        ConsensusTestUtils.mockTopicLookup(adminKey, submitKey, mockStore);
+    }
+
+    private TransactionBody newDeleteTxn() {
+        final var txnId =
+                TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
+        final var deleteTopicBuilder =
+                ConsensusDeleteTopicTransactionBody.newBuilder().topicID(WELL_KNOWN_TOPIC_ID);
+        return TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .consensusDeleteTopic(deleteTopicBuilder.build())
+                .build();
     }
 }

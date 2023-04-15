@@ -58,8 +58,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FreezeHandlerTest {
     @Mock
     ReadableSpecialFileStore specialFileStore;
+
     @Mock
     private AccountAccess keyLookup;
+
     @Mock
     private Account account;
 
@@ -106,8 +108,7 @@ class FreezeHandlerTest {
 
     @Test
     void rejectIfStartTimeInPastForCertainFreezeTypes() throws PreCheckException {
-        // when using these freeze types, it is required to set start time to a time after the
-        // effective consensus time
+        // when using these freeze types, it is required to set start time to a time after the effective consensus time
         FreezeType[] freezeTypes = {FREEZE_ONLY, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
         for (FreezeType freezeType : freezeTypes) {
@@ -188,8 +189,7 @@ class FreezeHandlerTest {
 
     @Test
     void happyPathFreezeUpgradeOrTelemetryUpgrade() throws PreCheckException {
-        // when using these freeze types, it is required to set an update file and file hash and
-        // they must match
+        // when using these freeze types, it is required to set an update file and file hash and they must match
         // also must set start time to a time after the effective consensus time
         FreezeType[] freezeTypes = {FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
@@ -216,8 +216,7 @@ class FreezeHandlerTest {
 
     @Test
     void happyPathPrepareUpgrade() throws PreCheckException {
-        // when using these freeze types, it is required to set an update file and file hash and
-        // they must match
+        // when using these freeze types, it is required to set an update file and file hash and they must match
         // start time not required
 
         FileID fileId = FileID.newBuilder().fileNum(1234L).build();

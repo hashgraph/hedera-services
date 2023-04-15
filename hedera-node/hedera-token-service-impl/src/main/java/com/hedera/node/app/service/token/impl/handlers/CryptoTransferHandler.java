@@ -75,6 +75,7 @@ public class CryptoTransferHandler implements TransactionHandler {
      * required to, at minimum, validate the signatures of all required signing keys.
      *
      * @param context the {@link PreHandleContext} which collects all information
+     *
      * @param accountStore the {@link AccountAccess} to use to resolve keys
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -111,14 +112,12 @@ public class CryptoTransferHandler implements TransactionHandler {
     }
 
     /**
-     * As part of pre-handle, checks that HBAR or fungible token transfers in the transfer list are
-     * plausible.
+     * As part of pre-handle, checks that HBAR or fungible token transfers in the transfer list are plausible.
      *
      * @param transfers The transfers to check
      * @param ctx The context we gather signing keys into
      * @param accountStore The account store to use to look up accounts
-     * @param hbarTransfer Whether this is a hbar transfer. When HIP-583 is implemented, we can
-     *     remove this argument.
+     * @param hbarTransfer Whether this is a hbar transfer. When HIP-583 is implemented, we can remove this argument.
      * @throws PreCheckException If the transaction is invalid
      */
     private void checkFungibleTokenTransfers(
@@ -127,10 +126,8 @@ public class CryptoTransferHandler implements TransactionHandler {
             @NonNull final AccountAccess accountStore,
             final boolean hbarTransfer)
             throws PreCheckException {
-        // We're going to iterate over all the transfers in the transfer list. Each transfer is
-        // known as an
-        // "account amount". Each of these represents the transfer of hbar INTO a single account or
-        // OUT of a
+        // We're going to iterate over all the transfers in the transfer list. Each transfer is known as an
+        // "account amount". Each of these represents the transfer of hbar INTO a single account or OUT of a
         // single account.
         for (final var accountAmount : transfers) {
             // Given an accountId, we need to look up the associated account.
@@ -139,30 +136,21 @@ public class CryptoTransferHandler implements TransactionHandler {
             final var isCredit = accountAmount.amount() > 0;
             final var isDebit = accountAmount.amount() < 0;
             if (account != null) {
-                // This next code is not right, but we have it for compatibility until after we
-                // migrate
-                // off the mono-service. Then we can fix this. In this logic, if the receiver
-                // account (the
-                // one with the credit) doesn't have a key AND the value being sent is non-hbar
-                // fungible tokens,
-                // then we fail with ACCOUNT_IS_IMMUTABLE. And if the account is being debited and
-                // has no key,
-                // then we also fail with the same error. It should be that being credited value
-                // DOES NOT require
+                // This next code is not right, but we have it for compatibility until after we migrate
+                // off the mono-service. Then we can fix this. In this logic, if the receiver account (the
+                // one with the credit) doesn't have a key AND the value being sent is non-hbar fungible tokens,
+                // then we fail with ACCOUNT_IS_IMMUTABLE. And if the account is being debited and has no key,
+                // then we also fail with the same error. It should be that being credited value DOES NOT require
                 // a key, unless `receiverSigRequired` is true.
                 final var accountKey = account.getKey();
                 if ((accountKey == null || accountKey.isEmpty()) && (isDebit || isCredit && !hbarTransfer)) {
                     throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
                 }
 
-                // We only need signing keys for accounts that are being debited OR those being
-                // credited
-                // but with receiverSigRequired set to true. If the account is being debited but
-                // "isApproval"
-                // is set on the transaction, then we defer to the token transfer logic to determine
-                // if all
-                // signing requirements were met ("isApproval" is a way for the client to say "I
-                // don't need a key
+                // We only need signing keys for accounts that are being debited OR those being credited
+                // but with receiverSigRequired set to true. If the account is being debited but "isApproval"
+                // is set on the transaction, then we defer to the token transfer logic to determine if all
+                // signing requirements were met ("isApproval" is a way for the client to say "I don't need a key
                 // because I'm approved which you will see when you handle this transaction").
                 if (isDebit && !accountAmount.isApproval()) {
                     ctx.requireKeyOrThrow(account.getKey(), ACCOUNT_IS_IMMUTABLE);
@@ -170,16 +158,12 @@ public class CryptoTransferHandler implements TransactionHandler {
                     ctx.requireKeyOrThrow(account.getKey(), INVALID_TRANSFER_ACCOUNT_ID);
                 }
             } else if (hbarTransfer) {
-                // It is possible for the transfer to be valid even if the account is not found. For
-                // example, we
-                // allow auto-creation of "hollow accounts" if you transfer value into an account
-                // *by alias* that
-                // didn't previously exist. If that is not the case, then we fail because we
-                // couldn't find the
+                // It is possible for the transfer to be valid even if the account is not found. For example, we
+                // allow auto-creation of "hollow accounts" if you transfer value into an account *by alias* that
+                // didn't previously exist. If that is not the case, then we fail because we couldn't find the
                 // destination account.
                 if (!isCredit || !isAlias(accountId)) {
-                    // Interestingly, this means that if the transfer amount is exactly 0 and the
-                    // account has a
+                    // Interestingly, this means that if the transfer amount is exactly 0 and the account has a
                     // non-existent alias, then we fail.
                     throw new PreCheckException(INVALID_ACCOUNT_ID);
                 }
@@ -221,8 +205,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // Lookup the receiver account and verify it.
         final var receiverAccount = accountStore.getAccountById(receiverId);
         if (receiverAccount == null) {
-            // It may be that the receiver account does not yet exist. If it is being addressed by
-            // alias,
+            // It may be that the receiver account does not yet exist. If it is being addressed by alias,
             // then this is OK, as we will automatically create the account. Otherwise, fail.
             if (!isAlias(receiverId)) {
                 throw new PreCheckException(INVALID_ACCOUNT_ID);
@@ -236,17 +219,14 @@ public class CryptoTransferHandler implements TransactionHandler {
             // If the receiver account has no key, then fail with ACCOUNT_IS_IMMUTABLE.
             throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
         } else if (receiverAccount.isReceiverSigRequired()) {
-            // If receiverSigRequired is set, and if there is no key on the receiver's account, then
-            // fail with
+            // If receiverSigRequired is set, and if there is no key on the receiver's account, then fail with
             // INVALID_TRANSFER_ACCOUNT_ID. Otherwise, add the key.
             meta.requireKeyOrThrow(receiverKey, INVALID_TRANSFER_ACCOUNT_ID);
         } else if (tokenMeta.hasRoyaltyWithFallback()
                 && !receivesFungibleValue(nftTransfer.senderAccountID(), op, accountStore)) {
-            // It may be that this transfer has royalty fees associated with it. If it does, then we
-            // need
+            // It may be that this transfer has royalty fees associated with it. If it does, then we need
             // to check that the receiver signed the transaction, UNLESS the sender or receiver is
-            // the treasury, in which case fallback fees will not be applied when the transaction is
-            // handled,
+            // the treasury, in which case fallback fees will not be applied when the transaction is handled,
             // so the receiver key does not need to sign.
             final var treasury = tokenMeta.treasuryNum();
             if (treasury != senderId.accountNumOrThrow() && treasury != receiverId.accountNumOrThrow()) {

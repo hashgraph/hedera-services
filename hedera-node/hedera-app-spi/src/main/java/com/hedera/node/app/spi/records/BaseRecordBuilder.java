@@ -17,12 +17,14 @@
 package com.hedera.node.app.spi.records;
 
 /**
- * Base implementation of a {@code UniversalRecordBuilder} that will track all the "universal"
- * transaction metadata and side effects. This builder is used when there are no side effects to
- * record from the transaction(e.g. a token pause).
+ * Base implementation of a {@code UniversalRecordBuilder} that will track all the
+ * "universal" transaction metadata and side effects. This builder is used when there are no
+ * side effects to record from the transaction(e.g. a token pause).
  */
 public class BaseRecordBuilder<T extends RecordBuilder<T>> extends UniversalRecordBuilder<T> {
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public T self() {
         return (T) this;

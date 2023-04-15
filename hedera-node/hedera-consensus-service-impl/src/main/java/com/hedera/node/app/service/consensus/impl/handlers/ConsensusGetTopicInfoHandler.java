@@ -128,7 +128,6 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
 
     /**
      * Provides information about a topic.
-     *
      * @param topicID the topic to get information about
      * @param topicStore the topic store
      * @return the information about the topic

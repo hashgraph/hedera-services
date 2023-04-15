@@ -99,21 +99,6 @@ class ConsensusCreateTopicHandlerParityTest {
 
         // then:
         assertDefaultPayer(context);
-        Assertions.assertThat(context.requiredNonPayerKeys())
-                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asPbjKey(), MISC_ACCOUNT_KT.asPbjKey());
-    }
-
-    @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer() throws PreCheckException {
-        // given:
-        final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO.pbjTxnBody();
-
-        // when:
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context);
-
-        // then:
-        assertDefaultPayer(context);
         // Note: DEFAULT_PAYER_KT in this case doesn't function as the payer - the payer is
         // CUSTOM_PAYER_ACCOUNT - but instead is in the required keys list because
         // DEFAULT_PAYER_KT is set as the auto-renew account

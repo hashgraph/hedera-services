@@ -36,8 +36,8 @@ import java.util.Set;
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
  * multiple background threads. Any state read or computed as part of this pre-handle, including any
- * errors, are captured in the {@link PreHandleResult}. This is then made available to the
- * transaction during the "handle" phase as part of the HandleContext.
+ * errors, are captured in the {@link PreHandleResult}. This is then made available to the transaction
+ * during the "handle" phase as part of the HandleContext.
  *
  * @param txnBody Transaction that is being pre-handled
  * @param payer payer for the transaction

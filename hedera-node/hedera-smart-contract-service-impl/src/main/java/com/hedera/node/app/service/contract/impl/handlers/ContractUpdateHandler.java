@@ -52,6 +52,7 @@ public class ContractUpdateHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {

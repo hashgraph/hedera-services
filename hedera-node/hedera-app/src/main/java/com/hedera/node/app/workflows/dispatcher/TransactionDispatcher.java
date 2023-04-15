@@ -279,7 +279,6 @@ public class TransactionDispatcher {
 
     /**
      * Dispatches the token unpause transaction to the appropriate handler.
-     *
      * @param tokenUnpause the token unpause transaction
      * @param tokenStore the token store
      */
@@ -292,7 +291,6 @@ public class TransactionDispatcher {
 
     /**
      * Dispatches the token pause transaction to the appropriate handler.
-     *
      * @param tokenPause the token pause transaction
      * @param tokenStore the token store
      */

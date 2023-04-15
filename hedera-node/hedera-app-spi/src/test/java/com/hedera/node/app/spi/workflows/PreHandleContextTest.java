@@ -39,16 +39,13 @@ class PreHandleContextTest {
     private static final AccountID PAYER = AccountID.newBuilder().accountNum(3L).build();
 
     @Mock
-    AccountAccess accountAccess;
-
-    @Mock
-    Account account;
-
-    @Mock
     private Key payerKey;
 
     @Mock
     private Key otherKey;
+
+    @Mock
+    AccountAccess accountAccess;
 
     @Mock
     Account account;

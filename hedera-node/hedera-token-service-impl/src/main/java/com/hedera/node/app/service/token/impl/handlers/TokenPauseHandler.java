@@ -55,6 +55,7 @@ public class TokenPauseHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
@@ -96,9 +97,8 @@ public class TokenPauseHandler implements TransactionHandler {
 
     /**
      * Validate semantics for the given transaction body.
-     *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle}
+     *                passed to {@link #handle}
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if the transaction body is invalid
      */

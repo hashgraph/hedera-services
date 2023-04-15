@@ -106,8 +106,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
                 .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
                 .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
                 .build();
-        // must be lenient here, because Mockito is a bit too sensitive, and not setting this causes
-        // NPE's
+        // must be lenient here, because Mockito is a bit too sensitive, and not setting this causes NPE's
         BDDMockito.lenient().when(schedule.ordinaryViewOfScheduledTxn()).thenReturn(PbjConverter.fromPbj(scheduledTxn));
         given(keyLookup.getAccountById(scheduleDeleter)).willReturn(payerAccount);
         given(payerAccount.key()).willReturn(adminKey);

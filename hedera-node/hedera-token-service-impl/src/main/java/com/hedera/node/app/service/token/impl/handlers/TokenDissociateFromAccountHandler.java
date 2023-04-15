@@ -40,14 +40,15 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     }
 
     /**
-     * Pre-handles a {@link HederaFunctionality#TOKEN_DISSOCIATE_FROM_ACCOUNT} transaction,
-     * returning the metadata required to, at minimum, validate the signatures of all required
-     * signing keys.
+     * Pre-handles a {@link HederaFunctionality#TOKEN_DISSOCIATE_FROM_ACCOUNT}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {

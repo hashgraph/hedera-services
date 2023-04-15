@@ -30,8 +30,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CONTRACT_CREATE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_CREATE}.
  */
 @Singleton
 public class ContractCreateHandler implements TransactionHandler {
@@ -53,6 +52,7 @@ public class ContractCreateHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -69,8 +69,7 @@ public class ContractCreateHandler implements TransactionHandler {
             }
         }
 
-        // If an account is to be used for auto-renewal, then the account must exist and the
-        // transaction
+        // If an account is to be used for auto-renewal, then the account must exist and the transaction
         // must be signed with that account's key.
         if (op.hasAutoRenewAccountId()) {
             final var autoRenewAccountID = op.autoRenewAccountIdOrThrow();

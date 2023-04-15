@@ -37,47 +37,40 @@ import java.util.Set;
 /**
  * Represents the context of a single {@code preHandle()}-call.
  *
- * <p>During pre-handle, each transaction handler needs access to the transaction body data (i.e.
- * the "operation" being performed, colloquially also called the "transaction" and "transaction
- * body" although both are more or less technically incorrect). The actual {@link TransactionBody}
- * can be accessed from this context. The body contains the operation, the transaction ID, the
- * originating node, and other information.
+ * <p>During pre-handle, each transaction handler needs access to the transaction body data (i.e. the "operation"
+ * being performed, colloquially also called the "transaction" and "transaction body" although both are more
+ * or less technically incorrect). The actual {@link TransactionBody} can be accessed from this context. The body
+ * contains the operation, the transaction ID, the originating node, and other information.
  *
- * <p>The main responsibility for a transaction handler during pre-handle is to semantically
- * validate the operation and to gather all required keys. The handler, when created, is preloaded
- * with the correct payer key (which is almost always the same as the transaction body's {@link
- * TransactionID}, except in the case of a scheduled transaction). {@link TransactionHandler}s must
- * add any additional required signing keys. Several convenience methods have been created for this
- * purpose.
+ * <p>The main responsibility for a transaction handler during pre-handle is to semantically validate the operation
+ * and to gather all required keys. The handler, when created, is preloaded with the correct payer key (which is
+ * almost always the same as the transaction body's {@link TransactionID}, except in the case of a scheduled
+ * transaction). {@link TransactionHandler}s must add any additional required signing keys. Several convenience
+ * methods have been created for this purpose.
  *
- * <p>{@link #requireKey(Key)} is used to add a required non-payer signing key (remember, the
- * payer signing key was added when the context was created). Some basic validation is performed
- * (the key cannot be null or empty).
+ * <p>{@link #requireKey(Key)} is used to add a required non-payer signing key (remember, the payer signing
+ * key was added when the context was created). Some basic validation is performed (the key cannot be null or empty).
  */
 public final class PreHandleContext {
     /** Used to get keys for accounts and contracts. */
     private final AccountAccess accountAccess;
     /** The transaction body. */
     private final TransactionBody txn;
-    /**
-     * The payer account ID. Specified in the transaction body, extracted and stored separately for
-     * convenience.
-     */
+    /** The payer account ID. Specified in the transaction body, extracted and stored separately for convenience. */
     private final AccountID payer;
     /** The payer's key, as found in state */
     private final Key payerKey;
     /**
-     * The set of all required non-payer keys. A {@link LinkedHashSet} is used to maintain a
-     * consistent ordering. While not strictly necessary, it is useful at the moment to ensure tests
-     * are deterministic. The tests should be updated to compare set contents rather than ordering.
+     * The set of all required non-payer keys. A {@link LinkedHashSet} is used to maintain a consistent ordering.
+     * While not strictly necessary, it is useful at the moment to ensure tests are deterministic. The tests should
+     * be updated to compare set contents rather than ordering.
      */
     private final Set<Key> requiredNonPayerKeys = new LinkedHashSet<>();
     /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
     private PreHandleContext innerContext;
 
     /**
-     * Create a new PreHandleContext instance. The payer and key will be extracted from the
-     * transaction body.
+     * Create a new PreHandleContext instance. The payer and key will be extracted from the transaction body.
      *
      * @param accountAccess used to get keys for accounts and contracts
      * @param txn the transaction body
@@ -102,8 +95,7 @@ public final class PreHandleContext {
         this.accountAccess = requireNonNull(accountAccess);
         this.txn = requireNonNull(txn);
         this.payer = requireNonNull(payer);
-        // Find the account, which must exist or throw a PreCheckException with the given response
-        // code.
+        // Find the account, which must exist or throw a PreCheckException with the given response code.
         final var account = accountAccess.getAccountById(payer);
         mustExist(account, responseCode);
         // NOTE: While it is true that the key can be null on some special accounts like
@@ -162,8 +154,8 @@ public final class PreHandleContext {
     }
 
     /**
-     * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if
-     * the key has already been added, then the call is a no-op. The key must not be null.
+     * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if the key has
+     * already been added, then the call is a no-op. The key must not be null.
      *
      * @param key key to be added
      * @return {@code this} object
@@ -178,9 +170,9 @@ public final class PreHandleContext {
     }
 
     /**
-     * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if
-     * the key has already been added, then the call is a no-op. The key must not be null and not
-     * empty, otherwise a PreCheckException is thrown with the given {@code responseCode}.
+     * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if the key has
+     * already been added, then the call is a no-op. The key must not be null and not empty, otherwise a
+     * PreCheckException is thrown with the given {@code responseCode}.
      *
      * @param key key to be added
      * @param responseCode the response code to be used in case the key is null or empty
@@ -188,8 +180,8 @@ public final class PreHandleContext {
      * @throws PreCheckException if the key is null or empty
      */
     @NonNull
-    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+    public PreHandleContext requireKeyOrThrow(
+            @Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException {
         requireNonNull(responseCode);
         if (key == null || key.key().kind().equals(KeyOneOfType.UNSET)) {
             throw new PreCheckException(responseCode);
@@ -198,17 +190,17 @@ public final class PreHandleContext {
     }
 
     /**
-     * Adds the admin key of the account addressed by the given {@code accountID} to the required
-     * non-payer keys. If the key is the same as the payer key, or if the key has already been
-     * added, then the call is a no-op. The {@link AccountID} must not be null, and must refer to an
-     * actual account. The admin key on that account must not be null or empty. If any of these
-     * conditions are not met, a PreCheckException is thrown with the given {@code responseCode}.
+     * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys. If
+     * the key is the same as the payer key, or if the key has already been added, then the call is a no-op. The
+     * {@link AccountID} must not be null, and must refer to an actual account. The admin key on that account must not
+     * be null or empty. If any of these conditions are not met, a PreCheckException is thrown with the given
+     * {@code responseCode}.
      *
      * @param accountID The ID of the account whose key is to be added
      * @param responseCode the response code to be used in case the key is null or empty
      * @return {@code this} object
-     * @throws PreCheckException if the key is null or empty or the account is null or the account
-     *     does not exist.
+     * @throws PreCheckException if the key is null or empty or the account is null or the
+     * account does not exist.
      */
     @NonNull
     public PreHandleContext requireKeyOrThrow(
@@ -237,14 +229,13 @@ public final class PreHandleContext {
     }
 
     /**
-     * The same as {@link #requireKeyOrThrow(AccountID, ResponseCodeEnum)} but for a {@link
-     * ContractID}.
+     * The same as {@link #requireKeyOrThrow(AccountID, ResponseCodeEnum)} but for a {@link ContractID}.
      *
      * @param accountID The ID of the contract account whose key is to be added
      * @param responseCode the response code to be used in case the key is null or empty
      * @return {@code this} object
-     * @throws PreCheckException if the key is null or empty or the account is null or the contract
-     *     account does not exist or the account is not a contract account.
+     * @throws PreCheckException if the key is null or empty or the account is null or the
+     * contract account does not exist or the account is not a contract account.
      */
     @NonNull
     public PreHandleContext requireKeyOrThrow(
@@ -272,16 +263,15 @@ public final class PreHandleContext {
     }
 
     /**
-     * Adds the admin key of the account addressed by the given {@code accountID} to the required
-     * non-payer keys if the {@link AccountID} is not null and if the account has
-     * `receiverSigRequired` set to true. If the account does not exist, or `receiverSigRequired` is
-     * true but the key is null or empty, then a {@link PreCheckException} will be thrown with the
-     * supplied {@code responseCode}.
+     * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys if
+     * the {@link AccountID} is not null and if the account has `receiverSigRequired` set to true. If the account
+     * does not exist, or `receiverSigRequired` is true but the key is null or empty, then a
+     * {@link PreCheckException} will be thrown with the supplied {@code responseCode}.
      *
      * @param accountID The ID of the account whose key is to be added
      * @param responseCode the response code to be used if a {@link PreCheckException} is thrown
-     * @throws PreCheckException if the account does not exist or the account has
-     *     `receiverSigRequired` but a null or empty key.
+     * @throws PreCheckException if the account does not exist or the account has `receiverSigRequired` but a null or
+     * empty key.
      */
     @NonNull
     public PreHandleContext requireKeyIfReceiverSigRequired(
@@ -304,8 +294,7 @@ public final class PreHandleContext {
             return this;
         }
 
-        // We will require the key. If the key isn't present, then we will throw the given response
-        // code.
+        // We will require the key. If the key isn't present, then we will throw the given response code.
         final var key = account.key();
         if (key == null
                 || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
@@ -318,14 +307,12 @@ public final class PreHandleContext {
     }
 
     /**
-     * The same as {@link #requireKeyIfReceiverSigRequired(AccountID, ResponseCodeEnum)} but for a
-     * {@link ContractID}.
+     * The same as {@link #requireKeyIfReceiverSigRequired(AccountID, ResponseCodeEnum)} but for a {@link ContractID}.
      *
      * @param contractID The ID of the contract account whose key is to be added
      * @param responseCode the response code to be used if a {@link PreCheckException} is thrown
-     * @throws PreCheckException if the account does not exist or the account has
-     *     `receiverSigRequired` but a null or empty key, or the account exists but is not a
-     *     contract account.
+     * @throws PreCheckException if the account does not exist or the account has `receiverSigRequired` but a null or
+     * empty key, or the account exists but is not a contract account.
      */
     @NonNull
     public PreHandleContext requireKeyIfReceiverSigRequired(
@@ -348,8 +335,7 @@ public final class PreHandleContext {
             return this;
         }
 
-        // We will require the key. If the key isn't present, then we will throw the given response
-        // code.
+        // We will require the key. If the key isn't present, then we will throw the given response code.
         final var key = account.key();
         if (key == null
                 || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
@@ -362,9 +348,9 @@ public final class PreHandleContext {
     }
 
     /**
-     * Creates a new {@link PreHandleContext} for a nested transaction. The nested transaction will
-     * be set on this context as the "inner context". There can only be one such at a time. The
-     * inner context is returned for convenience.
+     * Creates a new {@link PreHandleContext} for a nested transaction. The nested transaction will be set on
+     * this context as the "inner context". There can only be one such at a time. The inner context is returned
+     * for convenience.
      *
      * @param nestedTxn the nested transaction
      * @param payerForNested the payer for the nested transaction
@@ -393,19 +379,12 @@ public final class PreHandleContext {
 
     @Override
     public String toString() {
-        return "PreHandleContext{"
-                + "accountAccess="
-                + accountAccess
-                + ", txn="
-                + txn
-                + ", payer="
-                + payer
-                + ", requiredNonPayerKeys="
-                + requiredNonPayerKeys
-                + ", status="
-                + payerKey
-                + ", innerContext="
-                + innerContext
-                + '}';
+        return "PreHandleContext{" + "accountAccess="
+                + accountAccess + ", txn="
+                + txn + ", payer="
+                + payer + ", requiredNonPayerKeys="
+                + requiredNonPayerKeys + ", status="
+                + payerKey + ", innerContext="
+                + innerContext + '}';
     }
 }

@@ -65,13 +65,12 @@ class PreHandleContextListUpdatesTest {
     private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
     private Long payerNum = 3L;
 
-    final ContractID otherContractId =
-            ContractID.newBuilder().contractNum(123456L).build();
-
-    final AccountID otherAccountId = AccountID.newBuilder().accountNum(12345L).build();
-
     @Mock
     private Key payerKey;
+
+
+    final ContractID otherContractId =
+            ContractID.newBuilder().contractNum(123456L).build();
 
     @Mock
     private Key otherKey;
@@ -121,26 +120,21 @@ class PreHandleContextListUpdatesTest {
         // When we pass null to requireKeyOrThrow for the account ID then we get a PreCheckException
         final var subject = new PreHandleContext(accountAccess, createAccountTransaction());
         assertThrows(PreCheckException.class, () -> subject.requireKeyOrThrow((AccountID) null, INVALID_ACCOUNT_ID));
-        // When we pass null to requireKeyOrThrow for the response code then we get a null pointer
-        // exception
+        // When we pass null to requireKeyOrThrow for the response code then we get a null pointer exception
         assertThrows(NullPointerException.class, () -> subject.requireKeyOrThrow(payer, null));
-        // When we pass a null to requireKeyIfReceiverSigRequired for the account ID then nothing
-        // happens
+        // When we pass a null to requireKeyIfReceiverSigRequired for the account ID then nothing happens
         assertDoesNotThrow(() -> subject.requireKeyIfReceiverSigRequired((AccountID) null, INVALID_ACCOUNT_ID));
-        // When we pass a null to requireKeyIfReceiverSigRequired for the response code then we get
-        // a null pointer
+        // When we pass a null to requireKeyIfReceiverSigRequired for the response code then we get a null pointer
         // exception
         assertThrows(NullPointerException.class, () -> subject.requireKeyIfReceiverSigRequired(payer, null));
-        // When we pass non-null to requireKeyOrThrow or requireKeyIfReceiverSigRequired, then it
-        // succeeds
+        // When we pass non-null to requireKeyOrThrow or requireKeyIfReceiverSigRequired, then it succeeds
         assertDoesNotThrow(() -> subject.requireKeyOrThrow(payer, INVALID_ACCOUNT_ID));
         assertDoesNotThrow(() -> subject.requireKeyIfReceiverSigRequired(payer, INVALID_ACCOUNT_ID));
     }
 
     @Test
     void requireSomeOtherKey() throws PreCheckException {
-        // Given an account with a key, and a transaction using that account as the payer, and a
-        // PreHandleContext
+        // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
         given(accountAccess.getAccountById(payer)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         subject = new PreHandleContext(accountAccess, createAccountTransaction());
@@ -154,8 +148,7 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void requireSomeOtherKeyTwice() throws PreCheckException {
-        // Given an account with a key, and a transaction using that account as the payer, and a
-        // PreHandleContext
+        // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
         given(accountAccess.getAccountById(payer)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         subject = new PreHandleContext(accountAccess, createAccountTransaction());
@@ -170,8 +163,7 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void payerIsIgnoredWhenRequired() throws PreCheckException {
-        // Given an account with a key, and a transaction using that account as the payer, and a
-        // PreHandleContext
+        // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
         given(accountAccess.getAccountById(payer)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         subject = new PreHandleContext(accountAccess, createAccountTransaction());
@@ -195,8 +187,7 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void returnsIfGivenKeyIsPayer() throws PreCheckException {
-        // Given an account with a key, and a transaction using that account as the payer and a
-        // PreHandleContext
+        // Given an account with a key, and a transaction using that account as the payer and a PreHandleContext
         given(accountAccess.getAccountById(payer)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         subject = new PreHandleContext(accountAccess, createAccountTransaction());
@@ -215,8 +206,7 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void returnsIfGivenKeyIsInvalidAccountId() throws PreCheckException {
-        // Given an account with a key, and a transaction using that account as the payer and a
-        // PreHandleContext
+        // Given an account with a key, and a transaction using that account as the payer and a PreHandleContext
         given(accountAccess.getAccountById(payer)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         subject = new PreHandleContext(accountAccess, createAccountTransaction());

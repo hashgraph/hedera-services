@@ -13,8 +13,6 @@ module com.hedera.node.app.service.token.impl {
     requires com.hedera.pbj.runtime;
     requires com.github.spotbugs.annotations;
     requires transitive com.hedera.node.hapi;
-    requires com.hedera.hashgraph.protobuf.java.api;
-    requires org.apache.logging.log4j;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -27,5 +25,4 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app;
     exports com.hedera.node.app.service.token.impl.components;
     exports com.hedera.node.app.service.token.impl.serdes;
-    exports com.hedera.node.app.service.token.impl.records;
 }

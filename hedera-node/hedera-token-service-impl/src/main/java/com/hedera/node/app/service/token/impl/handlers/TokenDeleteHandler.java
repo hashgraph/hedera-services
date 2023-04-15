@@ -41,13 +41,13 @@ public class TokenDeleteHandler implements TransactionHandler {
     }
 
     /**
-     * Pre-handles a {@link HederaFunctionality#TOKEN_DELETE} transaction, returning the metadata
-     * required to, at minimum, validate the signatures of all required signing keys.
+     * Pre-handles a {@link HederaFunctionality#TOKEN_DELETE} transaction, returning the metadata required to, at
+     * minimum, validate the signatures of all required signing keys.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
+     * <p>Please note: the method signature is just a placeholder which is most likely going to change.
      *
      * @param context the {@link PreHandleContext} which collects all information
+     *
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */

@@ -30,10 +30,11 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Provides write methods for modifying underlying data storage mechanisms for working with Tokens.
+ * Provides write methods for modifying underlying data storage mechanisms for
+ * working with Tokens.
  *
- * <p>This class is not exported from the module. It is an internal implementation detail. This
- * class is not complete, it will be extended with other methods like remove, update etc.,
+ * <p>This class is not exported from the module. It is an internal implementation detail.
+ * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableTokenStore {
     /** The underlying data storage class that holds the token data. */
@@ -61,15 +62,15 @@ public class WritableTokenStore {
         tokenState.put(EntityNum.fromLong(token.tokenNumber()), Objects.requireNonNull(token));
     }
 
-    /** Commits the changes to the underlying data storage. */
+    /**
+     * Commits the changes to the underlying data storage.
+     */
     public void commit() {
         ((WritableKVStateBase) tokenState).commit();
     }
 
     /**
-     * Returns the {@link Token} with the given number. If no such Token exists, returns {@code
-     * Optional.empty()}
-     *
+     * Returns the {@link Token} with the given number. If no such Token exists, returns {@code Optional.empty()}
      * @param tokenNum - the number of the Token to be retrieved.
      */
     @NonNull
@@ -80,10 +81,8 @@ public class WritableTokenStore {
     }
 
     /**
-     * Returns the {@link Token} with the given number using {@link
-     * WritableKVState#getForModify(Comparable K)}. If no such token exists, returns {@code
-     * Optional.empty()}
-     *
+     * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify(Comparable K)}.
+     * If no such token exists, returns {@code Optional.empty()}
      * @param tokenNum - the number of the token to be retrieved.
      */
     @NonNull
@@ -95,7 +94,6 @@ public class WritableTokenStore {
 
     /**
      * Returns the number of tokens in the state.
-     *
      * @return the number of tokens in the state.
      */
     public long sizeOfState() {
@@ -104,7 +102,6 @@ public class WritableTokenStore {
 
     /**
      * Returns the set of tokens modified in existing state.
-     *
      * @return the set of tokens modified in existing state
      */
     @NonNull

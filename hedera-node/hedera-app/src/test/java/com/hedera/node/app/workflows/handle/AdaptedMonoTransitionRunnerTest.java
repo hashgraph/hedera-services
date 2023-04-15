@@ -49,8 +49,7 @@ class AdaptedMonoTransitionRunnerTest {
     //    @BeforeEach
     //    void setUp() {
     //        given(staticProperties.workflowsEnabled()).willReturn(Set.of(ConsensusCreateTopic));
-    //        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup,
-    // staticProperties,
+    //        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup, staticProperties,
     // storeFactory);
     //    }
     //

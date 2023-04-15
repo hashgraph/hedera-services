@@ -33,8 +33,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class CryptoCreateHandler implements TransactionHandler {
-    private static final Logger log = LogManager.getLogger(CryptoCreateHandler.class);
-
     @Inject
     public CryptoCreateHandler() {
         // Exists for injection

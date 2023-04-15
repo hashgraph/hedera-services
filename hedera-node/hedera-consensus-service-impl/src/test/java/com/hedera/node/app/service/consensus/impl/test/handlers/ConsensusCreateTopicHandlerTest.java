@@ -48,7 +48,6 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -132,8 +131,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        final var expectedHederaAdminKey = asHederaKey(adminKey).orElseThrow();
-        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(expectedHederaAdminKey);
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(adminKey);
     }
 
     @Test
@@ -418,15 +416,14 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java
 
-    private HederaKey mockPayerLookup() throws PreCheckException {
+    private Key mockPayerLookup()throws PreCheckException  {
         return mockPayerLookup(A_COMPLEX_KEY);
     }
 
-    private HederaKey mockPayerLookup(Key key) throws PreCheckException {
-        final var returnKey = asHederaKey(key).orElseThrow();
+    private Key mockPayerLookup(Key key) throws PreCheckException {
         final var account = mock(Account.class);
-        given(account.key()).willReturn(returnKey);
+        given(account.key()).willReturn(key);
         given(accountAccess.getAccountById(ACCOUNT_ID_3)).willReturn(account);
-        return returnKey;
+        return key;
     }
 }

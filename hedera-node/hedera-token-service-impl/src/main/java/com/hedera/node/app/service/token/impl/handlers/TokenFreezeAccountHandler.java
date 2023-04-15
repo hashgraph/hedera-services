@@ -41,10 +41,12 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
     }
 
     /**
-     * Pre-handles a {@link HederaFunctionality#TOKEN_FREEZE_ACCOUNT} transaction, returning the
-     * metadata required to, at minimum, validate the signatures of all required signing keys.
+     * Pre-handles a {@link HederaFunctionality#TOKEN_FREEZE_ACCOUNT}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
      *
      * @param context the {@link PreHandleContext} which collects all information
+     *
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */

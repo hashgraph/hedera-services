@@ -51,6 +51,7 @@ public class ContractDeleteHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -59,18 +60,14 @@ public class ContractDeleteHandler implements TransactionHandler {
         // The contract ID must be present on the transaction
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
-        // A contract corresponding to that contract ID must exist in state (otherwise we have
-        // nothing to delete)
+        // A contract corresponding to that contract ID must exist in state (otherwise we have nothing to delete)
         final var contract = context.accountAccess().getContractById(contractID);
         mustExist(contract, INVALID_CONTRACT_ID);
-        // If there is not an admin key, then the contract is immutable. Otherwise, the transaction
-        // must
+        // If there is not an admin key, then the contract is immutable. Otherwise, the transaction must
         // be signed by the admin key.
         context.requireKeyOrThrow(contract.key(), MODIFYING_IMMUTABLE_CONTRACT);
-        // If there is a transfer account ID, and IF that account has receiverSigRequired set, then
-        // the transaction
-        // must be signed by that account's key. Same if instead it uses a contract as the transfer
-        // target.
+        // If there is a transfer account ID, and IF that account has receiverSigRequired set, then the transaction
+        // must be signed by that account's key. Same if instead it uses a contract as the transfer target.
         if (op.hasTransferAccountID()) {
             context.requireKeyIfReceiverSigRequired(op.transferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
         } else if (op.hasTransferContractID()) {

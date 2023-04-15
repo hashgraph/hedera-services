@@ -51,13 +51,13 @@ public class ReadableTokenStore {
     }
 
     public record TokenMetadata(
-            Optional<HederaKey> adminKey,
-            Optional<HederaKey> kycKey,
-            Optional<HederaKey> wipeKey,
-            Optional<HederaKey> freezeKey,
-            Optional<HederaKey> supplyKey,
-            Optional<HederaKey> feeScheduleKey,
-            Optional<HederaKey> pauseKey,
+            Key adminKey,
+            Key kycKey,
+            Key wipeKey,
+            Key freezeKey,
+            Key supplyKey,
+            Key feeScheduleKey,
+            Key pauseKey,
             boolean hasRoyaltyWithFallback,
             long treasuryNum) {}
 

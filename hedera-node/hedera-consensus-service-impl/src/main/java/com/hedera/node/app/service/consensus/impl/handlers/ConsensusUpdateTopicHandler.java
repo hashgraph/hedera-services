@@ -77,10 +77,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var topic = topicStore.getTopicMetadata(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);
 
-        // Extending the expiry is the *only* update operation permitted without an admin key. So if
-        // that is the
-        // only thing this transaction is doing, then we don't need to worry about checking any
-        // additional keys.
+        // Extending the expiry is the *only* update operation permitted without an admin key. So if that is the
+        // only thing this transaction is doing, then we don't need to worry about checking any additional keys.
         if (onlyExtendsExpiry(op)) {
             return;
         }
@@ -88,14 +86,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // Any other modifications on this topic require the admin key.
         context.requireKeyOrThrow(topic.adminKey(), UNAUTHORIZED);
 
-        // If the transaction is setting a new admin key, then the transaction must also be signed
-        // by that new key
+        // If the transaction is setting a new admin key, then the transaction must also be signed by that new key
         if (op.hasAdminKey()) {
             context.requireKey(op.adminKeyOrThrow());
         }
 
-        // If the transaction is setting a new account for auto-renewals, then that account must
-        // also
+        // If the transaction is setting a new account for auto-renewals, then that account must also
         // have signed the transaction
         if (op.hasAutoRenewAccount()) {
             final var autoRenewAccountID = op.autoRenewAccountOrThrow();
