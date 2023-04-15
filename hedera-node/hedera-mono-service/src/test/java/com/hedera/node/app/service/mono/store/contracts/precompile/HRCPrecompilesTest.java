@@ -21,6 +21,8 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_HRC_DISSOCIATE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.accountMerkleId;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.precompiledContract;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.receiver;
@@ -29,12 +31,15 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
@@ -52,6 +57,7 @@ import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
@@ -87,7 +93,9 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -171,6 +179,9 @@ class HRCPrecompilesTest {
     private StateView stateView;
 
     @Mock
+    private ContractAliases aliases;
+
+    @Mock
     private FeeObject mockFeeObject;
 
     @Mock
@@ -199,6 +210,12 @@ class HRCPrecompilesTest {
 
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
+    @Mock
+    private Deque<MessageFrame> frameDeque;
+
+    @Mock
+    private Iterator<MessageFrame> dequeIterator;
 
     @Mock
     private AssociateLogic associateLogic;
@@ -289,6 +306,13 @@ class HRCPrecompilesTest {
                 .willReturn(tokenStore);
         given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
         given(associateLogic.validateSyntax(any())).willReturn(OK);
+        given(sigsVerifier.hasActiveKey(
+                        false,
+                        Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                        HTSTestsUtil.senderAddress,
+                        wrappedLedgers,
+                        TokenAssociateToAccount))
+                .willReturn(true);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build())
@@ -296,6 +320,8 @@ class HRCPrecompilesTest {
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.serviceFee()).willReturn(1L);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
 
@@ -308,7 +334,7 @@ class HRCPrecompilesTest {
         // then:
         Assertions.assertEquals(HTSTestsUtil.successResult, result);
         verify(associateLogic)
-                .associate(Id.fromGrpcAccount(sender), Collections.singletonList(HTSTestsUtil.tokenMerkleId));
+                .associate(Id.fromGrpcAccount(accountMerkleId), Collections.singletonList(HTSTestsUtil.tokenMerkleId));
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
@@ -330,6 +356,8 @@ class HRCPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         assertThrows(InvalidTransactionException.class, () -> subject.prepareComputation(pretendArguments, a -> a));
+
+        verify(wrappedLedgers, never()).commit();
     }
 
     @Test
@@ -352,6 +380,13 @@ class HRCPrecompilesTest {
                 .willReturn(tokenStore);
         given(infrastructureFactory.newAssociateLogic(accountStore, tokenStore)).willReturn(associateLogic);
         given(associateLogic.validateSyntax(any())).willReturn(OK);
+        given(sigsVerifier.hasActiveKey(
+                        false,
+                        Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                        HTSTestsUtil.senderAddress,
+                        wrappedLedgers,
+                        TokenAssociateToAccount))
+                .willReturn(true);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build())
@@ -359,6 +394,8 @@ class HRCPrecompilesTest {
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.serviceFee()).willReturn(1L);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         // Throw InvalidTransactionException with INVALID_ACCOUNT_ID
         doThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID))
                 .when(associateLogic)
@@ -372,6 +409,7 @@ class HRCPrecompilesTest {
 
         // then:
         Assertions.assertEquals(HTSTestsUtil.invalidAccountId, result);
+        verify(wrappedLedgers, never()).commit();
     }
 
     @Test
@@ -395,6 +433,13 @@ class HRCPrecompilesTest {
         given(infrastructureFactory.newDissociateLogic(accountStore, tokenStore))
                 .willReturn(dissociateLogic);
         given(dissociateLogic.validateSyntax(any())).willReturn(OK);
+        given(sigsVerifier.hasActiveKey(
+                        false,
+                        Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                        HTSTestsUtil.senderAddress,
+                        wrappedLedgers,
+                        TokenDissociateFromAccount))
+                .willReturn(true);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build())
@@ -402,6 +447,8 @@ class HRCPrecompilesTest {
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.serviceFee()).willReturn(1L);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
 
@@ -414,7 +461,7 @@ class HRCPrecompilesTest {
         // then:
         Assertions.assertEquals(HTSTestsUtil.successResult, result);
         verify(dissociateLogic)
-                .dissociate(Id.fromGrpcAccount(sender), Collections.singletonList(HTSTestsUtil.tokenMerkleId));
+                .dissociate(Id.fromGrpcAccount(accountMerkleId), Collections.singletonList(HTSTestsUtil.tokenMerkleId));
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
@@ -436,6 +483,7 @@ class HRCPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         assertThrows(InvalidTransactionException.class, () -> subject.prepareComputation(pretendArguments, a -> a));
+        verify(wrappedLedgers, never()).commit();
     }
 
     @Test
@@ -459,12 +507,21 @@ class HRCPrecompilesTest {
         given(infrastructureFactory.newDissociateLogic(accountStore, tokenStore))
                 .willReturn(dissociateLogic);
         given(dissociateLogic.validateSyntax(any())).willReturn(OK);
+        given(sigsVerifier.hasActiveKey(
+                        false,
+                        Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
+                        HTSTestsUtil.senderAddress,
+                        wrappedLedgers,
+                        TokenDissociateFromAccount))
+                .willReturn(true);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(mockFeeObject.serviceFee()).willReturn(1L);
         // Throw InvalidTransactionException with INVALID_ACCOUNT_ID
         doThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID))
@@ -479,16 +536,21 @@ class HRCPrecompilesTest {
 
         // then:
         Assertions.assertEquals(HTSTestsUtil.invalidAccountId, result);
+        verify(wrappedLedgers, never()).commit();
     }
 
     private Bytes givenFrameContext(final Bytes nestedArg) {
         given(frame.getSenderAddress()).willReturn(senderAddress);
+        given(frame.getRecipientAddress()).willReturn(contractAddress);
+        given(frame.getContractAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
         final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        given(frame.getMessageFrameStack()).willReturn(frameDeque);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
         return Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)), fungibleTokenAddr, nestedArg);
     }
 

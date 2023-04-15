@@ -72,8 +72,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetToken
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenKeyPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenTypePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GrantKycPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.HRCAssociatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.HRCDissociatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsFrozenPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsKycPrecompile;
@@ -699,7 +697,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             precompilePricingUtils));
                             case AbiConstants.ABI_ID_HRC_ASSOCIATE -> checkHRCToken(
                                     ledgers.tokens().exists(tokenId),
-                                    () -> new HRCAssociatePrecompile(
+                                    () -> new AssociatePrecompile(
                                             tokenId,
                                             senderAddress,
                                             ledgers,
@@ -712,7 +710,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             feeCalculator));
                             case AbiConstants.ABI_ID_HRC_DISSOCIATE -> checkHRCToken(
                                     ledgers.tokens().exists(tokenId),
-                                    () -> new HRCDissociatePrecompile(
+                                    () -> new DissociatePrecompile(
                                             tokenId,
                                             senderAddress,
                                             ledgers,

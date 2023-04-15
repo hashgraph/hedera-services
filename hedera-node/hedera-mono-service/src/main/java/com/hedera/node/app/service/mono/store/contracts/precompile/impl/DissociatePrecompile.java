@@ -18,12 +18,9 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -37,20 +34,23 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Dissociation;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.datatypes.Address;
 
 public class DissociatePrecompile extends AbstractDissociatePrecompile {
     private static final Function DISSOCIATE_TOKEN_FUNCTION = new Function("dissociateToken(address,address)", INT);
     private static final Bytes DISSOCIATE_TOKEN_SELECTOR = Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+    private final TokenID tokenID;
+    private final AccountID callerAccountID;
 
     public DissociatePrecompile(
             final WorldLedgers ledgers,
@@ -70,29 +70,42 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
                 infrastructureFactory,
                 pricingUtils,
                 feeCalculator);
+        this.tokenID = null;
+        this.callerAccountID = null;
+    }
+
+    public DissociatePrecompile(
+            final TokenID tokenID,
+            final Address callerAccount,
+            final WorldLedgers ledgers,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final Provider<FeeCalculator> feeCalculator) {
+        super(
+                ledgers,
+                aliases,
+                sigsVerifier,
+                sideEffects,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils,
+                feeCalculator);
+
+        this.tokenID = tokenID;
+        this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(Objects.requireNonNull(callerAccount));
     }
 
     @Override
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        dissociateOp = decodeDissociate(input, aliasResolver);
-        accountId = Id.fromGrpcAccount(Objects.requireNonNull(dissociateOp).accountId());
+        dissociateOp = tokenID == null
+                ? decodeDissociate(input, aliasResolver)
+                : Dissociation.singleDissociation(Objects.requireNonNull(callerAccountID), tokenID);
         transactionBody = syntheticTxnFactory.createDissociate(dissociateOp);
         return transactionBody;
-    }
-
-    @Override
-    public void run(final MessageFrame frame) {
-        /* --- Check required signatures --- */
-        final var hasRequiredSigs = KeyActivationUtils.validateKey(
-                frame,
-                accountId.asEvmAddress(),
-                sigsVerifier::hasActiveKey,
-                ledgers,
-                aliases,
-                TokenDissociateFromAccount);
-        validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, DISSOCIATE_FAILURE_MESSAGE);
-
-        super.run(frame);
     }
 
     @Override

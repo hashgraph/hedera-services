@@ -1,0 +1,28 @@
+[
+    {
+        "inputs": [],
+        "name": "associate",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "responseCode",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "dissociate",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "responseCode",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]

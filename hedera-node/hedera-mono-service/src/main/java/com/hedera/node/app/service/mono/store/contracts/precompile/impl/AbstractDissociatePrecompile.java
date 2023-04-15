@@ -18,6 +18,8 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DISSOCIATE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -29,6 +31,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.Infrastructur
 import com.hedera.node.app.service.mono.store.contracts.precompile.Precompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Dissociation;
+import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -38,10 +41,10 @@ import javax.inject.Provider;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractDissociatePrecompile implements Precompile {
-    protected static final String DISSOCIATE_FAILURE_MESSAGE = "Invalid full prefix for dissociate precompile!";
-    protected final WorldLedgers ledgers;
-    protected final ContractAliases aliases;
-    protected final EvmSigsVerifier sigsVerifier;
+    private static final String DISSOCIATE_FAILURE_MESSAGE = "Invalid full prefix for dissociate precompile!";
+    private final WorldLedgers ledgers;
+    private final ContractAliases aliases;
+    private final EvmSigsVerifier sigsVerifier;
     private final SideEffectsTracker sideEffects;
     private final InfrastructureFactory infrastructureFactory;
     protected final PrecompilePricingUtils pricingUtils;
@@ -49,8 +52,6 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
     protected Dissociation dissociateOp;
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final Provider<FeeCalculator> feeCalculator;
-    // This must be set by the subclasses after the dissociateOp has been created
-    protected Id accountId;
 
     protected AbstractDissociatePrecompile(
             final WorldLedgers ledgers,
@@ -74,6 +75,17 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
     @Override
     public void run(final MessageFrame frame) {
         Objects.requireNonNull(dissociateOp);
+
+        /* --- Check required signatures --- */
+        final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
+        final var hasRequiredSigs = KeyActivationUtils.validateKey(
+                frame,
+                accountId.asEvmAddress(),
+                sigsVerifier::hasActiveKey,
+                ledgers,
+                aliases,
+                TokenDissociateFromAccount);
+        validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, DISSOCIATE_FAILURE_MESSAGE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
