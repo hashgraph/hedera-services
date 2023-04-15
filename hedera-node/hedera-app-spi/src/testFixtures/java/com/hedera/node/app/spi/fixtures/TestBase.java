@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.fixtures;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -78,12 +79,12 @@ public class TestBase {
      * @return Some random bytes.
      */
     @NonNull
-    public final byte[] randomBytes(int length) {
+    public final Bytes randomBytes(int length) {
         final byte[] data = new byte[length];
         for (int i = 0; i < length; i++) {
             data[i] = (byte) rand.nextInt();
         }
-        return data;
+        return Bytes.wrap(data);
     }
 
     /**
