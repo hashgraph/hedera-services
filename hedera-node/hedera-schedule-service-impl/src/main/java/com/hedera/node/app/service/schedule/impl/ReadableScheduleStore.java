@@ -84,7 +84,7 @@ public class ReadableScheduleStore {
      *     returns {@link Optional#empty()}.
      */
     public record ScheduleMetadata(
-            Optional<Key> adminKey,
+            Key adminKey,
             TransactionBody scheduledTxn,
             Optional<AccountID> designatedPayer) {}
 }

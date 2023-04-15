@@ -114,9 +114,6 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     }
 
     private TransactionBody cryptoUpdateTransaction(final AccountID payerId, final AccountID accountToUpdate) {
-        if (payerId.equals(id)) {
-            setUpPayer();
-        }
         final var transactionID =
                 TransactionID.newBuilder().accountID(payerId).transactionValidStart(consensusTimestamp);
         final var updateTxnBody = CryptoUpdateTransactionBody.newBuilder()
