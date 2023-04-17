@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
-
 import java.util.Objects;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -101,7 +100,8 @@ public class MapWarmer {
             threadpool.execute(() -> {
                 // Sender:
                 final var acctMap = accountsStorageAdapter.get().getOnDiskAccounts();
-                final OnDiskAccount account = Objects.requireNonNull(acctMap).get(EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
+                final OnDiskAccount account =
+                        Objects.requireNonNull(acctMap).get(EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
                 if (account != null) {
                     final var headNum = account.getHeadNftTokenNum();
                     if (headNum != 0) {
@@ -115,12 +115,15 @@ public class MapWarmer {
             threadpool.execute(() -> {
                 // Receiver:
                 final var acctMap = accountsStorageAdapter.get().getOnDiskAccounts();
-                final OnDiskAccount account = Objects.requireNonNull(acctMap).get(EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
+                final OnDiskAccount account = Objects.requireNonNull(acctMap)
+                        .get(EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
                 if (account != null) {
                     final var headTokenId = account.getHeadTokenId();
                     if (headTokenId != 0) {
                         final var tokenRelMap = tokenRelsAdapter.get().getOnDiskRels();
-                        Objects.requireNonNull(tokenRelMap).warm(EntityNumVirtualKey.fromPair(EntityNumPair.fromLongs(receiver.getAccountNum(), headTokenId)));
+                        Objects.requireNonNull(tokenRelMap)
+                                .warm(EntityNumVirtualKey.fromPair(
+                                        EntityNumPair.fromLongs(receiver.getAccountNum(), headTokenId)));
                     }
 
                     final var headNum = account.getHeadNftTokenNum();
