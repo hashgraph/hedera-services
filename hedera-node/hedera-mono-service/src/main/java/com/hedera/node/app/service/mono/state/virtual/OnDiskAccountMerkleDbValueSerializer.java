@@ -63,7 +63,7 @@ public class OnDiskAccountMerkleDbValueSerializer implements ValueSerializer<OnD
     public int serialize(final OnDiskAccount value, final ByteBuffer out) throws IOException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
-        return value.serializeTo(out::put, out::putInt, out::putLong, data -> out.put(data, 0, data.length));
+        return value.serializeTo(out::put, out::putInt, out::putLong, out::put);
     }
 
     // Value deserializatioin

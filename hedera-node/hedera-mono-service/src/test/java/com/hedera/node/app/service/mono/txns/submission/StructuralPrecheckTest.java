@@ -451,7 +451,7 @@ class StructuralPrecheckTest {
     private void withVerifiableCounters() {
         final var platformContext = mock(PlatformContext.class);
         given(platform.getContext()).willReturn(platformContext);
-        given(platform.getContext().getMetrics()).willReturn(metrics);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(counter);
         counters.registerWith(platform);
     }

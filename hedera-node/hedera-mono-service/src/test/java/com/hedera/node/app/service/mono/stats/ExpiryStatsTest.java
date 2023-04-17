@@ -64,7 +64,7 @@ class ExpiryStatsTest {
         setMocks();
         final var platformContext = mock(PlatformContext.class);
         given(platform.getContext()).willReturn(platformContext);
-        given(platform.getContext().getMetrics()).willReturn(metrics);
+        given(platformContext.getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 

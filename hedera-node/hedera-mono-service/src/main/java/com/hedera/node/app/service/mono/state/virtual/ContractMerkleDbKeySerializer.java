@@ -77,7 +77,7 @@ public class ContractMerkleDbKeySerializer implements KeySerializer<ContractKey>
     // Key deserialization
 
     @Override
-    public int deserializeKeySize(ByteBuffer buffer) {
+    public int deserializeKeySize(final ByteBuffer buffer) {
         Objects.requireNonNull(buffer);
         return ContractKey.readKeySize(buffer);
     }

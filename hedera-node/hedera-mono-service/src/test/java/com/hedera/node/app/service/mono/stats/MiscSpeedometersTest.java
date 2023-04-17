@@ -55,7 +55,7 @@ class MiscSpeedometersTest {
         platform = mock(Platform.class);
         final var platformContext = mock(PlatformContext.class);
         given(platform.getContext()).willReturn(platformContext);
-        given(platform.getContext().getMetrics()).willReturn(metrics);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(syncVerifies).willReturn(txnRejections);
 
         subject = new MiscSpeedometers(halfLife);

@@ -82,7 +82,7 @@ class ThrottleGaugesTest {
         givenThrottleCollabs();
         final var platformContext = mock(PlatformContext.class);
         given(platform.getContext()).willReturn(platformContext);
-        given(platform.getContext().getMetrics()).willReturn(metrics);
+        given(platformContext.getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 
@@ -101,7 +101,7 @@ class ThrottleGaugesTest {
         given(hapiGasThrottle.percentUsed(any())).willReturn(13.0);
         final var platformContext = mock(PlatformContext.class);
         given(platform.getContext()).willReturn(platformContext);
-        given(platform.getContext().getMetrics()).willReturn(metrics);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(pretendGauge);
 
         subject.registerWith(platform);
@@ -121,7 +121,7 @@ class ThrottleGaugesTest {
         given(bThrottle.percentUsed(any())).willReturn(50.0);
         final var platformContext = mock(PlatformContext.class);
         given(platform.getContext()).willReturn(platformContext);
-        given(platform.getContext().getMetrics()).willReturn(metrics);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(pretendGauge);
 
         subject.registerWith(platform);
@@ -137,7 +137,7 @@ class ThrottleGaugesTest {
         givenThrottleCollabs();
         final var platformContext = mock(PlatformContext.class);
         given(platform.getContext()).willReturn(platformContext);
-        given(platform.getContext().getMetrics()).willReturn(metrics);
+        given(platformContext.getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 

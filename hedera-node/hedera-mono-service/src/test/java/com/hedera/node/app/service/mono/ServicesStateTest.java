@@ -883,9 +883,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
         final var platformContext = mock(PlatformContext.class);
         when(platform.getContext()).thenReturn(platformContext);
         when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
-        when(platform.getContext().getCryptography())
+        when(platformContext.getCryptography())
                 .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
-        assertNotNull(platform.getContext().getCryptography());
+        assertNotNull(platformContext.getCryptography());
         return platform;
     }
 

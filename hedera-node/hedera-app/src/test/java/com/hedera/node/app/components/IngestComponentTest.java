@@ -57,7 +57,7 @@ class IngestComponentTest {
         when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
 
-        given(platform.getContext().getCryptography()).willReturn(cryptography);
+        given(platformContext.getCryptography()).willReturn(cryptography);
 
         final var selfNodeId = new NodeId(false, 666L);
 

@@ -59,7 +59,7 @@ class EntityUtilGaugesTest {
     void registersAndUpdatesExpectedGauges() {
         final var platformContext = mock(PlatformContext.class);
         given(platform.getContext()).willReturn(platformContext);
-        given(platform.getContext().getMetrics()).willReturn(metrics);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(pretendGauge);
         given(usageLimits.percentAccountsUsed()).willReturn(2.0);
         given(usageLimits.percentContractsUsed()).willReturn(3.0);
