@@ -52,7 +52,7 @@ import org.apache.logging.log4j.Logger;
  * @param <V>
  * 		The value
  */
-public final class VirtualTeacherTreeView<K extends VirtualKey<? super K>, V extends VirtualValue>
+public final class VirtualTeacherTreeView<K extends VirtualKey, V extends VirtualValue>
         extends VirtualTreeViewBase<K, V> implements TeacherTreeView<Long> {
 
     private static final Logger logger = LogManager.getLogger(VirtualTeacherTreeView.class);

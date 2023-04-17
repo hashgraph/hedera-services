@@ -24,7 +24,6 @@ import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_USE
 import static com.swirlds.platform.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -69,9 +68,10 @@ class AddressBookInitializerTest {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(1),
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false,
                 getMockSignedState(0),
-                getMockSwirldStateSupplier(1),
                 configAddressBook,
                 getAddressBookConfig(true));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
@@ -89,9 +89,10 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = getRandomAddressBook();
         SignedState signedState = getMockSignedState(1);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(1),
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false,
                 signedState,
-                getMockSwirldStateSupplier(1),
                 configAddressBook,
                 getAddressBookConfig(true));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
@@ -104,20 +105,20 @@ class AddressBookInitializerTest {
     }
 
     @Test
-    @DisplayName("No state loaded from disk. Genesis State Initializes Address Book.")
+    @DisplayName("No state loaded from disk. Config.txt Initializes Address Book.")
     void noStateLoadedFromDisk() throws IOException {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
-        final AddressBook expectedAddressBook = copyWithStakeChanges(configAddressBook, 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(1),
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false,
                 getMockSignedState(0),
-                getMockSwirldStateSupplier(10),
                 configAddressBook,
                 getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
-                expectedAddressBook,
+                configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the expected address book.");
         assertAddressBookFileContent(initializer, configAddressBook, null, inititializedAddressBook);
@@ -129,9 +130,10 @@ class AddressBookInitializerTest {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(1),
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false,
                 getMockSignedState(0),
-                getMockSwirldStateSupplier(0),
                 configAddressBook,
                 getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
@@ -148,9 +150,10 @@ class AddressBookInitializerTest {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(1),
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false,
                 getMockSignedState(0),
-                getMockSwirldStateSupplier(2),
                 configAddressBook,
                 getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
@@ -162,23 +165,6 @@ class AddressBookInitializerTest {
     }
 
     @Test
-    @DisplayName("Current software version is less than state software version.")
-    void currentVersionLessThanStateVersion() throws IOException {
-        clearTestDirectory();
-        final SignedState signedState = getMockSignedState(2);
-        final AddressBook configAddressBook = getRandomAddressBook();
-        final SoftwareVersion configSoftwareVersion = getMockSoftwareVersion(1);
-        final Supplier<SwirldState> genesisSwirldState = getMockSwirldStateSupplier(1);
-        final AddressBookConfig addressBookConfig = getAddressBookConfig(false);
-
-        assertThrows(
-                IllegalStateException.class,
-                () -> new AddressBookInitializer(
-                        configSoftwareVersion, signedState, genesisSwirldState, configAddressBook, addressBookConfig),
-                "IllegalStateException was not thrown.");
-    }
-
-    @Test
     @DisplayName("Current software version is equal to state software version.")
     void currentVersionEqualsStateVersion() throws IOException {
         clearTestDirectory();
@@ -186,8 +172,9 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 getMockSoftwareVersion(2),
+                // no software upgrade
+                false,
                 signedState,
-                getMockSwirldStateSupplier(1),
                 configAddressBook,
                 getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
@@ -207,8 +194,9 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 getMockSoftwareVersion(3),
+                // software upgrade
+                true,
                 signedState,
-                getMockSwirldStateSupplier(0),
                 configAddressBook,
                 getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
@@ -228,8 +216,9 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 3);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 getMockSoftwareVersion(3),
+                // software upgrade
+                true,
                 signedState,
-                getMockSwirldStateSupplier(2),
                 configAddressBook,
                 getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
@@ -249,8 +238,9 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 5);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 getMockSoftwareVersion(3),
+                // software upgrade
+                true,
                 signedState,
-                getMockSwirldStateSupplier(10),
                 configAddressBook,
                 getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();

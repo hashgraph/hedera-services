@@ -210,7 +210,7 @@ public class EmergencyReconnectTests {
 
     private void assertTeacherSearchedForState(final EmergencyRecoveryFile emergencyRecoveryFile) {
         verify(signedStateManager, times(1).description("Teacher did not search for the correct state"))
-                .find(emergencyRecoveryFile.round(), emergencyRecoveryFile.hash());
+                .find(any());
     }
 
     private ReconnectController createReconnectController(
@@ -292,11 +292,10 @@ public class EmergencyReconnectTests {
 
     private void mockTeacherHasCompatibleState(
             final EmergencyRecoveryFile emergencyRecoveryFile, final SignedState teacherState) {
-        when(signedStateManager.find(emergencyRecoveryFile.round(), emergencyRecoveryFile.hash()))
-                .thenAnswer(i -> {
-                    teacherState.reserve();
-                    return new AutoCloseableWrapper<>(teacherState, teacherState::release);
-                });
+        when(signedStateManager.find(any())).thenAnswer(i -> {
+            teacherState.reserve();
+            return new AutoCloseableWrapper<>(teacherState, teacherState::release);
+        });
     }
 
     private AddressBook newAddressBook(final Random random, final int numNodes) {
@@ -310,7 +309,7 @@ public class EmergencyReconnectTests {
     }
 
     private void mockTeacherDoesNotHaveCompatibleState() {
-        when(signedStateManager.find(anyLong(), any())).thenReturn(new AutoCloseableWrapper<>(null, () -> {}));
+        when(signedStateManager.find(any())).thenReturn(new AutoCloseableWrapper<>(null, () -> {}));
     }
 
     private Callable<Void> doLearner(final EmergencyReconnectProtocol learnerProtocol, final Connection connection) {

@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
+import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.Hash;
@@ -86,8 +87,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements VirtualDataSource<K, V> {
+public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
 
     private static final Logger logger = LogManager.getLogger(MerkleDbDataSource.class);
 
@@ -97,9 +97,6 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * holder will have been configured by the time this static initializer runs.
      */
     private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
-
-    /** Label for database component used in logging, stats, etc. */
-    private static final String MERKLEDB_COMPONENT = "merkledb";
 
     /** Count of open database instances */
     private static final LongAdder COUNT_OF_OPEN_DATABASES = new LongAdder();

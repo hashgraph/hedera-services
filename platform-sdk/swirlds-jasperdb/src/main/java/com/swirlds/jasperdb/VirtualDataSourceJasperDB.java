@@ -110,7 +110,7 @@ import org.apache.logging.log4j.Logger;
  * 		type for values
  */
 @SuppressWarnings({"DuplicatedCode"})
-public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extends VirtualValue>
+public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         implements VirtualDataSource<K, V> {
     private static final Logger logger = LogManager.getLogger(VirtualDataSourceJasperDB.class);
 
