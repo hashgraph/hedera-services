@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.config;
@@ -87,12 +86,13 @@ public class PropertySourceBasedConfigTest {
         rawData.put("test.sidecarType", "CONTRACT_ACTION");
 
         BDDMockito.given(propertySource.allPropertyNames()).willReturn(rawData.keySet());
-        rawData.forEach((key, value) -> BDDMockito.given(propertySource.getRawValue(key)).willReturn(value));
+        rawData.forEach((key, value) ->
+                BDDMockito.given(propertySource.getRawValue(key)).willReturn(value));
     }
 
     @Test
     public void testConfig() {
-        //given
+        // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new CongestionMultipliersConverter())
                 .withConverter(new EntityScaleFactorsConverter())
@@ -111,38 +111,28 @@ public class PropertySourceBasedConfigTest {
                 .withSource(new PropertySourceBasedConfigSource(propertySource))
                 .build();
 
-        //when
-        final CongestionMultipliers congestionMultipliers = configuration.getValue("test.congestionMultipliers",
-                CongestionMultipliers.class);
-        final EntityScaleFactors entityScaleFactors = configuration.getValue("test.entityScaleFactors",
-                EntityScaleFactors.class);
-        final EntityType entityType = configuration.getValue("test.entityType",
-                EntityType.class);
-        final KnownBlockValues knownBlockValues = configuration.getValue("test.knownBlockValues",
-                KnownBlockValues.class);
-        final LegacyContractIdActivations legacyContractIdActivations = configuration.getValue(
-                "test.legacyContractIdActivations",
-                LegacyContractIdActivations.class);
-        final MapAccessType mapAccessType = configuration.getValue("test.mapAccessType",
-                MapAccessType.class);
-        final RecomputeType recomputeType = configuration.getValue("test.recomputeType",
-                RecomputeType.class);
-        final ScaleFactor scaleFactor = configuration.getValue("test.scaleFactor",
-                ScaleFactor.class);
-        final AccountID accountID = configuration.getValue("test.accountID",
-                AccountID.class);
-        final ContractID contractID = configuration.getValue("test.contractID",
-                ContractID.class);
-        final FileID fileID = configuration.getValue("test.fileID",
-                FileID.class);
-        final HederaFunctionality hederaFunctionality = configuration.getValue("test.hederaFunctionality",
-                HederaFunctionality.class);
-        final Profile profile = configuration.getValue("test.profile",
-                Profile.class);
-        final SidecarType sidecarType = configuration.getValue("test.sidecarType",
-                SidecarType.class);
+        // when
+        final CongestionMultipliers congestionMultipliers =
+                configuration.getValue("test.congestionMultipliers", CongestionMultipliers.class);
+        final EntityScaleFactors entityScaleFactors =
+                configuration.getValue("test.entityScaleFactors", EntityScaleFactors.class);
+        final EntityType entityType = configuration.getValue("test.entityType", EntityType.class);
+        final KnownBlockValues knownBlockValues =
+                configuration.getValue("test.knownBlockValues", KnownBlockValues.class);
+        final LegacyContractIdActivations legacyContractIdActivations =
+                configuration.getValue("test.legacyContractIdActivations", LegacyContractIdActivations.class);
+        final MapAccessType mapAccessType = configuration.getValue("test.mapAccessType", MapAccessType.class);
+        final RecomputeType recomputeType = configuration.getValue("test.recomputeType", RecomputeType.class);
+        final ScaleFactor scaleFactor = configuration.getValue("test.scaleFactor", ScaleFactor.class);
+        final AccountID accountID = configuration.getValue("test.accountID", AccountID.class);
+        final ContractID contractID = configuration.getValue("test.contractID", ContractID.class);
+        final FileID fileID = configuration.getValue("test.fileID", FileID.class);
+        final HederaFunctionality hederaFunctionality =
+                configuration.getValue("test.hederaFunctionality", HederaFunctionality.class);
+        final Profile profile = configuration.getValue("test.profile", Profile.class);
+        final SidecarType sidecarType = configuration.getValue("test.sidecarType", SidecarType.class);
 
-        //then
+        // then
         assertThat(congestionMultipliers).isNotNull();
         assertThat(entityScaleFactors).isNotNull();
         assertThat(entityType).isNotNull();

@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.config.converter;
@@ -27,24 +26,23 @@ class ScaleFactorConverterTest {
 
     @Test
     void testNullValue() {
-        //given
+        // given
         final ScaleFactorConverter converter = new ScaleFactorConverter();
 
-        //then
-        assertThatThrownBy(() -> converter.convert(null))
-                .isInstanceOf(NullPointerException.class);
+        // then
+        assertThatThrownBy(() -> converter.convert(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void testValidValue() {
-        //given
+        // given
         final ScaleFactorConverter converter = new ScaleFactorConverter();
         final String input = "1:3";
 
-        //when
+        // when
         final ScaleFactor scaleFactor = converter.convert(input);
 
-        //then
+        // then
         assertThat(scaleFactor).isNotNull();
         assertThat(scaleFactor.numerator()).isEqualTo(1);
         assertThat(scaleFactor.denominator()).isEqualTo(3);
@@ -52,12 +50,10 @@ class ScaleFactorConverterTest {
 
     @Test
     void testInvalidValue() {
-        //given
+        // given
         final ScaleFactorConverter converter = new ScaleFactorConverter();
 
-        //then
-        assertThatThrownBy(() -> converter.convert("null"))
-                .isInstanceOf(IllegalArgumentException.class);
+        // then
+        assertThatThrownBy(() -> converter.convert("null")).isInstanceOf(IllegalArgumentException.class);
     }
-
 }

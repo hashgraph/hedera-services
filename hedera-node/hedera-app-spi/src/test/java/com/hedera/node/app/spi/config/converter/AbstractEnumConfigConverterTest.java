@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.spi.config.converter;
@@ -34,8 +33,8 @@ class AbstractEnumConfigConverterTest {
      * Based on https://github.com/hashgraph/hedera-services/issues/6106 we currently need to add ConfigConverter
      * explicitly
      */
-    private static class RetentionPolicyConverter extends AbstractEnumConfigConverter<RetentionPolicy> implements
-            ConfigConverter<RetentionPolicy> {
+    private static class RetentionPolicyConverter extends AbstractEnumConfigConverter<RetentionPolicy>
+            implements ConfigConverter<RetentionPolicy> {
 
         @Override
         protected Class<RetentionPolicy> getEnumType() {
@@ -47,8 +46,8 @@ class AbstractEnumConfigConverterTest {
      * Based on https://github.com/hashgraph/hedera-services/issues/6106 we currently need to add ConfigConverter
      * explicitly
      */
-    private static class ElementTypeConverter extends AbstractEnumConfigConverter<ElementType> implements
-            ConfigConverter<ElementType> {
+    private static class ElementTypeConverter extends AbstractEnumConfigConverter<ElementType>
+            implements ConfigConverter<ElementType> {
 
         @Override
         protected Class<ElementType> getEnumType() {
@@ -58,39 +57,37 @@ class AbstractEnumConfigConverterTest {
 
     @Test
     void testNullValue() {
-        //given
+        // given
         final RetentionPolicyConverter converter = new RetentionPolicyConverter();
 
-        //then
-        assertThatThrownBy(() -> converter.convert(null))
-                .isInstanceOf(NullPointerException.class);
+        // then
+        assertThatThrownBy(() -> converter.convert(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void testInvalidValue() {
-        //given
+        // given
         final RetentionPolicyConverter converter = new RetentionPolicyConverter();
 
-        //then
-        assertThatThrownBy(() -> converter.convert("not-supported-value"))
-                .isInstanceOf(IllegalArgumentException.class);
+        // then
+        assertThatThrownBy(() -> converter.convert("not-supported-value")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testValidValue() {
-        //given
+        // given
         final RetentionPolicyConverter converter = new RetentionPolicyConverter();
 
-        //when
+        // when
         final RetentionPolicy source = converter.convert("SOURCE");
 
-        //then
+        // then
         assertThat(source).isEqualTo(RetentionPolicy.SOURCE);
     }
 
     @Test
     void testIntegration() {
-        //given
+        // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("retention-policy", "SOURCE"))
                 .withSource(new SimpleConfigSource("element-type", "TYPE"))
@@ -98,14 +95,12 @@ class AbstractEnumConfigConverterTest {
                 .withConverter(new ElementTypeConverter())
                 .build();
 
-        //when
+        // when
         final RetentionPolicy source = configuration.getValue("retention-policy", RetentionPolicy.class);
         final ElementType type = configuration.getValue("element-type", ElementType.class);
 
-        //then
+        // then
         assertThat(source).isEqualTo(RetentionPolicy.SOURCE);
         assertThat(type).isEqualTo(ElementType.TYPE);
     }
-
-
 }

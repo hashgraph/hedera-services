@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.spi.config.converter;
@@ -29,27 +28,25 @@ class ContractIDConverterTest {
 
     @Test
     void testNullParam() {
-        //given
+        // given
         final ContractIDConverter converter = new ContractIDConverter();
 
-        //then
-        assertThatThrownBy(() -> converter.convert(null))
-                .isInstanceOf(NullPointerException.class);
+        // then
+        assertThatThrownBy(() -> converter.convert(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     @ParameterizedTest
-    @ValueSource(strings = {"", " ", "  ", "a.b.b",
-            "1.b.c", "1.2.c", "a.2.3",
-            "1", "1.2",
-            ".1.2.3", "..1.2.3", ".1.2.3.", "1.2.3.4"})
+    @ValueSource(
+            strings = {
+                "", " ", "  ", "a.b.b", "1.b.c", "1.2.c", "a.2.3", "1", "1.2", ".1.2.3", "..1.2.3", ".1.2.3.", "1.2.3.4"
+            })
     void testAllNotParseable(final String input) {
-        //given
+        // given
         final ContractIDConverter converter = new ContractIDConverter();
 
-        //then
-        assertThatThrownBy(() -> converter.convert(input))
-                .isInstanceOf(IllegalArgumentException.class);
+        // then
+        assertThatThrownBy(() -> converter.convert(input)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -57,24 +54,23 @@ class ContractIDConverterTest {
     @ParameterizedTest
     @ValueSource(strings = {"1.2.3.", "1.2.3.."})
     void testEdgeCasesForDiscussion(final String input) {
-        //given
+        // given
         final ContractIDConverter converter = new ContractIDConverter();
 
-        //then
-        assertThatThrownBy(() -> converter.convert(input))
-                .isInstanceOf(IllegalArgumentException.class);
+        // then
+        assertThatThrownBy(() -> converter.convert(input)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testSimpleValue() {
-        //given
+        // given
         final ContractIDConverter converter = new ContractIDConverter();
         final String value = "1.2.3";
 
-        //when
+        // when
         final var result = converter.convert(value);
 
-        //then
+        // then
         assertThat(result).isNotNull();
         assertThat(result.shardNum()).isEqualTo(1L);
         assertThat(result.realmNum()).isEqualTo(2L);
@@ -83,14 +79,14 @@ class ContractIDConverterTest {
 
     @Test
     void testLongValues() {
-        //given
+        // given
         final ContractIDConverter converter = new ContractIDConverter();
         final String value = Long.MAX_VALUE + "." + Long.MAX_VALUE + ".0";
 
-        //when
+        // when
         final var result = converter.convert(value);
 
-        //then
+        // then
         assertThat(result).isNotNull();
         assertThat(result.shardNum()).isEqualTo(Long.MAX_VALUE);
         assertThat(result.realmNum()).isEqualTo(Long.MAX_VALUE);
