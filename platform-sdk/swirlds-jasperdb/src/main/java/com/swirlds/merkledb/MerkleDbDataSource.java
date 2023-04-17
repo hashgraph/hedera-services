@@ -783,9 +783,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         } else {
             final VirtualHashRecord rec = hashStoreDisk.get(path);
             hash = (rec != null) ? rec.hash() : null;
+            statistics.cycleInternalNodeReadsPerSecond();
         }
 
-        statistics.cycleInternalNodeReadsPerSecond();
         return hash;
     }
 

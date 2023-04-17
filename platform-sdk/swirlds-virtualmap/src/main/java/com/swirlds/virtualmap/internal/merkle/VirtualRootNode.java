@@ -1419,44 +1419,24 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     /**
-     * Loads the leaf, sibling and sibling of parents on the path to root into OS and not in java heap
-     * The OS cache helps in fast retrieval of values without costing us java heap
+     * Loads the leaf, sibling and siblings of parents on the path to root.
+     * Lower level caches (VirtualDataSource, the OS file cache) should make subsequent value retrievals faster.
+     * Warming keys can be done in parallel.
      * @param key key to the leaf node
      */
     public void warm(final K key) {
 
         // Warm the leaf node
         final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(key, false);
-
-        if (leafRecord != null) {
-            final long leafPath = leafRecord.getPath();
-            // Warm the sibling of the leaf
-            records.findLeafRecord(getSiblingPath(leafPath), false);
-            // Warm internal nodes (sibling on path to parent)
-            warmInternalNodesForLeaf(leafPath);
+        if (leafRecord == null) {
+            return;
         }
-    }
 
-    /**
-     * @param leafPath path to the leaf record
-     *   When the value in a leaf node is changed all the parent nodes up to the root need to be rehashed.
-     * 	 When navigating from leaf->root, for every parent the sibling needs to be read from disk
-     *   Hence we know all internal nodes that need to be read from disk to calculate the rootHash
-     *
-     * 	We can read those internal nodes from disk and the OS page cache will cache them for us
-     *  We do not need to do anything with the read data we can drop it
-     */
-    public void warmInternalNodesForLeaf(final long leafPath) {
-
-        long siblingPath;
-        long path = leafPath;
-
-        while (path > 0) {
-            path = getParentPath(path);
-            siblingPath = getSiblingPath(path);
-
+        // Warm node hashes for all siblings on the path to root.
+        // Those are used when rehashing the tree due to a changed leaf.
+        for (long path = leafRecord.getPath(); path > 0; path = getParentPath(path)) {
+            final long siblingPath = getSiblingPath(path);
             if (siblingPath != INVALID_PATH) {
-                // Pre-load sibling node hash
                 records.findHash(siblingPath);
             }
         }
