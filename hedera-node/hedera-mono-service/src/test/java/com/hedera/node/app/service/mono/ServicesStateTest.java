@@ -881,7 +881,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private Platform createMockPlatformWithCrypto() {
         final var platform = mock(Platform.class);
         final var platformContext = mock(PlatformContext.class);
-        when(platform.getContext()).thenReturn(platformContext);
         when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
         when(platformContext.getCryptography())
                 .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
