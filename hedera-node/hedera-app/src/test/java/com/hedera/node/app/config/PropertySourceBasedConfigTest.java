@@ -61,7 +61,7 @@ import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class PropertySourceBasedConfigTest {
+class PropertySourceBasedConfigTest {
 
     @Mock(strictness = Strictness.LENIENT)
     private PropertySource propertySource;
@@ -91,7 +91,7 @@ public class PropertySourceBasedConfigTest {
     }
 
     @Test
-    public void testConfig() {
+    void testConfig() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new CongestionMultipliersConverter())

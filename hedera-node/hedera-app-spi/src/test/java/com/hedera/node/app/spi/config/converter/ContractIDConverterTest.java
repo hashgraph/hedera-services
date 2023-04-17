@@ -88,6 +88,6 @@ class ContractIDConverterTest {
         assertThat(result).isNotNull();
         assertThat(result.shardNum()).isEqualTo(Long.MAX_VALUE);
         assertThat(result.realmNum()).isEqualTo(Long.MAX_VALUE);
-        assertThat(result.contractNum()).isEqualTo(0);
+        assertThat(result.contractNum()).isZero();
     }
 }

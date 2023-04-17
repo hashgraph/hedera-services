@@ -88,6 +88,6 @@ class FileIDConverterTest {
         assertThat(result).isNotNull();
         assertThat(result.shardNum()).isEqualTo(Long.MAX_VALUE);
         assertThat(result.realmNum()).isEqualTo(Long.MAX_VALUE);
-        assertThat(result.fileNum()).isEqualTo(0);
+        assertThat(result.fileNum()).isZero();
     }
 }
