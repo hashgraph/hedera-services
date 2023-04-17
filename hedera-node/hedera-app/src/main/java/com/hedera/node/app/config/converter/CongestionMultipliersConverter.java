@@ -19,6 +19,9 @@ package com.hedera.node.app.config.converter;
 import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
 import com.swirlds.config.api.converter.ConfigConverter;
 
+/**
+ * Config api {@link ConfigConverter} implementation for the type {@link CongestionMultipliers}.
+ */
 public class CongestionMultipliersConverter implements ConfigConverter<CongestionMultipliers> {
 
     @Override

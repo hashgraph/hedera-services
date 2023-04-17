@@ -20,8 +20,9 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.swirlds.config.api.converter.ConfigConverter;
 
 /**
- * Converter implementation for the config API to support {@link HederaFunctionality}. Based on
- * https://github.com/hashgraph/hedera-services/issues/6106 we currently need to add ConfigConverter explicitly
+ * Config api {@link ConfigConverter} implementation for the type {@link HederaFunctionality}. Based on
+ * https://github.com/hashgraph/hedera-services/issues/6106 we need to add {@code implements ConfigConverter} to the
+ * class for now.
  */
 public class HederaFunctionalityConverter extends AbstractEnumConfigConverter<HederaFunctionality>
         implements ConfigConverter<HederaFunctionality> {

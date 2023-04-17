@@ -19,6 +19,9 @@ package com.hedera.node.app.config.converter;
 import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.swirlds.config.api.converter.ConfigConverter;
 
+/**
+ * Config api {@link ConfigConverter} implementation for the type {@link LegacyContractIdActivations}.
+ */
 public class LegacyContractIdActivationsConverter implements ConfigConverter<LegacyContractIdActivations> {
 
     @Override

@@ -20,6 +20,11 @@ import com.swirlds.config.api.converter.ConfigConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
+/**
+ * Abstract class to support {@link ConfigConverter} for {@link Enum} types.
+ *
+ * @param <E> type of the enum
+ */
 public abstract class AbstractEnumConfigConverter<E extends Enum<E>> implements ConfigConverter<E> {
 
     @Override
@@ -32,6 +37,11 @@ public abstract class AbstractEnumConfigConverter<E extends Enum<E>> implements 
         return Enum.valueOf(enumType, value);
     }
 
+    /**
+     * Returns the {@link Class} of the {@link Enum} type.
+     *
+     * @return the {@link Class} of the {@link Enum} type
+     */
     @NonNull
     protected abstract Class<E> getEnumType();
 }

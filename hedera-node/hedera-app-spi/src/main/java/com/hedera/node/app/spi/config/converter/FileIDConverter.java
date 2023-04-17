@@ -20,6 +20,9 @@ import com.hedera.hapi.node.base.FileID;
 import com.swirlds.config.api.converter.ConfigConverter;
 import java.util.stream.Stream;
 
+/**
+ * Config api {@link ConfigConverter} implementation for the type {@link FileID}.
+ */
 public class FileIDConverter implements ConfigConverter<FileID> {
 
     @Override

@@ -20,6 +20,11 @@ import com.hedera.hapi.streams.SidecarType;
 import com.swirlds.config.api.converter.ConfigConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Config api {@link ConfigConverter} implementation for the type {@link SidecarType}. Based on
+ * https://github.com/hashgraph/hedera-services/issues/6106 we need to add {@code implements ConfigConverter} to the
+ * class for now.
+ */
 public class SidecarTypeConverter extends AbstractEnumConfigConverter<SidecarType>
         implements ConfigConverter<SidecarType> {
 

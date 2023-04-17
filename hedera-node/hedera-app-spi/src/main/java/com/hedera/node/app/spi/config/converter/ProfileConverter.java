@@ -19,6 +19,9 @@ package com.hedera.node.app.spi.config.converter;
 import com.hedera.node.app.spi.config.Profile;
 import com.swirlds.config.api.converter.ConfigConverter;
 
+/**
+ * Config api {@link ConfigConverter} implementation for the type {@link Profile}.
+ */
 public class ProfileConverter implements ConfigConverter<Profile> {
 
     @Override

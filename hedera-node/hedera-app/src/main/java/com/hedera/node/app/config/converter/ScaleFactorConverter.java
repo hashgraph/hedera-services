@@ -19,6 +19,9 @@ package com.hedera.node.app.config.converter;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.swirlds.config.api.converter.ConfigConverter;
 
+/**
+ * Config api {@link ConfigConverter} implementation for the type {@link ScaleFactor}.
+ */
 public class ScaleFactorConverter implements ConfigConverter<ScaleFactor> {
 
     @Override

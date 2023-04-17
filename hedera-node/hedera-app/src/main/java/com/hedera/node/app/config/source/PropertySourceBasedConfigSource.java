@@ -24,10 +24,18 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * A {@link ConfigSource} that wraps a {@link PropertySource} and redirects all calls to the {@link PropertySource}.
+ */
 public class PropertySourceBasedConfigSource implements ConfigSource {
 
     private final PropertySource propertySource;
 
+    /**
+     * Creates a new instance
+     *
+     * @param propertySource the property source
+     */
     public PropertySourceBasedConfigSource(@NonNull final PropertySource propertySource) {
         this.propertySource = Objects.requireNonNull(propertySource, "propertySource");
     }

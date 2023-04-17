@@ -20,6 +20,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.swirlds.config.api.converter.ConfigConverter;
 import java.util.stream.Stream;
 
+/**
+ * Config api {@link ConfigConverter} implementation for the type {@link AccountID}.
+ */
 public class AccountIDConverter implements ConfigConverter<AccountID> {
 
     @Override

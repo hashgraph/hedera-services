@@ -21,6 +21,11 @@ import com.hedera.node.app.spi.config.converter.AbstractEnumConfigConverter;
 import com.swirlds.config.api.converter.ConfigConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Config api {@link ConfigConverter} implementation for the type {@link RecomputeType}. Based on
+ * https://github.com/hashgraph/hedera-services/issues/6106 we need to add {@code implements ConfigConverter} to the
+ * class for now.
+ */
 public class RecomputeTypeConverter extends AbstractEnumConfigConverter<RecomputeType>
         implements ConfigConverter<RecomputeType> {
 

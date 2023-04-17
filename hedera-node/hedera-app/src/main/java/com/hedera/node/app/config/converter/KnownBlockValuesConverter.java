@@ -19,6 +19,9 @@ package com.hedera.node.app.config.converter;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.swirlds.config.api.converter.ConfigConverter;
 
+/**
+ * Config api {@link ConfigConverter} implementation for the type {@link KnownBlockValues}.
+ */
 public class KnownBlockValuesConverter implements ConfigConverter<KnownBlockValues> {
 
     @Override
