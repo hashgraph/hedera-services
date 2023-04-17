@@ -19,6 +19,7 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
@@ -33,8 +34,10 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,6 +58,7 @@ public class ReconnectLearner {
     private SignedState newSignedState;
     private final SignedStateValidationData stateValidationData;
     private SigSet sigSet;
+    private final PlatformContext platformContext;
     /**
      * After reconnect is finished, restore the socket timeout to the original value.
      */
@@ -77,6 +81,7 @@ public class ReconnectLearner {
      * 		reconnect metrics
      */
     public ReconnectLearner(
+            @NonNull final PlatformContext platformContext,
             final ThreadManager threadManager,
             final Connection connection,
             final AddressBook addressBook,
@@ -87,6 +92,7 @@ public class ReconnectLearner {
         currentState.throwIfImmutable("Can not perform reconnect with immutable state");
         currentState.throwIfDestroyed("Can not perform reconnect with destroyed state");
 
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = threadManager;
         this.connection = connection;
         this.addressBook = addressBook;
@@ -175,7 +181,7 @@ public class ReconnectLearner {
         synchronizer.synchronize();
 
         final State state = (State) synchronizer.getRoot();
-        newSignedState = new SignedState(state);
+        newSignedState = new SignedState(platformContext, state);
         newSignedState.setSigSet(sigSet);
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();

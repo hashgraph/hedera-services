@@ -27,6 +27,9 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.config.sources.SimpleConfigSource;
+import com.swirlds.common.context.DefaultPlatformContext;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -126,8 +129,13 @@ public final class EventRecoveryWorkflow {
 
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
 
-        final ReservedSignedState initialState =
-                SignedStateFileReader.readStateFile(signedStateFile).reservedSignedState();
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                configuration,
+                null, // TODO no-op metrics
+                CryptographyHolder.get());
+
+        final ReservedSignedState initialState = SignedStateFileReader.readStateFile(platformContext, signedStateFile)
+                .reservedSignedState();
 
         logger.info(
                 STARTUP.getMarker(),
@@ -140,8 +148,8 @@ public final class EventRecoveryWorkflow {
 
         logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
-        final ReservedSignedState resultingState =
-                reapplyTransactions(configuration, initialState, appMain, roundIterator, finalRound, selfId);
+        final ReservedSignedState resultingState = reapplyTransactions(
+                platformContext, configuration, initialState, appMain, roundIterator, finalRound, selfId);
 
         logger.info(
                 STARTUP.getMarker(), "Finished reapplying transactions, writing state to {}", resultingStateDirectory);
@@ -202,22 +210,24 @@ public final class EventRecoveryWorkflow {
     /**
      * Apply transactions on top of a state to produce a new state
      *
-     * @param configuration the configuration for the node
-     * @param initialState  the starting signed state
-     * @param appMain       the {@link SwirldMain} for the app. Ignored if null.
-     * @param roundIterator an iterator that walks over transactions
-     * @param finalRound    the last round to apply to the state (inclusive), will stop earlier if the event stream does
-     *                      not have events from the final round
-     * @param selfId        the self ID of the node
+     * @param platformContext the platform context
+     * @param configuration   the configuration for the node
+     * @param initialState    the starting signed state
+     * @param appMain         the {@link SwirldMain} for the app. Ignored if null.
+     * @param roundIterator   an iterator that walks over transactions
+     * @param finalRound      the last round to apply to the state (inclusive), will stop earlier if the event stream
+     *                        does not have events from the final round
+     * @param selfId          the self ID of the node
      * @return the resulting signed state
      * @throws IOException if there is a problem reading from the event stream file
      */
     @NonNull
     public static ReservedSignedState reapplyTransactions(
-            final Configuration configuration,
-            final ReservedSignedState initialState,
-            final SwirldMain appMain,
-            final IOIterator<Round> roundIterator,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
+            @NonNull final ReservedSignedState initialState,
+            @NonNull final SwirldMain appMain,
+            @NonNull final IOIterator<Round> roundIterator,
             final long finalRound,
             final long selfId)
             throws IOException {
@@ -267,7 +277,7 @@ public final class EventRecoveryWorkflow {
                     round.getEventCount(),
                     round.getRoundNum());
 
-            signedState = handleNextRound(signedState, round, roundsNonAncient);
+            signedState = handleNextRound(platformContext, signedState, round, roundsNonAncient);
             platform.setLatestState(signedState.get());
         }
 
@@ -294,13 +304,17 @@ public final class EventRecoveryWorkflow {
     /**
      * Apply a single round and generate a new state. The previous state is released.
      *
+     * @param platformContext  the current context
      * @param previousState    the previous round's signed state
      * @param round            the next round
      * @param roundsNonAncient the number of rounds until an event becomes ancient
      * @return the resulting signed state
      */
     private static ReservedSignedState handleNextRound(
-            final ReservedSignedState previousState, final Round round, final long roundsNonAncient) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ReservedSignedState previousState,
+            @NonNull final Round round,
+            final long roundsNonAncient) {
 
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
 
@@ -337,7 +351,8 @@ public final class EventRecoveryWorkflow {
             newState.getPlatformDualState().setLastFrozenTimeToBeCurrentFreezeTime();
         }
 
-        final ReservedSignedState signedState = new SignedState(newState, isFreezeState).reserve("recovery");
+        final ReservedSignedState signedState =
+                new SignedState(platformContext, newState, isFreezeState).reserve("recovery");
         previousState.close();
 
         return signedState;

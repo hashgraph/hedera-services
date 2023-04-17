@@ -42,6 +42,7 @@ import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.Connection;
+import com.swirlds.platform.TestPlatformContextFactory;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.reconnect.DummyConnection;
@@ -226,6 +227,7 @@ public class EmergencyReconnectTests {
                 mock(ReconnectLearnerThrottle.class),
                 receivedStateConsumer,
                 new ReconnectLearnerFactory(
+                        TestPlatformContextFactory.build(),
                         getStaticThreadManager(),
                         addressBook,
                         mock(ReconnectSettings.class),

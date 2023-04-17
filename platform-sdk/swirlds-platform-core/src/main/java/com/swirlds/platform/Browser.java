@@ -46,8 +46,8 @@ import com.swirlds.common.config.sources.AliasConfigSource;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
@@ -166,9 +166,9 @@ public class Browser {
 
     private static final String STARTUP_MESSAGE =
             """
-              //////////////////////
-             // Node is Starting //
-            //////////////////////""";
+                      //////////////////////
+                     // Node is Starting //
+                    //////////////////////""";
 
     /**
      * Prevent this class from being instantiated.
@@ -635,7 +635,13 @@ public class Browser {
                         Shutdown::immediateShutDown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
 
                 final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
-                        mainClassName, swirldName, nodeId, appVersion, addressBook.copy(), emergencyRecoveryManager);
+                        platformContext,
+                        mainClassName,
+                        swirldName,
+                        nodeId,
+                        appVersion,
+                        addressBook.copy(),
+                        emergencyRecoveryManager);
 
                 // check software version compatibility
                 final boolean softwareUpgrade =
@@ -708,6 +714,7 @@ public class Browser {
      * @return the signed state loaded from disk.
      */
     private ReservedSignedState getUnmodifiedSignedStateFromDisk(
+            @NonNull final PlatformContext platformContext,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
@@ -718,6 +725,7 @@ public class Browser {
         // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
         // time this class is used.
         final SavedStateLoader savedStateLoader = new SavedStateLoader(
+                platformContext,
                 Shutdown::immediateShutDown,
                 configAddressBook,
                 savedStateFiles,

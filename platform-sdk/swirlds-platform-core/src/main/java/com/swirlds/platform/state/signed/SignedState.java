@@ -22,6 +22,8 @@ import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAc
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.SwirldState;
@@ -131,26 +133,36 @@ public class SignedState implements SignedStateInfo {
      */
     private final ReferenceCounter reservations = new ReferenceCounter(this::destroy, this::onReferenceCountException);
 
+    // TODO add a "reason" the constructor!
+
     /**
      * Instantiate a signed state.
      *
-     * @param state       a fast copy of the state resulting from all transactions in consensus order from all events
-     *                    with received rounds up through the round this SignedState represents
-     * @param freezeState specifies whether this state is the last one saved before the freeze
+     * @param platformContext the platform context
+     * @param state           a fast copy of the state resulting from all transactions in consensus order from all
+     *                        events with received rounds up through the round this SignedState represents
+     * @param freezeState     specifies whether this state is the last one saved before the freeze
      */
-    public SignedState(@NonNull final State state, final boolean freezeState) { // TODO do we need this constructor?
-        this(state);
+    public SignedState(
+            @NonNull PlatformContext platformContext, @NonNull final State state, final boolean freezeState) {
+        this(platformContext, state);
         this.freezeState = freezeState;
-        sigSet = new SigSet();
     }
 
-    public SignedState(@NonNull final State state) {
+    public SignedState(@NonNull PlatformContext platformContext, @NonNull final State state) {
         state.reserve();
 
         this.state = state;
-        history = new SignedStateHistory(OSTime.getInstance(), getRound(), false); // TODO use real config
+        history = new SignedStateHistory(
+                OSTime.getInstance(),
+                getRound(),
+                platformContext
+                        .getConfiguration()
+                        .getConfigData(StateConfig.class)
+                        .debugStackTracesEnabled());
         history.recordAction(CREATION, getReservationCount(), null, null);
         registryRecord = RuntimeObjectRegistry.createRecord(getClass(), history);
+        sigSet = new SigSet();
     }
 
     /**
@@ -232,9 +244,6 @@ public class SignedState implements SignedStateInfo {
     public @NonNull ReservedSignedState reserve(@NonNull final String reason) {
         return new ReservedSignedState(this, reason);
     }
-
-    // TODO catch reservation exceptions and log history
-    // TODO review this API
 
     /**
      * Increment reservation count.
@@ -606,5 +615,14 @@ public class SignedState implements SignedStateInfo {
         for (final long nodeId : sigSet) {
             signingStake += trustedAddressBook.getAddress(nodeId).getStake();
         }
+    }
+
+    /**
+     * Get the reservation history for this object.
+     *
+     * @return the reservation history
+     */
+    SignedStateHistory getHistory() {
+        return history;
     }
 }

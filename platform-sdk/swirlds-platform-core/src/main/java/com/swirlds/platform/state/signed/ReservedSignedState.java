@@ -16,20 +16,26 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A wrapper around a signed state that holds a reservation. Until this wrapper is released/closed, the signed state
  * contained within will not be destroyed.
  * <p>
- * This class is not thread safe. That is, it is not safe for one thread to access this object while another thread
- * is asynchronously closing it. Each thread should hold its own reservation on a state if it needs to access a state.
+ * This class is not thread safe. That is, it is not safe for one thread to access this object while another thread is
+ * asynchronously closing it. Each thread should hold its own reservation on a state if it needs to access a state.
  */
-public final class ReservedSignedState implements AutoCloseableNonThrowing {
+public final class ReservedSignedState implements AutoCloseableNonThrowing { // TODO test this class
+
+    private static final Logger logger = LogManager.getLogger(ReservedSignedState.class);
 
     private final SignedState signedState;
     private final String reason;
@@ -143,8 +149,14 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
     /**
      * Throw an exception if this wrapper has been closed.
      */
-    private void throwIfClosed() { // TODO log history?
+    private void throwIfClosed() {
         if (closed) {
+            if (signedState != null) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "This ReservedSignedState has already been closed, dumping history\n{},",
+                        signedState.getHistory());
+            }
             throw new ReferenceCountException("This ReservedSignedState has been closed.");
         }
     }

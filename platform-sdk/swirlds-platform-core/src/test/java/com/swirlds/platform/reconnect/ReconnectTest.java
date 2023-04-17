@@ -34,6 +34,7 @@ import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.merkle.util.PairedStreams;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.SocketConnection;
+import com.swirlds.platform.TestPlatformContextFactory;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
@@ -177,6 +178,12 @@ final class ReconnectTest {
         final AddressBook addressBook = buildAddressBook(5);
 
         return new ReconnectLearner(
-                getStaticThreadManager(), connection, addressBook, state, RECONNECT_SOCKET_TIMEOUT, reconnectMetrics);
+                TestPlatformContextFactory.build(),
+                getStaticThreadManager(),
+                connection,
+                addressBook,
+                state,
+                RECONNECT_SOCKET_TIMEOUT,
+                reconnectMetrics);
     }
 }

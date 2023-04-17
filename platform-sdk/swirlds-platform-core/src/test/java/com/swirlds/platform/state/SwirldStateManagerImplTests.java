@@ -25,6 +25,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.TestPlatformContextFactory;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -110,7 +111,7 @@ public class SwirldStateManagerImplTests {
 
     private static SignedState newSignedState() {
         final State state = newState();
-        final SignedState ss = new SignedState(state);
+        final SignedState ss = new SignedState(TestPlatformContextFactory.build(), state);
         assertEquals(
                 1, state.getReservationCount(), "Creating a signed state should increment the state reference count.");
         return ss;

@@ -39,7 +39,6 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -146,7 +145,6 @@ class StateManagementComponentTests {
     @Test
     @DisplayName("Signed state to load becomes the latest complete signed state")
     void signedStateToLoadIsLatestComplete() {
-        Settings.getInstance().getState().signedStateSentinelEnabled = true;
         final Random random = RandomUtils.getRandomPrintSeed();
         final StateManagementComponent component = newStateManagementComponent(random);
 

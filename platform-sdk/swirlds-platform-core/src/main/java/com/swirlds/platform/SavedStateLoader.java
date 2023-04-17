@@ -17,11 +17,11 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
@@ -35,6 +35,7 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.SystemExitReason;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,9 +63,12 @@ public class SavedStateLoader {
     /** The status of emergency recovery */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
 
+    private final PlatformContext platformContext;
+
     /**
      * Creates a new instance.
      *
+     * @param platformContext the platform context
      * @param shutdownRequestedTrigger
      * 		a trigger capable of dispatching shutdown requests
      * @param addressBook
@@ -79,18 +83,20 @@ public class SavedStateLoader {
      * 		the emergency recovery manager
      */
     public SavedStateLoader(
+            final PlatformContext platformContext,
             final ShutdownRequestedTrigger shutdownRequestedTrigger,
             final AddressBook addressBook,
             final SavedStateInfo[] savedStateFiles,
             final SoftwareVersion currentSoftwareVersion,
             final Supplier<EmergencySignedStateValidator> emergencyStateValidator,
             final EmergencyRecoveryManager emergencyRecoveryManager) {
-        throwArgNull(shutdownRequestedTrigger, "shutdownRequestedTrigger");
-        throwArgNull(addressBook, "addressBook");
-        throwArgNull(currentSoftwareVersion, "currentSoftwareVersion");
-        throwArgNull(emergencyStateValidator, "emergencyStateValidator");
-        throwArgNull(emergencyStateValidator.get(), "emergencyStateValidator value");
-        throwArgNull(emergencyRecoveryManager, "emergencyRecoveryManager");
+        Objects.requireNonNull(shutdownRequestedTrigger);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(currentSoftwareVersion);
+        Objects.requireNonNull(emergencyStateValidator);
+        Objects.requireNonNull(emergencyStateValidator.get());
+        Objects.requireNonNull(emergencyRecoveryManager);
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.shutdownRequestedTrigger = shutdownRequestedTrigger;
         this.addressBook = addressBook;
         this.savedStateFiles = savedStateFiles;
@@ -265,8 +271,8 @@ public class SavedStateLoader {
         return null;
     }
 
-    private static SignedStateWithHashes readAndRehashState(final SavedStateInfo file) throws IOException {
-        final DeserializedSignedState deserializedSignedState = readStateFile(file.stateFile());
+    private SignedStateWithHashes readAndRehashState(final SavedStateInfo file) throws IOException {
+        final DeserializedSignedState deserializedSignedState = readStateFile(platformContext, file.stateFile());
         final Hash oldHash = deserializedSignedState.originalHash();
 
         // When loading from disk, we should hash the state every time so that the first fast copy will

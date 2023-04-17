@@ -20,12 +20,16 @@ import static com.swirlds.platform.state.editor.StateEditorUtils.formatNodeType;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatRoute;
 
 import com.swirlds.cli.utility.CommandBuilder;
+import com.swirlds.common.context.DefaultPlatformContext;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.route.MerkleRouteUtils;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -46,15 +50,22 @@ public class StateEditor {
     private ReservedSignedState signedState;
     private MerkleRoute currentWorkingRoute = MerkleRouteFactory.getEmptyRoute();
     private boolean alive = true;
+    private final PlatformContext platformContext;
 
     /**
      * Create a new state editor.
      *
-     * @param statePath
-     * 		the path where the signed state can be found
+     * @param statePath the path where the signed state can be found
      */
     public StateEditor(final Path statePath) throws IOException {
-        final DeserializedSignedState deserializedSignedState = SignedStateFileReader.readStateFile(statePath);
+
+        platformContext = new DefaultPlatformContext(
+                ConfigurationBuilder.create().build(),
+                null, // TODO no-op metrics
+                CryptographyHolder.get());
+
+        final DeserializedSignedState deserializedSignedState =
+                SignedStateFileReader.readStateFile(platformContext, statePath);
         System.out.println("\nLoading state from " + statePath);
         signedState = deserializedSignedState.reservedSignedState();
         System.out.println("Hashing state");
@@ -144,16 +155,16 @@ public class StateEditor {
     }
 
     /**
-     * Get the current working route, equivalent to the
-     * "current working directory" but relative to the root of the state.
+     * Get the current working route, equivalent to the "current working directory" but relative to the root of the
+     * state.
      */
     public MerkleRoute getCurrentWorkingRoute() {
         return currentWorkingRoute;
     }
 
     /**
-     * Set the current working route, equivalent to the
-     * "current working directory" but relative to the root of the state.
+     * Set the current working route, equivalent to the "current working directory" but relative to the root of the
+     * state.
      */
     public void setCurrentWorkingRoute(final MerkleRoute currentWorkingRoute) {
         getState().getNodeAtRoute(currentWorkingRoute); // throws if invalid
@@ -181,7 +192,9 @@ public class StateEditor {
      */
     public ReservedSignedState getSignedStateCopy() {
         final SignedState newSignedState = new SignedState(
-                signedState.get().getState().copy(), signedState.get().isFreezeState());
+                platformContext,
+                signedState.get().getState().copy(),
+                signedState.get().isFreezeState());
         try {
             return signedState.getAndReserve("StateEditor.getSignedStateCopy() return value");
         } finally {
@@ -199,8 +212,7 @@ public class StateEditor {
     /**
      * Parse a route string relative to the current working route.
      *
-     * @param path
-     * 		a path string
+     * @param path a path string
      * @return the route described by that path string
      */
     public MerkleRoute getRelativeRoute(final String path) {

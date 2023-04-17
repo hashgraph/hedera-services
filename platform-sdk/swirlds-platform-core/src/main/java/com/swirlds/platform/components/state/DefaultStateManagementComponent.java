@@ -192,7 +192,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         this.signedStateMetrics = new SignedStateMetrics(context.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
-        this.signedStateSentinel = new SignedStateSentinel(threadManager, OSTime.getInstance());
+        this.signedStateSentinel = new SignedStateSentinel(context, threadManager, OSTime.getInstance());
 
         dispatchBuilder = new DispatchBuilder(context.getConfiguration().getConfigData(DispatchConfiguration.class));
 
@@ -441,10 +441,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         signedStateGarbageCollector.start();
         signedStateFileManager.start();
         dispatchBuilder.start();
-
-        if (stateConfig.signedStateSentinelEnabled()) {
-            signedStateSentinel.start();
-        }
+        signedStateSentinel.start();
     }
 
     /**
@@ -453,9 +450,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public void stop() {
         signedStateFileManager.stop();
-        if (stateConfig.signedStateSentinelEnabled()) {
-            signedStateSentinel.stop();
-        }
+        signedStateSentinel.stop();
         signedStateGarbageCollector.stop();
     }
 

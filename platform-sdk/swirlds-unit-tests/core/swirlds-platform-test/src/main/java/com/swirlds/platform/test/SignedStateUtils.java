@@ -37,7 +37,7 @@ public class SignedStateUtils {
         root.setSwirldState(state);
         root.setPlatformState(randomPlatformState(random, false));
         boolean shouldSaveToDisk = random.nextBoolean();
-        SignedState signedState = new SignedState(root, shouldSaveToDisk);
+        SignedState signedState = new SignedState(TestPlatformContextFactory.build(), root, shouldSaveToDisk);
         signedState.getState().setHash(RandomUtils.randomHash(random));
         return signedState;
     }

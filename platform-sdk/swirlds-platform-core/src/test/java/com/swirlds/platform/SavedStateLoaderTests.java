@@ -112,6 +112,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new SavedStateLoader(
+                        TestPlatformContextFactory.build(),
                         null,
                         addressBook,
                         new SavedStateInfo[0],
@@ -125,6 +126,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new SavedStateLoader(
+                        TestPlatformContextFactory.build(),
                         null,
                         addressBook,
                         new SavedStateInfo[0],
@@ -137,6 +139,7 @@ public class SavedStateLoaderTests {
     private void testNullSavedStateInfos() {
         assertDoesNotThrow(
                 () -> new SavedStateLoader(
+                        TestPlatformContextFactory.build(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -150,6 +153,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new SavedStateLoader(
+                        TestPlatformContextFactory.build(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -163,7 +167,13 @@ public class SavedStateLoaderTests {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new SavedStateLoader(
-                        shutdownTrigger, addressBook, new SavedStateInfo[0], version, null, emergencyRecoveryManager),
+                        TestPlatformContextFactory.build(),
+                        shutdownTrigger,
+                        addressBook,
+                        new SavedStateInfo[0],
+                        version,
+                        null,
+                        emergencyRecoveryManager),
                 "exception should be thrown for null emergency state validator supplier");
     }
 
@@ -171,6 +181,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new SavedStateLoader(
+                        TestPlatformContextFactory.build(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -184,7 +195,13 @@ public class SavedStateLoaderTests {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new SavedStateLoader(
-                        shutdownTrigger, addressBook, new SavedStateInfo[0], version, () -> emergencyValidator, null),
+                        TestPlatformContextFactory.build(),
+                        shutdownTrigger,
+                        addressBook,
+                        new SavedStateInfo[0],
+                        version,
+                        () -> emergencyValidator,
+                        null),
                 "exception should be thrown for null emergency recovery manager");
     }
 
@@ -274,7 +291,13 @@ public class SavedStateLoaderTests {
 
     private void initSavedStateLoader(final SavedStateInfo[] stateInfos) {
         savedStateLoader = new SavedStateLoader(
-                shutdownTrigger, addressBook, stateInfos, version, () -> emergencyValidator, emergencyRecoveryManager);
+                TestPlatformContextFactory.build(),
+                shutdownTrigger,
+                addressBook,
+                stateInfos,
+                version,
+                () -> emergencyValidator,
+                emergencyRecoveryManager);
     }
 
     private void initEmergencyRecoveryManager() {

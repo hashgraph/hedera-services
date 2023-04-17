@@ -52,6 +52,7 @@ import com.swirlds.platform.stats.CycleTimingStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
@@ -124,6 +125,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      */
     private final int roundsNonAncient;
 
+    private final PlatformContext platformContext;
+
     /**
      * Instantiate, but don't start any threads yet. The Platform should first instantiate the
      * {@link ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
@@ -155,6 +158,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.roundAppliedToStateConsumer = roundAppliedToStateConsumer;
 
         this.settings = settings;
@@ -440,7 +444,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         ssTimingStat.setTimePoint(1);
 
-        final SignedState signedState = new SignedState(immutableStateCons, savedStateInFreeze);
+        final SignedState signedState = new SignedState(platformContext, immutableStateCons, savedStateInFreeze);
 
         ssTimingStat.setTimePoint(2);
 

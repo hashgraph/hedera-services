@@ -19,6 +19,10 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.DefaultPlatformContext;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateComparison;
@@ -118,8 +122,14 @@ public final class CompareStatesCommand extends AbstractCommand {
      */
     private static ReservedSignedState loadAndHashState(final Path statePath) throws IOException {
         System.out.println("Loading state from " + statePath);
+
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                ConfigurationHolder.getInstance().get(),
+                null, // TODO we need no-op metrics here
+                CryptographyHolder.get());
+
         final ReservedSignedState signedState =
-                SignedStateFileReader.readStateFile(statePath).reservedSignedState();
+                SignedStateFileReader.readStateFile(platformContext, statePath).reservedSignedState();
         System.out.println("Hashing state");
         try {
             MerkleCryptoFactory.getInstance()
