@@ -170,7 +170,6 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         given(readableStates.get("ACCOUNTS")).willReturn(accountState);
         given(accountState.get(any())).willReturn(payerAccount);
         given(payerAccount.key()).willReturn(payerKey);
-        given(payerAccount.memo()).willReturn("");
 
         final var meta = workflow.preHandle(state, workflowTxn);
 
