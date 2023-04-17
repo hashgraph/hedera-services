@@ -36,6 +36,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_CREATE2;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
@@ -50,19 +51,24 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_GAS_PER
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_AGGREGATE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
-import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS;
+import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
@@ -215,6 +221,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long maxPrecedingRecords;
     private long maxFollowingRecords;
     private Set<HederaFunctionality> schedulingWhitelist;
+    private Set<HederaFunctionality> systemContractsWithTopLevelSigsAccess;
     private CongestionMultipliers congestionMultipliers;
     private int feesMinCongestionPeriod;
     private boolean areNftsEnabled;
@@ -241,6 +248,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enableAllowances;
     private boolean limitTokenAssociations;
     private boolean enableHTSPrecompileCreate;
+    private Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits;
     private boolean atomicCryptoTransferEnabled;
     private KnownBlockValues knownBlockValues;
     private long exchangeRateGasReq;
@@ -262,6 +270,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long maxNumSchedules;
     private boolean utilPrngEnabled;
     private Set<SidecarType> enabledSidecars;
+    private boolean sidecarValidationEnabled;
     private boolean requireMinStakeToReward;
     private Map<Long, Long> nodeMaxMinStakeRatios;
     private int sidecarMaxSizeMb;
@@ -274,9 +283,12 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long traceabilityMaxExportsPerConsSec;
     private long traceabilityMinFreeToUsedGasThrottleRatio;
     private boolean lazyCreationEnabled;
-    private boolean cryptoCreateWithAliasAndEvmAddressEnabled;
+    private boolean cryptoCreateWithAliasEnabled;
     private boolean enforceContractCreationThrottle;
+    private Set<Address> permittedDelegateCallers;
     private EntityScaleFactors entityScaleFactors;
+    private long maxNumWithHapiSigsAccess;
+    private Set<Address> contractsWithSpecialHapiSigsAccess;
     private LegacyContractIdActivations legacyContractIdActivations;
     private int cryptoTransferWarmThreads;
 
@@ -342,6 +354,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         schedulingMaxTxnPerSecond = properties.getLongProperty(SCHEDULING_MAX_TXN_PER_SEC);
         schedulingMaxExpirationFutureSeconds = properties.getLongProperty(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS);
         schedulingWhitelist = properties.getFunctionsProperty(SCHEDULING_WHITE_LIST);
+        systemContractsWithTopLevelSigsAccess =
+                properties.getFunctionsProperty(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS);
         messageMaxBytesAllowed = properties.getIntProperty(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED);
         maxPrecedingRecords = properties.getLongProperty(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS);
         maxFollowingRecords = properties.getLongProperty(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS);
@@ -370,6 +384,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         create2Enabled = properties.getBooleanProperty(CONTRACTS_ALLOW_CREATE2);
         redirectTokenCalls = properties.getBooleanProperty(CONTRACTS_REDIRECT_TOKEN_CALLS);
         enabledSidecars = properties.getSidecarsProperty(CONTRACTS_SIDECARS);
+        sidecarValidationEnabled = properties.getBooleanProperty(CONTRACTS_SIDECAR_VALIDATION_ENABLED);
         enableAllowances = properties.getBooleanProperty(HEDERA_ALLOWANCES_IS_ENABLED);
         final var autoRenewTargetTypes = properties.getTypesProperty(AUTO_RENEW_TARGET_TYPES);
         expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
@@ -377,6 +392,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
         limitTokenAssociations = properties.getBooleanProperty(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS);
         enableHTSPrecompileCreate = properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE);
+        htsUnsupportedCustomFeeReceiverDebits =
+                properties.getCustomFeesProperty(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS);
         atomicCryptoTransferEnabled =
                 properties.getBooleanProperty(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
@@ -415,11 +432,13 @@ public class GlobalDynamicProperties implements EvmProperties {
         traceabilityMinFreeToUsedGasThrottleRatio =
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
         lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
-        cryptoCreateWithAliasAndEvmAddressEnabled =
-                properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED);
+        cryptoCreateWithAliasEnabled = properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
         enforceContractCreationThrottle = properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
         entityScaleFactors = properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
+        permittedDelegateCallers = properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS);
         legacyContractIdActivations = properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
+        contractsWithSpecialHapiSigsAccess = properties.getEvmAddresses(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS);
+        maxNumWithHapiSigsAccess = properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS);
         cryptoTransferWarmThreads = properties.getIntProperty(CRYPTO_TRANSFER_WARM_THREADS);
     }
 
@@ -739,6 +758,10 @@ public class GlobalDynamicProperties implements EvmProperties {
         return enableHTSPrecompileCreate;
     }
 
+    public Set<CustomFeeType> getHtsUnsupportedCustomFeeReceiverDebits() {
+        return htsUnsupportedCustomFeeReceiverDebits;
+    }
+
     public boolean isAtomicCryptoTransferEnabled() {
         return atomicCryptoTransferEnabled;
     }
@@ -823,6 +846,10 @@ public class GlobalDynamicProperties implements EvmProperties {
         return enabledSidecars;
     }
 
+    public boolean validateSidecarsEnabled() {
+        return sidecarValidationEnabled;
+    }
+
     public boolean requireMinStakeToReward() {
         return requireMinStakeToReward;
     }
@@ -871,8 +898,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         return lazyCreationEnabled;
     }
 
-    public boolean isCryptoCreateWithAliasAndEvmAddressEnabled() {
-        return cryptoCreateWithAliasAndEvmAddressEnabled;
+    public boolean isCryptoCreateWithAliasEnabled() {
+        return cryptoCreateWithAliasEnabled;
     }
 
     public EntityScaleFactors entityScaleFactors() {
@@ -889,6 +916,22 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isImplicitCreationEnabled() {
         return autoCreationEnabled && lazyCreationEnabled;
+    }
+
+    public Set<Address> permittedDelegateCallers() {
+        return permittedDelegateCallers;
+    }
+
+    public Set<HederaFunctionality> systemContractsWithTopLevelSigsAccess() {
+        return systemContractsWithTopLevelSigsAccess;
+    }
+
+    public long maxNumWithHapiSigsAccess() {
+        return maxNumWithHapiSigsAccess;
+    }
+
+    public Set<Address> contractsWithSpecialHapiSigsAccess() {
+        return contractsWithSpecialHapiSigsAccess;
     }
 
     public int cryptoTransferWarmThreads() {

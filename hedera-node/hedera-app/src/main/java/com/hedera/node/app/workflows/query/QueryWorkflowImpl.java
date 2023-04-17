@@ -16,157 +16,129 @@
 
 package com.hedera.node.app.workflows.query;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
+import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
+import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
+import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.SessionContext;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeAccumulator;
-import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.spi.meta.QueryContext;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
-import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.MalformedProtobufException;
+import com.hedera.pbj.runtime.UnknownFieldException;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import java.nio.ByteBuffer;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link QueryWorkflow} */
 public final class QueryWorkflowImpl implements QueryWorkflow {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(QueryWorkflowImpl.class);
+    private static final Logger logger = LogManager.getLogger(QueryWorkflowImpl.class);
 
     private static final EnumSet<ResponseType> UNSUPPORTED_RESPONSE_TYPES =
             EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
     private static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES =
-            List.of(NetworkGetExecutionTime, GetAccountDetails);
+            List.of(NETWORK_GET_EXECUTION_TIME, GET_ACCOUNT_DETAILS);
 
-    private final NodeInfo nodeInfo;
-    private final CurrentPlatformStatus currentPlatformStatus;
     private final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
-    private final QueryChecker checker;
+    private final QueryChecker queryChecker;
+    private final IngestChecker ingestChecker;
     private final QueryDispatcher dispatcher;
-    private final HapiOpCounters opCounters;
+
     private final FeeAccumulator feeAccumulator;
-    private final QueryContext queryContext;
+    private final Codec<Query> queryParser;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
      *
-     * @param nodeInfo the {@link NodeInfo} of the current node
-     * @param currentPlatformStatus the {@link CurrentPlatformStatus}
-     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed state depending on the
-     * {@link ResponseType}
+     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed
+     *     state depending on the {@link ResponseType}
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
-     * @param checker the {@link QueryChecker} with specific checks of an ingest-workflow
+     * @param queryChecker the {@link QueryChecker} with specific checks of an ingest-workflow
+     * @param ingestChecker the {@link IngestChecker} to handle the crypto transfer
      * @param dispatcher the {@link QueryDispatcher} that will call query-specific methods
-     * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
     public QueryWorkflowImpl(
-            @NonNull final NodeInfo nodeInfo,
-            @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
-            @NonNull final QueryChecker checker,
+            @NonNull final QueryChecker queryChecker,
+            @NonNull final IngestChecker ingestChecker,
             @NonNull final QueryDispatcher dispatcher,
-            @NonNull final HapiOpCounters opCounters,
             @NonNull final FeeAccumulator feeAccumulator,
-            @NonNull final QueryContextImpl queryContext) {
-        this.nodeInfo = requireNonNull(nodeInfo);
-        this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
+            @NonNull final Codec<Query> queryParser) {
         this.stateAccessor = requireNonNull(stateAccessor);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
-        this.checker = requireNonNull(checker);
+        this.ingestChecker = requireNonNull(ingestChecker);
+        this.queryChecker = requireNonNull(queryChecker);
         this.dispatcher = requireNonNull(dispatcher);
-        this.opCounters = requireNonNull(opCounters);
         this.feeAccumulator = requireNonNull(feeAccumulator);
-        this.queryContext = requireNonNull(queryContext);
+        this.queryParser = requireNonNull(queryParser);
     }
 
     @Override
-    public void handleQuery(
-            @NonNull final SessionContext session,
-            @NonNull final ByteBuffer requestBuffer,
-            @NonNull final ByteBuffer responseBuffer) {
-        requireNonNull(session);
+    public void handleQuery(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
-        LOGGER.info("Started handling a query request in Query workflow");
         // 1. Parse and check header
-        final Query query;
-        try {
-            query = session.queryParser().parseFrom(requestBuffer);
-        } catch (InvalidProtocolBufferException e) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
-        }
+        final Query query = parseQuery(requestBuffer);
+        logger.debug("Received query: {}", query);
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Received query: {}", query);
-        }
-
-        final var function = MiscUtils.functionalityOfQuery(query)
-                .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
-        opCounters.countReceived(function);
+        final var function = functionOf(query);
 
         final var handler = dispatcher.getHandler(query);
         final var queryHeader = handler.extractHeader(query);
         if (queryHeader == null) {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
-        final ResponseType responseType = queryHeader.getResponseType();
+        final ResponseType responseType = queryHeader.responseType();
+        logger.debug("Started answering a {} query of type {}", function, responseType);
 
         Response response;
         long fee = 0L;
         try (final var wrappedState = stateAccessor.apply(responseType)) {
             // Do some general pre-checks
-            if (nodeInfo.isSelfZeroStake()) {
-                // Zero stake nodes are currently not supported
-                throw new PreCheckException(INVALID_NODE_ACCOUNT);
-            }
-            if (currentPlatformStatus.get() != ACTIVE) {
-                throw new PreCheckException(PLATFORM_NOT_ACTIVE);
-            }
+            ingestChecker.checkNodeState();
             if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
@@ -177,24 +149,29 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             final var state = wrappedState.get();
+            final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
             if (paymentRequired) {
                 // 3.i Validate CryptoTransfer
-                allegedPayment = queryHeader.getPayment();
-                txBody = checker.validateCryptoTransfer(session, allegedPayment);
-                final var payer = txBody.getTransactionID().getAccountID();
+                allegedPayment = queryHeader.paymentOrThrow();
+                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
+                queryChecker.validateCryptoTransfer(transactionInfo);
+
+                txBody = transactionInfo.txBody();
+                final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
 
                 // 3.ii Check permissions
-                checker.checkPermissions(payer, function);
+                queryChecker.checkPermissions(payer, function);
 
                 // 3.iii Calculate costs
-                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
-                fee = totalFee(feeData);
+                final var feeData =
+                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
+                fee = feeData.totalFee();
 
                 // 3.iv Check account balances
-                checker.validateAccountBalances(payer, txBody, fee);
+                queryChecker.validateAccountBalances(payer, txBody, fee);
             } else {
                 if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
                     throw new PreCheckException(NOT_SUPPORTED);
@@ -202,29 +179,28 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 4. Check validity
-            final var storeFactory = new ReadableStoreFactory(state);
-            final var validity = dispatcher.validate(storeFactory, query);
+            final var context = new QueryContextImpl(state, query);
+            handler.validate(context);
 
             // 5. Submit payment to platform
             if (paymentRequired) {
-                submissionManager.submit(txBody, allegedPayment.toByteArray(), session.txBodyParser());
+                final var txBytes = PbjConverter.asWrappedBytes(Transaction.PROTOBUF, allegedPayment);
+                submissionManager.submit(txBody, txBytes);
             }
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
-                fee = totalFee(feeData);
+                final var feeData =
+                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
+                fee = feeData.totalFee();
 
-                final var header = createResponseHeader(responseType, validity, fee);
+                final var header = createResponseHeader(responseType, OK, fee);
                 response = handler.createEmptyResponse(header);
             } else {
                 // 6.ii Find response
-                final var header = createResponseHeader(responseType, validity, fee);
-                response = dispatcher.getResponse(storeFactory, query, header, queryContext);
+                final var header = createResponseHeader(responseType, OK, fee);
+                response = handler.findResponse(context, header);
             }
-
-            opCounters.countAnswered(function);
-
         } catch (InsufficientBalanceException e) {
             final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
             response = handler.createEmptyResponse(header);
@@ -233,20 +209,45 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             response = handler.createEmptyResponse(header);
         }
 
-        responseBuffer.put(response.toByteArray());
-        LOGGER.info("Finished handling a query request in Query workflow");
+        try {
+            Response.PROTOBUF.write(response, responseBuffer);
+            logger.debug("Finished handling a query request in Query workflow");
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new StatusRuntimeException(Status.INTERNAL);
+        }
     }
 
-    private long totalFee(final FeeObject costs) {
-        return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
+    private Query parseQuery(Bytes requestBuffer) {
+        try {
+            return queryParser.parseStrict(requestBuffer.toReadableSequentialData());
+        } catch (MalformedProtobufException | UnknownFieldException e) {
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+        } catch (IOException e) {
+            // This should technically not be possible. The data buffer supplied
+            // is either based on a byte[] or a byte buffer, in both cases all data
+            // is available and a generic IO exception shouldn't happen. If it does,
+            // it indicates the data could not be parsed, but for a reason other than
+            // those causing an MalformedProtobufException or UnknownFieldException.
+            logger.warn("Unexpected IO exception while parsing protobuf", e);
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+        }
     }
 
     private static ResponseHeader createResponseHeader(
             @NonNull final ResponseType type, @NonNull final ResponseCodeEnum responseCode, final long fee) {
         return ResponseHeader.newBuilder()
-                .setResponseType(type)
-                .setNodeTransactionPrecheckCode(responseCode)
-                .setCost(fee)
+                .responseType(type)
+                .nodeTransactionPrecheckCode(responseCode)
+                .cost(fee)
                 .build();
+    }
+
+    private static HederaFunctionality functionOf(@NonNull final Query query) {
+        try {
+            return HapiUtils.functionOf(query);
+        } catch (UnknownHederaFunctionality e) {
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+        }
     }
 }

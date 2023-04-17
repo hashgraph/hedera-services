@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.state.migration.StateVersions;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -95,19 +95,14 @@ public class SignedStateViewFactory {
         if (provider == null) {
             return false;
         }
-        // Since we can't get the enclosing platform SignedState, we don't know exactly when this
-        // state was signed.
-        // So we just use, as a guaranteed lower bound, the consensus time of its last-handled
-        // transaction.
+        // Since we can't get the enclosing platform SignedState, we don't know exactly when this state was signed.
+        // So we just use, as a guaranteed lower bound, the consensus time of its last-handled transaction.
         final var latestSigningTime = provider.getTimeOfLastHandledTxn();
 
         // There are a few edge cases that disqualify a state:
-        //   1. No transactions have been handled (latestSigningTime == null); abort now to avoid
-        // downstream NPE
-        //   2. The state isn't of the CURRENT_VERSION---this likely means a larger problem is at
-        // hand
-        //   3. The state has not completed an init() call---again, likely a symptom of a larger
-        // problem
+        //   1. No transactions have been handled (latestSigningTime == null); abort now to avoid downstream NPE
+        //   2. The state isn't of the CURRENT_VERSION---this likely means a larger problem is at hand
+        //   3. The state has not completed an init() call---again, likely a symptom of a larger problem
         return latestSigningTime != null
                 && provider.getStateVersion() == StateVersions.CURRENT_VERSION
                 && provider.isInitialized();
@@ -122,7 +117,7 @@ public class SignedStateViewFactory {
      * @throws NoValidSignedStateException
      */
     private void doWithLatest(final Consumer<StateChildrenProvider> action) throws NoValidSignedStateException {
-        try (final AutoCloseableWrapper<SwirldState2> wrapper = platform.getLatestImmutableState()) {
+        try (final AutoCloseableWrapper<SwirldState> wrapper = platform.getLatestImmutableState()) {
             final var provider = (StateChildrenProvider) wrapper.get();
             if (!isUsable(provider)) {
                 throw new NoValidSignedStateException();

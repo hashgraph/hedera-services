@@ -16,14 +16,35 @@
 
 package com.hedera.node.app.service.admin.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.admin.impl.codec.MonoSpecialFilesAdapterCodec;
+import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /** Standard implementation of the {@link FreezeService} {@link com.hedera.node.app.spi.Service}. */
 public final class FreezeServiceImpl implements FreezeService {
+    public static final String UPGRADE_FILES_KEY = "SPECIAL_FILES";
+
+    private static final SemanticVersion CURRENT_VERSION =
+            SemanticVersion.newBuilder().minor(34).build();
+
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        // No-op
+        registry.register(adminSchema());
+    }
+
+    private Schema adminSchema() {
+        return new Schema(CURRENT_VERSION) {
+            @NonNull
+            @Override
+            @SuppressWarnings("rawtypes")
+            public Set<StateDefinition> statesToCreate() {
+                return Set.of(StateDefinition.singleton(UPGRADE_FILES_KEY, new MonoSpecialFilesAdapterCodec()));
+            }
+        };
     }
 }

@@ -20,19 +20,18 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongListHeap;
 import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Random;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -43,28 +42,18 @@ import org.junit.jupiter.params.provider.MethodSource;
 @Disabled
 class DataFileCollectionMergeHammerTest {
 
-    /**
-     * Temporary directory provided by JUnit
-     */
-    @SuppressWarnings("unused")
-    @TempDir
-    Path tempFileDir;
-
     @ParameterizedTest
     @MethodSource("provideForBenchmark")
     @Tags({@Tag("Speed")})
-    void benchmark(int numFiles, int maxEntriesPerFile) {
+    void benchmark(int numFiles, int maxEntriesPerFile) throws IOException {
+        final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionMergeHammerTest");
         assertDoesNotThrow(() -> {
             final LongListHeap index = new LongListHeap();
             final var serializer = new ExampleFixedSizeDataSerializer();
             final var coll = new DataFileCollection<>(
-                    tempFileDir.resolve("mergeBenchTest"),
-                    "mergeBenchTest",
-                    serializer,
-                    (key, dataLocation, dataValue) -> {});
+                    tempFileDir.resolve("benchmark"), "benchmark", serializer, (key, dataLocation, dataValue) -> {});
 
             final Random rand = new Random(777);
-            final Semaphore pauseMerging = new Semaphore(1);
             for (int i = 0; i < numFiles; i++) {
                 coll.startWriting();
                 final int numRecords = rand.nextInt(maxEntriesPerFile);
@@ -77,12 +66,12 @@ class DataFileCollectionMergeHammerTest {
                     prevId = id;
                     index.put(id, coll.storeDataItem(new long[] {id, rand.nextLong()}));
                 }
-                coll.endWriting(index.size() * 2L - 1, index.size() * 2L).setFileAvailableForMerging(true);
+                coll.endWriting(index.size() * 2L - 1, index.size() * 2L).setFileCompleted();
             }
 
             final long start = System.currentTimeMillis();
-            final var filesToMerge = coll.getAllFilesAvailableForMerge();
-            coll.mergeFiles(index, filesToMerge, pauseMerging);
+            final var filesToMerge = coll.getAllCompletedFiles();
+            coll.compactFiles(index, filesToMerge);
             System.out.println(numFiles + " files took " + (System.currentTimeMillis() - start) + "ms");
             index.close();
         });
@@ -112,16 +101,13 @@ class DataFileCollectionMergeHammerTest {
     @Test
     @Tags({@Tag(TestTypeTags.HAMMER)})
     void hammer() throws IOException, InterruptedException {
+        final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionMergeHammerTest");
         final LongListHeap index = new LongListHeap();
         final var serializer = new ExampleFixedSizeDataSerializer();
         final var coll = new DataFileCollection<>(
-                tempFileDir.resolve("mergeHammerTest"),
-                "mergeHammerTest",
-                serializer,
-                (key, dataLocation, dataValue) -> {});
+                tempFileDir.resolve("hammer"), "hammer", serializer, (key, dataLocation, dataValue) -> {});
 
         final Random rand = new Random(777);
-        final Semaphore pauseMerging = new Semaphore(1);
         final AtomicBoolean stop = new AtomicBoolean(false);
         new Thread(() -> {
                     while (!stop.get()) {
@@ -138,7 +124,7 @@ class DataFileCollectionMergeHammerTest {
                                 index.put(id, coll.storeDataItem(new long[] {id, rand.nextLong()}));
                             }
                             coll.endWriting(index.size() * 2L - 1, index.size() * 2L)
-                                    .setFileAvailableForMerging(true);
+                                    .setFileCompleted();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -149,12 +135,12 @@ class DataFileCollectionMergeHammerTest {
         new Thread(() -> {
                     while (!stop.get()) {
                         try {
-                            final var filesToMerge = coll.getAllFilesAvailableForMerge();
+                            final var filesToMerge = coll.getAllCompletedFiles();
                             System.out.println(filesToMerge.size());
                             if (filesToMerge.size() > 10000) {
                                 stop.set(true);
                             }
-                            coll.mergeFiles(index, filesToMerge, pauseMerging);
+                            coll.compactFiles(index, filesToMerge);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -163,14 +149,14 @@ class DataFileCollectionMergeHammerTest {
                 .start();
 
         for (int i = 0; i < 100; i++) {
-            pauseMerging.acquire();
+            coll.pauseCompaction();
             SECONDS.sleep(3);
-            pauseMerging.release();
+            coll.resumeCompaction();
             SECONDS.sleep(1);
         }
 
         stop.set(true);
-        final var filesToMerge = coll.getAllFilesAvailableForMerge();
+        final var filesToMerge = coll.getAllCompletedFiles();
         assertTrue(filesToMerge.size() < 10000, "Too many files! We didn't keep up");
         index.close();
     }

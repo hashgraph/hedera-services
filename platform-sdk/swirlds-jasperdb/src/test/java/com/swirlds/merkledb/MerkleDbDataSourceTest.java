@@ -75,7 +75,8 @@ class MerkleDbDataSourceTest {
     }
 
     /**
-     * Keep track of initial direct memory used already, so we can check if we leek over and above what we started with
+     * Keep track of initial direct memory used already, so we can check if we leek over and above
+     * what we started with
      */
     private long directMemoryUsedAtStart;
 
@@ -90,7 +91,8 @@ class MerkleDbDataSourceTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES) + "MB and is now "
+                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES)
+                        + "MB and is now "
                         + (getDirectMemoryUsedBytes() * Units.BYTES_TO_MEBIBYTES)
                         + "MB");
     }
@@ -328,7 +330,8 @@ class MerkleDbDataSourceTest {
         // check 250 and 500
         assertLeaf(testType, dataSource, 250, 250);
         assertLeaf(testType, dataSource, 500, 500);
-        // move a leaf from 500 to 250, under new API there is no move as such, so we just write 500 leaf at 250 path
+        // move a leaf from 500 to 250, under new API there is no move as such, so we just write 500
+        // leaf at 250 path
         final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> vlr500 =
                 testType.dataType().createVirtualLeafRecord(500);
         vlr500.setPath(250);
@@ -401,10 +404,13 @@ class MerkleDbDataSourceTest {
         // close data source
         dataSource.close();
         // check directory still exists and temporary snapshot path does not
-        assertTrue(Files.exists(originalDb.getTableDir(tableName)), "Database dir should still exist");
+        assertTrue(
+                Files.exists(originalDb.getTableDir(tableName, dataSource.getTableId())),
+                "Database dir should still exist");
         final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPath);
         assertTrue(
-                Files.exists(snapshotDb.getTableDir(tableName)), "Snapshot dir [" + snapshotDbPath + "] should exist");
+                Files.exists(snapshotDb.getTableDir(tableName, dataSource.getTableId())),
+                "Snapshot dir [" + snapshotDbPath + "] should exist");
         // reopen data source and check
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource2 =
                 testType.dataType().getDataSource(snapshotDbPath, tableName, false);
@@ -580,7 +586,9 @@ class MerkleDbDataSourceTest {
                         1000,
                         2000,
                         IntStream.range(1, 5).mapToObj(i -> {
-                            System.out.println("SLOWLY loading record #" + i + " in "
+                            System.out.println("SLOWLY loading record #"
+                                    + i
+                                    + " in "
                                     + Thread.currentThread().getName());
                             sleepUnchecked(50L);
                             return createVirtualInternalRecord(i);

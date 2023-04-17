@@ -22,13 +22,19 @@ import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPaye
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.noneAvailable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JWildcardECDSAKey;
+import com.hedera.node.app.service.mono.sigs.HollowScreening.HollowScreenResult;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
 import com.hedera.node.app.service.mono.sigs.order.SigningOrderResultFactory;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.node.app.service.mono.utils.PendingCompletion;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -38,7 +44,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-class Expansion {
+public class Expansion {
     private final SigRequirements sigReqs;
     private final PubKeyToSigBytes pkToSigFn;
     private final CryptoSigsCreation cryptoSigsCreation;
@@ -47,6 +53,7 @@ class Expansion {
 
     private final LinkedRefs linkedRefs = new LinkedRefs();
     private final List<TransactionSignature> expandedSigs = new ArrayList<>();
+    private final AliasManager aliasManager;
 
     private JKey payerKey;
     private List<JKey> otherPartyKeys;
@@ -61,12 +68,14 @@ class Expansion {
             final SigRequirements sigReqs,
             final PubKeyToSigBytes pkToSigFn,
             final CryptoSigsCreation cryptoSigsCreation,
-            final TxnScopedPlatformSigFactory sigFactory) {
+            final TxnScopedPlatformSigFactory sigFactory,
+            final AliasManager aliasManager) {
         this.cryptoSigsCreation = cryptoSigsCreation;
         this.txnAccessor = txnAccessor;
         this.sigFactory = sigFactory;
         this.pkToSigFn = pkToSigFn;
         this.sigReqs = sigReqs;
+        this.aliasManager = aliasManager;
     }
 
     public void execute() {
@@ -88,7 +97,36 @@ class Expansion {
             pkToSigFn.forEachUnusedSigWithFullPrefix(
                     (type, pubKey, sig) -> expandedSigs.add(sigFactory.signAppropriately(type, pubKey, sig)));
         }
+
+        maybePerformHollowScreening();
         finalizeForExpansionUpTo(Role.OTHER_PARTIES, OK);
+    }
+
+    /**
+     * If there are any {@link JWildcardECDSAKey}s
+     * in the req keys and if any ECDSA sigs are present in {@link Expansion#expandedSigs}, we need to replace those
+     * {@link JWildcardECDSAKey}s with their corresponding {@link JECDSASecp256k1Key}s for further key activation checks,
+     * and add all {@link PendingCompletion}s to the txn accessor, if such are present.
+     *
+     * <p>Execute a {@link HollowScreening}, scoped
+     * to those {@link Expansion#expandedSigs}, and apply all needed changes according to the returnes {@link HollowScreenResult}.
+     *
+     */
+    private void maybePerformHollowScreening() {
+        if (HollowScreening.atLeastOneWildcardECDSAKeyIn(payerKey, otherPartyKeys)
+                && pkToSigFn.hasAtLeastOneEcdsaSig()) {
+            final var hollowScreenResult =
+                    HollowScreening.performFor(expandedSigs, payerKey, otherPartyKeys, aliasManager, linkedRefs);
+            if (hollowScreenResult.pendingCompletions() != null) {
+                txnAccessor.setPendingCompletions(hollowScreenResult.pendingCompletions());
+            }
+            if (hollowScreenResult.replacedPayerKey() != null) {
+                payerKey = hollowScreenResult.replacedPayerKey();
+            }
+            if (hollowScreenResult.replacedOtherKeys() != null) {
+                otherPartyKeys = hollowScreenResult.replacedOtherKeys();
+            }
+        }
     }
 
     private void finalizeForExpansionUpTo(final Role lastExpandSuccess, final ResponseCodeEnum finalStatus) {
@@ -132,8 +170,13 @@ class Expansion {
     }
 
     @FunctionalInterface
-    interface CryptoSigsCreation {
+    public interface CryptoSigsCreation {
         PlatformSigsCreationResult createFrom(
                 List<JKey> hederaKeys, PubKeyToSigBytes sigBytesFn, TxnScopedPlatformSigFactory factory);
+    }
+
+    @VisibleForTesting
+    LinkedRefs getLinkedRefs() {
+        return linkedRefs;
     }
 }

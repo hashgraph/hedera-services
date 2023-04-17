@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hapi.utils.exports;
 
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
 import static com.hedera.services.stream.proto.SignatureType.SHA_384_WITH_RSA;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -44,7 +45,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.InvalidKeyException;
@@ -115,6 +115,10 @@ public class FileSignTool {
     private static final String KEYSTORE_TYPE = "pkcs12";
     /** name of RecordStreamType */
     private static final String RECORD_STREAM_EXTENSION = "rcd";
+    /**
+     * name of compressed rcd file
+     */
+    private static final String COMPRESSED_RECORD_STREAM_EXTENSION = "rcd.gz";
 
     private static final DigestType currentDigestType = Cryptography.DEFAULT_DIGEST_TYPE;
 
@@ -254,15 +258,6 @@ public class FileSignTool {
         }
     }
 
-    private static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(final String fileLoc)
-            throws IOException {
-        try (final FileInputStream fin = new FileInputStream(fileLoc)) {
-            final int recordFileVersion = ByteBuffer.wrap(fin.readNBytes(4)).getInt();
-            final RecordStreamFile recordStreamFile = RecordStreamFile.parseFrom(fin);
-            return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamFile));
-        }
-    }
-
     private static ByteString wrapUnsafely(@NonNull final byte[] bytes) {
         return UnsafeByteOperations.unsafeWrap(bytes);
     }
@@ -301,7 +296,11 @@ public class FileSignTool {
         // extract latest app version from system property if available
         final String appVersionString = System.getProperty(HAPI_PROTOBUF_VERSION);
         if (appVersionString != null) {
-            final String[] versions = appVersionString.replace("-SNAPSHOT", "").split(Pattern.quote("."));
+            final String[] versions = appVersionString
+                    .replace("-SNAPSHOT", "")
+                    .split(Pattern.quote("-"))[0]
+                    .split(Pattern.quote("."));
+
             if (versions.length >= 3) {
                 try {
                     fileHeader = new int[] {
@@ -322,7 +321,8 @@ public class FileSignTool {
                 final SerializableDataOutputStream dos = new SerializableDataOutputStream(
                         new BufferedOutputStream(new HashingOutputStream(streamDigest)))) {
             // parse record file
-            final Pair<Integer, Optional<RecordStreamFile>> recordResult = readUncompressedRecordStreamFile(recordFile);
+            final Pair<Integer, Optional<RecordStreamFile>> recordResult =
+                    readMaybeCompressedRecordStreamFile(recordFile);
             final long blockNumber = recordResult.getValue().get().getBlockNumber();
             final byte[] startRunningHash = recordResult
                     .getValue()
@@ -375,7 +375,11 @@ public class FileSignTool {
                 SignatureFile.newBuilder().setFileSignature(fileSignature).setMetadataSignature(metadataSignature);
 
         // create signature file
-        final String sigFilePath = recordFile + "_sig";
+        final String sigFilePath = (recordFile.endsWith(".gz")
+                        ? Paths.get("").toAbsolutePath().toString() + File.separator + "tmp" + File.separator
+                                + Paths.get(recordFile.replace(".gz", "")).getFileName()
+                        : recordFile)
+                + "_sig";
         try (final FileOutputStream fos =
                 new FileOutputStream(destSigFilePath + File.separator + (new File(sigFilePath)).getName())) {
             // version in signature files is 1 byte, compared to 4 in record files
@@ -465,16 +469,25 @@ public class FileSignTool {
     public static void signAllFiles(
             final String sourceDir, final String destDir, final StreamType streamType, final KeyPair sigKeyPair)
             throws IOException {
+        LOGGER.info(MARKER, "Signing all files in {} and writing signatures to {}", sourceDir, destDir);
+
         // create directory if necessary
         final File destDirFile =
                 new File(Files.createDirectories(Paths.get(destDir)).toUri());
 
         final File folder = new File(sourceDir);
-        final File[] streamFiles = folder.listFiles((dir, name) -> streamType.isStreamFile(name));
+        final File[] streamFiles = folder.listFiles(
+                (dir, name) -> streamType.isStreamFile(name) || name.endsWith(COMPRESSED_RECORD_STREAM_EXTENSION));
+        if (streamFiles == null || streamFiles.length == 0) {
+            LOGGER.error(MARKER, "No stream files found in {}", sourceDir);
+        }
         final File[] accountBalanceFiles = folder.listFiles((dir, name) -> {
             final String lowerCaseName = name.toLowerCase();
             return lowerCaseName.endsWith(CSV_EXTENSION) || lowerCaseName.endsWith(ACCOUNT_BALANCE_EXTENSION);
         });
+        if (accountBalanceFiles == null || accountBalanceFiles.length == 0) {
+            LOGGER.error(MARKER, "No account balance files found in {}", sourceDir);
+        }
         Arrays.sort(streamFiles); // sort by file names and timestamps
         Arrays.sort(accountBalanceFiles);
 

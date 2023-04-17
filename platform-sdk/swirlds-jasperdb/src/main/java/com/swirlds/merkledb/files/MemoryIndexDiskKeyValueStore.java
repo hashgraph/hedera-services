@@ -22,14 +22,13 @@ import static com.swirlds.merkledb.files.DataFileCommon.dataLocationToString;
 import static com.swirlds.merkledb.files.DataFileCommon.fileIndexFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
-import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 import static com.swirlds.merkledb.files.DataFileCommon.printDataLinkValidation;
 
 import com.swirlds.common.utility.Units;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
-import com.swirlds.merkledb.collections.CASable;
+import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
@@ -40,7 +39,7 @@ import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,7 +51,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
  * sequential block of numbers that does not need to start at zero. The index from long key to disk
  * location for value is in RAM and the value data is stored in a set of files on disk.
  * <p>
- * <p>There is an assumption that keys are a contiguous range of incrementing numbers. This allows
+ * There is an assumption that keys are a contiguous range of incrementing numbers. This allows
  * easy deletion during merging by accepting any key/value with a key outside this range is not
  * needed any more. This design comes from being used where keys are leaf paths in a binary tree.
  *
@@ -76,6 +75,15 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * Also, useful for identifying what files are used by what part of the code.
      */
     private final String storeName;
+
+    /** The minimum key that is valid for this store. Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to
+     * be reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
+     */
+    private final AtomicLong minValidKey;
+    /** The maximum key that is valid for this store.  Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to
+     * be reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
+     */
+    private final AtomicLong maxValidKey;
 
     /**
      * Construct a new MemoryIndexDiskKeyValueStore
@@ -126,24 +134,25 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         // create file collection
         fileCollection = new DataFileCollection<>(
                 storeDir, storeName, legacyStoreName, dataItemSerializer, combinedLoadedDataCallback);
+        // no limits for the keys on init
+        minValidKey = new AtomicLong(0);
+        maxValidKey = new AtomicLong(Long.MAX_VALUE);
     }
 
     /**
      * Merge all files that match the given filter
      *
      * @param filterForFilesToMerge filter to choose which subset of files to merge
-     * @param mergingPaused Semaphore to monitor if we should pause merging
      * @param minNumberOfFilesToMerge The minimum number of files to consider for a merge
      * @throws IOException if there was a problem merging
      * @throws InterruptedException if the merge thread was interupted
      */
     public void merge(
             final Function<List<DataFileReader<D>>, List<DataFileReader<D>>> filterForFilesToMerge,
-            final Semaphore mergingPaused,
             final int minNumberOfFilesToMerge)
             throws IOException, InterruptedException {
         final long START = System.currentTimeMillis();
-        final List<DataFileReader<D>> allMergeableFiles = fileCollection.getAllFilesAvailableForMerge();
+        final List<DataFileReader<D>> allMergeableFiles = fileCollection.getAllCompletedFiles();
         final List<DataFileReader<D>> filesToMerge = filterForFilesToMerge.apply(allMergeableFiles);
         if (filesToMerge == null) {
             // nothing to do
@@ -151,7 +160,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         }
         final int size = filesToMerge.size();
         if (size < minNumberOfFilesToMerge) {
-            logger.info(
+            logger.debug(
                     MERKLE_DB.getMarker(),
                     "[{}] No need to merge as {} is less than the minimum {} files to merge.",
                     storeName,
@@ -160,17 +169,17 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             return;
         }
         final long filesToMergeSize = getSizeOfFiles(filesToMerge);
-        logger.info(
+        logger.debug(
                 MERKLE_DB.getMarker(),
-                "[{}] Starting merging {} files, total {}...\n",
+                "[{}] Starting merging {} files / {}",
                 storeName,
                 size,
                 formatSizeBytes(filesToMergeSize));
 
-        CASable indexUpdater = index;
+        CASableLongIndex indexUpdater = index;
         if (enableDeepValidation) {
             startChecking();
-            indexUpdater = new CASable() {
+            indexUpdater = new CASableLongIndex() {
                 @Override
                 public long get(final long key) {
                     return index.get(key);
@@ -182,21 +191,50 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
                     checkItem(casSuccessful, key, oldValue, newValue);
                     return casSuccessful;
                 }
+
+                @Override
+                @SuppressWarnings({"rawtypes", "unchecked"})
+                public void forEach(final LongAction action) throws InterruptedException {
+                    index.forEach(action);
+                }
             };
         }
-        final List<Path> newFilesCreated = fileCollection.mergeFiles(indexUpdater, filesToMerge, mergingPaused);
+        final List<Path> newFilesCreated = fileCollection.compactFiles(indexUpdater, filesToMerge);
         if (enableDeepValidation) {
             endChecking(filesToMerge);
         }
 
-        logMergeStats(
+        final long END = System.currentTimeMillis();
+        final double tookSeconds = (END - START) * Units.MILLISECONDS_TO_SECONDS;
+        logMergeStats(storeName, tookSeconds, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);
+        logger.debug(
+                MERKLE_DB.getMarker(),
+                "[{}] Finished merging {} files / {} in {} seconds",
                 storeName,
-                (System.currentTimeMillis() - START) * Units.MILLISECONDS_TO_SECONDS,
-                filesToMergeSize,
-                getSizeOfFilesByPath(newFilesCreated),
-                fileCollection,
-                filesToMerge,
-                allMergeableFiles);
+                size,
+                formatSizeBytes(filesToMergeSize),
+                tookSeconds);
+    }
+
+    /**
+     * Puts this store compaction on hold, if in progress, until {@link #resumeMerging()} is called.
+     * If compaction is not in progress, calling this method will prevent new compactions from
+     * starting until resumed.
+     *
+     * @throws IOException If an I/O error occurs.
+     */
+    public void pauseMerging() throws IOException {
+        fileCollection.pauseCompaction();
+    }
+
+    /**
+     * Resumes this store compaction if it was in progress, or unblocks a new compaction if it was
+     * blocked to start because of {@link #pauseMerging()}.
+     *
+     * @throws IOException If an I/O error occurs.
+     */
+    public void resumeMerging() throws IOException {
+        fileCollection.resumeCompaction();
     }
 
     /**
@@ -204,7 +242,13 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      *
      * @throws IOException If there was a problem opening a writing session
      */
-    public void startWriting() throws IOException {
+    public void startWriting(final long minimumValidKey, final long maxValidIndex) throws IOException {
+        this.minValidKey.set(minimumValidKey);
+        this.maxValidKey.set(maxValidIndex);
+        // By calling `updateMinValidIndex` we compact the index if it's applicable.
+        // We need to do this before we start putting values into the index, otherwise we could put a value by
+        // index that is not yet valid.
+        index.updateValidRange(minimumValidKey, maxValidIndex);
         fileCollection.startWriting();
     }
 
@@ -225,27 +269,23 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * End a session of writing
      *
-     * @param minimumValidKey The minimum valid key at this point in time.
-     * @param maximumValidKey The maximum valid key at this point in time.
      * @throws IOException If there was a problem closing the writing session
      */
-    public void endWriting(final long minimumValidKey, final long maximumValidKey) throws IOException {
-        final DataFileReader<D> dataFileReader = fileCollection.endWriting(minimumValidKey, maximumValidKey);
-        // At this point we know exactly what list indices are in use and, therefore,
-        // it's a good time to free memory reserved for the unused data.
-        // By calling `updateMinValidIndex` we compact the index if it's applicable.
-        index.updateMinValidIndex(minimumValidKey);
+    public void endWriting() throws IOException {
+        final long currentMinValidKey = minValidKey.get();
+        final long currentMaxValidKey = maxValidKey.get();
+        final DataFileReader<D> dataFileReader = fileCollection.endWriting(currentMinValidKey, currentMaxValidKey);
 
         // we have updated all indexes so the data file can now be included in merges
-        dataFileReader.setFileAvailableForMerging(true);
-
+        dataFileReader.setFileCompleted();
         logger.info(
                 MERKLE_DB.getMarker(),
-                "{} ended writing, numOfFiles={}, minimumValidKey={}, maximumValidKey={}",
+                "{} Ended writing, newFile={}, numOfFiles={}, minimumValidKey={}, maximumValidKey={}",
                 storeName,
+                dataFileReader.getIndex(),
                 fileCollection.getNumOfFiles(),
-                minimumValidKey,
-                maximumValidKey);
+                currentMinValidKey,
+                currentMaxValidKey);
     }
 
     /**
@@ -305,7 +345,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * @return statistics for sizes of all fully written files, in bytes
      */
     public LongSummaryStatistics getFilesSizeStatistics() {
-        return fileCollection.getAllFullyWrittenFilesSizeStatistics();
+        return fileCollection.getAllCompletedFilesSizeStatistics();
     }
 
     // =================================================================================================================
@@ -336,10 +376,10 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         }
 
         final KeyRange validKeyRange = fileCollection.getValidKeyRange();
-        final long minValidKey = validKeyRange.getMinValidKey();
-        final long maxValidKey = validKeyRange.getMaxValidKey();
+        final long currentMinValidKey = validKeyRange.getMinValidKey();
+        final long currentMaxValidKey = validKeyRange.getMaxValidKey();
 
-        for (long key = minValidKey; key <= maxValidKey; key++) {
+        for (long key = currentMinValidKey; key <= currentMaxValidKey; key++) {
             final long location = index.get(key, -1);
             if (mergedFileIds.contains(fileIndexFromDataLocation(location))) { // only entries for deleted files
                 // If we enter this "if", it means we have a corrupt index. Either we should have
@@ -379,7 +419,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
                 storeName,
                 index,
                 fileCollection.getSetOfNewFileIndexes(),
-                fileCollection.getAllFullyWrittenFiles(),
+                fileCollection.getAllCompletedFiles(),
                 validKeyRange);
     }
 

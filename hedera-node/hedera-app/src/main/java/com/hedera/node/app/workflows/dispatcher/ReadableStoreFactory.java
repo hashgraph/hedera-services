@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
@@ -29,7 +31,7 @@ import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Factory for all readable stores.
+ * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.
  */
 public class ReadableStoreFactory {
 
@@ -70,6 +72,17 @@ public class ReadableStoreFactory {
     public ReadableScheduleStore createScheduleStore() {
         final var scheduleStates = state.createReadableStates(ScheduleService.NAME);
         return new ReadableScheduleStore(scheduleStates);
+    }
+
+    /**
+     * Get a {@link ReadableScheduleStore}
+     *
+     * @return a new {@link ReadableScheduleStore}
+     */
+    @NonNull
+    public ReadableSpecialFileStore createSpecialFileStore() {
+        final var freezeStates = state.createReadableStates(FreezeService.NAME);
+        return new ReadableSpecialFileStore(freezeStates);
     }
 
     /**

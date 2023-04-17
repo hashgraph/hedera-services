@@ -43,7 +43,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
@@ -80,6 +79,7 @@ import com.hedera.test.utils.CryptoConfigUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.ResponsibleVMapUser;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -110,6 +110,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -213,6 +214,12 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @LoggingSubject
     private ServicesState subject;
+
+    @BeforeAll
+    static void setUpAll() {
+        // Use a different VirtualMap factory instance for every test to avoid VM folder name conflicts
+        ServicesState.setVmFactory(VirtualMapFactory::new);
+    }
 
     @BeforeEach
     void setUp() {
@@ -320,13 +327,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    void onReleaseAndArchiveNoopIfMetadataNull() {
-        mockAllMaps(mock(MerkleMap.class), mock(VirtualMap.class));
-        Assertions.assertDoesNotThrow(subject::archive);
-        Assertions.assertDoesNotThrow(subject::destroyNode);
-    }
-
-    @Test
     void onReleaseForwardsToMetadataIfNonNull() {
         // setup:
         subject.setMetadata(metadata);
@@ -336,21 +336,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         // then:
         verify(metadata).release();
-    }
-
-    @Test
-    void archiveForwardsToMetadataAndMerkleMaps() {
-        final MerkleMap<?, ?> mockMm = mock(MerkleMap.class);
-
-        subject.setMetadata(metadata);
-        mockAllMaps(mockMm, mock(VirtualMap.class));
-
-        // when:
-        subject.archive();
-
-        // then:
-        verify(metadata).release();
-        verify(mockMm, times(6)).archive();
     }
 
     @Test
@@ -895,10 +880,11 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     private Platform createMockPlatformWithCrypto() {
         final var platform = mock(Platform.class);
+        final var platformContext = mock(PlatformContext.class);
         when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
-        when(platform.getCryptography())
+        when(platformContext.getCryptography())
                 .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
-        assertNotNull(platform.getCryptography());
+        assertNotNull(platformContext.getCryptography());
         return platform;
     }
 

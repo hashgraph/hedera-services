@@ -16,16 +16,21 @@
 
 package com.swirlds.platform.internal;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A consensus round with all its events.
@@ -44,28 +49,35 @@ public class ConsensusRound implements Round {
     /** the last event in the round */
     private EventImpl lastEvent;
 
-    /** true if this round contains a shutdown event */
-    private boolean hasShutdownEvent;
-
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
 
     /**
+     * The event that, when added to the hashgraph, caused this round to reach consensus.
+     */
+    private final EventImpl keystoneEvent;
+
+    /**
      * Create a new instance with the provided consensus events.
      *
-     * @param consensusEvents
-     * 		the events in the round, in consensus order
-     * @param generations
-     * 		the consensus generations for this round
+     * @param consensusEvents the events in the round, in consensus order
+     * @param keystoneEvent   the event that, when added to the hashgraph, caused this round to reach consensus
+     * @param generations     the consensus generations for this round
      */
-    public ConsensusRound(final List<EventImpl> consensusEvents, final GraphGenerations generations) {
+    public ConsensusRound(
+            @NonNull final List<EventImpl> consensusEvents,
+            @NonNull final EventImpl keystoneEvent,
+            @NonNull final GraphGenerations generations) {
+
+        throwArgNull(consensusEvents, "consensusEvents");
+        throwArgNull(keystoneEvent, "keystoneEvent");
+        throwArgNull(generations, "generations");
+
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
+        this.keystoneEvent = keystoneEvent;
         this.generations = generations;
 
         for (final EventImpl e : consensusEvents) {
-            if (e.isLastOneBeforeShutdown()) {
-                hasShutdownEvent = true;
-            }
             numAppTransactions += e.getNumAppTransactions();
         }
 
@@ -75,13 +87,6 @@ public class ConsensusRound implements Round {
         }
 
         this.roundNum = consensusEvents.get(0).getRoundReceived();
-    }
-
-    /**
-     * @return true if this round is complete (contains the last event of the round)
-     */
-    public boolean isComplete() {
-        return lastEvent != null;
     }
 
     /**
@@ -155,24 +160,28 @@ public class ConsensusRound implements Round {
         return lastEvent;
     }
 
-    /**
-     * @return true if this round contains a shutdown event
-     */
-    public boolean hasShutdownEvent() {
-        return hasShutdownEvent;
-    }
-
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final ConsensusRound round = (ConsensusRound) o;
 
         return new EqualsBuilder()
                 .append(consensusEvents, round.consensusEvents)
                 .isEquals();
+    }
+
+    /**
+     * @return the event that, when added to the hashgraph, caused this round to reach consensus
+     */
+    public @NonNull EventImpl getKeystoneEvent() {
+        return keystoneEvent;
     }
 
     @Override
@@ -182,6 +191,9 @@ public class ConsensusRound implements Round {
 
     @Override
     public String toString() {
-        return "round: " + roundNum + ", consensus events: " + EventUtils.toShortStrings(consensusEvents);
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("round", roundNum)
+                .append("consensus events", EventUtils.toShortStrings(consensusEvents))
+                .toString();
     }
 }

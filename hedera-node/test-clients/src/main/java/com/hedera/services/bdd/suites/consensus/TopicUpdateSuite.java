@@ -32,6 +32,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
@@ -95,7 +96,10 @@ public class TopicUpdateSuite extends HapiSuite {
                 .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
                 .when()
                 .then(
-                        updateTopic("testTopic").adminKey(NONSENSE_KEY).hasPrecheck(BAD_ENCODING),
+                        updateTopic("testTopic")
+                                .adminKey(NONSENSE_KEY)
+                                .hasPrecheckFrom(BAD_ENCODING, OK)
+                                .hasKnownStatus(BAD_ENCODING),
                         updateTopic("testTopic").submitKey(NONSENSE_KEY).hasKnownStatus(BAD_ENCODING),
                         updateTopic("testTopic").topicMemo(longMemo).hasKnownStatus(MEMO_TOO_LONG),
                         updateTopic("testTopic").topicMemo(ZERO_BYTE_MEMO).hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING),
@@ -107,13 +111,12 @@ public class TopicUpdateSuite extends HapiSuite {
 
     private HapiSpec topicUpdateSigReqsEnforcedAtConsensus() {
         long PAYER_BALANCE = 199_999_999_999L;
-        Function<String[], HapiTopicUpdate> updateTopicSignedBy = (signers) -> {
-            return updateTopic("testTopic")
-                    .payingWith("payer")
-                    .adminKey("newAdminKey")
-                    .autoRenewAccountId("newAutoRenewAccount")
-                    .signedBy(signers);
-        };
+        Function<String[], HapiTopicUpdate> updateTopicSignedBy = (signers) -> updateTopic("testTopic")
+                .payingWith("payer")
+                .adminKey("newAdminKey")
+                .autoRenewAccountId("newAutoRenewAccount")
+                .signedBy(signers);
+        ;
         return defaultHapiSpec("topicUpdateSigReqsEnforcedAtConsensus")
                 .given(
                         newKeyNamed("oldAdminKey"),
@@ -216,7 +219,7 @@ public class TopicUpdateSuite extends HapiSuite {
                 .then(
                         updateTopic("testTopic")
                                 .expiry(now - 1) // less than consensus time
-                                .hasKnownStatus(INVALID_EXPIRATION_TIME),
+                                .hasKnownStatusFrom(INVALID_EXPIRATION_TIME, EXPIRATION_REDUCTION_NOT_ALLOWED),
                         updateTopic("testTopic")
                                 .expiry(now + 1000) // 1000 < autoRenewPeriod
                                 .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED));

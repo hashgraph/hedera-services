@@ -31,6 +31,7 @@ configurations.all {
 }
 
 dependencies {
+  implementation(project(":hedera-node:hapi-utils"))
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-schedule-service"))
   api(project(":hedera-node:hedera-token-service"))
@@ -41,6 +42,8 @@ dependencies {
 
   implementation(project(":hedera-node:hedera-mono-service"))
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
   testImplementation(testLibs.bundles.mockito)
+  testImplementation(testLibs.bundles.testing)
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
 }

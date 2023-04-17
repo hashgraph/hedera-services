@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * Validator to read a data source and all its data and check the complete data set is valid.
  */
-public class DataSourceValidator<K extends VirtualKey<? super K>, V extends VirtualValue> {
+public class DataSourceValidator<K extends VirtualKey, V extends VirtualValue> {
 
     private static final String WHITESPACE = " ".repeat(20);
 

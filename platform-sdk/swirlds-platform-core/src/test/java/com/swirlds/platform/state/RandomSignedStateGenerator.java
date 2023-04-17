@@ -31,7 +31,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.test.state.DummySwirldState2;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import java.time.Instant;
@@ -63,6 +63,7 @@ public class RandomSignedStateGenerator {
     private Map<Long, Signature> signatures;
     private boolean protectionEnabled = false;
     private Hash stateHash = null;
+    private Integer roundsNonAncient = null;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -105,7 +106,7 @@ public class RandomSignedStateGenerator {
         final State stateInstance;
         if (state == null) {
             stateInstance = new State();
-            final DummySwirldState2 swirldState = new DummySwirldState2(addressBookInstance);
+            final DummySwirldState swirldState = new DummySwirldState(addressBookInstance);
             stateInstance.setSwirldState(swirldState);
             PlatformState platformState = new PlatformState();
             final PlatformData platformData = new PlatformData();
@@ -159,9 +160,19 @@ public class RandomSignedStateGenerator {
             freezeStateInstance = freezeState;
         }
 
+        final int roundsNonAncientInstance;
+        if (roundsNonAncient == null) {
+            roundsNonAncientInstance = 26;
+        } else {
+            roundsNonAncientInstance = roundsNonAncient;
+        }
+
         final List<MinGenInfo> minGenInfoInstance;
         if (minGenInfo == null) {
-            minGenInfoInstance = List.of();
+            minGenInfoInstance = new ArrayList<>();
+            for (int i = 0; i < roundsNonAncientInstance; i++) {
+                minGenInfoInstance.add(new MinGenInfo(roundInstance - i, 0L));
+            }
         } else {
             minGenInfoInstance = minGenInfo;
         }
@@ -183,7 +194,8 @@ public class RandomSignedStateGenerator {
                 .setEvents(eventsInstance)
                 .setConsensusTimestamp(consensusTimestampInstance)
                 .setMinGenInfo(minGenInfoInstance)
-                .setCreationSoftwareVersion(softwareVersionInstance);
+                .setCreationSoftwareVersion(softwareVersionInstance)
+                .setRoundsNonAncient(roundsNonAncientInstance);
 
         final SignedState signedState = new SignedState(stateInstance, freezeStateInstance);
 
@@ -232,8 +244,8 @@ public class RandomSignedStateGenerator {
             signedState.getSigSet().addSignature(nodeId, signaturesInstance.get(nodeId));
         }
 
-        if (protectionEnabled && stateInstance.getSwirldState() instanceof final DummySwirldState2 dummySwirldState2) {
-            dummySwirldState2.disableDeletion();
+        if (protectionEnabled && stateInstance.getSwirldState() instanceof final DummySwirldState dummySwirldState) {
+            dummySwirldState.disableDeletion();
         }
 
         return signedState;
@@ -386,12 +398,22 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Default false. If true and a {@link DummySwirldState2} is being used, then disable deletion on the state.
+     * Default false. If true and a {@link DummySwirldState} is being used, then disable deletion on the state.
      *
      * @return this object
      */
     public RandomSignedStateGenerator setProtectionEnabled(final boolean protectionEnabled) {
         this.protectionEnabled = protectionEnabled;
+        return this;
+    }
+
+    /**
+     * Set the number of non-ancient rounds.
+     *
+     * @return this object
+     */
+    public RandomSignedStateGenerator setRoundsNonAncient(final int roundsNonAncient) {
+        this.roundsNonAncient = roundsNonAncient;
         return this;
     }
 }

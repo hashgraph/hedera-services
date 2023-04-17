@@ -16,139 +16,120 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.token.entity.Account;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.signature.SignaturePreparer;
-import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.solvency.SolvencyPreCheck;
+import com.hedera.node.app.spi.info.CurrentPlatformStatus;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.crypto.Cryptography;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
-import java.util.Objects;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/** The {@code IngestChecker} contains checks that are specific to the ingest workflow */
+/**
+ * The {@code IngestChecker} contains checks that are specific to the ingest workflow
+ */
 public class IngestChecker {
 
-    private static final Logger LOG = LoggerFactory.getLogger(IngestChecker.class);
-
     private final AccountID nodeAccountID;
+    private final NodeInfo nodeInfo;
+    private final CurrentPlatformStatus currentPlatformStatus;
+    private final TransactionChecker transactionChecker;
+    private final ThrottleAccumulator throttleAccumulator;
+    private final SolvencyPreCheck solvencyPreCheck;
     private final SignaturePreparer signaturePreparer;
-    private final Cryptography cryptography;
 
     /**
      * Constructor of the {@code IngestChecker}
      *
      * @param nodeAccountID the {@link AccountID} of the <em>node</em>
+     * @param nodeInfo the {@link NodeInfo} that contains information about the node
+     * @param currentPlatformStatus the {@link CurrentPlatformStatus} that contains the current status of the platform
+     * @param transactionChecker the {@link TransactionChecker} that pre-processes the bytes of a transaction
+     * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
+     * @param solvencyPreCheck the {@link SolvencyPreCheck} that checks payer balance
      * @param signaturePreparer the {@link SignaturePreparer} that prepares signature data
-     * @param cryptography the {@link Cryptography} used to verify signatures
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
     public IngestChecker(
-            @NonNull final AccountID nodeAccountID,
-            @NonNull final SignaturePreparer signaturePreparer,
-            @NonNull final Cryptography cryptography) {
+            @NonNull @NodeSelfId final AccountID nodeAccountID,
+            @NonNull final NodeInfo nodeInfo,
+            @NonNull final CurrentPlatformStatus currentPlatformStatus,
+            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final ThrottleAccumulator throttleAccumulator,
+            @NonNull final SolvencyPreCheck solvencyPreCheck,
+            @NonNull final SignaturePreparer signaturePreparer) {
         this.nodeAccountID = requireNonNull(nodeAccountID);
+        this.nodeInfo = requireNonNull(nodeInfo);
+        this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
+        this.transactionChecker = requireNonNull(transactionChecker);
+        this.throttleAccumulator = requireNonNull(throttleAccumulator);
+        this.solvencyPreCheck = solvencyPreCheck;
         this.signaturePreparer = requireNonNull(signaturePreparer);
-        this.cryptography = requireNonNull(cryptography);
     }
 
     /**
-     * Checks a transaction for semantic errors
+     * Checks the general state of the node
      *
-     * @param txBody the {@link TransactionBody}
-     * @param functionality the {@link HederaFunctionality} of the transaction
-     * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if a semantic error was discovered. The contained {@code responseCode} provides the
-     * error reason.
+     * @throws PreCheckException if the node is unable to process queries
      */
-    public void checkTransactionSemantics(
-            @NonNull final TransactionBody txBody, @NonNull final HederaFunctionality functionality)
-            throws PreCheckException {
-        requireNonNull(txBody);
-        requireNonNull(functionality);
-
-        if (!Objects.equals(nodeAccountID, txBody.getNodeAccountID())) {
+    public void checkNodeState() throws PreCheckException {
+        if (nodeInfo.isSelfZeroStake()) {
+            // Zero stake nodes are currently not supported
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
-
-        var txnId = txBody.getTransactionID();
-        if (txnId.getScheduled() || txnId.getNonce() != USER_TRANSACTION_NONCE) {
-            throw new PreCheckException(TRANSACTION_ID_FIELD_NOT_ALLOWED);
+        if (currentPlatformStatus.get() != ACTIVE) {
+            throw new PreCheckException(PLATFORM_NOT_ACTIVE);
         }
     }
 
     /**
-     * Checks the signature of the payer. <em>Currently not implemented.</em>
+     * Runs all the ingest checks on a {@link Transaction}
      *
-     * @param state the {@link HederaState} that should be used to read state
-     * @param requestBuffer the {@link ByteBuffer} containing the {@link Transaction}
-     * @param signatureMap the {@link SignatureMap} contained in the transaction
-     * @param payerID the {@link AccountID} of the payer
-     * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if an error is found while checking the signature. The contained {@code responseCode}
-     * provides the error reason.
+     * @param tx the {@link Transaction} to check
+     * @return the {@link TransactionInfo} with the extracted information
+     * @throws PreCheckException if a check fails
      */
-    public void checkPayerSignature(
-            @NonNull final HederaState state,
-            @NonNull final ByteBuffer requestBuffer,
-            @NonNull final SignatureMap signatureMap,
-            @NonNull final AccountID payerID)
+    public TransactionInfo runAllChecks(@NonNull final HederaState state, @NonNull final Transaction tx)
             throws PreCheckException {
-        final var transactionBytes = extractByteArray(requestBuffer);
-        final var signature = signaturePreparer.prepareSignature(state, transactionBytes, signatureMap, payerID);
-        if (!cryptography.verifySync(signature)) {
-            throw new PreCheckException(INVALID_SIGNATURE);
-        }
-    }
+        // 1. Check the syntax
+        final var transactionInfo = transactionChecker.check(tx);
+        final var txBody = transactionInfo.txBody();
+        final var functionality = transactionInfo.functionality();
 
-    /**
-     * Checks the solvency of the payer
-     *
-     * @param txBody the {@link TransactionBody}
-     * @param functionality the {@link HederaFunctionality} of the transaction
-     * @param payer the {@code Account} of the payer
-     * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws InsufficientBalanceException if the balance is sufficient
-     */
-    public void checkSolvency(
-            @NonNull final TransactionBody txBody,
-            @NonNull final HederaFunctionality functionality,
-            @NonNull final Account payer)
-            throws InsufficientBalanceException {
-        LOG.warn("IngestChecker.checkSolvency() has not been implemented yet");
-        // TODO: Implement once fee calculation is implemented
-    }
+        // This should never happen, because HapiUtils#checkFunctionality() will throw
+        // UnknownHederaFunctionality if it cannot map to a proper value, and WorkflowOnset
+        // will convert that to INVALID_TRANSACTION_BODY.
+        assert functionality != HederaFunctionality.NONE;
 
-    /**
-     * Extracts a {@code byte[]} from a {@link ByteBuffer}. The {@code byte[]} may contain a copy or point to the data
-     * of the {@code ByteBuffer} directly, i.e. the content should not be modified.
-     *
-     * @param buffer the {@link ByteBuffer} from which to extract the data
-     * @return the {@code byte[]} with the data
-     */
-    public byte[] extractByteArray(@NonNull final ByteBuffer buffer) {
-        requireNonNull(buffer);
-        if (buffer.hasArray()) {
-            return buffer.array();
-        } else {
-            final var byteArray = new byte[buffer.limit()];
-            buffer.get(byteArray);
-            return byteArray;
+        // 2. Check throttles
+        if (throttleAccumulator.shouldThrottle(transactionInfo.txBody())) {
+            throw new PreCheckException(ResponseCodeEnum.BUSY);
         }
+
+        // 3. Check payer's signature
+        signaturePreparer.syncGetPayerSigStatus(tx);
+
+        // 4. Check account balance
+        final AccountID payerID =
+                txBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
+        solvencyPreCheck.checkPayerAccountStatus(state, payerID);
+        solvencyPreCheck.checkSolvencyOfVerifiedPayer(state, tx);
+
+        return transactionInfo;
     }
 }

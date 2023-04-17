@@ -16,25 +16,24 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.functions.ThrowingConsumer;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldState1;
-import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.components.SystemTransactionHandler;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -42,19 +41,16 @@ import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import com.swirlds.platform.network.connectivity.TcpFactory;
 import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
-import com.swirlds.platform.state.SwirldStateManagerSingle;
+import com.swirlds.platform.state.SwirldStateManagerImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.PlatformConstructionException;
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
@@ -63,10 +59,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -152,56 +146,37 @@ final class PlatformConstructor {
     /**
      * Creates a new instance of {@link SwirldStateManager}.
      *
-     * @param threadManager
-     * 		responsible for creating and managing threads
      * @param selfId
      * 		this node's id
-     * @param systemTransactionHandler
-     * 		the handler of system transactions
+     * @param preConsensusSystemTransactionManager
+     * 		the manager which handles system transactions pre-consensus
+     * @param postConsensusSystemTransactionManager
+     * 		the manager which handles system transactions post-consensus
      * @param metrics
      * 		reference to the metrics-system
      * @param settings
      * 		static settings provider
-     * @param consEstimateSupplier
-     * 		supplier of an estimated consensus time for transactions
      * @param initialState
      * 		the initial state
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
-            final ThreadManager threadManager,
             final NodeId selfId,
-            final SystemTransactionHandler systemTransactionHandler,
+            final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             final Metrics metrics,
             final SettingsProvider settings,
-            final Supplier<Instant> consEstimateSupplier,
             final BooleanSupplier inFreezeChecker,
             final State initialState) {
 
-        if (initialState.getSwirldState() instanceof SwirldState2) {
-            return new SwirldStateManagerDouble(
-                    selfId,
-                    systemTransactionHandler,
-                    new SwirldStateMetrics(metrics),
-                    settings,
-                    inFreezeChecker,
-                    initialState);
-        } else if (initialState.getSwirldState() instanceof SwirldState1) {
-            return new SwirldStateManagerSingle(
-                    threadManager,
-                    selfId,
-                    systemTransactionHandler,
-                    new SwirldStateMetrics(metrics),
-                    new ConsensusMetricsImpl(selfId, metrics),
-                    settings,
-                    consEstimateSupplier,
-                    inFreezeChecker,
-                    initialState);
-        } else {
-            logger.error(ERROR.getMarker(), "Unrecognized SwirldState class: {}", initialState.getClass());
-            SystemUtils.exitSystem(SystemExitReason.FATAL_ERROR);
-            return null;
-        }
+        return new SwirldStateManagerImpl(
+                selfId,
+                preConsensusSystemTransactionManager,
+                postConsensusSystemTransactionManager,
+                new SwirldStateMetrics(metrics),
+                settings,
+                inFreezeChecker,
+                initialState);
     }
 
     /**
@@ -243,6 +218,7 @@ final class PlatformConstructor {
      * 		the instance that streams consensus events to disk
      * @param stateHashSignQueue
      * 		the queue for signed states that need signatures collected
+     * @param waitForEventDurability a method that blocks until an event becomes durable.
      * @param enterFreezePeriod
      * 		a runnable executed when a freeze is entered
      * @param roundAppliedToStateConsumer
@@ -252,17 +228,18 @@ final class PlatformConstructor {
      * @return the newly constructed instance of {@link ConsensusRoundHandler}
      */
     static ConsensusRoundHandler consensusHandler(
-            final PlatformContext platformContext,
-            final ThreadManager threadManager,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
             final long selfId,
-            final SettingsProvider settingsProvider,
-            final SwirldStateManager swirldStateManager,
-            final ConsensusHandlingMetrics consensusHandlingMetrics,
-            final EventStreamManager<EventImpl> eventStreamManager,
-            final BlockingQueue<SignedState> stateHashSignQueue,
-            final Runnable enterFreezePeriod,
-            final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
-            final SoftwareVersion softwareVersion) {
+            @NonNull final SettingsProvider settingsProvider,
+            @NonNull final SwirldStateManager swirldStateManager,
+            @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
+            @NonNull final EventStreamManager<EventImpl> eventStreamManager,
+            @NonNull final BlockingQueue<SignedState> stateHashSignQueue,
+            @NonNull final ThrowingConsumer<EventImpl, InterruptedException> waitForEventDurability,
+            @NonNull final Runnable enterFreezePeriod,
+            @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
+            @NonNull final SoftwareVersion softwareVersion) {
 
         return new ConsensusRoundHandler(
                 platformContext,
@@ -273,6 +250,7 @@ final class PlatformConstructor {
                 consensusHandlingMetrics,
                 eventStreamManager,
                 stateHashSignQueue,
+                waitForEventDurability,
                 enterFreezePeriod,
                 roundAppliedToStateConsumer,
                 softwareVersion);

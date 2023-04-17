@@ -19,7 +19,6 @@ package com.hedera.test.utils;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -73,10 +72,6 @@ public class IdUtils {
 
     public static AccountID asAccountWithAlias(String alias) {
         return AccountID.newBuilder().setAlias(ByteString.copyFromUtf8(alias)).build();
-    }
-
-    public static AccountID fromKey(EntityNum mk) {
-        return asAccount(String.format("0.0.%d", mk.longValue()));
     }
 
     public static ContractID asContract(String v) {

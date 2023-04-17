@@ -18,10 +18,12 @@ package com.hedera.node.app.service.mono.stats;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
@@ -55,7 +57,9 @@ class EntityUtilGaugesTest {
 
     @Test
     void registersAndUpdatesExpectedGauges() {
-        given(platform.getMetrics()).willReturn(metrics);
+        final var platformContext = mock(PlatformContext.class);
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(pretendGauge);
         given(usageLimits.percentAccountsUsed()).willReturn(2.0);
         given(usageLimits.percentContractsUsed()).willReturn(3.0);
@@ -66,10 +70,19 @@ class EntityUtilGaugesTest {
         given(usageLimits.percentStorageSlotsUsed()).willReturn(8.0);
         given(usageLimits.percentTokenRelsUsed()).willReturn(9.0);
         given(usageLimits.percentSchedulesUsed()).willReturn(10.0);
+        given(usageLimits.getNumAccounts()).willReturn(11L);
+        given(usageLimits.getNumContracts()).willReturn(12L);
+        given(usageLimits.getNumFiles()).willReturn(13L);
+        given(usageLimits.getNumNfts()).willReturn(14L);
+        given(usageLimits.getNumTokens()).willReturn(15L);
+        given(usageLimits.getNumTopics()).willReturn(16L);
+        given(usageLimits.getNumStorageSlots()).willReturn(17L);
+        given(usageLimits.getNumTokenRels()).willReturn(18L);
+        given(usageLimits.getNumSchedules()).willReturn(19L);
 
         subject.registerWith(platform);
         subject.updateAll();
 
-        verify(metrics, times(9)).getOrCreate(any(DoubleGauge.Config.class));
+        verify(metrics, times(18)).getOrCreate(any(DoubleGauge.Config.class));
     }
 }

@@ -83,7 +83,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
@@ -112,7 +112,7 @@ import org.apache.logging.log4j.Logger;
 
 /** The Merkle tree root of the Hedera Services world state. */
 public class ServicesState extends PartialNaryMerkleInternal
-        implements MerkleInternal, SwirldState2, StateChildrenProvider {
+        implements MerkleInternal, SwirldState, StateChildrenProvider {
     private static final Logger log = LogManager.getLogger(ServicesState.class);
 
     private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
@@ -122,6 +122,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     private int deserializedStateVersion = CURRENT_VERSION;
     // All of the state that is not itself hashed or serialized, but only derived from such state
     private StateMetadata metadata;
+    // Virtual map factory. If multiple states are in a single JVM, each has its own factory
+    private VirtualMapFactory vmFactory = null;
     /* Set to true if virtual NFTs are enabled. */
     private boolean enabledVirtualNft;
     private boolean enableVirtualAccounts;
@@ -261,7 +263,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                         INSERTIONS_PER_COPY,
                         this,
                         new ToDiskMigrations(enableVirtualAccounts, enableVirtualTokenRels),
-                        vmFactory.get(),
+                        getVirtualMapFactory(),
                         accountMigrator,
                         tokenRelMigrator);
             }
@@ -418,22 +420,6 @@ public class ServicesState extends PartialNaryMerkleInternal
 
         return that;
     }
-
-    /* --- Archivable --- */
-    @Override
-    public synchronized void archive() {
-        if (metadata != null) {
-            metadata.release();
-        }
-
-        topics().archive();
-        tokens().archive();
-        accounts().archive();
-        uniqueTokens().archive();
-        tokenAssociations().archive();
-        stakingInfo().archive();
-    }
-
     /* --- MerkleNode --- */
     @Override
     public synchronized void destroyNode() {
@@ -559,7 +545,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     void createGenesisChildren(
             final AddressBook addressBook, final long seqStart, final BootstrapProperties bootstrapProperties) {
-        final VirtualMapFactory virtualMapFactory = vmFactory.get();
+        final VirtualMapFactory virtualMapFactory = getVirtualMapFactory();
         if (enabledVirtualNft) {
             setChild(StateChildIndices.UNIQUE_TOKENS, virtualMapFactory.newVirtualizedUniqueTokenStorage());
         } else {
@@ -603,7 +589,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     private static StakingInfoBuilder stakingInfoBuilder = StakingInfoMapBuilder::buildStakingInfoMap;
-    private static Supplier<VirtualMapFactory> vmFactory = VirtualMapFactory::new;
+    private static Supplier<VirtualMapFactory> vmFactorySupplier = null; // for testing purposes
     private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
     private static MapToDiskMigration mapToDiskMigration = MapMigrationToDisk::migrateToDiskAsApropos;
     static final Function<MerkleAccountState, OnDiskAccount> accountMigrator = OnDiskAccount::from;
@@ -636,7 +622,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     private static void migrateVirtualMapsToMerkleDb(final ServicesState state) {
-        final VirtualMapFactory virtualMapFactory = vmFactory.get();
+        final VirtualMapFactory virtualMapFactory = state.getVirtualMapFactory();
 
         // virtualized blobs
         final VirtualMap<VirtualBlobKey, VirtualBlobValue> storageMap = state.getChild(StateChildIndices.STORAGE);
@@ -703,6 +689,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         final int copyTargetMapEveryPuts = 10_000;
         final AtomicInteger count = new AtomicInteger(copyTargetMapEveryPuts);
         final AtomicReference<VirtualMap<K, V>> targetMapRef = new AtomicReference<>(target);
+        final AtomicReference<VirtualRootNode<K, V>> previousRoot = new AtomicReference<>();
         MiscUtils.withLoggedDuration(
                 () -> {
                     try {
@@ -719,6 +706,16 @@ public class ServicesState extends PartialNaryMerkleInternal
                                         targetMapRef.set(curCopy.copy());
                                         curCopy.release();
                                         count.set(copyTargetMapEveryPuts);
+                                        // Apply backpressure, so virtual map flushing to disk can
+                                        // keep up with data migration
+                                        final VirtualRootNode<K, V> root = curCopy.getRight();
+                                        if (root.shouldBeFlushed()) {
+                                            final VirtualRootNode<K, V> previous = previousRoot.get();
+                                            if (previous != null) {
+                                                previous.waitUntilFlushed();
+                                            }
+                                            previousRoot.set(root);
+                                        }
                                     }
                                 },
                                 4);
@@ -785,9 +782,19 @@ public class ServicesState extends PartialNaryMerkleInternal
         ServicesState.stakingInfoBuilder = stakingInfoBuilder;
     }
 
+    private VirtualMapFactory getVirtualMapFactory() {
+        if (vmFactorySupplier != null) {
+            return vmFactorySupplier.get();
+        }
+        if (vmFactory == null) {
+            vmFactory = new VirtualMapFactory();
+        }
+        return vmFactory;
+    }
+
     @VisibleForTesting
-    public static void setVmFactory(final Supplier<VirtualMapFactory> vmFactory) {
-        ServicesState.vmFactory = vmFactory;
+    public static void setVmFactory(final Supplier<VirtualMapFactory> vmFactorySupplier) {
+        ServicesState.vmFactorySupplier = vmFactorySupplier;
     }
 
     @VisibleForTesting

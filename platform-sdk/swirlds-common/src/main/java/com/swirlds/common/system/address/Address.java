@@ -17,21 +17,24 @@
 package com.swirlds.common.system.address;
 
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
- * One address in an address book, including all the info about a member. It is immutable. Each getter for a
- * byte array returns a clone of that array. The constructor clones all the arrays passed to it. Each
- * "copySet" simply returns a new deep copy with one variable different. So it isn't a setter, but is a
- * variant of the builder design pattern without a separate build() method.
+ * One address in an address book, including all the info about a member. It is immutable. Each getter for a byte array
+ * returns a clone of that array. The constructor clones all the arrays passed to it. Each "copySet" simply returns a
+ * new deep copy with one variable different. So it isn't a setter, but is a variant of the builder design pattern
+ * without a separate build() method.
  */
 public class Address implements SelfSerializable {
     private static final long CLASS_ID = 0x5acfd3a4a32376eL;
@@ -139,44 +142,27 @@ public class Address implements SelfSerializable {
     /**
      * Same as
      * {@link #Address(long, String, String, long, boolean, byte[], int, byte[], int, byte[], int, byte[], int,
-     * SerializablePublicKey, SerializablePublicKey, SerializablePublicKey, String)}
-     * but with different key types.
+     * SerializablePublicKey, SerializablePublicKey, SerializablePublicKey, String)} but with different key types.
      * Deprecated, should use the method mentioned above.
      *
-     * @param id
-     * 		the ID for that member
-     * @param nickname
-     * 		the name given to that member by the member creating this address
-     * @param selfName
-     * 		the name given to that member by themself
-     * @param stake
-     * 		the amount of stake (0 if they should have no influence on the consensus)
-     * @param ownHost
-     * 		is that member running on the same machine as the member creating this address?
-     * @param addressInternalIpv4
-     * 		IPv4 address on the inside of the NATing router
-     * @param portInternalIpv4
-     * 		port for the internal IPv4 address
-     * @param addressExternalIpv4
-     * 		IPv4 address on the outside of the NATing router (same as internal if there is no NAT)
-     * @param portExternalIpv4
-     * 		port port for the external IPv4 address
-     * @param addressInternalIpv6
-     * 		IPv6 address on the inside of the NATing router
-     * @param portInternalIpv6
-     * 		port for the internal IPv6 address
-     * @param addressExternalIpv6
-     * 		address on the outside of the NATing router
-     * @param portExternalIpv6
-     * 		port for the external IPv6 address
-     * @param sigPublicKey
-     * 		public key used for signing
-     * @param encPublicKey
-     * 		public key used for encryption
-     * @param agreePublicKey
-     * 		public key used for key agreement in TLS
-     * @param memo
-     * 		additional information about the node, can be null
+     * @param id                  the ID for that member
+     * @param nickname            the name given to that member by the member creating this address
+     * @param selfName            the name given to that member by themself
+     * @param stake               the amount of stake (0 if they should have no influence on the consensus)
+     * @param ownHost             is that member running on the same machine as the member creating this address?
+     * @param addressInternalIpv4 IPv4 address on the inside of the NATing router
+     * @param portInternalIpv4    port for the internal IPv4 address
+     * @param addressExternalIpv4 IPv4 address on the outside of the NATing router (same as internal if there is no
+     *                            NAT)
+     * @param portExternalIpv4    port port for the external IPv4 address
+     * @param addressInternalIpv6 IPv6 address on the inside of the NATing router
+     * @param portInternalIpv6    port for the internal IPv6 address
+     * @param addressExternalIpv6 address on the outside of the NATing router
+     * @param portExternalIpv6    port for the external IPv6 address
+     * @param sigPublicKey        public key used for signing
+     * @param encPublicKey        public key used for encryption
+     * @param agreePublicKey      public key used for key agreement in TLS
+     * @param memo                additional information about the node, can be null
      */
     @Deprecated
     public Address(
@@ -220,40 +206,24 @@ public class Address implements SelfSerializable {
     /**
      * constructor for a mutable address for one member.
      *
-     * @param id
-     * 		the ID for that member
-     * @param nickname
-     * 		the name given to that member by the member creating this address
-     * @param selfName
-     * 		the name given to that member by themself
-     * @param stake
-     * 		the amount of stake (0 if they should have no influence on the consensus)
-     * @param ownHost
-     * 		is that member running on the same machine as the member creating this address?
-     * @param addressInternalIpv4
-     * 		IPv4 address on the inside of the NATing router
-     * @param portInternalIpv4
-     * 		port for the internal IPv4 address
-     * @param addressExternalIpv4
-     * 		IPv4 address on the outside of the NATing router (same as internal if there is no NAT)
-     * @param portExternalIpv4
-     * 		port for the external IPv4 address
-     * @param addressInternalIpv6
-     * 		IPv6 address on the inside of the NATing router
-     * @param portInternalIpv6
-     * 		port for the internal IPv6 address
-     * @param addressExternalIpv6
-     * 		address on the outside of the NATing router
-     * @param portExternalIpv6
-     * 		port for the external IPv6 address
-     * @param sigPublicKey
-     * 		public key used for signing
-     * @param encPublicKey
-     * 		public key used for encryption
-     * @param agreePublicKey
-     * 		public key used for key agreement in TLS
-     * @param memo
-     * 		additional information about the node, can be null
+     * @param id                  the ID for that member
+     * @param nickname            the name given to that member by the member creating this address
+     * @param selfName            the name given to that member by themself
+     * @param stake               the amount of stake (0 if they should have no influence on the consensus)
+     * @param ownHost             is that member running on the same machine as the member creating this address?
+     * @param addressInternalIpv4 IPv4 address on the inside of the NATing router
+     * @param portInternalIpv4    port for the internal IPv4 address
+     * @param addressExternalIpv4 IPv4 address on the outside of the NATing router (same as internal if there is no
+     *                            NAT)
+     * @param portExternalIpv4    port for the external IPv4 address
+     * @param addressInternalIpv6 IPv6 address on the inside of the NATing router
+     * @param portInternalIpv6    port for the internal IPv6 address
+     * @param addressExternalIpv6 address on the outside of the NATing router
+     * @param portExternalIpv6    port for the external IPv6 address
+     * @param sigPublicKey        public key used for signing
+     * @param encPublicKey        public key used for encryption
+     * @param agreePublicKey      public key used for key agreement in TLS
+     * @param memo                additional information about the node, can be null
      */
     public Address(
             final long id,
@@ -365,8 +335,7 @@ public class Address implements SelfSerializable {
     /**
      * Get local IP port
      *
-     * @param a
-     * 		the Address object to be operated on
+     * @param a the Address object to be operated on
      * @return port number
      */
     public int getConnectPortIpv4(Address a) {
@@ -376,8 +345,7 @@ public class Address implements SelfSerializable {
     /**
      * Check whether a given Address has the same external IPv4 address as mine.
      *
-     * @param a
-     * 		Given Address to check.
+     * @param a Given Address to check.
      * @return True if they are exactly the same.
      */
     public boolean isLocalTo(Address a) {
@@ -513,8 +481,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different Id.
      *
-     * @param id
-     * 		New Id for the created Address.
+     * @param id New Id for the created Address.
      * @return The new Address.
      */
     public Address copySetId(long id) {
@@ -526,8 +493,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different stake.
      *
-     * @param stake
-     * 		New stake for the created Address.
+     * @param stake New stake for the created Address.
      * @return The new Address.
      */
     public Address copySetStake(long stake) {
@@ -539,8 +505,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different nickname.
      *
-     * @param nickname
-     * 		New nickname for the created Address.
+     * @param nickname New nickname for the created Address.
      * @return The new Address.
      */
     public Address copySetNickname(String nickname) {
@@ -552,8 +517,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different selfName.
      *
-     * @param selfName
-     * 		New selfName for the created Address.
+     * @param selfName New selfName for the created Address.
      * @return The new Address.
      */
     public Address copySetSelfName(String selfName) {
@@ -565,8 +529,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different ownHost value.
      *
-     * @param ownHost
-     * 		New ownHost for the created Address.
+     * @param ownHost New ownHost for the created Address.
      * @return The new Address.
      */
     public Address copySetOwnHost(boolean ownHost) {
@@ -578,8 +541,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different internal IPv4 port.
      *
-     * @param portInternalIpv4
-     * 		New portInternalIpv4 for the created Address.
+     * @param portInternalIpv4 New portInternalIpv4 for the created Address.
      * @return The new Address.
      */
     public Address copySetPortInternalIpv4(int portInternalIpv4) {
@@ -591,8 +553,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different internal IPv6 port.
      *
-     * @param portInternalIpv6
-     * 		New portInternalIpv6 for the created Address.
+     * @param portInternalIpv6 New portInternalIpv6 for the created Address.
      * @return The new Address.
      */
     public Address copySetPortInternalIpv6(int portInternalIpv6) {
@@ -604,8 +565,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different external Ipv4 port.
      *
-     * @param portExternalIpv4
-     * 		New portExternalIpv4 for the created Address.
+     * @param portExternalIpv4 New portExternalIpv4 for the created Address.
      * @return The new Address.
      */
     public Address copySetPortExternalIpv4(int portExternalIpv4) {
@@ -617,8 +577,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different external Ipv6 port.
      *
-     * @param portExternalIpv6
-     * 		New portExternalIpv6 for the created Address.
+     * @param portExternalIpv6 New portExternalIpv6 for the created Address.
      * @return The new Address.
      */
     public Address copySetPortExternalIpv6(int portExternalIpv6) {
@@ -630,8 +589,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different internal IPv4 address.
      *
-     * @param AddressInternalIpv4
-     * 		New AddressInternalIpv4 for the created Address.
+     * @param AddressInternalIpv4 New AddressInternalIpv4 for the created Address.
      * @return The new Address.
      */
     public Address copySetAddressInternalIpv4(byte[] AddressInternalIpv4) {
@@ -643,8 +601,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different internal IPv6 address.
      *
-     * @param AddressInternalIpv6
-     * 		New AddressInternalIpv6 for the created Address.
+     * @param AddressInternalIpv6 New AddressInternalIpv6 for the created Address.
      * @return The new Address.
      */
     public Address copySetAddressInternalIpv6(byte[] AddressInternalIpv6) {
@@ -656,8 +613,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different external IPv4 address.
      *
-     * @param AddressExternalIpv4
-     * 		New AddressExternalIpv4 for the created Address.
+     * @param AddressExternalIpv4 New AddressExternalIpv4 for the created Address.
      * @return The new Address.
      */
     public Address copySetAddressExternalIpv4(byte[] AddressExternalIpv4) {
@@ -669,8 +625,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different external IPv6 address.
      *
-     * @param AddressExternalIpv6
-     * 		New AddressExternalIpv6 for the created Address.
+     * @param AddressExternalIpv6 New AddressExternalIpv6 for the created Address.
      * @return The new Address.
      */
     public Address copySetAddressExternalIpv6(byte[] AddressExternalIpv6) {
@@ -682,8 +637,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different PublicKey for signature.
      *
-     * @param sigPublicKey
-     * 		New sigPublicKey for the created Address.
+     * @param sigPublicKey New sigPublicKey for the created Address.
      * @return The new Address.
      */
     public Address copySetSigPublicKey(PublicKey sigPublicKey) {
@@ -695,8 +649,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different PublicKey for encrypting.
      *
-     * @param encPublicKey
-     * 		New encPublicKey for the created Address.
+     * @param encPublicKey New encPublicKey for the created Address.
      * @return The new Address.
      */
     public Address copySetEncPublicKey(PublicKey encPublicKey) {
@@ -708,8 +661,7 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different PublicKey for TLS key agreement.
      *
-     * @param agreePublicKey
-     * 		New agreePublicKey for the created Address.
+     * @param agreePublicKey New agreePublicKey for the created Address.
      * @return The new Address.
      */
     public Address copySetAgreePublicKey(PublicKey agreePublicKey) {
@@ -747,10 +699,8 @@ public class Address implements SelfSerializable {
     /**
      * Write the Address to the given stream. It should later be read from the stream with readAddress().
      *
-     * @param outStream
-     * 		the stream to write to.
-     * @throws IOException
-     * 		thrown if there any problems during operation
+     * @param outStream the stream to write to.
+     * @throws IOException thrown if there any problems during operation
      */
     @Deprecated
     public void writeAddress(SerializableDataOutputStream outStream) throws IOException {
@@ -758,16 +708,13 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Return a new Address object read from the given stream. It should have been written to the stream
-     * with writeAddress().
+     * Return a new Address object read from the given stream. It should have been written to the stream with
+     * writeAddress().
      *
-     * @param inStream
-     * 		the stream to read from
-     * @param version
-     * 		the version of the serialized address
+     * @param inStream the stream to read from
+     * @param version  the version of the serialized address
      * @return the new Address object that was read.
-     * @throws IOException
-     * 		thrown if there are any problems in operation
+     * @throws IOException thrown if there are any problems in operation
      * @deprecated 0.6.6
      */
     @Deprecated(forRemoval = true)
@@ -851,8 +798,7 @@ public class Address implements SelfSerializable {
     /**
      * Return the String of dot format of the IPv4 address.
      *
-     * @param ip
-     * 		IP address.
+     * @param ip IP address.
      * @return IP address String of dot format.
      */
     public static String ipString(byte[] ip) {
@@ -873,9 +819,18 @@ public class Address implements SelfSerializable {
         }
 
         Address address = (Address) o;
+        return equalsWithoutStakeAndOwnHost(address) && ownHost == address.ownHost && stake == address.stake;
+    }
+
+    /**
+     * Checks for equality with another addresses without checking the equality of stake or ownHost values.
+     *
+     * @param address The other address to check for equality with this address.
+     * @return true if all values in the other address match this address without consideration of stake or ownHost
+     * values, false otherwise.
+     */
+    public boolean equalsWithoutStakeAndOwnHost(@NonNull final Address address) {
         return id == address.id
-                && ownHost == address.ownHost
-                && stake == address.stake
                 && portInternalIpv4 == address.portInternalIpv4
                 && portExternalIpv4 == address.portExternalIpv4
                 && portInternalIpv6 == address.portInternalIpv6
@@ -886,9 +841,15 @@ public class Address implements SelfSerializable {
                 && Arrays.equals(addressExternalIpv4, address.addressExternalIpv4)
                 && Arrays.equals(addressInternalIpv6, address.addressInternalIpv6)
                 && Arrays.equals(addressExternalIpv6, address.addressExternalIpv6)
-                && Objects.equals(sigPublicKey, address.sigPublicKey)
-                && Objects.equals(encPublicKey, address.encPublicKey)
-                && Objects.equals(agreePublicKey, address.agreePublicKey)
+                && Arrays.equals(
+                        sigPublicKey.getPublicKey().getEncoded(),
+                        address.sigPublicKey.getPublicKey().getEncoded())
+                && Arrays.equals(
+                        encPublicKey.getPublicKey().getEncoded(),
+                        address.encPublicKey.getPublicKey().getEncoded())
+                && Arrays.equals(
+                        agreePublicKey.getPublicKey().getEncoded(),
+                        address.agreePublicKey.getPublicKey().getEncoded())
                 && Objects.equals(memo, address.memo);
     }
 
@@ -905,23 +866,24 @@ public class Address implements SelfSerializable {
      */
     @Override
     public String toString() {
-        return "Address{" + "id="
-                + id + ", nickname='"
-                + nickname + '\'' + ", selfName='"
-                + selfName + '\'' + ", ownHost="
-                + ownHost + ", stake="
-                + stake + ", addressInternalIpv4="
-                + Arrays.toString(addressInternalIpv4) + ", portInternalIpv4="
-                + portInternalIpv4 + ", addressExternalIpv4="
-                + Arrays.toString(addressExternalIpv4) + ", portExternalIpv4="
-                + portExternalIpv4 + ", addressInternalIpv6="
-                + Arrays.toString(addressInternalIpv6) + ", portInternalIpv6="
-                + portInternalIpv6 + ", portExternalIpv6="
-                + portExternalIpv6 + ", addressExternalIpv6="
-                + Arrays.toString(addressExternalIpv6) + ", sigPublicKey="
-                + sigPublicKey + ", encPublicKey="
-                + encPublicKey + ", agreePublicKey="
-                + agreePublicKey + ", memo='"
-                + memo + '\'' + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("id", id)
+                .append("nickname", nickname)
+                .append("selfName", selfName)
+                .append("ownHost", ownHost)
+                .append("stake", stake)
+                .append("addressInternalIpv4", Arrays.toString(addressInternalIpv4))
+                .append("portInternalIpv4", portInternalIpv4)
+                .append("addressExternalIpv4", Arrays.toString(addressExternalIpv4))
+                .append("portExternalIpv4", portExternalIpv4)
+                .append("addressInternalIpv6", Arrays.toString(addressInternalIpv6))
+                .append("portInternalIpv6", portInternalIpv6)
+                .append("portExternalIpv6", portExternalIpv6)
+                .append("addressExternalIpv6", Arrays.toString(addressExternalIpv6))
+                .append("sigPublicKey", sigPublicKey)
+                .append("encPublicKey", encPublicKey)
+                .append("agreePublicKey", agreePublicKey)
+                .append("memo", memo)
+                .toString();
     }
 }

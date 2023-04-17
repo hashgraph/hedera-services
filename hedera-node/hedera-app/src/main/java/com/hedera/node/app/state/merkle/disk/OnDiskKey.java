@@ -16,16 +16,17 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import com.hedera.node.app.spi.state.Serdes;
-import com.hedera.node.app.spi.state.serdes.ByteBufferDataInput;
-import com.hedera.node.app.spi.state.serdes.ByteBufferDataOutput;
+import static com.hedera.node.app.state.merkle.StateUtils.readFromStream;
+import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
+
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -37,8 +38,8 @@ import java.util.Objects;
  * object of type {@code K}. For example, the "real" key may be {@code AccountID}, but it must be
  * wrapped by an {@link OnDiskKey} to adapt it for use by the {@link VirtualMap}.
  *
- * <p>The {@code AccountID} itself is not directly serializable, and therefore a {@link Serdes} is
- * provided to handle all serialization needs for the "real" key. The {@link Serdes} is used to
+ * <p>The {@code AccountID} itself is not directly serializable, and therefore a {@link Codec} is
+ * provided to handle all serialization needs for the "real" key. The {@link Codec} is used to
  * convert the "real" key into bytes for hashing, saving to disk via the {@link VirtualMap}, reading
  * from disk, reconnect, and for state saving.
  *
@@ -49,8 +50,8 @@ public final class OnDiskKey<K extends Comparable<? super K>> implements Virtual
     private static final long CLASS_ID = 0x2929238293892373L;
     /** The metadata */
     private final StateMetadata<K, ?> md;
-    /** The {@link Serdes} used for handling serialization for the "real" key. */
-    private final Serdes<K> serdes;
+    /** The {@link Codec} used for handling serialization for the "real" key. */
+    private final Codec<K> codec;
     /** The "real" key, such as AccountID. */
     private K key;
 
@@ -58,7 +59,7 @@ public final class OnDiskKey<K extends Comparable<? super K>> implements Virtual
     @Deprecated(forRemoval = true)
     public OnDiskKey() {
         md = null;
-        serdes = null;
+        codec = null;
     }
 
     /**
@@ -68,7 +69,7 @@ public final class OnDiskKey<K extends Comparable<? super K>> implements Virtual
      */
     public OnDiskKey(final StateMetadata<K, ?> md) {
         this.md = md;
-        this.serdes = md.stateDefinition().keySerdes();
+        this.codec = md.stateDefinition().keyCodec();
     }
 
     /**
@@ -89,24 +90,31 @@ public final class OnDiskKey<K extends Comparable<? super K>> implements Virtual
 
     /** Writes the "real" key to the given stream. {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        serdes.write(key, serializableDataOutputStream);
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+        writeToStream(out, codec, key);
     }
 
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        serdes.write(key, new ByteBufferDataOutput(byteBuffer));
+        final var output = BufferedData.wrap(byteBuffer);
+        output.skip(4);
+        codec.write(key, output);
+        final var pos = output.position();
+        output.position(0);
+        output.writeInt((int) pos - 4);
+        output.position(pos);
     }
 
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        key = serdes.parse(new ByteBufferDataInput(byteBuffer));
+        final var buf = BufferedData.wrap(byteBuffer);
+        buf.skip(4);
+        key = codec.parse(buf);
     }
 
     @Override
-    public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
-            throws IOException {
-        key = serdes.parse(new DataInputStream(serializableDataInputStream));
+    public void deserialize(@NonNull final SerializableDataInputStream in, int ignored) throws IOException {
+        key = readFromStream(in, codec);
     }
 
     @Override
@@ -136,5 +144,10 @@ public final class OnDiskKey<K extends Comparable<? super K>> implements Virtual
     @Override
     public int hashCode() {
         return Objects.hash(key);
+    }
+
+    @Override
+    public String toString() {
+        return "OnDiskKey{" + "key=" + key + '}';
     }
 }

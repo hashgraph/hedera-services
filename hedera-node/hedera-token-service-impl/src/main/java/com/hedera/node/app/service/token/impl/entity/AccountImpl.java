@@ -16,20 +16,20 @@
 
 package com.hedera.node.app.service.token.impl.entity;
 
-import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.service.token.entity.AccountBuilder;
+import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.node.app.spi.accounts.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Optional;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-/** An implementation of {@link Account}. FUTURE: Should be moved to token-service-impl module */
+/** An implementation of {@link Account} */
 public record AccountImpl(
         long accountNumber,
-        Optional<byte[]> alias,
+        Bytes alias,
         @Nullable HederaKey key,
         long expiry,
         long balance,
@@ -53,25 +53,13 @@ public record AccountImpl(
         implements Account {
 
     @Override
-    public long shardNumber() {
-        // FUTURE: Need to get this from config
-        return 0;
-    }
-
-    @Override
-    public long realmNumber() {
-        // FUTURE: Need to get this from config
-        return 0;
-    }
-
-    @Override
     public boolean isHollow() {
         return key == null;
     }
 
     @Override
-    public Optional<HederaKey> getKey() {
-        return Optional.ofNullable(key);
+    public HederaKey getKey() {
+        return key;
     }
 
     @Override

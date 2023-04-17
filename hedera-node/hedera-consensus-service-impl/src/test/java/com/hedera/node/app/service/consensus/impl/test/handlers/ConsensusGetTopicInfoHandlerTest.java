@@ -16,152 +16,200 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hederahashgraph.api.proto.java.ResponseType.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 
-import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
+import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoResponse;
+import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
+import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hederahashgraph.api.proto.java.*;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
+
+    @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private QueryContext context;
+
     private ConsensusGetTopicInfoHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ConsensusGetTopicInfoHandler();
+        subject = new ConsensusGetTopicInfoHandler(networkInfo);
     }
 
     @Test
-    void emptyConstructor() {
-        assertNotNull(new ConsensusGetTopicInfoHandler());
-    }
-
-    @Test
-    void extractsHeader() throws Throwable {
-        final var query = createGetTopicInfoQuery(topicNum.intValue());
+    void extractsHeader() {
+        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         final var header = subject.extractHeader(query);
-        assertEquals(query.getConsensusGetTopicInfo().getHeader(), header);
+        final var op = query.consensusGetTopicInfoOrThrow();
+        assertEquals(op.header(), header);
     }
 
     @Test
     void createsEmptyResponse() {
         final var responseHeader = ResponseHeader.newBuilder()
-                .setNodeTransactionPrecheckCode(FAIL_FEE)
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
         final var response = subject.createEmptyResponse(responseHeader);
         final var expectedResponse = Response.newBuilder()
-                .setConsensusGetTopicInfo(ConsensusGetTopicInfoResponse.newBuilder()
-                        .setHeader(responseHeader)
-                        .build())
+                .consensusGetTopicInfo(
+                        ConsensusGetTopicInfoResponse.newBuilder().header(responseHeader))
                 .build();
         assertEquals(expectedResponse, response);
     }
 
     @Test
     void requiresPayment() {
-        assertTrue(subject.requiresNodePayment(ANSWER_ONLY));
-        assertTrue(subject.requiresNodePayment(ANSWER_STATE_PROOF));
-        assertFalse(subject.requiresNodePayment(COST_ANSWER));
-        assertFalse(subject.requiresNodePayment(COST_ANSWER_STATE_PROOF));
+        assertTrue(subject.requiresNodePayment(ResponseType.ANSWER_ONLY));
+        assertTrue(subject.requiresNodePayment(ResponseType.ANSWER_STATE_PROOF));
+        assertFalse(subject.requiresNodePayment(ResponseType.COST_ANSWER));
+        assertFalse(subject.requiresNodePayment(ResponseType.COST_ANSWER_STATE_PROOF));
     }
 
     @Test
     void needsAnswerOnlyCostForCostAnswer() {
-        assertFalse(subject.needsAnswerOnlyCost(ANSWER_ONLY));
-        assertFalse(subject.needsAnswerOnlyCost(ANSWER_STATE_PROOF));
-        assertTrue(subject.needsAnswerOnlyCost(COST_ANSWER));
-        assertFalse(subject.needsAnswerOnlyCost(COST_ANSWER_STATE_PROOF));
+        assertFalse(subject.needsAnswerOnlyCost(ResponseType.ANSWER_ONLY));
+        assertFalse(subject.needsAnswerOnlyCost(ResponseType.ANSWER_STATE_PROOF));
+        assertTrue(subject.needsAnswerOnlyCost(ResponseType.COST_ANSWER));
+        assertFalse(subject.needsAnswerOnlyCost(ResponseType.COST_ANSWER_STATE_PROOF));
     }
 
     @Test
     void validatesQueryWhenValidTopic() throws Throwable {
         givenValidTopic();
 
-        final var query = createGetTopicInfoQuery(topicNum.intValue());
-        final var response = subject.validate(query, store);
-        assertEquals(OK, response);
+        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
+        given(context.query()).willReturn(query);
+        given(context.createStore(ReadableTopicStore.class)).willReturn(readableStore);
+
+        assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();
     }
 
     @Test
     void validatesQueryIfInvalidTopic() throws Throwable {
-        given(topics.get(topicNum)).willReturn(null);
+        readableTopicState.reset();
+        final var state =
+                MapReadableKVState.<Long, MerkleTopic>builder("TOPICS").build();
+        given(readableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(state);
+        final var store = new ReadableTopicStore(readableStates);
 
-        final var query = createGetTopicInfoQuery(topicNum.intValue());
-        final var response = subject.validate(query, store);
-        assertEquals(INVALID_TOPIC_ID, response);
+        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTopicStore.class)).thenReturn(store);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_TOPIC_ID));
     }
 
     @Test
     void validatesQueryIfDeletedTopic() throws Throwable {
-        givenValidTopic();
-        given(topic.isDeleted()).willReturn(true);
+        givenValidTopic(autoRenewId.accountNum(), true);
+        readableTopicState = readableTopicState();
+        given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
+        readableStore = new ReadableTopicStore(readableStates);
 
-        final var query = createGetTopicInfoQuery(topicNum.intValue());
-        final var response = subject.validate(query, store);
-        assertEquals(INVALID_TOPIC_ID, response);
+        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_TOPIC_ID));
     }
 
     @Test
-    void getsResponseIfFailedResponse() throws Throwable {
+    void getsResponseIfFailedResponse() {
         final var responseHeader = ResponseHeader.newBuilder()
-                .setNodeTransactionPrecheckCode(FAIL_FEE)
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
 
-        final var query = createGetTopicInfoQuery(topicNum.intValue());
-        final var response = subject.findResponse(query, responseHeader, store, queryContext);
-        assertEquals(FAIL_FEE, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
-        assertEquals(
-                ConsensusTopicInfo.newBuilder().build(),
-                response.getConsensusGetTopicInfo().getTopicInfo());
+        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
+
+        final var response = subject.findResponse(context, responseHeader);
+        final var op = response.consensusGetTopicInfoOrThrow();
+        assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
+        assertNull(op.topicInfo());
     }
 
     @Test
-    void getsResponseIfOkResponse() throws Throwable {
+    void getsResponseIfOkResponse() {
         givenValidTopic();
-        given(queryContext.getLedgerId()).willReturn(ledgerId);
-        final var responseHeader =
-                ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK).build();
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
         final var expectedInfo = getExpectedInfo();
 
-        final var query = createGetTopicInfoQuery(topicNum.intValue());
-        final var response = subject.findResponse(query, responseHeader, store, queryContext);
-        assertEquals(OK, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
-        assertEquals(expectedInfo, response.getConsensusGetTopicInfo().getTopicInfo());
+        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
+
+        final var response = subject.findResponse(context, responseHeader);
+        final var topicInfoResponse = response.consensusGetTopicInfoOrThrow();
+        assertEquals(ResponseCodeEnum.OK, topicInfoResponse.header().nodeTransactionPrecheckCode());
+        assertEquals(expectedInfo, topicInfoResponse.topicInfo());
     }
 
     private ConsensusTopicInfo getExpectedInfo() {
         return ConsensusTopicInfo.newBuilder()
-                .setMemo(memo)
-                .setAdminKey(asKeyUnchecked((JKey) adminKey))
-                .setRunningHash(ByteString.copyFrom(new byte[48]))
-                .setSequenceNumber(1L)
-                .setExpirationTime(RichInstant.MISSING_INSTANT.toGrpc())
-                .setSubmitKey(asKeyUnchecked((JKey) adminKey))
-                .setAutoRenewAccount(autoRenewId)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100L).build())
-                .setLedgerId(ledgerId)
+                .memo(topic.memo())
+                .adminKey(key)
+                .runningHash(Bytes.wrap("runningHash"))
+                .sequenceNumber(topic.sequenceNumber())
+                .expirationTime(Timestamp.newBuilder().seconds(topic.expiry()))
+                .submitKey(key)
+                .autoRenewAccount(AccountID.newBuilder().accountNum(topic.autoRenewAccountNumber()))
+                .autoRenewPeriod(WELL_KNOWN_AUTO_RENEW_PERIOD)
+                .ledgerId(ledgerId)
                 .build();
     }
 
-    private Query createGetTopicInfoQuery(int topicId) throws Throwable {
-        final var payment = payerSponsoredTransfer(payerId, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
+    private Query createGetTopicInfoQuery(final int topicId) {
+        final var payment =
+                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = ConsensusGetTopicInfoQuery.newBuilder()
-                .setTopicID(TopicID.newBuilder().setTopicNum(topicId).build())
-                .setHeader(QueryHeader.newBuilder().setPayment(payment).build())
+                .topicID(TopicID.newBuilder().topicNum(topicId).build())
+                .header(QueryHeader.newBuilder().payment(payment).build())
                 .build();
 
-        return Query.newBuilder().setConsensusGetTopicInfo(data).build();
+        return Query.newBuilder().consensusGetTopicInfo(data).build();
     }
 }

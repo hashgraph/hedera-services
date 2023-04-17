@@ -36,6 +36,22 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         }
 
         @Test
+        @DisplayName("The size of the state is the size of the virtual map")
+        void sizeWorks() {
+            setupFruitVirtualMap();
+
+            final var state = new OnDiskWritableKVState<>(fruitVirtualMetadata, fruitVirtualMap);
+            assertThat(state.size()).isEqualTo(0);
+
+            add(fruitVirtualMap, fruitVirtualMetadata, A_KEY, APPLE);
+            add(fruitVirtualMap, fruitVirtualMetadata, B_KEY, BANANA);
+            add(fruitVirtualMap, fruitVirtualMetadata, C_KEY, CHERRY);
+
+            assertThat(state.size()).isEqualTo(fruitVirtualMap.size());
+            assertThat(state.size()).isEqualTo(3);
+        }
+
+        @Test
         @DisplayName("You must specify the metadata")
         void nullMetadataThrows() {
             //noinspection DataFlowIssue

@@ -49,8 +49,7 @@ import java.util.Objects;
  * @param <V>
  * 		The value.
  */
-public class JasperDbBuilder<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements VirtualDataSourceBuilder<K, V> {
+public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSourceBuilder<K, V> {
 
     private static final long CLASS_ID = 0xe3f6da254983b38cL;
 
@@ -251,7 +250,8 @@ public class JasperDbBuilder<K extends VirtualKey<? super K>, V extends VirtualV
      * {@inheritDoc}
      */
     @Override
-    public VirtualDataSourceJasperDB<K, V> copy(final VirtualDataSource<K, V> snapshotMe) {
+    public VirtualDataSourceJasperDB<K, V> copy(
+            final VirtualDataSource<K, V> snapshotMe, final boolean makeCopyActive) {
         validateBuilderState();
         if (!(snapshotMe instanceof VirtualDataSourceJasperDB<K, V> snapshotMeJasperDB)) {
             throw new IllegalArgumentException("The datasource must be compatible with the jasperdb");

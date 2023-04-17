@@ -16,19 +16,19 @@
 
 package com.hedera.node.app.service.token.impl.entity;
 
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.spi.accounts.Account.HBARS_TO_TINYBARS;
 
-import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.service.token.entity.AccountBuilder;
+import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.node.app.spi.accounts.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * An implementation of {@link AccountBuilder} for building Account instances. This class is
- * <strong>not</strong> exported from the module. FUTURE: Should be moved to token-service-impl
+ * <strong>not</strong> exported from the module.
  * module
  */
 public class AccountBuilderImpl implements AccountBuilder {
@@ -55,7 +55,7 @@ public class AccountBuilderImpl implements AccountBuilder {
     private long autoRenewAccountNumber;
     private long autoRenewSecs;
     private long accountNumber;
-    private Optional<byte[]> alias;
+    private Bytes alias;
     private boolean isSmartContract;
 
     /**
@@ -66,7 +66,7 @@ public class AccountBuilderImpl implements AccountBuilder {
      */
     public AccountBuilderImpl(@NonNull Account copyOf) {
         Objects.requireNonNull(copyOf);
-        this.key = copyOf.getKey().orElse(null);
+        this.key = copyOf.getKey();
         this.expiry = copyOf.expiry();
         this.balance = copyOf.balanceInTinyBar();
         this.memo = copyOf.memo();
@@ -91,7 +91,7 @@ public class AccountBuilderImpl implements AccountBuilder {
     }
 
     public AccountBuilderImpl() {
-        alias = Optional.empty();
+        alias = Bytes.EMPTY;
         /* Default constructor for creating new Accounts */
     }
 
@@ -123,7 +123,7 @@ public class AccountBuilderImpl implements AccountBuilder {
     @NonNull
     @Override
     public AccountBuilder memo(String value) {
-        this.memo = Objects.requireNonNull(value);
+        this.memo = value;
         return this;
     }
 
@@ -235,7 +235,7 @@ public class AccountBuilderImpl implements AccountBuilder {
     @Override
     @NonNull
     public AccountBuilder alias(byte[] value) {
-        this.alias = Optional.of(value);
+        this.alias = Bytes.wrap(value);
         return this;
     }
 

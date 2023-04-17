@@ -16,11 +16,19 @@
 
 package com.hedera.node.app.throttle;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayOutputStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -38,12 +46,36 @@ public class MonoThrottleAccumulator implements ThrottleAccumulator {
     }
 
     @Override
-    public boolean shouldThrottle(@NonNull HederaFunctionality functionality) {
-        throw new UnsupportedOperationException();
+    public boolean shouldThrottle(@NonNull final TransactionBody txn) {
+        try {
+            // This is wildly inefficient. We need to rework the fee system, so we are not
+            // creating temporary objects like this and doing so much protobuf serialization
+            // for no good reason!
+            var out = new ByteArrayOutputStream();
+            TransactionBody.PROTOBUF.write(txn, new WritableStreamingData(out));
+            final var txnBytes = out.toByteArray();
+
+            final var signedTx = SignedTransaction.newBuilder()
+                    .bodyBytes(Bytes.wrap(txnBytes))
+                    .build();
+
+            out = new ByteArrayOutputStream();
+            SignedTransaction.PROTOBUF.write(signedTx, new WritableStreamingData(out));
+
+            final var adapter = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+                    .signedTransactionBytes(Bytes.wrap(out.toByteArray()))
+                    .build());
+
+            return hapiThrottling.shouldThrottleTxn(adapter);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public boolean shouldThrottleQuery(final @NonNull HederaFunctionality functionality, final @NonNull Query query) {
-        return hapiThrottling.shouldThrottleQuery(functionality, query);
+        final var monoFunctionality = PbjConverter.fromPbj(functionality);
+        final var monoQuery = PbjConverter.fromPbj(query);
+        return hapiThrottling.shouldThrottleQuery(monoFunctionality, monoQuery);
     }
 }

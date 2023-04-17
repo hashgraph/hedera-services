@@ -42,7 +42,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * within a {@link com.hedera.node.app.HederaApp} instance, which is important while we are relying
  * heavily on adapters around {@code mono-service} components.
  */
-public class VirtualMapLikeAdapter {
+public final class VirtualMapLikeAdapter {
     private VirtualMapLikeAdapter() {
         throw new UnsupportedOperationException("Utility Class");
     }
@@ -94,7 +94,9 @@ public class VirtualMapLikeAdapter {
 
             @Override
             public void put(final K key, final V value) {
-                real.put(new OnDiskKey<>(md, key), new OnDiskValue<>(md, value));
+                final var onDiskKey = new OnDiskKey<>(md, key);
+                final var onDiskValue = new OnDiskValue<>(md, value);
+                real.put(onDiskKey, onDiskValue);
             }
 
             @Override

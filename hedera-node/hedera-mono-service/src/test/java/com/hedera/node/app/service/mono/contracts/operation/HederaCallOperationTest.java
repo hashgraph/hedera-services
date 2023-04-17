@@ -17,12 +17,15 @@
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.hedera.node.app.service.mono.contracts.operation.CommonCallSetup.commonSetup;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
@@ -126,7 +129,7 @@ class HederaCallOperationTest {
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
         given(acc.getAddress()).willReturn(Address.ZERO);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
                 .willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
 
@@ -134,9 +137,41 @@ class HederaCallOperationTest {
         assertNull(opRes.getHaltReason());
         assertEquals(opRes.getGasCost(), cost);
 
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
                 .willReturn(false);
         var invalidSignaturesRes = subject.execute(evmMsgFrame, evm);
         assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, invalidSignaturesRes.getHaltReason());
+    }
+
+    @Test
+    void staticCallsDoNotCheckSignatures() {
+        commonSetup(evmMsgFrame, worldUpdater, acc);
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                .willReturn(cost);
+        // and:
+        given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
+        // and:
+        given(evmMsgFrame.stackSize()).willReturn(20);
+        given(evmMsgFrame.getRemainingGas()).willReturn(cost);
+        given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
+
+        given(worldUpdater.get(any())).willReturn(acc);
+        given(acc.getBalance()).willReturn(Wei.of(100));
+        given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
+        given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmMsgFrame.isStatic()).willReturn(true);
+
+        var opRes = subject.execute(evmMsgFrame, evm);
+        assertNull(opRes.getHaltReason());
+        assertEquals(opRes.getGasCost(), cost);
+        // and:
+        verifyNoInteractions(sigsVerifier);
     }
 }

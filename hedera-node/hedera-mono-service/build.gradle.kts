@@ -39,6 +39,7 @@ configurations.all {
 dependencies {
   annotationProcessor(libs.dagger.compiler)
 
+  api(project(":hedera-node:hapi"))
   api(project(":hedera-node:hedera-evm"))
   api(project(":hedera-node:hedera-app-spi"))
   api(project(":hedera-node:hedera-admin-service"))
@@ -99,6 +100,10 @@ tasks.withType<JavaCompile> { options.annotationProcessorPath = apt }
 val jmhDaggerSources = file("build/generated/sources/annotationProcessor/java/jmh")
 
 java.sourceSets["jmh"].java.srcDir(jmhDaggerSources)
+
+val generatedSources = file("build/generated/sources/annotationProcessor/java/main")
+
+java.sourceSets["main"].java.srcDir(generatedSources)
 
 // Replace variables in semantic-version.properties with build variables
 tasks.processResources {

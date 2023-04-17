@@ -16,450 +16,371 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Parser;
-import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionResponse;
+import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.onset.OnsetResult;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import java.nio.ByteBuffer;
-import java.util.Optional;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class IngestWorkflowImplTest {
-
-    private static final AccountID ACCOUNT_ID =
-            AccountID.newBuilder().setAccountNum(42L).build();
-    private static final TransactionID TRANSACTION_ID =
-            TransactionID.newBuilder().setAccountID(ACCOUNT_ID).build();
-    private static final TransactionBody TRANSACTION_BODY =
-            TransactionBody.newBuilder().setTransactionID(TRANSACTION_ID).build();
-    private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder().build();
-    private static final OnsetResult ONSET_RESULT =
-            new OnsetResult(TRANSACTION_BODY, TRANSACTION_BODY.toByteArray(), OK, SIGNATURE_MAP, ConsensusCreateTopic);
-
-    @Mock
-    private NodeInfo nodeInfo;
-
-    @Mock(strictness = LENIENT)
-    private CurrentPlatformStatus currentPlatformStatus;
-
-    @Mock(strictness = LENIENT)
-    private Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
-
-    @Mock(strictness = LENIENT)
-    private WorkflowOnset onset;
-
-    @Mock(strictness = LENIENT)
-    private ReadableAccountStore accountStore;
-
-    @Mock
-    private Account account;
-
-    @Mock(strictness = LENIENT)
-    private IngestChecker checker;
-
-    @Mock
-    private ThrottleAccumulator throttleAccumulator;
-
-    @Mock
-    private SubmissionManager submissionManager;
-
-    @Mock
-    private HapiOpCounters opCounters;
-
-    @Mock
-    private Parser<Query> queryParser;
-
-    @Mock
-    private Parser<Transaction> txParser;
-
-    @Mock
-    private Parser<SignedTransaction> signedParser;
-
-    @Mock
-    private Parser<TransactionBody> txBodyParser;
-
-    private SessionContext ctx;
+class IngestWorkflowImplTest extends AppTestBase {
+    /** The workflow to be tested. */
     private IngestWorkflowImpl workflow;
-    private ByteBuffer requestBuffer;
+
+    /**
+     * The request. For testing purposes, the bytes in this buffer are not important. The {@link TransactionChecker} is
+     * stubbed to always return a valid parsed object.
+     */
+    private Bytes requestBuffer;
+
+    /** The buffer to write responses into. */
+    private final BufferedData responseBuffer = BufferedData.allocate(1024 * 6);
+
+    /** The request transaction */
+    private Transaction transaction;
+
+    /** The request transaction body */
+    private TransactionBody transactionBody;
+
+    // The following fields are all mocked dependencies of the workflow.
+    @Mock(strictness = LENIENT)
+    HederaState state;
+
+    @Mock(strictness = LENIENT)
+    Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+
+    @Mock(strictness = LENIENT)
+    TransactionChecker transactionChecker;
+
+    @Mock(strictness = LENIENT)
+    IngestChecker ingestChecker;
+
+    @Mock(strictness = LENIENT)
+    SubmissionManager submissionManager;
+
+    @Mock(strictness = LENIENT)
+    Metrics metrics;
+
+    @Mock(strictness = LENIENT)
+    Counter countSubmitted;
 
     @BeforeEach
-    void setup(@Mock(strictness = LENIENT) HederaState state) throws PreCheckException {
-        when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
+    void setup() throws PreCheckException {
+        // The request buffer, with basically random bytes
+        requestBuffer = randomBytes(10);
+        transactionBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(1001).build())
+                        .build())
+                .build();
+
+        // The account will have the following state
+        // TODO Anything here??
+
+        // The state is going to always be empty
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
-        when(accountStore.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        // TODO Mock out the metrics to return objects we can inspect later
+        when(metrics.getOrCreate(any())).thenReturn(countSubmitted);
 
-        requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
-        ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
-        when(onset.parseAndCheck(ctx, requestBuffer)).thenReturn(ONSET_RESULT);
-        when(checker.extractByteArray(any())).thenReturn(new byte[0]);
+        // Mock out the onset to always return a valid parsed object
+        transaction = Transaction.newBuilder().body(transactionBody).build();
+        when(transactionChecker.parse(requestBuffer)).thenReturn(transaction);
+        final var transactionInfo = new TransactionInfo(
+                transaction,
+                transactionBody,
+                SignatureMap.newBuilder().build(),
+                HederaFunctionality.CONSENSUS_CREATE_TOPIC);
+        when(ingestChecker.runAllChecks(state, transaction)).thenReturn(transactionInfo);
 
-        workflow = new IngestWorkflowImpl(
-                nodeInfo,
-                currentPlatformStatus,
-                stateAccessor,
-                onset,
-                checker,
-                throttleAccumulator,
-                submissionManager,
-                opCounters);
+        // Create the workflow we are going to test with
+        workflow = new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, submissionManager, metrics);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        null,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        onset,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        opCounters))
+        assertThatThrownBy(() ->
+                        new IngestWorkflowImpl(null, transactionChecker, ingestChecker, submissionManager, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, null, ingestChecker, submissionManager, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() ->
+                        new IngestWorkflowImpl(stateAccessor, transactionChecker, null, submissionManager, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () -> new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, null, metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        null,
-                        stateAccessor,
-                        onset,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        null,
-                        onset,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        null,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        onset,
-                        null,
-                        throttleAccumulator,
-                        submissionManager,
-                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        onset,
-                        checker,
-                        null,
-                        submissionManager,
-                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        onset,
-                        checker,
-                        throttleAccumulator,
-                        null,
-                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        onset,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        null))
+                        stateAccessor, transactionChecker, ingestChecker, submissionManager, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    void testSuccess() throws PreCheckException, InvalidProtocolBufferException {
-        // given
-        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+    @DisplayName("When everything goes right, the transaction should be submitted")
+    void testSuccess() throws PreCheckException, IOException {
+        // When the transaction is submitted
+        workflow.submitTransaction(requestBuffer, responseBuffer);
 
-        // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer, states -> accountStore);
-
-        // then
+        // Then we get a response that is OK
         final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
-        assertThat(response.getCost()).isZero();
-        verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager).submit(eq(TRANSACTION_BODY), any(), eq(txBodyParser));
-        verify(opCounters).countSubmitted(ConsensusCreateTopic);
+        assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(OK);
+        // The cost *MUST* be zero, it is only non-zero for insufficient balance errors
+        assertThat(response.cost()).isZero();
+        // And that the transaction and its bytes were actually passed to the submission manager
+        verify(submissionManager).submit(transactionBody, requestBuffer);
+        // And that the metrics for counting submitted transactions was incremented
+        verify(countSubmitted).increment();
     }
 
-    @Test
-    void testSuccessWithNonDirectByteBuffer(@Mock ByteBuffer localRequestBuffer)
-            throws PreCheckException, InvalidProtocolBufferException {
-        // given
-        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
-        when(onset.parseAndCheck(ctx, localRequestBuffer)).thenReturn(ONSET_RESULT);
+    @Nested
+    @DisplayName("0. Node state pre-checks")
+    class NodeTests {
+        @Test
+        @DisplayName("When the node is zero stake, the transaction should be rejected")
+        void testParseAndCheckWithZeroStakeFails() throws IOException, PreCheckException {
+            // Given a node that IS zero stake
+            doThrow(new PreCheckException(INVALID_NODE_ACCOUNT))
+                    .when(ingestChecker)
+                    .checkNodeState();
 
-        // when
-        workflow.submitTransaction(ctx, localRequestBuffer, responseBuffer, states -> accountStore);
+            // When the transaction is submitted
+            workflow.submitTransaction(requestBuffer, responseBuffer);
 
-        // then
-        final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
-        assertThat(response.getCost()).isZero();
-        verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager).submit(eq(TRANSACTION_BODY), any(), eq(txBodyParser));
-        verify(opCounters).countSubmitted(ConsensusCreateTopic);
-    }
-
-    @Test
-    void testParseAndCheckWithZeroStakeFails() throws InvalidProtocolBufferException, PreCheckException {
-        // given
-        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
-        when(nodeInfo.isSelfZeroStake()).thenReturn(true);
-
-        // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
-
-        // then
-        final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(INVALID_NODE_ACCOUNT);
-        assertThat(response.getCost()).isZero();
-        verify(opCounters, never()).countReceived(any());
-        verify(submissionManager, never()).submit(any(), any(), any());
-        verify(opCounters, never()).countSubmitted(any());
-    }
-
-    @ParameterizedTest
-    @EnumSource(PlatformStatus.class)
-    void testParseAndCheckWithInactivePlatformFails(final PlatformStatus status)
-            throws InvalidProtocolBufferException, PreCheckException {
-        if (status != PlatformStatus.ACTIVE) {
-            // given
-            final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
-            final var inactivePlatformStatus = mock(CurrentPlatformStatus.class);
-            when(inactivePlatformStatus.get()).thenReturn(status);
-            workflow = new IngestWorkflowImpl(
-                    nodeInfo,
-                    inactivePlatformStatus,
-                    stateAccessor,
-                    onset,
-                    checker,
-                    throttleAccumulator,
-                    submissionManager,
-                    opCounters);
-
-            // when
-            workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
-
-            // then
+            // Then the request is rejected with INVALID_NODE_ACCOUNT
             final TransactionResponse response = parseResponse(responseBuffer);
-            assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(PLATFORM_NOT_ACTIVE);
-            assertThat(response.getCost()).isZero();
-            verify(opCounters, never()).countReceived(any());
-            verify(submissionManager, never()).submit(any(), any(), any());
-            verify(opCounters, never()).countSubmitted(any());
+            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(INVALID_NODE_ACCOUNT);
+            // The cost *MUST* be zero, it is only non-zero for insufficient balance errors
+            assertThat(response.cost()).isZero();
+            // And the transaction was not submitted
+            verify(submissionManager, never()).submit(any(), any());
+            // And the metrics for counting submitted transactions was not incremented
+            verify(countSubmitted, never()).increment();
+        }
+
+        @ParameterizedTest
+        @EnumSource(PlatformStatus.class)
+        @DisplayName("When the platform is not ACTIVE, the transaction should be rejected (except for ACTIVE)")
+        void testParseAndCheckWithInactivePlatformFails(final PlatformStatus status)
+                throws IOException, PreCheckException {
+            // Since the enum source is going over all states, and the ACTIVE state is
+            // actually good, I need to skip that one.
+            if (status != PlatformStatus.ACTIVE) {
+                // Given a platform that is not ACTIVE
+                doThrow(new PreCheckException(PLATFORM_NOT_ACTIVE))
+                        .when(ingestChecker)
+                        .checkNodeState();
+
+                // When the transaction is submitted
+                workflow.submitTransaction(requestBuffer, responseBuffer);
+
+                // Then the response fails with PLATFORM_NOT_ACTIVE
+                final TransactionResponse response = parseResponse(responseBuffer);
+                assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(PLATFORM_NOT_ACTIVE);
+                // The cost *MUST* be zero, it is only non-zero for insufficient balance errors
+                assertThat(response.cost()).isZero();
+                // And the transaction is not submitted to the platform
+                verify(submissionManager, never()).submit(any(), any());
+                // And the metrics for counting submitted transactions was not incremented
+                verify(countSubmitted, never()).increment();
+            }
         }
     }
 
-    @Test
-    void testOnsetFails(@Mock WorkflowOnset localOnset) throws PreCheckException, InvalidProtocolBufferException {
-        // given
-        when(localOnset.parseAndCheck(any(), any(ByteBuffer.class)))
-                .thenThrow(new PreCheckException(INVALID_TRANSACTION));
-        workflow = new IngestWorkflowImpl(
-                nodeInfo,
-                currentPlatformStatus,
-                stateAccessor,
-                localOnset,
-                checker,
-                throttleAccumulator,
-                submissionManager,
-                opCounters);
-        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+    @Nested
+    @DisplayName("1. Parse the TransactionBody")
+    class OnsetTests {
+        /**
+         * It is not necessary to test all the possible failure reasons, just a few to make sure that
+         * the workflow is passing the failure reason to the response.
+         * @return a stream of arguments with the failure reason
+         */
+        public static Stream<Arguments> failureReasons() {
+            return Stream.of(
+                    Arguments.of(INVALID_TRANSACTION),
+                    Arguments.of(INVALID_TRANSACTION_BODY),
+                    Arguments.of(TRANSACTION_HAS_UNKNOWN_FIELDS),
+                    Arguments.of(TRANSACTION_OVERSIZE));
+        }
 
-        // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+        @ParameterizedTest(name = "WorkflowOnset fails with error code {0}")
+        @MethodSource("failureReasons")
+        @DisplayName("If the transaction fails WorkflowOnset, a failure response is returned with the right error")
+        void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
+            // Given a WorkflowOnset that will throw a PreCheckException with the given failure reason
+            when(transactionChecker.parse(any())).thenThrow(new PreCheckException(failureReason));
 
-        // then
-        final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(INVALID_TRANSACTION);
-        assertThat(response.getCost()).isZero();
-        verify(opCounters, never()).countReceived(any());
-        verify(submissionManager, never()).submit(any(), any(), any());
-        verify(opCounters, never()).countSubmitted(any());
+            // When the transaction is submitted
+            workflow.submitTransaction(requestBuffer, responseBuffer);
+
+            // Then the response fails with the given failure reason
+            final TransactionResponse response = parseResponse(responseBuffer);
+            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(failureReason);
+            // The cost *MUST* be zero, it is only non-zero for insufficient balance errors
+            assertThat(response.cost()).isZero();
+            // And the transaction is not submitted to the platform
+            verify(submissionManager, never()).submit(any(), any());
+            // And the metrics for counting submitted transactions was not incremented
+            verify(countSubmitted, never()).increment();
+        }
+
+        @Test
+        @DisplayName("If some random exception is thrown from TransactionChecker, the exception is bubbled up")
+        void randomException() throws PreCheckException {
+            // Given a WorkflowOnset that will throw a RuntimeException
+            when(transactionChecker.parse(any())).thenThrow(new RuntimeException("parseAndCheck exception"));
+
+            // When the transaction is submitted, then the exception is bubbled up
+            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("parseAndCheck exception");
+            // And the transaction is not submitted to the platform
+            verify(submissionManager, never()).submit(any(), any());
+            // And the metrics for counting submitted transactions was not incremented
+            verify(countSubmitted, never()).increment();
+        }
     }
 
-    @Test
-    void testThrottleFails() throws PreCheckException, InvalidProtocolBufferException {
-        // given
-        when(throttleAccumulator.shouldThrottle(ConsensusCreateTopic)).thenReturn(true);
-        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+    @Nested
+    @DisplayName("2.-6. Check the transaction")
+    class IngestCheckerTests {
+        public static Stream<Arguments> failureReasons() {
+            return Stream.of(
+                    Arguments.of(INVALID_TRANSACTION),
+                    Arguments.of(INVALID_TRANSACTION_BODY),
+                    Arguments.of(BUSY),
+                    Arguments.of(INVALID_SIGNATURE));
+        }
 
-        // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+        @ParameterizedTest(name = "IngestChecker fails with error code {0}")
+        @MethodSource("failureReasons")
+        @DisplayName("When ingest checks fail, the transaction should be rejected")
+        void testIngestChecksFail(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
+            // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
+            when(ingestChecker.runAllChecks(state, transaction)).thenThrow(new PreCheckException(failureReason));
 
-        // then
-        final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(BUSY);
-        assertThat(response.getCost()).isZero();
-        verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager, never()).submit(any(), any(), any());
-        verify(opCounters, never()).countSubmitted(any());
+            // When the transaction is submitted
+            workflow.submitTransaction(requestBuffer, responseBuffer);
+
+            // Then the response fails with BUSY
+            final TransactionResponse response = parseResponse(responseBuffer);
+            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(failureReason);
+            // The cost *MUST* be zero, it is only non-zero for insufficient balance errors
+            assertThat(response.cost()).isZero();
+            // And the transaction is not submitted to the platform
+            verify(submissionManager, never()).submit(any(), any());
+            // And the metrics for counting submitted transactions was not incremented
+            verify(countSubmitted, never()).increment();
+        }
+
+        @Test
+        @DisplayName("If some random exception is thrown from IngestChecker, the exception is bubbled up")
+        void randomException() throws PreCheckException {
+            // Given a ThrottleAccumulator that will throw a RuntimeException
+            when(ingestChecker.runAllChecks(state, transaction))
+                    .thenThrow(new RuntimeException("runAllChecks exception"));
+
+            // When the transaction is submitted, then the exception is bubbled up
+            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("runAllChecks exception");
+            // And the transaction is not submitted to the platform
+            verify(submissionManager, never()).submit(any(), any());
+            // And the metrics for counting submitted transactions was not incremented
+            verify(countSubmitted, never()).increment();
+        }
     }
 
-    @Test
-    void testPayerAccountNotFoundFails(@Mock ReadableAccountStore localAccountStore)
-            throws PreCheckException, InvalidProtocolBufferException {
-        // given
-        when(localAccountStore.getAccount(any())).thenReturn(Optional.empty());
-        workflow = new IngestWorkflowImpl(
-                nodeInfo,
-                currentPlatformStatus,
-                stateAccessor,
-                onset,
-                checker,
-                throttleAccumulator,
-                submissionManager,
-                opCounters);
-        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+    @Nested
+    @DisplayName("7. Submit to platform")
+    class PlatformSubmissionTests {
 
-        // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer, states -> localAccountStore);
+        @Test
+        @DisplayName("If the platform fails to onConsensusRound the transaction, the transaction should be rejected")
+        void testSubmitFails() throws PreCheckException, IOException {
+            // Given a SubmissionManager that will fail the submit
+            doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
+                    .when(submissionManager)
+                    .submit(any(), any());
 
-        // then
-        final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(PAYER_ACCOUNT_NOT_FOUND);
-        assertThat(response.getCost()).isZero();
-        verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager, never()).submit(any(), any(), any());
-        verify(opCounters, never()).countSubmitted(ConsensusCreateTopic);
+            // When we submit a transaction
+            workflow.submitTransaction(requestBuffer, responseBuffer);
+
+            // Then the response will indicate the platform rejected the transaction
+            final TransactionResponse response = parseResponse(responseBuffer);
+            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
+            // And the cost will be zero
+            assertThat(response.cost()).isZero();
+            // And the metrics for counting submitted transactions was not incremented
+            verify(countSubmitted, never()).increment();
+        }
+
+        @Test
+        @DisplayName("If some random exception is thrown from submitting to the platform, the exception is bubbled up")
+        void randomException() throws PreCheckException {
+            // Given a SubmissionManager that will throw a RuntimeException from submit
+            doThrow(new RuntimeException("submit exception"))
+                    .when(submissionManager)
+                    .submit(any(), any());
+
+            // When the transaction is submitted, then the exception is bubbled up
+            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("submit exception");
+            // And the metrics for counting submitted transactions was not incremented
+            verify(countSubmitted, never()).increment();
+        }
     }
 
-    @Test
-    void testPayerSignatureFails() throws PreCheckException, InvalidProtocolBufferException {
-        // given
-        doThrow(new PreCheckException(INVALID_PAYER_SIGNATURE))
-                .when(checker)
-                .checkPayerSignature(any(), eq(requestBuffer), eq(SIGNATURE_MAP), any());
-        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
-
-        // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer, states -> accountStore);
-
-        // then
-        final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(INVALID_PAYER_SIGNATURE);
-        assertThat(response.getCost()).isZero();
-        verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager, never()).submit(any(), any(), any());
-        verify(opCounters, never()).countSubmitted(any());
-    }
-
-    @Test
-    void testSolvencyFails() throws PreCheckException, InvalidProtocolBufferException {
-        // given
-        doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, 42L))
-                .when(checker)
-                .checkSolvency(eq(TRANSACTION_BODY), eq(ConsensusCreateTopic), any());
-        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
-
-        // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer, states -> accountStore);
-
-        // then
-        final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_ACCOUNT_BALANCE);
-        assertThat(response.getCost()).isEqualTo(42L);
-        verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager, never()).submit(any(), any(), any());
-        verify(opCounters, never()).countSubmitted(any());
-    }
-
-    @Test
-    void testSubmitFails() throws PreCheckException, InvalidProtocolBufferException {
-        // given
-        doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
-                .when(submissionManager)
-                .submit(eq(TRANSACTION_BODY), any(), any());
-        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
-
-        // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer, states -> accountStore);
-
-        // then
-        final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
-        assertThat(response.getCost()).isZero();
-        verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(opCounters, never()).countSubmitted(any());
-    }
-
-    private static TransactionResponse parseResponse(ByteBuffer responseBuffer) throws InvalidProtocolBufferException {
-        final byte[] bytes = new byte[responseBuffer.position()];
-        responseBuffer.get(0, bytes);
-        return TransactionResponse.parseFrom(bytes);
+    private static TransactionResponse parseResponse(@NonNull final BufferedData responseBuffer) throws IOException {
+        responseBuffer.flip();
+        return TransactionResponse.PROTOBUF.parse(responseBuffer);
     }
 }

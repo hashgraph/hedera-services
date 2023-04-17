@@ -38,10 +38,12 @@ package com.hedera.node.app.service.mono.contracts.operation;
  *
  */
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
@@ -53,6 +55,7 @@ import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
@@ -101,8 +104,10 @@ class HederaOperationUtilTest {
     @Mock
     private WorldLedgers ledgers;
 
+    @Mock
+    private BooleanSupplier isChildStatic;
+
     private final long expectedHaltGas = 10L;
-    private final long expectedSuccessfulGas = 100L;
 
     @Test
     void shortCircuitsForPrecompileSigCheck() {
@@ -118,15 +123,35 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> false,
-                precompiledContractMap);
+                precompiledContractMap,
+                isChildStatic);
 
         assertSame(degenerateResult, result);
     }
 
     @Test
+    void shortCircuitsForStaticChild() {
+        final var degenerateResult = new Operation.OperationResult(0, null);
+        given(executionSupplier.get()).willReturn(degenerateResult);
+        given(isChildStatic.getAsBoolean()).willReturn(true);
+
+        final var result = HederaOperationUtil.addressSignatureCheckExecution(
+                sigsVerifier,
+                messageFrame,
+                PRETEND_RECIPIENT_ADDR,
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> true,
+                precompiledContractMap,
+                isChildStatic);
+
+        assertSame(degenerateResult, result);
+        verifyNoInteractions(sigsVerifier);
+    }
+
+    @Test
     void haltsWithInvalidSolidityAddressWhenAccountSignatureCheckExecution() {
         // given:
-        given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
 
         // when:
@@ -137,14 +162,13 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> false,
-                precompiledContractMap);
+                precompiledContractMap,
+                isChildStatic);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
         assertEquals(expectedHaltGas, result.getGasCost());
         // and:
-        verify(messageFrame).getWorldUpdater();
-        verify(hederaWorldUpdater).get(Address.ZERO);
         verify(gasSupplier).getAsLong();
         verify(executionSupplier, never()).get();
     }
@@ -158,7 +182,8 @@ class HederaOperationUtilTest {
         given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
         given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
         given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(true, mockTarget, Address.ALTBN128_ADD, ledgers))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        true, mockTarget, Address.ALTBN128_ADD, ledgers, ContractCall))
                 .willReturn(false);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
@@ -171,7 +196,8 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompiledContractMap);
+                precompiledContractMap,
+                isChildStatic);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason());
@@ -180,7 +206,8 @@ class HederaOperationUtilTest {
         verify(messageFrame).getWorldUpdater();
         verify(hederaWorldUpdater).get(Address.ZERO);
         verify(worldStateAccount).getAddress();
-        verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers);
+        verify(sigsVerifier)
+                .hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers, ContractCall);
         verify(gasSupplier).getAsLong();
         verify(executionSupplier, never()).get();
     }
@@ -194,7 +221,8 @@ class HederaOperationUtilTest {
         given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
         given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
         given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(false, mockTarget, Address.ALTBN128_MUL, ledgers))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, mockTarget, Address.ALTBN128_MUL, ledgers, ContractCall))
                 .willReturn(false);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
@@ -207,7 +235,8 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompiledContractMap);
+                precompiledContractMap,
+                isChildStatic);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason());
@@ -216,7 +245,8 @@ class HederaOperationUtilTest {
         verify(messageFrame).getWorldUpdater();
         verify(hederaWorldUpdater).get(Address.ZERO);
         verify(worldStateAccount).getAddress();
-        verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(false, mockTarget, PRETEND_CONTRACT_ADDR, ledgers);
+        verify(sigsVerifier)
+                .hasActiveKeyOrNoReceiverSigReq(false, mockTarget, PRETEND_CONTRACT_ADDR, ledgers, ContractCall);
         verify(gasSupplier).getAsLong();
         verify(executionSupplier, never()).get();
     }
@@ -230,8 +260,10 @@ class HederaOperationUtilTest {
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
         given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
         given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers, ContractCall))
                 .willReturn(true);
+        long expectedSuccessfulGas = 100L;
         given(executionSupplier.get()).willReturn(new Operation.OperationResult(expectedSuccessfulGas, null));
 
         // when:
@@ -242,7 +274,8 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompiledContractMap);
+                precompiledContractMap,
+                isChildStatic);
 
         // then:
         assertNull(result.getHaltReason());
@@ -251,7 +284,8 @@ class HederaOperationUtilTest {
         verify(messageFrame).getWorldUpdater();
         verify(hederaWorldUpdater).get(Address.ZERO);
         verify(worldStateAccount).getAddress();
-        verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers);
+        verify(sigsVerifier)
+                .hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers, ContractCall);
         verify(gasSupplier, never()).getAsLong();
         verify(executionSupplier).get();
     }

@@ -48,8 +48,7 @@ public final class FileUtils {
     /**
      * Syntactic sugar. Runs an operation and rethrows any {@link IOException}s as {@link UncheckedIOException}s.
      *
-     * @param runnable
-     * 		an operation to run
+     * @param runnable an operation to run
      */
     public static void rethrowIO(final IORunnable runnable) {
         try {
@@ -62,8 +61,7 @@ public final class FileUtils {
     /**
      * Syntactic sugar. Runs an operation and rethrows any {@link IOException}s as {@link UncheckedIOException}s.
      *
-     * @param supplier
-     * 		an operation that supplies a value
+     * @param supplier an operation that supplies a value
      */
     public static <T> T rethrowIO(final IOSupplier<T> supplier) {
         try {
@@ -85,8 +83,7 @@ public final class FileUtils {
      * For example, if the current execution directory is "/user/home" and this method is invoked with "foo", then a
      * {@link Path} at "/user/home/foo" is returned. Resolves "~".
      *
-     * @param pathDescription
-     * 		a description of the path, e.g. "foo", "/foobar", "foo/bar"
+     * @param pathDescription a description of the path, e.g. "foo", "/foobar", "foo/bar"
      * @return an absolute Path to the requested location
      */
     public static Path getAbsolutePath(final String pathDescription) {
@@ -99,8 +96,7 @@ public final class FileUtils {
      * For example, if the current execution directory is "/user/home" and this method is invoked with "foo", then a
      * {@link Path} at "/user/home/foo" is returned. Resolves "~".
      *
-     * @param path
-     * 		a non-absolute path
+     * @param path a non-absolute path
      * @return an absolute Path to the requested location
      */
     public static Path getAbsolutePath(final Path path) {
@@ -108,18 +104,19 @@ public final class FileUtils {
     }
 
     /**
-     * Recursively delete a directory and all files contained in this directory. If there is a problem deleting a
-     * file or subdirectory, no more files or directories are attempted to be deleted.
+     * Recursively delete a directory and all files contained in this directory. If there is a problem deleting a file
+     * or subdirectory, no more files or directories are attempted to be deleted.
      *
-     * @param directoryToBeDeleted
-     * 		the directory to be deleted
+     * @param directoryToBeDeleted the directory to be deleted
      */
     @SuppressWarnings("resource")
     public static void deleteDirectory(final Path directoryToBeDeleted) throws IOException {
         if (Files.isDirectory(directoryToBeDeleted)) {
-            final Iterator<Path> children = Files.list(directoryToBeDeleted).iterator();
-            while (children.hasNext()) {
-                deleteDirectory(children.next());
+            try (final Stream<Path> list = Files.list(directoryToBeDeleted)) {
+                final Iterator<Path> children = list.iterator();
+                while (children.hasNext()) {
+                    deleteDirectory(children.next());
+                }
             }
             Files.delete(directoryToBeDeleted);
         } else {
@@ -128,11 +125,10 @@ public final class FileUtils {
     }
 
     /**
-     * Similar to {@link #deleteDirectory(Path)} but with additional logging. If there is a problem deleting a file
-     * or subdirectory, no more files or directories are attempted to be deleted.
+     * Similar to {@link #deleteDirectory(Path)} but with additional logging. If there is a problem deleting a file or
+     * subdirectory, no more files or directories are attempted to be deleted.
      *
-     * @param directoryToBeDeleted
-     * 		the directory to be deleted
+     * @param directoryToBeDeleted the directory to be deleted
      */
     public static void deleteDirectoryAndLog(final Path directoryToBeDeleted) throws IOException {
         logger.info(STATE_TO_DISK.getMarker(), "deleting directory {}", directoryToBeDeleted);
@@ -152,14 +148,11 @@ public final class FileUtils {
      * directory. Deleting files in the new directory has no effect on the old directory. Adding files to the new
      * directory has no effect on the old directory.
      *
-     * @param source
-     * 		the directory structure to copy, is legal for this argument to be a regular file
-     * @param destination
-     * 		the location where the directory structure will be placed, assumed that no file or directory
-     * 		already exists in this location. Note that the root of the copied directory structure will be placed at this
-     * 		destination, and not in this destination.
-     * @throws UncheckedIOException
-     * 		if there is a problem hard linking the tree
+     * @param source      the directory structure to copy, is legal for this argument to be a regular file
+     * @param destination the location where the directory structure will be placed, assumed that no file or directory
+     *                    already exists in this location. Note that the root of the copied directory structure will be
+     *                    placed at this destination, and not in this destination.
+     * @throws UncheckedIOException if there is a problem hard linking the tree
      */
     public static void hardLinkTree(final Path source, final Path destination) throws IOException {
         if (!exists(source)) {
@@ -200,10 +193,8 @@ public final class FileUtils {
     /**
      * Throw an exception if any of an array of files already exists.
      *
-     * @param files
-     * 		an array of files
-     * @throws IOException
-     * 		if any of the files exist
+     * @param files an array of files
+     * @throws IOException if any of the files exist
      */
     public static void throwIfFileExists(final Path... files) throws IOException {
         if (files == null) {
@@ -217,28 +208,23 @@ public final class FileUtils {
     }
 
     /**
-     * Execute an operation that writes to a directory. When the operation is complete, rename the directory.
-     * Useful for file operations that need to be atomic.
+     * Execute an operation that writes to a directory. When the operation is complete, rename the directory. Useful for
+     * file operations that need to be atomic.
      *
-     * @param directory
-     * 		the name of directory after it is renamed
-     * @param operation
-     * 		an operation that writes to a directory
+     * @param directory the name of directory after it is renamed
+     * @param operation an operation that writes to a directory
      */
     public static void executeAndRename(final Path directory, final IOConsumer<Path> operation) throws IOException {
         executeAndRename(directory, buildTemporaryDirectory(), operation);
     }
 
     /**
-     * Execute an operation that writes to a directory. When the operation is complete, rename the directory.
-     * Useful for file operations that need to be atomic.
+     * Execute an operation that writes to a directory. When the operation is complete, rename the directory. Useful for
+     * file operations that need to be atomic.
      *
-     * @param directory
-     * 		the name of directory after it is renamed
-     * @param tmpDirectory
-     * 		the name of the temporary directory, if it does not exist then it is created
-     * @param operation
-     * 		an operation that writes to a directory
+     * @param directory    the name of directory after it is renamed
+     * @param tmpDirectory the name of the temporary directory, if it does not exist then it is created
+     * @param operation    an operation that writes to a directory
      */
     public static void executeAndRename(final Path directory, final Path tmpDirectory, final IOConsumer<Path> operation)
             throws IOException {
@@ -276,10 +262,8 @@ public final class FileUtils {
     /**
      * Write to a new file, and make sure it's flushed to disk before returning.
      *
-     * @param file
-     * 		the file to be written to, should not exist prior to this method being called
-     * @param writeMethod
-     * 		the method that writes
+     * @param file        the file to be written to, should not exist prior to this method being called
+     * @param writeMethod the method that writes
      */
     public static void writeAndFlush(final Path file, final IOConsumer<MerkleDataOutputStream> writeMethod)
             throws IOException {
@@ -297,5 +281,14 @@ public final class FileUtils {
             // make sure the data is actually written to disk
             fileOut.getFD().sync();
         }
+    }
+
+    /**
+     * Returns the user directory path specified by the {@code user.dir} system property.
+     *
+     * @return the user directory path
+     */
+    public static String getUserDir() {
+        return System.getProperty("user.dir");
     }
 }

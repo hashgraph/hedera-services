@@ -18,6 +18,7 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
 import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import java.io.IOException;
@@ -28,59 +29,55 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * DataFile's metadata that is stored in the data file's footer
  */
 @SuppressWarnings("unused")
 public final class DataFileMetadata {
-    /** The file format version, this is ready in case we need to change file format and support multiple versions. */
+    /**
+     * The file format version, this is ready in case we need to change file format and support
+     * multiple versions.
+     */
     private final int fileFormatVersion;
     /**
-     * The data item value's size, if the file contains fixed size data items then this is the size in bytes of
-     * those items. If the file contains variable size items then this is the constant VARIABLE_DATA_SIZE.
+     * The data item value's size, if the file contains fixed size data items then this is the size
+     * in bytes of those items. If the file contains variable size items then this is the constant
+     * VARIABLE_DATA_SIZE.
      */
     private final int dataItemValueSize;
-    /** The number of data items the file contains */
-    private final long dataItemCount;
+    /**
+     * The number of data items the file contains. When metadata is loaded from a file, the number
+     * of items is read directly from there. When metadata is created by {@link DataFileWriter} for
+     * new files during flushes or compactions, this field is set to 0 initially and then updated
+     * right before the file is finished writing. For such new files, no code needs their metadata
+     * until they are fully written, so wrong (zero) item count shouldn't be an issue.
+     */
+    private volatile long dataItemCount;
     /** The file index, in a data file collection */
     private final int index;
     /**
-     * The creation date of this file, this is critical as it is used when merging two files to know which files data
-     * is newer.
+     * The creation date of this file, this is critical as it is used when merging two files to know
+     * which files data is newer.
      */
     private final Instant creationDate;
-    /**
-     * True if this file was created as part of a merge, false if it was fresh data. This can be used during merging to
-     * select if we want to include previously merged files in a merging round or not.
-     */
-    private final boolean isMergeFile;
     /** Serialization version for data stored in the file */
     private final long serializationVersion;
 
     /**
      * Create a new DataFileMetadata with complete set of data
      *
-     * @param fileFormatVersion
-     * 		The file format version, this is ready in case we need to change file format and support
-     * 		multiple versions.
-     * @param dataItemValueSize
-     * 		The data item value's size, if the file contains fixed size data items then this is the
-     * 		size in bytes of those items. If the file contains variable size items then this is the
-     * 		constant VARIABLE_DATA_SIZE.
-     * @param dataItemCount
-     * 		The number of data items the file contains
-     * @param index
-     * 		The file index, in a data file collection
-     * @param creationDate
-     * 		The creation data of this file, this is critical as it is used when merging two files to know
-     * 		which files data is newer.
-     * @param isMergeFile
-     * 		True if this file was created as part of a merge, false if it was fresh data. This can be used
-     * 		during merging to select if we want to include previously merged files in a merging round or
-     * 		not.
-     * @param serializationVersion
-     * 		Serialization version for data stored in the file
+     * @param fileFormatVersion The file format version, this is ready in case we need to change
+     *     file format and support multiple versions.
+     * @param dataItemValueSize The data item value's size, if the file contains fixed size data
+     *     items then this is the size in bytes of those items. If the file contains variable size
+     *     items then this is the constant VARIABLE_DATA_SIZE.
+     * @param dataItemCount The number of data items the file contains
+     * @param index The file index, in a data file collection
+     * @param creationDate The creation data of this file, this is critical as it is used when
+     *     merging two files to know which files data is newer.
+     * @param serializationVersion Serialization version for data stored in the file
      */
     public DataFileMetadata(
             final int fileFormatVersion,
@@ -88,24 +85,20 @@ public final class DataFileMetadata {
             final long dataItemCount,
             final int index,
             final Instant creationDate,
-            final boolean isMergeFile,
             final long serializationVersion) {
         this.fileFormatVersion = fileFormatVersion;
         this.dataItemValueSize = dataItemValueSize;
         this.dataItemCount = dataItemCount;
         this.index = index;
         this.creationDate = creationDate;
-        this.isMergeFile = isMergeFile;
         this.serializationVersion = serializationVersion;
     }
 
     /**
      * Create a DataFileMetadata loading it from a existing file
      *
-     * @param file
-     * 		The file to read metadata from
-     * @throws IOException
-     * 		If there was a problem reading metadata footer from the file
+     * @param file The file to read metadata from
+     * @throws IOException If there was a problem reading metadata footer from the file
      */
     public DataFileMetadata(Path file) throws IOException {
         try (final SeekableByteChannel channel = Files.newByteChannel(file, StandardOpenOption.READ)) {
@@ -120,7 +113,7 @@ public final class DataFileMetadata {
             this.dataItemCount = buf.getLong();
             this.index = buf.getInt();
             this.creationDate = Instant.ofEpochSecond(buf.getLong(), buf.getInt());
-            this.isMergeFile = buf.get() == 1;
+            buf.get(); // backwards compatibility: used to be a byte for isMergeFile
             this.serializationVersion = buf.getLong();
         }
     }
@@ -138,66 +131,61 @@ public final class DataFileMetadata {
         buf.putInt(this.index);
         buf.putLong(this.creationDate.getEpochSecond());
         buf.putInt(this.creationDate.getNano());
-        buf.put((byte) (this.isMergeFile ? 1 : 0));
+        buf.put((byte) 0); // backwards compatibility: used to be a byte for isMergeFile
         buf.putLong(this.serializationVersion);
         buf.rewind();
         return buf;
     }
 
     /**
-     * Get the file format version, this is ready in case we need to change file format and support multiple versions.
+     * Get the file format version, this is ready in case we need to change file format and support
+     * multiple versions.
      */
     public int getFileFormatVersion() {
         return fileFormatVersion;
     }
 
     /**
-     * Get the data item value's size, if the file contains fixed size data items then this is the size in bytes of
-     * those items. If the file contains variable size items then this is the constant VARIABLE_DATA_SIZE.
+     * Get the data item value's size, if the file contains fixed size data items then this is the
+     * size in bytes of those items. If the file contains variable size items then this is the
+     * constant VARIABLE_DATA_SIZE.
      */
     public int getDataItemValueSize() {
         return dataItemValueSize;
     }
 
-    /**
-     * Get if the file has variable size data
-     */
+    /** Get if the file has variable size data */
     public boolean hasVariableSizeData() {
         return dataItemValueSize == VARIABLE_DATA_SIZE;
     }
 
     /**
-     * Get the number of data items the file contains
+     * Get the number of data items the file contains. If this method is called before the
+     * corresponding file is completely written by {@link DataFileWriter}, the return value is 0.
      */
     public long getDataItemCount() {
         return dataItemCount;
     }
 
     /**
-     * Get the files index, out of a set of data files
+     * Updates number of data items in the file. This method is called by {@link DataFileWriter}
+     * right before the file is finished writing.
      */
+    void setDataItemCount(final long dataItemCount) {
+        this.dataItemCount = dataItemCount;
+    }
+
+    /** Get the files index, out of a set of data files */
     public int getIndex() {
         return index;
     }
 
-    /**
-     * Get the date the file was created in UTC
-     */
+    /** Get the date the file was created in UTC */
     public Instant getCreationDate() {
         return creationDate;
     }
 
-    /**
-     * Get if the file is a merge file. True if this is a merge file, false if it is a new data file that has not been
-     * merged.
-     */
-    public boolean isMergeFile() {
-        return isMergeFile;
-    }
-
-    /**
-     * Get the serialization version for data stored in this file
-     */
+    /** Get the serialization version for data stored in this file */
     public long getSerializationVersion() {
         return serializationVersion;
     }
@@ -205,14 +193,14 @@ public final class DataFileMetadata {
     /** toString for debugging */
     @Override
     public String toString() {
-        return "DataFileMetadata{" + "fileFormatVersion="
-                + fileFormatVersion + ", dataItemValueSize="
-                + dataItemValueSize + ", dataItemCount="
-                + dataItemCount + ", index="
-                + index + ", creationDate="
-                + creationDate + ", isMergeFile="
-                + isMergeFile + ", serializationVersion="
-                + serializationVersion + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("fileFormatVersion", fileFormatVersion)
+                .append("dataItemValueSize", dataItemValueSize)
+                .append("dataItemCount", dataItemCount)
+                .append("index", index)
+                .append("creationDate", creationDate)
+                .append("serializationVersion", serializationVersion)
+                .toString();
     }
 
     /**
@@ -231,7 +219,6 @@ public final class DataFileMetadata {
                 && dataItemValueSize == that.dataItemValueSize
                 && dataItemCount == that.dataItemCount
                 && index == that.index
-                && isMergeFile == that.isMergeFile
                 && serializationVersion == that.serializationVersion
                 && Objects.equals(this.creationDate, that.creationDate);
     }
@@ -242,12 +229,6 @@ public final class DataFileMetadata {
     @Override
     public int hashCode() {
         return Objects.hash(
-                fileFormatVersion,
-                dataItemValueSize,
-                dataItemCount,
-                index,
-                creationDate,
-                isMergeFile,
-                serializationVersion);
+                fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, serializationVersion);
     }
 }

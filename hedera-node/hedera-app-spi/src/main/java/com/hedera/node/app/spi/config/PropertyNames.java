@@ -73,8 +73,7 @@ public class PropertyNames {
     public static final String ACCOUNTS_MAX_NUM = "accounts.maxNumber";
     public static final String AUTO_CREATION_ENABLED = "autoCreation.enabled";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
-    public static final String CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED =
-            "cryptoCreateWithAliasAndEvmAddress.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final String BALANCES_EXPORT_DIR_PATH = "balances.exportDir.path";
     public static final String BALANCES_EXPORT_ENABLED = "balances.exportEnabled";
     public static final String BALANCES_EXPORT_PERIOD_SECS = "balances.exportPeriodSecs";
@@ -83,6 +82,7 @@ public class PropertyNames {
     public static final String BALANCES_COMPRESS_ON_CREATION = "balances.compressOnCreation";
     public static final String CACHE_RECORDS_TTL = "cache.records.ttl";
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";
+    public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
     public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME = "contracts.referenceSlotLifetime";
     public static final String CONTRACTS_FREE_STORAGE_TIER_LIMIT = "contracts.freeStorageTierLimit";
     public static final String CONTRACTS_STORAGE_SLOT_PRICE_TIERS = "contract.storageSlotPriceTiers";
@@ -93,6 +93,10 @@ public class PropertyNames {
     public static final String CONTRACTS_LOCAL_CALL_EST_RET_BYTES = "contracts.localCall.estRetBytes";
     public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";
     public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS = "contracts.allowAutoAssociations";
+
+    public static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+    public static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
+    public static final String CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS = "contracts.withSpecialHapiSigsAccess";
     public static final String CONTRACTS_ENFORCE_CREATION_THROTTLE = "contracts.enforceCreationThrottle";
     public static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
     public static final String CONTRACTS_MAX_KV_PAIRS_AGGREGATE = "contracts.maxKvPairs.aggregate";
@@ -100,6 +104,7 @@ public class PropertyNames {
     public static final String CONTRACTS_MAX_NUM = "contracts.maxNumber";
     public static final String CONTRACTS_CHAIN_ID = "contracts.chainId";
     public static final String CONTRACTS_SIDECARS = "contracts.sidecars";
+    public static final String CONTRACTS_SIDECAR_VALIDATION_ENABLED = "contracts.sidecarValidationEnabled";
     public static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS = "contracts.throttle.throttleByGas";
     public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT = "contracts.maxRefundPercentOfGasLimit";
     public static final String CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT = "contracts.scheduleThrottleMaxGasLimit";
@@ -109,6 +114,8 @@ public class PropertyNames {
     public static final String CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS = "contracts.precompile.exportRecordResults";
     public static final String CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE =
             "contracts.precompile.htsEnableTokenCreate";
+    public static final String CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS =
+            "contracts.precompile.unsupportedCustomFeeReceiverDebits";
     public static final String CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED =
             "contracts.precompile.atomicCryptoTransfer.enabled";
     public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
@@ -247,4 +254,6 @@ public class PropertyNames {
     public static final String STATS_SPEEDOMETER_HALF_LIFE_SECS = "stats.speedometerHalfLifeSecs";
     public static final String WORKFLOWS_ENABLED = "hedera.workflows.enabled";
     public static final String VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB = "virtualdatasource.jasperdbToMerkledb";
+    public static final String ACCOUNTS_BLOCKLIST_ENABLED = "accounts.blocklist.enabled";
+    public static final String ACCOUNTS_BLOCKLIST_RESOURCE = "accounts.blocklist.resource";
 }

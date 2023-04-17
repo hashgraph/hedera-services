@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,30 +30,31 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenAssociateToAccount}.
+ * HederaFunctionality#TOKEN_ASSOCIATE_TO_ACCOUNT}.
  */
 @Singleton
 public class TokenAssociateToAccountHandler implements TransactionHandler {
     @Inject
-    public TokenAssociateToAccountHandler() {}
+    public TokenAssociateToAccountHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenAssociateToAccount} transaction,
+     * Pre-handles a {@link HederaFunctionality#TOKEN_ASSOCIATE_TO_ACCOUNT} transaction,
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
 
-        final var op = context.getTxn().getTokenAssociate();
-        final var target = op.getAccount();
+        final var op = context.body().tokenAssociateOrThrow();
+        final var target = op.accountOrElse(AccountID.DEFAULT);
 
-        context.addNonPayerKey(target, INVALID_ACCOUNT_ID);
+        context.requireKeyOrThrow(target, INVALID_ACCOUNT_ID);
     }
 
     /**
@@ -60,11 +63,9 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

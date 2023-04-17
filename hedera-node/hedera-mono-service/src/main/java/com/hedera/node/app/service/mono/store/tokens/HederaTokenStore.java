@@ -629,7 +629,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     }
 
     private void updateMemoIfAppropriate(final MerkleToken token, final TokenUpdateTransactionBody changes) {
-        if (changes.hasMemo()) {
+        if (changes.hasMemo() && changes.getMemo().getValue().length() > 0) {
             token.setMemo(changes.getMemo().getValue());
         }
     }

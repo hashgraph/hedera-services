@@ -16,16 +16,23 @@
 
 package com.hedera.node.app;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
+import com.hedera.node.app.annotations.NodeSelfId;
+import com.hedera.node.app.authorization.AuthorizerDaggerModule;
 import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.fees.AdaptedFeeCalculatorModule;
+import com.hedera.node.app.info.InfoDaggerModule;
+import com.hedera.node.app.metrics.MetricsDaggerModule;
 import com.hedera.node.app.service.mono.CacheModule;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
 import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
 import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
-import com.hedera.node.app.service.mono.context.properties.*;
+import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.contracts.ContractsModule;
 import com.hedera.node.app.service.mono.fees.FeesModule;
 import com.hedera.node.app.service.mono.files.FilesModule;
@@ -44,7 +51,14 @@ import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
-import com.hedera.node.app.workflows.query.QueryModule;
+import com.hedera.node.app.solvency.SolvencyModule;
+import com.hedera.node.app.state.HederaStateModule;
+import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.throttle.ThrottleModule;
+import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
+import com.hedera.node.app.workflows.prehandle.AdaptedMonoEventExpansion;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;
+import com.hedera.node.app.workflows.query.QueryWorkflowModule;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.Platform;
@@ -54,10 +68,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-/** The infrastructure used to implement the platform contract for a Hedera Services node.
+/**
+ * The infrastructure used to implement the platform contract for a Hedera Services node.
  * This is needed for adding dagger subcomponents.
  * Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But,
- * in the future this class will be cleaned up to not have multiple module dependencies */
+ * in the future this class will be cleaned up to not have multiple module dependencies
+ */
 @Singleton
 @Component(
         modules = {
@@ -82,14 +98,28 @@ import javax.inject.Singleton;
             TransactionsModule.class,
             ExpiryModule.class,
             ServiceModule.class,
-            QueryModule.class,
-            CacheModule.class,
+            QueryWorkflowModule.class,
+            HandleWorkflowModule.class,
+            PreHandleWorkflowModule.class,
+            HederaStateModule.class,
+            AdaptedFeeCalculatorModule.class,
+            HederaStateModule.class,
+            MetricsDaggerModule.class,
+            AuthorizerDaggerModule.class,
+            InfoDaggerModule.class,
+            ThrottleModule.class,
+            SolvencyModule.class,
+            CacheModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
     Provider<QueryComponent.Factory> queryComponentFactory();
 
     Provider<IngestComponent.Factory> ingestComponentFactory();
+
+    WorkingStateAccessor workingStateAccessor();
+
+    AdaptedMonoEventExpansion adaptedMonoEventExpansion();
 
     @Component.Builder
     interface Builder {
@@ -106,7 +136,7 @@ public interface HederaApp extends ServicesApp {
         Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);
 
         @BindsInstance
-        Builder selfId(long selfId);
+        Builder selfId(@NodeSelfId final AccountID selfId);
 
         @BindsInstance
         Builder staticAccountMemo(@StaticAccountMemo String accountMemo);

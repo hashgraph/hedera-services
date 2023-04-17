@@ -19,7 +19,6 @@ package com.swirlds.merkledb.files;
 import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.merkledb.serialize.DataItemHeader;
@@ -50,9 +49,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DataFileLowLevelTest {
 
-    /**
-     * Temporary directory provided by JUnit
-     */
+    /** Temporary directory provided by JUnit */
     @SuppressWarnings("unused")
     @TempDir
     static Path tempFileDir;
@@ -68,16 +65,14 @@ class DataFileLowLevelTest {
     // Helper Methods
 
     /**
-     * For tests, we want to have all different dta sizes, so we use this function to choose how many times to repeat
-     * the data value long
+     * For tests, we want to have all different dta sizes, so we use this function to choose how
+     * many times to repeat the data value long
      */
     private int getRepeatCountForKey(long key) {
         return (int) (key % 20L);
     }
 
-    /**
-     * Create an example variable sized data item with lengths of data from 0 to 20.
-     */
+    /** Create an example variable sized data item with lengths of data from 0 to 20. */
     private long[] getVariableSizeDataForI(int i) {
         int repeatCount = getRepeatCountForKey(i);
         long[] dataValue = new long[1 + repeatCount];
@@ -88,9 +83,7 @@ class DataFileLowLevelTest {
         return dataValue;
     }
 
-    /**
-     * Check a fixed or variable size data items data
-     */
+    /** Check a fixed or variable size data items data */
     private void checkItem(FilesTestType testType, int i, long[] dataItem) {
         switch (testType) {
             default:
@@ -116,12 +109,7 @@ class DataFileLowLevelTest {
     void createFile(FilesTestType testType) throws IOException {
         // open file and write data
         DataFileWriter<long[]> writer = new DataFileWriter<>(
-                "test_" + testType.name(),
-                tempFileDir,
-                DATA_FILE_INDEX,
-                testType.dataItemSerializer,
-                TEST_START,
-                false);
+                "test_" + testType.name(), tempFileDir, DATA_FILE_INDEX, testType.dataItemSerializer, TEST_START);
         LongArrayList listOfDataItemLocations = new LongArrayList(1000);
         for (int i = 0; i < 1000; i++) {
             long[] dataValue;
@@ -137,7 +125,8 @@ class DataFileLowLevelTest {
 
             listOfDataItemLocations.add(writer.storeDataItem(dataValue));
         }
-        final var dataFileMetadata = writer.finishWriting();
+        writer.finishWriting();
+        final var dataFileMetadata = writer.getMetadata();
         // tests
         assertTrue(Files.exists(writer.getPath()), "expected file does not exist");
         assertEquals(
@@ -158,7 +147,7 @@ class DataFileLowLevelTest {
         int size = RANDOM.nextInt(300) + 1;
         long key = RANDOM.nextLong();
         DataItemHeader dataItemHeader = new DataItemHeader(size, key);
-        String expectedToString = "DataItemHeader{size=" + size + ", key=" + key + "}";
+        String expectedToString = "DataItemHeader[size=" + size + ",key=" + key + "]";
         assertEquals(expectedToString, dataItemHeader.toString(), "unexpected value of toString()");
     }
 
@@ -179,7 +168,6 @@ class DataFileLowLevelTest {
                 dataFileMetadata.hasVariableSizeData(),
                 "unexpected testType");
         assertEquals(DATA_FILE_INDEX, dataFileMetadata.getIndex(), "unexpected Index");
-        assertFalse(dataFileMetadata.isMergeFile(), "unexpected value from isMergeFile()");
         assertEquals(
                 testType.dataItemSerializer.getCurrentDataVersion(),
                 dataFileMetadata.getSerializationVersion(),
@@ -189,11 +177,11 @@ class DataFileLowLevelTest {
                 dataFileMetadata.getFileFormatVersion(),
                 "unexpected FileFormatVersion");
         if (testType == FilesTestType.fixed) {
-            String expectedToString =
-                    "DataFileMetadata{fileFormatVersion=1, dataItemValueSize=16, " + "dataItemCount=1000,"
-                            + " "
-                            + "index=123, creationDate="
-                            + TEST_START + ", " + "isMergeFile=false, serializationVersion=1}";
+            String expectedToString = "DataFileMetadata[fileFormatVersion=1,dataItemValueSize=16,"
+                    + "dataItemCount=1000,index=123,creationDate="
+                    + TEST_START
+                    + ","
+                    + "serializationVersion=1]";
             assertEquals(expectedToString, dataFileMetadata.toString(), "unexpected toString() value");
         }
     }
@@ -356,8 +344,7 @@ class DataFileLowLevelTest {
                 tempFileDir,
                 DATA_FILE_INDEX + 1,
                 testType.dataItemSerializer,
-                TEST_START.plus(1, ChronoUnit.SECONDS),
-                false);
+                TEST_START.plus(1, ChronoUnit.SECONDS));
 
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
@@ -368,7 +355,8 @@ class DataFileLowLevelTest {
             newDataLocations.add(
                     newDataFileWriter.writeCopiedDataItem(dataFileMetadata.getSerializationVersion(), itemData));
         }
-        final var newDataFileMetadata = newDataFileWriter.finishWriting();
+        newDataFileWriter.finishWriting();
+        final var newDataFileMetadata = newDataFileWriter.getMetadata();
         // now read back and check
         DataFileReader<long[]> dataFileReader =
                 new DataFileReader<>(newDataFileWriter.getPath(), testType.dataItemSerializer, newDataFileMetadata);

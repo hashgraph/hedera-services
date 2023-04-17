@@ -32,20 +32,22 @@ import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MAX_
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MAX_NUM_OF_KEYS;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MEDIUM_MERGE_CUTOFF_MB;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MEDIUM_MERGE_PERIOD;
-import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MERGE_ACTIVATED_PERIOD;
+import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MERGE_ACTIVATE_PERIOD;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MIN_NUMBER_OF_FILES_IN_MERGE;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_MOVE_LIST_CHUNK_SIZE;
+import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_PERCENT_HALFDISKHASHMAP_FLUSH_THREADS;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_RECONNECT_KEY_LEAK_MITIGATION_ENABLED;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_SMALL_MERGE_CUTOFF_MB;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_WRITER_OUTPUT_BUFFER_BYTES;
 
+import com.swirlds.merkledb.settings.DefaultMerkleDbSettings;
 import com.swirlds.merkledb.settings.MerkleDbSettings;
 import com.swirlds.platform.internal.SubSetting;
 import java.time.temporal.ChronoUnit;
 
 /**
- * @deprecated will be replaced by the {@link com.swirlds.config.api.Configuration} API in near future. If you need
- * 		to use this class please try to do as less static access as possible.
+ * @deprecated will be replaced by the {@link com.swirlds.config.api.Configuration} API in near
+ *     future. If you need to use this class please try to do as less static access as possible.
  */
 @Deprecated(forRemoval = true)
 @SuppressWarnings("unused")
@@ -64,7 +66,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
     public long maxDataFileBytes = DEFAULT_MAX_FILE_SIZE_BYTES;
     public long fullMergePeriod = DEFAULT_FULL_MERGE_PERIOD;
     public long mediumMergePeriod = DEFAULT_MEDIUM_MERGE_PERIOD;
-    public long mergeActivatedPeriod = DEFAULT_MERGE_ACTIVATED_PERIOD;
+    public long mergeActivatePeriod = DEFAULT_MERGE_ACTIVATE_PERIOD;
     public int maxNumberOfFilesInMerge = DEFAULT_MAX_NUMBER_OF_FILES_IN_MERGE;
     public int minNumberOfFilesInMerge = DEFAULT_MIN_NUMBER_OF_FILES_IN_MERGE;
     public boolean reconnectKeyLeakMitigationEnabled = DEFAULT_RECONNECT_KEY_LEAK_MITIGATION_ENABLED;
@@ -76,10 +78,10 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
     public boolean indexRebuildingEnforced = DEFAULT_INDEX_REBUILDING_ENFORCED;
     public int leafRecordCacheSize = DEFAULT_LEAF_RECORD_CACHE_SIZE;
     public int reservedBufferLengthForLeafList = DEFAULT_RESERVED_BUFFER_LENGTH;
+    public double percentHalfDiskHashMapFlushThreads = DEFAULT_PERCENT_HALFDISKHASHMAP_FLUSH_THREADS;
+    public int numHalfDiskHashMapFlushThreads = -1; // by default, calculated based on percentage
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getMaxNumOfKeys() {
         return maxNumOfKeys;
@@ -92,9 +94,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.maxNumOfKeys = maxNumOfKeys;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getInternalHashesRamToDiskThreshold() {
         return internalHashesRamToDiskThreshold;
@@ -108,9 +108,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.internalHashesRamToDiskThreshold = internalHashesRamToDiskThreshold;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getMediumMergeCutoffMb() {
         return mediumMergeCutoffMb;
@@ -120,9 +118,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.mediumMergeCutoffMb = mediumMergeCutoffMb;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getSmallMergeCutoffMb() {
         return smallMergeCutoffMb;
@@ -132,9 +128,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.smallMergeCutoffMb = smallMergeCutoffMb;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public ChronoUnit getMergePeriodUnit() {
         return ChronoUnit.valueOf(mergePeriodUnit);
@@ -145,9 +139,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.mergePeriodUnit = mergePeriodUnit;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getFullMergePeriod() {
         return fullMergePeriod;
@@ -160,9 +152,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.fullMergePeriod = fullMergePeriod;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getMediumMergePeriod() {
         return mediumMergePeriod;
@@ -175,19 +165,17 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.mediumMergePeriod = mediumMergePeriod;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getMergeActivatePeriod() {
-        return mergeActivatedPeriod;
+        return mergeActivatePeriod;
     }
 
-    public void setMergeActivatedPeriod(final long mergeActivatedPeriod) {
-        if (mergeActivatedPeriod < 0) {
-            throw new IllegalArgumentException("Cannot configure smallMergePeriod=" + mergeActivatedPeriod);
+    public void setMergeActivatePeriod(final long mergeActivatePeriod) {
+        if (mergeActivatePeriod < 0) {
+            throw new IllegalArgumentException("Cannot configure smallMergePeriod=" + mergeActivatePeriod);
         }
-        this.mergeActivatedPeriod = mergeActivatedPeriod;
+        this.mergeActivatePeriod = mergeActivatePeriod;
     }
 
     /**
@@ -202,8 +190,10 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
 
     public void setMaxNumberOfFilesInMerge(final int maxNumberOfFilesInMerge) {
         if (maxNumberOfFilesInMerge <= minNumberOfFilesInMerge) {
-            throw new IllegalArgumentException("Cannot configure maxNumberOfFilesInMerge to " + maxNumberOfFilesInMerge
-                    + ", it mist be > " + minNumberOfFilesInMerge);
+            throw new IllegalArgumentException("Cannot configure maxNumberOfFilesInMerge to "
+                    + maxNumberOfFilesInMerge
+                    + ", it mist be > "
+                    + minNumberOfFilesInMerge);
         }
         this.maxNumberOfFilesInMerge = maxNumberOfFilesInMerge;
     }
@@ -220,15 +210,15 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
 
     public void setMinNumberOfFilesInMerge(final int minNumberOfFilesInMerge) {
         if (minNumberOfFilesInMerge < 2 || minNumberOfFilesInMerge >= maxNumberOfFilesInMerge) {
-            throw new IllegalArgumentException("Cannot configure minNumberOfFilesInMerge to " + minNumberOfFilesInMerge
-                    + ", it must be >= 2 and < " + maxNumberOfFilesInMerge);
+            throw new IllegalArgumentException("Cannot configure minNumberOfFilesInMerge to "
+                    + minNumberOfFilesInMerge
+                    + ", it must be >= 2 and < "
+                    + maxNumberOfFilesInMerge);
         }
         this.minNumberOfFilesInMerge = minNumberOfFilesInMerge;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getMaxDataFileBytes() {
         return maxDataFileBytes;
@@ -241,9 +231,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.maxDataFileBytes = maxDataFileBytes;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getMoveListChunkSize() {
         return moveListChunkSize;
@@ -256,9 +244,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.moveListChunkSize = moveListChunkSize;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getMaxRamUsedForMergingGb() {
         return maxRamUsedForMergingGb;
@@ -271,9 +257,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.maxRamUsedForMergingGb = maxRamUsedForMergingGb;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getIteratorInputBufferBytes() {
         return iteratorInputBufferBytes;
@@ -286,49 +270,37 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.iteratorInputBufferBytes = iteratorInputBufferBytes;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getWriterOutputBufferBytes() {
         return writerOutputBufferBytes;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean isReconnectKeyLeakMitigationEnabled() {
         return reconnectKeyLeakMitigationEnabled;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getKeySetBloomFilterHashCount() {
         return keySetBloomFilterHashCount;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getKeySetBloomFilterSizeInBytes() {
         return keySetBloomFilterSizeInBytes;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getKeySetHalfDiskHashMapSize() {
         return keySetHalfDiskHashMapSize;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getKeySetHalfDiskHashMapBuffer() {
         return keySetHalfDiskHashMapBuffer;
@@ -341,17 +313,13 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
         this.writerOutputBufferBytes = writerOutputBufferBytes;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean isIndexRebuildingEnforced() {
         return indexRebuildingEnforced;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getLeafRecordCacheSize() {
         return leafRecordCacheSize;
@@ -374,5 +342,40 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
 
     public void setReservedBufferLengthForLeafList(final int reservedBufferLengthForLeafList) {
         this.reservedBufferLengthForLeafList = reservedBufferLengthForLeafList;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public double getPercentHalfDiskHashMapFlushThreads() {
+        return percentHalfDiskHashMapFlushThreads;
+    }
+
+    public void setPercentHalfDiskHashMapFlushThreads(final double percentHalfDiskHashMapFlushThreads) {
+        if ((percentHalfDiskHashMapFlushThreads <= 0.0) || (percentHalfDiskHashMapFlushThreads > 100.0)) {
+            throw new IllegalArgumentException(
+                    "Cannot configure percentHalfDiskHashMapFlushThreads=" + percentHalfDiskHashMapFlushThreads);
+        }
+        this.percentHalfDiskHashMapFlushThreads = percentHalfDiskHashMapFlushThreads;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getNumHalfDiskHashMapFlushThreads() {
+        if (numHalfDiskHashMapFlushThreads > 0) {
+            return numHalfDiskHashMapFlushThreads;
+        }
+        return DefaultMerkleDbSettings.getNumHalfDiskHashMapFlushThreads(getPercentHalfDiskHashMapFlushThreads());
+    }
+
+    public void setNumHalfDiskHashMapFlushThreads(final int numHalfDiskHashMapFlushThreads) {
+        if (numHalfDiskHashMapFlushThreads <= 0) {
+            throw new IllegalArgumentException(
+                    "Cannot configure numHalfDiskHashMapFlushThreads=" + numHalfDiskHashMapFlushThreads);
+        }
+        this.numHalfDiskHashMapFlushThreads = numHalfDiskHashMapFlushThreads;
     }
 }

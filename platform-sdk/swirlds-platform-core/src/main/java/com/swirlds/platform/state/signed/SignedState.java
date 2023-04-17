@@ -96,7 +96,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     /**
      * The root of the merkle state.
      */
-    private State state;
+    private final State state;
 
     /**
      * The timestamp of when this object was created.
@@ -342,12 +342,12 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      */
     @Override
     public String toString() {
-        return String.format(
-                "SS(round: %d, sigs: %d/%s, hash: %s)",
-                getRound(),
-                signingStake,
-                (getAddressBook() == null ? "?" : getAddressBook().getTotalStake()),
-                state.getHash());
+        return "SS(round: %d, sigs: %d/%s, hash: %s)"
+                .formatted(
+                        getRound(),
+                        signingStake,
+                        (getAddressBook() == null ? "?" : getAddressBook().getTotalStake()),
+                        state.getHash());
     }
 
     /**
@@ -420,12 +420,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        for (final MinGenInfo minGenInfo : getMinGenInfo()) {
-            if (minGenInfo.round() == round) {
-                return minGenInfo.minimumGeneration();
-            }
-        }
-        throw new NoSuchElementException("No minimum generation found for round: " + round);
+        return getState().getPlatformState().getPlatformData().getMinGen(round);
     }
 
     /**
@@ -434,10 +429,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      * @return the generation of the oldest round
      */
     public long getMinRoundGeneration() {
-        return getMinGenInfo().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
-                .minimumGeneration();
+        return getState().getPlatformState().getPlatformData().getMinRoundGeneration();
     }
 
     /**
@@ -512,7 +504,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     }
 
     /**
-     * Check if a signature is valid.
+     * Check if a signature is valid.  If a node has no stake, we consider the signature to be invalid.
      *
      * @param address   the address of the signer, or null if there is no signing address
      * @param signature the signature to check
@@ -522,6 +514,11 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     private boolean isSignatureValid(final Address address, final Signature signature) {
         if (address == null) {
             // Signing node is not in the address book.
+            return false;
+        }
+
+        if (address.getStake() == 0) {
+            // Signing node has no stake.
             return false;
         }
 
