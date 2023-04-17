@@ -50,10 +50,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TokenUpdateHandlerParityTest extends ParityTestBase {
     private final TokenUpdateHandler subject = new TokenUpdateHandler();
+
+    @BeforeEach
+    void setUp() {
+        super.setUp();
+    }
 
     @Test
     void tokenUpdateWithoutAffectingKeys() throws PreCheckException {
