@@ -60,6 +60,9 @@ public class ReadableScheduleStore {
      */
     public Optional<ScheduleMetadata> get(final ScheduleID id) {
         final var schedule = schedulesById.get(id.scheduleNum());
+        if (schedule == null) {
+            return Optional.empty();
+        }
         final Key adminKey;
         if (schedule.hasAdminKey()) {
             adminKey = sanityRestoredToPbj(schedule.adminKey().get());

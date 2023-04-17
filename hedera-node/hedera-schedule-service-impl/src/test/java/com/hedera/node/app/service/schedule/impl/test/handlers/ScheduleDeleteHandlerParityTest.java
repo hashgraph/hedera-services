@@ -142,6 +142,7 @@ class AdapterUtils {
             throws DecoderException {
         final ScheduleID scheduleID =
                 ScheduleID.newBuilder().scheduleNum(schedId).build();
+        given(schedule.hasAdminKey()).willReturn(key == null ? false : true);
         given(schedule.adminKey()).willReturn(key == null ? Optional.empty() : Optional.of(key.asJKey()));
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(txnBody));
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);

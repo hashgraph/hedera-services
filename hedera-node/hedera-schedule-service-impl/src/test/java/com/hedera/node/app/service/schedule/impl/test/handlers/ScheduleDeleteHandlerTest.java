@@ -71,6 +71,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     void scheduleDeleteHappyPath() throws DecoderException, PreCheckException {
         final var txn = scheduleDeleteTransaction();
         scheduledTxn = givenSetupForScheduleDelete(txn);
+        BDDMockito.given(schedule.hasAdminKey()).willReturn(true);
         BDDMockito.given(schedule.adminKey()).willReturn(Optional.of(JKey.mapKey(TEST_KEY)));
         BDDMockito.given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
 
