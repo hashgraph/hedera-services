@@ -86,6 +86,9 @@ public final class MerkleDb {
     /** Metadata file name. Relative to database storage dir */
     private static final String METADATA_FILENAME = "metadata.mdb";
 
+    /** Label for database component used in logging, stats, etc. */
+    public static final String MERKLEDB_COMPONENT = "merkledb";
+
     /**
      * All virtual database instances in a process. Once we have something like "application
      * context" to share a single JVM between multiple nodes, this should be changed to be global to

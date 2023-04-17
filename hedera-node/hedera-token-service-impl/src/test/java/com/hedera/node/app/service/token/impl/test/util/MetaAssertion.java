@@ -18,18 +18,11 @@ package com.hedera.node.app.service.token.impl.test.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 
 public class MetaAssertion {
 
-    public static void basicContextAssertions(
-            final PreHandleContext context,
-            final int keysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertEquals(keysSize, context.getRequiredNonPayerKeys().size());
-        assertEquals(failed, context.failed());
-        assertEquals(failureStatus, context.getStatus());
+    public static void basicContextAssertions(final PreHandleContext context, final int keysSize) {
+        assertEquals(keysSize, context.requiredNonPayerKeys().size());
     }
 }
