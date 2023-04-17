@@ -18,7 +18,11 @@ package com.hedera.node.app.service.token.impl.test.entity;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.accounts.Account.HBARS_TO_TINYBARS;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
@@ -26,7 +30,7 @@ import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.service.token.impl.entity.AccountImpl;
 import com.hedera.node.app.spi.accounts.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
-import java.util.Optional;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -52,8 +56,8 @@ class AccountBuilderImplTest {
         final var account = subject.build();
 
         assertEquals(2, account.accountNumber());
-        assertEquals(Optional.empty(), account.alias());
-        assertEquals(key, account.getKey().get());
+        assertEquals(Bytes.EMPTY, account.alias());
+        assertEquals(key, account.getKey());
         assertEquals(123456789L, account.expiry());
         assertEquals(20_000_000_000L, account.balanceInTinyBar());
         assertEquals(20_000_000_000L / HBARS_TO_TINYBARS, account.balanceInHbar());
@@ -85,7 +89,7 @@ class AccountBuilderImplTest {
     @Test
     void defaultConstructorWorks() {
         subject = new AccountBuilderImpl();
-        assertEquals(Optional.empty(), subject.build().alias());
+        assertEquals(Bytes.EMPTY, subject.build().alias());
     }
 
     @Test
@@ -117,8 +121,8 @@ class AccountBuilderImplTest {
 
         final var account = subject.build();
         assertEquals(20L, account.accountNumber());
-        assertArrayEquals(new byte[10], account.alias().get());
-        assertEquals(newKey, account.getKey().get());
+        assertEquals(Bytes.wrap(new byte[10]), account.alias());
+        assertEquals(newKey, account.getKey());
         assertEquals(1_234_567_890L, account.expiry());
         assertEquals(40_000_000_000L, account.balanceInTinyBar());
         assertEquals(40_000_000_000L / HBARS_TO_TINYBARS, account.balanceInHbar());
@@ -144,7 +148,7 @@ class AccountBuilderImplTest {
     private AccountImpl setUpAccount() {
         return new AccountImpl(
                 2,
-                Optional.empty(),
+                Bytes.EMPTY,
                 key,
                 12_3456_789L,
                 20_000_000_000L,

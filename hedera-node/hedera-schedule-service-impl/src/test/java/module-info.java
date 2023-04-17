@@ -10,6 +10,7 @@ module com.hedera.node.app.service.schedule.impl.test {
     requires org.apache.commons.codec;
     requires com.hedera.node.app.spi.fixtures;
     requires com.swirlds.common;
+    requires org.assertj.core;
 
     opens com.hedera.node.app.service.schedule.impl.test to
             org.junit.platform.commons,
