@@ -16,7 +16,12 @@
 
 package com.hedera.node.app.signature;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -35,6 +40,7 @@ import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.List;
@@ -143,29 +149,36 @@ class MonoSignaturePreparerTest {
     @Test
     void delegatesPayerSigCheck() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
-        final var status = subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN));
-        assertEquals(ResponseCodeEnum.OK, status);
+
+        assertThatCode(() -> subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN)))
+                .doesNotThrowAnyException();
     }
 
     @Test
     void translatesKeyPrefixMismatch() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willThrow(KeyPrefixMismatchException.class);
-        final var status = subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN));
-        assertEquals(ResponseCodeEnum.KEY_PREFIX_MISMATCH, status);
+
+        assertThatThrownBy(() -> subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN)))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(KEY_PREFIX_MISMATCH));
     }
 
     @Test
     void translatesInvalidIdException() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willThrow(InvalidAccountIDException.class);
-        final var status = subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN));
-        assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+
+        assertThatThrownBy(() -> subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN)))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_ACCOUNT_ID));
     }
 
     @Test
     void translatesUnrecognizedFailure() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willThrow(IllegalArgumentException.class);
-        final var status = subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN));
-        assertEquals(ResponseCodeEnum.INVALID_SIGNATURE, status);
+
+        assertThatThrownBy(() -> subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN)))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_SIGNATURE));
     }
 
     private void givenHappy(final PlatformSigsCreationResult result) {
@@ -177,7 +190,7 @@ class MonoSignaturePreparerTest {
     }
 
     private void givenUnhappy(final PlatformSigsCreationResult result) {
-        given(result.asCode()).willReturn(KEY_PREFIX_MISMATCH);
+        given(result.asCode()).willReturn(com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH);
         given(result.hasFailed()).willReturn(true);
     }
 }
