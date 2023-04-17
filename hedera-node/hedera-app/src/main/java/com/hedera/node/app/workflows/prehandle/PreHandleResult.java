@@ -70,7 +70,7 @@ public record PreHandleResult(
                 requireNonNull(signatureMap),
                 context.payer(),
                 status,
-                asHederaKey(context.payerKey()).get(),
+                asHederaKey(context.payerKey()).orElse(null),
                 asHederaKeys(context.requiredNonPayerKeys()),
                 requireNonNull(cryptoSignatures),
                 innerResult);

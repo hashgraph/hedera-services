@@ -33,16 +33,14 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -82,9 +80,6 @@ class PreHandleWorkflowImplTest extends AppTestBase {
     private Key payerKey;
 
     @Mock(strictness = LENIENT)
-    private HederaKey payerHederaKey;
-
-    @Mock(strictness = LENIENT)
     private SwirldTransaction transaction;
 
     @Mock(strictness = LENIENT)
@@ -115,7 +110,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
     private ReadableKVState accountState;
 
     @Mock
-    private MerkleAccount payerAccount;
+    private Account payerAccount;
 
     @Mock
     private ConsensusTransactionImpl workflowTxn;
@@ -174,8 +169,8 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
         given(readableStates.get("ACCOUNTS")).willReturn(accountState);
         given(accountState.get(any())).willReturn(payerAccount);
-        given(payerAccount.getAccountKey()).willReturn((JKey) payerHederaKey);
-        given(payerAccount.getMemo()).willReturn("");
+        given(payerAccount.key()).willReturn(payerKey);
+        given(payerAccount.memo()).willReturn("");
 
         final var meta = workflow.preHandle(state, workflowTxn);
 
@@ -295,8 +290,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
         given(readableStates.get("ACCOUNTS")).willReturn(accountState);
         given(accountState.get(any())).willReturn(payerAccount);
-        given(payerAccount.getAccountKey()).willReturn((JKey) payerHederaKey);
-        given(payerAccount.getMemo()).willReturn("");
+        given(payerAccount.key()).willReturn(payerKey);
 
         workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
