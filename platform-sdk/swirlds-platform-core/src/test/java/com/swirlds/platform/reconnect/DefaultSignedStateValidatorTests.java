@@ -113,9 +113,10 @@ class DefaultSignedStateValidatorTests {
             final List<Node> nodes = initRandomizedNodes(r);
             final List<Node> signingNodes = getRandomizedSigningNodes(r, nodes);
             final long validSigningWeight = getValidSignatureWeight(signingNodes);
-            final long totalState = getTotalWeight(nodes);
+            final long totalWeight = getTotalWeight(nodes);
             final String desc = String.format(
-                    "\nseed: %sL:, valid signing weight: %s, total weight: %s\n", seed, validSigningWeight, totalState);
+                    "\nseed: %sL:, valid signing weight: %s, total weight: %s\n",
+                    seed, validSigningWeight, totalWeight);
             arguments.add(Arguments.of(desc, nodes, signingNodes));
         }
 

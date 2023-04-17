@@ -54,7 +54,7 @@ public class ConsensusHashFinder {
     private final long round;
 
     /**
-     * The total state of nodes that have reported their hash for this round.
+     * The total weight of nodes that have reported their hash for this round.
      */
     private long hashReportedWeight;
 

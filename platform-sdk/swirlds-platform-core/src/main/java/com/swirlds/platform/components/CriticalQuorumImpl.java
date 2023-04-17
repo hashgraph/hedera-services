@@ -131,21 +131,22 @@ public class CriticalQuorumImpl implements CriticalQuorum {
         handleRoundBoundary(event);
 
         final long nodeId = event.getCreatorId();
-        final long totalState = addressBook.getTotalWeight();
+        final long totalWeight = addressBook.getTotalWeight();
 
         // Increase the event count
         final int originalEventCount = eventCounts.getOrDefault(nodeId, 0);
         eventCounts.put(nodeId, originalEventCount + 1);
 
         // Update threshold map
-        final long originalWeightAtThreshold = weightNotExceedingThreshold.getOrDefault(originalEventCount, totalState);
+        final long originalWeightAtThreshold =
+                weightNotExceedingThreshold.getOrDefault(originalEventCount, totalWeight);
         final long newWeightAtThreshold =
                 originalWeightAtThreshold - addressBook.getAddress(nodeId).getWeight();
         weightNotExceedingThreshold.put(originalEventCount, newWeightAtThreshold);
 
         // Make sure threshold allows at least 1/3 of the weight to be part of the critical quorum
         if (!Utilities.isStrongMinority(
-                weightNotExceedingThreshold.getOrDefault(threshold.get(), totalState), totalState)) {
+                weightNotExceedingThreshold.getOrDefault(threshold.get(), totalWeight), totalWeight)) {
             threshold.incrementAndGet();
         }
     }
