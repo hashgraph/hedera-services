@@ -494,7 +494,7 @@ class StateSigningTests {
         int i = 0;
         for (final Address address : addressBook) {
             newAddressBook.add(address.copySetStake(0));
-            assertTrue(address.equalsWithoutStake(newAddressBook.getAddress(newAddressBook.getId(i))));
+            assertTrue(address.equalsWithoutStakeAndOwnHost(newAddressBook.getAddress(newAddressBook.getId(i))));
             i++;
         }
 
