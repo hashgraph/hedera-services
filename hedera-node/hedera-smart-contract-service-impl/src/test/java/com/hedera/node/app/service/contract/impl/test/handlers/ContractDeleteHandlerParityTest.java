@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static com.hedera.test.factories.scenarios.ContractCreateScenarios.DILIGENT_SIGNING_PAYER_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.MISC_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.RECEIVER_SIG_KT;
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_IMMUTABLE_SCENARIO;
@@ -89,9 +88,8 @@ class ContractDeleteHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asKey());
-        assertThat(context.requiredNonPayerKeys())
-                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asPbjKey(), DILIGENT_SIGNING_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(MISC_ADMIN_KT.asPbjKey());
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

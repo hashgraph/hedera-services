@@ -29,11 +29,15 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class ContractCreateHandlerTest extends ContractHandlerTestBase {
     private final ContractCreateHandler subject = new ContractCreateHandler();
+
+    @BeforeEach
+    void setUp() {}
 
     @Test
     @DisplayName("Adds valid admin key")

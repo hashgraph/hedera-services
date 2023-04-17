@@ -18,6 +18,8 @@ package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
+import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 
@@ -45,10 +47,10 @@ public class ContractHandlerTestBase implements TransactionFactory {
     protected final AccountID autoRenewAccountId = asAccount("0.0.10001");
     protected final Key payerKey = A_COMPLEX_KEY;
     protected final HederaKey payerHederaKey = asHederaKey(A_COMPLEX_KEY).orElseThrow();
-    protected final Key adminKey = A_COMPLEX_KEY;
+    protected final Key adminKey = B_COMPLEX_KEY;
     protected final Key adminContractKey =
             Key.newBuilder().contractID(asContract("0.0.10002")).build();
-    protected final Key autoRenewKey = A_COMPLEX_KEY;
+    protected final Key autoRenewKey = C_COMPLEX_KEY;
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final ContractID targetContract =
