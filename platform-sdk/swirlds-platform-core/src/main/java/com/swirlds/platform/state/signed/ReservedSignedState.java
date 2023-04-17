@@ -17,6 +17,9 @@
 package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.AutoCloseableNonThrowing;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -41,7 +44,8 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
      * Create a wrapper around null (for scenarios where we are storing a null signed state).
      */
     public ReservedSignedState() {
-        this(null, null);
+        this.signedState = null;
+        this.reason = "";
     }
 
     /**
@@ -51,9 +55,9 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
      * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
      *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
      */
-    ReservedSignedState(final SignedState signedState, final String reason) {
-        this.signedState = signedState;
-        this.reason = reason;
+    ReservedSignedState(@NonNull final SignedState signedState, @NonNull final String reason) {
+        this.signedState = Objects.requireNonNull(signedState);
+        this.reason = Objects.requireNonNull(reason);
 
         // It is safe to "leak this" here.
         // All fields are final, this class is final, and everything has been instantiated.
@@ -84,7 +88,7 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
      *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
      * @return a new wrapper around the state that holds a new reservation
      */
-    public ReservedSignedState getAndReserve(final String reason) {
+    public @NonNull ReservedSignedState getAndReserve(@NonNull final String reason) {
         if (closed.get()) {
             throw new IllegalStateException("Can not get another reservation from a closed wrapper.");
         }
@@ -98,7 +102,7 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
      *
      * @return the signed state
      */
-    public SignedState get() {
+    public @Nullable SignedState get() {
         if (closed.get()) {
             throw new IllegalStateException("Can not get signed state from closed wrapper.");
         }
@@ -123,7 +127,7 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
     /**
      * Get the reason why this state was reserved.
      */
-    String getReason() {
+    @NonNull String getReason() {
         return reason;
     }
 

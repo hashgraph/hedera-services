@@ -36,6 +36,8 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -137,13 +139,13 @@ public class SignedState implements SignedStateInfo {
      *                    with received rounds up through the round this SignedState represents
      * @param freezeState specifies whether this state is the last one saved before the freeze
      */
-    public SignedState(final State state, final boolean freezeState) {
+    public SignedState(@NonNull final State state, final boolean freezeState) { // TODO do we need this constructor?
         this(state);
         this.freezeState = freezeState;
         sigSet = new SigSet();
     }
 
-    public SignedState(final State state) {
+    public SignedState(@NonNull final State state) {
         state.reserve();
 
         this.state = state;
@@ -155,7 +157,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * Set a garbage collector, used to delete states on a background thread.
      */
-    public synchronized void setGarbageCollector(final SignedStateGarbageCollector signedStateGarbageCollector) {
+    public synchronized void setGarbageCollector(@NonNull final SignedStateGarbageCollector signedStateGarbageCollector) {
         this.signedStateGarbageCollector = signedStateGarbageCollector;
     }
 
@@ -171,7 +173,7 @@ public class SignedState implements SignedStateInfo {
      * {@inheritDoc}
      */
     @Override
-    public SigSet getSigSet() {
+    public SigSet getSigSet() { // TODO nullable?
         return sigSet;
     }
 
@@ -180,7 +182,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @param sigSet the signatures to be attached to this signed state
      */
-    public void setSigSet(final SigSet sigSet) {
+    public void setSigSet(@NonNull final SigSet sigSet) {
         signingStake = 0;
         this.sigSet = sigSet;
         for (final long signingNode : sigSet) {
@@ -197,7 +199,7 @@ public class SignedState implements SignedStateInfo {
      * {@inheritDoc}
      */
     @Override
-    public AddressBook getAddressBook() {
+    public @NonNull AddressBook getAddressBook() {
         return Objects.requireNonNull(
                 getState().getPlatformState().getAddressBook(),
                 "address book stored in this signed state is null, this should never happen");
@@ -209,7 +211,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the state contained in the signed state
      */
-    public State getState() {
+    public @NonNull State getState() {
         return state;
     }
 
@@ -227,16 +229,17 @@ public class SignedState implements SignedStateInfo {
      *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
      * @return a wrapper that holds the state and the reservation
      */
-    public ReservedSignedState reserve(final String reason) {
+    public @NonNull ReservedSignedState reserve(@NonNull final String reason) {
         return new ReservedSignedState(this, reason);
     }
 
     // TODO catch reservation exceptions and log history
+    // TODO review this API
 
     /**
      * Increment reservation count.
      */
-    void incrementReservationCount(final ReservedSignedState reservation) {
+    void incrementReservationCount(@NonNull final ReservedSignedState reservation) {
         history.recordAction(RESERVE, getReservationCount(), reservation.getReason(), reservation.getReservationId());
         reservations.reserve();
     }
@@ -244,7 +247,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * Decrement reservation count.
      */
-    void decrementReservationCount(final ReservedSignedState reservation) {
+    void decrementReservationCount(@NonNull final ReservedSignedState reservation) {
         history.recordAction(RELEASE, getReservationCount(), reservation.getReason(), reservation.getReservationId());
         reservations.release();
     }
@@ -269,7 +272,8 @@ public class SignedState implements SignedStateInfo {
      * This method is called when there is a reference count exception.
      */
     private void onReferenceCountException() {
-        logger.error(EXCEPTION.getMarker(), history.toString());
+        logger.error(EXCEPTION.getMarker(), "SignedState reference count error detected, dumping history.\n{}",
+                history.toString());
     }
 
     /**
@@ -353,6 +357,8 @@ public class SignedState implements SignedStateInfo {
                 (getAddressBook() == null ? "?" : getAddressBook().getTotalStake()),
                 state.getHash());
     }
+
+    // TODO nullability for all of these fields...
 
     /**
      * Get the consensus timestamp for this signed state

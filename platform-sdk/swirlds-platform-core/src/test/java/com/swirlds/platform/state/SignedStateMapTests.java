@@ -43,7 +43,7 @@ class SignedStateMapTests {
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
         assertEquals(NO_STATE_ROUND, map.getLatestRound());
-        assertNull(map.getLatest().get());
+        assertNull(map.getLatestAndReserve().get());
 
         final AtomicInteger references = new AtomicInteger();
 
@@ -55,7 +55,7 @@ class SignedStateMapTests {
 
         map.put(signedState);
         assertEquals(1, map.getSize(), "unexpected size");
-        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatest()) {
+        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatestAndReserve()) {
             assertSame(signedState, wrapper.get());
         }
         assertEquals(signedState.getRound(), map.getLatestRound());
@@ -68,15 +68,15 @@ class SignedStateMapTests {
         AutoCloseableWrapper<SignedState> wrapper;
 
         // Get a reference to a round that is not in the map
-        wrapper = map.get(0);
+        wrapper = map.getAndReserve(0);
         assertNull(wrapper.get());
         wrapper.close();
 
-        wrapper = map.get(0);
+        wrapper = map.getAndReserve(0);
         assertNull(wrapper.get());
         wrapper.close();
 
-        wrapper = map.get(round);
+        wrapper = map.getAndReserve(round);
         assertSame(signedState, wrapper.get(), "wrapper returned incorrect object");
         assertEquals(1, references.get(), "invalid reference count");
         wrapper.close();
@@ -91,7 +91,7 @@ class SignedStateMapTests {
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
         assertEquals(NO_STATE_ROUND, map.getLatestRound());
-        assertNull(map.getLatest().get());
+        assertNull(map.getLatestAndReserve().get());
 
         final AtomicInteger references = new AtomicInteger();
 
@@ -103,7 +103,7 @@ class SignedStateMapTests {
 
         map.put(signedState);
         assertEquals(1, map.getSize(), "unexpected size");
-        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatest()) {
+        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatestAndReserve()) {
             assertSame(signedState, wrapper.get());
         }
 
@@ -114,7 +114,7 @@ class SignedStateMapTests {
         assertEquals(0, map.getSize(), "unexpected size");
         assertEquals(0, referencesHeldByMap.get(), "invalid reference count");
         assertEquals(NO_STATE_ROUND, map.getLatestRound());
-        assertNull(map.getLatest().get());
+        assertNull(map.getLatestAndReserve().get());
 
         // remove an element not in the map, should not throw
         map.remove(0);
@@ -141,7 +141,7 @@ class SignedStateMapTests {
         assertEquals(1, map.getSize(), "unexpected size");
         assertEquals(1, references1.get(), "invalid reference count");
         assertEquals(0, references2.get(), "invalid reference count");
-        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatest()) {
+        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatestAndReserve()) {
             assertSame(signedState1, wrapper.get());
         }
         assertEquals(round, map.getLatestRound());
@@ -150,7 +150,7 @@ class SignedStateMapTests {
         assertEquals(1, map.getSize(), "unexpected size");
         assertEquals(0, references1.get(), "invalid reference count");
         assertEquals(1, references2.get(), "invalid reference count");
-        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatest()) {
+        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatestAndReserve()) {
             assertSame(signedState2, wrapper.get());
         }
         assertEquals(round, map.getLatestRound());
@@ -165,7 +165,7 @@ class SignedStateMapTests {
         assertThrows(NullPointerException.class, () -> map.put(null), "map should reject a null signed state");
         assertEquals(0, map.getSize(), "unexpected size");
         assertEquals(NO_STATE_ROUND, map.getLatestRound());
-        assertNull(map.getLatest().get());
+        assertNull(map.getLatestAndReserve().get());
     }
 
     @Test
@@ -199,17 +199,17 @@ class SignedStateMapTests {
         doReturn(round3).when(signedState3).getRound();
 
         map.put(signedState1);
-        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatest()) {
+        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatestAndReserve()) {
             assertSame(signedState1, wrapper.get());
         }
         assertEquals(signedState1.getRound(), map.getLatestRound());
         map.put(signedState2);
-        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatest()) {
+        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatestAndReserve()) {
             assertSame(signedState2, wrapper.get());
         }
         assertEquals(signedState2.getRound(), map.getLatestRound());
         map.put(signedState3);
-        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatest()) {
+        try (final AutoCloseableWrapper<SignedState> wrapper = map.getLatestAndReserve()) {
             assertSame(signedState3, wrapper.get());
         }
         assertEquals(signedState3.getRound(), map.getLatestRound());
@@ -225,11 +225,11 @@ class SignedStateMapTests {
         assertEquals(0, referencesHeldByMap2.get(), "invalid reference count");
         assertEquals(0, referencesHeldByMap3.get(), "invalid reference count");
         assertEquals(NO_STATE_ROUND, map.getLatestRound());
-        assertNull(map.getLatest().get());
+        assertNull(map.getLatestAndReserve().get());
 
-        assertNull(map.get(round1).get(), "state should not be in map");
-        assertNull(map.get(round2).get(), "state should not be in map");
-        assertNull(map.get(round3).get(), "state should not be in map");
+        assertNull(map.getAndReserve(round1).get(), "state should not be in map");
+        assertNull(map.getAndReserve(round2).get(), "state should not be in map");
+        assertNull(map.getAndReserve(round3).get(), "state should not be in map");
         assertEquals(0, map.getSize(), "unexpected size");
         assertEquals(0, referencesHeldByMap1.get(), "invalid reference count");
         assertEquals(0, referencesHeldByMap2.get(), "invalid reference count");

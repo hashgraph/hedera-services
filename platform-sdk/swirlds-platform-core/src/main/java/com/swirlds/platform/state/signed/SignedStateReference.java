@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.platform.state.signed.SignedStateUtilities.newSignedStateWrapper;
-
-import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.common.threading.locks.AutoClosableLock;
+import com.swirlds.common.threading.locks.Locks;
+import com.swirlds.common.threading.locks.locked.Locked;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Similar to an {@link java.util.concurrent.atomic.AtomicReference AtomicReference&lt;SignedState&gt;}, but with the
@@ -26,7 +28,8 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
  */
 public class SignedStateReference {
 
-    private SignedState signedState;
+    private ReservedSignedState reservedSignedState = new ReservedSignedState();
+    private final AutoClosableLock lock = Locks.createAutoLock();
 
     /**
      * Create a new signed state reference with a null initial state.
@@ -37,29 +40,33 @@ public class SignedStateReference {
      * Create a new signed state reference with an initial state.
      *
      * @param signedState a signed state
+     * @param reason      a short description of why this SignedState is being reserved. Each location where a
+     *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
+     *                    reservation bugs easier.
      */
-    public SignedStateReference(final SignedState signedState) {
-        set(signedState);
+    public SignedStateReference(@NonNull final SignedState signedState, @NonNull final String reason) {
+        set(signedState, reason);
     }
 
     /**
      * Set a signed state, replacing the existing state.
      *
      * @param signedState a signed state, may be null
+     * @param reason      a short description of why this SignedState is being reserved. Each location where a
+     *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
+     *                    reservation bugs easier.
      */
-    public synchronized void set(final SignedState signedState) {
-        if (signedState == this.signedState) {
-            // Same object, no action required
-            return;
-        }
+    public void set(@Nullable final SignedState signedState, @NonNull final String reason) {
+        try (final Locked l = lock.lock()) {
+            if (signedState == reservedSignedState.get()) {
+                // Same object, no action required
+                return;
+            }
 
-        if (this.signedState != null) {
-            this.signedState.release();
+            reservedSignedState.close();
+            reservedSignedState =
+                    signedState == null ? new ReservedSignedState() : new ReservedSignedState(signedState, reason);
         }
-        if (signedState != null) {
-            signedState.reserve();
-        }
-        this.signedState = signedState;
     }
 
     /**
@@ -67,8 +74,10 @@ public class SignedStateReference {
      *
      * @return true if the referenced state is null
      */
-    public synchronized boolean isNull() {
-        return signedState == null;
+    public boolean isNull() {
+        try (final Locked l = lock.lock()) {
+            return reservedSignedState == null;
+        }
     }
 
     /**
@@ -76,18 +85,23 @@ public class SignedStateReference {
      *
      * @return the signed state's round, or -1 if this object references a null object
      */
-    public synchronized long getRound() {
-        return signedState == null ? -1 : signedState.getRound();
+    public long getRound() {
+        try (final Locked l = lock.lock()) {
+            final SignedState signedState = reservedSignedState.get();
+            return signedState == null ? -1 : signedState.getRound();
+        }
     }
 
     /**
      * Get the signed state and take a reservation on it.
      *
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
      * @return an autocloseable wrapper with the state, when closed the state is released
      */
-    public AutoCloseableWrapper<SignedState> get() {
-        final SignedState stateToReturn = signedState;
-
-        return newSignedStateWrapper(stateToReturn);
+    public ReservedSignedState getAndReserve(@NonNull final String reason) {
+        try (final Locked l = lock.lock()) {
+            return reservedSignedState.getAndReserve(reason);
+        }
     }
 }

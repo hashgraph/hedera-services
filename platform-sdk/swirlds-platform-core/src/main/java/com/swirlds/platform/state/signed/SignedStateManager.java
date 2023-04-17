@@ -143,7 +143,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @return a wrapper with the latest complete signed state, or null if no recent states that are complete
      */
     public @NonNull AutoCloseableWrapper<SignedState> getLatestSignedState() {
-        return completeStates.getLatest();
+        return completeStates.getLatestAndReserve();
     }
 
     /**
@@ -387,7 +387,7 @@ public class SignedStateManager implements SignedStateFinder {
      * not present
      */
     private @NonNull AutoCloseableWrapper<SignedState> getIncompleteState(final long round) {
-        return incompleteStates.get(round);
+        return incompleteStates.getAndReserve(round);
     }
 
     /**
