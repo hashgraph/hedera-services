@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components.common.output;
 
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 
 /**
  * Invoked when a new signed state has been created as a result of transaction processing.
@@ -30,5 +30,5 @@ public interface NewSignedStateFromTransactionsConsumer {
      *
      * @param signedState the newly created signed state
      */
-    void newSignedStateFromTransactions(final SignedState signedState);
+    void newSignedStateFromTransactions(final ReservedSignedState signedState);
 }

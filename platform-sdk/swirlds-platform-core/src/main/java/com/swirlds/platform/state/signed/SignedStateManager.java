@@ -78,8 +78,7 @@ public class SignedStateManager implements SignedStateFinder {
     /**
      * A signature that was received when there was no state with a matching round.
      */
-    private record SavedSignature(long round, long memberId, Signature signature) {
-    }
+    private record SavedSignature(long round, long memberId, Signature signature) {}
 
     /**
      * Signatures for rounds in the future.
@@ -210,7 +209,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the signed state to add
      */
     public synchronized void addState(@NonNull final SignedState signedState) {
-        throwArgNull(signedState, "signedState");
+        throwArgNull(signedState, "reservedSignedState");
 
         if (signedState.getState().getHash() == null) {
             throw new IllegalArgumentException(
@@ -269,17 +268,14 @@ public class SignedStateManager implements SignedStateFinder {
             signedStateMetrics.getStateSignatureAge().update(signatureAge);
         }
 
-        try (final ReservedSignedState wrapper =
-                getIncompleteState(round)) {
-
-            final SignedState signedState = wrapper.get();
-            if (signedState == null) {
+        try (final ReservedSignedState wrapper = getIncompleteState(round)) {
+            if (wrapper.isNull()) {
                 // This round has already been completed, or it is really old or in the future
                 savedSignatures.add(new SavedSignature(round, signerId, signature));
                 return;
             }
 
-            addSignature(signedState, signerId, signature);
+            addSignature(wrapper.get(), signerId, signature);
         }
     }
 
@@ -458,7 +454,8 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the new most recently and complete signed state
      */
     private void notifyNewLatestCompleteState(@NonNull final SignedState signedState) {
-        newLatestCompleteStateConsumer.newLatestCompleteStateEvent(new SignedStateWrapper(signedState));
+        newLatestCompleteStateConsumer.newLatestCompleteStateEvent(
+                signedState.reserve("SignedStateManager.notifyNewLatestCompleteState()"));
     }
 
     /**
@@ -467,7 +464,8 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that was unable to be complete signed
      */
     private void notifyStateLacksSignatures(@NonNull final SignedState signedState) {
-        stateLacksSignaturesConsumer.stateLacksSignatures(new SignedStateWrapper(signedState));
+        stateLacksSignaturesConsumer.stateLacksSignatures(
+                signedState.reserve("SignedStateManager.notifyStateLacksSignatures()"));
     }
 
     /**
@@ -476,6 +474,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that now has enough signatures
      */
     private void notifyStateHasEnoughSignatures(@NonNull final SignedState signedState) {
-        stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(new SignedStateWrapper(signedState));
+        stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(
+                signedState.reserve("SignedStateManager.notifyStateHasEnoughSignatures()"));
     }
 }

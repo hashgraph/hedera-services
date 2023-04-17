@@ -16,7 +16,8 @@
 
 package com.swirlds.platform.components.state.output;
 
-import com.swirlds.platform.state.signed.SignedStateWrapper;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An event when a signed state gathers enough signatures to be considered complete. This differs from
@@ -24,8 +25,8 @@ import com.swirlds.platform.state.signed.SignedStateWrapper;
  * signed state but just now gathered enough signatures to be considered complete. If this state is also the latest
  * complete signed state, then both events are created.
  * <p>
- * The state within the {@link SignedStateWrapper} holds a reservation. The wiring layer must release the
- * {@link SignedStateWrapper} after all consumers have completed.
+ * The state within the {@link ReservedSignedState} holds a reservation. The wiring layer must release the
+ * {@link ReservedSignedState} after all consumers have completed.
  */
 @FunctionalInterface
 public interface StateHasEnoughSignaturesConsumer {
@@ -38,5 +39,5 @@ public interface StateHasEnoughSignaturesConsumer {
      *
      * @param signedStateWrapper the wrapped signed state
      */
-    void stateHasEnoughSignatures(SignedStateWrapper signedStateWrapper);
+    void stateHasEnoughSignatures(@NonNull ReservedSignedState signedStateWrapper);
 }

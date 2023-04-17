@@ -20,7 +20,7 @@ import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateComparison;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.util.BootstrapUtils;
@@ -113,18 +113,17 @@ public final class CompareStatesCommand extends AbstractCommand {
     /**
      * Load a state from disk and hash it.
      *
-     * @param statePath
-     * 		the location of the state to load
+     * @param statePath the location of the state to load
      * @return the loaded state
      */
-    private static SignedState loadAndHashState(final Path statePath) throws IOException {
+    private static ReservedSignedState loadAndHashState(final Path statePath) throws IOException {
         System.out.println("Loading state from " + statePath);
-        final SignedState signedState =
-                SignedStateFileReader.readStateFile(statePath).signedState();
+        final ReservedSignedState signedState =
+                SignedStateFileReader.readStateFile(statePath).reservedSignedState();
         System.out.println("Hashing state");
         try {
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(signedState.getState())
+                    .digestTreeAsync(signedState.get().getState())
                     .get();
         } catch (final InterruptedException | ExecutionException e) {
             throw new RuntimeException("unable to hash state", e);
@@ -143,12 +142,14 @@ public final class CompareStatesCommand extends AbstractCommand {
         BootstrapUtils.loadConfiguration(configurationPaths);
         BootstrapUtils.setupConstructableRegistry();
 
-        final SignedState stateA = loadAndHashState(stateAPath);
-        final SignedState stateB = loadAndHashState(stateBPath);
-
-        SignedStateComparison.printMismatchedNodes(
-                SignedStateComparison.mismatchedNodeIterator(stateA.getState(), stateB.getState(), deepComparison),
-                nodeLimit);
+        try (final ReservedSignedState stateA = loadAndHashState(stateAPath)) {
+            try (final ReservedSignedState stateB = loadAndHashState(stateBPath)) {
+                SignedStateComparison.printMismatchedNodes(
+                        SignedStateComparison.mismatchedNodeIterator(
+                                stateA.get().getState(), stateB.get().getState(), deepComparison),
+                        nodeLimit);
+            }
+        }
 
         return 0;
     }

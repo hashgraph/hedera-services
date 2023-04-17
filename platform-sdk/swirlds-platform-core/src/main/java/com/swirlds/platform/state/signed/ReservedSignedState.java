@@ -17,22 +17,24 @@
 package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.AutoCloseableNonThrowing;
+import com.swirlds.common.exceptions.ReferenceCountException;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A wrapper around a signed state that holds a reservation. Until this wrapper is released/closed, the signed state
  * contained within will not be destroyed.
+ * <p>
+ * This class is not thread safe. That is, it is not safe for one thread to access this object while another thread
+ * is asynchronously closing it. Each thread should hold its own reservation on a state if it needs to access a state.
  */
 public final class ReservedSignedState implements AutoCloseableNonThrowing {
 
     private final SignedState signedState;
     private final String reason;
     private final long reservationId = nextReservationId.getAndIncrement();
-    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private boolean closed = false;
 
     /**
      * The next reservation id to use. It is ok that this is static, since we don't care which ID any particular
@@ -52,8 +54,9 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
      * Create a new reserved signed state.
      *
      * @param signedState the signed state to reserve
-     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
-     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
+     * @param reason      a short description of why this SignedState is being reserved. Each location where a
+     *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
+     *                    reservation bugs easier.
      */
     ReservedSignedState(@NonNull final SignedState signedState, @NonNull final String reason) {
         this.signedState = Objects.requireNonNull(signedState);
@@ -66,18 +69,22 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
 
     /**
      * Check if the signed state is null.
+     *
      * @return true if the signed state is null, false otherwise
      */
     public boolean isNull() {
+        throwIfClosed();
         return signedState == null;
     }
 
     /**
-     * Check if the signed state is not null. If this method returns true
-     * then it is not strictly required to call {@link #close} on this object.
+     * Check if the signed state is not null. If this method returns true then it is not strictly required to call
+     * {@link #close} on this object.
+     *
      * @return true if the signed state is not null, false otherwise
      */
     public boolean isNotNull() {
+        throwIfClosed();
         return signedState != null;
     }
 
@@ -89,9 +96,7 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
      * @return a new wrapper around the state that holds a new reservation
      */
     public @NonNull ReservedSignedState getAndReserve(@NonNull final String reason) {
-        if (closed.get()) {
-            throw new IllegalStateException("Can not get another reservation from a closed wrapper.");
-        }
+        throwIfClosed();
         return new ReservedSignedState(signedState, reason);
     }
 
@@ -101,12 +106,11 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
      * reserving it.
      *
      * @return the signed state
+     * @throws NullPointerException if the signed state is null
      */
-    public @Nullable SignedState get() {
-        if (closed.get()) {
-            throw new IllegalStateException("Can not get signed state from closed wrapper.");
-        }
-        return signedState;
+    public @NonNull SignedState get() {
+        throwIfClosed();
+        return Objects.requireNonNull(signedState);
     }
 
     /**
@@ -114,11 +118,8 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
      */
     @Override
     public void close() {
-        final boolean prev = closed.getAndSet(true);
-        if (prev) {
-            throw new IllegalStateException("Already released");
-        }
-
+        throwIfClosed();
+        closed = true;
         if (signedState != null) {
             signedState.decrementReservationCount(this);
         }
@@ -127,7 +128,8 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
     /**
      * Get the reason why this state was reserved.
      */
-    @NonNull String getReason() {
+    @NonNull
+    String getReason() {
         return reason;
     }
 
@@ -136,5 +138,14 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
      */
     long getReservationId() {
         return reservationId;
+    }
+
+    /**
+     * Throw an exception if this wrapper has been closed.
+     */
+    private void throwIfClosed() { // TODO log history?
+        if (closed) {
+            throw new ReferenceCountException("This ReservedSignedState has been closed.");
+        }
     }
 }

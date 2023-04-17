@@ -131,15 +131,16 @@ class SignedStateFileReadWriteTest {
 
         final DeserializedSignedState deserializedSignedState = readStateFile(stateFile);
         MerkleCryptoFactory.getInstance()
-                .digestTreeSync(deserializedSignedState.signedState().getState());
+                .digestTreeSync(
+                        deserializedSignedState.reservedSignedState().get().getState());
 
         assertNotNull(deserializedSignedState.originalHash(), "hash should not be null");
         assertEquals(signedState.getState().getHash(), deserializedSignedState.originalHash(), "hash should match");
         assertEquals(
                 signedState.getState().getHash(),
-                deserializedSignedState.signedState().getState().getHash(),
+                deserializedSignedState.reservedSignedState().get().getState().getHash(),
                 "hash should match");
-        assertNotSame(signedState, deserializedSignedState.signedState(), "state should be a different object");
+        assertNotSame(signedState, deserializedSignedState.reservedSignedState(), "state should be a different object");
     }
 
     @Test
@@ -295,7 +296,7 @@ class SignedStateFileReadWriteTest {
             final SignedState signedState =
                     new RandomSignedStateGenerator().setRound(round).build();
 
-            manager.saveSignedStateToDisk(signedState);
+            manager.saveSignedStateToDisk(signedState.reserve("test"));
         }
 
         // The states should have been written by now

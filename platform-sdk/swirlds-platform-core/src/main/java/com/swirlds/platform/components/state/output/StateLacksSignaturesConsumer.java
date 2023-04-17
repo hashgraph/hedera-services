@@ -16,13 +16,14 @@
 
 package com.swirlds.platform.components.state.output;
 
-import com.swirlds.platform.state.signed.SignedStateWrapper;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Invoked when a signed state fails to collect sufficient signatures before being ejected from memory.
  * <p>
- * The state within the {@link SignedStateWrapper} holds a reservation. The wiring layer must release the
- * {@link SignedStateWrapper} after all consumers have completed.
+ * The state within the {@link ReservedSignedState} holds a reservation. The wiring layer must release the
+ * {@link ReservedSignedState} after all consumers have completed.
  */
 @FunctionalInterface
 public interface StateLacksSignaturesConsumer {
@@ -35,5 +36,5 @@ public interface StateLacksSignaturesConsumer {
      *
      * @param signedStateWrapper the wrapped signed state
      */
-    void stateLacksSignatures(SignedStateWrapper signedStateWrapper);
+    void stateLacksSignatures(@NonNull ReservedSignedState signedStateWrapper);
 }

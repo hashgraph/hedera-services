@@ -26,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.util.HashMap;
@@ -61,7 +61,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
         // No state is unsigned in this test. If this method is called then the test is expected to fail.
         return ssw -> {
             stateLacksSignaturesCount.getAndIncrement();
-            ssw.release();
+            ssw.close();
         };
     }
 
@@ -74,7 +74,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
         return ssw -> {
             assertEquals(highestRound.get() - roundAgeToSign, ssw.get().getRound(), "unexpected round completed");
             stateHasEnoughSignaturesCount.getAndIncrement();
-            ssw.release();
+            ssw.close();
         };
     }
 
@@ -111,10 +111,10 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
                 addSignature(manager, roundToSign, 1);
             }
 
-            try (final AutoCloseableWrapper<SignedState> lastState = manager.getLatestImmutableState()) {
+            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");
             }
-            try (final AutoCloseableWrapper<SignedState> lastCompletedState = manager.getLatestSignedState()) {
+            try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
                 if (roundToSign >= 0) {
                     assertSame(
                             signedStates.get(roundToSign), lastCompletedState.get(), "unexpected last completed state");
@@ -127,14 +127,13 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
         }
 
         final long lastCompletedRound;
-        try (final AutoCloseableWrapper<SignedState> wrapper = manager.getLatestSignedState()) {
+        try (final ReservedSignedState wrapper = manager.getLatestSignedState("test")) {
             lastCompletedRound = wrapper.get().getRound();
         }
 
         for (int round = 0; round < count; round++) {
             final long finalRound = round;
-            try (final AutoCloseableWrapper<SignedState> wrapper =
-                    manager.find(state -> state.getRound() == finalRound)) {
+            try (final ReservedSignedState wrapper = manager.find(state -> state.getRound() == finalRound, "test")) {
 
                 final SignedState foundState = wrapper.get();
 

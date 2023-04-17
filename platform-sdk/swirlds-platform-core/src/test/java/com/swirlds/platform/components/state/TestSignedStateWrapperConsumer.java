@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.components.state;
 
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateWrapper;
 
-public class TestSignedStateWrapperConsumer {
+public class TestSignedStateWrapperConsumer { // TODO why does this class exist?
 
-    private SignedStateWrapper lastWrapper;
+    private ReservedSignedState lastWrapper;
     private SignedState lastSignedState;
     private int invocationCount;
 
@@ -29,11 +29,11 @@ public class TestSignedStateWrapperConsumer {
         reset();
     }
 
-    public void consume(final SignedStateWrapper ssw) {
+    public void consume(final ReservedSignedState ssw) {
         invocationCount++;
         lastWrapper = ssw;
         lastSignedState = ssw.get();
-        ssw.release();
+        ssw.close();
     }
 
     public int getNumInvocations() {
@@ -44,7 +44,7 @@ public class TestSignedStateWrapperConsumer {
         return lastSignedState;
     }
 
-    public SignedStateWrapper getLastWrapper() {
+    public ReservedSignedState getLastWrapper() {
         return lastWrapper;
     }
 
@@ -56,10 +56,11 @@ public class TestSignedStateWrapperConsumer {
     }
 
     private void fullyRelease() {
-        if (lastSignedState != null) {
-            while (lastSignedState.getReservationCount() > 0) {
-                lastSignedState.release();
-            }
-        }
+        // TODO I don't understand this class
+        //        if (lastSignedState != null) {
+        //            while (lastSignedState.getReservationCount() > 0) {
+        //                lastSignedState.release();
+        //            }
+        //        }
     }
 }

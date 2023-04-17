@@ -23,10 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.util.HashMap;
@@ -60,7 +60,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
                     signedStates.get(highestRound.get() - roundsToKeepForSigning),
                     ssw.get(),
                     "unexpected state was retired");
-            ssw.release();
+            ssw.close();
         };
     }
 
@@ -72,7 +72,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
         return ssw -> {
             stateHasEnoughSignaturesCount.getAndIncrement();
-            ssw.release();
+            ssw.close();
         };
     }
 
@@ -101,10 +101,10 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
 
             manager.addState(signedState);
 
-            try (final AutoCloseableWrapper<SignedState> lastState = manager.getLatestImmutableState()) {
+            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");
             }
-            try (final AutoCloseableWrapper<SignedState> lastCompletedState = manager.getLatestSignedState()) {
+            try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
                 assertNull(lastCompletedState.get(), "no states should be completed in this test");
             }
 

@@ -37,7 +37,10 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateReference;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -51,7 +54,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     private final AddressBook addressBook;
     private final Crypto crypto;
 
-    private SignedState immutableState;
+    private final SignedStateReference immutableState = new SignedStateReference();
 
     private final Metrics metrics;
 
@@ -97,11 +100,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      * @param signedState the most recent signed state
      */
     public synchronized void setLatestState(final SignedState signedState) {
-        if (this.immutableState != null) {
-            immutableState.release();
-        }
-        signedState.reserve();
-        this.immutableState = signedState;
+        immutableState.set(signedState, "RecoveryPlatform.setLatestState");
     }
 
     /**
@@ -158,12 +157,14 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      */
     @SuppressWarnings("unchecked")
     @Override
-    public synchronized <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState() {
-        if (immutableState == null) {
-            return null;
-        }
-        immutableState.reserve();
-        return new AutoCloseableWrapper<>((T) immutableState.getSwirldState(), immutableState::release);
+    public synchronized <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(
+            @NonNull final String reason) {
+        final ReservedSignedState reservedSignedState = immutableState.getAndReserve(reason);
+        return new AutoCloseableWrapper<>(
+                reservedSignedState.isNull()
+                        ? null
+                        : (T) reservedSignedState.get().getSwirldState(),
+                reservedSignedState::close);
     }
 
     /**
@@ -171,11 +172,13 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      */
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState() {
-        if (immutableState == null) {
-            return null;
-        }
-        return (AutoCloseableWrapper<T>) immutableState.getSwirldState();
+    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(@NonNull final String reason) {
+        final ReservedSignedState reservedSignedState = immutableState.getAndReserve(reason);
+        return new AutoCloseableWrapper<>(
+                reservedSignedState.isNull()
+                        ? null
+                        : (T) reservedSignedState.get().getSwirldState(),
+                reservedSignedState::close);
     }
 
     /**
@@ -192,9 +195,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      */
     @Override
     public void close() {
-        if (immutableState != null) {
-            immutableState.release();
-        }
+        immutableState.clear();
         metricsExecutor.shutdown();
         notificationEngine.shutdown();
     }

@@ -202,31 +202,31 @@ public class SignedStateFileManager implements Startable {
      * @return true if it will be written to disk, false otherwise
      */
     private boolean saveSignedStateToDisk(
-            final SignedState signedState,
+            final ReservedSignedState signedState,
             final Path directory,
             final String taskDescription,
             final Consumer<Boolean> finishedCallback) {
 
-        signedState.reserve();
-
         final boolean accepted = taskQueue.offer(() -> {
             final long start = time.nanoTime();
             boolean success = false;
-            try {
-                writeSignedStateToDisk(selfId.getId(), directory, signedState, taskDescription);
+            final long round = signedState.get().getRound();
+            try (signedState) {
+                writeSignedStateToDisk(selfId.getId(), directory, signedState.get(), taskDescription);
                 metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+
+                stateToDiskAttemptConsumer.stateToDiskAttempt(
+                        signedState.getAndReserve("SignedStateFileManager.saveSignedStateToDisk()"), directory, true);
 
                 success = true;
             } catch (final Throwable e) {
                 logger.error(
                         EXCEPTION.getMarker(),
                         "Unable to write signed state to disk for round {} to {}.",
-                        signedState.getRound(),
+                        round,
                         directory,
                         e);
             } finally {
-                stateToDiskAttemptConsumer.stateToDiskAttempt(new SignedStateWrapper(signedState), directory, success);
-                signedState.release();
                 if (finishedCallback != null) {
                     finishedCallback.accept(success);
                 }
@@ -235,7 +235,6 @@ public class SignedStateFileManager implements Startable {
         });
 
         if (!accepted) {
-            signedState.release();
             if (finishedCallback != null) {
                 finishedCallback.accept(false);
             }
@@ -243,7 +242,8 @@ public class SignedStateFileManager implements Startable {
                     STATE_TO_DISK.getMarker(),
                     "Unable to save signed state to disk for round {} due to backlog of "
                             + "operations in the SignedStateManager task queue.",
-                    signedState.getRound());
+                    signedState.get().getRound());
+            signedState.close();
         }
         return accepted;
     }
@@ -253,9 +253,9 @@ public class SignedStateFileManager implements Startable {
      *
      * @param signedState the signed state to be written to disk.
      */
-    public boolean saveSignedStateToDisk(final SignedState signedState) {
+    public boolean saveSignedStateToDisk(final ReservedSignedState signedState) {
         return saveSignedStateToDisk(
-                signedState, getSignedStateDir(signedState.getRound()), "periodic snapshot", success -> {
+                signedState, getSignedStateDir(signedState.get().getRound()), "periodic snapshot", success -> {
                     if (success) {
                         deleteOldStates();
                     }
@@ -270,14 +270,16 @@ public class SignedStateFileManager implements Startable {
      *                    part of a file path, so it should not contain whitespace or special characters.
      * @param blocking    if true then block until the state has been fully written to disk
      */
-    public void dumpState(final SignedState signedState, final String reason, final boolean blocking) {
+    public void dumpState(final ReservedSignedState signedState, final String reason, final boolean blocking) {
         final CountDownLatch latch = new CountDownLatch(1);
 
         saveSignedStateToDisk(
                 signedState,
                 getSignedStatesBaseDirectory()
                         .resolve(reason)
-                        .resolve(String.format("node%d_round%d", selfId.getId(), signedState.getRound())),
+                        .resolve(String.format(
+                                "node%d_round%d",
+                                selfId.getId(), signedState.get().getRound())),
                 reason,
                 success -> latch.countDown());
 

@@ -145,7 +145,6 @@ public class ManualWiring {
         stateManagementComponentFactory.newLatestCompleteStateConsumer(ssw -> {
             boolean success = asyncLatestCompleteStateQueue.offer(() -> {
                 appCommunicationComponent.newLatestCompleteStateEvent(ssw);
-                ssw.release();
             });
             if (!success) {
                 logger.error(
@@ -153,7 +152,7 @@ public class ManualWiring {
                         "Unable to add new latest complete state task " + "(state round = {}) to {} because it is full",
                         ssw.get().getRound(),
                         asyncLatestCompleteStateQueue.getName());
-                ssw.release();
+                ssw.close();
             }
         });
 
@@ -161,18 +160,13 @@ public class ManualWiring {
         stateManagementComponentFactory.stateToDiskConsumer((ssw, path, success) -> {
             freezeManager.stateToDisk(ssw.get(), path, success);
             appCommunicationComponent.stateToDiskAttempt(ssw, path, success);
-            ssw.release();
         });
 
-        stateManagementComponentFactory.stateLacksSignaturesConsumer(ssw -> {
-            freezeManager.stateLacksSignatures(ssw.get());
-            ssw.release();
-        });
+        stateManagementComponentFactory.stateLacksSignaturesConsumer(
+                ssw -> freezeManager.stateLacksSignatures(ssw.get()));
 
-        stateManagementComponentFactory.newCompleteStateConsumer(ssw -> {
-            freezeManager.stateHasEnoughSignatures(ssw.get());
-            ssw.release();
-        });
+        stateManagementComponentFactory.newCompleteStateConsumer(
+                ssw -> freezeManager.stateHasEnoughSignatures(ssw.get()));
 
         stateManagementComponentFactory.prioritySystemTransactionConsumer(prioritySystemTransactionSubmitter);
         stateManagementComponentFactory.haltRequestedConsumer(haltRequestedConsumer);

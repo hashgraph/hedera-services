@@ -21,9 +21,9 @@ import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
-import com.swirlds.platform.state.signed.SignedStateWrapper;
 
 /**
  * Utility class for building instances of {@link SignedStateManager}.
@@ -32,9 +32,11 @@ public class SignedStateManagerBuilder {
 
     private final StateConfig stateConfig;
     private final SignedStateMetrics metrics;
-    private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = SignedStateWrapper::release;
-    private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer = SignedStateWrapper::release;
-    private StateLacksSignaturesConsumer stateLacksSignaturesConsumer = SignedStateWrapper::release;
+    private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer =
+            ReservedSignedState::close; // TODO WTF is this?
+    private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer =
+            ReservedSignedState::close; //  and this?
+    private StateLacksSignaturesConsumer stateLacksSignaturesConsumer = ReservedSignedState::close; //   and this too?
 
     public SignedStateManagerBuilder(final StateConfig stateConfig) {
         this.stateConfig = stateConfig;

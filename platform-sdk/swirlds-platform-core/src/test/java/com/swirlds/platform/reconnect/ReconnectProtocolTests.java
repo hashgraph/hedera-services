@@ -30,6 +30,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.sync.FallenBehindManager;
@@ -161,11 +162,14 @@ public class ReconnectProtocolTests {
             signedState = null;
         }
 
+        final ReservedSignedState reservedSignedState = mock(ReservedSignedState.class);
+        when(reservedSignedState.get()).thenReturn(signedState);
+
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
                 PEER_ID,
                 teacherThrottle,
-                () -> signedState,
+                () -> reservedSignedState,
                 100,
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
@@ -244,11 +248,14 @@ public class ReconnectProtocolTests {
         when(signedState.getState()).thenReturn(state);
         when(state.isInitialized()).thenReturn(true);
 
+        final ReservedSignedState reservedSignedState = mock(ReservedSignedState.class);
+        when(reservedSignedState.get()).thenReturn(signedState);
+
         final ReconnectProtocol peer2 = new ReconnectProtocol(
                 getStaticThreadManager(),
                 node2,
                 reconnectThrottle,
-                () -> signedState,
+                () -> reservedSignedState,
                 100,
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
@@ -325,17 +332,20 @@ public class ReconnectProtocolTests {
                     stateReleased.setValue(true);
                     return null;
                 })
-                .when(signedState)
-                .release();
+                .when(signedState);
+        //                .release(); // TODO
         final State state = mock(State.class);
         when(signedState.getState()).thenReturn(state);
         when(state.isInitialized()).thenReturn(true);
+
+        final ReservedSignedState reservedSignedState = mock(ReservedSignedState.class);
+        when(reservedSignedState.get()).thenReturn(signedState);
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
                 new NodeId(false, 0),
                 reconnectThrottle,
-                () -> signedState,
+                () -> reservedSignedState,
                 100,
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),

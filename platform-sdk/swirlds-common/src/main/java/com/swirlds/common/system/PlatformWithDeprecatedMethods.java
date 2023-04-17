@@ -17,6 +17,7 @@
 package com.swirlds.common.system;
 
 import com.swirlds.common.system.events.PlatformEvent;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
@@ -101,5 +102,6 @@ public interface PlatformWithDeprecatedMethods extends Platform {
      * @deprecated this method doesn't belong in the platform
      */
     @Deprecated(forRemoval = true)
+    @Nullable
     Instant getLastSignedStateTimestamp();
 }

@@ -49,9 +49,11 @@ import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateFileWriter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -124,30 +126,33 @@ public final class EventRecoveryWorkflow {
 
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
 
-        final SignedState initialState =
-                SignedStateFileReader.readStateFile(signedStateFile).signedState();
+        final ReservedSignedState initialState =
+                SignedStateFileReader.readStateFile(signedStateFile).reservedSignedState();
 
-        logger.info(STARTUP.getMarker(), "State from round {} loaded.", initialState.getRound());
+        logger.info(
+                STARTUP.getMarker(),
+                "State from round {} loaded.",
+                initialState.get().getRound());
         logger.info(STARTUP.getMarker(), "Loading event stream at {}", eventStreamDirectory);
 
-        final IOIterator<Round> roundIterator =
-                new EventStreamRoundIterator(eventStreamDirectory, initialState.getRound() + 1, allowPartialRounds);
+        final IOIterator<Round> roundIterator = new EventStreamRoundIterator(
+                eventStreamDirectory, initialState.get().getRound() + 1, allowPartialRounds);
 
         logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
-        final SignedState resultingState =
+        final ReservedSignedState resultingState =
                 reapplyTransactions(configuration, initialState, appMain, roundIterator, finalRound, selfId);
 
         logger.info(
                 STARTUP.getMarker(), "Finished reapplying transactions, writing state to {}", resultingStateDirectory);
 
-        SignedStateFileWriter.writeSignedStateFilesToDirectory(selfId, resultingStateDirectory, resultingState);
+        SignedStateFileWriter.writeSignedStateFilesToDirectory(selfId, resultingStateDirectory, resultingState.get());
 
-        updateEmergencyRecoveryFile(resultingStateDirectory, initialState.getConsensusTimestamp());
+        updateEmergencyRecoveryFile(resultingStateDirectory, initialState.get().getConsensusTimestamp());
 
         logger.info(STARTUP.getMarker(), "Recovery process completed");
 
-        resultingState.release();
+        resultingState.close();
     }
 
     /**
@@ -207,9 +212,10 @@ public final class EventRecoveryWorkflow {
      * @return the resulting signed state
      * @throws IOException if there is a problem reading from the event stream file
      */
-    public static SignedState reapplyTransactions(
+    @NonNull
+    public static ReservedSignedState reapplyTransactions(
             final Configuration configuration,
-            final SignedState initialState,
+            final ReservedSignedState initialState,
             final SwirldMain appMain,
             final IOIterator<Round> roundIterator,
             final long finalRound,
@@ -223,31 +229,32 @@ public final class EventRecoveryWorkflow {
         final long roundsNonAncient =
                 configuration.getConfigData(ConsensusConfig.class).roundsNonAncient();
 
-        initialState.getState().throwIfImmutable("initial state must be mutable");
-        initialState.reserve();
+        initialState.get().getState().throwIfImmutable("initial state must be mutable");
 
         logger.info(STARTUP.getMarker(), "Initializing application state");
 
-        final RecoveryPlatform platform = new RecoveryPlatform(configuration, initialState, selfId);
+        final RecoveryPlatform platform = new RecoveryPlatform(configuration, initialState.get(), selfId);
 
         initialState
+                .get()
                 .getSwirldState()
                 .init(
                         platform,
-                        initialState.getState().getSwirldDualState(),
+                        initialState.get().getState().getSwirldDualState(),
                         InitTrigger.EVENT_STREAM_RECOVERY,
                         initialState
+                                .get()
                                 .getState()
                                 .getPlatformState()
                                 .getPlatformData()
                                 .getCreationSoftwareVersion());
-        initialState.getState().markAsInitialized();
+        initialState.get().getState().markAsInitialized();
 
         if (appMain != null) {
             appMain.init(platform, platform.getSelfId());
         }
 
-        SignedState signedState = initialState;
+        ReservedSignedState signedState = initialState;
 
         // Apply events to the state
         while (roundIterator.hasNext()
@@ -261,13 +268,13 @@ public final class EventRecoveryWorkflow {
                     round.getRoundNum());
 
             signedState = handleNextRound(signedState, round, roundsNonAncient);
-            platform.setLatestState(signedState);
+            platform.setLatestState(signedState.get());
         }
 
         logger.info(STARTUP.getMarker(), "Hashing resulting signed state");
         try {
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(signedState.getState())
+                    .digestTreeAsync(signedState.get().getState())
                     .get();
         } catch (final InterruptedException e) {
             throw new RuntimeException("interrupted while attempting to hash the state", e);
@@ -277,7 +284,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Hashing complete");
 
         // Let the application know about the recovered state
-        notifyStateRecovered(platform.getNotificationEngine(), signedState);
+        notifyStateRecovered(platform.getNotificationEngine(), signedState.get());
 
         platform.close();
 
@@ -292,45 +299,46 @@ public final class EventRecoveryWorkflow {
      * @param roundsNonAncient the number of rounds until an event becomes ancient
      * @return the resulting signed state
      */
-    private static SignedState handleNextRound(
-            final SignedState previousState, final Round round, final long roundsNonAncient) {
+    private static ReservedSignedState handleNextRound(
+            final ReservedSignedState previousState, final Round round, final long roundsNonAncient) {
 
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
 
-        previousState.getState().throwIfImmutable();
-        final State newState = previousState.getState().copy();
+        previousState.get().getState().throwIfImmutable();
+        final State newState = previousState.get().getState().copy();
         newState.getPlatformState()
                 .getPlatformData()
                 .setRound(round.getRoundNum())
-                .setNumEventsCons(previousState.getNumEventsCons() + round.getEventCount())
-                .setHashEventsCons(getHashEventsCons(previousState.getHashEventsCons(), round))
-                .setEvents(collectEventsForRound(roundsNonAncient, previousState.getEvents(), round))
+                .setNumEventsCons(previousState.get().getNumEventsCons() + round.getEventCount())
+                .setHashEventsCons(getHashEventsCons(previousState.get().getHashEventsCons(), round))
+                .setEvents(collectEventsForRound(
+                        roundsNonAncient, previousState.get().getEvents(), round))
                 .setConsensusTimestamp(currentRoundTimestamp)
-                .setMinGenInfo(getMinGenInfo(roundsNonAncient, previousState.getMinGenInfo(), round))
+                .setMinGenInfo(
+                        getMinGenInfo(roundsNonAncient, previousState.get().getMinGenInfo(), round))
                 .setCreationSoftwareVersion(previousState
+                        .get()
                         .getState()
                         .getPlatformState()
                         .getPlatformData()
                         .getCreationSoftwareVersion());
 
         applyTransactions(
-                previousState.getSwirldState().cast(),
+                previousState.get().getSwirldState().cast(),
                 newState.getSwirldState().cast(),
                 newState.getSwirldDualState(),
                 round);
 
         final boolean isFreezeState = isFreezeState(
-                previousState.getConsensusTimestamp(),
+                previousState.get().getConsensusTimestamp(),
                 currentRoundTimestamp,
                 newState.getPlatformDualState().getFreezeTime());
         if (isFreezeState) {
             newState.getPlatformDualState().setLastFrozenTimeToBeCurrentFreezeTime();
         }
 
-        final SignedState signedState = new SignedState(newState, isFreezeState);
-
-        signedState.reserve();
-        previousState.release();
+        final ReservedSignedState signedState = new SignedState(newState, isFreezeState).reserve("recovery");
+        previousState.close();
 
         return signedState;
     }

@@ -48,7 +48,7 @@ import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.SwirldStateManagerImpl;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.PlatformConstructionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -61,16 +61,11 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.BooleanSupplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Used to construct platform components that use DI
  */
 final class PlatformConstructor {
-
-    /** use this for all logging, as controlled by the optional data/log4j2.xml file */
-    private static final Logger logger = LogManager.getLogger(PlatformConstructor.class);
 
     /** The maximum size of the queue holding signed states ready to be hashed and signed by others. */
     private static final int STATE_HASH_QUEUE_MAX = 1;
@@ -129,12 +124,12 @@ final class PlatformConstructor {
      * @param signedStateConsumer
      * 		consumer of signed states that hashes the state and collects signatures
      */
-    static QueueThread<SignedState> stateHashSignQueue(
+    static QueueThread<ReservedSignedState> stateHashSignQueue(
             final ThreadManager threadManager,
             final long selfId,
-            final InterruptableConsumer<SignedState> signedStateConsumer) {
+            final InterruptableConsumer<ReservedSignedState> signedStateConsumer) {
 
-        return new QueueThreadConfiguration<SignedState>(threadManager)
+        return new QueueThreadConfiguration<ReservedSignedState>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("state-hash-sign")
@@ -235,7 +230,7 @@ final class PlatformConstructor {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
-            @NonNull final BlockingQueue<SignedState> stateHashSignQueue,
+            @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final ThrowingConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final Runnable enterFreezePeriod,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,

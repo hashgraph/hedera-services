@@ -28,8 +28,8 @@ import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateWrapper;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Random;
@@ -70,10 +70,8 @@ public class AppCommComponentTests {
         });
 
         final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
-        final SignedStateWrapper wrapper = new SignedStateWrapper(signedState);
+        final ReservedSignedState wrapper = signedState.reserve("test");
         component.stateToDiskAttempt(wrapper, tmpDir, success);
-
-        assertFalse(wrapper.isDestroyed(), "Component must not release the signed state wrapper");
 
         if (success) {
             assertEquals(1, numInvocations.get(), "Unexpected number of notifications");
@@ -106,12 +104,12 @@ public class AppCommComponentTests {
             }
         });
 
-        final SignedStateWrapper wrapper = new SignedStateWrapper(signedState);
+        final ReservedSignedState wrapper = signedState.reserve("test");
         final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
         component.newLatestCompleteStateEvent(wrapper);
 
         // Intentionally release the wrapper before the notification callback executes
-        wrapper.release();
+        wrapper.close();
 
         // Allow the notification callback to execute
         senderLatch.countDown();

@@ -40,7 +40,6 @@ import com.swirlds.common.test.merkle.util.PairedStreams;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
@@ -55,6 +54,7 @@ import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.io.IOException;
@@ -210,7 +210,7 @@ public class EmergencyReconnectTests {
 
     private void assertTeacherSearchedForState(final EmergencyRecoveryFile emergencyRecoveryFile) {
         verify(signedStateManager, times(1).description("Teacher did not search for the correct state"))
-                .find(any());
+                .find(any(), any());
     }
 
     private ReconnectController createReconnectController(
@@ -292,10 +292,10 @@ public class EmergencyReconnectTests {
 
     private void mockTeacherHasCompatibleState(
             final EmergencyRecoveryFile emergencyRecoveryFile, final SignedState teacherState) {
-        when(signedStateManager.find(any())).thenAnswer(i -> {
-            teacherState.reserve();
-            return new AutoCloseableWrapper<>(teacherState, teacherState::release);
-        });
+        //        when(signedStateManager.find(any(), any())).thenAnswer(i -> {
+        //            teacherState.reserve();
+        //            return new AutoCloseableWrapper<>(teacherState, teacherState::release);
+        //        }); // TODO
     }
 
     private AddressBook newAddressBook(final Random random, final int numNodes) {
@@ -309,7 +309,7 @@ public class EmergencyReconnectTests {
     }
 
     private void mockTeacherDoesNotHaveCompatibleState() {
-        when(signedStateManager.find(any())).thenReturn(new AutoCloseableWrapper<>(null, () -> {}));
+        when(signedStateManager.find(any(), any())).thenReturn(new ReservedSignedState());
     }
 
     private Callable<Void> doLearner(final EmergencyReconnectProtocol learnerProtocol, final Connection connection) {

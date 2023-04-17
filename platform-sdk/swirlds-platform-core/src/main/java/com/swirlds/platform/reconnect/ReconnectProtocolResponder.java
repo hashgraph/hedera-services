@@ -24,7 +24,7 @@ import com.swirlds.platform.Connection;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.unidirectional.NetworkProtocolResponder;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,60 +77,57 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                 connection.getSelfId(),
                 connection.getOtherId());
 
-        // the SignedState is later manually released by the ReconnectTeacher
-        final SignedState state =
-                latestSignedStateProvider.getLatestSignedState().get();
+        try (final ReservedSignedState state =
+                latestSignedStateProvider.getLatestSignedState("ReconnectProtocolResponder.protocolInitiated()")) {
 
-        if (state == null) {
-            logger.info(
-                    RECONNECT.getMarker(),
-                    "Rejecting reconnect request from node {} " + "due to lack of a fully signed state",
-                    connection.getOtherId().getId());
-            ReconnectUtils.denyReconnect(connection);
-            return;
-        }
+            if (state.isNull()) {
+                logger.info(
+                        RECONNECT.getMarker(),
+                        "Rejecting reconnect request from node {} " + "due to lack of a fully signed state",
+                        connection.getOtherId().getId());
+                ReconnectUtils.denyReconnect(connection);
+                return;
+            }
 
-        if (!state.getState().isInitialized()) {
-            state.release();
-            ReconnectUtils.denyReconnect(connection);
-            logger.warn(
-                    RECONNECT.getMarker(),
-                    "Rejecting reconnect request from node {} " + "due to lack of an initialized signed state.",
-                    connection.getOtherId().getId());
-            return;
-        } else if (!state.isComplete()) {
-            // this is only possible if signed state manager violates its contractual obligations
-            state.release();
-            ReconnectUtils.denyReconnect(connection);
-            logger.error(
-                    RECONNECT.getMarker(),
-                    "Rejecting reconnect request from node {} due to lack of a fully signed state."
-                            + " The signed state manager attempted to provide a state that was not"
-                            + " fully signed, which should not be possible.",
-                    connection.getOtherId().getId());
-            return;
-        }
+            if (!state.get().getState().isInitialized()) {
+                ReconnectUtils.denyReconnect(connection);
+                logger.warn(
+                        RECONNECT.getMarker(),
+                        "Rejecting reconnect request from node {} " + "due to lack of an initialized signed state.",
+                        connection.getOtherId().getId());
+                return;
+            } else if (!state.get().isComplete()) {
+                // this is only possible if signed state manager violates its contractual obligations
+                ReconnectUtils.denyReconnect(connection);
+                logger.error(
+                        RECONNECT.getMarker(),
+                        "Rejecting reconnect request from node {} due to lack of a fully signed state."
+                                + " The signed state manager attempted to provide a state that was not"
+                                + " fully signed, which should not be possible.",
+                        connection.getOtherId().getId());
+                return;
+            }
 
-        if (!reconnectThrottle.initiateReconnect(connection.getOtherId().getId())) {
-            state.release();
-            ReconnectUtils.denyReconnect(connection);
-            return;
-        }
+            if (!reconnectThrottle.initiateReconnect(connection.getOtherId().getId())) {
+                ReconnectUtils.denyReconnect(connection);
+                return;
+            }
 
-        try {
-            ReconnectUtils.confirmReconnect(connection);
-            new ReconnectTeacher(
-                            threadManager,
-                            connection,
-                            state,
-                            settings.getAsyncStreamTimeoutMilliseconds(),
-                            connection.getSelfId().getId(),
-                            connection.getOtherId().getId(),
-                            state.getRound(),
-                            stats)
-                    .execute();
-        } finally {
-            reconnectThrottle.reconnectAttemptFinished();
+            try {
+                ReconnectUtils.confirmReconnect(connection);
+                new ReconnectTeacher(
+                                threadManager,
+                                connection,
+                                state.getAndReserve("ReconnectProtocolResponder.protocolInitiated() reconnect"),
+                                settings.getAsyncStreamTimeoutMilliseconds(),
+                                connection.getSelfId().getId(),
+                                connection.getOtherId().getId(),
+                                state.get().getRound(),
+                                stats)
+                        .execute();
+            } finally {
+                reconnectThrottle.reconnectAttemptFinished();
+            }
         }
     }
 }

@@ -37,6 +37,7 @@ import com.swirlds.platform.SocketConnection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -112,7 +113,6 @@ final class ReconnectTest {
                     .setSigningNodeIds(nodeIds)
                     .build();
 
-            signedState.reserve();
             final MerkleCryptography cryptography = MerkleCryptoFactory.getInstance();
             cryptography.digestSync(signedState.getState().getPlatformState());
             cryptography.digestSync(signedState.getState());
@@ -124,9 +124,8 @@ final class ReconnectTest {
 
             final Thread thread = new Thread(() -> {
                 try {
-                    signedState.reserve();
                     final ReconnectTeacher sender = buildSender(
-                            signedState,
+                            signedState.reserve("test"),
                             new DummyConnection(pairedStreams.getTeacherInput(), pairedStreams.getTeacherOutput()),
                             reconnectMetrics);
                     sender.execute();
@@ -138,7 +137,6 @@ final class ReconnectTest {
             thread.start();
             receiver.execute(mock(SignedStateValidator.class));
             thread.join();
-            signedState.release();
         }
     }
 
@@ -155,7 +153,9 @@ final class ReconnectTest {
     }
 
     private ReconnectTeacher buildSender(
-            final SignedState signedState, final SocketConnection connection, final ReconnectMetrics reconnectMetrics)
+            final ReservedSignedState signedState,
+            final SocketConnection connection,
+            final ReconnectMetrics reconnectMetrics)
             throws IOException {
 
         final long selfId = 0;

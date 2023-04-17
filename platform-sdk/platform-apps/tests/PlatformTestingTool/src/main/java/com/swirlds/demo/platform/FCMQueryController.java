@@ -78,7 +78,7 @@ class FCMQueryController {
                 }
 
                 try (final AutoCloseableWrapper<PlatformTestingToolState> stateWrapper =
-                        platform.getLatestImmutableState()) {
+                        platform.getLatestImmutableState("FCMQueryController.execute()")) {
                     final PlatformTestingToolState state = stateWrapper.get();
                     if (state == null) {
                         continue;

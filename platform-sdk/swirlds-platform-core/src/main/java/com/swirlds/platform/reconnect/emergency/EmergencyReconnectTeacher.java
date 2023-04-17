@@ -20,11 +20,11 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.reconnect.ReconnectException;
 import com.swirlds.platform.reconnect.ReconnectTeacher;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFinder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -66,7 +66,7 @@ public class EmergencyReconnectTeacher {
      * not fully signed, or a later round that is signed by more than half the network stake.
      *
      * @param round the state must have a round greater than this if it does not exactly match the hash
-     * @param hash the hash of the state to find, ignored if the round is greater than the requested round
+     * @param hash  the hash of the state to find, ignored if the round is greater than the requested round
      * @return a predicate that decides if a state is suitable for an emergency reconnect
      */
     public static @NonNull Predicate<SignedState> emergencyStateCriteria(final long round, @NonNull final Hash hash) {
@@ -88,8 +88,8 @@ public class EmergencyReconnectTeacher {
         try {
             final long round = connection.getDis().readLong();
             final Hash hash = connection.getDis().readSerializable();
-            try (final AutoCloseableWrapper<SignedState> stateWrapper =
-                    stateFinder.find(emergencyStateCriteria(round, hash))) {
+            try (final ReservedSignedState stateWrapper =
+                    stateFinder.find(emergencyStateCriteria(round, hash), "EmergencyReconnectTeacher.execute() find")) {
                 final SignedState state = stateWrapper.get();
                 if (state != null) {
                     writeHasState(connection, true);
@@ -98,14 +98,10 @@ public class EmergencyReconnectTeacher {
                             "Beginning emergency reconnect in the role of teacher for node {}",
                             connection.getOtherId());
 
-                    // take an explicit reservation because the
-                    // reconnect teacher will release it later
-                    state.reserve();
-
                     new ReconnectTeacher(
                                     threadManager,
                                     connection,
-                                    state,
+                                    state.reserve("EmergencyReconnectTeacher.execute() reconnect"),
                                     reconnectSocketTimeout,
                                     connection.getSelfId().getId(),
                                     connection.getOtherId().getId(),

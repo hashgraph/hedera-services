@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
 

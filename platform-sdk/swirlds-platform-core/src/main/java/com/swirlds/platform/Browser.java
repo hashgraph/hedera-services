@@ -95,8 +95,8 @@ import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
@@ -634,18 +634,19 @@ public class Browser {
                 final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
                         Shutdown::immediateShutDown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
 
-                final SignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
+                final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
                         mainClassName, swirldName, nodeId, appVersion, addressBook.copy(), emergencyRecoveryManager);
 
                 // check software version compatibility
-                final boolean softwareUpgrade = BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState);
+                final boolean softwareUpgrade =
+                        BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.get());
 
                 final AddressBookConfig addressBookConfig =
                         platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
 
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                        appVersion, softwareUpgrade, loadedSignedState, addressBook.copy(), addressBookConfig);
+                        appVersion, softwareUpgrade, loadedSignedState.get(), addressBook.copy(), addressBookConfig);
 
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
@@ -706,7 +707,7 @@ public class Browser {
      * @param emergencyRecoveryManager the emergency recovery manager to use for emergency recovery.
      * @return the signed state loaded from disk.
      */
-    private SignedState getUnmodifiedSignedStateFromDisk(
+    private ReservedSignedState getUnmodifiedSignedStateFromDisk(
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,

@@ -90,7 +90,8 @@ public class HelloSwirldDemoMain implements SwirldMain {
 
         while (true) {
             String received;
-            try (final AutoCloseableWrapper<HelloSwirldDemoState> wrapper = platform.getLatestImmutableState()) {
+            try (final AutoCloseableWrapper<HelloSwirldDemoState> wrapper =
+                    platform.getLatestImmutableState("HelloSwirldDemoMain.run()")) {
                 final HelloSwirldDemoState state = wrapper.get();
                 received = state.getReceived();
             }

@@ -46,6 +46,7 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -102,7 +103,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
     /** A queue that accepts signed states for hashing and signature collection. */
-    private final BlockingQueue<SignedState> stateHashSignQueue;
+    private final BlockingQueue<ReservedSignedState> stateHashSignQueue;
 
     /** puts the system in a freeze state when executed */
     private final Runnable enterFreezePeriod;
@@ -148,7 +149,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
-            @NonNull final BlockingQueue<SignedState> stateHashSignQueue,
+            @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final ThrowingConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final Runnable enterFreezePeriod,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
@@ -228,9 +229,9 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * Clears and releases any signed states in the {@code stateHashSignQueueThread} queue.
      */
     private void clearStateHashSignQueueThread() {
-        SignedState signedState = stateHashSignQueue.poll();
+        ReservedSignedState signedState = stateHashSignQueue.poll();
         while (signedState != null) {
-            signedState.release();
+            signedState.close();
             signedState = stateHashSignQueue.poll();
         }
     }
@@ -240,7 +241,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * previously saved on disk
      *
      * @param signedState the state to load data from
-     * @param isReconnect if it is true, the signedState is loaded at reconnect; if it is false, the signedState is
+     * @param isReconnect if it is true, the reservedSignedState is loaded at reconnect; if it is false, the reservedSignedState is
      *                    loaded at startup
      */
     public void loadDataFromSignedState(final SignedState signedState, final boolean isReconnect) {
@@ -259,7 +260,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 "consensus event handler minGenFamous after startup: {}",
                 () -> Arrays.toString(signedState.getMinGenInfo().toArray()));
 
-        // get startRunningHash from signedState
+        // get startRunningHash from reservedSignedState
         final Hash initialHash = new Hash(signedState.getHashEventsCons());
         eventStreamManager.setInitialHash(initialHash);
 
@@ -443,7 +444,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         ssTimingStat.setTimePoint(2);
 
-        stateHashSignQueue.put(signedState);
+        stateHashSignQueue.put(signedState.reserve("ConsensusHandler.createSignedState()"));
 
         ssTimingStat.stopCycle();
     }

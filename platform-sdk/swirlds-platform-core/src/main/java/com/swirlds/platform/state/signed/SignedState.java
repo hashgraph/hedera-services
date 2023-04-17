@@ -37,7 +37,6 @@ import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -157,7 +156,8 @@ public class SignedState implements SignedStateInfo {
     /**
      * Set a garbage collector, used to delete states on a background thread.
      */
-    public synchronized void setGarbageCollector(@NonNull final SignedStateGarbageCollector signedStateGarbageCollector) {
+    public synchronized void setGarbageCollector(
+            @NonNull final SignedStateGarbageCollector signedStateGarbageCollector) {
         this.signedStateGarbageCollector = signedStateGarbageCollector;
     }
 
@@ -272,7 +272,9 @@ public class SignedState implements SignedStateInfo {
      * This method is called when there is a reference count exception.
      */
     private void onReferenceCountException() {
-        logger.error(EXCEPTION.getMarker(), "SignedState reference count error detected, dumping history.\n{}",
+        logger.error(
+                EXCEPTION.getMarker(),
+                "SignedState reference count error detected, dumping history.\n{}",
                 history.toString());
     }
 

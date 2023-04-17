@@ -23,8 +23,8 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateNotification;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateWrapper;
 import java.nio.file.Path;
 
 /**
@@ -40,7 +40,7 @@ public class DefaultAppCommunicationComponent implements AppCommunicationCompone
 
     @Override
     public void stateToDiskAttempt(
-            final SignedStateWrapper signedStateWrapper, final Path directory, final boolean success) {
+            final ReservedSignedState signedStateWrapper, final Path directory, final boolean success) {
         if (success) {
             final SignedState state = signedStateWrapper.get();
             // Synchronous notification, no need to take an extra reservation
@@ -56,15 +56,14 @@ public class DefaultAppCommunicationComponent implements AppCommunicationCompone
     }
 
     @Override
-    public void newLatestCompleteStateEvent(final SignedStateWrapper signedStateWrapper) {
+    public void newLatestCompleteStateEvent(final ReservedSignedState signedStateWrapper) {
         final SignedState signedState = signedStateWrapper.get();
         final NewSignedStateNotification notification = new NewSignedStateNotification(
                 signedState.getSwirldState(),
                 signedState.getState().getSwirldDualState(),
                 signedState.getRound(),
                 signedState.getConsensusTimestamp());
-        signedState.reserve();
-        notificationEngine.dispatch(NewSignedStateListener.class, notification, r -> signedState.release());
+        notificationEngine.dispatch(NewSignedStateListener.class, notification, r -> signedStateWrapper.close());
     }
 
     @Override

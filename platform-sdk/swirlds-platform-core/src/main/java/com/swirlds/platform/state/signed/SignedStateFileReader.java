@@ -148,7 +148,8 @@ public final class SignedStateFileReader {
 
         newSignedState.setSigSet(data.getRight());
 
-        returnState = new DeserializedSignedState(newSignedState, data.getMiddle());
+        returnState = new DeserializedSignedState(
+                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.getMiddle());
 
         return returnState;
     }

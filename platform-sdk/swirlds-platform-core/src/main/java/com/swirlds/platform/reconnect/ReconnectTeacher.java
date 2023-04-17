@@ -29,7 +29,7 @@ import com.swirlds.logging.payloads.ReconnectStartPayload;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.StateSettings;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.IOException;
 import java.net.SocketException;
 import org.apache.logging.log4j.LogManager;
@@ -45,7 +45,7 @@ public class ReconnectTeacher {
     private static final Logger logger = LogManager.getLogger(ReconnectTeacher.class);
 
     private final Connection connection;
-    private final SignedState signedState;
+    private final ReservedSignedState signedState;
     private final int reconnectSocketTimeout;
 
     private final long selfId;
@@ -58,8 +58,6 @@ public class ReconnectTeacher {
      * After reconnect is finished, restore the socket timeout to the original value.
      */
     private int originalSocketTimeout;
-
-    private boolean stateIsReleased;
 
     private final ThreadManager threadManager;
 
@@ -76,7 +74,7 @@ public class ReconnectTeacher {
     public ReconnectTeacher(
             final ThreadManager threadManager,
             final Connection connection,
-            final SignedState signedState,
+            final ReservedSignedState signedState,
             final int reconnectSocketTimeout,
             final long selfId,
             final long otherId,
@@ -137,13 +135,8 @@ public class ReconnectTeacher {
      *                            when there is an error in the underlying protocol
      */
     public void execute() throws ReconnectException {
-        try {
+        try (signedState) {
             executeInternal();
-        } finally {
-            if (!stateIsReleased) {
-                // If execution aborted without finishing the reconnect, ensure the state is properly released
-                signedState.release();
-            }
         }
     }
 
@@ -183,8 +176,8 @@ public class ReconnectTeacher {
         logger.info(
                 RECONNECT.getMarker(),
                 "The following state will be sent to the learner:\n{}\n{}",
-                () -> signedState.getState().getPlatformState().getInfoString(),
-                () -> new MerkleTreeVisualizer(signedState.getState())
+                () -> signedState.get().getState().getPlatformState().getInfoString(),
+                () -> new MerkleTreeVisualizer(signedState.get().getState())
                         .setDepth(StateSettings.getDebugHashDepth())
                         .render());
     }
@@ -212,15 +205,8 @@ public class ReconnectTeacher {
                 threadManager,
                 new MerkleDataInputStream(connection.getDis()),
                 new MerkleDataOutputStream(connection.getDos()),
-                signedState.getState(),
+                signedState.get().getState(),
                 connection::disconnect);
-
-        // State is acquired via SignedStateManager.getLastCompleteSignedState(), which acquires
-        // a reservation. The synchronizer manually acquires references to merkle nodes in the
-        // state within its constructor. After that has completed, the lock on the signed state itself
-        // is no longer required to be held.
-        stateIsReleased = true;
-        signedState.release();
 
         synchronizer.synchronize();
         connection.getDos().flush();
@@ -237,16 +223,16 @@ public class ReconnectTeacher {
     private void sendSignatures() throws IOException {
         final StringBuilder sb = new StringBuilder();
         sb.append("Sending signatures from nodes ");
-        formattedList(sb, signedState.getSigSet().iterator());
+        formattedList(sb, signedState.get().getSigSet().iterator());
         sb.append(" (signing stake = ")
-                .append(signedState.getSigningStake())
+                .append(signedState.get().getSigningStake())
                 .append("/")
-                .append(signedState.getAddressBook().getTotalStake())
+                .append(signedState.get().getAddressBook().getTotalStake())
                 .append(") for state hash ")
-                .append(signedState.getState().getHash());
+                .append(signedState.get().getState().getHash());
 
         logger.info(RECONNECT.getMarker(), sb);
-        connection.getDos().writeSerializable(signedState.getSigSet(), true);
+        connection.getDos().writeSerializable(signedState.get().getSigSet(), true);
         connection.getDos().flush();
     }
 }

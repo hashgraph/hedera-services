@@ -28,6 +28,7 @@ import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.route.MerkleRouteUtils;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import java.io.IOException;
@@ -42,7 +43,7 @@ import picocli.CommandLine;
  */
 public class StateEditor {
 
-    private SignedState signedState;
+    private ReservedSignedState signedState;
     private MerkleRoute currentWorkingRoute = MerkleRouteFactory.getEmptyRoute();
     private boolean alive = true;
 
@@ -55,16 +56,16 @@ public class StateEditor {
     public StateEditor(final Path statePath) throws IOException {
         final DeserializedSignedState deserializedSignedState = SignedStateFileReader.readStateFile(statePath);
         System.out.println("\nLoading state from " + statePath);
-        signedState = deserializedSignedState.signedState();
+        signedState = deserializedSignedState.reservedSignedState();
         System.out.println("Hashing state");
         try {
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(signedState.getState())
+                    .digestTreeAsync(signedState.get().getState())
                     .get();
         } catch (final InterruptedException | ExecutionException e) {
             throw new RuntimeException("problem encountered while hashing state", e);
         }
-        System.out.println("Hash = " + signedState.getState().getHash());
+        System.out.println("Hash = " + signedState.get().getState().getHash());
     }
 
     /**
@@ -163,14 +164,14 @@ public class StateEditor {
      * Get the state.
      */
     public State getState() {
-        return signedState.getState();
+        return signedState.get().getState();
     }
 
     /**
      * Get the signed state.
      */
-    public SignedState getSignedState() {
-        return signedState;
+    public ReservedSignedState getSignedState() {
+        return signedState.getAndReserve("StateEditor.getSignedState()");
     }
 
     /**
@@ -178,13 +179,13 @@ public class StateEditor {
      *
      * @return the immutable copy
      */
-    public SignedState getSignedStateCopy() {
-        final SignedState newSignedState =
-                new SignedState(signedState.getState().copy(), signedState.isFreezeState());
+    public ReservedSignedState getSignedStateCopy() {
+        final SignedState newSignedState = new SignedState(
+                signedState.get().getState().copy(), signedState.get().isFreezeState());
         try {
-            return signedState;
+            return signedState.getAndReserve("StateEditor.getSignedStateCopy() return value");
         } finally {
-            signedState = newSignedState;
+            signedState = newSignedState.reserve("StateEditor.getSignedStateCopy()");
         }
     }
 

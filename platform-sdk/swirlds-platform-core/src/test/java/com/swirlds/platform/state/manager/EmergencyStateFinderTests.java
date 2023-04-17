@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.util.HashMap;
@@ -71,12 +71,14 @@ public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
 
         validateReservationCounts(round -> round < signedStates.size() - roundAgeToSign - 1);
 
-        try (final AutoCloseableWrapper<SignedState> lastCompleteWrapper = manager.getLatestSignedState()) {
+        try (final ReservedSignedState lastCompleteWrapper = manager.getLatestSignedState("test")) {
             final SignedState lastComplete = lastCompleteWrapper.get();
 
             // Search for a round and hash that match the last complete state exactly
-            try (final AutoCloseableWrapper<SignedState> actualWrapper = manager.find(emergencyStateCriteria(
-                    lastComplete.getRound(), lastComplete.getState().getHash()))) {
+            try (final ReservedSignedState actualWrapper = manager.find(
+                    emergencyStateCriteria(
+                            lastComplete.getRound(), lastComplete.getState().getHash()),
+                    "test")) {
                 final SignedState actual = actualWrapper.get();
                 // the last complete state should always have 3 reservations
                 // 1 for the reservation
@@ -90,8 +92,8 @@ public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
             }
 
             // Search for a round earlier than the last complete state
-            try (final AutoCloseableWrapper<SignedState> actualWrapper =
-                    manager.find(emergencyStateCriteria(lastComplete.getRound() - 1, RandomUtils.randomHash(random)))) {
+            try (final ReservedSignedState actualWrapper = manager.find(
+                    emergencyStateCriteria(lastComplete.getRound() - 1, RandomUtils.randomHash(random)), "test")) {
 
                 final SignedState actual = actualWrapper.get();
                 verifyFoundSignedState(
@@ -103,12 +105,12 @@ public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
             }
         }
 
-        try (final AutoCloseableWrapper<SignedState> lastWrapper = manager.getLatestImmutableState()) {
+        try (final ReservedSignedState lastWrapper = manager.getLatestImmutableState("test")) {
             final SignedState last = lastWrapper.get();
 
             // Search for a round and hash that match the last state exactly
-            try (final AutoCloseableWrapper<SignedState> actualWrapper = manager.find(
-                    emergencyStateCriteria(last.getRound(), last.getState().getHash()))) {
+            try (final ReservedSignedState actualWrapper = manager.find(
+                    emergencyStateCriteria(last.getRound(), last.getState().getHash()), "test")) {
                 final SignedState actual = actualWrapper.get();
                 // the last state should have 4 reservations:
                 // 2 for being the last state held by the manager
@@ -119,8 +121,8 @@ public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
 
             for (long i = manager.getLastCompleteRound() + 1; i <= last.getRound(); i++) {
                 // Search for a round later than the last complete round with a hash that doesn't match any state
-                try (final AutoCloseableWrapper<SignedState> actualWrapper =
-                        manager.find(emergencyStateCriteria(i, RandomUtils.randomHash(random)))) {
+                try (final ReservedSignedState actualWrapper =
+                        manager.find(emergencyStateCriteria(i, RandomUtils.randomHash(random)), "test")) {
                     final SignedState actual = actualWrapper.get();
                     assertNull(
                             actual,

@@ -70,6 +70,13 @@ public class SignedStateReference {
     }
 
     /**
+     * Set this reference to null.
+     */
+    public void clear() {
+        set(null, "");
+    }
+
+    /**
      * Check if the current value referenced by this object is null.
      *
      * @return true if the referenced state is null
