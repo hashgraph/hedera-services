@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
@@ -73,7 +74,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         // The transaction cannot set the admin key unless the transaction was signed by that key
         if (op.hasAdminKey()) {
-            context.requireKey(op.adminKeyOrThrow());
+            context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
         }
 
         // If an account is to be used for auto-renewal, then the account must exist and the transaction

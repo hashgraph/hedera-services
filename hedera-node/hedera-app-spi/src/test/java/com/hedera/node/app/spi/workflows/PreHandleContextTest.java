@@ -21,13 +21,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,11 +42,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PreHandleContextTest {
     private static final AccountID PAYER = AccountID.newBuilder().accountNum(3L).build();
 
-    @Mock
-    private Key payerKey;
+    private Key payerKey = A_COMPLEX_KEY;
 
-    @Mock
-    private Key otherKey;
+    private Key otherKey = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(1)
+                    .keys(KeyList.newBuilder()
+                            .keys(Key.newBuilder()
+                                    .contractID(ContractID.newBuilder()
+                                            .contractNum(123456L)
+                                            .build())
+                                    .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+                                    .build())))
+            .build();
 
     @Mock
     AccountAccess accountAccess;
@@ -69,7 +81,7 @@ class PreHandleContextTest {
                 .accountID(PAYER)
                 .transactionValidStart(Timestamp.newBuilder().seconds(123_456L).build());
         final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
-                .key(A_COMPLEX_KEY)
+                .key(otherKey)
                 .receiverSigRequired(true)
                 .memo("Create Account")
                 .build();
