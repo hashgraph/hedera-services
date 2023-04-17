@@ -234,8 +234,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
 
             // then:
             assertDefaultPayer(context);
-            Assertions.assertThat(context.requiredNonPayerKeys())
-                    .containsExactly(MISC_TOPIC_ADMIN_KT.asPbjKey());
+            Assertions.assertThat(context.requiredNonPayerKeys()).containsExactly(MISC_TOPIC_ADMIN_KT.asPbjKey());
         }
 
         @Test

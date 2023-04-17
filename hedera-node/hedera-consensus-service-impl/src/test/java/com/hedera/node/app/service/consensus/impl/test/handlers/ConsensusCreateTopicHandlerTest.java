@@ -416,7 +416,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java
 
-    private Key mockPayerLookup()throws PreCheckException  {
+    private Key mockPayerLookup() throws PreCheckException {
         return mockPayerLookup(A_COMPLEX_KEY);
     }
 

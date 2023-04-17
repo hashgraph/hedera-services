@@ -68,7 +68,6 @@ class PreHandleContextListUpdatesTest {
     @Mock
     private Key payerKey;
 
-
     final ContractID otherContractId =
             ContractID.newBuilder().contractNum(123456L).build();
 

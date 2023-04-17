@@ -180,8 +180,8 @@ public final class PreHandleContext {
      * @throws PreCheckException if the key is null or empty
      */
     @NonNull
-    public PreHandleContext requireKeyOrThrow(
-            @Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException {
+    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException {
         requireNonNull(responseCode);
         if (key == null || key.key().kind().equals(KeyOneOfType.UNSET)) {
             throw new PreCheckException(responseCode);

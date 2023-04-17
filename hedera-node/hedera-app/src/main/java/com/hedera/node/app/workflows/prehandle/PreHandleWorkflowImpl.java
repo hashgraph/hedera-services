@@ -218,8 +218,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final Bytes txBodyBytes,
             @NonNull final SignatureMap signatureMap) {
         final var otherSignatures = signaturePreparer.prepareSignatures(
-                state, PbjConverter.asBytes(txBodyBytes), signatureMap,
-                asHederaKeys(context.requiredNonPayerKeys()));
+                state, PbjConverter.asBytes(txBodyBytes), signatureMap, asHederaKeys(context.requiredNonPayerKeys()));
         cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
         return otherSignatures;
     }

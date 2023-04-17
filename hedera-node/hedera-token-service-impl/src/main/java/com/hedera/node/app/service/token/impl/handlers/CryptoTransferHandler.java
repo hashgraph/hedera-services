@@ -144,7 +144,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // a key, unless `receiverSigRequired` is true.
                 final var accountKey = account.key();
                 if ((accountKey == null || accountKey.key().kind().equals(KeyOneOfType.UNSET))
-                && (isDebit || isCredit && !hbarTransfer)) {
+                        && (isDebit || isCredit && !hbarTransfer)) {
                     throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
                 }
 
