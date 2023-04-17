@@ -17,6 +17,7 @@
 package com.hedera.node.app.config;
 
 import com.hedera.node.app.config.internal.ConfigurationAdaptor;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.config.ConfigProvider;
 import com.swirlds.common.threading.locks.AutoClosableLock;
@@ -26,6 +27,9 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
+/**
+ * Implementation of the {@link ConfigProvider} interface.
+ */
 public class ConfigProviderImpl implements ConfigProvider {
 
     private final PropertySource propertySource;
@@ -36,11 +40,20 @@ public class ConfigProviderImpl implements ConfigProvider {
 
     private final AutoClosableLock lock = Locks.createAutoLock();
 
+    /**
+     * Constructor.
+     *
+     * @param propertySource the property source to use. All properties will be read from this source.
+     */
     public ConfigProviderImpl(@NonNull final PropertySource propertySource) {
         this.propertySource = Objects.requireNonNull(propertySource, "propertySource");
         update();
     }
 
+    /**
+     * This method must be called if a property has changed. It will update the configuration and increase the version.
+     * This should happen whenever {@link GlobalDynamicProperties#reload()} is called.
+     */
     public void update() {
         try (final Locked ignored = lock.lock()) {
             configuration = new ConfigurationAdaptor(propertySource);

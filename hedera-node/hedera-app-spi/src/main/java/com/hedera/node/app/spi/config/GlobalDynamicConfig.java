@@ -147,5 +147,4 @@ public record GlobalDynamicConfig(
         // EntityScaleFactors entityScaleFactors,
         long maxNumWithHapiSigsAccess,
         // LegacyContractIdActivations legacyContractIdActivations,
-        Set<Address> contractsWithSpecialHapiSigsAccess) {
-}
+        Set<Address> contractsWithSpecialHapiSigsAccess) {}
