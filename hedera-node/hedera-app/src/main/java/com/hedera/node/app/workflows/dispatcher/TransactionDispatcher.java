@@ -294,7 +294,6 @@ public class TransactionDispatcher {
             TransactionBody tokenGrantKyc, WritableTokenRelationStore tokenRelStore) {
         final var handler = handlers.tokenGrantKycToAccountHandler();
         handler.handle(tokenGrantKyc, tokenRelStore);
-        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
         tokenRelStore.commit();
     }
 

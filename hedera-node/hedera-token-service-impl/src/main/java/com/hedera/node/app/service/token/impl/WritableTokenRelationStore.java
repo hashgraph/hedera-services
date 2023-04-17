@@ -54,7 +54,7 @@ public class WritableTokenRelationStore {
      * @param tokenRelation - the tokenRelation to be persisted
      */
     public void put(@NonNull final TokenRelation tokenRelation) {
-        Objects.requireNonNull(tokenRelState)
+        requireNonNull(tokenRelState)
                 .put(
                         EntityNumPair.fromLongs(tokenRelation.tokenNumber(), tokenRelation.accountNumber()),
                         Objects.requireNonNull(tokenRelation));
