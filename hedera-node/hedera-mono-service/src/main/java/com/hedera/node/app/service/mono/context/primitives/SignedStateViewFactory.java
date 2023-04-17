@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.state.migration.StateVersions;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -117,7 +117,7 @@ public class SignedStateViewFactory {
      * @throws NoValidSignedStateException
      */
     private void doWithLatest(final Consumer<StateChildrenProvider> action) throws NoValidSignedStateException {
-        try (final AutoCloseableWrapper<SwirldState2> wrapper = platform.getLatestImmutableState()) {
+        try (final AutoCloseableWrapper<SwirldState> wrapper = platform.getLatestImmutableState()) {
             final var provider = (StateChildrenProvider) wrapper.get();
             if (!isUsable(provider)) {
                 throw new NoValidSignedStateException();

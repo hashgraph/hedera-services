@@ -23,6 +23,7 @@ import com.hedera.node.app.service.admin.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -72,5 +73,10 @@ public class WritableStoreFactory {
     public WritableUpgradeFileStore createUpgradeFileStore() {
         final var upgradeFileStates = stateAccessor.getHederaState().createWritableStates(FreezeService.NAME);
         return new WritableUpgradeFileStore(upgradeFileStates);
+
+    @NonNull
+    public WritableTokenRelationStore createTokenRelStore() {
+        final var tokenRelStates = stateAccessor.getHederaState().createWritableStates("TokenRelations");
+        return new WritableTokenRelationStore(tokenRelStates);
     }
 }
