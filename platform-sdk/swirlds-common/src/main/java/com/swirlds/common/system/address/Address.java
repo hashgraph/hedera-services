@@ -148,7 +148,7 @@ public class Address implements SelfSerializable {
      * @param id                  the ID for that member
      * @param nickname            the name given to that member by the member creating this address
      * @param selfName            the name given to that member by themself
-     * @param weight               the amount of weight (0 if they should have no influence on the consensus)
+     * @param weight              the amount of weight (0 if they should have no influence on the consensus)
      * @param ownHost             is that member running on the same machine as the member creating this address?
      * @param addressInternalIpv4 IPv4 address on the inside of the NATing router
      * @param portInternalIpv4    port for the internal IPv4 address
@@ -209,7 +209,7 @@ public class Address implements SelfSerializable {
      * @param id                  the ID for that member
      * @param nickname            the name given to that member by the member creating this address
      * @param selfName            the name given to that member by themself
-     * @param weight               the amount of weight (0 if they should have no influence on the consensus)
+     * @param weight              the amount of weight (0 if they should have no influence on the consensus)
      * @param ownHost             is that member running on the same machine as the member creating this address?
      * @param addressInternalIpv4 IPv4 address on the inside of the NATing router
      * @param portInternalIpv4    port for the internal IPv4 address

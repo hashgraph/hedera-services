@@ -226,7 +226,7 @@ public class ConsensusHashFinder {
                 .append(hashReportedWeight)
                 .append("/")
                 .append(totalWeight)
-                .append(" weight have reported a hash for round ")
+                .append(" of total weight have reported a hash for round ")
                 .append(round)
                 .append(".\n");
         if (consensusHash != null) {

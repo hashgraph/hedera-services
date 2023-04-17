@@ -131,7 +131,7 @@ swirld, 123
 # (after the word "address" at the start):
 #         nickname            - a short version of the member's name
 #         full name           - the member's name
-#         weight              - a nonnegative integer that weighting the consensus voting
+#         weight              - a nonnegative integer that weights the consensus voting
 #                               (normally all are 1, can be others, but can't all be 0)
 #         internal IP address - four numbers, each in the range 0-255, separated by dots
 #                               (Only use 127.0.0.1 if ALL the members are on the same machine)

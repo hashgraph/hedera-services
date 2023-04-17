@@ -136,7 +136,7 @@ public class AddressBookInitializer {
 
     /**
      * Determines the address book to use.  If the configured current version of the application is higher than the save
-     * state version, the swirld state is given the config address book to determine weight weights.  If the address book
+     * state version, the swirld state is given the config address book to determine weights.  If the address book
      * returned by the swirld application is valid, it is the initial address book to use, otherwise the configuration
      * address book is the one to use.  All three address books, the configuration address book, the save state address
      * book, and the new address book to use are recorded in the address book directory.
