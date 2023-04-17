@@ -40,4 +40,19 @@ public final class ArgumentUtils {
         }
         return argument;
     }
+
+    /**
+     * Throw an {@link IllegalArgumentException} if the supplied {@code String} is blank.
+     *
+     * @param argument     the argument checked
+     * @param argumentName the name of the argument
+     */
+    public static String throwArgBlank(final String argument, final String argumentName) {
+        throwArgNull(argument, argumentName);
+        if (argument.isBlank()) {
+            throw new IllegalArgumentException(
+                    String.format("The supplied argument '%s' cannot be blank!", argumentName));
+        }
+        return argument;
+    }
 }
