@@ -84,14 +84,14 @@ class QueryCheckerTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
-        assertThatThrownBy(() -> new QueryChecker(null, queryFeeCheck, authorizer, cryptoTransferHandler,
-                solvencyPreCheck))
+        assertThatThrownBy(() ->
+                        new QueryChecker(null, queryFeeCheck, authorizer, cryptoTransferHandler, solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(accountNumbers, null, authorizer, cryptoTransferHandler,
-                solvencyPreCheck))
+        assertThatThrownBy(() ->
+                        new QueryChecker(accountNumbers, null, authorizer, cryptoTransferHandler, solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(accountNumbers, queryFeeCheck, null, cryptoTransferHandler,
-                solvencyPreCheck))
+        assertThatThrownBy(() ->
+                        new QueryChecker(accountNumbers, queryFeeCheck, null, cryptoTransferHandler, solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(accountNumbers, queryFeeCheck, authorizer, null, solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
@@ -207,7 +207,8 @@ class QueryCheckerTest {
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
         doThrow(new PreCheckException(PAYER_ACCOUNT_NOT_FOUND))
-                .when(solvencyPreCheck).assessWithSvcFees(transaction);
+                .when(solvencyPreCheck)
+                .assessWithSvcFees(transaction);
 
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, transactionInfo, fee))
@@ -235,7 +236,8 @@ class QueryCheckerTest {
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, fee))
-                .when(queryFeeCheck).validateQueryPaymentTransfers(txBody, fee);
+                .when(queryFeeCheck)
+                .validateQueryPaymentTransfers(txBody, fee);
 
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, transactionInfo, fee))
@@ -264,7 +266,8 @@ class QueryCheckerTest {
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
-                .when(queryFeeCheck).nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);
+                .when(queryFeeCheck)
+                .nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);
 
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, transactionInfo, fee))
@@ -294,7 +297,8 @@ class QueryCheckerTest {
         final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
         when(accountNumbers.isSuperuser(4711L)).thenReturn(true);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
-                .when(queryFeeCheck).nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);
+                .when(queryFeeCheck)
+                .nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);
 
         // when
         assertDoesNotThrow(() -> checker.validateAccountBalances(payer, transactionInfo, fee));
@@ -322,7 +326,8 @@ class QueryCheckerTest {
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
-                .when(queryFeeCheck).nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);
+                .when(queryFeeCheck)
+                .nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);
 
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, transactionInfo, fee))

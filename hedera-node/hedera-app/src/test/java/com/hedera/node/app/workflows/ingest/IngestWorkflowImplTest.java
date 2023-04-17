@@ -138,16 +138,13 @@ class IngestWorkflowImplTest extends AppTestBase {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(() ->
-                        new IngestWorkflowImpl(null, transactionChecker, ingestChecker, submissionManager))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(null, transactionChecker, ingestChecker, submissionManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, null, ingestChecker, submissionManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new IngestWorkflowImpl(stateAccessor, transactionChecker, null, submissionManager))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, transactionChecker, null, submissionManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, null))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
