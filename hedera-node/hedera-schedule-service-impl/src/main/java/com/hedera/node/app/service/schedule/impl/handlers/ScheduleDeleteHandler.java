@@ -18,6 +18,7 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -74,7 +75,7 @@ public class ScheduleDeleteHandler implements TransactionHandler {
         // check whether schedule was created with an admin key
         // if it wasn't, the schedule can't be deleted
         final var adminKey = scheduleLookupResult.get().adminKey();
-        if (adminKey == null) {
+        if (adminKey == null || isEmpty(adminKey)) {
             throw new PreCheckException(SCHEDULE_IS_IMMUTABLE);
         }
 
