@@ -44,7 +44,6 @@ class ProfileConverterTest {
         assertThatThrownBy(() -> converter.convert("null")).isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test
     @ParameterizedTest
     @CsvSource({
         "DEV, DEV",

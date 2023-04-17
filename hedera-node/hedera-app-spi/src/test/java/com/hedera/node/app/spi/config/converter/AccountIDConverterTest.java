@@ -35,7 +35,6 @@ class AccountIDConverterTest {
         assertThatThrownBy(() -> converter.convert(null)).isInstanceOf(NullPointerException.class);
     }
 
-    @Test
     @ParameterizedTest
     @ValueSource(
             strings = {
@@ -49,7 +48,6 @@ class AccountIDConverterTest {
         assertThatThrownBy(() -> converter.convert(input)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test
     @Disabled
     @ParameterizedTest
     @ValueSource(strings = {"1.2.3.", "1.2.3.."})
