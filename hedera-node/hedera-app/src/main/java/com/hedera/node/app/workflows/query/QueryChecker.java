@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.query;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -28,7 +27,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.authorization.Authorizer;
-import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
+import com.hedera.node.app.fees.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -104,10 +103,7 @@ public class QueryChecker {
         // TODO: Migrate functionality from the following call (#4207):
         //  solvencyPrecheck.validate(txBody);
 
-        final var xfersStatus = queryFeeCheck.validateQueryPaymentTransfers2(txBody);
-        if (xfersStatus != OK) {
-            throw new InsufficientBalanceException(xfersStatus, fee);
-        }
+        queryFeeCheck.validateQueryPaymentTransfers(txBody, fee);
 
         // A super-user cannot use an alias. Sorry, Clark Kent.
         if (payer.hasAccountNum() && accountNumbers.isSuperuser(payer.accountNumOrThrow())) {
@@ -117,10 +113,7 @@ public class QueryChecker {
         final var xfers = txBody.cryptoTransferOrThrow()
                 .transfersOrElse(TransferList.DEFAULT)
                 .accountAmountsOrElse(Collections.emptyList());
-        final var feeStatus = queryFeeCheck.nodePaymentValidity2(xfers, fee, txBody.nodeAccountID());
-        if (feeStatus != OK) {
-            throw new InsufficientBalanceException(feeStatus, fee);
-        }
+        queryFeeCheck.nodePaymentValidity(xfers, fee, txBody.nodeAccountID());
     }
 
     /**

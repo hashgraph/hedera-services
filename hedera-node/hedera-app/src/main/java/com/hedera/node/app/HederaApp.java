@@ -22,7 +22,7 @@ import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.authorization.AuthorizerDaggerModule;
 import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
-import com.hedera.node.app.fees.AdaptedFeeCalculatorModule;
+import com.hedera.node.app.fees.FeesModule;
 import com.hedera.node.app.info.InfoDaggerModule;
 import com.hedera.node.app.metrics.MetricsDaggerModule;
 import com.hedera.node.app.service.mono.ServicesApp;
@@ -33,7 +33,6 @@ import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
 import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.contracts.ContractsModule;
-import com.hedera.node.app.service.mono.fees.FeesModule;
 import com.hedera.node.app.service.mono.files.FilesModule;
 import com.hedera.node.app.service.mono.grpc.GrpcModule;
 import com.hedera.node.app.service.mono.keys.KeysModule;
@@ -77,7 +76,7 @@ import javax.inject.Singleton;
 @Component(
         modules = {
             TaskModule.class,
-            FeesModule.class,
+            com.hedera.node.app.service.mono.fees.FeesModule.class,
             KeysModule.class,
             SigsModule.class,
             GrpcModule.class,
@@ -101,7 +100,7 @@ import javax.inject.Singleton;
             HandleWorkflowModule.class,
             PreHandleWorkflowModule.class,
             HederaStateModule.class,
-            AdaptedFeeCalculatorModule.class,
+            FeesModule.class,
             HederaStateModule.class,
             MetricsDaggerModule.class,
             AuthorizerDaggerModule.class,

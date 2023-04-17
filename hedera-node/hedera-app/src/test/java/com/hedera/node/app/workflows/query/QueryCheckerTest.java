@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -41,7 +40,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.authorization.Authorizer;
-import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
+import com.hedera.node.app.fees.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -169,16 +168,13 @@ class QueryCheckerTest {
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
-        when(queryFeeCheck.validateQueryPaymentTransfers2(txBody)).thenReturn(OK);
-        when(queryFeeCheck.nodePaymentValidity2(List.of(accountAmount), fee, nodeAccountId))
-                .thenReturn(OK);
 
         // when
         assertDoesNotThrow(() -> checker.validateAccountBalances(payer, txBody, fee));
     }
 
     @Test
-    void testValidateAccountBalancesWithFailingPaymentTransfers() {
+    void testValidateAccountBalancesWithFailingPaymentTransfers() throws InsufficientBalanceException {
         // given
         final var fee = 42L;
         final var payer = AccountID.newBuilder().build();
@@ -193,7 +189,8 @@ class QueryCheckerTest {
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
-        when(queryFeeCheck.validateQueryPaymentTransfers2(txBody)).thenReturn(INSUFFICIENT_PAYER_BALANCE);
+        doThrow(new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, fee))
+                .when(queryFeeCheck).validateQueryPaymentTransfers(txBody, fee);
 
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, txBody, fee))
@@ -203,7 +200,7 @@ class QueryCheckerTest {
     }
 
     @Test
-    void testValidateAccountBalancesWithFailingNodePayment() {
+    void testValidateAccountBalancesWithFailingNodePayment() throws InsufficientBalanceException {
         // given
         final var fee = 42L;
         final var payer = AccountID.newBuilder().build();
@@ -218,9 +215,8 @@ class QueryCheckerTest {
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
-        when(queryFeeCheck.validateQueryPaymentTransfers2(txBody)).thenReturn(OK);
-        when(queryFeeCheck.nodePaymentValidity2(List.of(accountAmount), fee, nodeAccountId))
-                .thenReturn(INSUFFICIENT_TX_FEE);
+        doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
+                .when(queryFeeCheck).nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);
 
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, txBody, fee))
@@ -230,7 +226,7 @@ class QueryCheckerTest {
     }
 
     @Test
-    void testValidateAccountBalancesWithSuperuserAndFailingNodePayment() {
+    void testValidateAccountBalancesWithSuperuserAndFailingNodePayment() throws InsufficientBalanceException {
         // given
         final var fee = 42L;
         final var payer = AccountID.newBuilder().accountNum(4711L).build();
@@ -245,17 +241,16 @@ class QueryCheckerTest {
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
-        when(queryFeeCheck.validateQueryPaymentTransfers2(txBody)).thenReturn(OK);
         when(accountNumbers.isSuperuser(4711L)).thenReturn(true);
-        when(queryFeeCheck.nodePaymentValidity2(List.of(accountAmount), fee, nodeAccountId))
-                .thenReturn(INSUFFICIENT_TX_FEE);
+        doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
+                .when(queryFeeCheck).nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);
 
         // when
         assertDoesNotThrow(() -> checker.validateAccountBalances(payer, txBody, fee));
     }
 
     @Test
-    void onlyAccountNumCanBeSuperuserInValidateAccountBalances() {
+    void onlyAccountNumCanBeSuperuserInValidateAccountBalances() throws InsufficientBalanceException {
         // given
         final var fee = 42L;
         final var payer = AccountID.newBuilder()
@@ -272,9 +267,8 @@ class QueryCheckerTest {
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
-        when(queryFeeCheck.validateQueryPaymentTransfers2(txBody)).thenReturn(OK);
-        when(queryFeeCheck.nodePaymentValidity2(List.of(accountAmount), fee, nodeAccountId))
-                .thenReturn(INSUFFICIENT_TX_FEE);
+        doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
+                .when(queryFeeCheck).nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);
 
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, txBody, fee))

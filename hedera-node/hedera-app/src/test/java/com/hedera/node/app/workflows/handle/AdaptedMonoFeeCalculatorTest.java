@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.fees.AdaptedMonoFeeCalculator;
 import com.hedera.node.app.fees.MonoGetTopicInfoUsage;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;

@@ -17,14 +17,17 @@
 package com.hedera.node.app.fees;
 
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.workflows.handle.AdaptedMonoFeeCalculator;
 import dagger.Binds;
 import dagger.Module;
 import javax.inject.Singleton;
 
 @Module
-public interface AdaptedFeeCalculatorModule {
+public interface FeesModule {
     @Binds
     @Singleton
     FeeCalculator bindFeeCalculator(AdaptedMonoFeeCalculator adaptedMonoFeeCalculator);
+
+    @Binds
+    @Singleton
+    QueryFeeCheck bindQueryFeeCheck(MonoQueryFeeCheck monoQueryFeeCheck);
 }
