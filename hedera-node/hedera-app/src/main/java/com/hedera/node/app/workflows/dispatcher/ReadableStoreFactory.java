@@ -75,9 +75,9 @@ public class ReadableStoreFactory {
     }
 
     /**
-     * Get a {@link ReadableScheduleStore}
+     * Get a {@link ReadableUpgradeFileStore}
      *
-     * @return a new {@link ReadableScheduleStore}
+     * @return a new {@link ReadableUpgradeFileStore}
      */
     @NonNull
     public ReadableUpgradeFileStore createUpgradeFileStore() {

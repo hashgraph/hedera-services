@@ -80,14 +80,14 @@ public class FreezeHandler implements TransactionHandler {
         }
 
         final FreezeType freezeType = freezeTxn.freezeType();
+        final var txValidStart = context.body().transactionID().transactionValidStart();
         switch (freezeType) {
                 // default value for freezeType is UNKNOWN_FREEZE_TYPE
                 // reject any freeze transactions that do not set freezeType or set it to UNKNOWN_FREEZE_TYPE
             case UNKNOWN_FREEZE_TYPE -> throw new PreCheckException(INVALID_FREEZE_TRANSACTION_BODY);
 
                 // FREEZE_ONLY requires a valid start_time
-            case FREEZE_ONLY -> verifyFreezeStartTimeIsInFuture(
-                    freezeTxn, context.body().transactionID().transactionValidStart());
+            case FREEZE_ONLY -> verifyFreezeStartTimeIsInFuture(freezeTxn, txValidStart);
 
                 // PREPARE_UPGRADE requires valid update_file and file_hash values
             case PREPARE_UPGRADE -> verifyUpdateFileAndHash(freezeTxn, upgradeFileStore);
@@ -95,8 +95,7 @@ public class FreezeHandler implements TransactionHandler {
                 // FREEZE_UPGRADE and TELEMETRY_UPGRADE require a valid start_time and valid update_file and
                 // file_hash values
             case FREEZE_UPGRADE, TELEMETRY_UPGRADE -> {
-                verifyFreezeStartTimeIsInFuture(
-                        freezeTxn, context.body().transactionID().transactionValidStart());
+                verifyFreezeStartTimeIsInFuture(freezeTxn, txValidStart);
 
                 // from proto specs, it looks like update file not required for FREEZE_UPGRADE and TELEMETRY_UPGRADE
                 // but specs aren't very clear
