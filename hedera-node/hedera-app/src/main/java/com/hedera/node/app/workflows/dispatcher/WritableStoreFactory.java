@@ -73,7 +73,7 @@ public class WritableStoreFactory {
     public WritableUpgradeFileStore createUpgradeFileStore() {
         final var upgradeFileStates = stateAccessor.getHederaState().createWritableStates(FreezeService.NAME);
         return new WritableUpgradeFileStore(upgradeFileStates);
-
+    }
     @NonNull
     public WritableTokenRelationStore createTokenRelStore() {
         final var tokenRelStates = stateAccessor.getHederaState().createWritableStates("TokenRelations");
