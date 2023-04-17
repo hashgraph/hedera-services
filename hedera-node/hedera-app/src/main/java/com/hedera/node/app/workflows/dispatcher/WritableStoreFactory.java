@@ -65,4 +65,15 @@ public class WritableStoreFactory {
         final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
         return new WritableTokenStore(tokenStates);
     }
+
+    /**
+     * Get a {@link WritableAccountStore} from the {@link HederaState}
+     *
+     * @return a new {@link WritableAccountStore}
+     */
+    @NonNull
+    public WritableAccountStore createAccountStore() {
+        final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
+        return new WritableAccountStore(tokenStates);
+    }
 }
