@@ -27,8 +27,6 @@ import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
 import com.hedera.node.app.service.token.impl.components.TokenComponent;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.MonoThrottleAccumulator;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -47,10 +45,6 @@ public interface QueryWorkflowModule {
     @Binds
     @Singleton
     QueryWorkflow bindQueryWorkflow(QueryWorkflowImpl queryWorkflow);
-
-    @Binds
-    @Singleton
-    ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
 
     @Binds
     @Singleton

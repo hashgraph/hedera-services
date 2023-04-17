@@ -67,6 +67,8 @@ public class AddressBookInitializer {
     /** The current version of the application from config.txt. */
     @NonNull
     private final SoftwareVersion currentVersion;
+    /** Indicate that the software version has upgraded. */
+    private final boolean softwareUpgrade;
     /** The SignedState loaded from disk. May be null. */
     @Nullable
     private final SignedState loadedSignedState;
@@ -88,20 +90,23 @@ public class AddressBookInitializer {
     private final boolean useConfigAddressBook;
 
     /**
-     * Constructs an AddressBookInitializer to initialize an address book from config.txt,
-     * the saved state from disk, or the SwirldState on upgrade.
+     * Constructs an AddressBookInitializer to initialize an address book from config.txt, the saved state from disk, or
+     * the SwirldState on upgrade.
      *
      * @param currentVersion    The current version of the application. Must not be null.
+     * @param softwareUpgrade   Indicate that the software version has upgraded.
      * @param signedState       The signed state loaded from disk.  May be null.
      * @param configAddressBook The address book derived from config.txt. Must not be null.
      * @param addressBookConfig The configuration settings for AddressBooks.
      */
     public AddressBookInitializer(
             @NonNull final SoftwareVersion currentVersion,
+            final boolean softwareUpgrade,
             @Nullable final SignedState signedState,
             @NonNull final AddressBook configAddressBook,
             @NonNull final AddressBookConfig addressBookConfig) {
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
+        this.softwareUpgrade = softwareUpgrade;
         this.configAddressBook = Objects.requireNonNull(configAddressBook, "The configAddressBook must not be null.");
         Objects.requireNonNull(addressBookConfig, "The addressBookConfig must not be null.");
         this.loadedSignedState = signedState;
@@ -130,13 +135,11 @@ public class AddressBookInitializer {
     }
 
     /**
-     * Determines the address book to use.  If there is no saved platform state, the config address book stake is
-     * updated by the swirld application state.  If the configured current version of the application is higher than the
-     * save state version, the swirld state is given both the config and previously saved address book to determine
-     * stake weights.  If the address book returned by the swirld application is valid, it is the initial address book
-     * to use, otherwise the configuration address book is the one to use.  All three address books, the configuration
-     * address book, the save state address book, and the new address book to use are recorded in the used address book
-     * file.
+     * Determines the address book to use.  If the configured current version of the application is higher than the save
+     * state version, the swirld state is given the config address book to determine stake weights.  If the address book
+     * returned by the swirld application is valid, it is the initial address book to use, otherwise the configuration
+     * address book is the one to use.  All three address books, the configuration address book, the save state address
+     * book, and the new address book to use are recorded in the address book directory.
      *
      * @return the address book to use in the platform.
      */
@@ -155,35 +158,18 @@ public class AddressBookInitializer {
                     "The loaded signed state is null. The candidateAddressBook is set to "
                             + "the address book from config.txt.");
             candidateAddressBook = configAddressBook;
+        } else if (!softwareUpgrade) {
+            logger.info(STARTUP.getMarker(), "Using the loaded signed state's address book and stake values.");
+            candidateAddressBook = loadedAddressBook;
         } else {
-            final SoftwareVersion loadedSoftwareVersion = loadedSignedState
-                    .getState()
-                    .getPlatformState()
-                    .getPlatformData()
-                    .getCreationSoftwareVersion();
-            final int versionComparison = currentVersion.compareTo(loadedSoftwareVersion);
-            if (versionComparison < 0) {
-                throw new IllegalStateException("The currentVersion `" + currentVersion
-                        + "` is prior to the stateVersion `" + loadedSoftwareVersion + "`");
-            } else if (versionComparison == 0) {
-                logger.info(
-                        STARTUP.getMarker(),
-                        "No Software Upgrade. Continuing with software version {} and "
-                                + "using the loaded signed state's address book and stake values.",
-                        loadedSoftwareVersion);
-                candidateAddressBook = loadedAddressBook;
-            } else {
-                logger.info(
-                        STARTUP.getMarker(),
-                        "Software Upgrade from version {} to {}. "
-                                + "The address book stake will be updated by the saved state's SwirldState.",
-                        loadedSoftwareVersion,
-                        currentVersion);
-                candidateAddressBook = loadedSignedState
-                        .getSwirldState()
-                        .updateStake(configAddressBook.copy())
-                        .copy();
-            }
+            // There is a software upgrade
+            logger.info(
+                    STARTUP.getMarker(),
+                    "The address book stake may be updated by the application using data from the state snapshot.");
+            candidateAddressBook = loadedSignedState
+                    .getSwirldState()
+                    .updateStake(configAddressBook.copy())
+                    .copy();
         }
         candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
         recordAddressBooks(candidateAddressBook);
