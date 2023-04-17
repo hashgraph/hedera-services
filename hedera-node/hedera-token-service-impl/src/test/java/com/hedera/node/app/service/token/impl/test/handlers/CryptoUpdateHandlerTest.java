@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
@@ -33,29 +33,40 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     private final AccountID updateAccountId =
             AccountID.newBuilder().accountNum(32132).build();
-    private final Key updateAccountKey = A_COMPLEX_KEY;
+    private final Key opKey = B_COMPLEX_KEY;
 
     @Mock
     private Account updateAccount;
 
     private CryptoUpdateHandler subject = new CryptoUpdateHandler();
 
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(updateAccountId.accountNum()), updateAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
+    }
+
     @Test
     void cryptoUpdateVanilla() throws PreCheckException {
         final var txn = cryptoUpdateTransaction(id, updateAccountId);
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
-                .willReturn(updateAccount);
-        given(updateAccount.key()).willReturn(updateAccountKey);
+        given(updateAccount.key()).willReturn(otherKey);
         given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
 
@@ -63,15 +74,13 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 2);
         assertEquals(key, context.payerKey());
-        assertTrue(context.requiredNonPayerKeys().contains(updateAccountKey));
+        assertTrue(context.requiredNonPayerKeys().contains(otherKey));
     }
 
     @Test
     void cryptoUpdateNewSignatureKeyWaivedVanilla() throws PreCheckException {
         final var txn = cryptoUpdateTransaction(id, updateAccountId);
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
-                .willReturn(updateAccount);
-        given(updateAccount.key()).willReturn(updateAccountKey);
+        given(updateAccount.key()).willReturn(otherKey);
         given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
 
@@ -79,7 +88,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
-        assertIterableEquals(List.of(updateAccountKey), context.requiredNonPayerKeys());
+        assertIterableEquals(List.of(otherKey), context.requiredNonPayerKeys());
     }
 
     @Test
@@ -92,14 +101,17 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
-        assertFalse(context.requiredNonPayerKeys().contains(updateAccountKey));
+        assertFalse(context.requiredNonPayerKeys().contains(otherKey));
     }
 
     @Test
     void cryptoUpdateUpdateAccountMissingFails() throws PreCheckException {
         final var txn = cryptoUpdateTransaction(id, updateAccountId);
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum())))
-                .willReturn(null);
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
 
         given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
@@ -118,7 +130,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 TransactionID.newBuilder().accountID(payerId).transactionValidStart(consensusTimestamp);
         final var updateTxnBody = CryptoUpdateTransactionBody.newBuilder()
                 .accountIDToUpdate(accountToUpdate)
-                .key(key)
+                .key(opKey)
                 .build();
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)

@@ -22,13 +22,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
+import static com.hedera.node.app.spi.workflows.PreHandleContext.isEmpty;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransferList;
@@ -142,9 +142,9 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // then we fail with ACCOUNT_IS_IMMUTABLE. And if the account is being debited and has no key,
                 // then we also fail with the same error. It should be that being credited value DOES NOT require
                 // a key, unless `receiverSigRequired` is true.
+                //
                 final var accountKey = account.key();
-                if ((accountKey == null || accountKey.key().kind().equals(KeyOneOfType.UNSET))
-                        && (isDebit || isCredit && !hbarTransfer)) {
+                if ((accountKey == null || isEmpty(accountKey)) && (isDebit || isCredit && !hbarTransfer)) {
                     throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
                 }
 
@@ -216,7 +216,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
 
         final var receiverKey = receiverAccount.key();
-        if (receiverKey == null || receiverKey.key().kind().equals(KeyOneOfType.UNSET)) {
+        if (receiverKey == null || isEmpty(receiverKey)) {
             // If the receiver account has no key, then fail with ACCOUNT_IS_IMMUTABLE.
             throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
         } else if (receiverAccount.receiverSigRequired()) {
@@ -251,7 +251,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         // If the sender account is immutable, then we throw an exception.
         final var key = senderAccount.key();
-        if (key == null || key.key().kind().equals(KeyOneOfType.UNSET)) {
+        if (key == null || isEmpty(key)) {
             // If the sender account has no key, then fail with ACCOUNT_IS_IMMUTABLE.
             throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
         } else if (!nftTransfer.isApproval()) {

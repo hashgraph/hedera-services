@@ -45,7 +45,7 @@ class TokenUnfreezeAccountHandlerParityTest {
 
     @BeforeEach
     void setUp() {
-        accountStore = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         tokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
         subject = new TokenUnfreezeAccountHandler();
     }

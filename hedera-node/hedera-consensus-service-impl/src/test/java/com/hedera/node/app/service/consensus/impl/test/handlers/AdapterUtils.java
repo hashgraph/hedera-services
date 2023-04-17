@@ -16,21 +16,20 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.test.handlers.SigReqAdapterUtils.wellKnownAccountStoreAt;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.StateKeyAdapter;
 import com.hedera.test.utils.TestFixturesKeyLookup;
 import java.util.Map;
 import org.mockito.Mockito;
@@ -69,9 +68,8 @@ public class AdapterUtils {
         return mockStates;
     }
 
-    private static ReadableKVState<EntityNumVirtualKey, ? extends HederaAccount> wellKnownAccountsState() {
-        final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
-        return new StateKeyAdapter<>(wrappedState, EntityNumVirtualKey::asEntityNum);
+    private static ReadableKVState<EntityNumVirtualKey, Account> wellKnownAccountsState() {
+        return new MapReadableKVState<>(ACCOUNTS_KEY, wellKnownAccountStoreAt());
     }
 
     private static MapReadableKVState<String, EntityNumValue> wellKnownAliasState() {

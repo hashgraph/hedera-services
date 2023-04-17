@@ -19,17 +19,32 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private CryptoCreateHandler subject = new CryptoCreateHandler();
+
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
+    }
 
     @Test
     void preHandleCryptoCreateVanilla() throws PreCheckException {
@@ -40,7 +55,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         assertEquals(txn, context.body());
         basicMetaAssertions(context, 1);
-        assertEquals(accountHederaKey, context.payerKey());
+        assertEquals(key, context.payerKey());
     }
 
     @Test
@@ -52,16 +67,16 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         subject.preHandle(context);
 
         assertEquals(expected.body(), context.body());
-        assertFalse(context.requiredNonPayerKeys().contains(accountHederaKey));
+        assertFalse(context.requiredNonPayerKeys().contains(key));
         basicMetaAssertions(context, 0);
         assertThat(context.requiredNonPayerKeys()).isEmpty();
-        assertEquals(accountHederaKey, context.payerKey());
+        assertEquals(key, context.payerKey());
     }
 
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
         final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
         final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
-                .key(key)
+                .key(otherKey)
                 .receiverSigRequired(receiverSigReq)
                 .memo("Create Account")
                 .build();

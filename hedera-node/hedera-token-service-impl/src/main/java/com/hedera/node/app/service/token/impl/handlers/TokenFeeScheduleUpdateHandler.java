@@ -65,9 +65,8 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var tokenId = op.tokenIdOrElse(TokenID.DEFAULT);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        final var feeScheduleKey = tokenMetadata.feeScheduleKey();
-        if (feeScheduleKey != null) {
-            context.requireKey(feeScheduleKey);
+        if (tokenMetadata.hasFeeScheduleKey()) {
+            context.requireKey(tokenMetadata.feeScheduleKey());
             for (final var customFee : op.customFeesOrElse(emptyList())) {
                 final var collector = customFee.feeCollectorAccountIdOrElse(AccountID.DEFAULT);
                 context.requireKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);

@@ -31,38 +31,33 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 
 class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
-    private final AccountID deleteAccountId =
-            AccountID.newBuilder().accountNum(3213).build();
-    private final AccountID transferAccountId =
-            AccountID.newBuilder().accountNum(32134).build();
-    private final Long deleteAccountNum = deleteAccountId.accountNum();
-    private final Long transferAccountNum = transferAccountId.accountNum();
-
-    @Mock
-    private Account deleteAccount;
-
-    @Mock
-    private Account transferAccount;
-
     private CryptoDeleteHandler subject = new CryptoDeleteHandler();
+
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
+                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
+    }
 
     @Test
     void preHandlesCryptoDeleteIfNoReceiverSigRequired() throws PreCheckException {
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum)))
-                .willReturn(deleteAccount);
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(transferAccountNum)))
-                .willReturn(transferAccount);
-        given(deleteAccount.key()).willReturn(key);
-        given(transferAccount.key()).willReturn(key);
         given(transferAccount.receiverSigRequired()).willReturn(false);
+        given(deleteAccount.key()).willReturn(accountKey);
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
@@ -76,14 +71,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void preHandlesCryptoDeleteIfReceiverSigRequiredVanilla() throws PreCheckException {
-
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum)))
-                .willReturn(deleteAccount);
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(transferAccountNum)))
-                .willReturn(transferAccount);
-        given(deleteAccount.key()).willReturn(key);
         given(transferAccount.key()).willReturn(key);
         given(transferAccount.receiverSigRequired()).willReturn(true);
+        given(deleteAccount.key()).willReturn(accountKey);
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
@@ -112,11 +102,20 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddTransferKeyIfAccountSameAsPayerForCryptoDelete() throws PreCheckException {
         final var txn = deleteAccountTransaction(deleteAccountId, id);
 
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
+                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
+        given(deleteAccount.key()).willReturn(accountKey);
+
         final var context = new PreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
         assertEquals(txn, context.body());
-        assertEquals(accountHederaKey, context.payerKey());
+        assertEquals(key, context.payerKey());
         basicMetaAssertions(context, 0);
         assertEquals(0, context.requiredNonPayerKeys().size());
     }
@@ -130,40 +129,38 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         assertEquals(txn, context.body());
         basicMetaAssertions(context, 0);
-        assertEquals(accountHederaKey, context.payerKey());
+        assertEquals(key, context.payerKey());
     }
 
     @Test
     void failsWithResponseCodeIfAnyAccountMissingForCryptoDelete() throws PreCheckException {
-
         /* ------ payerAccount missing, so deleteAccount and transferAccount will not be added  ------ */
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(null);
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum)))
-                .willReturn(deleteAccount);
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(transferAccountNum)))
-                .willReturn(transferAccount);
+        readableAccounts = emptyReadableAccountStateBuilder().build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
         given(deleteAccount.key()).willReturn(accountKey);
 
         assertThrowsPreCheck(() -> new PreHandleContext(readableStore, txn), INVALID_PAYER_ACCOUNT_ID);
 
         /* ------ deleteAccount missing, so transferAccount will not be added ------ */
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
-        given(account.key()).willReturn(accountKey);
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum)))
-                .willReturn(null);
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(transferAccountNum)))
-                .willReturn(transferAccount);
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
 
         final var context2 = new PreHandleContext(readableStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context2), INVALID_ACCOUNT_ID);
 
         /* ------ transferAccount missing ------ */
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum)))
-                .willReturn(deleteAccount);
-        given(deleteAccount.key()).willReturn(accountKey);
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(transferAccountNum)))
-                .willReturn(null);
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
 
         final var context3 = new PreHandleContext(readableStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context3), INVALID_TRANSFER_ACCOUNT_ID);
@@ -171,9 +168,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void doesntExecuteIfAccountIdIsDefaultInstance() throws PreCheckException {
-
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum)))
-                .willReturn(deleteAccount);
         given(deleteAccount.key()).willReturn(key);
 
         final var txn = deleteAccountTransaction(deleteAccountId, AccountID.DEFAULT);

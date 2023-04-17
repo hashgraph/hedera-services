@@ -63,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
+import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -75,7 +76,7 @@ class TokenCreateHandleParityTest {
 
     @BeforeEach
     void setUp() {
-        accountStore = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         subject = new TokenCreateHandler();
     }
 

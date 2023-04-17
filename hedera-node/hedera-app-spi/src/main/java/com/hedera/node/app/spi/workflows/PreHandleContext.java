@@ -24,10 +24,13 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -218,8 +221,7 @@ public final class PreHandleContext {
         }
 
         final var key = account.key();
-        if (key == null
-                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
+        if (key == null || isEmpty(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
@@ -337,8 +339,7 @@ public final class PreHandleContext {
 
         // We will require the key. If the key isn't present, then we will throw the given response code.
         final var key = account.key();
-        if (key == null
-                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
+        if (key == null || isEmpty(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
@@ -386,5 +387,33 @@ public final class PreHandleContext {
                 + requiredNonPayerKeys + ", status="
                 + payerKey + ", innerContext="
                 + innerContext + '}';
+    }
+
+    /**
+     * Checks if the given key is empty.
+     * For a KeyList type checks if the list is empty.
+     * For a ThresholdKey type checks if the list is empty.
+     * For an Ed25519 or EcdsaSecp256k1 type checks if there are zero bytes.
+     * TODO: This method need to be updated for other key types.
+     * @param pbjKey the key to check
+     * @return true if the key is empty, false otherwise
+     */
+    public static boolean isEmpty(final Key pbjKey) {
+        final var key = pbjKey.key();
+        if (key.kind().equals(KeyOneOfType.UNSET)) {
+            return true;
+        }
+        if (pbjKey.hasKeyList()) {
+            return ((KeyList) key.value()).hasKeys()
+                    && ((KeyList) key.value()).keys().isEmpty();
+        } else if (pbjKey.hasThresholdKey()) {
+            return ((ThresholdKey) key.value()).hasKeys()
+                    && ((ThresholdKey) key.value()).keys().keys().isEmpty();
+        } else if (pbjKey.hasEd25519()) {
+            return ((Bytes) key.value()).length() == 0;
+        } else if (pbjKey.hasEcdsaSecp256k1()) {
+            return ((Bytes) key.value()).length() == 0;
+        }
+        return true;
     }
 }

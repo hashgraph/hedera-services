@@ -73,9 +73,8 @@ public class TokenUpdateHandler implements TransactionHandler {
 
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        final var adminKey = tokenMetadata.adminKey();
-        if (adminKey != null) {
-            context.requireKey(adminKey);
+        if (tokenMetadata.hasAdminKey()) {
+            context.requireKey(tokenMetadata.adminKey());
         }
         if (op.hasAutoRenewAccount()) {
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);

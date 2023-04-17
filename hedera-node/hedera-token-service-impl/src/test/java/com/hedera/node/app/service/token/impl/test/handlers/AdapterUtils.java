@@ -68,7 +68,7 @@ public class AdapterUtils {
         return new StateKeyAdapter<>(wrappedState, EntityNumVirtualKey::asEntityNum);
     }
 
-    private static MapReadableKVState<String, EntityNumValue> wellKnownAliasState() {
+    public static MapReadableKVState<String, EntityNumValue> wellKnownAliasState() {
         final Map<String, EntityNumValue> wellKnownAliases = Map.ofEntries(
                 Map.entry(CURRENTLY_UNUSED_ALIAS, new EntityNumValue(MISSING_NUM.longValue())),
                 Map.entry(
