@@ -171,7 +171,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 fee = feeData.totalFee();
 
                 // 3.iv Check account balances
-                queryChecker.validateAccountBalances(payer, txBody, fee);
+                queryChecker.validateAccountBalances(payer, transactionInfo, fee);
             } else {
                 if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
                     throw new PreCheckException(NOT_SUPPORTED);

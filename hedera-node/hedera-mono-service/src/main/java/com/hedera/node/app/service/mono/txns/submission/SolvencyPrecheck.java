@@ -33,7 +33,6 @@ import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.FeeExemptions;
 import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
@@ -87,7 +86,7 @@ public class SolvencyPrecheck {
         return assess(accessor, false);
     }
 
-    TxnValidityAndFeeReq assessWithSvcFees(SignedTxnAccessor accessor) {
+    public TxnValidityAndFeeReq assessWithSvcFees(SignedTxnAccessor accessor) {
         return assess(accessor, true);
     }
 
@@ -133,10 +132,6 @@ public class SolvencyPrecheck {
      */
     public ResponseCodeEnum payerAccountStatus(final EntityNum payerNum) {
         return queryableAccountStatus(payerNum, accounts.get());
-    }
-
-    public com.hedera.hapi.node.base.ResponseCodeEnum payerAccountStatus2(final EntityNum payerNum) {
-        return PbjConverter.toPbj(queryableAccountStatus(payerNum, accounts.get()));
     }
 
     /**
