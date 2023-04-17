@@ -72,7 +72,7 @@ public class Network {
      * @throws SocketException
      * 		if there are any errors getting the addreses
      */
-    static boolean isOwn(InetAddress addr) throws SocketException {
+    public static boolean isOwn(InetAddress addr) throws SocketException {
         return getOwnAddresses().contains(addr);
     }
 
