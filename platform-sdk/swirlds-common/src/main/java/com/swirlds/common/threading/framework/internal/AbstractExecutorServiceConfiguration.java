@@ -38,11 +38,6 @@ public class AbstractExecutorServiceConfiguration<T extends AbstractExecutorServ
     private static final Logger logger = LogManager.getLogger(AbstractExecutorServiceConfiguration.class);
 
     /**
-     * Set the queue to be this size for an unlimited queue.
-     */
-    public static final int UNLIMITED_QUEUE_SIZE = -1; // TODO this doesn't belong here!
-
-    /**
      * An default exception handler for executor services.
      */
     private static final Thread.UncaughtExceptionHandler defaultExceptionHandler =
@@ -57,7 +52,7 @@ public class AbstractExecutorServiceConfiguration<T extends AbstractExecutorServ
     private Duration keepAliveTime = Duration.ofSeconds(0);
     private BlockingQueue<Runnable> queue;
 
-    private int queueSize = UNLIMITED_QUEUE_SIZE;
+    private int queueSize;
     private UncaughtExceptionHandler uncaughtExceptionHandler = defaultExceptionHandler;
 
     private ExecutorServiceProfile profile = ExecutorServiceProfile.CUSTOM;
@@ -174,13 +169,13 @@ public class AbstractExecutorServiceConfiguration<T extends AbstractExecutorServ
      * Set the maximum queue size for work waiting to be processed. Default unlimited. Ignored if queue implementation
      * is provided via {@link #setQueue(BlockingQueue)}.
      *
-     * @param queueSize the maximum queue size, or {@link #UNLIMITED_QUEUE_SIZE} if there should be no limit.
+     * @param queueSize the maximum queue size, or 0 if there should be no limit.
      * @return this object
      */
     @NonNull
     @SuppressWarnings("unchecked")
     protected T setQueueSize(final int queueSize) {
-        if (queueSize < 1 && queueSize != UNLIMITED_QUEUE_SIZE) {
+        if (queueSize < 0) {
             throw new IllegalArgumentException("Queue size must be at least 1 or unlimited");
         }
         this.queueSize = queueSize;
@@ -229,7 +224,7 @@ public class AbstractExecutorServiceConfiguration<T extends AbstractExecutorServ
      */
     protected @NonNull BlockingQueue<Runnable> buildQueue() {
         if (queue == null) {
-            if (queueSize == UNLIMITED_QUEUE_SIZE) {
+            if (queueSize == 0) {
                 queue = new java.util.concurrent.LinkedBlockingQueue<>();
             } else {
                 queue = new java.util.concurrent.ArrayBlockingQueue<>(queueSize);
