@@ -64,15 +64,19 @@ class PreHandleContextListUpdatesTest {
     private Key key = A_COMPLEX_KEY;
     private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
     private Long payerNum = 3L;
-
-    @Mock
-    private Key payerKey;
+    private Key payerKey = A_COMPLEX_KEY;
 
     final ContractID otherContractId =
             ContractID.newBuilder().contractNum(123456L).build();
 
-    @Mock
-    private Key otherKey;
+    private Key otherKey = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(Key.newBuilder()
+                                    .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+                                    .build())))
+            .build();
 
     @Mock
     private AccountAccess accountAccess;

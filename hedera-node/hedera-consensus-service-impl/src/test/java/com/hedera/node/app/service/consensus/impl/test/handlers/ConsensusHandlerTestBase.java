@@ -54,6 +54,7 @@ public class ConsensusHandlerTestBase {
     protected final byte[] runningHash = "runningHash".getBytes();
 
     protected final Key adminKey = key;
+    protected final Key autoRenewKey = anotherKey;
     protected final EntityNum topicEntityNum = EntityNum.fromLong(1L);
     protected final TopicID topicId =
             TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();

@@ -85,7 +85,9 @@ public class TestFixturesKeyLookup implements AccountAccess {
                 account.getNumPositiveBalances(),
                 account.getEthereumNonce(),
                 account.totalStakeAtStartOfLastRewardedPeriod(),
-                account.getAutoRenewAccount().num(),
+                account.getAutoRenewAccount() != null
+                        ? account.getAutoRenewAccount().num()
+                        : 0,
                 account.getAutoRenewSecs(),
                 account.getNumContractKvPairs(),
                 Collections.emptyList(),

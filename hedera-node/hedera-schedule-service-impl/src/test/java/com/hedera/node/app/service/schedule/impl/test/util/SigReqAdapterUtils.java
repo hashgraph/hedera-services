@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.util;
+package com.hedera.node.app.service.schedule.impl.test.util;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromFcCustomFee;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromGrpcKey;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT;
@@ -37,14 +33,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FROM_OVERLAP_PAYER;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FROM_OVERLAP_PAYER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_IMMUTABLE;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_KYC;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_PAUSE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_SUPPLY;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_WIPE;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
@@ -74,28 +63,13 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.AccountTokenAllowance;
-import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.transaction.CustomFee;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.StateKeyAdapter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import org.apache.commons.lang3.NotImplementedException;
 
 public class SigReqAdapterUtils {
-    private static final String TOKENS_KEY = "TOKENS";
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
     private static AccountCryptoAllowance cryptoAllowances = AccountCryptoAllowance.newBuilder()
@@ -115,33 +89,7 @@ public class SigReqAdapterUtils {
             .accountNum(DEFAULT_PAYER.getAccountNum())
             .build();
 
-    /**
-     * Returns the {@link ReadableTokenStore} containing the "well-known" tokens that exist in a
-     * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests
-     * that require a {@link ReadableTokenStore}.
-     *
-     * @return the well-known token store
-     */
-    public static ReadableTokenStore wellKnownTokenStoreAt() {
-        final var source = sigReqsMockTokenStore();
-        final Map<EntityNum, Token> destination = new HashMap<>();
-        List.of(
-                        toPbj(KNOWN_TOKEN_IMMUTABLE),
-                        toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS),
-                        toPbj(KNOWN_TOKEN_WITH_PAUSE),
-                        toPbj(KNOWN_TOKEN_WITH_FREEZE),
-                        toPbj(KNOWN_TOKEN_WITH_KYC),
-                        toPbj(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY),
-                        toPbj(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK),
-                        toPbj(KNOWN_TOKEN_WITH_SUPPLY),
-                        toPbj(KNOWN_TOKEN_WITH_WIPE))
-                .forEach(id -> destination.put(EntityNum.fromLong(id.tokenNum()), asToken(source.get(fromPbj(id)))));
-        final var wrappedState = new MapReadableKVState<>("TOKENS", destination);
-        final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
-        return new ReadableTokenStore(mockStates(Map.of(TOKENS_KEY, state)));
-    }
-
-    public static ReadableAccountStore wellKnownAccountStoreAt() {
+    public static Map<EntityNumVirtualKey, Account> wellKnownAccountStoreAt() {
         final var destination = new HashMap<EntityNumVirtualKey, Account>();
         destination.put(
                 EntityNumVirtualKey.fromLong(FIRST_TOKEN_SENDER.getAccountNum()),
@@ -216,8 +164,7 @@ public class SigReqAdapterUtils {
         destination.put(
                 EntityNumVirtualKey.fromLong(FROM_OVERLAP_PAYER.getAccountNum()),
                 toPbjAccount(FROM_OVERLAP_PAYER.getAccountNum(), FROM_OVERLAP_PAYER_KT.asPbjKey(), DEFAULT_BALANCE));
-        final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, destination);
-        return new ReadableAccountStore(mockStates(Map.of(ACCOUNTS_KEY, wrappedState)));
+        return destination;
     }
 
     private static Account toPbjAccount(final long number, final Key key, long balance) {
@@ -269,75 +216,5 @@ public class SigReqAdapterUtils {
                 fungibleTokenAllowances,
                 2,
                 false);
-    }
-
-    @SuppressWarnings("java:S1604")
-    private static com.hedera.node.app.service.mono.store.tokens.TokenStore sigReqsMockTokenStore() {
-        final var dummyScenario = new TxnHandlingScenario() {
-            @Override
-            public PlatformTxnAccessor platformTxn() {
-                throw new NotImplementedException();
-            }
-        };
-        return dummyScenario.tokenStore();
-    }
-
-    public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
-        try {
-            return toPbj(scenario.platformTxn().getTxn());
-        } catch (final Throwable e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Token asToken(final MerkleToken token) {
-        final var customFee = token.customFeeSchedule();
-        final List<CustomFee> pbjFees = new ArrayList<>();
-        if (customFee != null) {
-            customFee.forEach(fee -> pbjFees.add(fromFcCustomFee(fee)));
-        }
-        return new Token(
-                token.entityNum(),
-                token.name(),
-                token.symbol(),
-                token.decimals(),
-                token.totalSupply(),
-                token.treasuryNum().longValue(),
-                !token.adminKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.adminKey().get()))
-                        : Key.DEFAULT,
-                !token.kycKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.kycKey().get()))
-                        : Key.DEFAULT,
-                !token.freezeKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.freezeKey().get()))
-                        : Key.DEFAULT,
-                !token.wipeKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.wipeKey().get()))
-                        : Key.DEFAULT,
-                !token.supplyKey().isEmpty() ? fromGrpcKey(asKeyUnchecked(token.getSupplyKey())) : Key.DEFAULT,
-                !token.feeScheduleKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.feeScheduleKey().get()))
-                        : Key.DEFAULT,
-                !token.pauseKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.pauseKey().get()))
-                        : Key.DEFAULT,
-                token.getLastUsedSerialNumber(),
-                token.isDeleted(),
-                token.tokenType() == com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON
-                        ? com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON
-                        : com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE,
-                token.supplyType() == com.hedera.node.app.service.mono.state.enums.TokenSupplyType.FINITE
-                        ? com.hedera.hapi.node.base.TokenSupplyType.FINITE
-                        : com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
-                token.autoRenewAccount() == null ? 0 : token.autoRenewAccount().num(),
-                token.autoRenewPeriod(),
-                token.expiry(),
-                token.memo(),
-                token.maxSupply(),
-                token.isPaused(),
-                token.accountsAreFrozenByDefault(),
-                token.accountsAreFrozenByDefault(),
-                pbjFees);
     }
 }
