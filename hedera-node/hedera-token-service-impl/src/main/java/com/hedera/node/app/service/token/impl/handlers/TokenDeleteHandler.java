@@ -58,9 +58,8 @@ public class TokenDeleteHandler implements TransactionHandler {
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        final var adminKey = tokenMetadata.adminKey();
         // we will fail in handle() if token has no admin key
-        if (tokenMetadata.adminKey() != null) {
+        if (tokenMetadata.hasAdminKey()) {
             context.requireKey(tokenMetadata.adminKey());
         }
     }

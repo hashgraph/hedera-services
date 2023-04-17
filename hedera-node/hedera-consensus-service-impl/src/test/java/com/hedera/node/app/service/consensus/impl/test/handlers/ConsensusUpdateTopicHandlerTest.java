@@ -422,7 +422,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(account.key()).willReturn(adminKey);
 
         final var op = OP_BUILDER
-                .adminKey(key)
+                .adminKey(anotherKey)
                 .topicID(TopicID.newBuilder().topicNum(1L).build())
                 .build();
         final var context = new PreHandleContext(accountAccess, txnWith(op));
@@ -430,15 +430,16 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         subject.preHandle(context, readableStore);
 
         assertThat(context.payerKey()).isEqualTo(adminKey);
-        // adminKey and op admin key
-        assertEquals(2, context.requiredNonPayerKeys().size());
-        //        assertSame(context.requiredNonPayerKeys().get(0), asHederaKey(key).get());
+        // adminKey is same as payer key. So will not be added to required keys.
+        // and op admin key is different, so will be added.
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertTrue(context.requiredNonPayerKeys().contains(anotherKey));
     }
 
     @Test
     void autoRenewAccountKeyAdded() throws PreCheckException {
         given(accountAccess.getAccountById(autoRenewId)).willReturn(autoRenewAccount);
-        given(autoRenewAccount.key()).willReturn(adminKey);
+        given(autoRenewAccount.key()).willReturn(autoRenewKey);
         given(accountAccess.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 

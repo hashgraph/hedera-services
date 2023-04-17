@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.test.handlers.CryptoHandlerTestBase;
@@ -27,6 +28,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 // FUTURE: Once we have protobuf generated object need to replace all JKeys.
@@ -34,9 +36,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ReadableAccountStoreTest extends CryptoHandlerTestBase {
     private ReadableAccountStore subject;
 
+    @Mock
+    private Account account;
+
     @BeforeEach
     public void setUp() {
         super.setUp();
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
         subject = readableStore;
     }
 
@@ -44,7 +54,7 @@ class ReadableAccountStoreTest extends CryptoHandlerTestBase {
     @Test
     void getAccount() {
         // given
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
+        given(account.accountNumber()).willReturn(accountNum);
         given(account.memo()).willReturn("");
         given(account.key()).willReturn(accountKey);
         given(account.expiry()).willReturn(5L);
@@ -60,7 +70,8 @@ class ReadableAccountStoreTest extends CryptoHandlerTestBase {
         given(account.ethereumNonce()).willReturn(29L);
         given(account.stakedToMe()).willReturn(31L);
         given(account.stakePeriodStart()).willReturn(37L);
-        given(account.stakedToMe()).willReturn(41L);
+        given(account.stakeAtStartOfLastRewardedPeriod()).willReturn(37L);
+        given(account.stakedNumber()).willReturn(41L);
         given(account.declineReward()).willReturn(true);
         given(account.autoRenewAccountNumber()).willReturn(53L);
         given(account.autoRenewSecs()).willReturn(59L);
@@ -74,7 +85,6 @@ class ReadableAccountStoreTest extends CryptoHandlerTestBase {
         assertThat(mappedAccount).isNotNull();
         assertThat(mappedAccount.key()).isEqualTo(accountKey);
         assertThat(mappedAccount.expiry()).isEqualTo(5L);
-        assertThat(mappedAccount.tinybarBalance()).isEqualTo(7L);
         assertThat(mappedAccount.tinybarBalance()).isEqualTo(7L * HBARS_TO_TINYBARS);
         assertThat(mappedAccount.memo()).isEqualTo("Hello World");
         assertThat(mappedAccount.deleted()).isTrue();
@@ -101,9 +111,9 @@ class ReadableAccountStoreTest extends CryptoHandlerTestBase {
     @Test
     void getsEmptyAccount() {
         // given
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(account);
         given(account.key()).willReturn(accountKey);
         given(account.memo()).willReturn("");
+        given(account.accountNumber()).willReturn(accountNum);
 
         // when
         final var mappedAccount = subject.getAccountById(id);
@@ -131,14 +141,18 @@ class ReadableAccountStoreTest extends CryptoHandlerTestBase {
         assertThat(mappedAccount.autoRenewAccountNumber()).isZero();
         assertThat(mappedAccount.autoRenewSecs()).isZero();
         assertThat(mappedAccount.accountNumber()).isEqualTo(accountNum);
-        assertThat(mappedAccount.alias()).isEqualTo(Bytes.EMPTY);
+        assertThat(mappedAccount.alias()).isEqualTo(null);
         assertThat(mappedAccount.smartContract()).isFalse();
     }
 
     @SuppressWarnings("unchecked")
     @Test
     void getsNullIfMissingAccount() {
-        given(readableAccounts.get(EntityNumVirtualKey.fromLong(accountNum))).willReturn(null);
+        readableAccounts = emptyReadableAccountStateBuilder().build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
+        subject = readableStore;
+
         final var result = subject.getAccountById(id);
         assertThat(result).isNull();
     }

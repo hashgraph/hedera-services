@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
@@ -142,8 +143,8 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             info.runningHash(Bytes.wrap(meta.runningHash()));
             info.sequenceNumber(meta.sequenceNumber());
             info.expirationTime(meta.expirationTimestamp());
-            if (meta.adminKey() != null) info.adminKey(meta.adminKey());
-            if (meta.submitKey() != null) info.submitKey(meta.submitKey());
+            if (meta.adminKey() != null && !isEmpty(meta.adminKey())) info.adminKey(meta.adminKey());
+            if (meta.submitKey() != null && !isEmpty(meta.submitKey())) info.submitKey(meta.submitKey());
             info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewDurationSeconds()));
             meta.autoRenewAccountId()
                     .ifPresent(account ->

@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler.noThrowSha384HashOf;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.AdapterUtils.PARITY_DEFAULT_PAYER;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusCreateTopicHandlerTest.ACCOUNT_ID_3;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.newTopicMeta;
@@ -169,8 +168,9 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         @Test
         void getsConsensusSubmitMessageWithSubmitKey() throws PreCheckException {
             final var txn = CONSENSUS_SUBMIT_MESSAGE_SCENARIO.pbjTxnBody();
+            final var key = A_COMPLEX_KEY;
 
-            var topicMeta = newTopicMeta(A_NONNULL_KEY);
+            var topicMeta = newTopicMeta(key);
             given(readableStore.getTopicMetadata(notNull())).willReturn(topicMeta);
             final var context = new PreHandleContext(keyLookup, txn);
 
@@ -179,7 +179,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
             // then:
             ConsensusTestUtils.assertDefaultPayer(context);
-            Assertions.assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(A_NONNULL_KEY));
+            Assertions.assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(key));
         }
 
         @Test

@@ -22,7 +22,9 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromGrpcKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
+import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.wellKnownAliasState;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT;
@@ -62,7 +64,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_RECE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.wellKnownAccounts;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
@@ -143,7 +144,6 @@ public class SigReqAdapterUtils {
     }
 
     public static ReadableAccountStore wellKnownAccountStoreAt() {
-        final var source = wellKnownAccounts();
         final var destination = new HashMap<EntityNumVirtualKey, Account>();
         destination.put(
                 EntityNumVirtualKey.fromLong(FIRST_TOKEN_SENDER.getAccountNum()),
@@ -219,7 +219,8 @@ public class SigReqAdapterUtils {
                 EntityNumVirtualKey.fromLong(FROM_OVERLAP_PAYER.getAccountNum()),
                 toPbjAccount(FROM_OVERLAP_PAYER.getAccountNum(), FROM_OVERLAP_PAYER_KT.asPbjKey(), DEFAULT_BALANCE));
         final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, destination);
-        return new ReadableAccountStore(mockStates(Map.of(ACCOUNTS_KEY, wrappedState)));
+        return new ReadableAccountStore(
+                mockStates(Map.of(ACCOUNTS_KEY, wrappedState, ALIASES_KEY, wellKnownAliasState())));
     }
 
     private static Account toPbjAccount(final long number, final Key key, long balance) {

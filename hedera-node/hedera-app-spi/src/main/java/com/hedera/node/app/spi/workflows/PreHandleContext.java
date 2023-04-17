@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
@@ -163,7 +164,7 @@ public final class PreHandleContext {
      */
     @NonNull
     public PreHandleContext requireKey(@NonNull final Key key) {
-        if (!key.equals(payerKey)) {
+        if (!key.equals(payerKey) && isValid(key)) {
             requiredNonPayerKeys.add(key);
         }
         return this;
@@ -183,7 +184,7 @@ public final class PreHandleContext {
     public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
         requireNonNull(responseCode);
-        if (key == null || key.key().kind().equals(KeyOneOfType.UNSET)) {
+        if (key == null || !isValid(key)) {
             throw new PreCheckException(responseCode);
         }
         return requireKey(key);
@@ -218,8 +219,7 @@ public final class PreHandleContext {
         }
 
         final var key = account.key();
-        if (key == null
-                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
+        if (key == null || !isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
@@ -252,8 +252,7 @@ public final class PreHandleContext {
         }
 
         final var key = account.key();
-        if (key == null
-                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
+        if (key == null || !isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
@@ -337,8 +336,7 @@ public final class PreHandleContext {
 
         // We will require the key. If the key isn't present, then we will throw the given response code.
         final var key = account.key();
-        if (key == null
-                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
+        if (key == null || !isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);

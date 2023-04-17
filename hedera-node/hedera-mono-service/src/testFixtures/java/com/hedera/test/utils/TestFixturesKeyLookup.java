@@ -16,11 +16,8 @@
 
 package com.hedera.test.utils;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asPbjKeyUnchecked;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -28,11 +25,10 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
 
 public class TestFixturesKeyLookup implements AccountAccess {
     private final ReadableKVState<String, Long> aliases;
-    private final ReadableKVState<EntityNumVirtualKey, HederaAccount> accounts;
+    private final ReadableKVState<EntityNumVirtualKey, Account> accounts;
 
     public TestFixturesKeyLookup(@NonNull final ReadableStates states) {
         this.accounts = states.get("ACCOUNTS");
@@ -60,38 +56,7 @@ public class TestFixturesKeyLookup implements AccountAccess {
         }
     }
 
-    private Account getNewAccount(long num, Bytes alias, HederaAccount account) {
-        return new Account(
-                num,
-                alias,
-                asPbjKeyUnchecked(account.getAccountKey()),
-                account.getExpiry(),
-                account.getBalance(),
-                account.getMemo(),
-                account.isDeleted(),
-                account.getStakedToMe(),
-                account.getStakePeriodStart(),
-                account.getStakedId(),
-                account.isDeclinedReward(),
-                account.isReceiverSigRequired(),
-                account.getHeadTokenId(),
-                account.getHeadNftTokenNum(),
-                account.getHeadNftSerialNum(),
-                account.getNftsOwned(),
-                account.getMaxAutomaticAssociations(),
-                account.getUsedAutoAssociations(),
-                account.getNumAssociations(),
-                account.isSmartContract(),
-                account.getNumPositiveBalances(),
-                account.getEthereumNonce(),
-                account.totalStakeAtStartOfLastRewardedPeriod(),
-                account.getAutoRenewAccount().num(),
-                account.getAutoRenewSecs(),
-                account.getNumContractKvPairs(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                account.getNumTreasuryTitles(),
-                account.isExpiredAndPendingRemoval());
+    private Account getNewAccount(long num, Bytes alias, Account account) {
+        return account.copyBuilder().alias(alias).accountNumber(num).build();
     }
 }

@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.transaction.CustomFee.FeeOneOfType.ROYALTY_FE
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
@@ -58,7 +59,35 @@ public class ReadableTokenStore {
             Key feeScheduleKey,
             Key pauseKey,
             boolean hasRoyaltyWithFallback,
-            long treasuryNum) {}
+            long treasuryNum) {
+        public boolean hasAdminKey() {
+            return adminKey != null && !adminKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasKycKey() {
+            return kycKey != null && !kycKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasWipeKey() {
+            return wipeKey != null && !wipeKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasFreezeKey() {
+            return freezeKey != null && !freezeKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasSupplyKey() {
+            return supplyKey != null && !supplyKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasFeeScheduleKey() {
+            return feeScheduleKey != null && !feeScheduleKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasPauseKey() {
+            return pauseKey != null && !pauseKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+    }
 
     /**
      * Returns the token metadata needed for signing requirements.
@@ -87,13 +116,13 @@ public class ReadableTokenStore {
             }
         }
         return new TokenMetadata(
-                token.adminKeyOrElse(Key.DEFAULT),
-                token.kycKeyOrElse(Key.DEFAULT),
-                token.wipeKeyOrElse(Key.DEFAULT),
-                token.freezeKeyOrElse(Key.DEFAULT),
-                token.supplyKeyOrElse(Key.DEFAULT),
-                token.feeScheduleKeyOrElse(Key.DEFAULT),
-                token.pauseKeyOrElse(Key.DEFAULT),
+                token.adminKeyOrElse(null),
+                token.kycKeyOrElse(null),
+                token.wipeKeyOrElse(null),
+                token.freezeKeyOrElse(null),
+                token.supplyKeyOrElse(null),
+                token.feeScheduleKeyOrElse(null),
+                token.pauseKeyOrElse(null),
                 hasRoyaltyWithFallback,
                 token.treasuryAccountNumber()); // remove this and make it a long
     }

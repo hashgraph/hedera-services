@@ -32,7 +32,7 @@ import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,8 +51,8 @@ class ContractCreateHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asKey());
-        assertThat(context.requiredNonPayerKeys()).isEqualTo(List.of(MISC_ACCOUNT_KT.asKey()));
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(MISC_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test
@@ -61,7 +61,7 @@ class ContractCreateHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asKey());
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
         assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
@@ -71,7 +71,7 @@ class ContractCreateHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asKey());
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
         assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
@@ -81,8 +81,8 @@ class ContractCreateHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asKey());
-        assertThat(context.requiredNonPayerKeys()).isEqualTo(List.of(DEFAULT_ADMIN_KT.asKey()));
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(DEFAULT_ADMIN_KT.asPbjKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

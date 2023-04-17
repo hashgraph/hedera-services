@@ -58,7 +58,7 @@ public class TokenMintHandler implements TransactionHandler {
         final var op = context.body().tokenMintOrThrow();
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        if (tokenMeta.supplyKey() != null) {
+        if (tokenMeta.hasSupplyKey()) {
             context.requireKey(tokenMeta.supplyKey());
         }
     }

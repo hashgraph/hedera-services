@@ -58,10 +58,9 @@ public class TokenBurnHandler implements TransactionHandler {
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        final var supplyKey = tokenMetadata.supplyKey();
         // we will fail in handle() if token has no supply key
-        if (supplyKey != null) {
-            context.requireKey(supplyKey);
+        if (tokenMetadata.hasSupplyKey()) {
+            context.requireKey(tokenMetadata.supplyKey());
         }
     }
 

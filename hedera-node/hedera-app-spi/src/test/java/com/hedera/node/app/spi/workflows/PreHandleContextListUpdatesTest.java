@@ -38,7 +38,6 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,15 +63,30 @@ class PreHandleContextListUpdatesTest {
     private Key key = A_COMPLEX_KEY;
     private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
     private Long payerNum = 3L;
-
-    @Mock
-    private Key payerKey;
+    private Key payerKey = A_COMPLEX_KEY;
 
     final ContractID otherContractId =
             ContractID.newBuilder().contractNum(123456L).build();
 
-    @Mock
-    private Key otherKey;
+    private Key otherKey = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(1)
+                    .keys(KeyList.newBuilder()
+                            .keys(Key.newBuilder()
+                                    .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+                                    .build())))
+            .build();
+    private Key contractIdKey = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(1)
+                    .keys(KeyList.newBuilder()
+                            .keys(Key.newBuilder()
+                                    .contractID(ContractID.newBuilder()
+                                            .contractNum(123456L)
+                                            .build())
+                                    .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+                                    .build())))
+            .build();
 
     @Mock
     private AccountAccess accountAccess;
@@ -196,11 +210,11 @@ class PreHandleContextListUpdatesTest {
 
         // Then the call succeeds, although the payer key is not added to requiredNonPayerKeys
         assertEquals(payerKey, subject.payerKey());
-        assertIterableEquals(List.of(), subject.requiredNonPayerKeys());
+        assertIterableEquals(Set.of(), subject.requiredNonPayerKeys());
 
         // And when we try with requireKeyIfReceiverSigRequired, it also succeeds in the same way
         subject.requireKeyIfReceiverSigRequired(payer, INVALID_ACCOUNT_ID);
-        assertIterableEquals(List.of(), subject.requiredNonPayerKeys());
+        assertIterableEquals(Set.of(), subject.requiredNonPayerKeys());
     }
 
     @Test
@@ -222,14 +236,14 @@ class PreHandleContextListUpdatesTest {
         given(accountAccess.getAccountById(payer)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         given(accountAccess.getContractById(otherContractId)).willReturn(contractAccount);
-        given(contractAccount.key()).willReturn(otherKey);
+        given(contractAccount.key()).willReturn(contractIdKey);
         subject = new PreHandleContext(accountAccess, createAccountTransaction());
 
         // When we require the contract account's key,
         subject.requireKeyOrThrow(otherContractId, INVALID_CONTRACT_ID);
 
         // Then the contract account's key is included in the required non-payer keys
-        assertIterableEquals(List.of(otherKey), subject.requiredNonPayerKeys());
+        assertIterableEquals(Set.of(contractIdKey), subject.requiredNonPayerKeys());
     }
 
     @Test
@@ -246,7 +260,7 @@ class PreHandleContextListUpdatesTest {
 
         // Then it isn't added to the list of keys because the key is already the payer key
         assertEquals(payerKey, subject.payerKey());
-        assertIterableEquals(List.of(), subject.requiredNonPayerKeys());
+        assertIterableEquals(Set.of(), subject.requiredNonPayerKeys());
     }
 
     @Test
@@ -261,7 +275,7 @@ class PreHandleContextListUpdatesTest {
                 .requireKeyOrThrow(alias, INVALID_CONTRACT_ID);
 
         assertEquals(payerKey, subject.payerKey());
-        assertIterableEquals(List.of(otherKey), subject.requiredNonPayerKeys());
+        assertIterableEquals(Set.of(otherKey), subject.requiredNonPayerKeys());
     }
 
     @Test

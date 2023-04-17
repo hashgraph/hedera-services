@@ -40,7 +40,7 @@ import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -102,7 +102,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(context.requiredNonPayerKeys(), List.of(MISC_ADMIN_KT.asPbjKey()));
+        assertEquals(context.requiredNonPayerKeys(), Set.of(MISC_ADMIN_KT.asPbjKey()));
     }
 
     @Test
@@ -112,7 +112,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(context.requiredNonPayerKeys(), List.of(MISC_ADMIN_KT.asPbjKey()));
+        assertEquals(context.requiredNonPayerKeys(), Set.of(MISC_ADMIN_KT.asPbjKey()));
     }
 
     @Test
@@ -122,7 +122,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(context.requiredNonPayerKeys(), List.of(MISC_ADMIN_KT.asPbjKey()));
+        assertEquals(context.requiredNonPayerKeys(), Set.of(MISC_ADMIN_KT.asPbjKey()));
     }
 
     @Test
@@ -132,7 +132,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(context.requiredNonPayerKeys(), List.of(MISC_ADMIN_KT.asPbjKey()));
+        assertEquals(context.requiredNonPayerKeys(), Set.of(MISC_ADMIN_KT.asPbjKey()));
     }
 
     @Test
@@ -142,7 +142,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(context.requiredNonPayerKeys(), List.of(MISC_ACCOUNT_KT.asPbjKey()));
+        assertEquals(context.requiredNonPayerKeys(), Set.of(MISC_ACCOUNT_KT.asPbjKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

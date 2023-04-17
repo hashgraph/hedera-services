@@ -49,7 +49,7 @@ class TokenRevokeKycFromAccountHandlerTest {
 
     @BeforeEach
     void setUp() {
-        accountStore = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         tokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
         subject = new TokenRevokeKycFromAccountHandler();
     }

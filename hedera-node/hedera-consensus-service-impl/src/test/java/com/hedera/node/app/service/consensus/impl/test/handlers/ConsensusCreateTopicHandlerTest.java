@@ -19,7 +19,6 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,8 +146,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        final var expectedHederaAdminKey = asHederaKey(adminKey).orElseThrow();
-        assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(expectedHederaAdminKey));
+        assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(adminKey));
     }
 
     @Test

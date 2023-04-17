@@ -41,7 +41,6 @@ import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.Collections;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -136,7 +135,6 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(scheduledTxn));
-        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
         given(schedule.hasExplicitPayer()).willReturn(false);
 
         final var context = new PreHandleContext(keyLookup, txn);
@@ -156,7 +154,6 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(scheduledTxn));
-        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
         return scheduledTxn;
     }
 

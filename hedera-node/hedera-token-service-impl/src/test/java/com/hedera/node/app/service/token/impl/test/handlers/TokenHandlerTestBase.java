@@ -20,6 +20,8 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
+import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -52,8 +54,8 @@ public class TokenHandlerTestBase {
     protected static final Key payerKey = A_COMPLEX_KEY;
     protected static final HederaKey payerHederaKey = asHederaKey(payerKey).get();
     protected final Key adminKey = A_COMPLEX_KEY;
-    protected final Key pauseKey = A_COMPLEX_KEY;
-    protected final Key wipeKey = A_COMPLEX_KEY;
+    protected final Key pauseKey = B_COMPLEX_KEY;
+    protected final Key wipeKey = C_COMPLEX_KEY;
     protected final Key kycKey = A_COMPLEX_KEY;
     protected final Key feeScheduleKey = A_COMPLEX_KEY;
     protected final Key supplyKey = A_COMPLEX_KEY;

@@ -61,7 +61,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         final var op = context.body().tokenUnfreezeOrThrow();
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        if (tokenMeta.freezeKey() != null) {
+        if (tokenMeta.hasFreezeKey()) {
             context.requireKey(tokenMeta.freezeKey());
         }
     }

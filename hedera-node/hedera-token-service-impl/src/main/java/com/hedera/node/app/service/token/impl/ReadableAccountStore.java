@@ -16,21 +16,16 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import static java.util.Objects.requireNonNull;
-
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
-import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -74,6 +69,20 @@ public class ReadableAccountStore implements AccountAccess {
         return bytes.matchesPrefix(MIRROR_PREFIX);
     }
 
+    /**
+     * Returns the {@link Account} for a given {@link AccountID}
+     *
+     * @param accountID the {@code AccountID} which {@code Account is requested}
+     * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
+     *     Optional} otherwise
+     */
+    @Override
+    @Nullable
+    public Account getAccountById(@NonNull final AccountID accountID) {
+        final var account = getAccountLeaf(accountID);
+        return account == null ? null : account;
+    }
+
     /* Helper methods */
 
     /**
@@ -84,7 +93,7 @@ public class ReadableAccountStore implements AccountAccess {
      * @return merkle leaf for the given account number
      */
     @Nullable
-    protected Account getAccountLeaf(@NonNull final AccountID id) {
+    private Account getAccountLeaf(@NonNull final AccountID id) {
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =
@@ -106,20 +115,6 @@ public class ReadableAccountStore implements AccountAccess {
     }
 
     /**
-     * Returns the {@link Account} for a given {@link AccountID}
-     *
-     * @param accountID the {@code AccountID} which {@code Account is requested}
-     * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
-     *     Optional} otherwise
-     */
-    @Override
-    @Nullable
-    public Account getAccountById(@NonNull final AccountID accountID) {
-        final var account = getAccountLeaf(accountID);
-        return account == null ? null : account;
-    }
-
-    /**
      * Returns the contract leaf for the given contract id. If the contract doesn't exist returns
      * {@code Optional.empty()}
      *
@@ -127,7 +122,7 @@ public class ReadableAccountStore implements AccountAccess {
      * @return merkle leaf for the given contract number
      */
     @Nullable
-    protected Account getContractLeaf(@NonNull final ContractID id) {
+    private Account getContractLeaf(@NonNull final ContractID id) {
         // Get the contract number based on the contract identifier. It may be null.
         final var contractOneOf = id.contract();
         final Long contractNum =
@@ -146,8 +141,7 @@ public class ReadableAccountStore implements AccountAccess {
 
                         // If we didn't find an alias, we will want to auto-create this account. But
                         // we don't want to auto-create an account if there is already another
-                        // account in the system with the same EVM address that we would have
-                        // auto-created.
+                        // account in the system with the same EVM address that we would have auto-created.
                         if (evmAddress.length() > EVM_ADDRESS_LEN && entityNum == null) {
                             // if we don't find entity num for key alias we can try to derive EVM
                             // address from it and look it up
@@ -186,11 +180,5 @@ public class ReadableAccountStore implements AccountAccess {
         final var buf = new byte[Math.toIntExact(alias.length())];
         alias.getBytes(0, buf);
         return AliasManager.keyAliasToEVMAddress(ByteString.copyFrom(buf));
-    }
-
-    @NonNull
-    public Optional<HederaKey> asHederaKey(@NonNull final Key key) {
-        requireNonNull(key);
-        return Utils.asHederaKey(key);
     }
 }

@@ -68,7 +68,7 @@ public class TokenPauseHandler implements TransactionHandler {
         if (tokenMeta == null) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }
-        if (tokenMeta.pauseKey() != null) {
+        if (tokenMeta.hasPauseKey()) {
             context.requireKey(tokenMeta.pauseKey());
         }
     }
