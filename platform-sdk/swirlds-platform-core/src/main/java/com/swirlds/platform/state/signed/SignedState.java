@@ -16,21 +16,21 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SIGNED_STATE;
+import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
+import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
+import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
-import com.swirlds.common.Reservable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.time.OSTime;
-import com.swirlds.common.utility.AbstractReservable;
+import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
@@ -46,6 +46,8 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+// TODO breaking change: removed setting signedStateSentinelEnabled
 
 /**
  * <p>
@@ -69,7 +71,7 @@ import org.apache.logging.log4j.Logger;
  * rejoining after a long absence.
  * </p>
  */
-public class SignedState extends AbstractReservable implements Reservable, SignedStateInfo {
+public class SignedState implements SignedStateInfo {
 
     private static final Logger logger = LogManager.getLogger(SignedState.class);
 
@@ -124,21 +126,19 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     private final SignedStateHistory history;
 
     /**
+     * Keeps track of reservations on this object.
+     */
+    private final ReferenceCounter reservations = new ReferenceCounter(this::destroy, this::onReferenceCountException);
+
+    /**
      * Instantiate a signed state.
      *
-     * @param state
-     * 		a fast copy of the state resulting from all transactions in consensus order from all
-     * 		events with received rounds up through the round this SignedState represents
-     * @param freezeState
-     * 		specifies whether this state is the last one saved before the freeze
+     * @param state       a fast copy of the state resulting from all transactions in consensus order from all events
+     *                    with received rounds up through the round this SignedState represents
+     * @param freezeState specifies whether this state is the last one saved before the freeze
      */
     public SignedState(final State state, final boolean freezeState) {
         this(state);
-
-        if (history != null) {
-            history.setRound(state.getPlatformState().getPlatformData().getRound());
-        }
-
         this.freezeState = freezeState;
         sigSet = new SigSet();
     }
@@ -147,13 +147,8 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
         state.reserve();
 
         this.state = state;
-
-        if (Settings.getInstance().getState().signedStateSentinelEnabled) {
-            history = new SignedStateHistory(OSTime.getInstance());
-            history.recordAction(SignedStateHistory.SignedStateAction.CREATION, getReservationCount());
-        } else {
-            history = null;
-        }
+        history = new SignedStateHistory(OSTime.getInstance(), getRound(), false); // TODO use real config
+        history.recordAction(CREATION, getReservationCount(), null, null);
         registryRecord = RuntimeObjectRegistry.createRecord(getClass(), history);
     }
 
@@ -226,33 +221,38 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     }
 
     /**
-     * Reserves the SignedState for use. While reserved, this SignedState cannot be deleted, so it is very important to
-     * call releaseState() on it when done.
+     * Reserves the SignedState for use. While reserved, this SignedState will not be deleted.
+     *
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
+     * @return a wrapper that holds the state and the reservation
      */
-    @Override
-    public void reserve() {
-        if (history != null) {
-            history.recordAction(SignedStateHistory.SignedStateAction.RESERVE, getReservationCount());
-        }
-        super.reserve();
+    public ReservedSignedState reserve(final String reason) {
+        return new ReservedSignedState(this, reason);
+    }
+
+    // TODO catch reservation exceptions and log history
+
+    /**
+     * Increment reservation count.
+     */
+    void incrementReservationCount(final ReservedSignedState reservation) {
+        history.recordAction(RESERVE, getReservationCount(), reservation.getReason(), reservation.getReservationId());
+        reservations.reserve();
     }
 
     /**
-     * Releases a reservation previously obtained in reserveState()
+     * Decrement reservation count.
      */
-    @Override
-    public boolean release() {
-        if (history != null) {
-            history.recordAction(SignedStateAction.RELEASE, getReservationCount());
-        }
-        return super.release();
+    void decrementReservationCount(final ReservedSignedState reservation) {
+        history.recordAction(RELEASE, getReservationCount(), reservation.getReason(), reservation.getReservationId());
+        reservations.release();
     }
 
     /**
      * Add this state to the queue to be deleted on a background thread.
      */
-    @Override
-    protected void onDestroy() {
+    private void destroy() {
         if (signedStateGarbageCollector == null
                 || !signedStateGarbageCollector.executeOnGarbageCollectionThread(this::delete)) {
             logger.warn(
@@ -263,6 +263,13 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
                 delete();
             }
         }
+    }
+
+    /**
+     * This method is called when there is a reference count exception.
+     */
+    private void onReferenceCountException() {
+        logger.error(EXCEPTION.getMarker(), history.toString());
     }
 
     /**
@@ -279,14 +286,12 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     private synchronized void delete() {
         final Instant start = Instant.now();
 
-        if (isDestroyed()) {
+        if (reservations.isDestroyed()) { // TODO why is this check necessary?
             if (!deleted) {
                 try {
                     deleted = true;
 
-                    if (history != null) {
-                        history.recordAction(SignedStateHistory.SignedStateAction.RELEASE, getReservationCount());
-                    }
+                    history.recordAction(SignedStateAction.DESTROY, getReservationCount(), null, null);
                     registryRecord.release();
                     state.release();
 
@@ -303,9 +308,8 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     /**
      * Get the number of reservations.
      */
-    @Override
     public synchronized int getReservationCount() {
-        return super.getReservationCount();
+        return reservations.getReservationCount();
     }
 
     /**
@@ -342,12 +346,12 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      */
     @Override
     public String toString() {
-        return "SS(round: %d, sigs: %d/%s, hash: %s)"
-                .formatted(
-                        getRound(),
-                        signingStake,
-                        (getAddressBook() == null ? "?" : getAddressBook().getTotalStake()),
-                        state.getHash());
+        return String.format(
+                "SS(round: %d, sigs: %d/%s, hash: %s)",
+                getRound(),
+                signingStake,
+                (getAddressBook() == null ? "?" : getAddressBook().getTotalStake()),
+                state.getHash());
     }
 
     /**
@@ -420,7 +424,12 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        return getState().getPlatformState().getPlatformData().getMinGen(round);
+        for (final MinGenInfo minGenInfo : getMinGenInfo()) {
+            if (minGenInfo.round() == round) {
+                return minGenInfo.minimumGeneration();
+            }
+        }
+        throw new NoSuchElementException("No minimum generation found for round: " + round);
     }
 
     /**
@@ -429,7 +438,10 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      * @return the generation of the oldest round
      */
     public long getMinRoundGeneration() {
-        return getState().getPlatformState().getPlatformData().getMinRoundGeneration();
+        return getMinGenInfo().stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
+                .minimumGeneration();
     }
 
     /**
@@ -504,7 +516,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     }
 
     /**
-     * Check if a signature is valid.  If a node has no stake, we consider the signature to be invalid.
+     * Check if a signature is valid.
      *
      * @param address   the address of the signer, or null if there is no signing address
      * @param signature the signature to check
@@ -514,11 +526,6 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     private boolean isSignatureValid(final Address address, final Signature signature) {
         if (address == null) {
             // Signing node is not in the address book.
-            return false;
-        }
-
-        if (address.getStake() == 0) {
-            // Signing node has no stake.
             return false;
         }
 
@@ -535,8 +542,8 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      * state is either not complete or was previously complete prior to this signature
      */
     private boolean addSignature(final AddressBook addressBook, final long nodeId, final Signature signature) {
-        throwArgNull(addressBook, "addressBook");
-        throwArgNull(signature, "signature");
+        Objects.requireNonNull(addressBook, "addressBook");
+        Objects.requireNonNull(signature, "signature");
 
         if (isComplete()) {
             // No need to add more signatures
