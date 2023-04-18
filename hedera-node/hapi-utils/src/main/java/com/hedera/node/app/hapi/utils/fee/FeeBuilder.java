@@ -140,7 +140,7 @@ public class FeeBuilder {
             final FeeData feeCoefficients, final FeeData componentMetrics, final ExchangeRate exchangeRate) {
 
         final FeeObject feeObject = getFeeObject(feeCoefficients, componentMetrics, exchangeRate);
-        return feeObject.getServiceFee() + feeObject.getNodeFee() + feeObject.getNetworkFee();
+        return feeObject.serviceFee() + feeObject.nodeFee() + feeObject.networkFee();
     }
 
     public static FeeObject getFeeObject(

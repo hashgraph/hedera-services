@@ -16,16 +16,6 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static java.util.Objects.requireNonNull;
-
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
@@ -34,14 +24,11 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -50,7 +37,11 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Optional;
+
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -83,95 +74,18 @@ public class ReadableAccountStore implements AccountAccess {
         this.aliases = states.get("ALIASES");
     }
 
-    /** {@inheritDoc} */
-    @NonNull
-    @Override
-    public KeyOrLookupFailureReason getKey(@NonNull final AccountID id) {
-        requireNonNull(id);
-        if (id.equals(AccountID.DEFAULT)) {
-            return withFailureReason(INVALID_ACCOUNT_ID);
-        }
-        final var account = getAccountLeaf(id);
-        return account == null ? withFailureReason(INVALID_ACCOUNT_ID) : validateKey(account.getAccountKey(), false);
-    }
-
-    /** {@inheritDoc} */
-    @NonNull
-    @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final AccountID id) {
-        requireNonNull(id);
-        if (id.equals(AccountID.DEFAULT)) {
-            return withFailureReason(INVALID_ACCOUNT_ID);
-        }
-
-        final var account = getAccountLeaf(id);
-        if (account == null) {
-            return withFailureReason(INVALID_ACCOUNT_ID);
-        }
-
-        final var responseIgnoringSigReq = validateKey(account.getAccountKey(), false);
-        return (responseIgnoringSigReq.failed() || account.isReceiverSigRequired())
-                ? responseIgnoringSigReq
-                : PRESENT_BUT_NOT_REQUIRED;
-    }
-
-    /** {@inheritDoc} */
-    @NonNull
-    @Override
-    public KeyOrLookupFailureReason getKey(@NonNull final ContractID id) {
-        requireNonNull(id);
-
-        if (id.equals(ContractID.DEFAULT)) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        }
-
-        final var contract = getContractLeaf(id);
-        if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        }
-
-        return validateKey(contract.getAccountKey(), true);
-    }
-
-    /** {@inheritDoc} */
-    @NonNull
-    @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID id) {
-        requireNonNull(id);
-
-        if (id.equals(ContractID.DEFAULT)) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        }
-
-        final var contract = getContractLeaf(id);
-        if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        }
-
-        final var responseIgnoringSigReq = validateKey(contract.getAccountKey(), true);
-        if (responseIgnoringSigReq.failed() || contract.isReceiverSigRequired()) {
-            return responseIgnoringSigReq;
-        }
-        return PRESENT_BUT_NOT_REQUIRED;
-    }
-
     /**
      * Returns the {@link Account} for a given {@link AccountID}
      *
-     * @param id the {@code AccountID} which {@code Account is requested}
+     * @param accountID the {@code AccountID} which {@code Account is requested}
      * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
      *     Optional} otherwise
      */
     @Override
-    @NonNull
-    public Optional<Account> getAccountById(@NonNull final AccountID id) {
-        requireNonNull(id);
-        if (id.equals(AccountID.DEFAULT)) {
-            return Optional.empty();
-        }
-        // TODO Make sure we have tests for getAccount for all valid account IDs.
-        final var account = getAccountLeaf(id);
-        return Optional.ofNullable(account).map(accountLeaf -> mapAccount(id, accountLeaf));
+    @Nullable
+    public Account getAccountById(@NonNull final AccountID accountID) {
+        final var account = getAccountLeaf(accountID);
+        return account == null ? null : mapAccount(accountID, account);
     }
 
     /* Helper methods */
@@ -248,19 +162,6 @@ public class ReadableAccountStore implements AccountAccess {
                 };
 
         return contractNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(contractNum));
-    }
-
-    private KeyOrLookupFailureReason validateKey(@Nullable final JKey key, final boolean isContractKey) {
-        if (key == null || key.isEmpty()) {
-            if (isContractKey) {
-                return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
-            }
-            return withFailureReason(ACCOUNT_IS_IMMUTABLE);
-        } else if (isContractKey && key instanceof JContractIDKey) {
-            return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
-        } else {
-            return withKey(key);
-        }
     }
 
     private static boolean isMirror(final Bytes bytes) {
