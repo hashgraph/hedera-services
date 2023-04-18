@@ -303,8 +303,8 @@ public class EmergencyReconnectTests {
     private AddressBook newAddressBook(final Random random, final int numNodes) {
         return new RandomAddressBookGenerator(random)
                 .setSize(numNodes)
-                .setAverageStake(100L)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setAverageWeight(100L)
+                .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
                 .setSequentialIds(true)
                 .build();

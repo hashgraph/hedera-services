@@ -224,10 +224,10 @@ public class ReconnectTeacher {
         final StringBuilder sb = new StringBuilder();
         sb.append("Sending signatures from nodes ");
         formattedList(sb, signedState.get().getSigSet().iterator());
-        sb.append(" (signing stake = ")
-                .append(signedState.get().getSigningStake())
+        sb.append(" (signing weight = ")
+                .append(signedState.get().getSigningWeight())
                 .append("/")
-                .append(signedState.get().getAddressBook().getTotalStake())
+                .append(signedState.get().getAddressBook().getTotalWeight())
                 .append(") for state hash ")
                 .append(signedState.get().getState().getHash());
 

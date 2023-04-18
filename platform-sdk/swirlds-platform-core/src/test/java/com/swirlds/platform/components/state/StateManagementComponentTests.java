@@ -36,6 +36,7 @@ import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
@@ -542,7 +543,7 @@ class StateManagementComponentTests {
                 .build();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setSequentialIds(true)
                 .build();
 

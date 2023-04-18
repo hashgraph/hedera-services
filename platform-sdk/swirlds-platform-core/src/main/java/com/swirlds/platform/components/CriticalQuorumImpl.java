@@ -49,10 +49,10 @@ public class CriticalQuorumImpl implements CriticalQuorum {
     private final Map<Long, Integer> eventCounts;
 
     /**
-     * A map from possible thresholds to stakes. The given stake is the stake of all
+     * A map from possible thresholds to weights. The given weight is the weight of all
      * nodes that do not exceed the threshold.
      */
-    private final Map<Integer, Long> stakeNotExceedingThreshold;
+    private final Map<Integer, Long> weightNotExceedingThreshold;
 
     /**
      * Any nodes with an event count that does not exceed this threshold are considered
@@ -83,7 +83,7 @@ public class CriticalQuorumImpl implements CriticalQuorum {
         this.thresholdSoftening = thresholdSoftening;
 
         eventCounts = new ConcurrentHashMap<>();
-        stakeNotExceedingThreshold = new HashMap<>();
+        weightNotExceedingThreshold = new HashMap<>();
 
         threshold = new AtomicInteger(0);
     }
@@ -113,7 +113,7 @@ public class CriticalQuorumImpl implements CriticalQuorum {
         if (event.getRoundCreated() > round) {
             round = event.getRoundCreated();
             eventCounts.clear();
-            stakeNotExceedingThreshold.clear();
+            weightNotExceedingThreshold.clear();
             threshold.set(0);
         }
     }
@@ -131,21 +131,22 @@ public class CriticalQuorumImpl implements CriticalQuorum {
         handleRoundBoundary(event);
 
         final long nodeId = event.getCreatorId();
-        final long totalState = addressBook.getTotalStake();
+        final long totalWeight = addressBook.getTotalWeight();
 
         // Increase the event count
         final int originalEventCount = eventCounts.getOrDefault(nodeId, 0);
         eventCounts.put(nodeId, originalEventCount + 1);
 
         // Update threshold map
-        final long originalStakeAtThreshold = stakeNotExceedingThreshold.getOrDefault(originalEventCount, totalState);
-        final long newStakeAtThreshold =
-                originalStakeAtThreshold - addressBook.getAddress(nodeId).getStake();
-        stakeNotExceedingThreshold.put(originalEventCount, newStakeAtThreshold);
+        final long originalWeightAtThreshold =
+                weightNotExceedingThreshold.getOrDefault(originalEventCount, totalWeight);
+        final long newWeightAtThreshold =
+                originalWeightAtThreshold - addressBook.getAddress(nodeId).getWeight();
+        weightNotExceedingThreshold.put(originalEventCount, newWeightAtThreshold);
 
-        // Make sure threshold allows at least 1/3 of the stake to be part of the critical quorum
+        // Make sure threshold allows at least 1/3 of the weight to be part of the critical quorum
         if (!Utilities.isStrongMinority(
-                stakeNotExceedingThreshold.getOrDefault(threshold.get(), totalState), totalState)) {
+                weightNotExceedingThreshold.getOrDefault(threshold.get(), totalWeight), totalWeight)) {
             threshold.incrementAndGet();
         }
     }

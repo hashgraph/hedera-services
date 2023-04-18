@@ -94,7 +94,7 @@ final class ReconnectTest {
 
     private void executeReconnect(final ReconnectMetrics reconnectMetrics) throws InterruptedException, IOException {
 
-        final long stakePerNode = 100L;
+        final long weightPerNode = 100L;
         final int numNodes = 4;
         final List<Long> nodeIds =
                 IntStream.range(0, numNodes).mapToLong(i -> (long) i).boxed().toList();
@@ -102,8 +102,8 @@ final class ReconnectTest {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(numNodes)
-                .setAverageStake(stakePerNode)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setAverageWeight(weightPerNode)
+                .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
                 .setSequentialIds(true)
                 .build();
