@@ -58,7 +58,7 @@ public class SignedStateReference {
      */
     public void set(@Nullable final SignedState signedState, @NonNull final String reason) {
         try (final Locked l = lock.lock()) {
-            if (signedState == reservedSignedState.get()) {
+            if (signedState == reservedSignedState.getNullable()) {
                 // Same object, no action required
                 return;
             }
@@ -94,8 +94,7 @@ public class SignedStateReference {
      */
     public long getRound() {
         try (final Locked l = lock.lock()) {
-            final SignedState signedState = reservedSignedState.get();
-            return signedState == null ? -1 : signedState.getRound();
+            return reservedSignedState.isNull() ? -1 : reservedSignedState.get().getRound();
         }
     }
 

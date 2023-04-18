@@ -673,7 +673,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(ReservedSignedState signedStateFromDisk, State initialState) {}
+    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -707,6 +707,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param signedStateFromDisk the SignedState loaded from disk.
      * @return the LoadedState
      */
+    @NonNull
     private LoadedState initializeLoadedStateFromSignedState(@NonNull final ReservedSignedState signedStateFromDisk) {
         try (signedStateFromDisk) {
             if (signedStateFromDisk.isNotNull()) {
@@ -727,7 +728,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
             }
         }
-        return new LoadedState(null, null);
+        return new LoadedState(new ReservedSignedState(), null);
     }
 
     private State loadSavedState(final SignedState signedStateFromDisk) {
