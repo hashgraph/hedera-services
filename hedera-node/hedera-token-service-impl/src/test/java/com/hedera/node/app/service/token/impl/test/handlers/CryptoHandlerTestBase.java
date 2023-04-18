@@ -233,6 +233,7 @@ public class CryptoHandlerTestBase {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 2,
-                false);
+                false,
+                null);
     }
 }

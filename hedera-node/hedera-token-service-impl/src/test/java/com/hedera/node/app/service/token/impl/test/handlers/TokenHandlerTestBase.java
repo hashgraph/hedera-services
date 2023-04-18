@@ -251,6 +251,7 @@ public class TokenHandlerTestBase {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 2,
-                false);
+                false,
+                null);
     }
 }

@@ -74,9 +74,9 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
-import com.hedera.hapi.node.state.token.AccountTokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -205,21 +205,19 @@ class AdapterUtils {
         private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
         private static AccountCryptoAllowance cryptoAllowances = AccountCryptoAllowance.newBuilder()
-                .accountNum(DEFAULT_PAYER.getAccountNum())
+                .spenderNum(DEFAULT_PAYER.getAccountNum())
                 .amount(500L)
                 .build();
         private static AccountFungibleTokenAllowance fungibleTokenAllowances =
                 AccountFungibleTokenAllowance.newBuilder()
-                        .tokenAllowanceKey(AccountTokenAllowance.newBuilder()
-                                .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
-                                .accountNum(DEFAULT_PAYER.getAccountNum())
-                                .build())
+                        .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
+                        .spenderNum(DEFAULT_PAYER.getAccountNum())
                         .amount(10_000L)
                         .build();
 
-        private static AccountTokenAllowance nftAllowances = AccountTokenAllowance.newBuilder()
+        private static AccountApprovalForAllAllowance nftAllowances = AccountApprovalForAllAllowance.newBuilder()
                 .tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
-                .accountNum(DEFAULT_PAYER.getAccountNum())
+                .spenderNum(DEFAULT_PAYER.getAccountNum())
                 .build();
 
         public static Map<EntityNumVirtualKey, Account> wellKnownAccountStoreAt() {
@@ -320,7 +318,7 @@ class AdapterUtils {
                 boolean receiverSigRequired,
                 List<AccountCryptoAllowance> cryptoAllowances,
                 List<AccountFungibleTokenAllowance> fungibleTokenAllowances,
-                List<AccountTokenAllowance> nftTokenAllowances) {
+                List<AccountApprovalForAllAllowance> nftTokenAllowances) {
             return new Account(
                     number,
                     Bytes.EMPTY,
@@ -352,7 +350,8 @@ class AdapterUtils {
                     nftTokenAllowances,
                     fungibleTokenAllowances,
                     2,
-                    false);
+                    false,
+                    null);
         }
     }
 }
