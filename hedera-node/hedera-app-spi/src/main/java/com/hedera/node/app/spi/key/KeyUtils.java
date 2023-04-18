@@ -22,7 +22,7 @@ import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Utility class for working with keys. This validates if the key is empty and valid.
@@ -43,7 +43,7 @@ public class KeyUtils {
      * @param pbjKey the key to check
      * @return true if the key is empty, false otherwise
      */
-    public static boolean isEmpty(@NonNull final Key pbjKey) {
+    public static boolean isEmpty(@Nullable final Key pbjKey) {
         if (pbjKey == null) {
             return true;
         }
@@ -80,7 +80,7 @@ public class KeyUtils {
      * @param pbjKey the key to check
      * @return true if the key is valid, false otherwise
      */
-    public static boolean isValid(final Key pbjKey) {
+    public static boolean isValid(@Nullable final Key pbjKey) {
         if (isEmpty(pbjKey)) {
             return false;
         }
