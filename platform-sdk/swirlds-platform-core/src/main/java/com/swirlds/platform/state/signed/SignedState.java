@@ -79,9 +79,9 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     private SigSet sigSet;
 
     /**
-     * The total stake that has signed this state.
+     * The total weight that has signed this state.
      */
-    private long signingStake;
+    private long signingWeight;
 
     /**
      * Is this the last state saved before the freeze period
@@ -186,7 +186,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      * @param sigSet the signatures to be attached to this signed state
      */
     public void setSigSet(final SigSet sigSet) {
-        signingStake = 0;
+        signingWeight = 0;
         this.sigSet = sigSet;
         for (final long signingNode : sigSet) {
             final Address address = getAddressBook().getAddress(signingNode);
@@ -194,7 +194,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
                 throw new IllegalStateException(
                         "Signature for node " + signingNode + " found, but that node is not in the address book");
             }
-            signingStake += address.getStake();
+            signingWeight += address.getWeight();
         }
     }
 
@@ -345,8 +345,8 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
         return "SS(round: %d, sigs: %d/%s, hash: %s)"
                 .formatted(
                         getRound(),
-                        signingStake,
-                        (getAddressBook() == null ? "?" : getAddressBook().getTotalStake()),
+                        signingWeight,
+                        (getAddressBook() == null ? "?" : getAddressBook().getTotalWeight()),
                         state.getHash());
     }
 
@@ -460,12 +460,12 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     }
 
     /**
-     * Get the total signing stake collected so far.
+     * Get the total signing weight collected so far.
      *
-     * @return total stake of members whose signatures have been collected
+     * @return total weight of members whose signatures have been collected
      */
-    public long getSigningStake() {
-        return signingStake;
+    public long getSigningWeight() {
+        return signingWeight;
     }
 
     /**
@@ -473,7 +473,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      */
     @Override
     public boolean isComplete() {
-        return Utilities.isMajority(signingStake, getAddressBook().getTotalStake());
+        return Utilities.isMajority(signingWeight, getAddressBook().getTotalWeight());
     }
 
     /**
@@ -486,8 +486,8 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
         if (!isComplete()) {
             throw new SignedStateInvalidException(
                     "Signed state lacks sufficient valid signatures. This state has " + sigSet.size()
-                            + " valid signatures representing " + signingStake + "/"
-                            + getAddressBook().getTotalStake() + " stake");
+                            + " valid signatures representing " + signingWeight + "/"
+                            + getAddressBook().getTotalWeight() + " weight");
         }
     }
 
@@ -504,7 +504,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     }
 
     /**
-     * Check if a signature is valid.  If a node has no stake, we consider the signature to be invalid.
+     * Check if a signature is valid.  If a node has no weight, we consider the signature to be invalid.
      *
      * @param address   the address of the signer, or null if there is no signing address
      * @param signature the signature to check
@@ -517,8 +517,8 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
             return false;
         }
 
-        if (address.getStake() == 0) {
-            // Signing node has no stake.
+        if (address.getWeight() == 0) {
+            // Signing node has no weight.
             return false;
         }
 
@@ -554,7 +554,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
         }
 
         sigSet.addSignature(nodeId, signature);
-        signingStake += address.getStake();
+        signingWeight += address.getWeight();
 
         return isComplete();
     }
@@ -586,10 +586,10 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
             sigSet.removeSignature(nodeId);
         }
 
-        // Recalculate signing stake. We should do this even if we don't remove signatures.
-        signingStake = 0;
+        // Recalculate signing weight. We should do this even if we don't remove signatures.
+        signingWeight = 0;
         for (final long nodeId : sigSet) {
-            signingStake += trustedAddressBook.getAddress(nodeId).getStake();
+            signingWeight += trustedAddressBook.getAddress(nodeId).getWeight();
         }
     }
 }

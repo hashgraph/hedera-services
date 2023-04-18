@@ -93,7 +93,7 @@ public class ReadableAccountStore implements AccountAccess {
      * @return merkle leaf for the given account number
      */
     @Nullable
-    private Account getAccountLeaf(@NonNull final AccountID id) {
+    Account getAccountLeaf(@NonNull final AccountID id) {
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =

@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
@@ -216,5 +217,40 @@ public class TokenHandlerTestBase {
                 .accountsFrozenByDefault(true)
                 .accountsKycGrantedByDefault(true)
                 .build();
+    }
+
+    protected Account newPayerAccount() {
+        return new Account(
+                2L,
+                null,
+                payerKey,
+                1_234_567L,
+                10_000,
+                "testAccount",
+                false,
+                1_234L,
+                1_234_568L,
+                0,
+                true,
+                true,
+                3,
+                2,
+                1,
+                2,
+                10,
+                1,
+                3,
+                false,
+                2,
+                0,
+                1000L,
+                2,
+                72000,
+                0,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                2,
+                false);
     }
 }

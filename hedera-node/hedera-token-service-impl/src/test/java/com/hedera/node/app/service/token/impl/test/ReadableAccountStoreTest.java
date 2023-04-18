@@ -46,8 +46,7 @@ class ReadableAccountStoreTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(accountNum), account)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
-        subject = readableStore;
+        subject = new ReadableAccountStore(readableStates);
     }
 
     @SuppressWarnings("unchecked")

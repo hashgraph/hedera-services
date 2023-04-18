@@ -75,7 +75,7 @@ public class ScheduleDeleteHandler implements TransactionHandler {
         // check whether schedule was created with an admin key
         // if it wasn't, the schedule can't be deleted
         final var adminKey = scheduleLookupResult.get().adminKey();
-        if (adminKey == null || isEmpty(adminKey)) {
+        if (isEmpty(adminKey)) {
             throw new PreCheckException(SCHEDULE_IS_IMMUTABLE);
         }
 

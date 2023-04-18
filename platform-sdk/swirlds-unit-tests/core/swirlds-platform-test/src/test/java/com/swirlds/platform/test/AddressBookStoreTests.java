@@ -533,9 +533,9 @@ class AddressBookStoreTests {
 
         final AddressBookStore store = addressBookStoreImpl.constructor.get();
 
-        // Force all nodes to have zero stake
+        // Force all nodes to have zero weight
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setCustomStakeGenerator(nodeId -> 0)
+                .setCustomWeightGenerator(nodeId -> 0)
                 .build();
 
         assertThrows(

@@ -26,8 +26,8 @@ import java.net.InetAddress;
  * 		the name given to that addressbook member by the member creating this address
  * @param selfName
  * 		the name given to that addressbook member by themself
- * @param stake
- * 		the amount of stake (0 if they should have no influence on the consensus)
+ * @param weight
+ * 		the amount of weight (0 if they should have no influence on the consensus)
  * @param internalInetAddressName
  * 		IPv4 address on the inside of the NATing router
  * @param internalPort
@@ -44,7 +44,7 @@ import java.net.InetAddress;
 public record AddressConfig(
         String nickname,
         String selfName,
-        long stake,
+        long weight,
         InetAddress internalInetAddressName,
         int internalPort,
         InetAddress externalInetAddressName,

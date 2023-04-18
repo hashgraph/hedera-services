@@ -21,8 +21,6 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.consensus.Topic;
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -73,58 +71,5 @@ public class TopicStore {
             long sequenceNumber,
             byte[] runningHash,
             long key,
-            boolean isDeleted) {
-        // Overriding equals, hashCode and toString to consider array's content
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            TopicMetadata that = (TopicMetadata) o;
-            return autoRenewDurationSeconds == that.autoRenewDurationSeconds
-                    && sequenceNumber == that.sequenceNumber
-                    && key == that.key
-                    && isDeleted == that.isDeleted
-                    && Objects.equals(memo, that.memo)
-                    && Objects.equals(adminKey, that.adminKey)
-                    && Objects.equals(submitKey, that.submitKey)
-                    && Objects.equals(autoRenewAccountId, that.autoRenewAccountId)
-                    && Objects.equals(expirationTimestamp, that.expirationTimestamp)
-                    && Arrays.equals(runningHash, that.runningHash);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = Objects.hash(
-                    memo,
-                    adminKey,
-                    submitKey,
-                    autoRenewDurationSeconds,
-                    autoRenewAccountId,
-                    expirationTimestamp,
-                    sequenceNumber,
-                    key,
-                    isDeleted);
-            result = 31 * result + Arrays.hashCode(runningHash);
-            return result;
-        }
-
-        @Override
-        public String toString() {
-            return "TopicMetadata{" + "memo="
-                    + memo + ", adminKey="
-                    + adminKey + ", submitKey="
-                    + submitKey + ", autoRenewDurationSeconds="
-                    + autoRenewDurationSeconds + ", autoRenewAccountId="
-                    + autoRenewAccountId + ", expirationTimestamp="
-                    + expirationTimestamp + ", sequenceNumber="
-                    + sequenceNumber + ", runningHash="
-                    + Arrays.toString(runningHash) + ", key="
-                    + key + ", isDeleted="
-                    + isDeleted + '}';
-        }
-    }
+            boolean isDeleted) {}
 }

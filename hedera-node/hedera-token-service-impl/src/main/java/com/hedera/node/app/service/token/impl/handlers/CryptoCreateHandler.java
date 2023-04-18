@@ -31,6 +31,7 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody.StakedIdOneOfType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.records.CreateAccountRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -220,5 +221,10 @@ public class CryptoCreateHandler implements TransactionHandler {
             // set
             return -stakedNodeId - 1;
         }
+    }
+
+    @Override
+    public CryptoCreateRecordBuilder newRecordBuilder() {
+        return new CreateAccountRecordBuilder();
     }
 }
