@@ -262,6 +262,7 @@ dependencyResolutionManagement {
       version("hamcrest-version", "2.2")
       version("json-version", "20210307")
       version("junit5-version", "5.9.0")
+      version("junit-pioneer-version", "2.0.1")
       version("helidon-version", "3.0.2")
       version("mockito-version", "4.6.1")
       version("picocli-version", "4.6.3")
@@ -280,6 +281,7 @@ dependencyResolutionManagement {
               "junit-jupiter",
               "junit-jupiter-api",
               "junit-jupiter-params",
+              "junit-pioneer",
               "mockito-inline",
               "mockito-jupiter",
               "hamcrest",
@@ -300,6 +302,7 @@ dependencyResolutionManagement {
           .versionRef("junit5-version")
       library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params")
           .versionRef("junit5-version")
+      library("junit-pioneer", "org.junit-pioneer", "junit-pioneer").versionRef("junit-pioneer-version")
       library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
       library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter")
           .versionRef("mockito-version")

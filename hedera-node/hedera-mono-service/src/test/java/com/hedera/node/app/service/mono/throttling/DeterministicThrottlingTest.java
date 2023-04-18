@@ -101,6 +101,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junitpioneer.jupiter.cartesian.CartesianTest;
+import org.junitpioneer.jupiter.cartesian.CartesianTest.Enum.Mode;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -167,19 +169,11 @@ class DeterministicThrottlingTest {
         assertEquals(10999999990000L, dNow.used());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "HAPI,true,true",
-        "HAPI,false,true",
-        "CONSENSUS,true,true",
-        "CONSENSUS,false,true",
-        "HAPI,true,false",
-        "HAPI,false,false",
-        "CONSENSUS,true,false",
-        "CONSENSUS,false,false"
-    })
+    @CartesianTest
     void usesScheduleCreateThrottleForSubmitMessage(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled, final boolean waitForExpiry)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
+            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
@@ -208,19 +202,11 @@ class DeterministicThrottlingTest {
                 subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "HAPI,true,true",
-        "HAPI,false,true",
-        "CONSENSUS,true,true",
-        "CONSENSUS,false,true",
-        "HAPI,true,false",
-        "HAPI,false,false",
-        "CONSENSUS,true,false",
-        "CONSENSUS,false,false"
-    })
+    @CartesianTest
     void usesScheduleCreateThrottleWithNestedThrottleExempt(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled, final boolean waitForExpiry)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
+            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
@@ -248,9 +234,10 @@ class DeterministicThrottlingTest {
                 0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
-    void scheduleCreateAlwaysThrottledWhenNoBody(final DeterministicThrottlingMode mode, final boolean longTermEnabled)
+    @CartesianTest
+    void scheduleCreateAlwaysThrottledWhenNoBody(
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
@@ -274,10 +261,11 @@ class DeterministicThrottlingTest {
                 0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CartesianTest
     void usesScheduleCreateThrottleForCryptoTransferNoAutoCreations(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled) throws IOException {
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
+            throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
@@ -301,10 +289,11 @@ class DeterministicThrottlingTest {
                 subject.activeThrottlesFor(CryptoTransfer).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CartesianTest
     void doesntUseCryptoCreateThrottleForCryptoTransferWithAutoCreationIfAutoAndLazyCreationDisabled(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled) throws IOException {
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
+            throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
         final var alias = aPrimitiveKey.toByteString();
@@ -335,21 +324,11 @@ class DeterministicThrottlingTest {
                 subject.activeThrottlesFor(CryptoTransfer).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "HAPI,true,true",
-        "HAPI,false,true",
-        "CONSENSUS,true,true",
-        "CONSENSUS,false,true",
-        "HAPI,true,false",
-        "HAPI,false,false",
-        "CONSENSUS,true,false",
-        "CONSENSUS,false,false"
-    })
+    @CartesianTest
     void doesntUseCryptoCreateThrottleForCryptoTransferWithNoAliases(
-            final DeterministicThrottlingMode mode,
-            final boolean longTermEnabled,
-            final boolean autoOrLazyCreationEnabled)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
+            @CartesianTest.Values(booleans = {false, true}) final boolean autoOrLazyCreationEnabled)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
@@ -416,10 +395,11 @@ class DeterministicThrottlingTest {
         assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CartesianTest
     void usesCryptoCreateThrottleForCryptoTransferWithAutoCreationInScheduleCreate(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled) throws IOException {
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
+            throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
         final var alias = aPrimitiveKey.toByteString();
@@ -462,10 +442,11 @@ class DeterministicThrottlingTest {
         assertEquals(0, subject.activeThrottlesFor(CryptoTransfer).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CartesianTest
     void usesScheduleCreateThrottleForAliasedCryptoTransferWithNoAutoCreation(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled) throws IOException {
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
+            throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
         final var alias = aPrimitiveKey.toByteString();
@@ -500,19 +481,11 @@ class DeterministicThrottlingTest {
                 subject.activeThrottlesFor(CryptoTransfer).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "HAPI,true,true",
-        "HAPI,false,true",
-        "CONSENSUS,true,true",
-        "CONSENSUS,false,true",
-        "HAPI,true,false",
-        "HAPI,false,false",
-        "CONSENSUS,true,false",
-        "CONSENSUS,false,false"
-    })
+    @CartesianTest
     void usesScheduleSignThrottle(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled, final boolean waitForExpiry)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
+            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
@@ -550,19 +523,11 @@ class DeterministicThrottlingTest {
                 subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "HAPI,true,true",
-        "HAPI,false,true",
-        "CONSENSUS,true,true",
-        "CONSENSUS,false,true",
-        "HAPI,true,false",
-        "HAPI,false,false",
-        "CONSENSUS,true,false",
-        "CONSENSUS,false,false"
-    })
+    @CartesianTest
     void usesScheduleSignThrottleWithNestedThrottleExempt(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled, final boolean waitForExpiry)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
+            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
@@ -654,10 +619,11 @@ class DeterministicThrottlingTest {
                 0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CartesianTest
     void usesCryptoCreateThrottleForCryptoTransferWithAutoCreationInScheduleSign(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled) throws IOException {
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
+            throws IOException {
 
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
