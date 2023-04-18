@@ -438,7 +438,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final Supplier<SwirldState> genesisStateBuilder,
-            @Nullable final ReservedSignedState loadedSignedState,
+            @NonNull final ReservedSignedState loadedSignedState,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
@@ -578,7 +578,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
         try (loadedState.signedStateFromDisk) {
-            init(loadedState.signedStateFromDisk.get(), loadedState.initialState, genesisStateBuilder);
+            init(loadedState.signedStateFromDisk.getNullable(), loadedState.initialState, genesisStateBuilder);
         }
     }
 

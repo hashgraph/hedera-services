@@ -34,6 +34,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.SystemExitReason;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -134,6 +135,7 @@ public class SavedStateLoader {
      * @throws IOException
      * 		if there was an exception reading a saved state file
      */
+    @NonNull
     public ReservedSignedState getSavedStateToLoad() throws SignedStateLoadingException, IOException {
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
             return getEmergencySavedStateToLoad();
@@ -149,9 +151,10 @@ public class SavedStateLoader {
      * @throws IOException
      * 		if there was an exception reading a saved state file
      */
+    @NonNull
     private ReservedSignedState getEmergencySavedStateToLoad() throws IOException {
         if (savedStateFiles == null) {
-            return null;
+            return new ReservedSignedState();
         }
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
@@ -163,7 +166,7 @@ public class SavedStateLoader {
                 logger.error(EXCEPTION.getMarker(), "Emergency recovery must not be performed during migration.");
                 shutdownRequestedTrigger.dispatch(
                         "Migration During Emergency Recovery", SystemExitReason.EMERGENCY_RECOVERY_ERROR.getExitCode());
-                return null;
+                return new ReservedSignedState();
             }
 
             final ReservedSignedState signedState = stateWithHashes.signedState;
@@ -219,7 +222,7 @@ public class SavedStateLoader {
                         "No states on disk could be loaded as a starting point. Starting from a genesis state.");
             }
         }
-        return latest;
+        return latest == null ? new ReservedSignedState() : latest;
     }
 
     /**
@@ -231,6 +234,7 @@ public class SavedStateLoader {
      * @throws SignedStateLoadingException
      * 		if a signed state is required to start the node and none are found
      */
+    @NonNull
     private ReservedSignedState getRegularSavedStateToLoad() throws IOException, SignedStateLoadingException {
         return getRegularSavedStateToLoad(Long.MAX_VALUE);
     }
@@ -246,6 +250,7 @@ public class SavedStateLoader {
      * @throws SignedStateLoadingException
      * 		if a signed state is required to start the node and none are found
      */
+    @NonNull
     private ReservedSignedState getRegularSavedStateToLoad(final long maxRound)
             throws IOException, SignedStateLoadingException {
 
@@ -253,7 +258,7 @@ public class SavedStateLoader {
             if (settings.isRequireStateLoad()) {
                 throw new SignedStateLoadingException("No saved states found on disk!");
             } else {
-                return null;
+                return new ReservedSignedState();
             }
         }
 
@@ -268,7 +273,7 @@ public class SavedStateLoader {
                 return stateWithHashes.signedState;
             }
         }
-        return null;
+        return new ReservedSignedState();
     }
 
     private SignedStateWithHashes readAndRehashState(final SavedStateInfo file) throws IOException {

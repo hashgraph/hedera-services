@@ -645,14 +645,14 @@ public class Browser {
 
                 // check software version compatibility
                 final boolean softwareUpgrade =
-                        BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.get());
+                        BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.getNullable());
 
                 final AddressBookConfig addressBookConfig =
                         platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
 
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                        appVersion, softwareUpgrade, loadedSignedState.get(), addressBook.copy(), addressBookConfig);
+                        appVersion, softwareUpgrade, loadedSignedState.getNullable(), addressBook.copy(), addressBookConfig);
 
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
@@ -713,6 +713,7 @@ public class Browser {
      * @param emergencyRecoveryManager the emergency recovery manager to use for emergency recovery.
      * @return the signed state loaded from disk.
      */
+    @NonNull
     private ReservedSignedState getUnmodifiedSignedStateFromDisk(
             @NonNull final PlatformContext platformContext,
             @NonNull final String mainClassName,
@@ -740,7 +741,7 @@ public class Browser {
                 SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
             }
         }
-        return null;
+        return new ReservedSignedState();
     }
 
     /**

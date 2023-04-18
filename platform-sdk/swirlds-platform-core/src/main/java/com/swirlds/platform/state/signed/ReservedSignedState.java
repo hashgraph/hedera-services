@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
@@ -33,7 +34,7 @@ import org.apache.logging.log4j.Logger;
  * This class is not thread safe. That is, it is not safe for one thread to access this object while another thread is
  * asynchronously closing it. Each thread should hold its own reservation on a state if it needs to access a state.
  */
-public final class ReservedSignedState implements AutoCloseableNonThrowing { // TODO test this class
+public final class ReservedSignedState implements AutoCloseableNonThrowing { // TODO test this class // TODO nullable version?
 
     private static final Logger logger = LogManager.getLogger(ReservedSignedState.class);
 
@@ -117,6 +118,18 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing { // 
     public @NonNull SignedState get() {
         throwIfClosed();
         return Objects.requireNonNull(signedState);
+    }
+
+    /**
+     * Get the signed state. Similar to {@link #get()}, but does not throw an exception if this object wraps null. Does
+     * not take any reservations on the signed state, this is the responsibility of the caller. Do not keep a reference
+     * to this signed state outside the scope of this wrapper object without properly reserving it.
+     *
+     * @return the signed state, or null if this object wraps null
+     */
+    public @Nullable SignedState getNullable() {
+        throwIfClosed();
+        return signedState;
     }
 
     /**
