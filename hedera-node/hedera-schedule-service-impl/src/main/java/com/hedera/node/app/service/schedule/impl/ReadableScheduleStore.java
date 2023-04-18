@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.asPbjKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -65,7 +65,7 @@ public class ReadableScheduleStore {
         }
         final Key adminKey;
         if (schedule.hasAdminKey()) {
-            adminKey = sanityRestoredToPbj(schedule.adminKey().get());
+            adminKey = asPbjKey(schedule.adminKey().get());
         } else {
             adminKey = null;
         }

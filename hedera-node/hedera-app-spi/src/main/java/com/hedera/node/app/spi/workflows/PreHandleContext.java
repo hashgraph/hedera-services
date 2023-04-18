@@ -184,7 +184,7 @@ public final class PreHandleContext {
     public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
         requireNonNull(responseCode);
-        if (key == null || !isValid(key)) {
+        if (!isValid(key)) {
             throw new PreCheckException(responseCode);
         }
         return requireKey(key);
@@ -219,7 +219,7 @@ public final class PreHandleContext {
         }
 
         final var key = account.key();
-        if (key == null || !isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
+        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
@@ -252,7 +252,7 @@ public final class PreHandleContext {
         }
 
         final var key = account.key();
-        if (key == null || !isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
+        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
@@ -336,7 +336,7 @@ public final class PreHandleContext {
 
         // We will require the key. If the key isn't present, then we will throw the given response code.
         final var key = account.key();
-        if (key == null || !isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
+        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);

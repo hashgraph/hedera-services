@@ -143,9 +143,8 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // then we fail with ACCOUNT_IS_IMMUTABLE. And if the account is being debited and has no key,
                 // then we also fail with the same error. It should be that being credited value DOES NOT require
                 // a key, unless `receiverSigRequired` is true.
-                //
                 final var accountKey = account.key();
-                if ((accountKey == null || isEmpty(accountKey)) && (isDebit || isCredit && !hbarTransfer)) {
+                if ((isEmpty(accountKey)) && (isDebit || isCredit && !hbarTransfer)) {
                     throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
                 }
 
@@ -217,7 +216,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
 
         final var receiverKey = receiverAccount.key();
-        if (receiverKey == null || isEmpty(receiverKey)) {
+        if (isEmpty(receiverKey)) {
             // If the receiver account has no key, then fail with ACCOUNT_IS_IMMUTABLE.
             throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
         } else if (receiverAccount.receiverSigRequired()) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package utils;
+package com.hedera.node.app.utils;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;

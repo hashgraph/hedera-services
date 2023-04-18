@@ -22,7 +22,13 @@ import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Utility class for working with keys. This validates if the key is empty and valid.
+ */
+// NOTE: This class is not in the right place. But is needed by several modules.
+// !!!!!!!!!!🔥🔥🔥 It should be moved once we find where to keep it. 🔥🔥🔥!!!!!!!!!!!
 public class KeyUtils {
     public static final int ED25519_BYTE_LENGTH = 32;
     private static final byte ODD_PARITY = (byte) 0x03;
@@ -37,9 +43,12 @@ public class KeyUtils {
      * @param pbjKey the key to check
      * @return true if the key is empty, false otherwise
      */
-    public static boolean isEmpty(final Key pbjKey) {
+    public static boolean isEmpty(@NonNull final Key pbjKey) {
+        if (pbjKey == null) {
+            return true;
+        }
         final var key = pbjKey.key();
-        if (key != null && key.kind().equals(KeyOneOfType.UNSET)) {
+        if (key == null || KeyOneOfType.UNSET.equals(key.kind())) {
             return true;
         }
         if (pbjKey.hasKeyList()) {
@@ -61,14 +70,17 @@ public class KeyUtils {
         return true;
     }
 
+    /**
+     * Checks if the gReaiven key is valid. Based on the key type it checks the basic requirements
+     * for the key type.
+     * @param pbjKey the key to check
+     * @return true if the key is valid, false otherwise
+     */
     public static boolean isValid(final Key pbjKey) {
         if (isEmpty(pbjKey)) {
             return false;
         }
         final var key = pbjKey.key();
-        if (key.kind().equals(KeyOneOfType.UNSET)) {
-            return true;
-        }
         if (pbjKey.hasKeyList()) {
             for (Key keys : ((KeyList) key.value()).keys()) {
                 if (!isValid(keys)) {

@@ -66,16 +66,6 @@ public final class MerkleMapLikeAdapter {
             }
 
             @Override
-            public void archive() {
-                real.archive();
-            }
-
-            @Override
-            public boolean isArchived() {
-                return real.isArchived();
-            }
-
-            @Override
             public Hash getHash() {
                 return real.getHash();
             }
