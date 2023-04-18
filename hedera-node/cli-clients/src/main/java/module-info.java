@@ -8,5 +8,4 @@ module com.hedera.services.cli {
     requires com.swirlds.platform;
     requires com.swirlds.common;
     requires info.picocli;
-    requires io.github.classgraph;
 }

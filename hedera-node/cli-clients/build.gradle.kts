@@ -25,7 +25,7 @@ description = "Hedera Services Command-Line Clients"
 tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.services.cli") } }
 
 configurations.all {
-  exclude("javax.anno0tation", "javax.annotation.api")
+  exclude("javax.annotation", "javax.annotation.api")
   exclude("com.google.code.findbugs", "jsr305")
   exclude("org.jetbrains", "annotations")
   exclude("org.checkerframework", "checker-qual")
@@ -36,7 +36,6 @@ dependencies {
   compileOnly(libs.spotbugs.annotations)
   implementation(libs.bundles.swirlds)
   implementation(project(":hedera-node:hedera-mono-service"))
-  implementation(testLibs.classgraph)
   implementation(testLibs.picocli)
   testImplementation(testLibs.bundles.testing)
 }
