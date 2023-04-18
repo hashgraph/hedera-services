@@ -56,6 +56,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
@@ -231,6 +232,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.isLazyCreationEnabled());
         assertFalse(subject.isCryptoCreateWithAliasEnabled());
         assertFalse(subject.isAtomicCryptoTransferEnabled());
+        assertTrue(subject.isHRCAssociateEnabled());
         assertFalse(subject.isImplicitCreationEnabled());
     }
 
@@ -660,6 +662,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(specialHapiSigsAccess);
         given(properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS))
                 .willReturn(i + 93L);
+        given(properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED))
+                .willReturn((i + 93) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

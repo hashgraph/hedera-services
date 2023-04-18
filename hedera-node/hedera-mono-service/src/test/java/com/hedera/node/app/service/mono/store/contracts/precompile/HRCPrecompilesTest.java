@@ -295,6 +295,7 @@ class HRCPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
 
+        given(dynamicProperties.isHRCAssociateEnabled()).willReturn(true);
         given(wrappedLedgers.tokens().exists(any())).willReturn(true);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -345,6 +346,7 @@ class HRCPrecompilesTest {
         final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_HRC_ASSOCIATE));
         final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
+        given(dynamicProperties.isHRCAssociateEnabled()).willReturn(true);
         // this line defines the tokenId as invalid
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(wrappedLedgers.tokens().exists(any())).willReturn(false);
@@ -369,6 +371,7 @@ class HRCPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
 
+        given(dynamicProperties.isHRCAssociateEnabled()).willReturn(true);
         given(wrappedLedgers.tokens().exists(any())).willReturn(true);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -421,6 +424,7 @@ class HRCPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
 
+        given(dynamicProperties.isHRCAssociateEnabled()).willReturn(true);
         given(wrappedLedgers.tokens().exists(any())).willReturn(true);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -472,6 +476,7 @@ class HRCPrecompilesTest {
         final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_HRC_DISSOCIATE));
         final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
+        given(dynamicProperties.isHRCAssociateEnabled()).willReturn(true);
         // this line defines the tokenId as invalid
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(wrappedLedgers.tokens().exists(any())).willReturn(false);
@@ -495,6 +500,7 @@ class HRCPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
 
+        given(dynamicProperties.isHRCAssociateEnabled()).willReturn(true);
         given(wrappedLedgers.tokens().exists(any())).willReturn(true);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))

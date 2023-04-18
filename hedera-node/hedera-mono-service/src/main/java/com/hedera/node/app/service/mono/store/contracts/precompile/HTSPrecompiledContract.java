@@ -696,7 +696,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             evmEncoder,
                                             precompilePricingUtils));
                             case AbiConstants.ABI_ID_HRC_ASSOCIATE -> checkHRCToken(
-                                    ledgers.tokens().exists(tokenId),
+                                    dynamicProperties.isHRCAssociateEnabled()
+                                            && ledgers.tokens().exists(tokenId),
                                     () -> new AssociatePrecompile(
                                             tokenId,
                                             senderAddress,
@@ -709,7 +710,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             precompilePricingUtils,
                                             feeCalculator));
                             case AbiConstants.ABI_ID_HRC_DISSOCIATE -> checkHRCToken(
-                                    ledgers.tokens().exists(tokenId),
+                                    dynamicProperties.isHRCAssociateEnabled()
+                                            && ledgers.tokens().exists(tokenId),
                                     () -> new DissociatePrecompile(
                                             tokenId,
                                             senderAddress,
