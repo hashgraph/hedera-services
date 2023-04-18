@@ -52,19 +52,23 @@ public class KeyUtils {
             return true;
         }
         if (pbjKey.hasKeyList()) {
-            return ((KeyList) key.value()).hasKeys()
-                    && ((KeyList) key.value()).keys().isEmpty();
+            return !((KeyList) key.value()).hasKeys()
+                    || (((KeyList) key.value()).hasKeys()
+                            && ((KeyList) key.value()).keys().isEmpty());
         } else if (pbjKey.hasThresholdKey()) {
-            return ((ThresholdKey) key.value()).hasKeys()
-                    && ((ThresholdKey) key.value()).keys().keys().isEmpty();
+            return !((ThresholdKey) key.value()).hasKeys()
+                    || (((ThresholdKey) key.value()).hasKeys()
+                            && ((ThresholdKey) key.value()).keys().keys().isEmpty());
         } else if (pbjKey.hasEd25519()) {
             return ((Bytes) key.value()).length() == 0;
         } else if (pbjKey.hasEcdsaSecp256k1()) {
             return ((Bytes) key.value()).length() == 0;
         } else if (pbjKey.hasDelegatableContractId()) {
-            return ((ContractID) key.value()).contractNum() == 0;
+            return !((ContractID) key.value()).hasContractNum()
+                    || (((ContractID) key.value()).hasContractNum() && ((ContractID) key.value()).contractNum() == 0);
         } else if (pbjKey.hasContractID()) {
-            return ((ContractID) key.value()).contractNum() == 0;
+            return !((ContractID) key.value()).hasContractNum()
+                    || (((ContractID) key.value()).hasContractNum() && ((ContractID) key.value()).contractNum() == 0);
         }
         // ECDSA_384 and RSA_3072 are not supported yet
         return true;
@@ -102,12 +106,12 @@ public class KeyUtils {
             return ((Bytes) key.value()).length() == ED25519_BYTE_LENGTH;
         } else if (pbjKey.hasEcdsaSecp256k1()) {
             final var ecKey = ((Bytes) key.value());
-            return !(ecKey.length() != ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH)
-                    || (ecKey.getByte(0) != 0x02 && ecKey.getByte(0) != 0x03);
+            return ecKey.length() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
+                    && ((ecKey.getByte(0) == EVEN_PARITY || ecKey.getByte(0) == ODD_PARITY));
         } else if (pbjKey.hasDelegatableContractId()) {
-            return ((ContractID) key.value()).contractNum().intValue() != 0;
+            return ((ContractID) key.value()).contractNum().intValue() > 0;
         } else if (pbjKey.hasContractID()) {
-            return ((ContractID) key.value()).contractNum().intValue() != 0;
+            return ((ContractID) key.value()).contractNum().intValue() > 0;
         }
         // ECDSA_384 and RSA_3072 are not supported yet
         return true;
