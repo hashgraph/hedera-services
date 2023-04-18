@@ -67,12 +67,15 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
                     accessor.setSigMeta(forPayerOnly((JKey) payerKey, metadata.cryptoSignatures(), accessor));
                 } else {
                     accessor.setSigMeta(forPayerAndOthers(
-                            (JKey) payerKey, (List) metadata.otherPartyKeys(), metadata.cryptoSignatures(), accessor));
+                            (JKey) payerKey,
+                            (List) (metadata.otherPartyKeys().stream().toList()),
+                            metadata.cryptoSignatures(),
+                            accessor));
                 }
             } else {
                 accessor.setSigMeta(noneAvailable());
             }
-            // Prevent the mono-service worfklow from rationalizing sigs
+            // Prevent the mono-service workflow from rationalizing sigs
             accessor.setExpandedSigStatus(PbjConverter.fromPbj(preHandleStatus));
             accessor.setLinkedRefs(new LinkedRefs());
             return accessor;

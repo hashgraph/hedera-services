@@ -17,21 +17,18 @@
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -47,14 +44,8 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.accounts.Account;
-import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -65,7 +56,6 @@ import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,27 +84,15 @@ class IngestWorkflowImplTest extends AppTestBase {
     /** The buffer to write responses into. */
     private final BufferedData responseBuffer = BufferedData.allocate(1024 * 6);
 
-    /** The actual bytes inside the requestBuffer */
-    private byte[] requestBytes;
+    /** The request transaction */
+    private Transaction transaction;
 
     /** The request transaction body */
     private TransactionBody transactionBody;
 
     // The following fields are all mocked dependencies of the workflow.
     @Mock(strictness = LENIENT)
-    Account account;
-
-    @Mock(strictness = LENIENT)
-    NodeInfo nodeInfo;
-
-    @Mock(strictness = LENIENT)
     HederaState state;
-
-    @Mock(strictness = LENIENT)
-    ReadableAccountStore accountStore;
-
-    @Mock(strictness = LENIENT)
-    CurrentPlatformStatus currentPlatformStatus;
 
     @Mock(strictness = LENIENT)
     Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
@@ -123,10 +101,7 @@ class IngestWorkflowImplTest extends AppTestBase {
     TransactionChecker transactionChecker;
 
     @Mock(strictness = LENIENT)
-    IngestChecker checker;
-
-    @Mock(strictness = LENIENT)
-    ThrottleAccumulator throttleAccumulator;
+    IngestChecker ingestChecker;
 
     @Mock(strictness = LENIENT)
     SubmissionManager submissionManager;
@@ -140,8 +115,7 @@ class IngestWorkflowImplTest extends AppTestBase {
     @BeforeEach
     void setup() throws PreCheckException {
         // The request buffer, with basically random bytes
-        requestBytes = randomBytes(10);
-        requestBuffer = Bytes.wrap(requestBytes);
+        requestBuffer = randomBytes(10);
         transactionBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(1001).build())
@@ -151,118 +125,41 @@ class IngestWorkflowImplTest extends AppTestBase {
         // The account will have the following state
         // TODO Anything here??
 
-        // The platform status is always active
-        when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
         // The state is going to always be empty
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
-        // The account store will always return the same mocked account.
-        // TODO I don't like this, because we should test flows where the account doesn't exist, etc.
-        when(accountStore.getAccountById(any())).thenReturn(Optional.of(account));
         // TODO Mock out the metrics to return objects we can inspect later
         when(metrics.getOrCreate(any())).thenReturn(countSubmitted);
 
         // Mock out the onset to always return a valid parsed object
-        final var onsetResult = new TransactionInfo(
-                Transaction.newBuilder().body(transactionBody).build(),
+        transaction = Transaction.newBuilder().body(transactionBody).build();
+        when(transactionChecker.parse(requestBuffer)).thenReturn(transaction);
+        final var transactionInfo = new TransactionInfo(
+                transaction,
                 transactionBody,
                 SignatureMap.newBuilder().build(),
                 HederaFunctionality.CONSENSUS_CREATE_TOPIC);
-        when(transactionChecker.parseAndCheck(requestBuffer)).thenReturn(onsetResult);
+        when(ingestChecker.runAllChecks(state, transaction)).thenReturn(transactionInfo);
 
         // Create the workflow we are going to test with
-        workflow = new IngestWorkflowImpl(
-                nodeInfo,
-                currentPlatformStatus,
-                stateAccessor,
-                transactionChecker,
-                checker,
-                throttleAccumulator,
-                submissionManager,
-                metrics);
+        workflow = new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, submissionManager, metrics);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        null,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        transactionChecker,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        metrics))
+        assertThatThrownBy(() ->
+                        new IngestWorkflowImpl(null, transactionChecker, ingestChecker, submissionManager, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, null, ingestChecker, submissionManager, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() ->
+                        new IngestWorkflowImpl(stateAccessor, transactionChecker, null, submissionManager, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () -> new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, null, metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        null,
-                        stateAccessor,
-                        transactionChecker,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        metrics))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        null,
-                        transactionChecker,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        metrics))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        null,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        metrics))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        transactionChecker,
-                        null,
-                        throttleAccumulator,
-                        submissionManager,
-                        metrics))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        transactionChecker,
-                        checker,
-                        null,
-                        submissionManager,
-                        metrics))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        transactionChecker,
-                        checker,
-                        throttleAccumulator,
-                        null,
-                        metrics))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        transactionChecker,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        null))
+                        stateAccessor, transactionChecker, ingestChecker, submissionManager, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -278,7 +175,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         // The cost *MUST* be zero, it is only non-zero for insufficient balance errors
         assertThat(response.cost()).isZero();
         // And that the transaction and its bytes were actually passed to the submission manager
-        verify(submissionManager).submit(transactionBody, requestBytes);
+        verify(submissionManager).submit(transactionBody, requestBuffer);
         // And that the metrics for counting submitted transactions was incremented
         verify(countSubmitted).increment();
     }
@@ -290,7 +187,9 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("When the node is zero stake, the transaction should be rejected")
         void testParseAndCheckWithZeroStakeFails() throws IOException, PreCheckException {
             // Given a node that IS zero stake
-            when(nodeInfo.isSelfZeroStake()).thenReturn(true);
+            doThrow(new PreCheckException(INVALID_NODE_ACCOUNT))
+                    .when(ingestChecker)
+                    .checkNodeState();
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);
@@ -315,7 +214,9 @@ class IngestWorkflowImplTest extends AppTestBase {
             // actually good, I need to skip that one.
             if (status != PlatformStatus.ACTIVE) {
                 // Given a platform that is not ACTIVE
-                when(currentPlatformStatus.get()).thenReturn(status);
+                doThrow(new PreCheckException(PLATFORM_NOT_ACTIVE))
+                        .when(ingestChecker)
+                        .checkNodeState();
 
                 // When the transaction is submitted
                 workflow.submitTransaction(requestBuffer, responseBuffer);
@@ -334,7 +235,7 @@ class IngestWorkflowImplTest extends AppTestBase {
     }
 
     @Nested
-    @DisplayName("1. Parse the TransactionBody and check the syntax")
+    @DisplayName("1. Parse the TransactionBody")
     class OnsetTests {
         /**
          * It is not necessary to test all the possible failure reasons, just a few to make sure that
@@ -354,7 +255,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If the transaction fails WorkflowOnset, a failure response is returned with the right error")
         void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
             // Given a WorkflowOnset that will throw a PreCheckException with the given failure reason
-            when(transactionChecker.parseAndCheck(any())).thenThrow(new PreCheckException(failureReason));
+            when(transactionChecker.parse(any())).thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);
@@ -371,10 +272,10 @@ class IngestWorkflowImplTest extends AppTestBase {
         }
 
         @Test
-        @DisplayName("If some random exception is thrown from WorkflowOnset, the exception is bubbled up")
+        @DisplayName("If some random exception is thrown from TransactionChecker, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a WorkflowOnset that will throw a RuntimeException
-            when(transactionChecker.parseAndCheck(any())).thenThrow(new RuntimeException("parseAndCheck exception"));
+            when(transactionChecker.parse(any())).thenThrow(new RuntimeException("parseAndCheck exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
@@ -388,20 +289,29 @@ class IngestWorkflowImplTest extends AppTestBase {
     }
 
     @Nested
-    @DisplayName("2. Check throttles")
-    class ThrottleTests {
-        @Test
-        @DisplayName("When the transaction is throttled, the transaction should be rejected")
-        void testThrottleFails() throws PreCheckException, IOException {
+    @DisplayName("2.-6. Check the transaction")
+    class IngestCheckerTests {
+        public static Stream<Arguments> failureReasons() {
+            return Stream.of(
+                    Arguments.of(INVALID_TRANSACTION),
+                    Arguments.of(INVALID_TRANSACTION_BODY),
+                    Arguments.of(BUSY),
+                    Arguments.of(INVALID_SIGNATURE));
+        }
+
+        @ParameterizedTest(name = "IngestChecker fails with error code {0}")
+        @MethodSource("failureReasons")
+        @DisplayName("When ingest checks fail, the transaction should be rejected")
+        void testIngestChecksFail(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(throttleAccumulator.shouldThrottle(transactionBody)).thenReturn(true);
+            when(ingestChecker.runAllChecks(state, transaction)).thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);
 
             // Then the response fails with BUSY
             final TransactionResponse response = parseResponse(responseBuffer);
-            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(BUSY);
+            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(failureReason);
             // The cost *MUST* be zero, it is only non-zero for insufficient balance errors
             assertThat(response.cost()).isZero();
             // And the transaction is not submitted to the platform
@@ -411,155 +321,16 @@ class IngestWorkflowImplTest extends AppTestBase {
         }
 
         @Test
-        @DisplayName("If some random exception is thrown from ThrottleAccumulator, the exception is bubbled up")
+        @DisplayName("If some random exception is thrown from IngestChecker, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a ThrottleAccumulator that will throw a RuntimeException
-            when(throttleAccumulator.shouldThrottle(transactionBody))
-                    .thenThrow(new RuntimeException("shouldThrottle exception"));
+            when(ingestChecker.runAllChecks(state, transaction))
+                    .thenThrow(new RuntimeException("runAllChecks exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
                     .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("shouldThrottle exception");
-            // And the transaction is not submitted to the platform
-            verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
-        }
-    }
-
-    @Nested
-    @DisplayName("3. Check semantics")
-    class SemanticTests {
-
-        @Test
-        @DisplayName("If some random exception is thrown from checking semantics, the exception is bubbled up")
-        void randomException() throws PreCheckException {
-            // Given an IngestChecker that will throw a RuntimeException from checkTransactionSemantics
-            doThrow(new RuntimeException("checkTransactionSemantics exception"))
-                    .when(checker)
-                    .checkTransactionSemantics(any(), eq(HederaFunctionality.CONSENSUS_CREATE_TOPIC));
-
-            // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("checkTransactionSemantics exception");
-            // And the transaction is not submitted to the platform
-            verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
-        }
-    }
-
-    @Nested
-    @DisplayName("4. Get payer account")
-    class PayerAccountTests {
-        @Test
-        @DisplayName("If the payer account is not found, the transaction should be rejected")
-        void noSuchPayerAccount() throws PreCheckException, IOException {
-            // Given an account store that is not able to find the account
-            when(accountStore.getAccountById(any())).thenReturn(Optional.empty());
-            doThrow(new PreCheckException(PAYER_ACCOUNT_NOT_FOUND))
-                    .when(checker)
-                    .checkPayerSignature(any(), any(), any(), any());
-
-            // When we submit a transaction
-            workflow.submitTransaction(requestBuffer, responseBuffer);
-
-            // Then the response will indicate the payer account was not found
-            final TransactionResponse response = parseResponse(responseBuffer);
-            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(PAYER_ACCOUNT_NOT_FOUND);
-            assertThat(response.cost()).isZero();
-            // And the transaction is not submitted to the platform
-            verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
-        }
-    }
-
-    @Nested
-    @DisplayName("5. Check payer's signature")
-    class PayerSignatureTests {
-
-        @Test
-        @DisplayName("If the payer signature is invalid, the transaction should be rejected")
-        void payerSignatureFails() throws PreCheckException, IOException {
-            // Given a checker that will fail the payer signature check
-            doThrow(new PreCheckException(INVALID_PAYER_SIGNATURE))
-                    .when(checker)
-                    .checkPayerSignature(any(), any(), any(), any());
-
-            // When we submit a transaction
-            workflow.submitTransaction(requestBuffer, responseBuffer);
-
-            // Then the response will indicate the payer signature was invalid
-            final TransactionResponse response = parseResponse(responseBuffer);
-            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(INVALID_PAYER_SIGNATURE);
-            // And the cost will be zero
-            assertThat(response.cost()).isZero();
-            // And the transaction is not submitted to the platform
-            verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
-        }
-
-        @Test
-        @DisplayName("If some random exception is thrown from checking signatures, the exception is bubbled up")
-        void randomException() throws PreCheckException {
-            // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
-            doThrow(new RuntimeException("checkPayerSignature exception"))
-                    .when(checker)
-                    .checkPayerSignature(any(), any(), any(), any());
-
-            // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("checkPayerSignature exception");
-            // And the transaction is not submitted to the platform
-            verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
-        }
-    }
-
-    @Nested
-    @DisplayName("6. Check account balance")
-    class PayerBalanceTests {
-
-        @Test
-        @DisplayName("If the payer account has insufficient funds, the transaction should be rejected")
-        void insolvent() throws PreCheckException, IOException {
-            // Given a checker that will fail the payer solvency check
-            doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, 42L))
-                    .when(checker)
-                    .checkSolvency(any());
-
-            // When we submit a transaction
-            workflow.submitTransaction(requestBuffer, responseBuffer);
-
-            // Then the response will indicate the payer account had insufficient funds
-            final TransactionResponse response = parseResponse(responseBuffer);
-            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_ACCOUNT_BALANCE);
-            // And the cost will be the amount of the estimated fee
-            assertThat(response.cost()).isEqualTo(42L);
-            // And the transaction is not submitted to the platform
-            verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
-        }
-
-        @Test
-        @DisplayName("If some random exception is thrown from checking solvency, the exception is bubbled up")
-        void randomException() throws PreCheckException {
-            // Given an IngestChecker that will throw a RuntimeException from checkSolvency
-            doThrow(new RuntimeException("checkSolvency exception"))
-                    .when(checker)
-                    .checkSolvency(any());
-
-            // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("checkSolvency exception");
+                    .hasMessageContaining("runAllChecks exception");
             // And the transaction is not submitted to the platform
             verify(submissionManager, never()).submit(any(), any());
             // And the metrics for counting submitted transactions was not incremented

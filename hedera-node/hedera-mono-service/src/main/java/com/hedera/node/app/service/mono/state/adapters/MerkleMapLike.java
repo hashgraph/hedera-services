@@ -44,10 +44,6 @@ public interface MerkleMapLike<K, V extends MerkleNode & Keyed<K>> {
 
     Hash getHash();
 
-    void archive();
-
-    boolean isArchived();
-
     boolean isEmpty();
 
     void forEachNode(BiConsumer<? super K, ? super V> action);
@@ -67,16 +63,6 @@ public interface MerkleMapLike<K, V extends MerkleNode & Keyed<K>> {
             @Override
             public boolean isEmpty() {
                 return real.isEmpty();
-            }
-
-            @Override
-            public void archive() {
-                real.archive();
-            }
-
-            @Override
-            public boolean isArchived() {
-                return real.isArchived();
             }
 
             @Override

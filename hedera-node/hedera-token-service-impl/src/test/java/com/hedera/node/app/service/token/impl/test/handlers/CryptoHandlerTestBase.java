@@ -24,7 +24,6 @@ import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -77,14 +76,8 @@ public class CryptoHandlerTestBase {
         setUpPayer();
     }
 
-    protected void basicMetaAssertions(
-            final PreHandleContext context,
-            final int keysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertThat(context.getRequiredNonPayerKeys()).hasSize(keysSize);
-        assertThat(context.failed()).isEqualTo(failed);
-        assertThat(context.getStatus()).isEqualTo(failureStatus);
+    protected void basicMetaAssertions(final PreHandleContext context, final int keysSize) {
+        assertThat(context.requiredNonPayerKeys()).hasSize(keysSize);
     }
 
     protected void setUpPayer() {
