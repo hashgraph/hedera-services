@@ -130,24 +130,6 @@ class OrderedComparisonTest {
     }
 
     @Test
-    void hmm() throws IOException {
-        final var assetLoc = "/Users/michaeltinker/Dev/hedera-services/hedera-node/data/recordstreams/record0.0.3";
-        final var entries = parseV6RecordStreamEntriesIn(assetLoc);
-
-        for (final var entry : entries) {
-            final var accessor = entry.accessor();
-            System.out.println(accessor.getFunction());
-            //            if (accessor.getFunction() == NONE) {
-            //                System.out.println("@ " + entry.consensusTime()
-            //                        + ": " + accessor.getTxn() + "\n➡️\n" + entry.txnRecord());
-            //            }
-        }
-
-        final var histograms = statusHistograms(entries);
-        System.out.println(histograms);
-    }
-
-    @Test
     void canInvestigateWithCorrelatedSidecars() throws IOException {
         final var loc = ABSENT_RESULT_STREAMS_DIR + File.separator + "node0";
         final var entries = parseV6RecordStreamEntriesIn(loc);
