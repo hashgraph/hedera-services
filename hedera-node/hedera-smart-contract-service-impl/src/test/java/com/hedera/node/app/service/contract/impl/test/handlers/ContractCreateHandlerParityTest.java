@@ -24,7 +24,6 @@ import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRA
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.txns.ContractCreateFactory.DEFAULT_ADMIN_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -33,7 +32,7 @@ import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -52,8 +51,8 @@ class ContractCreateHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertThat(sanityRestored(context.payerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.requiredNonPayerKeys())).isEqualTo(List.of(MISC_ACCOUNT_KT.asKey()));
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(MISC_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test
@@ -62,8 +61,8 @@ class ContractCreateHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertThat(sanityRestored(context.payerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.requiredNonPayerKeys())).isEmpty();
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
@@ -72,8 +71,8 @@ class ContractCreateHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertThat(sanityRestored(context.payerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.requiredNonPayerKeys())).isEmpty();
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
@@ -82,8 +81,8 @@ class ContractCreateHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertThat(sanityRestored(context.payerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.requiredNonPayerKeys())).isEqualTo(List.of(DEFAULT_ADMIN_KT.asKey()));
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(DEFAULT_ADMIN_KT.asPbjKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
