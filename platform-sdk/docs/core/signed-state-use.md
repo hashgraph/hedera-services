@@ -18,15 +18,17 @@ improper use of the state's reference count. Failure to use a state object corre
    a. If possible, use a `ReservedSignedState` in a try-with-resources block.
    b. Avoid using `@Nullable ReservedSignedState` parameters. As a pattern, it is better to pass a non-null
       `ReservedSignedState` wrapped around `null`.
-3. It is NEVER thread safe for threads to read from the same `ReservedSignedState` instance concurrently
+3. When creating a new `SignedState`, do not pass it to other methods or parts of the system with an implicit reference,
+   always ensure that an explicit reservation is held before passing a `SignedState` to other parts of the code.
+4. It is NEVER thread safe for threads to read from the same `ReservedSignedState` instance concurrently
    with another thread calling `ReservedSignedState.close()`.
    a. In multithreaded environments, prefer to create a new `ReservedSignedState` for each thread that needs to
       read from the state, or
    b. Use the `SignedStateReference` and/or `SignedStateMap` utility objects, which provide thread-safe access and
       management of `SignedState` objects.
-4. When using any API that requires a reason to be provided when taking a new reservation on a signed state, ensure
+5. When using any API that requires a reason to be provided when taking a new reservation on a signed state, ensure
    that the reason is sufficiently unique so that an engineer debugging a reference count exception can unambiguously
    find the code that is responsible for the reservation by searching for the reason string.
-5. Setting configuration `state.debugStackTracesEnabled = true` provides extra information in the logs when a
+6. Setting configuration `state.debugStackTracesEnabled = true` provides extra information in the logs when a
    reference count exception occurs. This can be useful for debugging reference count issues, but it is critical
    that this setting is NEVER enabled in a production environment.

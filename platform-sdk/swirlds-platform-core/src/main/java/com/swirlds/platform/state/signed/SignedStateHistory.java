@@ -21,7 +21,9 @@ import com.swirlds.common.utility.StackTrace;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -70,31 +72,33 @@ public class SignedStateHistory {
             int reservations) {
 
         /**
-         * {@inheritDoc}
+         * Generate a report and add it to a string builder.
+         *
+         * @param sb                   the string builder to add the report to
+         * @param releasedReservations the set of unique ids of reservations that have been released
          */
-        @Override
-        public String toString() {
+        public void generateReport(final StringBuilder sb, final Set<Long> releasedReservations) {
+            sb.append(action);
 
-            final StringBuilder sb = new StringBuilder();
-
-            sb.append(action)
-                    .append(" @ ")
-                    .append(timestamp)
-                    .append("\n")
-                    .append("initial reservations: ")
-                    .append(reservations);
+            if (action == SignedStateAction.RESERVE) {
+                if (!releasedReservations.contains(uniqueId)) {
+                    sb.append(" (unreleased)");
+                }
+            }
 
             if (reason != null) {
-                sb.append("\nreason: ").append(reason);
+                sb.append("\n   reason: ").append(reason);
             }
+            sb.append("\n   timestamp: ").append(timestamp);
+            sb.append("\n   initial reservations: ").append(reservations);
             if (uniqueId != null) {
-                sb.append("\nreservation ID: ").append(uniqueId);
+                sb.append("\n   reservation ID: ").append(uniqueId);
             }
             if (stackTrace != null) {
                 sb.append("\n").append(stackTrace);
             }
 
-            return sb.toString();
+            sb.append("\n\n");
         }
     }
 
@@ -141,8 +145,19 @@ public class SignedStateHistory {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
-        sb.append("SignedState history for round ").append(round).append("\n");
-        actions.forEach(report -> sb.append(report).append("\n"));
+        sb.append("SignedState history for round ").append(round).append(":\n\n");
+
+        final Set<Long> releasedReservations = new HashSet<>();
+        for (final SignedStateActionReport report : actions) {
+            if (report.action() == SignedStateAction.RELEASE) {
+                releasedReservations.add(report.uniqueId());
+            }
+        }
+
+        for (final SignedStateActionReport report : actions) {
+            report.generateReport(sb, releasedReservations);
+        }
+
         return sb.toString();
     }
 }
