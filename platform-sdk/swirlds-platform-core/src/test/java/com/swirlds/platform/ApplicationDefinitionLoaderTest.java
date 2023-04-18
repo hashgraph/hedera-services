@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
- * TODO: More tests can currently not be written since the ApplicationDefinitionLoader internally tries to load jar
+ * FUTURE WORK: More tests can currently not be written since the ApplicationDefinitionLoader internally tries to load jar
  * files from the classpath.
  */
 class ApplicationDefinitionLoaderTest {

@@ -28,6 +28,7 @@ This code is maintained by the "Platform Hashgraph" team.
         - Out of order gossip algorithm
     - Hashgraph
     - State management
+        - [Rules for using SignedState objects](./core/signed-state-use.md)
         - State snapshots
         - Hashing
         - State Signing

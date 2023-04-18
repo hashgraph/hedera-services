@@ -576,9 +576,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
 
-        // TODO what is releasing this state?
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
-        init(loadedState, genesisStateBuilder);
+        try (loadedState.signedStateFromDisk) {
+            init(loadedState.signedStateFromDisk.get(), loadedState.initialState, genesisStateBuilder);
+        }
     }
 
     /**
@@ -900,7 +901,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * {@link StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete
      * parts.
      */
-    private void init(final LoadedState loadedState, final Supplier<SwirldState> genesisStateBuilder) {
+    private void init(
+            @Nullable final SignedState signedStateFromDisk,
+            @Nullable final State initialState,
+            @NonNull final Supplier<SwirldState> genesisStateBuilder) {
 
         // if this setting is 0 or less, there is no startup freeze
         if (settings.getFreezeSecondsAfterStartup() > 0) {
@@ -918,7 +922,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             initEventStreamManager(String.valueOf(selfId));
         }
 
-        buildEventHandlers(loadedState, genesisStateBuilder);
+        buildEventHandlers(signedStateFromDisk, initialState, genesisStateBuilder);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 currentPlatformStatus::get,
@@ -926,8 +930,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
 
-        if (loadedState.signedStateFromDisk != null) {
-            loadIntoConsensusAndEventMapper(loadedState.signedStateFromDisk.get());
+        if (signedStateFromDisk != null) {
+            loadIntoConsensusAndEventMapper(signedStateFromDisk);
         } else {
             consensusRef.set(new ConsensusImpl(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
@@ -945,8 +949,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         // build the event intake classes
         buildEventIntake();
-        if (loadedState.signedStateFromDisk != null) {
-            eventLinker.loadFromSignedState(loadedState.signedStateFromDisk.get());
+        if (signedStateFromDisk != null) {
+            eventLinker.loadFromSignedState(signedStateFromDisk);
         }
 
         clearAllPipelines = new LoggingClearables(
@@ -1131,23 +1135,26 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * Build all the classes required for events and transactions to flow through the system
      */
-    private void buildEventHandlers(final LoadedState loadedState, final Supplier<SwirldState> genesisStateBuilder) {
+    private void buildEventHandlers(
+            @Nullable final SignedState signedStateFromDisk,
+            @Nullable final State initialState,
+            @NonNull final Supplier<SwirldState> genesisStateBuilder) {
 
         // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
         final QueueThread<ReservedSignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
                 threadManager, selfId.getId(), stateManagementComponent::newSignedStateFromTransactions);
         stateHashSignQueueThread.start();
 
-        if (loadedState.signedStateFromDisk != null) {
+        if (signedStateFromDisk != null) {
             logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                            loadedState.signedStateFromDisk.get().getRound(),
-                            loadedState.signedStateFromDisk.get().getConsensusTimestamp(),
+                            signedStateFromDisk.getRound(),
+                            signedStateFromDisk.getConsensusTimestamp(),
                             startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
 
-            buildEventHandlersFromState(loadedState.initialState, stateHashSignQueueThread);
+            buildEventHandlersFromState(initialState, stateHashSignQueueThread);
 
-            consensusRoundHandler.loadDataFromSignedState(loadedState.signedStateFromDisk.get(), false);
+            consensusRoundHandler.loadDataFromSignedState(signedStateFromDisk, false);
         } else {
             final State state = buildGenesisState(this, initialAddressBook, appVersion, genesisStateBuilder);
             buildEventHandlersFromState(state, stateHashSignQueueThread);
