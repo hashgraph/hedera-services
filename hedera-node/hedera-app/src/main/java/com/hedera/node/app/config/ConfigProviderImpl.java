@@ -57,7 +57,7 @@ public class ConfigProviderImpl implements ConfigProvider {
     public void update() {
         try (final Locked ignored = lock.lock()) {
             configuration = new ConfigurationAdaptor(propertySource);
-            version = version + 1;
+            version++;
         }
     }
 
