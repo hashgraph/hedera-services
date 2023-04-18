@@ -136,7 +136,7 @@ public class AddressBookInitializer {
 
     /**
      * Determines the address book to use.  If the configured current version of the application is higher than the save
-     * state version, the swirld state is given the config address book to determine stake weights.  If the address book
+     * state version, the swirld state is given the config address book to determine weights.  If the address book
      * returned by the swirld application is valid, it is the initial address book to use, otherwise the configuration
      * address book is the one to use.  All three address books, the configuration address book, the save state address
      * book, and the new address book to use are recorded in the address book directory.
@@ -159,16 +159,16 @@ public class AddressBookInitializer {
                             + "the address book from config.txt.");
             candidateAddressBook = configAddressBook;
         } else if (!softwareUpgrade) {
-            logger.info(STARTUP.getMarker(), "Using the loaded signed state's address book and stake values.");
+            logger.info(STARTUP.getMarker(), "Using the loaded signed state's address book and weight values.");
             candidateAddressBook = loadedAddressBook;
         } else {
             // There is a software upgrade
             logger.info(
                     STARTUP.getMarker(),
-                    "The address book stake may be updated by the application using data from the state snapshot.");
+                    "The address book weight may be updated by the application using data from the state snapshot.");
             candidateAddressBook = loadedSignedState
                     .getSwirldState()
-                    .updateStake(configAddressBook.copy())
+                    .updateWeight(configAddressBook.copy())
                     .copy();
         }
         candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
@@ -178,8 +178,8 @@ public class AddressBookInitializer {
 
     /**
      * Checks if the candidateAddressBook is valid and returns it, otherwise returns the configAddressBook if it has
-     * non-zero stake.   If the candidateAddressBook's addresses are out of sync with the configAddressBook or both
-     * address books have 0 stake, an IllegalStateException is thrown.
+     * non-zero weight.   If the candidateAddressBook's addresses are out of sync with the configAddressBook or both
+     * address books have 0 weight, an IllegalStateException is thrown.
      *
      * @return the valid address book to use.
      */
@@ -188,12 +188,12 @@ public class AddressBookInitializer {
         if (candidateAddressBook == null) {
             logger.warn(STARTUP.getMarker(), "The candidateAddressBook is null, using configAddressBook instead.");
             return configAddressBook;
-        } else if (!AddressBookValidator.hasNonZeroStake(candidateAddressBook)
-                || !AddressBookValidator.sameExceptForStake(configAddressBook, candidateAddressBook)) {
+        } else if (!AddressBookValidator.hasNonZeroWeight(candidateAddressBook)
+                || !AddressBookValidator.sameExceptForWeight(configAddressBook, candidateAddressBook)) {
             // an error was recorded by the address book validator.  Check the configuration address book for usability.
-            if (!AddressBookValidator.hasNonZeroStake(configAddressBook)) {
+            if (!AddressBookValidator.hasNonZeroWeight(configAddressBook)) {
                 throw new IllegalStateException(
-                        "The candidateAddressBook is not valid and the configAddressBook has 0 total stake.");
+                        "The candidateAddressBook is not valid and the configAddressBook has 0 total weight.");
             } else {
                 logger.warn(
                         STARTUP.getMarker(), "The candidateAddressBook is not valid, using configAddressBook instead.");

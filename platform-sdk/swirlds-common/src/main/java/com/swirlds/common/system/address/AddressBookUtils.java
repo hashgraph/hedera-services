@@ -60,11 +60,11 @@ public class AddressBookUtils {
         }
         final String nickname = parts[1];
         final String selfname = parts[2];
-        final Long stake;
+        final Long weight;
         try {
-            stake = Long.parseLong(parts[3]);
+            weight = Long.parseLong(parts[3]);
         } catch (NumberFormatException e) {
-            throw new ParseException("Cannot parse value of stake from '" + parts[3] + "'", 3);
+            throw new ParseException("Cannot parse value of weight from '" + parts[3] + "'", 3);
         }
         final InetAddress internalIp;
         try {
@@ -96,7 +96,7 @@ public class AddressBookUtils {
                 id,
                 nickname,
                 selfname,
-                stake,
+                weight,
                 isOwnHost,
                 internalIp.getAddress(),
                 internalPort,

@@ -122,13 +122,13 @@ class WinTab2Consensus extends PrePaintableJPanel {
                             + "those signatures. It shows how many transactions have achieved "
                             + "consensus so far, and the latest round number that has its "
                             + " events discarded, the latest that has collected signatures from members "
-                            + "with at least 1/3 of the total stake, the latest that has its "
+                            + "with at least 1/3 of the total weight, the latest that has its "
                             + "famous witnesses decided (which is the core of the hashgraph consensus "
                             + "algorithm), and the latest that has at least one known event. \n\n"
                             + "For each round, the table shows the round number, then the "
                             + "count of how many signatures are collected so far, then an indication "
                             + "of whether this represents everyone (___), or not everyone but at least "
-                            + "one third of stake (ooo), or even less than that (###).");
+                            + "one third of weight (ooo), or even less than that (###).");
             text.setFont(new Font("monospaced", Font.PLAIN, 14));
 
             text.setText(s);
