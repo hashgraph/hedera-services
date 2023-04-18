@@ -54,14 +54,14 @@ public class IssMetrics {
     private final IntegerGauge issCountGauge;
 
     /**
-     * The current total stake tied up by ISS events.
+     * The current total weight tied up by ISS events.
      */
-    private long issStake;
+    private long issWeight;
 
     /**
-     * The metric for the current stake tied up by ISS events.
+     * The metric for the current weight tied up by ISS events.
      */
-    private final LongGauge issStakeGage;
+    private final LongGauge issWeightGage;
 
     /**
      * The ISS status of a node.
@@ -119,8 +119,8 @@ public class IssMetrics {
         issCountGauge = metrics.getOrCreate(new IntegerGauge.Config(INTERNAL_CATEGORY, "issCount")
                 .withDescription("the number of nodes that currently disagree with the consensus hash"));
 
-        issStakeGage = metrics.getOrCreate(new LongGauge.Config(INTERNAL_CATEGORY, "issStake")
-                .withDescription("the amount of stake tied up by ISS events"));
+        issWeightGage = metrics.getOrCreate(new LongGauge.Config(INTERNAL_CATEGORY, "issWeight")
+                .withDescription("the amount of weight tied up by ISS events"));
 
         for (final Address address : addressBook) {
             issDataByNode.put(address.getId(), new IssStatus());
@@ -135,10 +135,10 @@ public class IssMetrics {
     }
 
     /**
-     * Get the current stake currently tied up in an ISS.
+     * Get the current weight currently tied up in an ISS.
      */
-    public long getIssStake() {
-        return issStake;
+    public long getIssWeight() {
+        return issWeight;
     }
 
     /**
@@ -173,16 +173,16 @@ public class IssMetrics {
         issStatus.setRound(round);
 
         if (issStatus.hasIss() != hasIss) {
-            final long stake = addressBook.getAddress(nodeId).getStake();
+            final long weight = addressBook.getAddress(nodeId).getWeight();
             if (hasIss) {
                 issCount++;
-                issStake += stake;
+                issWeight += weight;
             } else {
                 issCount--;
-                issStake -= stake;
+                issWeight -= weight;
             }
             issCountGauge.set(issCount);
-            issStakeGage.set(issStake);
+            issWeightGage.set(issWeight);
             issStatus.setHasIss(hasIss);
         }
     }
@@ -210,9 +210,9 @@ public class IssMetrics {
         }
 
         issCount = addressBook.getSize();
-        issStake = addressBook.getTotalStake();
+        issWeight = addressBook.getTotalWeight();
 
         issCountGauge.set(issCount);
-        issStakeGage.set(issStake);
+        issWeightGage.set(issWeight);
     }
 }

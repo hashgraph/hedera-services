@@ -44,8 +44,8 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
      */
     private DynamicValueGenerator<Double> newEventWeight;
 
-    /** The amount of stake this node has. */
-    private final long stake;
+    /** The amount of weight this node has. */
+    private final long weight;
 
     /**
      * The average size of a transaction, in bytes.
@@ -67,8 +67,8 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
      */
     private static final double DEFAULT_TX_COUNT_STD_DEV = 3;
 
-    /** The default amount of stake to allocate this node is no value is provided. */
-    protected static final long DEFAULT_STAKE = 1;
+    /** The default amount of weight to allocate this node is no value is provided. */
+    protected static final long DEFAULT_WEIGHT = 1;
 
     /** The default transaction generator used to create transaction for generated events. */
     protected static final TransactionGenerator DEFAULT_TRANSACTION_GENERATOR =
@@ -103,20 +103,20 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     private final boolean useFakeHashes;
 
     /**
-     * Creates a new instance with the supplied transaction generator and stake.
+     * Creates a new instance with the supplied transaction generator and weight.
      *
      * @param useFakeHashes
      * 		indicates if fake hashes should be used instead of real ones
      * @param transactionGenerator
      * 		a transaction generator to use when creating events
-     * @param stake
-     * 		the stake allocated to this event source
+     * @param weight
+     * 		the weight allocated to this event source
      */
     protected AbstractEventSource(
-            final boolean useFakeHashes, final TransactionGenerator transactionGenerator, final long stake) {
+            final boolean useFakeHashes, final TransactionGenerator transactionGenerator, final long weight) {
         this.useFakeHashes = useFakeHashes;
         this.transactionGenerator = transactionGenerator;
-        this.stake = stake;
+        this.weight = weight;
         nodeId = -1;
         setNewEventWeight(1.0);
 
@@ -134,7 +134,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     protected AbstractEventSource(final AbstractEventSource<T> that) {
         this.useFakeHashes = that.useFakeHashes;
         this.transactionGenerator = that.transactionGenerator;
-        this.stake = that.stake;
+        this.weight = that.weight;
         this.nodeId = that.nodeId;
         this.newEventWeight = that.newEventWeight.cleanCopy();
 
@@ -181,8 +181,8 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     }
 
     @Override
-    public long getStake() {
-        return stake;
+    public long getWeight() {
+        return weight;
     }
 
     /**
