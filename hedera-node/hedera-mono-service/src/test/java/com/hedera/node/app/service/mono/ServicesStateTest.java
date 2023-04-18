@@ -50,6 +50,7 @@ import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
+import com.hedera.node.app.service.mono.sigs.order.MapWarmer;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.mono.state.forensics.HashLogger;
 import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreator;
@@ -363,6 +364,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(metadata.app()).willReturn(app);
         given(app.logic()).willReturn(logic);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(app.mapWarmer()).willReturn(mock(MapWarmer.class));
 
         subject.handleConsensusRound(round, dualState);
         verify(dualStateAccessor).setDualState(dualState);
