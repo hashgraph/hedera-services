@@ -550,6 +550,16 @@ class TransactionDispatcherTest {
     }
 
     @Test
+    void dispatchesTokenRevokeKycAsExpected() {
+        given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
+
+        dispatcher.dispatchHandle(
+                HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT, transactionBody, writableStoreFactory);
+
+        verify(writableTokenRelStore).commit();
+    }
+
+    @Test
     void dispatchesTokenPauseAsExpected() {
         given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
 

@@ -115,6 +115,8 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTopicStore());
             case TOKEN_GRANT_KYC_TO_ACCOUNT -> dispatchTokenGrantKycToAccount(
                     txn, writableStoreFactory.createTokenRelStore());
+            case TOKEN_REVOKE_KYC_FROM_ACCOUNT -> dispatchTokenRevokeKycFromAccount(
+                    txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
@@ -294,6 +296,19 @@ public class TransactionDispatcher {
             TransactionBody tokenGrantKyc, WritableTokenRelationStore tokenRelStore) {
         final var handler = handlers.tokenGrantKycToAccountHandler();
         handler.handle(tokenGrantKyc, tokenRelStore);
+        tokenRelStore.commit();
+    }
+
+    /**
+     * Dispatches the token revoke KYC transaction to the appropriate handler.
+     *
+     * @param tokenRevokeKyc the token revoke KYC transaction
+     * @param tokenRelStore the token relation store
+     */
+    private void dispatchTokenRevokeKycFromAccount(
+            TransactionBody tokenRevokeKyc, WritableTokenRelationStore tokenRelStore) {
+        final var handler = handlers.tokenRevokeKycFromAccountHandler();
+        handler.handle(tokenRevokeKyc, tokenRelStore);
         tokenRelStore.commit();
     }
 
