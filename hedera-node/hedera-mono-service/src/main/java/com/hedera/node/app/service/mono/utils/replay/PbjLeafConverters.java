@@ -20,6 +20,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
+import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
+import com.hedera.hapi.node.state.token.AccountTokenAllowance;
 import com.hedera.hapi.node.token.CryptoAllowance;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
@@ -27,7 +30,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.spi.validation.ExpiryMeta;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -90,7 +93,7 @@ public class PbjLeafConverters {
                 .usedAutoAssociations(account.getUsedAutoAssociations())
                 .contractKvPairsNumber(account.getNumContractKvPairs())
                 .cryptoAllowances(orderedHbarAllowancesFrom(account))
-                .nftAllowances(orderedOperatorApprovalsFrom(account))
+                .approveForAllNftAllowances(orderedOperatorApprovalsFrom(account))
                 .tokenAllowances(orderedFungibleAllowancesFrom(account))
                 .declineReward(account.isDeclinedReward())
                 .stakeAtStartOfLastRewardedPeriod(account.totalStakeAtStartOfLastRewardedPeriod())
@@ -102,52 +105,54 @@ public class PbjLeafConverters {
                 .build();
     }
 
-    static List<NftAllowance> orderedOperatorApprovalsFrom(@NonNull final MerkleAccount account) {
+    static List<AccountTokenAllowance> orderedOperatorApprovalsFrom(@NonNull final MerkleAccount account) {
         return orderedOperatorApprovals(
                 account.getApproveForAllNfts().stream()
-                        .map(a -> NftAllowance.newBuilder()
-                                .tokenId(TokenID.newBuilder().tokenNum(a.getTokenNum().longValue()))
+                        .map(a -> AccountTokenAllowance.newBuilder()
+                                .accountNum(a.getSpenderNum().longValue())
+                                .tokenNum(a.getTokenNum().longValue())
                                 .build()
                         ).toList());
     }
 
-    static List<CryptoAllowance> orderedHbarAllowancesFrom(@NonNull final MerkleAccount account) {
+    static List<AccountCryptoAllowance> orderedHbarAllowancesFrom(@NonNull final MerkleAccount account) {
         return orderedHbarAllowances(
                 account.getCryptoAllowances().entrySet().stream()
-                        .map(e -> CryptoAllowance.newBuilder()
-                                .owner(AccountID.newBuilder().accountNum(e.getKey().longValue()))
+                        .map(e -> AccountCryptoAllowance.newBuilder()
+                                .accountNum(e.getKey().longValue())
                                 .amount(e.getValue())
                                 .build()
                         ).toList());
     }
 
-    static List<TokenAllowance> orderedFungibleAllowancesFrom(@NonNull final MerkleAccount account) {
+    static List<AccountFungibleTokenAllowance> orderedFungibleAllowancesFrom(@NonNull final MerkleAccount account) {
         return orderedFungibleAllowances(
                 account.getFungibleTokenAllowances().entrySet().stream()
-                        .map(e -> TokenAllowance.newBuilder()
-                                .tokenId(TokenID.newBuilder().tokenNum(e.getKey().getTokenNum().longValue()))
+                        .map(e -> AccountFungibleTokenAllowance.newBuilder()
+                                .tokenAllowanceKey(AccountTokenAllowance.newBuilder()
+                                        .tokenNum(e.getKey().getTokenNum().longValue())
+                                        .accountNum(e.getKey().getSpenderNum().longValue()))
                                 .amount(e.getValue())
                                 .build()
                         ).toList());
     }
 
-    static List<NftAllowance> orderedOperatorApprovals(final List<NftAllowance> approvals) {
+    static List<AccountTokenAllowance> orderedOperatorApprovals(final List<AccountTokenAllowance> approvals) {
         return approvals.stream()
-                .sorted(Comparator.comparingLong(a -> a.tokenIdOrThrow().tokenNum()))
+                .sorted(Comparator.comparingLong(AccountTokenAllowance::tokenNum))
                 .toList();
     }
 
-    static List<CryptoAllowance> orderedHbarAllowances(final List<CryptoAllowance> allowances) {
+    static List<AccountCryptoAllowance> orderedHbarAllowances(final List<AccountCryptoAllowance> allowances) {
         return allowances.stream()
-                .sorted(Comparator.<CryptoAllowance>comparingLong(a -> a.ownerOrThrow().accountNumOrThrow())
-                        .thenComparingLong(CryptoAllowance::amount))
+                .sorted(Comparator.comparingLong(AccountCryptoAllowance::amount))
                 .toList();
     }
 
-    static List<TokenAllowance> orderedFungibleAllowances(final List<TokenAllowance> allowances) {
+    static List<AccountFungibleTokenAllowance> orderedFungibleAllowances(final List<AccountFungibleTokenAllowance> allowances) {
         return allowances.stream()
-                .sorted(Comparator.<TokenAllowance>comparingLong(a -> a.tokenIdOrThrow().tokenNum())
-                        .thenComparingLong(TokenAllowance::amount))
+                .sorted(Comparator.<AccountFungibleTokenAllowance>comparingLong(allowance -> allowance.tokenAllowanceKey().tokenNum())
+                        .thenComparingLong(AccountFungibleTokenAllowance::amount))
                 .toList();
     }
 }

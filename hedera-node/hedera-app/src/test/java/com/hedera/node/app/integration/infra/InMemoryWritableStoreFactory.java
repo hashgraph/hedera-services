@@ -31,6 +31,7 @@ import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
@@ -64,6 +65,11 @@ public class InMemoryWritableStoreFactory implements WritableStoreFactory {
                 TokenService.NAME, new TokenServiceImpl(),
                 UtilService.NAME, new UtilServiceImpl());
         services.forEach((name, service) -> serviceStates.put(name, inMemoryStatesFrom(service::registerSchemas)));
+    }
+
+    @Override
+    public WritableTokenRelationStore createTokenRelStore() {
+        return new WritableTokenRelationStore(serviceStates.get(TokenService.NAME));
     }
 
     @Override

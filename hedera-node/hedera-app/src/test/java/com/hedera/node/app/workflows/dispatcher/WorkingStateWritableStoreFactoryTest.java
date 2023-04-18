@@ -76,4 +76,12 @@ class WorkingStateWritableStoreFactoryTest {
         final var store = subject.createTokenStore();
         assertNotNull(store);
     }
+
+    @Test
+    void returnsTokenRelStore() {
+        workingStateAccessor.setHederaState(state);
+        given(state.createWritableStates("TokenRelations")).willReturn(writableStates);
+        final var store = subject.createTokenRelStore();
+        assertNotNull(store);
+    }
 }

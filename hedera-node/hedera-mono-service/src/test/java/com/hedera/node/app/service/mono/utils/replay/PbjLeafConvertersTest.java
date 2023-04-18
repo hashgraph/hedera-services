@@ -137,7 +137,7 @@ class PbjLeafConvertersTest {
                 orderedHbarAllowances(account.cryptoAllowancesOrThrow()));
         assertEquals(
                 orderedOperatorApprovalsFrom(merkleAccount),
-                orderedOperatorApprovals(account.nftAllowancesOrThrow()));
+                orderedOperatorApprovals(account.approveForAllNftAllowancesOrThrow()));
         assertEquals(
                 orderedFungibleAllowancesFrom(merkleAccount),
                 orderedFungibleAllowances(account.tokenAllowancesOrThrow()));

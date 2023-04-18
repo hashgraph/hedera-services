@@ -1304,6 +1304,15 @@ public final class PbjConverter {
         }
     }
 
+    public static com.hedera.hapi.node.base.Key asPbjKey(@NonNull final JKey jKey) {
+        requireNonNull(jKey);
+        try {
+            return toPbj(JKey.mapJKey(jKey));
+        } catch (DecoderException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static @NonNull CustomFee fromFcCustomFee(@Nullable final FcCustomFee fcFee) {
         try (final var bais =
                 new ByteArrayInputStream(Objects.requireNonNull(fcFee).asGrpc().toByteArray())) {

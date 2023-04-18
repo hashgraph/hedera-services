@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -62,5 +63,11 @@ public class WorkingStateWritableStoreFactory implements WritableStoreFactory {
     public WritableTokenStore createTokenStore() {
         final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
         return new WritableTokenStore(tokenStates);
+    }
+
+    @Override
+    public WritableTokenRelationStore createTokenRelStore() {
+        final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
+        return new WritableTokenRelationStore(tokenStates);
     }
 }
