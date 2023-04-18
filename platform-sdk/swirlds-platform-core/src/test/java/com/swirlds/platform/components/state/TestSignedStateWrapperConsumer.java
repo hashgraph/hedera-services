@@ -16,12 +16,10 @@
 
 package com.swirlds.platform.components.state;
 
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 
-public class TestSignedStateWrapperConsumer { // TODO why does this class exist?
+public class TestSignedStateWrapperConsumer {
 
-    private ReservedSignedState lastWrapper;
     private SignedState lastSignedState;
     private int invocationCount;
 
@@ -29,11 +27,9 @@ public class TestSignedStateWrapperConsumer { // TODO why does this class exist?
         reset();
     }
 
-    public void consume(final ReservedSignedState ssw) {
+    public void consume(final SignedState ss) {
         invocationCount++;
-        lastWrapper = ssw;
-        lastSignedState = ssw.get();
-        ssw.close();
+        lastSignedState = ss;
     }
 
     public int getNumInvocations() {
@@ -44,14 +40,9 @@ public class TestSignedStateWrapperConsumer { // TODO why does this class exist?
         return lastSignedState;
     }
 
-    public ReservedSignedState getLastWrapper() {
-        return lastWrapper;
-    }
-
     public void reset() {
         fullyRelease();
         lastSignedState = null;
-        lastWrapper = null;
         invocationCount = 0;
     }
 

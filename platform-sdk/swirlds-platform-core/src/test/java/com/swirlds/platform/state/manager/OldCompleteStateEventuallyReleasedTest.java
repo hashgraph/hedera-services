@@ -57,10 +57,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
      */
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer() {
         // No state is unsigned in this test. If this method is called then the test is expected to fail.
-        return ssw -> {
-            stateLacksSignaturesCount.getAndIncrement();
-            ssw.close();
-        };
+        return ss -> stateLacksSignaturesCount.getAndIncrement();
     }
 
     /**

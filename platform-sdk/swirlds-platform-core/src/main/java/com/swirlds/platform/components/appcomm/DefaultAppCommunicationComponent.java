@@ -25,6 +25,7 @@ import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateNotification;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 
 /**
@@ -56,14 +57,17 @@ public class DefaultAppCommunicationComponent implements AppCommunicationCompone
     }
 
     @Override
-    public void newLatestCompleteStateEvent(final ReservedSignedState signedStateWrapper) {
-        final SignedState signedState = signedStateWrapper.get();
+    public void newLatestCompleteStateEvent(@NonNull final SignedState signedState) {
+        final ReservedSignedState reservedSignedState =
+                signedState.reserve("DefaultAppCommunicationComponent.newLatestCompleteStateEvent()");
+
         final NewSignedStateNotification notification = new NewSignedStateNotification(
-                signedState.getSwirldState(),
-                signedState.getState().getSwirldDualState(),
-                signedState.getRound(),
-                signedState.getConsensusTimestamp());
-        notificationEngine.dispatch(NewSignedStateListener.class, notification, r -> signedStateWrapper.close());
+                reservedSignedState.get().getSwirldState(),
+                reservedSignedState.get().getState().getSwirldDualState(),
+                reservedSignedState.get().getRound(),
+                reservedSignedState.get().getConsensusTimestamp());
+
+        notificationEngine.dispatch(NewSignedStateListener.class, notification, r -> reservedSignedState.close());
     }
 
     @Override

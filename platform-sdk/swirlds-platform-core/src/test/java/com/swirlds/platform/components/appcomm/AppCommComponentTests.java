@@ -104,12 +104,8 @@ public class AppCommComponentTests {
             }
         });
 
-        final ReservedSignedState wrapper = signedState.reserve("test");
         final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
-        component.newLatestCompleteStateEvent(wrapper);
-
-        // Intentionally release the wrapper before the notification callback executes
-        wrapper.close();
+        component.newLatestCompleteStateEvent(signedState);
 
         // Allow the notification callback to execute
         senderLatch.countDown();

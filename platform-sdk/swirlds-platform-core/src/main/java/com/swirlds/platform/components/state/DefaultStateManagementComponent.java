@@ -213,16 +213,16 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 stateToDiskEventConsumer,
                 preConsensusEventWriter::setMinimumGenerationToStore);
 
-        final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ssw -> {
-            stateHasEnoughSignatures(ssw.get());
+        final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ss -> {
+            stateHasEnoughSignatures(ss);
             // This consumer releases the wrapper, so it must be last
-            stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(ssw);
+            stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(ss);
         };
 
-        final StateLacksSignaturesConsumer combinedStateLacksSignaturesConsumer = ssw -> {
-            stateLacksSignatures(ssw.get());
+        final StateLacksSignaturesConsumer combinedStateLacksSignaturesConsumer = ss -> {
+            stateLacksSignatures(ss);
             // This consumer releases the wrapper, so it must be last.
-            stateLacksSignaturesConsumer.stateLacksSignatures(ssw);
+            stateLacksSignaturesConsumer.stateLacksSignatures(ss);
         };
 
         signedStateManager = new SignedStateManager(

@@ -41,6 +41,7 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -142,17 +143,18 @@ public class ManualWiring {
                 new DefaultStateManagementComponentFactory(
                         platformContext, threadManager, addressBook, platformSigner, mainClassName, selfId, swirldName);
 
-        stateManagementComponentFactory.newLatestCompleteStateConsumer(ssw -> {
+        stateManagementComponentFactory.newLatestCompleteStateConsumer(ss -> {
+            final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");
+
             boolean success = asyncLatestCompleteStateQueue.offer(() -> {
-                appCommunicationComponent.newLatestCompleteStateEvent(ssw);
+                appCommunicationComponent.newLatestCompleteStateEvent(ss);
             });
             if (!success) {
                 logger.error(
                         EXCEPTION.getMarker(),
                         "Unable to add new latest complete state task " + "(state round = {}) to {} because it is full",
-                        ssw.get().getRound(),
+                        ss.getRound(),
                         asyncLatestCompleteStateQueue.getName());
-                ssw.close();
             }
         });
 
@@ -162,11 +164,8 @@ public class ManualWiring {
             appCommunicationComponent.stateToDiskAttempt(ssw, path, success);
         });
 
-        stateManagementComponentFactory.stateLacksSignaturesConsumer(
-                ssw -> freezeManager.stateLacksSignatures(ssw.get()));
-
-        stateManagementComponentFactory.newCompleteStateConsumer(
-                ssw -> freezeManager.stateHasEnoughSignatures(ssw.get()));
+        stateManagementComponentFactory.stateLacksSignaturesConsumer(freezeManager::stateLacksSignatures);
+        stateManagementComponentFactory.newCompleteStateConsumer(freezeManager::stateHasEnoughSignatures);
 
         stateManagementComponentFactory.prioritySystemTransactionConsumer(prioritySystemTransactionSubmitter);
         stateManagementComponentFactory.haltRequestedConsumer(haltRequestedConsumer);

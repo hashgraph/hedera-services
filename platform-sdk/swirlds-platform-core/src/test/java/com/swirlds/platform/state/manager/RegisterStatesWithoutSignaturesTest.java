@@ -52,15 +52,12 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer() {
-        return ssw -> {
+        return ss -> {
             stateLacksSignaturesCount.getAndIncrement();
 
-            assertEquals(highestRound.get() - roundsToKeepForSigning, ssw.get().getRound(), "unexpected round retired");
+            assertEquals(highestRound.get() - roundsToKeepForSigning, ss.getRound(), "unexpected round retired");
             assertSame(
-                    signedStates.get(highestRound.get() - roundsToKeepForSigning),
-                    ssw.get(),
-                    "unexpected state was retired");
-            ssw.close();
+                    signedStates.get(highestRound.get() - roundsToKeepForSigning), ss, "unexpected state was retired");
         };
     }
 
@@ -70,10 +67,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
-        return ssw -> {
-            stateHasEnoughSignaturesCount.getAndIncrement();
-            ssw.close();
-        };
+        return ss -> stateHasEnoughSignaturesCount.getAndIncrement();
     }
 
     /**

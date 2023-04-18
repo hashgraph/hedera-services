@@ -16,25 +16,19 @@
 
 package com.swirlds.platform.components.state.output;
 
-import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * There is a new, most up-to-date and complete signed state.
- * <p>
- * The state within the {@link ReservedSignedState} holds a reservation. The wiring layer releases the
- * {@link ReservedSignedState} after all consumers have completed.
  */
 @FunctionalInterface
 public interface NewLatestCompleteStateConsumer {
 
     /**
      * There is a new latest complete signed state.
-     * <p>
-     * The signed state holds a reservation for the duration of this call. Implementers must not release this
-     * reservation.
      *
-     * @param signedStateWrapper the wrapped signed state
+     * @param signedState signed state
      */
-    void newLatestCompleteStateEvent(@NonNull final ReservedSignedState signedStateWrapper);
+    void newLatestCompleteStateEvent(@NonNull final SignedState signedState);
 }

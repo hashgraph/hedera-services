@@ -17,6 +17,7 @@
 package com.swirlds.platform.components.state.output;
 
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -30,11 +31,8 @@ public interface StateLacksSignaturesConsumer {
 
     /**
      * A signed state is about to be ejected from memory and has not collected enough signatures to be complete.
-     * <p>
-     * The signed state holds a reservation for the duration of this call. Implementers must not release this
-     * reservation.
      *
-     * @param signedStateWrapper the wrapped signed state
+     * @param signedState the signed state
      */
-    void stateLacksSignatures(@NonNull ReservedSignedState signedStateWrapper);
+    void stateLacksSignatures(@NonNull SignedState signedState);
 }

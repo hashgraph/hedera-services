@@ -18,6 +18,10 @@ improper use of the state's reference count. Failure to use a state object corre
    a. If possible, use a `ReservedSignedState` in a try-with-resources block.
    b. Avoid using `@Nullable ReservedSignedState` parameters. As a pattern, it is better to pass a non-null
       `ReservedSignedState` wrapped around `null`.
+   c. In general, prefer passing a `SignedState` into a method instead of a `ReservedSignedState`. If an implementation
+      is synchronous and does not need a copy of the state after the method returns, it won't need to take another
+      reservation. And if it does need to keep the state after the method returns, it is simple to take a new
+      reservation.
 3. When creating a new `SignedState`, do not pass it to other methods or parts of the system with an implicit reference,
    always ensure that an explicit reservation is held before passing a `SignedState` to other parts of the code.
 4. It is NEVER thread safe for threads to read from the same `ReservedSignedState` instance concurrently

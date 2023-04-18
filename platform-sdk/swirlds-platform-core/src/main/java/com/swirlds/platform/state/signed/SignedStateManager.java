@@ -458,8 +458,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the new most recently and complete signed state
      */
     private void notifyNewLatestCompleteState(@NonNull final SignedState signedState) {
-        newLatestCompleteStateConsumer.newLatestCompleteStateEvent(
-                signedState.reserve("SignedStateManager.notifyNewLatestCompleteState()"));
+        newLatestCompleteStateConsumer.newLatestCompleteStateEvent(signedState);
     }
 
     /**
@@ -468,8 +467,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that was unable to be complete signed
      */
     private void notifyStateLacksSignatures(@NonNull final SignedState signedState) {
-        stateLacksSignaturesConsumer.stateLacksSignatures(
-                signedState.reserve("SignedStateManager.notifyStateLacksSignatures()"));
+        stateLacksSignaturesConsumer.stateLacksSignatures(signedState);
     }
 
     /**
@@ -478,7 +476,6 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that now has enough signatures
      */
     private void notifyStateHasEnoughSignatures(@NonNull final SignedState signedState) {
-        stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(
-                signedState.reserve("SignedStateManager.notifyStateHasEnoughSignatures()"));
+        stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(signedState);
     }
 }

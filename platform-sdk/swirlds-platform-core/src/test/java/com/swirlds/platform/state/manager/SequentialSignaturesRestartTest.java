@@ -63,10 +63,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
      */
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer() {
         // No state is unsigned in this test. If this method is called then the test is expected to fail.
-        return ssw -> {
-            stateLacksSignaturesCount.getAndIncrement();
-            ssw.close();
-        };
+        return ss -> stateLacksSignaturesCount.getAndIncrement();
     }
 
     /**
@@ -75,11 +72,9 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
-        return ssw -> {
-            assertEquals(highestRound.get() - roundAgeToSign, ssw.get().getRound(), "unexpected round completed");
-
+        return ss -> {
+            assertEquals(highestRound.get() - roundAgeToSign, ss.getRound(), "unexpected round completed");
             stateHasEnoughSignaturesCount.getAndIncrement();
-            ssw.close();
         };
     }
 
