@@ -107,7 +107,8 @@ public class RecordStreamManagerTest {
                 recordMemo,
                 INITIAL_RANDOM_HASH,
                 streamType,
-                globalDynamicProperties);
+                globalDynamicProperties,
+                null);
 
         given(globalDynamicProperties.recordFileVersion()).willReturn(5);
 
@@ -120,7 +121,8 @@ public class RecordStreamManagerTest {
                 recordMemo,
                 INITIAL_RANDOM_HASH,
                 streamType,
-                globalDynamicProperties);
+                globalDynamicProperties,
+                null);
     }
 
     private static void configProps(NodeLocalProperties props) {

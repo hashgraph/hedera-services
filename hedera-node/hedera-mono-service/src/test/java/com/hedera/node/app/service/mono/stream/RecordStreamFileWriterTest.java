@@ -102,6 +102,7 @@ class RecordStreamFileWriterTest {
     @BeforeEach
     void setUp() throws NoSuchAlgorithmException {
         subject = new RecordStreamFileWriter(
+                null,
                 expectedExportDir(),
                 signer,
                 streamType,

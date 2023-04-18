@@ -95,6 +95,19 @@ public class RecordStreamObject extends AbstractSerializableHashable
         runningHash = new RunningHash();
     }
 
+    public RecordStreamObject(
+            final TransactionRecord transactionRecord,
+            final Transaction transaction,
+            final Instant consensusTimestamp,
+            final List<TransactionSidecarRecord.Builder> sidecars) {
+        this.transaction = transaction;
+        this.consensusTimestamp = consensusTimestamp;
+        this.transactionRecord = transactionRecord;
+        this.sidecars = sidecars;
+
+        runningHash = new RunningHash();
+    }
+
     public RecordStreamObject setWriteNewFile() {
         this.writeNewFile = true;
         return this;
@@ -183,6 +196,7 @@ public class RecordStreamObject extends AbstractSerializableHashable
                 .append(this.transactionRecord, that.transactionRecord)
                 .append(this.transaction, that.transaction)
                 .append(this.consensusTimestamp, that.consensusTimestamp)
+                .append(this.writeNewFile, that.writeNewFile)
                 .isEquals();
     }
 
@@ -234,5 +248,6 @@ public class RecordStreamObject extends AbstractSerializableHashable
         this.transactionRecord = transactionRecord;
 
         runningHash = new RunningHash();
+        sidecars = Collections.emptyList();
     }
 }

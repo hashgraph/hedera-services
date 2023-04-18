@@ -22,7 +22,10 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStre
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Message;
@@ -54,12 +57,17 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.GZIPOutputStream;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -86,6 +94,20 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
     /** a messageDigest object for digesting sidecar files and generating sidecar file hash */
     private final MessageDigest sidecarStreamDigest;
+    /**
+     * If non-null, indicates we are in recovery mode, and the writer will use this to helper to ensure
+     * its generated record files include any items from a record file on disk whose 2-second range of
+     * consensus timestamps <i>includes</i>the first consensus transaction in the recovery event stream.
+     * That is, suppose:
+     * <ol>
+     *     <li>There is a record file {@code F} on disk with consensus times in the range {@code [X, X + 2s)}</li>
+     *     <li>The recovery event stream begins at time {@code T}, where {@code T > X} and {@code T < X + 2s}.</li>
+     * </ol>
+     * Then the writer needs to ensure the first record file it generates includes the items from {@code F}
+     * in the time range {@code [X, T)}.
+     */
+    @Nullable
+    private RecoveryRecordsWriter recoveryRecordsWriter;
 
     /**
      * Output stream for digesting metaData. Metadata should be written to this stream. Any data
@@ -133,6 +155,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private final GlobalDynamicProperties dynamicProperties;
 
     public RecordStreamFileWriter(
+            final @Nullable RecoveryRecordsWriter recoveryRecordsWriter,
             final String dirPath,
             final Signer signer,
             final RecordStreamType streamType,
@@ -140,6 +163,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             final int maxSidecarFileSize,
             final GlobalDynamicProperties globalDynamicProperties)
             throws NoSuchAlgorithmException {
+        this.recoveryRecordsWriter = recoveryRecordsWriter;
         this.dirPath = dirPath;
         this.signer = signer;
         this.streamType = streamType;
@@ -163,10 +187,18 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             beginNew(object);
         }
 
-        // if recordStreamFile is null, it means startWriteAtCompleteWindow is true,
-        // and we are still in the first incomplete window, so we don't serialize this object;
-        // so we only serialize the object when stream is not null
         if (recordStreamFileBuilder != null) {
+            consume(object);
+        } else if (recoveryRecordsWriter != null) {
+            final var memory = recoveryRecordsWriter;
+            recoveryRecordsWriter = null;
+            // Recover the prefix of this block that was already written to disk prior to
+            // the start of the recovery stream (if there was no prefix on disk, then we could
+            // not get here, since that would mean no transactions were handled in the previous
+            // 2-second block; and the item passed to this addObject() call would have
+            // necessarily started a new block, hence making recordStreamFileBuilder non-null)
+            memory.writeRecordPrefixForRecoveryStartingWith(object, this);
+            // Now we're ready to include this item
             consume(object);
         }
 
@@ -342,6 +374,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     e);
         }
     }
+
 
     /**
      * add given object to the current record stream file

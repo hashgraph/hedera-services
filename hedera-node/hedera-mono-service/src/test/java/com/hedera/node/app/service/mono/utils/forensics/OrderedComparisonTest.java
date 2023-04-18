@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.vis
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.RESULTDATA_NOT_SET;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -127,6 +128,24 @@ class OrderedComparisonTest {
         assertEquals(3, fileAppends.size());
         final var appendTarget = fileAppends.get(0).body().getFileAppend().getFileID();
         assertEquals(48287857L, appendTarget.getFileNum());
+    }
+
+    @Test
+    void hmm() throws IOException {
+        final var assetLoc = "/Users/michaeltinker/Dev/hedera-services/hedera-node/data/recordstreams/record0.0.3";
+        final var entries = parseV6RecordStreamEntriesIn(assetLoc);
+
+        for (final var entry : entries) {
+            final var accessor = entry.accessor();
+            System.out.println(accessor.getFunction());
+//            if (accessor.getFunction() == NONE) {
+//                System.out.println("@ " + entry.consensusTime()
+//                        + ": " + accessor.getTxn() + "\n➡️\n" + entry.txnRecord());
+//            }
+        }
+
+        final var histograms = statusHistograms(entries);
+        System.out.println(histograms);
     }
 
     @Test

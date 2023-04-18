@@ -38,6 +38,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -82,15 +84,16 @@ public class RecordStreamManager {
     private final MiscRunningAvgs runningAvgs;
 
     /**
-     * @param platform the platform which initializes this RecordStreamManager instance
-     * @param runningAvgs an instance for recording the average value of recordStream queue size
-     * @param nodeLocalProperties the node-local property source, which says four things: (1) is the
-     *     record stream enabled?, (2) how many seconds should elapse before creating the next
-     *     record file, and (3) how large a capacity the record stream blocking queue should have.
-     * @param accountMemo the account of this node from the address book memo
-     * @param initialHash the initial hash
+     * @param platform              the platform which initializes this RecordStreamManager instance
+     * @param runningAvgs           an instance for recording the average value of recordStream queue size
+     * @param nodeLocalProperties   the node-local property source, which says four things: (1) is the
+     *                              record stream enabled?, (2) how many seconds should elapse before creating the next
+     *                              record file, and (3) how large a capacity the record stream blocking queue should have.
+     * @param accountMemo           the account of this node from the address book memo
+     * @param initialHash           the initial hash
+     * @param recoveryRecordsWriter if not null, the recovery records writer that should be passed to the record stream file writer
      * @throws NoSuchAlgorithmException is thrown when fails to get required MessageDigest instance
-     * @throws IOException is thrown when fails to create directory for record streaming
+     * @throws IOException              is thrown when fails to create directory for record streaming
      */
     public RecordStreamManager(
             final Platform platform,
@@ -99,7 +102,8 @@ public class RecordStreamManager {
             final String accountMemo,
             final Hash initialHash,
             final RecordStreamType streamType,
-            final GlobalDynamicProperties globalDynamicProperties)
+            final GlobalDynamicProperties globalDynamicProperties,
+            final @Nullable RecoveryRecordsWriter recoveryRecordsWriter)
             throws NoSuchAlgorithmException, IOException {
         final var nodeScopedRecordLogDir = effectiveLogDir(nodeLocalProperties.recordLogDir(), accountMemo);
         final var nodeScopedSidecarDir = effectiveSidecarDir(nodeScopedRecordLogDir, nodeLocalProperties.sidecarDir());
@@ -108,6 +112,7 @@ public class RecordStreamManager {
             Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
             Files.createDirectories(Paths.get(nodeScopedSidecarDir));
             protobufStreamFileWriter = new RecordStreamFileWriter(
+                    recoveryRecordsWriter,
                     nodeScopedRecordLogDir,
                     platform,
                     streamType,

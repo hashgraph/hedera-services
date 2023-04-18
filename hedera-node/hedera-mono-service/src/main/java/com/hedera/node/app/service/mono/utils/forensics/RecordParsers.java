@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 /**
  * Provides a helper to parse the <i>.rcd.gz</i> files in a directory into a list of {@link
@@ -56,7 +57,21 @@ public class RecordParsers {
      */
     @SuppressWarnings("java:S3655")
     public static List<RecordStreamEntry> parseV6RecordStreamEntriesIn(final String streamDir) throws IOException {
-        final var recordFiles = RecordStreamingUtils.orderedRecordFilesFrom(streamDir);
+        return parseV6RecordStreamEntriesIn(streamDir, f -> true);
+    }
+
+    /**
+     * Given a directory of compressed V6 record files, and a predicate testing whether a particular
+     * file is of interest, returns a list of all the {@code (Transaction, TransactionRecord)} entries
+     * contained in those files, in order of ascending consensus time.
+     *
+     * @param streamDir a directory with compressed V6 record files
+     * @return all the contained stream entries
+     * @throws IOException if the files cannot be read or parsed
+     */
+    public static List<RecordStreamEntry> parseV6RecordStreamEntriesIn(
+            final String streamDir, final Predicate<String> inclusionTest) throws IOException {
+        final var recordFiles = RecordStreamingUtils.orderedRecordFilesFrom(streamDir, inclusionTest);
         final List<RecordStreamEntry> entries = new ArrayList<>();
         for (final var recordFile : recordFiles) {
             final var readResult = readMaybeCompressedRecordStreamFile(recordFile);

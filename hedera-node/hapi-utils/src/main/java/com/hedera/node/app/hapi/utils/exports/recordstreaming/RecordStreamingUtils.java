@@ -32,6 +32,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.tuple.Pair;
 
 /** Minimal utility to read record stream files and their corresponding signature files. */
@@ -129,10 +131,11 @@ public class RecordStreamingUtils {
                 .toList();
     }
 
-    public static List<String> orderedRecordFilesFrom(final String streamDir) throws IOException {
+    public static List<String> orderedRecordFilesFrom(
+            final String streamDir, final @NonNull Predicate<String> inclusionTest) throws IOException {
         return filteredFilesFrom(
                 streamDir,
-                RecordStreamingUtils::isRecordFile,
+                f -> RecordStreamingUtils.isRecordFile(f) && inclusionTest.test(f),
                 comparing(RecordStreamingUtils::parseRecordFileConsensusTime));
     }
 

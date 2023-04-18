@@ -76,7 +76,8 @@ public interface RecordsModule {
                     accountMemo,
                     initialHash,
                     streamType,
-                    globalDynamicProperties);
+                    globalDynamicProperties,
+                    null);
         } catch (NoSuchAlgorithmException | IOException fatal) {
             throw new IllegalStateException("Could not construct record stream manager", fatal);
         }

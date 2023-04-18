@@ -108,7 +108,7 @@ public enum RecordStreamAccess {
     public Data readStreamDataFrom(String loc, final String relativeSidecarLoc) throws IOException {
         final var fAtLoc = relocatedIfNotPresentWithCurrentPathPrefix(new File(loc), "..", TEST_CLIENTS_PREFIX);
         loc = fAtLoc.getAbsolutePath();
-        final var recordFiles = orderedRecordFilesFrom(loc);
+        final var recordFiles = orderedRecordFilesFrom(loc, f -> true);
         final var sidecarLoc = loc + File.separator + relativeSidecarLoc;
         final List<String> sidecarFiles;
         if (new File(sidecarLoc).exists()) {
