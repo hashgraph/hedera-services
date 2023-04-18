@@ -22,10 +22,7 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStre
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
-import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.CREATE;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Message;
@@ -53,21 +50,17 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
 import com.swirlds.logging.LogMarker;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.GZIPOutputStream;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -374,7 +367,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     e);
         }
     }
-
 
     /**
      * add given object to the current record stream file

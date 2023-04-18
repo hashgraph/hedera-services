@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.vis
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.RESULTDATA_NOT_SET;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -138,10 +137,10 @@ class OrderedComparisonTest {
         for (final var entry : entries) {
             final var accessor = entry.accessor();
             System.out.println(accessor.getFunction());
-//            if (accessor.getFunction() == NONE) {
-//                System.out.println("@ " + entry.consensusTime()
-//                        + ": " + accessor.getTxn() + "\n➡️\n" + entry.txnRecord());
-//            }
+            //            if (accessor.getFunction() == NONE) {
+            //                System.out.println("@ " + entry.consensusTime()
+            //                        + ": " + accessor.getTxn() + "\n➡️\n" + entry.txnRecord());
+            //            }
         }
 
         final var histograms = statusHistograms(entries);

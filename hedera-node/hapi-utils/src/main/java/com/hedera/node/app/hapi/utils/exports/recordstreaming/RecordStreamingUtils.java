@@ -22,6 +22,7 @@ import com.hedera.node.app.hapi.utils.exports.FileCompressionUtils;
 import com.hedera.services.stream.proto.RecordStreamFile;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.SignatureFile;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,8 +33,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.tuple.Pair;
 
 /** Minimal utility to read record stream files and their corresponding signature files. */

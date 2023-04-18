@@ -1,19 +1,20 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.mono.stream;
-
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.UncheckedIOException;
-import java.time.Instant;
-import java.util.List;
 
 import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.ALL_EXPECTED_RSOS_ASSET;
 import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.ON_DISK_FILES_LOC;
@@ -21,6 +22,20 @@ import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.R
 import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.loadRecoveryRsosFrom;
 import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.rsoFrom;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.io.UncheckedIOException;
+import java.time.Instant;
+import java.util.List;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RecoveryRecordsWriterTest {
@@ -57,10 +72,9 @@ class RecoveryRecordsWriterTest {
         subject = new RecoveryRecordsWriter(2_000L, "missingOnDiskRecords");
 
         final var mockFirstRso = new RecordStreamObject(
-                TransactionRecord.getDefaultInstance(),
-                Transaction.getDefaultInstance(),
-                Instant.now());
-        assertThrows(UncheckedIOException.class,
+                TransactionRecord.getDefaultInstance(), Transaction.getDefaultInstance(), Instant.now());
+        assertThrows(
+                UncheckedIOException.class,
                 () -> subject.writeRecordPrefixForRecoveryStartingWith(mockFirstRso, recordStreamFileWriter));
     }
 

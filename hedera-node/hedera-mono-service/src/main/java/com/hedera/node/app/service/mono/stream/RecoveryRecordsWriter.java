@@ -1,22 +1,37 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.mono.stream;
-
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import javax.inject.Singleton;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseRecordFileConsensusTime;
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6SidecarRecordsByConsTimeIn;
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.visitWithSidecars;
 import static java.util.Objects.requireNonNull;
+
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A helper class for {@link RecordStreamFileWriter} to use when generating record stream
@@ -56,8 +71,7 @@ public class RecoveryRecordsWriter {
      * @param recordStreamFileWriter the {@link RecordStreamFileWriter} to use for writing the recovery stream
      */
     public void writeRecordPrefixForRecoveryStartingWith(
-            final RecordStreamObject firstItem,
-            final RecordStreamFileWriter recordStreamFileWriter) {
+            final RecordStreamObject firstItem, final RecordStreamFileWriter recordStreamFileWriter) {
         try {
             final var recoveryStartTime = firstItem.getTimestamp();
             final var filter = inclusionTestFor(recoveryStartTime, blockPeriodMs);
@@ -73,13 +87,14 @@ public class RecoveryRecordsWriter {
                             entry.txnRecord(),
                             entry.submittedTransaction(),
                             entry.consensusTime(),
-                            sidecars.stream().map(TransactionSidecarRecord::toBuilder).toList());
-                    // The first item we encounter must necessarily be the first in a file
+                            sidecars.stream()
+                                    .map(TransactionSidecarRecord::toBuilder)
+                                    .toList());
+                    // The first item we encounter must necessarily be the first in the file with the items prefix
                     if (itemIsFirst.get()) {
                         rso.setWriteNewFile();
                         itemIsFirst.set(false);
                     }
-                    System.out.println("BOOP " + rso.getTimestamp());
                     recordStreamFileWriter.addObject(rso);
                 }
             });
@@ -99,8 +114,9 @@ public class RecoveryRecordsWriter {
     static Predicate<String> inclusionTestFor(@NonNull final Instant firstRecoveryTime, final long blockPeriodMs) {
         return recordFile -> {
             final var fileTime = parseRecordFileConsensusTime(recordFile);
-            final var includesFirstRecoveryTime = !requireNonNull(firstRecoveryTime).isBefore(fileTime) &&
-                    fileTime.plusMillis(blockPeriodMs).isAfter(firstRecoveryTime);
+            final var includesFirstRecoveryTime =
+                    !requireNonNull(firstRecoveryTime).isBefore(fileTime)
+                            && fileTime.plusMillis(blockPeriodMs).isAfter(firstRecoveryTime);
             if (includesFirstRecoveryTime) {
                 logger.info("Found record file '{}' with a possible prefix for the recovery stream", recordFile);
             }
