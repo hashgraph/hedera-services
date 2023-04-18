@@ -17,13 +17,17 @@ The ingest-workflow is single-threaded, but multiple calls can run in parallel.
 
 The ingest workflow consists of the following steps:
 
+0. **Check node.** The node is checked to ensure it is not in a state that prevents it from processing transactions.
 1. **Parse transaction.** The transaction arrives as a byte-array. The required parts are parsed and the structure and syntax are validated.
-2. **Check throttles.** Throttling must be observed and checked as early as possible.
-3. **Get payer account.** The account data of the payer is read from the latest immutable state.
-4. **Verify payer's signature.** The signature of the payer is checked. (Please note: other signatures are not checked here, but in later stages)
-5. **Check account balance.** The account of the payer is checked to ensure it is able to pay the fee.
-6. **Submit to platform.** The transaction is submitted to the platform for further processing.
-7. **TransactionResponse.** Return `TransactionResponse`  with result-code.
+2. **Deduplicate.** The transaction is checked to ensure it has not been processed before.
+3. **Check throttles.** Throttling must be observed and checked as early as possible.
+4. **Get payer account.** The account data of the payer is read from the latest immutable state.
+5. Account Balance
+   1. **Check account balance.** The account of the payer is checked to ensure it is able to pay the fee.
+   2. **Estimate fee.** Compute the fee that is required to pay for the transaction.
+6. **Verify payer's signature.** The signature of the payer is checked. (Please note: other signatures are not checked here, but in later stages)
+7. **Submit to platform.** The transaction is submitted to the platform for further processing.
+8. **TransactionResponse.** Return `TransactionResponse`  with result-code.
 
 If all checks have been successful, the transaction has been submitted to the platform and the precheck-code of the returned `TransactionResponse` is `OK`.
 Otherwise the transaction is rejected with an appropriate response code.
@@ -67,17 +71,19 @@ The query-workflow is single-threaded, but multiple calls can run in parallel.
 The query workflow consists of the following steps:
 
 1. **Parse and check header.** The query arrives as a byte-array. The required parts are parsed and the type of the query (header) is extracted and validated.
-2. **Check query throttles.** Throttling must be observed and checked as early as possible.
-3. If a payment is required:
-   1. **Validate the CryptoTransfer.** The contained `CryptoTransfer` is validated.
-   2. **Check permissions.** It is checked, if the requester is actually allowed to do the query.
-   3. **Calculate costs.** The costs of the query are calculated.
-   4. **Check account balances.** The accounts of all payers are checked.
-4. **Check validity.** The query is checked semantically.
-5. **Submit payment to platform.** If a payment is required, the contained `CryptoTransfer` is submitted to the platform.
-6. The last step depends on what was requested
-   1. **Find response.** If the result of the query is expected (and not only the costs), the actual query is performed.
-   2. **Estimate costs.** If only the costs are requested, they are estimated. (Requests for costs are free, therefore the costs have not been calculated in step 3.)
+2. **Check node.** The node is checked to ensure it is not in a state that prevents it from processing transactions.
+3. **Check query throttles.** Throttling must be observed and checked as early as possible.
+4. If a payment is required:
+   1. **Ingest checks.** Run all checks of the ingest workflow on the `CryptoTransfer`.
+   2. **Validate the CryptoTransfer.** The contained `CryptoTransfer` is validated.
+   3. **Check permissions.** It is checked, if the requester is actually allowed to do the query.
+   4. **Calculate costs.** The costs of the query are calculated.
+   5. **Check account balances.** The accounts of all payers are checked.
+5. **Check validity.** The query is checked semantically.
+6. **Submit payment to platform.** If a payment is required, the contained `CryptoTransfer` is submitted to the platform.
+7. The last step depends on what was requested
+   1. **Estimate costs.** If only the costs are requested, they are estimated. (Requests for costs are free, therefore the costs have not been calculated in step 3.)
+   2. **Find response.** If the result of the query is expected (and not only the costs), the actual query is performed.
 
 Depending on what was requested, either the result of the query or the expected costs are returned to the caller.
 If at anytime an error occurs, a response with the error code is returned.

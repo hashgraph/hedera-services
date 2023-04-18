@@ -137,13 +137,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         Response response;
         long fee = 0L;
         try (final var wrappedState = stateAccessor.apply(responseType)) {
-            // Do some general pre-checks
+            // 2. Do some general pre-checks
             ingestChecker.checkNodeState();
             if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
 
-            // 2. Check query throttles
+            // 3. Check query throttles
             if (throttleAccumulator.shouldThrottleQuery(function, query)) {
                 throw new PreCheckException(BUSY);
             }
@@ -154,23 +154,26 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
             if (paymentRequired) {
-                // 3.i Validate CryptoTransfer
                 allegedPayment = queryHeader.paymentOrThrow();
+
+                // 4.i Ingest checks
                 final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
+
+                // 4.ii Validate CryptoTransfer
                 queryChecker.validateCryptoTransfer(transactionInfo);
 
                 txBody = transactionInfo.txBody();
                 final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
 
-                // 3.ii Check permissions
+                // 4.iii Check permissions
                 queryChecker.checkPermissions(payer, function);
 
-                // 3.iii Calculate costs
+                // 4.iv Calculate costs
                 final var feeData =
                         feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
                 fee = feeData.totalFee();
 
-                // 3.iv Check account balances
+                // 4.v Check account balances
                 queryChecker.validateAccountBalances(payer, transactionInfo, fee);
             } else {
                 if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
@@ -178,18 +181,18 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 }
             }
 
-            // 4. Check validity
+            // 5. Check validity of query
             final var context = new QueryContextImpl(state, query);
             handler.validate(context);
 
-            // 5. Submit payment to platform
+            // 6. Submit payment to platform
             if (paymentRequired) {
                 final var txBytes = PbjConverter.asWrappedBytes(Transaction.PROTOBUF, allegedPayment);
                 submissionManager.submit(txBody, txBytes);
             }
 
             if (handler.needsAnswerOnlyCost(responseType)) {
-                // 6.i Estimate costs
+                // 7.i Estimate costs
                 final var feeData =
                         feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
                 fee = feeData.totalFee();
@@ -197,7 +200,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 final var header = createResponseHeader(responseType, OK, fee);
                 response = handler.createEmptyResponse(header);
             } else {
-                // 6.ii Find response
+                // 7.ii Find response
                 final var header = createResponseHeader(responseType, OK, fee);
                 response = handler.findResponse(context, header);
             }
