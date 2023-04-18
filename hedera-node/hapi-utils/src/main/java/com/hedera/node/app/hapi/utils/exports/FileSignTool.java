@@ -115,6 +115,10 @@ public class FileSignTool {
     private static final String KEYSTORE_TYPE = "pkcs12";
     /** name of RecordStreamType */
     private static final String RECORD_STREAM_EXTENSION = "rcd";
+    /**
+     * name of compressed rcd file
+     */
+    private static final String COMPRESSED_RECORD_STREAM_EXTENSION = "rcd.gz";
 
     private static final DigestType currentDigestType = Cryptography.DEFAULT_DIGEST_TYPE;
 
@@ -465,16 +469,25 @@ public class FileSignTool {
     public static void signAllFiles(
             final String sourceDir, final String destDir, final StreamType streamType, final KeyPair sigKeyPair)
             throws IOException {
+        LOGGER.info(MARKER, "Signing all files in {} and writing signatures to {}", sourceDir, destDir);
+
         // create directory if necessary
         final File destDirFile =
                 new File(Files.createDirectories(Paths.get(destDir)).toUri());
 
         final File folder = new File(sourceDir);
-        final File[] streamFiles = folder.listFiles((dir, name) -> streamType.isStreamFile(name));
+        final File[] streamFiles = folder.listFiles(
+                (dir, name) -> streamType.isStreamFile(name) || name.endsWith(COMPRESSED_RECORD_STREAM_EXTENSION));
+        if (streamFiles == null || streamFiles.length == 0) {
+            LOGGER.error(MARKER, "No stream files found in {}", sourceDir);
+        }
         final File[] accountBalanceFiles = folder.listFiles((dir, name) -> {
             final String lowerCaseName = name.toLowerCase();
             return lowerCaseName.endsWith(CSV_EXTENSION) || lowerCaseName.endsWith(ACCOUNT_BALANCE_EXTENSION);
         });
+        if (accountBalanceFiles == null || accountBalanceFiles.length == 0) {
+            LOGGER.error(MARKER, "No account balance files found in {}", sourceDir);
+        }
         Arrays.sort(streamFiles); // sort by file names and timestamps
         Arrays.sort(accountBalanceFiles);
 

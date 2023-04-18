@@ -63,7 +63,6 @@ public class WritableTopicStore extends TopicStore {
 
     /**
      * Commits the changes to the underlying data storage.
-     * TODO: Not sure if the stores have responsibility of committing the changes. This might change in the future.
      */
     public void commit() {
         requireNonNull(topicState);

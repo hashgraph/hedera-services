@@ -213,4 +213,23 @@ public interface MerkleDbSettings {
      * @return length of a reserved buffer
      */
     int getReservedBufferLengthForLeafList();
+
+    /**
+     * Get the percentage, from 0.0 to 100.0, of available processors to use for {@link
+     * com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap} background flushing threads. Flushing
+     * happens on the main lifecycle thread, but some work can be done on these background
+     * threads, e.g. parallel bucket reads before they are updated and written back to disk.
+     *
+     * @return the configured percentage of processors to use for HalfDiskHashMap flushing
+     */
+    double getPercentHalfDiskHashMapFlushThreads();
+
+    /**
+     * Get the number of threads to use for {@link com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap}
+     * background flushing. If not set explicitly, it is equal to the number of available CPUs multiplied
+     * by {@link #getPercentHalfDiskHashMapFlushThreads()}.
+     *
+     * @return the number of threads to use for HalfDiskHashMap flushing
+     */
+    int getNumHalfDiskHashMapFlushThreads();
 }

@@ -83,7 +83,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
@@ -112,7 +112,7 @@ import org.apache.logging.log4j.Logger;
 
 /** The Merkle tree root of the Hedera Services world state. */
 public class ServicesState extends PartialNaryMerkleInternal
-        implements MerkleInternal, SwirldState2, StateChildrenProvider {
+        implements MerkleInternal, SwirldState, StateChildrenProvider {
     private static final Logger log = LogManager.getLogger(ServicesState.class);
 
     private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
@@ -416,22 +416,6 @@ public class ServicesState extends PartialNaryMerkleInternal
 
         return that;
     }
-
-    /* --- Archivable --- */
-    @Override
-    public synchronized void archive() {
-        if (metadata != null) {
-            metadata.release();
-        }
-
-        topics().archive();
-        tokens().archive();
-        accounts().archive();
-        uniqueTokens().archive();
-        tokenAssociations().archive();
-        stakingInfo().archive();
-    }
-
     /* --- MerkleNode --- */
     @Override
     public synchronized void destroyNode() {

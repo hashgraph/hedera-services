@@ -19,6 +19,7 @@ package com.hedera.node.app.grpc;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.node.app.utils.TestUtils;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.swirlds.common.metrics.Metrics;
@@ -27,7 +28,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import utils.TestUtils;
 
 /**
  * Tests for the {@link GrpcServiceBuilder}. Since the gRPC system deals in bytes, these tests use simple strings
@@ -37,8 +37,8 @@ final class GrpcServiceBuilderTest {
     private static final String SERVICE_NAME = "TestService";
 
     // These are simple no-op workflows
-    private final QueryWorkflow queryWorkflow = (session, requestBuffer, responseBuffer) -> {};
-    private final IngestWorkflow ingestWorkflow = (session, requestBuffer, responseBuffer) -> {};
+    private final QueryWorkflow queryWorkflow = (requestBuffer, responseBuffer) -> {};
+    private final IngestWorkflow ingestWorkflow = (requestBuffer, responseBuffer) -> {};
 
     private GrpcServiceBuilder builder;
     private final Metrics metrics = TestUtils.metrics();

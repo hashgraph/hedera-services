@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V extends VirtualValue>
+public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue>
         implements DataItemSerializer<VirtualLeafRecord<K, V>> {
 
     private final long currentVersion;

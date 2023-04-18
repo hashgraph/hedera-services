@@ -100,7 +100,7 @@ gitRepositories {
     // choose tag or branch of HAPI you would like to test with
     // this looks for a tag in hedera-protobufs repo
     // This version needs to match tha HAPI version below in versionCatalogs
-    tag.set("v0.37.0")
+    tag.set("add-pbj-types-for-state")
     // do not load project from repo
     autoInclude.set(false)
   }
@@ -114,9 +114,8 @@ dependencyResolutionManagement {
     // distribution. These libs can be depended on during compilation, or bundled as part of
     // runtime.
     create("libs") {
-      // The HAPI API version to use, this need to match the Hapi protubuf java version from pom.xml
-      // (https://github.com/hashgraph/hedera-protobufs-java.git)
-      version("hapi-version", "0.37.0-SNAPSHOT")
+      // The HAPI API version to use, this need to match the tag set on gitRepositories above
+      version("hapi-version", "0.37.0-services-SNAPSHOT")
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.5.1")
@@ -143,7 +142,7 @@ dependencyResolutionManagement {
       version("netty-version", "4.1.66.Final")
       version("protobuf-java-version", "3.19.4")
       version("slf4j-version", "2.0.3")
-      version("swirlds-version", "0.36.1")
+      version("swirlds-version", "0.37.0-adhoc.xc76224af")
       version("tuweni-version", "2.2.0")
       version("jna-version", "5.12.1")
       version("jsr305-version", "3.0.2")
@@ -178,7 +177,8 @@ dependencyResolutionManagement {
               "swirlds-merkle",
               "swirlds-fcqueue",
               "swirlds-jasperdb",
-              "swirlds-virtualmap"))
+              "swirlds-virtualmap",
+              "swirlds-test-framework"))
 
       // Define the individual libraries
       library("pbj-runtime", "com.hedera.pbj", "pbj-runtime").versionRef("pbj-version")
@@ -245,6 +245,8 @@ dependencyResolutionManagement {
       library("swirlds-fcqueue", "com.swirlds", "swirlds-fcqueue").versionRef("swirlds-version")
       library("swirlds-jasperdb", "com.swirlds", "swirlds-jasperdb").versionRef("swirlds-version")
       library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap")
+          .versionRef("swirlds-version")
+      library("swirlds-test-framework", "com.swirlds", "swirlds-test-framework")
           .versionRef("swirlds-version")
       library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
       library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")

@@ -32,9 +32,12 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -101,13 +104,19 @@ public class TransactionDispatcher {
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody txn,
             @NonNull final WritableStoreFactory writableStoreFactory) {
-        final var topicStore = writableStoreFactory.createTopicStore();
         switch (function) {
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(
-                    txn.consensusCreateTopicOrThrow(), topicStore, usageLimits);
-            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(txn.consensusUpdateTopicOrThrow(), topicStore);
-            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(txn.consensusDeleteTopicOrThrow(), topicStore);
-            case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(txn, topicStore);
+                    txn.consensusCreateTopicOrThrow(), writableStoreFactory.createTopicStore(), usageLimits);
+            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(
+                    txn.consensusUpdateTopicOrThrow(), writableStoreFactory.createTopicStore());
+            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(
+                    txn.consensusDeleteTopicOrThrow(), writableStoreFactory.createTopicStore());
+            case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(
+                    txn, writableStoreFactory.createTopicStore());
+            case TOKEN_GRANT_KYC_TO_ACCOUNT -> dispatchTokenGrantKycToAccount(
+                    txn, writableStoreFactory.createTokenRelStore());
+            case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
+            case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -122,11 +131,12 @@ public class TransactionDispatcher {
      */
     //    @SuppressWarnings("java:S1479") // ignore too many branches warning
     public void dispatchPreHandle(
-            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context) {
+            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context)
+            throws PreCheckException {
         requireNonNull(storeFactory);
         requireNonNull(context);
 
-        final var txBody = context.getTxn();
+        final var txBody = context.body();
         switch (txBody.data().kind()) {
             case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler()
                     .preHandle(context);
@@ -190,8 +200,8 @@ public class TransactionDispatcher {
                     .preHandle(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
                     .preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(context);
-            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(context);
+            case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(context, storeFactory.createTokenStore());
+            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(context, storeFactory.createTokenStore());
 
             case UTIL_PRNG -> handlers.utilPrngHandler().preHandle(context);
 
@@ -272,5 +282,42 @@ public class TransactionDispatcher {
                 topicStore);
         txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
         topicStore.commit();
+    }
+
+    /**
+     * Dispatches the token grant KYC transaction to the appropriate handler.
+     *
+     * @param tokenGrantKyc the token grant KYC transaction
+     * @param tokenRelStore the token relation store
+     */
+    private void dispatchTokenGrantKycToAccount(
+            TransactionBody tokenGrantKyc, WritableTokenRelationStore tokenRelStore) {
+        final var handler = handlers.tokenGrantKycToAccountHandler();
+        handler.handle(tokenGrantKyc, tokenRelStore);
+        tokenRelStore.commit();
+    }
+
+    /**
+     * Dispatches the token unpause transaction to the appropriate handler.
+     * @param tokenUnpause the token unpause transaction
+     * @param tokenStore the token store
+     */
+    private void dispatchTokenUnpause(
+            @NonNull final TransactionBody tokenUnpause, @NonNull final WritableTokenStore tokenStore) {
+        final var handler = handlers.tokenUnpauseHandler();
+        handler.handle(tokenUnpause, tokenStore);
+        tokenStore.commit();
+    }
+
+    /**
+     * Dispatches the token pause transaction to the appropriate handler.
+     * @param tokenPause the token pause transaction
+     * @param tokenStore the token store
+     */
+    private void dispatchTokenPause(
+            @NonNull final TransactionBody tokenPause, @NonNull final WritableTokenStore tokenStore) {
+        final var handler = handlers.tokenPauseHandler();
+        handler.handle(tokenPause, tokenStore);
+        tokenStore.commit();
     }
 }
