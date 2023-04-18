@@ -109,6 +109,7 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
@@ -313,6 +314,9 @@ class TransactionDispatcherTest {
 
     @Mock
     private WritableTokenStore writableTokenStore;
+
+    @Mock
+    private WritableTokenRelationStore writableTokenRelStore;
 
     @Mock
     private UsageLimits usageLimits;
@@ -533,6 +537,16 @@ class TransactionDispatcherTest {
         dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE, transactionBody, writableStoreFactory);
 
         verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
+    }
+
+    @Test
+    void dispatchesTokenGrantKycAsExpected() {
+        given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
+
+        dispatcher.dispatchHandle(
+                HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT, transactionBody, writableStoreFactory);
+
+        verify(writableTokenRelStore).commit();
     }
 
     @Test

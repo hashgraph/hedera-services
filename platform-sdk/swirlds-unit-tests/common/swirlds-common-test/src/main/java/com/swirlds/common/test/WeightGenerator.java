@@ -19,20 +19,20 @@ package com.swirlds.common.test;
 import java.util.List;
 
 /**
- * Generates a list of node stakes given a seed and number of nodes. The list of stake values must have a size equal to
+ * Generates a list of node weights given a seed and number of nodes. The list of weight values must have a size equal to
  * the specified number of nodes.
  */
 @FunctionalInterface
-public interface StakeGenerator {
+public interface WeightGenerator {
 
     /**
-     * Generate a list of stake values.
+     * Generate a list of weight values.
      *
      * @param seed
      * 		the seed to use for randomization. May or may not be used depending on the implementation.
      * @param numberOfNodes
-     * 		the number of nodes to generate stake for
-     * @return a list of stakes equal in size to {@code numberOfNodes}
+     * 		the number of nodes to generate weight for
+     * @return a list of weights equal in size to {@code numberOfNodes}
      */
-    List<Long> getStakes(Long seed, int numberOfNodes);
+    List<Long> getWeights(Long seed, int numberOfNodes);
 }

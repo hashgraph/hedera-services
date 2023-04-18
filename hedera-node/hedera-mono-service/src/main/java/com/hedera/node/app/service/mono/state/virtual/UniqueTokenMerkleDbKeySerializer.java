@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -62,13 +61,6 @@ public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTok
     @Override
     public int getTypicalSerializedSize() {
         return UniqueTokenKey.ESTIMATED_SIZE_BYTES;
-    }
-
-    @Override
-    public int serialize(final UniqueTokenKey key, final SerializableDataOutputStream out) throws IOException {
-        Objects.requireNonNull(key);
-        Objects.requireNonNull(out);
-        return key.serializeTo(out::write);
     }
 
     @Override
