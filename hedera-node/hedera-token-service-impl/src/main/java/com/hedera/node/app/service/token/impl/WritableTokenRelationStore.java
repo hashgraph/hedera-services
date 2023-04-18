@@ -45,7 +45,7 @@ public class WritableTokenRelationStore {
      * @param states The state to use.
      */
     public WritableTokenRelationStore(@NonNull final WritableStates states) {
-        this.tokenRelState = requireNonNull(states).get("TOKEN_RELATIONS");
+        this.tokenRelState = requireNonNull(states).get(TokenServiceImpl.TOKEN_RELS_KEY);
     }
 
     /**
