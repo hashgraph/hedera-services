@@ -83,7 +83,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
             if (state.isNull()) {
                 logger.info(
                         RECONNECT.getMarker(),
-                        "Rejecting reconnect request from node {} " + "due to lack of a fully signed state",
+                        "Rejecting reconnect request from node {} due to lack of a fully signed state",
                         connection.getOtherId().getId());
                 ReconnectUtils.denyReconnect(connection);
                 return;
@@ -93,7 +93,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                 ReconnectUtils.denyReconnect(connection);
                 logger.warn(
                         RECONNECT.getMarker(),
-                        "Rejecting reconnect request from node {} " + "due to lack of an initialized signed state.",
+                        "Rejecting reconnect request from node {} due to lack of an initialized signed state.",
                         connection.getOtherId().getId());
                 return;
             } else if (!state.get().isComplete()) {
