@@ -17,12 +17,9 @@
 package com.hedera.test.utils;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.accounts.AccountBuilder;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -31,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TestFixturesKeyLookup implements AccountAccess {
     private final ReadableKVState<String, Long> aliases;
-    private final ReadableKVState<EntityNumVirtualKey, HederaAccount> accounts;
+    private final ReadableKVState<EntityNumVirtualKey, Account> accounts;
 
     public TestFixturesKeyLookup(@NonNull final ReadableStates states) {
         this.accounts = states.get("ACCOUNTS");
@@ -48,150 +45,18 @@ public class TestFixturesKeyLookup implements AccountAccess {
                 return null;
             } else {
                 final var account = accounts.get(new EntityNumVirtualKey(num));
-                return account == null ? null : new StubbedAccount(num, alias, account);
+                return account == null ? null : getNewAccount(num, alias, account);
             }
         } else if (!accountID.hasAccountNum()) {
             return null;
         } else {
             final long num = accountID.accountNumOrThrow();
             final var account = accounts.get(new EntityNumVirtualKey(num));
-            return account == null ? null : new StubbedAccount(num, Bytes.EMPTY, account);
+            return account == null ? null : getNewAccount(num, Bytes.EMPTY, account);
         }
     }
 
-    private static final class StubbedAccount implements Account {
-        private final long num;
-        private final Bytes alias;
-        private final HederaAccount account;
-
-        private StubbedAccount(long num, Bytes alias, HederaAccount account) {
-            this.num = num;
-            this.alias = alias;
-            this.account = account;
-        }
-
-        @Override
-        public long accountNumber() {
-            return num;
-        }
-
-        @Nullable
-        @Override
-        public Bytes alias() {
-            return alias;
-        }
-
-        @Override
-        public boolean isHollow() {
-            return false;
-        }
-
-        @Nullable
-        @Override
-        public HederaKey getKey() {
-            return account.getAccountKey();
-        }
-
-        @Override
-        public long expiry() {
-            return account.getExpiry();
-        }
-
-        @Override
-        public long balanceInTinyBar() {
-            return account.getBalance();
-        }
-
-        @Override
-        public long autoRenewSecs() {
-            return account.getAutoRenewSecs();
-        }
-
-        @NonNull
-        @Override
-        public String memo() {
-            return account.getMemo();
-        }
-
-        @Override
-        public boolean isDeleted() {
-            return account.isDeleted();
-        }
-
-        @Override
-        public boolean isSmartContract() {
-            return account.isSmartContract();
-        }
-
-        @Override
-        public boolean isReceiverSigRequired() {
-            return account.isReceiverSigRequired();
-        }
-
-        @Override
-        public long numberOfOwnedNfts() {
-            return account.getNftsOwned();
-        }
-
-        @Override
-        public int maxAutoAssociations() {
-            return account.getMaxAutomaticAssociations();
-        }
-
-        @Override
-        public int usedAutoAssociations() {
-            return account.getUsedAutoAssociations();
-        }
-
-        @Override
-        public int numAssociations() {
-            return account.getNumAssociations();
-        }
-
-        @Override
-        public int numPositiveBalances() {
-            return account.getNumPositiveBalances();
-        }
-
-        @Override
-        public long ethereumNonce() {
-            return account.getEthereumNonce();
-        }
-
-        @Override
-        public long stakedToMe() {
-            return account.getStakedToMe();
-        }
-
-        @Override
-        public long stakePeriodStart() {
-            return account.getStakePeriodStart();
-        }
-
-        @Override
-        public long stakedNum() {
-            return account.totalStake();
-        }
-
-        @Override
-        public boolean declineReward() {
-            return account.isDeclinedReward();
-        }
-
-        @Override
-        public long stakeAtStartOfLastRewardedPeriod() {
-            return account.totalStakeAtStartOfLastRewardedPeriod();
-        }
-
-        @Override
-        public long autoRenewAccountNumber() {
-            return account.getAutoRenewAccount().num();
-        }
-
-        @NonNull
-        @Override
-        public AccountBuilder copy() {
-            throw new UnsupportedOperationException("copy not supported");
-        }
+    private Account getNewAccount(long num, Bytes alias, Account account) {
+        return account.copyBuilder().alias(alias).accountNumber(num).build();
     }
 }

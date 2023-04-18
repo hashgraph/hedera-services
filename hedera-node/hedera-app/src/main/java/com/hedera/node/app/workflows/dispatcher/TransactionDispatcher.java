@@ -230,13 +230,13 @@ public class TransactionDispatcher {
         return context -> dispatchPreHandle(storeFactory, context);
     }
 
+    // TODO: In all the below methods, commit will be called in workflow or some other place
+    //  when handle workflow is implemented
     private void dispatchConsensusDeleteTopic(
             @NonNull final ConsensusDeleteTopicTransactionBody topicDeletion,
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusDeleteTopicHandler();
         handler.handle(topicDeletion, topicStore);
-        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
-        // This is temporary solution to make sure that topic is created
         topicStore.commit();
     }
 
@@ -245,8 +245,6 @@ public class TransactionDispatcher {
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusUpdateTopicHandler();
         handler.handle(handleContext, topicUpdate, topicStore);
-        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
-        // This is temporary solution to make sure that topic is created
         topicStore.commit();
     }
 
@@ -266,8 +264,6 @@ public class TransactionDispatcher {
         txnCtx.setCreated(PbjConverter.fromPbj(
                 TopicID.newBuilder().topicNum(recordBuilder.getCreatedTopic()).build()));
         usageLimits.refreshTopics();
-        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
-        // This is temporary solution to make sure that topic is created
         topicStore.commit();
     }
 

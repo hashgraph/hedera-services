@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -71,8 +70,7 @@ public class TokenCreateHandler implements TransactionHandler {
             context.requireKeyOrThrow(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
         }
         if (tokenCreateTxnBody.hasAdminKey()) {
-            final var adminKey = asHederaKey(tokenCreateTxnBody.adminKeyOrThrow());
-            adminKey.ifPresent(context::requireKey);
+            context.requireKey(tokenCreateTxnBody.adminKeyOrThrow());
         }
         final var customFees = tokenCreateTxnBody.customFeesOrElse(emptyList());
         addCustomFeeCollectorKeys(context, customFees);

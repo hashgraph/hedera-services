@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
@@ -51,6 +52,7 @@ import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoAddLiveHashTransactionBody;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -135,8 +137,6 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
-import com.hedera.node.app.spi.accounts.Account;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -337,10 +337,10 @@ class TransactionDispatcherTest {
     private TransactionDispatcher dispatcher;
 
     @BeforeEach
-    void setup(@Mock final ReadableStates readableStates, @Mock HederaKey payerKey) {
+    void setup(@Mock final ReadableStates readableStates, @Mock Key payerKey) {
         when(state.createReadableStates(any())).thenReturn(readableStates);
         when(accountStore.getAccountById(any(AccountID.class))).thenReturn(account);
-        lenient().when(account.getKey()).thenReturn(payerKey);
+        lenient().when(account.key()).thenReturn(payerKey);
 
         handlers = new TransactionHandlers(
                 consensusCreateTopicHandler,
