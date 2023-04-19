@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookValidator;
@@ -64,6 +65,9 @@ public class AddressBookInitializer {
             DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-m-ss").withZone(ZoneId.systemDefault());
     /** For logging info, warn, and error. */
     private static final Logger logger = LogManager.getLogger(AddressBookInitializer.class);
+    /** The context for the platform */
+    @NonNull
+    private final PlatformContext platformContext;
     /** The current version of the application from config.txt. */
     @NonNull
     private final SoftwareVersion currentVersion;
@@ -97,18 +101,20 @@ public class AddressBookInitializer {
      * @param softwareUpgrade   Indicate that the software version has upgraded.
      * @param signedState       The signed state loaded from disk.  May be null.
      * @param configAddressBook The address book derived from config.txt. Must not be null.
-     * @param addressBookConfig The configuration settings for AddressBooks.
+     * @param platformContext   The context for the platform. Must not be null.
      */
     public AddressBookInitializer(
             @NonNull final SoftwareVersion currentVersion,
             final boolean softwareUpgrade,
             @Nullable final SignedState signedState,
             @NonNull final AddressBook configAddressBook,
-            @NonNull final AddressBookConfig addressBookConfig) {
+            @NonNull final PlatformContext platformContext) {
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
         this.softwareUpgrade = softwareUpgrade;
         this.configAddressBook = Objects.requireNonNull(configAddressBook, "The configAddressBook must not be null.");
-        Objects.requireNonNull(addressBookConfig, "The addressBookConfig must not be null.");
+        this.platformContext = Objects.requireNonNull(platformContext, "The platformContext must not be null.");
+        final AddressBookConfig addressBookConfig =
+                platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
         this.loadedSignedState = signedState;
         this.loadedAddressBook = loadedSignedState == null ? null : loadedSignedState.getAddressBook();
         this.pathToAddressBookDirectory = Path.of(addressBookConfig.addressBookDirectory());
@@ -168,7 +174,7 @@ public class AddressBookInitializer {
                     "The address book weight may be updated by the application using data from the state snapshot.");
             candidateAddressBook = loadedSignedState
                     .getSwirldState()
-                    .updateWeight(configAddressBook.copy())
+                    .updateWeight(configAddressBook.copy(), platformContext)
                     .copy();
         }
         candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);

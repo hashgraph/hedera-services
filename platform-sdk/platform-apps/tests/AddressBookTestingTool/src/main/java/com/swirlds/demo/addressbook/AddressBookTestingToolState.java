@@ -33,8 +33,10 @@ import static com.swirlds.platform.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HE
 import static com.swirlds.platform.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
 import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
+import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -56,6 +58,7 @@ import com.swirlds.platform.Network;
 import com.swirlds.platform.config.AddressBookConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
 import java.nio.file.Files;
@@ -65,7 +68,6 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -83,8 +85,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     private static AddressBookTestingToolConfig testingToolConfig;
     /** the address book configuration */
     private static AddressBookConfig addressBookConfig;
-    /** flag indicating if staking behavior has been logged. */
-    private static AtomicBoolean logStakingBehavior = new AtomicBoolean(true);
+    /** flag indicating if weighting behavior has been logged. */
+    private static AtomicBoolean logWeightingBehavior = new AtomicBoolean(true);
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -98,6 +100,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     private final AtomicBoolean validationPerformed = new AtomicBoolean(false);
 
     private Platform platform = null;
+
+    private PlatformContext context = null;
 
     /**
      * The true "state" of this app. Each transaction is just an integer that gets added to this value.
@@ -117,6 +121,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         this.runningSum = that.runningSum;
         this.selfId = that.selfId;
         this.platform = that.platform;
+        this.context = that.context;
         this.validationPerformed.set(that.validationPerformed.get());
     }
 
@@ -145,6 +150,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         testingToolConfig = platform.getContext().getConfiguration().getConfigData(AddressBookTestingToolConfig.class);
 
         this.platform = platform;
+        this.context = platform.getContext();
 
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
@@ -176,11 +182,13 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             if (validateTestScenario()) {
                 logger.info(
                         STARTUP.getMarker(),
-                        "Test scenario {} validated successfully.",
+                        "Test scenario {}: finished without errors.",
                         testingToolConfig.testScenario());
             } else {
                 logger.error(
-                        EXCEPTION.getMarker(), "Test scenario {} validation failed.", testingToolConfig.testScenario());
+                        EXCEPTION.getMarker(),
+                        "Test scenario {}: validation failed with errors.",
+                        testingToolConfig.testScenario());
             }
         }
     }
@@ -243,17 +251,22 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @Override
     @NonNull
-    public AddressBook updateWeight(@NonNull final AddressBook addressBook) {
+    public synchronized AddressBook updateWeight(
+            @NonNull final AddressBook addressBook, @NonNull final PlatformContext context) {
         Objects.requireNonNull(addressBook, "the address book cannot be null");
-        final int stakingBehavior = testingToolConfig.stakingBehavior();
-        logger.info("updateWeight called in State. Staking Behavior: {}", stakingBehavior);
-        switch (stakingBehavior) {
+        this.context = Objects.requireNonNull(context, "the platform context cannot be null");
+        final int weightingBehavior = context.getConfiguration()
+                .getConfigData(AddressBookTestingToolConfig.class)
+                .weightingBehavior();
+        logger.info("updateWeight called in State. Weighting Behavior: {}", weightingBehavior);
+        switch (weightingBehavior) {
             case 1:
-                return stakingBehavior1(addressBook);
+                return weightingBehavior1(addressBook);
             case 2:
-                return stakingBehavior2(addressBook);
+                return weightingBehavior2(addressBook);
             default:
-                logger.info(STARTUP.getMarker(), "Staking Behavior {}: no change to address book.", stakingBehavior);
+                logger.info(
+                        STARTUP.getMarker(), "Weighting Behavior {}: no change to address book.", weightingBehavior);
                 return addressBook;
         }
     }
@@ -265,9 +278,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @return the updated address book.
      */
     @NonNull
-    private AddressBook stakingBehavior1(@NonNull final AddressBook addressBook) {
-        if (logStakingBehavior.get()) {
-            logger.info(STARTUP.getMarker(), "Staking Behavior 1: updating all nodes to have 10 weight.");
+    private AddressBook weightingBehavior1(@NonNull final AddressBook addressBook) {
+        if (logWeightingBehavior.get()) {
+            logger.info(STARTUP.getMarker(), "Weighting Behavior 1: updating all nodes to have 10 weight.");
         }
         for (int i = 0; i < addressBook.getSize(); i++) {
             addressBook.updateWeight(i, 10);
@@ -282,11 +295,11 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @return the updated address book.
      */
     @NonNull
-    private AddressBook stakingBehavior2(@NonNull final AddressBook addressBook) {
-        if (logStakingBehavior.get()) {
+    private AddressBook weightingBehavior2(@NonNull final AddressBook addressBook) {
+        if (logWeightingBehavior.get()) {
             logger.info(
                     STARTUP.getMarker(),
-                    "Staking Behavior 2: updating all nodes to have weight equal to their nodeId.");
+                    "Weighting Behavior 2: updating all nodes to have weight equal to their nodeId.");
         }
         for (int i = 0; i < addressBook.getSize(); i++) {
             addressBook.updateWeight(i, i);
@@ -298,23 +311,25 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         if (platform == null) {
             throw new IllegalStateException("platform is null, init has not been called.");
         }
-        logStakingBehavior.set(false);
-        final int testScenario = testingToolConfig.testScenario();
+        logWeightingBehavior.set(false);
+        final String testScenario = testingToolConfig.testScenario();
         try {
             logger.info(DEMO_INFO.getMarker(), "Validating test scenario {}.", testScenario);
             switch (testScenario) {
-                case 1:
-                    return testScenario1GenesisForceUseOfConfigAddressBook();
-                case 2:
-                    return testScenario2GenesisUnforcedUseOfConfigAddressBook();
-                case 3:
-                    return testScenario3NoSoftwareUpdateUseSavedStateAddressBook();
-                case 4:
-                    return testScenario4NoSoftwareUpdateForceUseOfConfigAddressBook();
-                case 5:
-                    return testScenario5SoftwareUpgradeStakingBehavior2();
-                case 6:
-                    return testScenario6SoftwareUpgradeForceUseOfConfigAddressBook();
+                case "genesisForceUseOfConfigAddressBookTrue":
+                    return genesisForceUseOfConfigAddressBookTrue(testScenario);
+                case "genesisForceUseOfConfigAddressBookFalse":
+                    return genesisForceUseOfConfigAddressBookFalse(testScenario);
+                case "noSoftwareUpgradeUseSavedStateAddressBook":
+                    return noSoftwareUpgradeUseSavedStateAddressBook(testScenario);
+                case "noSoftwareUpgradeForceUseOfConfigAddressBook":
+                    return noSoftwareUpgradeForceUseOfConfigAddressBook(testScenario);
+                case "softwareUpgradeWeightingBehavior2":
+                    return softwareUpgradeWeightingBehavior2(testScenario);
+                case "softwareUpgradeForceUseOfConfigAddressBook":
+                    return softwareUpgradeForceUseOfConfigAddressBook(testScenario);
+                case "skipValidation":
+                    // fall into default case. No validation performed.
                 default:
                     logger.info(DEMO_INFO.getMarker(), "Test Scenario {}: no validation performed.", testScenario);
                     return true;
@@ -325,8 +340,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         }
     }
 
-    private boolean testScenario6SoftwareUpgradeForceUseOfConfigAddressBook() throws IOException, ParseException {
-        if (!checkTestScenarioConditions(true, 6, 2, 2)) {
+    private boolean softwareUpgradeForceUseOfConfigAddressBook(@NonNull final String testScenario)
+            throws IOException, ParseException {
+        if (!checkTestScenarioConditions(true, testScenario, 2, 2)) {
             return false;
         }
 
@@ -334,17 +350,18 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
+                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
                 && theConfigurationAddressBookWasUsed();
     }
 
-    private boolean testScenario5SoftwareUpgradeStakingBehavior2() throws IOException, ParseException {
-        if (!checkTestScenarioConditions(false, 5, 2, 2)) {
+    private boolean softwareUpgradeWeightingBehavior2(@NonNull final String testScenario)
+            throws IOException, ParseException {
+        if (!checkTestScenarioConditions(false, testScenario, 2, 2)) {
             return false;
         }
 
@@ -352,7 +369,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, false)
                 && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
@@ -360,8 +377,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && equalsAsConfigText(platformAddressBook, updatedAddressBook, true);
     }
 
-    private boolean testScenario4NoSoftwareUpdateForceUseOfConfigAddressBook() throws IOException, ParseException {
-        if (!checkTestScenarioConditions(true, 4, 1, 2)) {
+    private boolean noSoftwareUpgradeForceUseOfConfigAddressBook(@NonNull final String testScenario)
+            throws IOException, ParseException {
+        if (!checkTestScenarioConditions(true, testScenario, 1, 1)) {
             return false;
         }
 
@@ -369,17 +387,17 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
+                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
                 && theConfigurationAddressBookWasUsed();
     }
 
-    private boolean testScenario3NoSoftwareUpdateUseSavedStateAddressBook() throws IOException, ParseException {
-        if (!checkTestScenarioConditions(false, 3, 1, 2)) {
+    private boolean noSoftwareUpgradeUseSavedStateAddressBook(String testScenario) throws IOException, ParseException {
+        if (!checkTestScenarioConditions(false, testScenario, 1, 1)) {
             return false;
         }
 
@@ -387,23 +405,25 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
-        return equalsAsConfigText(platformAddressBook, configAddressBook, false)
+        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false);
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
+                && theStateAddressBookWasUsed();
     }
 
-    private boolean testScenario2GenesisUnforcedUseOfConfigAddressBook() throws IOException, ParseException {
-        if (!checkTestScenarioConditions(false, 2, 1, 1)) {
+    private boolean genesisForceUseOfConfigAddressBookFalse(@NonNull final String testScenario)
+            throws IOException, ParseException {
+        if (!checkTestScenarioConditions(false, testScenario, 1, 1)) {
             return false;
         }
 
         final AddressBook platformAddressBook = platform.getAddressBook();
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
@@ -411,15 +431,16 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && theStateAddressBookWasNull(true);
     }
 
-    private boolean testScenario1GenesisForceUseOfConfigAddressBook() throws IOException, ParseException {
-        if (!checkTestScenarioConditions(true, 1, 1, 1)) {
+    private boolean genesisForceUseOfConfigAddressBookTrue(@NonNull final String testScenario)
+            throws IOException, ParseException {
+        if (!checkTestScenarioConditions(true, testScenario, 1, 1)) {
             return false;
         }
 
         final AddressBook platformAddressBook = platform.getAddressBook();
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
@@ -434,14 +455,14 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @param forceUseConfigAddressBook the expected value of `addressBook.forceUseOfConfigAddressBook`
      * @param testScenario              the expected value of `testingTool.testScenario`
      * @param softwareVersion           the expected value of `testingTool.softwareVersion`
-     * @param stakingBehavior           the expected value of `testingTool.stakingBehavior`
+     * @param weightingBehavior         the expected value of `testingTool.weightingBehavior`
      * @return true if the preconditions are met, false otherwise
      */
     private boolean checkTestScenarioConditions(
             final boolean forceUseConfigAddressBook,
-            final int testScenario,
+            final String testScenario,
             final int softwareVersion,
-            final int stakingBehavior) {
+            final int weightingBehavior) {
         boolean passed = true;
         if (addressBookConfig.forceUseOfConfigAddressBook() != forceUseConfigAddressBook) {
             logger.error(
@@ -464,11 +485,11 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     softwareVersion);
             passed = false;
         }
-        if (testingToolConfig.stakingBehavior() != stakingBehavior) {
+        if (testingToolConfig.weightingBehavior() != weightingBehavior) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "The test scenario requires the setting `testingTool.stakingBehavior, {}`",
-                    stakingBehavior);
+                    "The test scenario requires the setting `testingTool.weightingBehavior, {}`",
+                    weightingBehavior);
             passed = false;
         }
         return passed;
@@ -525,6 +546,21 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             } else {
                 logger.error(EXCEPTION.getMarker(), "The state address book was null. {}", StackTrace.getStackTrace());
             }
+        }
+        return pass;
+    }
+
+    /**
+     * Checks if the state address book was used.
+     *
+     * @return true if the state address book was used, false otherwise.
+     */
+    private boolean theStateAddressBookWasUsed() throws IOException {
+        final String fileContents = getLastAddressBookFileEndsWith(DEBUG);
+        final String textAfterUsedHeader = getTextAfterHeader(fileContents, USED_ADDRESS_BOOK_HEADER);
+        final boolean pass = textAfterUsedHeader.contains(STATE_ADDRESS_BOOK_USED);
+        if (!pass) {
+            logger.error(EXCEPTION.getMarker(), "The state address book was not used. {}", StackTrace.getStackTrace());
         }
         return pass;
     }
@@ -644,14 +680,21 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     @NonNull
     private String getLastAddressBookFileEndsWith(@NonNull final String suffix) throws IOException {
         final Path addressBookDirectory = Path.of(addressBookConfig.addressBookDirectory());
+        File[] files = addressBookDirectory.toFile().listFiles(File::isFile);
         final AtomicReference<Path> lastAddressBookDebugFile = new AtomicReference<>(null);
-        try (final Stream<Path> files = Files.list(addressBookDirectory)) {
-            files.sorted().forEach(file -> {
-                if (file.toString().endsWith(suffix)) {
-                    lastAddressBookDebugFile.set(file);
+        for (int i = 0; i < files.length; i++) {
+            if (files[i].getName().endsWith(suffix)) {
+                String fileName = files[i].getName();
+                Path lastAddressBookDebugFilePath = lastAddressBookDebugFile.get();
+                if (lastAddressBookDebugFilePath == null) {
+                    lastAddressBookDebugFile.set(files[i].toPath());
+                } else if (fileName.compareTo(
+                                lastAddressBookDebugFilePath.getFileName().toString())
+                        > 0) {
+                    lastAddressBookDebugFile.set(files[i].toPath());
                 }
-            });
-            return Files.readString(lastAddressBookDebugFile.get());
+            }
         }
+        return Files.readString(lastAddressBookDebugFile.get());
     }
 }

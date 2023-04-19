@@ -22,7 +22,7 @@ Add the following lines to the settings.txt file
 
 ```
 addressBookTestingTool.softwareVersion, 1
-addressBookTestingTool.stakingBehavior, 1
+addressBookTestingTool.weightingBehavior, 1
 ```
 ## Testing Genesis Behavior
 
@@ -33,9 +33,9 @@ addressBookTestingTool.stakingBehavior, 1
 ```
 state.saveStatePeriod,                    0
 addressBook.forceUseOfConfigAddressBook,  true
-addressBookTestingTool.testScenario,      1
+addressBookTestingTool.testScenario,      genesisForceUseOfConfigAddressBookTrue
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 
@@ -70,9 +70,9 @@ Errors are logged if any of the following conditions are violated.
 ```
 state.saveStatePeriod,                    0
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      2
+addressBookTestingTool.testScenario,      genesisForceUseOfConfigAddressBookFalse
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 
@@ -109,9 +109,9 @@ Errors are logged if any of the following conditions are violated.
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      0
+addressBookTestingTool.testScenario,      skipValidation
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 4. Stop the app
@@ -119,9 +119,9 @@ addressBookTestingTool.stakingBehavior,   1
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      3
+addressBookTestingTool.testScenario,      noSoftwareUpgradeUseSavedStateAddressBook
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   2
+addressBookTestingTool.weightingBehavior, 1
 ```
 6. Run the app for 60 seconds.
 
@@ -157,9 +157,9 @@ Errors are logged if any of the following conditions are violated.
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      0
+addressBookTestingTool.testScenario,      skipValidation
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 4. Stop the app
@@ -167,9 +167,9 @@ addressBookTestingTool.stakingBehavior,   1
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  true
-addressBookTestingTool.testScenario,      4
+addressBookTestingTool.testScenario,      noSoftwareUpgradeForceUseOfConfigAddressBook
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   2
+addressBookTestingTool.weightingBehavior, 1
 ```
 6. Run the app for 60 seconds.
 
@@ -197,7 +197,7 @@ Errors are logged if any of the following conditions are violated.
     * **the state saved address book contains the addresses in the config.txt, all with weight 10. (differs from previous section)**
     * **the used address book has the text `The Configuration Address Book Was Used.` (differs from previous section)**
 
-### Test Scenario 5: Software Upgrade, Staking Behavior 2
+### Test Scenario 5: Software Upgrade, Weighting Behavior 2
 #### Instructions
 
 1. Delete `sdk/data/saved` directory if it exists
@@ -205,9 +205,9 @@ Errors are logged if any of the following conditions are violated.
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      0
+addressBookTestingTool.testScenario,      skipValidation
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 4. Stop the app
@@ -215,9 +215,9 @@ addressBookTestingTool.stakingBehavior,   1
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      5
+addressBookTestingTool.testScenario,      softwareUpgradeWeightingBehavior2
 addressBookTestingTool.softwareVersion,   2
-addressBookTestingTool.stakingBehavior,   2
+addressBookTestingTool.weightingBehavior, 2
 ```
 6. Run the app for 60 seconds.
 
@@ -253,9 +253,9 @@ Errors are logged if any of the following conditions are violated.
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      0
+addressBookTestingTool.testScenario,      skipValidation
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 4. Stop the app
@@ -263,9 +263,9 @@ addressBookTestingTool.stakingBehavior,   1
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  true
-addressBookTestingTool.testScenario,      6
+addressBookTestingTool.testScenario,      softwareUpgradeForceUseOfConfigAddressBook
 addressBookTestingTool.softwareVersion,   2
-addressBookTestingTool.stakingBehavior,   2
+addressBookTestingTool.weightingBehavior, 2
 ```
 6. Run the app for 60 seconds.
 
