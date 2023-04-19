@@ -746,8 +746,7 @@ class SyntheticTxnFactoryTest {
                 receiver,
                 txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
         assertEquals(
-                sender,
-                txnBody.getCryptoApproveAllowance().getNftAllowances(0).getOwner());
+                sender, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getOwner());
         assertEquals(
                 nonFungible,
                 txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());

@@ -343,7 +343,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createApproveAllowanceForAllNFT(
-        @NonNull final SetApprovalForAllWrapper setApprovalForAllWrapper, @NonNull EntityId ownerId) {
+            @NonNull final SetApprovalForAllWrapper setApprovalForAllWrapper, @NonNull EntityId ownerId) {
 
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
