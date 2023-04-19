@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.state.migration;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
@@ -69,20 +68,6 @@ class TokenRelStorageAdapterTest {
         assertSame(SOME_HASH, subject.getHash());
         assertFalse(subject.areOnDisk());
         assertSame(inMemoryRels, subject.getInMemoryRels());
-    }
-
-    @Test
-    void archiveWorksForOnDisk() {
-        withOnDiskSubject();
-        subject.archive();
-        verifyNoInteractions(onDiskRels);
-    }
-
-    @Test
-    void archiveWorkForInMemory() {
-        withInMemorySubject();
-        subject.archive();
-        verify(inMemoryRels).archive();
     }
 
     @Test

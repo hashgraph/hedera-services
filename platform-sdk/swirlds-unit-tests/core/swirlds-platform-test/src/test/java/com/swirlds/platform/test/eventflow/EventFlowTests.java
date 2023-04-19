@@ -40,6 +40,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.platform.SettingsProvider;
@@ -554,7 +555,7 @@ class EventFlowTests {
             final Random random, final int numNodes, final SwirldState swirldState, final State initialState) {
         addressBook = new RandomAddressBookGenerator(random)
                 .setSize(numNodes)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
                 .setSequentialIds(true)
                 .build();

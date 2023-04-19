@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.StakeGenerators.BALANCED;
+import static com.swirlds.common.test.WeightGenerators.BALANCED;
 
 import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.test.framework.TestComponentTags;
@@ -60,7 +60,7 @@ class ConsensusTests {
     @ParameterizedTest
     void reconnectSimulation(final ConsensusTestParams params) {
         ConsensusTestDefinitions.reconnectSimulation(
-                testDirectory, params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+                testDirectory, params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#reconnectSimulationWithShadowGraph")
@@ -71,7 +71,7 @@ class ConsensusTests {
     @ParameterizedTest
     void reconnectSimulationWithShadowGraph(final ConsensusTestParams params) {
         ConsensusTestDefinitions.reconnectSimulation(
-                testDirectory, params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+                testDirectory, params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#staleEvent")
@@ -82,7 +82,7 @@ class ConsensusTests {
     @DisplayName("Stale Events Tests")
     @ParameterizedTest
     void staleEvent(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.staleEvent(params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestDefinitions.staleEvent(params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @ParameterizedTest
@@ -93,7 +93,7 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("All Events Returned Tests")
     void areAllEventsReturned(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.areAllEventsReturned(params.numNodes(), params.stakeGenerator());
+        ConsensusTestDefinitions.areAllEventsReturned(params.numNodes(), params.weightGenerator());
     }
 
     @ParameterizedTest
@@ -105,7 +105,7 @@ class ConsensusTests {
     @DisplayName("Order Invariance Tests")
     void orderInvarianceTests(final ConsensusTestParams params) {
         ConsensusTestDefinitions.orderInvarianceTests(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+                params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @Disabled("Failing - documented in swirlds/swirlds-platform/issues/4995")
@@ -117,7 +117,7 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Forking Tests")
     void forkingTests(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.forkingTests(params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestDefinitions.forkingTests(params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @Disabled("Failing - documented in swirlds/swirlds-platform/issues/4995")
@@ -143,7 +143,7 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Partition Tests")
     void partitionTests(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.partitionTests(params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestDefinitions.partitionTests(params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @ParameterizedTest
@@ -155,7 +155,7 @@ class ConsensusTests {
     @DisplayName("Sub Quorum Partition Tests")
     void subQuorumPartitionTests(final ConsensusTestParams params) {
         ConsensusTestDefinitions.subQuorumPartitionTests(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+                params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @ParameterizedTest
@@ -166,7 +166,7 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Clique Tests")
     void cliqueTests(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.cliqueTests(params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestDefinitions.cliqueTests(params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @ParameterizedTest
@@ -178,7 +178,7 @@ class ConsensusTests {
     @DisplayName("Variable Rate Tests")
     void variableRateTests(final ConsensusTestParams params) {
         ConsensusTestDefinitions.variableRateTests(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+                params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @ParameterizedTest
@@ -190,7 +190,7 @@ class ConsensusTests {
     @DisplayName("Node Uses Stale Other Parents")
     void nodeUsesStaleOtherParents(final ConsensusTestParams params) {
         ConsensusTestDefinitions.nodeUsesStaleOtherParents(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+                params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @ParameterizedTest
@@ -202,7 +202,7 @@ class ConsensusTests {
     @DisplayName("Node Provides Stale Other Parents")
     void nodeProvidesStaleOtherParents(final ConsensusTestParams params) {
         ConsensusTestDefinitions.nodeProvidesStaleOtherParents(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+                params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @ParameterizedTest
@@ -214,7 +214,7 @@ class ConsensusTests {
     @DisplayName("Quorum Of Nodes Go Down Tests")
     void quorumOfNodesGoDownTests(final ConsensusTestParams params) {
         ConsensusTestDefinitions.quorumOfNodesGoDownTests(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+                params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @ParameterizedTest
@@ -226,7 +226,7 @@ class ConsensusTests {
     @DisplayName("Sub Quorum Of Nodes Go Down Tests")
     void subQuorumOfNodesGoDownTests(final ConsensusTestParams params) {
         ConsensusTestDefinitions.subQuorumOfNodesGoDownTests(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+                params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @ParameterizedTest
@@ -237,7 +237,7 @@ class ConsensusTests {
     @DisplayName("Repeated Timestamp Test")
     void repeatedTimestampTest(final ConsensusTestParams params) {
         ConsensusTestDefinitions.repeatedTimestampTest(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+                params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 
     @ParameterizedTest
@@ -247,6 +247,7 @@ class ConsensusTests {
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Consensus Receives Ancient Event")
     void ancientEventTest(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.ancientEventTest(params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestDefinitions.ancientEventTest(
+                params.numNodes(), params.weightGenerator(), NUM_ITER, params.seeds());
     }
 }
