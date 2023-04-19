@@ -159,16 +159,27 @@ class StateManagementComponentTests {
             final SignedState signedState =
                     new RandomSignedStateGenerator(random).setRound(roundNum).build();
 
+            System.out.println("roundNum: " + roundNum); // TODO
+
             final SignedState signedStateSpy = spy(signedState);
             when(signedStateSpy.isComplete()).thenReturn(true);
+
+            System.out.println("    checkpoint 0"); // TODO
 
             final SourceOfSignedState source =
                     random.nextBoolean() ? SourceOfSignedState.DISK : SourceOfSignedState.RECONNECT;
             component.stateToLoad(signedStateSpy, source);
 
+            System.out.println("    checkpoint 1"); // TODO
+
             // Some basic assertions on the signed state provided to the new latest complete state consumer
             verifyNewLatestCompleteStateConsumer(roundNum, signedStateSpy);
+
+            System.out.println("    checkpoint 2"); // TODO
+
             verifyLatestCompleteState(signedStateSpy, component);
+
+            System.out.println("    checkpoint 3"); // TODO
         }
 
         // Send a bunch of signed states that are older than the latest complete signed state
@@ -195,6 +206,7 @@ class StateManagementComponentTests {
             verifyLatestCompleteState(newLatestCompleteStateConsumer.getLastSignedState(), component);
         }
 
+        System.out.println("attempting to stop"); // TODO
         component.stop();
     }
 
