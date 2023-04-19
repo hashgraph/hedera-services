@@ -32,14 +32,15 @@ public final class TestPlatformContextFactory {
 
     private TestPlatformContextFactory() {}
 
+    private static final Configuration configuration =
+            scanAndRegisterAllConfigTypes(ConfigurationBuilder.create()).build();
+
     /**
      * Create a new {@link PlatformContext} for testing.
      *
      * @return a new {@link PlatformContext} for testing
      */
     public static PlatformContext build() {
-        final Configuration configuration =
-                scanAndRegisterAllConfigTypes(ConfigurationBuilder.create()).build();
         return new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
     }
 }
