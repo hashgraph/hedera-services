@@ -61,7 +61,7 @@ class EmulatesMapValidatorTest {
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new KeyValuePairConverter())
                 .withConfigDataType(CorrectDefinedRecord.class)
-                .withSource(new SimpleConfigSource("dataMap", "key1;value1,key2;value2"))
+                .withSource(new SimpleConfigSource("dataMap", "key1=value1,key2=value2"))
                 .build();
         final EmulatesMapValidator validator = new EmulatesMapValidator();
 
@@ -78,7 +78,7 @@ class EmulatesMapValidatorTest {
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new KeyValuePairConverter())
                 .withConfigDataType(CorrectDefinedRecord.class)
-                .withSource(new SimpleConfigSource("dataMap", "key1;value1,key1;value2"))
+                .withSource(new SimpleConfigSource("dataMap", "key1=value1,key1=value2"))
                 .build();
         final EmulatesMapValidator validator = new EmulatesMapValidator();
 
@@ -98,8 +98,8 @@ class EmulatesMapValidatorTest {
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new KeyValuePairConverter())
                 .withConfigDataType(BadDefinedRecord.class)
-                .withSource(new SimpleConfigSource("pair", "key1;value1"))
-                .withSource(new SimpleConfigSource("data", "key1;value1"))
+                .withSource(new SimpleConfigSource("pair", "key1=value1"))
+                .withSource(new SimpleConfigSource("data", "key1=value1"))
                 .build();
         final EmulatesMapValidator validator = new EmulatesMapValidator();
 
