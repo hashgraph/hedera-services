@@ -39,6 +39,7 @@ import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -133,8 +134,6 @@ public class SignedState implements SignedStateInfo {
      */
     private final ReferenceCounter reservations = new ReferenceCounter(this::destroy, this::onReferenceCountException);
 
-    // TODO add a "reason" the constructor!
-
     /**
      * Instantiate a signed state.
      *
@@ -201,7 +200,7 @@ public class SignedState implements SignedStateInfo {
      * {@inheritDoc}
      */
     @Override
-    public SigSet getSigSet() { // TODO nullable?
+    public @NonNull SigSet getSigSet() {
         return sigSet;
     }
 
@@ -211,8 +210,8 @@ public class SignedState implements SignedStateInfo {
      * @param sigSet the signatures to be attached to this signed state
      */
     public void setSigSet(@NonNull final SigSet sigSet) {
+        this.sigSet = Objects.requireNonNull(sigSet);
         signingWeight = 0;
-        this.sigSet = sigSet;
         for (final long signingNode : sigSet) {
             final Address address = getAddressBook().getAddress(signingNode);
             if (address == null) {
@@ -317,7 +316,7 @@ public class SignedState implements SignedStateInfo {
     private synchronized void delete() {
         final Instant start = Instant.now();
 
-        if (reservations.isDestroyed()) { // TODO why is this check necessary?
+        if (reservations.isDestroyed()) {
             if (!deleted) {
                 try {
                     deleted = true;
@@ -381,21 +380,19 @@ public class SignedState implements SignedStateInfo {
                 .formatted(getRound(), signingWeight, getAddressBook().getTotalWeight(), state.getHash());
     }
 
-    // TODO nullability for all of these fields...
-
     /**
      * Get the consensus timestamp for this signed state
      *
      * @return the consensus timestamp for this signed state.
      */
-    public Instant getConsensusTimestamp() {
+    public @NonNull Instant getConsensusTimestamp() {
         return state.getPlatformState().getPlatformData().getConsensusTimestamp();
     }
 
     /**
      * The wall clock time when this SignedState object was instantiated.
      */
-    public Instant getCreationTimestamp() {
+    public @NonNull Instant getCreationTimestamp() {
         return creationTimestamp;
     }
 
@@ -404,7 +401,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the root node of the application's state.
      */
-    public SwirldState getSwirldState() {
+    public @NonNull SwirldState getSwirldState() {
         return state.getSwirldState();
     }
 
@@ -413,7 +410,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return events in the platformState
      */
-    public EventImpl[] getEvents() {
+    public @NonNull EventImpl[] getEvents() {
         return state.getPlatformState().getPlatformData().getEvents();
     }
 
@@ -422,7 +419,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the hash of the consensus events in this state
      */
-    public Hash getHashEventsCons() {
+    public @NonNull Hash getHashEventsCons() {
         return state.getPlatformState().getPlatformData().getHashEventsCons();
     }
 
@@ -440,7 +437,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the minimum generation of famous witnesses per round
      */
-    public List<MinGenInfo> getMinGenInfo() {
+    public @NonNull List<MinGenInfo> getMinGenInfo() {
         return state.getPlatformState().getPlatformData().getMinGenInfo();
     }
 
@@ -478,7 +475,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the timestamp of the last transaction added to this state
      */
-    public Instant getLastTransactionTimestamp() {
+    public @NonNull Instant getLastTransactionTimestamp() {
         return state.getPlatformState().getPlatformData().getLastTransactionTimestamp();
     }
 
@@ -540,7 +537,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if the signed state is now complete as a result of the signature being added, false if the signed
      * state is either not complete or was previously complete prior to this signature
      */
-    public boolean addSignature(final long nodeId, final Signature signature) {
+    public boolean addSignature(final long nodeId, @NonNull final Signature signature) {
         return addSignature(getAddressBook(), nodeId, signature);
     }
 
@@ -552,7 +549,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if the signature is valid, false otherwise
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    private boolean isSignatureValid(final Address address, final Signature signature) {
+    private boolean isSignatureValid(@Nullable final Address address, @NonNull final Signature signature) {
         if (address == null) {
             // Signing node is not in the address book.
             return false;
@@ -575,7 +572,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if the signed state is now complete as a result of the signature being added, false if the signed
      * state is either not complete or was previously complete prior to this signature
      */
-    private boolean addSignature(final AddressBook addressBook, final long nodeId, final Signature signature) {
+    private boolean addSignature(@NonNull final AddressBook addressBook, final long nodeId, @NonNull final Signature signature) {
         Objects.requireNonNull(addressBook, "addressBook");
         Objects.requireNonNull(signature, "signature");
 
@@ -614,7 +611,7 @@ public class SignedState implements SignedStateInfo {
      * @param trustedAddressBook use this address book to determine signature validity instead of the one inside the
      *                           signed state. Useful if validating signed states from untrusted sources.
      */
-    public void pruneInvalidSignatures(final AddressBook trustedAddressBook) {
+    public void pruneInvalidSignatures(@NonNull final AddressBook trustedAddressBook) {
         final List<Long> signaturesToRemove = new ArrayList<>();
         for (final long nodeId : sigSet) {
             final Address address = trustedAddressBook.getAddress(nodeId);
@@ -639,7 +636,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the reservation history
      */
-    SignedStateHistory getHistory() {
+    @NonNull SignedStateHistory getHistory() {
         return history;
     }
 }

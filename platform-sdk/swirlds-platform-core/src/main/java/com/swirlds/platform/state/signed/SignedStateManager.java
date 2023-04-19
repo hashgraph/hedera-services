@@ -56,8 +56,6 @@ import java.util.function.Predicate;
  */
 public class SignedStateManager implements SignedStateFinder {
 
-    // TODO use autolock in this class
-
     /**
      * The latest signed state. May be unhashed. May or may not have all of its signatures.
      */
@@ -78,7 +76,8 @@ public class SignedStateManager implements SignedStateFinder {
     /**
      * A signature that was received when there was no state with a matching round.
      */
-    private record SavedSignature(long round, long memberId, Signature signature) {}
+    private record SavedSignature(long round, long memberId, @NonNull Signature signature) {
+    }
 
     /**
      * Signatures for rounds in the future.
