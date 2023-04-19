@@ -150,7 +150,8 @@ public final class BootstrapUtils {
             logger.info(
                     STARTUP.getMarker(),
                     "Software upgrade in progress. Previous software version was {}, current version is {}.",
-                    loadedSoftwareVersion, appVersion);
+                    loadedSoftwareVersion,
+                    appVersion);
         } else {
             softwareUpgrade = false;
             logger.info(
