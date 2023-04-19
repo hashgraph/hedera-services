@@ -27,7 +27,7 @@ import com.swirlds.config.api.ConfigProperty;
  * @param weightingBehavior
  *      The integer value of the weighting behavior of the AddressBookTestingToolState SwirldState.
  * @param testScenario
- *     The integer value of the test scenario being run for validation.
+ *     The string value of the test scenario being run for validation. This must match an enumerated value in {@link AddressBookTestScenario}.
  */
 @ConfigData("addressBookTestingTool")
 public record AddressBookTestingToolConfig(
