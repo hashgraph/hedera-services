@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -77,10 +76,8 @@ public class EmulatesMapValidator implements ConfigValidator {
         }
         final var typedValue = (AnnotatedProperty<EmulatesMap, Collection<KeyValuePair>>) property;
 
-        final int uniqueKeyCount = typedValue.propertyValue().stream()
-                .map(KeyValuePair::key)
-                .collect(Collectors.toSet())
-                .size();
+        final long uniqueKeyCount =
+                typedValue.propertyValue().stream().distinct().count();
         if (uniqueKeyCount != typedValue.propertyValue().size()) {
             final ConfigViolation violation = create(typedValue, "Property contains duplicate keys");
             return Optional.of(violation);

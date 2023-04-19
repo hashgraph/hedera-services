@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  */
 public class KeyValuePairConverter implements ConfigConverter<KeyValuePair> {
 
-    private static final String PATTERN = Pattern.quote(";");
+    private static final String PATTERN = Pattern.quote("=");
 
     @Override
     public KeyValuePair convert(final String value) throws IllegalArgumentException, NullPointerException {

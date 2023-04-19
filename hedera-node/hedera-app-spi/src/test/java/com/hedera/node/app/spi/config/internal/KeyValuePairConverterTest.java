@@ -42,7 +42,7 @@ class KeyValuePairConverterTest {
     void testValidValue() {
         // given
         final KeyValuePairConverter converter = new KeyValuePairConverter();
-        final String value = "key;value";
+        final String value = "key=value";
 
         // when
         final var result = converter.convert(value);
@@ -56,14 +56,14 @@ class KeyValuePairConverterTest {
     void testValidValueMultipleSemicolon() {
         // given
         final KeyValuePairConverter converter = new KeyValuePairConverter();
-        final String value = "key;value;stillValue;";
+        final String value = "key=value=stillValue;";
 
         // when
         final var result = converter.convert(value);
 
         // then
         assertThat(result.key()).isEqualTo("key");
-        assertThat(result.value()).isEqualTo("value;stillValue;");
+        assertThat(result.value()).isEqualTo("value=stillValue;");
     }
 
     @Test
@@ -81,7 +81,7 @@ class KeyValuePairConverterTest {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new KeyValuePairConverter())
-                .withSource(new SimpleConfigSource("testProperty", "key;value"))
+                .withSource(new SimpleConfigSource("testProperty", "key=value"))
                 .build();
 
         // when
@@ -98,7 +98,7 @@ class KeyValuePairConverterTest {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new KeyValuePairConverter())
-                .withSource(new SimpleConfigSource("testProperty", "key;value"))
+                .withSource(new SimpleConfigSource("testProperty", "key=value"))
                 .build();
 
         // when
@@ -115,7 +115,7 @@ class KeyValuePairConverterTest {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new KeyValuePairConverter())
-                .withSource(new SimpleConfigSource("testProperty", "key1;value1,key2;value2,key3;value3"))
+                .withSource(new SimpleConfigSource("testProperty", "key1=value1,key2=value2,key3=value3"))
                 .build();
 
         // when
