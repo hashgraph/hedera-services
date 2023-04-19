@@ -17,12 +17,14 @@
 package com.hedera.node.app.fees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
 
@@ -35,12 +37,13 @@ public class MonoQueryFeeCheck implements QueryFeeCheck {
 
     @Inject
     public MonoQueryFeeCheck(com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck delegate) {
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate, "The supplied argument 'delegate' cannot be null!");
     }
 
     @Override
-    public void validateQueryPaymentTransfers(TransactionBody txBody, long queryFee)
+    public void validateQueryPaymentTransfers(@NonNull final TransactionBody txBody, long queryFee)
             throws InsufficientBalanceException {
+        requireNonNull(txBody, "The supplied argument 'txBody' cannot be null!");
         final var monoTxBody = PbjConverter.fromPbj(txBody);
         final var monoResult = delegate.validateQueryPaymentTransfers(monoTxBody);
         final var result = PbjConverter.toPbj(monoResult);
@@ -50,8 +53,12 @@ public class MonoQueryFeeCheck implements QueryFeeCheck {
     }
 
     @Override
-    public void nodePaymentValidity(List<AccountAmount> transfers, long queryFee, AccountID node)
-            throws InsufficientBalanceException {
+    public void nodePaymentValidity(
+            @NonNull final List<AccountAmount> transfers,
+            long queryFee,
+            @NonNull final AccountID node) throws InsufficientBalanceException {
+        requireNonNull(transfers, "The supplied argument 'transfers' cannot be null!");
+        requireNonNull(node, "The supplied argument 'node' cannot be null!");
         final var monoNode = PbjConverter.fromPbj(node);
         final var monoTransfers = transfers.stream().map(PbjConverter::fromPbj).toList();
         final var monoResult = delegate.nodePaymentValidity(monoTransfers, queryFee, monoNode);

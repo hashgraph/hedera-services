@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
@@ -36,7 +37,7 @@ public interface QueryFeeCheck {
      * @param queryFee transaction fee
      * @throws InsufficientBalanceException if the transaction is invalid
      */
-    void validateQueryPaymentTransfers(TransactionBody txBody, long queryFee) throws InsufficientBalanceException;
+    void validateQueryPaymentTransfers(@NonNull TransactionBody txBody, long queryFee) throws InsufficientBalanceException;
 
     /**
      * Validates node payment transfer transaction before reaching consensus. Validate each payer has enough balance.
@@ -46,6 +47,6 @@ public interface QueryFeeCheck {
      * @param node account id of the node
      * @throws InsufficientBalanceException if the payments are insufficient
      */
-    void nodePaymentValidity(List<AccountAmount> transfers, long queryFee, AccountID node)
+    void nodePaymentValidity(@NonNull List<AccountAmount> transfers, long queryFee, @NonNull AccountID node)
             throws InsufficientBalanceException;
 }
