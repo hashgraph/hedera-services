@@ -57,6 +57,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.commons.codec.DecoderException;
 
 public final class PbjConverter {
     public static @NonNull AccountID toPbj(@NonNull com.hederahashgraph.api.proto.java.AccountID accountID) {
@@ -1275,6 +1276,15 @@ public final class PbjConverter {
             // Should be impossible, so just propagate an exception
             throw new IllegalStateException("Invalid conversion from PBJ for Key", e);
         } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static com.hedera.hapi.node.base.Key asPbjKey(@NonNull final JKey jKey) {
+        requireNonNull(jKey);
+        try {
+            return toPbj(JKey.mapJKey(jKey));
+        } catch (DecoderException e) {
             throw new RuntimeException(e);
         }
     }

@@ -57,7 +57,7 @@ Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for files
   * usedAddressBook_v1_<date>.txt
-    * matches the addresses in the config.txt, including stake value.
+    * matches the addresses in the config.txt, including weight value.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * the state saved address book was null
@@ -81,7 +81,7 @@ addressBookTestingTool.stakingBehavior,   1
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: The loaded signed state is null. The candidateAddressBook is set to genesisSwirldState.updateStake(configAddressBook, null).
+AddressBookInitializer: The loaded signed state is null. The candidateAddressBook is set to genesisSwirldState.updateWeight(configAddressBook, null).
 ```
 and
 ```
@@ -94,7 +94,7 @@ Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for files
   * usedAddressBook_v1_<date>.txt
-    * contains the addresses in the config.txt with identical stake
+    * contains the addresses in the config.txt with identical weight
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * the state saved address book was null
@@ -130,7 +130,7 @@ addressBookTestingTool.stakingBehavior,   2
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: No Software Upgrade. Continuing with software version 1 and using the loaded signed state's address book and stake values.
+AddressBookInitializer: No Software Upgrade. Continuing with software version 1 and using the loaded signed state's address book and weight values.
 ```
 and
 ```
@@ -143,7 +143,7 @@ Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * contains the addresses in the config.txt, all with stake 10.
+    * contains the addresses in the config.txt, all with weight 10.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * **the state saved address book matches the content of the non-debug .txt file. (differs from previous section)**
@@ -191,10 +191,10 @@ Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * **matches the addresses in the config.txt, including stake value. (differs from previous section)**
+    * **matches the addresses in the config.txt, including weight value. (differs from previous section)**
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
-    * **the state saved address book contains the addresses in the config.txt, all with stake 10. (differs from previous section)**
+    * **the state saved address book contains the addresses in the config.txt, all with weight 10. (differs from previous section)**
     * **the used address book has the text `The Configuration Address Book Was Used.` (differs from previous section)**
 
 ### Test Scenario 5: Software Upgrade, Staking Behavior 2
@@ -226,7 +226,7 @@ addressBookTestingTool.stakingBehavior,   2
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: Software Upgrade from version 1 to 2. The address book stake will be updated by the saved state's SwirldState.
+AddressBookInitializer: Software Upgrade from version 1 to 2. The address book weight will be updated by the saved state's SwirldState.
 ```
 and
 ```
@@ -239,7 +239,7 @@ Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * **matches the addresses in the config.txt, but the stake values incrementally increase starting from 0. (differs from previous section)**
+    * **matches the addresses in the config.txt, but the weight values incrementally increase starting from 0. (differs from previous section)**
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * The state saved address book is the same as what is in config.txt
@@ -287,8 +287,8 @@ Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * **matches the addresses in the config.txt, including stake value. (differs from previous section)**
+    * **matches the addresses in the config.txt, including weight value. (differs from previous section)**
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
-    * **The state saved address book is the config.txt addresses with stake values incrementally increasing starting from 0 (differs from previous section)**
+    * **The state saved address book is the config.txt addresses with weight values incrementally increasing starting from 0 (differs from previous section)**
     * **the used address book matches the content of the non-debug .txt file. (differs from previous section)**

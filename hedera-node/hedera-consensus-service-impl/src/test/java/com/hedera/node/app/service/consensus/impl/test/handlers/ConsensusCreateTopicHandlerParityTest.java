@@ -25,7 +25,6 @@ import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
@@ -70,8 +69,8 @@ class ConsensusCreateTopicHandlerParityTest {
 
         // then:
         assertDefaultPayer(context);
-        Assertions.assertThat(sanityRestored(context.requiredNonPayerKeys()))
-                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asKey());
+        Assertions.assertThat(context.requiredNonPayerKeys())
+                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asPbjKey());
     }
 
     @Test
@@ -85,8 +84,8 @@ class ConsensusCreateTopicHandlerParityTest {
 
         // then:
         assertDefaultPayer(context);
-        Assertions.assertThat(sanityRestored(context.requiredNonPayerKeys()))
-                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asKey(), MISC_ACCOUNT_KT.asKey());
+        Assertions.assertThat(context.requiredNonPayerKeys())
+                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asPbjKey(), MISC_ACCOUNT_KT.asPbjKey());
     }
 
     @Test
@@ -103,8 +102,8 @@ class ConsensusCreateTopicHandlerParityTest {
         // Note: DEFAULT_PAYER_KT in this case doesn't function as the payer - the payer is
         // CUSTOM_PAYER_ACCOUNT - but instead is in the required keys list because
         // DEFAULT_PAYER_KT is set as the auto-renew account
-        Assertions.assertThat(sanityRestored(context.requiredNonPayerKeys()))
-                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asKey());
+        Assertions.assertThat(context.requiredNonPayerKeys())
+                .containsExactlyInAnyOrder(SIMPLE_TOPIC_ADMIN_KEY.asPbjKey());
     }
 
     @Test
