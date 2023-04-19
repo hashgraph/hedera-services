@@ -25,24 +25,19 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
-import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.common.utility.NoOpMetricsBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * A simplified version of the platform to be used during the recovery workflow.
@@ -55,10 +50,6 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     private final Crypto crypto;
 
     private final SignedStateReference immutableState = new SignedStateReference();
-
-    private final Metrics metrics;
-
-    private final ScheduledExecutorService metricsExecutor;
 
     private final NotificationEngine notificationEngine;
 
@@ -79,13 +70,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
 
         crypto = initNodeSecurity(addressBook, configuration)[(int) selfId];
 
-        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-
-        metricsExecutor = Executors.newSingleThreadScheduledExecutor(
-                getStaticThreadManager().createThreadFactory("recovery-platform", "MetricsThread"));
-        metrics = new DefaultMetrics(
-                this.selfId, new MetricKeyRegistry(), metricsExecutor, new DefaultMetricsFactory(), metricsConfig);
-        metrics.start();
+        final Metrics metrics = NoOpMetricsBuilder.buildNoOpMetrics();
 
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
 
@@ -196,7 +181,6 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     @Override
     public void close() {
         immutableState.clear();
-        metricsExecutor.shutdown();
         notificationEngine.shutdown();
     }
 }

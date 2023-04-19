@@ -543,7 +543,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
             state.initControlStructures(this::handleMessageQuorum);
 
-            // TODO implement mirrorNode
+            // FUTURE WORK implement mirrorNode
             final String myName = platform.getSelfAddress().getSelfName();
 
             String jsonFileName = null;

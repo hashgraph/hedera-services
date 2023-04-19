@@ -29,6 +29,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.route.MerkleRouteUtils;
+import com.swirlds.common.utility.NoOpMetricsBuilder;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
@@ -61,7 +62,7 @@ public class StateEditor {
 
         platformContext = new DefaultPlatformContext(
                 ConfigurationBuilder.create().build(),
-                null, // TODO no-op metrics
+                NoOpMetricsBuilder.buildNoOpMetrics(),
                 CryptographyHolder.get());
 
         final DeserializedSignedState deserializedSignedState =

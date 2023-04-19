@@ -44,6 +44,7 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateNotification;
 import com.swirlds.common.utility.CompareTo;
+import com.swirlds.common.utility.NoOpMetricsBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.internal.EventImpl;
@@ -116,9 +117,6 @@ public final class EventRecoveryWorkflow {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
         ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, "com.swirlds");
 
-        // Recovery workflow doesn't need the metrics output.
-        configurationBuilder.withSource(new SimpleConfigSource("disableMetricsOutput", "true"));
-
         for (final Path configurationFile : configurationFiles) {
             logger.info(STARTUP.getMarker(), "Loading configuration from {}", configurationFile);
             configurationBuilder.withSource(new LegacyFileConfigSource(configurationFile));
@@ -131,7 +129,7 @@ public final class EventRecoveryWorkflow {
 
         final PlatformContext platformContext = new DefaultPlatformContext(
                 configuration,
-                null, // TODO no-op metrics
+                NoOpMetricsBuilder.buildNoOpMetrics(),
                 CryptographyHolder.get());
 
         final ReservedSignedState initialState = SignedStateFileReader.readStateFile(platformContext, signedStateFile)

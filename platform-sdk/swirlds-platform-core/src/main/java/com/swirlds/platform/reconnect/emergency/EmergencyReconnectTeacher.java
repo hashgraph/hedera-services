@@ -90,8 +90,8 @@ public class EmergencyReconnectTeacher {
             final Hash hash = connection.getDis().readSerializable();
             try (final ReservedSignedState stateWrapper =
                     stateFinder.find(emergencyStateCriteria(round, hash), "EmergencyReconnectTeacher.execute() find")) {
-                final SignedState state = stateWrapper.get();
-                if (state != null) {
+                if (stateWrapper.isNotNull()) {
+                    final SignedState state = stateWrapper.get();
                     writeHasState(connection, true);
                     logger.info(
                             RECONNECT.getMarker(),

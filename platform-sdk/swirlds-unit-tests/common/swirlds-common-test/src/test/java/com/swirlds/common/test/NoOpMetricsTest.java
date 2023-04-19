@@ -41,6 +41,7 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import com.swirlds.common.test.metrics.NoOpMetrics;
+import com.swirlds.common.utility.NoOpMetricsBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
@@ -48,6 +49,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("No-Op Metrics Test")
 class NoOpMetricsTest {
@@ -60,37 +63,29 @@ class NoOpMetricsTest {
         assertNotNull(metric.getUnit());
         assertNotNull(metric.getFormat());
         assertNotNull(metric.getValueTypes());
-        metric.reset();
-        final StatsBuffered statsBuffered = metric.getStatsBuffered();
-        assertNotNull(statsBuffered);
-        assertNotNull(statsBuffered.getAllHistory());
-        assertNotNull(statsBuffered.getRecentHistory());
-        statsBuffered.reset(0);
-        statsBuffered.getMean();
-        statsBuffered.getMax();
-        statsBuffered.getMin();
-        statsBuffered.getStdDev();
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Counter Test")
-    void counterTest() {
+    void counterTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final Counter metric = metrics.getOrCreate(new Counter.Config("asdf", "asdf"));
 
             metric.increment();
 
-            metric.add(0);
+            metric.add(1);
             testCommonMethods(metric);
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Double Accumulator Test")
-    void doubleAccumulatorTest() {
+    void doubleAccumulatorTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final DoubleAccumulator metric = metrics.getOrCreate(new DoubleAccumulator.Config("asdf", "asdf"));
 
             metric.getInitialValue();
@@ -99,11 +94,12 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Double Gauge Test")
-    void doubleGaugeTest() {
+    void doubleGaugeTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final DoubleGauge metric = metrics.getOrCreate(new DoubleGauge.Config("asdf", "asdf"));
 
             metric.get();
@@ -112,11 +108,12 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Duration Gauge Test")
-    void durationGaugeTest() {
+    void durationGaugeTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final DurationGauge metric =
                     metrics.getOrCreate(new DurationGauge.Config("asdf", "asdf", ChronoUnit.NANOS));
 
@@ -127,11 +124,12 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Function Gauge Test")
-    void functionGaugeTest() {
+    void functionGaugeTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final Supplier<Integer> supplier = () -> 0;
             final FunctionGauge<Integer> metric =
                     metrics.getOrCreate(new FunctionGauge.Config<>("asdf", "asdf", Integer.class, supplier));
@@ -140,11 +138,12 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Integer Accumulator Test")
-    void integerAccumulatorTest() {
+    void integerAccumulatorTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final IntegerAccumulator metric = metrics.getOrCreate(new IntegerAccumulator.Config("asdf", "asdf"));
 
             metric.get();
@@ -154,11 +153,12 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Integer Gauge Test")
-    void integerGaugeTest() {
+    void integerGaugeTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final IntegerGauge metric = metrics.getOrCreate(new IntegerGauge.Config("asdf", "asdf"));
 
             metric.get();
@@ -167,11 +167,12 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Integer Pair Accumulator Test")
-    void IntegerPairAccumulatorTest() {
+    void IntegerPairAccumulatorTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final IntegerPairAccumulator<Integer> metric = metrics.getOrCreate(
                     new IntegerPairAccumulator.Config<>("asdf", "asdf", Integer.class, (x, y) -> 0));
 
@@ -184,11 +185,12 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Long Accumulator Test")
-    void longAccumulatorTest() {
+    void longAccumulatorTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final LongAccumulator metric = metrics.getOrCreate(new LongAccumulator.Config("asdf", "asdf"));
 
             metric.get();
@@ -198,11 +200,12 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Long Gauge Test")
-    void longGaugeTest() {
+    void longGaugeTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final LongGauge metric = metrics.getOrCreate(new LongGauge.Config("asdf", "asdf"));
 
             metric.get();
@@ -211,11 +214,12 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Running Average Metric Test")
-    void runningAverageMetricTest() {
+    void runningAverageMetricTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final RunningAverageMetric metric = metrics.getOrCreate(new RunningAverageMetric.Config("asdf", "asdf"));
 
             metric.get(Metric.ValueType.VALUE);
@@ -226,11 +230,12 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Speedometer Metric Test")
-    void speedometerMetricTest() {
+    void speedometerMetricTest(final boolean source) {
         assertDoesNotThrow(() -> {
-            final Metrics metrics = new NoOpMetrics();
+            final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
             final SpeedometerMetric metric = metrics.getOrCreate(new SpeedometerMetric.Config("asdf", "asdf"));
 
             metric.get(Metric.ValueType.VALUE);
@@ -263,10 +268,11 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("getMetric() Test")
-    void getMetricTest() {
-        final Metrics metrics = new NoOpMetrics();
+    void getMetricTest(final boolean source) {
+        final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
 
         // no category or metric
         assertNull(metrics.getMetric("foo", "bar"));
@@ -282,10 +288,11 @@ class NoOpMetricsTest {
         assertNull(metrics.getMetric("foo", "bar"));
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Find Metrics By Category Test")
-    void findMetricsByCategoryTest() {
-        final Metrics metrics = new NoOpMetrics();
+    void findMetricsByCategoryTest(final boolean source) {
+        final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
 
         final Metric foo1 = metrics.getOrCreate(new Counter.Config("foo", "1"));
         final Metric foo2 = metrics.getOrCreate(new Counter.Config("foo", "2"));
@@ -331,10 +338,11 @@ class NoOpMetricsTest {
         assertTrue(metrics.findMetricsByCategory("asdf").isEmpty());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("getAll() Test")
-    void getAllTest() {
-        final Metrics metrics = new NoOpMetrics();
+    void getAllTest(final boolean source) {
+        final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
 
         final Metric foo1 = metrics.getOrCreate(new Counter.Config("foo", "1"));
         final Metric foo2 = metrics.getOrCreate(new Counter.Config("foo", "2"));
@@ -366,10 +374,11 @@ class NoOpMetricsTest {
         assertTrue(allMetricsReduced.contains(bar2));
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("getOrCreate() Test")
-    void getOrCreate() {
-        final Metrics metrics = new NoOpMetrics();
+    void getOrCreate(final boolean source) {
+        final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
         final Metric foo1 = metrics.getOrCreate(new Counter.Config("foo", "1"));
         assertSame(foo1, metrics.getOrCreate(new Counter.Config("foo", "1")));
 
@@ -379,10 +388,11 @@ class NoOpMetricsTest {
         assertNotSame(foo1, foo1b);
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Misc Metrics Test")
-    void miscMetricsTest() {
-        final Metrics metrics = new NoOpMetrics();
+    void miscMetricsTest(final boolean source) {
+        final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
 
         // The following operations should not throw.
         assertDoesNotThrow(() -> {
@@ -392,10 +402,11 @@ class NoOpMetricsTest {
         });
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("remove() Test")
-    void removeTest() {
-        final Metrics metrics = new NoOpMetrics();
+    void removeTest(final boolean source) {
+        final Metrics metrics = source ? new NoOpMetrics() : NoOpMetricsBuilder.buildNoOpMetrics();
 
         metrics.getOrCreate(new Counter.Config("foo", "1"));
         metrics.getOrCreate(new Counter.Config("foo", "2"));

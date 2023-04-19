@@ -47,7 +47,7 @@ public class NextSeqConsList extends AbstractListLeaf<SerializableLong> {
 
     @Override
     protected int getMaxSize() {
-        return 1000; // TODO this should match (or exceed) the total number of nodes
+        return 1000; // FUTURE WORK this should match (or exceed) the total number of nodes
     }
 
     @Override

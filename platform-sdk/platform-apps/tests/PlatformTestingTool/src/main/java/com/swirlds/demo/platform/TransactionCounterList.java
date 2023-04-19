@@ -41,7 +41,7 @@ public class TransactionCounterList extends AbstractListLeaf<TransactionCounter>
 
     @Override
     public int getMaxSize() {
-        return Integer.MAX_VALUE; // TODO what is a sane value for this?
+        return Integer.MAX_VALUE; // FUTURE WORK what is a sane value for this?
     }
 
     @Override

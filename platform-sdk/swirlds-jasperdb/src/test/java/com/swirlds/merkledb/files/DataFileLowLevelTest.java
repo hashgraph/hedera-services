@@ -230,7 +230,7 @@ class DataFileLowLevelTest {
                     int repeatCount = getRepeatCountForKey(i);
                     // read size
                     int size = (int) longBuf.get();
-                    // TODO be nice to assert size
+                    // FUTURE WORK be nice to assert size
                     // read key
                     assertEquals(i, longBuf.get(), "unexpected data value #2");
                     for (int j = 0; j < repeatCount; j++) {

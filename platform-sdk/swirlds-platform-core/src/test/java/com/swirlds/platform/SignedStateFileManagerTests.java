@@ -508,8 +508,6 @@ class SignedStateFileManagerTests {
             final SignedState signedState = new RandomSignedStateGenerator(random)
                     .setConsensusTimestamp(timestamp)
                     .setRound(round)
-                    //                    .setMinimumGenerationNonAncient(random.nextLong((round + 1) * 100, (round + 1)
-                    // * 101)) // TODO
                     .build();
 
             manager.determineIfStateShouldBeSaved(signedState);

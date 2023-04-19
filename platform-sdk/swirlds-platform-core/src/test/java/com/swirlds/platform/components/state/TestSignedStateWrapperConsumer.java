@@ -41,17 +41,7 @@ public class TestSignedStateWrapperConsumer {
     }
 
     public void reset() {
-        fullyRelease();
         lastSignedState = null;
         invocationCount = 0;
-    }
-
-    private void fullyRelease() {
-        // TODO I don't understand this class
-        //        if (lastSignedState != null) {
-        //            while (lastSignedState.getReservationCount() > 0) {
-        //                lastSignedState.release();
-        //            }
-        //        }
     }
 }

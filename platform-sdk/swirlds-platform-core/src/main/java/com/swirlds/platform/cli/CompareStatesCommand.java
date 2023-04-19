@@ -24,6 +24,7 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.utility.NoOpMetricsBuilder;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateComparison;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -125,7 +126,7 @@ public final class CompareStatesCommand extends AbstractCommand {
 
         final PlatformContext platformContext = new DefaultPlatformContext(
                 ConfigurationHolder.getInstance().get(),
-                null, // TODO we need no-op metrics here
+                NoOpMetricsBuilder.buildNoOpMetrics(),
                 CryptographyHolder.get());
 
         final ReservedSignedState signedState =
