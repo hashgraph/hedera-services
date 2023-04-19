@@ -35,6 +35,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.SystemExitReason;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -85,18 +86,32 @@ public class SavedStateLoader {
             final SoftwareVersion currentSoftwareVersion,
             final Supplier<EmergencySignedStateValidator> emergencyStateValidator,
             final EmergencyRecoveryManager emergencyRecoveryManager) {
-        throwArgNull(shutdownRequestedTrigger, "shutdownRequestedTrigger");
-        throwArgNull(addressBook, "addressBook");
-        throwArgNull(currentSoftwareVersion, "currentSoftwareVersion");
-        throwArgNull(emergencyStateValidator, "emergencyStateValidator");
-        throwArgNull(emergencyStateValidator.get(), "emergencyStateValidator value");
-        throwArgNull(emergencyRecoveryManager, "emergencyRecoveryManager");
+
+        Objects.requireNonNull(shutdownRequestedTrigger, "shutdownRequestedTrigger");
+        Objects.requireNonNull(addressBook, "addressBook");
+        Objects.requireNonNull(currentSoftwareVersion, "currentSoftwareVersion");
+        Objects.requireNonNull(emergencyStateValidator, "emergencyStateValidator");
+        Objects.requireNonNull(emergencyStateValidator.get(), "emergencyStateValidator value");
+        Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
+
         this.shutdownRequestedTrigger = shutdownRequestedTrigger;
         this.addressBook = addressBook;
         this.savedStateFiles = savedStateFiles;
         this.currentSoftwareVersion = currentSoftwareVersion;
         this.emergencyStateValidator = emergencyStateValidator;
         this.emergencyRecoveryManager = emergencyRecoveryManager;
+
+        if (savedStateFiles == null || savedStateFiles.length == 0) {
+            logger.info(STARTUP.getMarker(), "No saved states were found on disk");
+        } else {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("The following saved states were found on disk:");
+            for (final SavedStateInfo savedStateFile : savedStateFiles) {
+                sb.append("\n  - ").append(savedStateFile.stateFile());
+            }
+
+            logger.info(STARTUP.getMarker(), sb.toString());
+        }
     }
 
     /**
@@ -261,6 +276,9 @@ public class SavedStateLoader {
     }
 
     private static SignedStateWithHashes readAndRehashState(final SavedStateInfo file) throws IOException {
+
+        logger.info(STARTUP.getMarker(), "Loading signed state from disk: {}", file.stateFile());
+
         final DeserializedSignedState deserializedSignedState = readStateFile(file.stateFile());
         final Hash oldHash = deserializedSignedState.originalHash();
 
