@@ -83,6 +83,8 @@ include(":hedera-node:hedera-evm-impl")
 
 include(":hedera-node:hedera-mono-service")
 
+include(":hedera-node:cli-clients")
+
 include(":hedera-node:test-clients")
 
 // Enable Gradle Build Scan
@@ -115,7 +117,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      version("hapi-version", "0.37.0-services-SNAPSHOT")
+      version("hapi-version", "0.37.0-allowance-SNAPSHOT")
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.5.1")
@@ -178,7 +180,8 @@ dependencyResolutionManagement {
               "swirlds-fcqueue",
               "swirlds-jasperdb",
               "swirlds-virtualmap",
-              "swirlds-test-framework"))
+              "swirlds-test-framework",
+              "swirlds-cli"))
 
       // Define the individual libraries
       library("pbj-runtime", "com.hedera.pbj", "pbj-runtime").versionRef("pbj-version")
@@ -248,6 +251,7 @@ dependencyResolutionManagement {
           .versionRef("swirlds-version")
       library("swirlds-test-framework", "com.swirlds", "swirlds-test-framework")
           .versionRef("swirlds-version")
+      library("swirlds-cli", "com.swirlds", "swirlds-cli").versionRef("swirlds-version")
       library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
       library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
       library("spotbugs-annotations", "com.github.spotbugs", "spotbugs-annotations")

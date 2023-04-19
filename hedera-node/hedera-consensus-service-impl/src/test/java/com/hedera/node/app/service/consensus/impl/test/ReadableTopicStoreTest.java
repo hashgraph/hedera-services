@@ -20,14 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.impl.TopicStore.TopicMetadata;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -62,43 +59,6 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
         assertEquals(Optional.of(memo), topicMeta.memo());
         assertFalse(topicMeta.isDeleted());
         assertArrayEquals(runningHash, topicMeta.runningHash());
-    }
-
-    @Test
-    void objectMethodsWorks() {
-        final var meta = new TopicMetadata(
-                Optional.of(memo),
-                adminKey,
-                adminKey,
-                100L,
-                OptionalLong.of(autoRenewId.accountNum()),
-                Timestamp.newBuilder().seconds(100L).build(),
-                1L,
-                new byte[48],
-                topicEntityNum.longValue(),
-                false);
-
-        final var expectedString =
-                "TopicMetadata{memo=Optional[test memo], adminKey=<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>, submitKey=<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>, autoRenewDurationSeconds=100, autoRenewAccountId=OptionalLong[4], expirationTimestamp=Timestamp[seconds=100, nanos=0], sequenceNumber=1, runningHash=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], key=1, isDeleted=false}";
-        assertEquals(expectedString, meta.toString());
-
-        final var metaCopy = meta;
-        assertEquals(meta, metaCopy);
-        assertEquals(meta.hashCode(), metaCopy.hashCode());
-
-        final var meta2 = new TopicMetadata(
-                Optional.of(memo),
-                adminKey,
-                adminKey,
-                100L,
-                OptionalLong.of(autoRenewId.accountNum()),
-                WELL_KNOWN_EXPIRY,
-                1L,
-                new byte[48],
-                topicEntityNum.longValue(),
-                true);
-        assertNotEquals(meta, meta2);
-        assertNotEquals(meta.hashCode(), meta2.hashCode());
     }
 
     @Test

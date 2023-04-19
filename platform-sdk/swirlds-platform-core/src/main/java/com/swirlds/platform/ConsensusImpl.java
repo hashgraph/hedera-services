@@ -118,8 +118,8 @@ import org.apache.logging.log4j.Logger;
  * unique famous witnesses will end up being a subset of it.
  *
  * NOTE: for concision, all of the above talks about things like "2/3 of the members" or "2/3 of the witnesses". In
- * every case, it should be interpreted to actually mean "members whose stake adds up to more than 2/3 of the total
- * stake", and "witnesses created by members whose stake is more than 2/3 of the total".
+ * every case, it should be interpreted to actually mean "members whose weight adds up to more than 2/3 of the total
+ * weight", and "witnesses created by members whose weight is more than 2/3 of the total".
  **/
 public class ConsensusImpl implements Consensus {
 
@@ -528,22 +528,22 @@ public class ConsensusImpl implements Consensus {
                 election.vote[voterId] = (election.event == w);
             } else {
                 // either a coin round or normal round, so count votes from witnesses you strongly see
-                long yesStake = 0; // total stake of all members voting yes
-                long noStake = 0; // total stake of all members voting yes
+                long yesWeight = 0; // total weight of all members voting yes
+                long noWeight = 0; // total weight of all members voting yes
                 for (EventImpl w : stronglySeen) {
                     int id = (int) w.getCreatorId();
-                    long stake = addressBook.getAddress(id).getStake();
+                    long weight = addressBook.getAddress(id).getWeight();
                     if (election.prevRound.vote[id]) {
-                        yesStake += stake;
+                        yesWeight += weight;
                     } else {
-                        noStake += stake;
+                        noWeight += weight;
                     }
                 }
-                long totalStake = addressBook.getTotalStake();
-                boolean superMajority = Utilities.isSuperMajority(yesStake, totalStake)
-                        || Utilities.isSuperMajority(noStake, totalStake);
+                long totalWeight = addressBook.getTotalWeight();
+                boolean superMajority = Utilities.isSuperMajority(yesWeight, totalWeight)
+                        || Utilities.isSuperMajority(noWeight, totalWeight);
 
-                election.vote[voterId] = (yesStake >= noStake);
+                election.vote[voterId] = (yesWeight >= noWeight);
                 if ((election.age % config.coinFreq()) == 0) {
                     // a coin round. Vote randomly unless you strongly see a supermajority. Don't decide.
                     numCoinRounds++;
@@ -1207,7 +1207,7 @@ public class ConsensusImpl implements Consensus {
         } else { // calculate the answer, and remember it for next time
             // find and memoize answers for all choices of m, then return answer for just this m
             int numMembers = getAddressBook().getSize(); // number of members
-            long totalStake = addressBook.getTotalStake(); // total stake in existence
+            long totalWeight = addressBook.getTotalWeight(); // total weight in existence
             EventImpl sp = x.getSelfParent(); // self parent
             EventImpl op = x.getOtherParent(); // other parent
             long prx = parentRound(x); // parent round of x
@@ -1226,13 +1226,13 @@ public class ConsensusImpl implements Consensus {
                     if (round(st) != prx) { // ignore if the canonical is in the wrong round, or doesn't exist
                         x.setStronglySeeP(mm, null);
                     } else {
-                        long stake = 0;
+                        long weight = 0;
                         for (long m3 = 0; m3 < numMembers; m3++) {
                             if (seeThru(x, mm, m3) == st) { // only count intermediates that see the canonical witness
-                                stake += addressBook.getAddress(m3).getStake();
+                                weight += addressBook.getAddress(m3).getWeight();
                             }
                         }
-                        if (Utilities.isSuperMajority(stake, totalStake)) { // strongly see supermajority of
+                        if (Utilities.isSuperMajority(weight, totalWeight)) { // strongly see supermajority of
                             // intermediates
                             x.setStronglySeeP(mm, st);
                         } else {
@@ -1266,7 +1266,7 @@ public class ConsensusImpl implements Consensus {
     private long round(EventImpl x) {
         int numMembers = getAddressBook().getSize(); // number of members that are voting, with ID 0 to numMembers-1
         EventImpl op, sp; // other parent, self parent
-        long rop, rsp, stake; // roundCreated of other parent, roundCerated of self parent, sum of stake involved
+        long rop, rsp, weight; // roundCreated of other parent, roundCerated of self parent, sum of weight involved
 
         if (x == null) {
             return 0;
@@ -1356,17 +1356,17 @@ public class ConsensusImpl implements Consensus {
             return x.getRoundCreated();
         }
 
-        // parents have equal rounds (not -1), so check if x can strongly see witnesses with a supermajority of stake
-        stake = 0;
+        // parents have equal rounds (not -1), so check if x can strongly see witnesses with a supermajority of weight
+        weight = 0;
         int numStronglySeen = 0;
         for (long m = 0; m < numMembers; m++) {
             if (stronglySeeP(x, m) != null) {
-                stake += addressBook.getAddress(m).getStake();
+                weight += addressBook.getAddress(m).getWeight();
                 numStronglySeen++;
             }
         }
         consensusMetrics.witnessesStronglySeen(numStronglySeen);
-        if (Utilities.isSuperMajority(stake, addressBook.getTotalStake())) {
+        if (Utilities.isSuperMajority(weight, addressBook.getTotalWeight())) {
             // it's a supermajority, so advance to the next round
             x.setRoundCreated(1 + parentRound(x));
             consensusMetrics.roundIncrementedByStronglySeen();
