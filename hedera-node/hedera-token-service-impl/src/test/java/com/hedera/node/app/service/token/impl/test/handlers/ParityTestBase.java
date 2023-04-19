@@ -33,7 +33,7 @@ public class ParityTestBase {
 
     @BeforeEach
     void setUp() {
-        readableAccountStore = AdapterUtils.wellKnownAccountStoreAt();
+        readableAccountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
     }
 

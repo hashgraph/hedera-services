@@ -20,6 +20,8 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
+import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -29,6 +31,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
@@ -49,14 +52,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class TokenHandlerTestBase {
     protected static final String TOKENS = "TOKENS";
+    protected static final Key payerKey = A_COMPLEX_KEY;
+    protected static final HederaKey payerHederaKey = asHederaKey(payerKey).get();
     protected final Key adminKey = A_COMPLEX_KEY;
-    protected final Key pauseKey = A_COMPLEX_KEY;
-    protected final Key wipeKey = A_COMPLEX_KEY;
+    protected final Key pauseKey = B_COMPLEX_KEY;
+    protected final Key wipeKey = C_COMPLEX_KEY;
     protected final Key kycKey = A_COMPLEX_KEY;
     protected final Key feeScheduleKey = A_COMPLEX_KEY;
     protected final Key supplyKey = A_COMPLEX_KEY;
     protected final Key freezeKey = A_COMPLEX_KEY;
-    protected final Key payerKey = A_COMPLEX_KEY;
     protected final AccountID payerId = protoToPbj(asAccount("0.0.3"), AccountID.class);
     protected final AccountID treasury = protoToPbj(asAccount("0.0.100"), AccountID.class);
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
@@ -67,7 +71,6 @@ public class TokenHandlerTestBase {
     protected final HederaKey freezeHederaKey = asHederaKey(freezeKey).get();
     protected final HederaKey feeScheduleHederaKey = asHederaKey(feeScheduleKey).get();
     protected final HederaKey pauseHederaKey = asHederaKey(A_COMPLEX_KEY).get();
-    protected static final HederaKey payerHederaKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final EntityNum tokenEntityNum = EntityNum.fromLong(1L);
     protected final TokenID tokenId =
             TokenID.newBuilder().tokenNum(tokenEntityNum.longValue()).build();
@@ -214,5 +217,40 @@ public class TokenHandlerTestBase {
                 .accountsFrozenByDefault(true)
                 .accountsKycGrantedByDefault(true)
                 .build();
+    }
+
+    protected Account newPayerAccount() {
+        return new Account(
+                2L,
+                null,
+                payerKey,
+                1_234_567L,
+                10_000,
+                "testAccount",
+                false,
+                1_234L,
+                1_234_568L,
+                0,
+                true,
+                true,
+                3,
+                2,
+                1,
+                2,
+                10,
+                1,
+                3,
+                false,
+                2,
+                0,
+                1000L,
+                2,
+                72000,
+                0,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                2,
+                false);
     }
 }

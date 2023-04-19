@@ -73,8 +73,8 @@ public class EventSourceFactory {
         return new StandardEventSource(false);
     }
 
-    public static StandardEventSource newStandardEventSource(final long stake) {
-        return new StandardEventSource(false, stake);
+    public static StandardEventSource newStandardEventSource(final long weight) {
+        return new StandardEventSource(false, weight);
     }
 
     public static List<StandardEventSource> newStandardEventSources(final int numToCreate) {
@@ -83,10 +83,10 @@ public class EventSourceFactory {
         return sources;
     }
 
-    public static List<EventSource<?>> newStandardEventSources(final List<Long> nodeStakes) {
-        final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
-        for (final Long nodeStake : nodeStakes) {
-            eventSources.add(newStandardEventSource(nodeStake));
+    public static List<EventSource<?>> newStandardEventSources(final List<Long> nodeWeights) {
+        final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
+        for (final Long nodeWeight : nodeWeights) {
+            eventSources.add(newStandardEventSource(nodeWeight));
         }
         return eventSources;
     }

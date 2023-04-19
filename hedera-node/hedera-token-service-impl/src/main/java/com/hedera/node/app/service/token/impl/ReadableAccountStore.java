@@ -20,18 +20,12 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
-import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -60,7 +54,7 @@ public class ReadableAccountStore implements AccountAccess {
     }
 
     /** The underlying data storage class that holds the account data. */
-    private final ReadableKVState<EntityNumVirtualKey, MerkleAccount> accountState;
+    private final ReadableKVState<EntityNumVirtualKey, Account> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
     private final ReadableKVState<String, EntityNumValue> aliases;
 
@@ -74,6 +68,10 @@ public class ReadableAccountStore implements AccountAccess {
         this.aliases = states.get("ALIASES");
     }
 
+    private static boolean isMirror(final Bytes bytes) {
+        return bytes.matchesPrefix(MIRROR_PREFIX);
+    }
+
     /**
      * Returns the {@link Account} for a given {@link AccountID}
      *
@@ -85,7 +83,7 @@ public class ReadableAccountStore implements AccountAccess {
     @Nullable
     public Account getAccountById(@NonNull final AccountID accountID) {
         final var account = getAccountLeaf(accountID);
-        return account == null ? null : mapAccount(accountID, account);
+        return account == null ? null : account;
     }
 
     /* Helper methods */
@@ -98,7 +96,7 @@ public class ReadableAccountStore implements AccountAccess {
      * @return merkle leaf for the given account number
      */
     @Nullable
-    private HederaAccount getAccountLeaf(@NonNull final AccountID id) {
+    private Account getAccountLeaf(@NonNull final AccountID id) {
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =
@@ -127,7 +125,7 @@ public class ReadableAccountStore implements AccountAccess {
      * @return merkle leaf for the given contract number
      */
     @Nullable
-    private HederaAccount getContractLeaf(@NonNull final ContractID id) {
+    private Account getContractLeaf(@NonNull final ContractID id) {
         // Get the contract number based on the contract identifier. It may be null.
         final var contractOneOf = id.contract();
         final Long contractNum =
@@ -164,10 +162,6 @@ public class ReadableAccountStore implements AccountAccess {
         return contractNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(contractNum));
     }
 
-    private static boolean isMirror(final Bytes bytes) {
-        return bytes.matchesPrefix(MIRROR_PREFIX);
-    }
-
     private static long numFromEvmAddress(final Bytes bytes) {
         return bytes.getLong(12);
     }
@@ -176,7 +170,7 @@ public class ReadableAccountStore implements AccountAccess {
         return evmAddress.getLong(12);
     }
 
-    private static Long fromMirror(final Bytes evmAddress) {
+    static Long fromMirror(final Bytes evmAddress) {
         return numFromEvmAddress(evmAddress);
     }
 
@@ -189,44 +183,5 @@ public class ReadableAccountStore implements AccountAccess {
         final var buf = new byte[Math.toIntExact(alias.length())];
         alias.getBytes(0, buf);
         return AliasManager.keyAliasToEVMAddress(ByteString.copyFrom(buf));
-    }
-
-    // Converts a HederaAccount into an Account
-    private Account mapAccount(final AccountID idOrAlias, final HederaAccount account) {
-        final var accountNum = idOrAlias.accountNumOrElse(0L);
-        final var builder = new AccountBuilderImpl()
-                .key(account.getAccountKey())
-                .expiry(account.getExpiry())
-                .balance(account.getBalance())
-                .memo(account.getMemo())
-                .deleted(account.isDeleted())
-                .receiverSigRequired(account.isReceiverSigRequired())
-                .numberOfOwnedNfts(account.getNftsOwned())
-                .maxAutoAssociations(account.getMaxAutomaticAssociations())
-                .usedAutoAssociations(account.getUsedAutoAssociations())
-                .numAssociations(account.getNumAssociations())
-                .numPositiveBalances(account.getNumPositiveBalances())
-                .ethereumNonce(account.getEthereumNonce())
-                .stakedToMe(account.getStakedToMe())
-                .stakePeriodStart(account.getStakePeriodStart())
-                .stakedNum(account.totalStake())
-                .declineReward(account.isDeclinedReward())
-                .stakeAtStartOfLastRewardedPeriod(account.getStakePeriodStart())
-                .autoRenewSecs(account.getAutoRenewSecs())
-                .accountNumber(accountNum)
-                .isSmartContract(account.isSmartContract());
-        if (account.getAutoRenewAccount() != null) {
-            builder.autoRenewAccountNumber(account.getAutoRenewAccount().num());
-        }
-        if (account.getAlias() != null) {
-            builder.alias(account.getAlias().toByteArray());
-        }
-        return builder.build();
-    }
-
-    @NonNull
-    public Optional<HederaKey> asHederaKey(@NonNull final Key key) {
-        requireNonNull(key);
-        return Utils.asHederaKey(key);
     }
 }
