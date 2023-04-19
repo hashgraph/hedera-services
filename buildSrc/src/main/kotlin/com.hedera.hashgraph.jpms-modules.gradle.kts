@@ -35,10 +35,12 @@ extraJavaModuleInfo {
         exports("io.grpc.util")
         requiresTransitive("com.google.protobuf")
         requiresTransitive("com.google.common")
+        requires("java.logging")
     }
     module("io.grpc:grpc-netty", "grpc.netty") {
         exportAllPackages()
         requires("io.grpc")
+        requires("java.logging")
     }
     module("io.grpc:grpc-stub", "grpc.stub") {
         exportAllPackages()
@@ -51,6 +53,7 @@ extraJavaModuleInfo {
     module("io.grpc:grpc-protobuf", "grpc.protobuf") {
         exportAllPackages()
         requires("io.grpc")
+        requires("grpc.protobuf.lite")
     }
     module("io.grpc:grpc-protobuf-lite", "grpc.protobuf.lite") {
         exportAllPackages()
@@ -88,6 +91,7 @@ extraJavaModuleInfo {
     module("com.google.guava:guava", "com.google.common") {
         exportAllPackages()
         requireAllDefinedDependencies()
+        requires("java.logging")
     }
     module("com.google.guava:listenablefuture", "com.google.guava.listenablefuture") {
         exportAllPackages()

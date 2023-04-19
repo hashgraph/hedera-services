@@ -134,6 +134,6 @@ tasks.clean { dependsOn(cleanRun) }
 
 tasks.register("showHapiVersion") {
   doLast {
-//    println(versionCatalogs.named("libs").findVersion("hapi-version").get().requiredVersion)
+    //    println(versionCatalogs.named("libs").findVersion("hapi-version").get().requiredVersion)
   }
 }

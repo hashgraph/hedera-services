@@ -22,7 +22,6 @@ module com.hedera.node.app {
     requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.hapi;
-
     requires com.swirlds.platform;
     requires com.swirlds.fchashmap;
     requires com.swirlds.config;
