@@ -35,6 +35,7 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState.Builder;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -45,6 +46,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,6 +62,7 @@ public class CryptoHandlerTestBase {
     protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
+    protected final Instant consensusInstant = Instant.ofEpochSecond(consensusTimestamp.seconds());
     protected final Key accountKey = A_COMPLEX_KEY;
     protected final HederaKey accountHederaKey = asHederaKey(accountKey).get();
     protected final Long accountNum = id.accountNum();
@@ -97,12 +100,15 @@ public class CryptoHandlerTestBase {
             .tokenId(token)
             .owner(owner)
             .build();
+    protected static final long defaultAutoRenewPeriod = 720000L;
+    protected static final long payerBalance = 10_000L;
     protected MapReadableKVState<String, EntityNumValue> readableAliases;
     protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;
     protected MapWritableKVState<String, EntityNumValue> writableAliases;
     protected MapWritableKVState<EntityNumVirtualKey, Account> writableAccounts;
     protected Account account;
     protected ReadableAccountStore readableStore;
+    protected WritableAccountStore writableStore;
 
     @Mock
     protected Account deleteAccount;
@@ -137,6 +143,7 @@ public class CryptoHandlerTestBase {
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         given(readableStates.<String, EntityNumValue>get(ALIASES)).willReturn(readableAliases);
         readableStore = new ReadableAccountStore(readableStates);
+        writableStore = new WritableAccountStore(writableStates);
     }
 
     protected void refreshStoresWithCurrentTokenInWritable() {
@@ -149,6 +156,7 @@ public class CryptoHandlerTestBase {
         given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<String, EntityNumValue>get(ALIASES)).willReturn(writableAliases);
         readableStore = new ReadableAccountStore(readableStates);
+        writableStore = new WritableAccountStore(writableStates);
     }
 
     @NonNull
@@ -207,7 +215,7 @@ public class CryptoHandlerTestBase {
                 alias.alias(),
                 key,
                 1_234_567L,
-                10_000,
+                payerBalance,
                 "testAccount",
                 false,
                 1_234L,

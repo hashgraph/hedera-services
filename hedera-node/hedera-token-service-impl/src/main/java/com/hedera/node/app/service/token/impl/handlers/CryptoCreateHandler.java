@@ -17,29 +17,35 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody.StakedIdOneOfType;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.records.CreateAccountRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -66,9 +72,13 @@ public class CryptoCreateHandler implements TransactionHandler {
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().cryptoCreateAccountOrThrow();
+        final var validationResult = pureChecks(op);
+        if (validationResult != OK) {
+            throw new PreCheckException(validationResult);
+        }
         if (op.hasKey()) {
             final var receiverSigReq = op.receiverSigRequired();
             if (receiverSigReq && op.hasKey()) {
@@ -78,12 +88,18 @@ public class CryptoCreateHandler implements TransactionHandler {
     }
 
     /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
+     * This method is called during the handle workflow. It executes the {@code CryptoCreate}
+     * transaction, creating a new account with the given properties.
+     * If the transaction is successful, the account is created and the payer account is charged
+     * the transaction fee and the initial balance of new account and the balance of the
+     * new account is set to the initial balance.
+     * If the transaction is not successful, the account is not created and the payer account is
+     * charged the transaction fee.
      *
      * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws HandleException      if the transaction is not successful due to payer
+     * account being deleted or has insufficient balance or the account is not created due to
+     * the usage of a price regime
      */
     public void handle(
             @NonNull final HandleContext handleContext,
@@ -92,63 +108,93 @@ public class CryptoCreateHandler implements TransactionHandler {
             @NonNull final CryptoCreateRecordBuilder recordBuilder,
             @NonNull final boolean areCreatableAccounts) {
         final var op = txnBody.cryptoCreateAccount();
-        try {
-            // If accounts can't be created, due to the usage of a price regime, throw an exception
-            if (!areCreatableAccounts) {
-                throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
-            }
 
-            // validate payer account exists and has enough balance
-            final var optionalPayer = accountStore.getForModify(
-                    txnBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
-            final long newPayerBalance = optionalPayer.get().tinybarBalance() - op.initialBalance();
-            validatePayer(optionalPayer, newPayerBalance);
-
-            // Change payer's balance to reflect the deduction of the initial balance for the new
-            // account
-            final var modifiedPayer = optionalPayer
-                    .get()
-                    .copyBuilder()
-                    .tinybarBalance(newPayerBalance)
-                    .build();
-            accountStore.put(modifiedPayer);
-
-            // Build the account to be persisted based on the transaction body
-            final var accountCreated = buildAccount(op, handleContext);
-            accountStore.put(accountCreated);
-
-            final var createdAccountNum = accountCreated.accountNumber();
-            recordBuilder.setCreatedAccount(createdAccountNum);
-
-            if (op.alias() != Bytes.EMPTY) {
-                accountStore.putAlias(op.alias().toString(), createdAccountNum);
-            }
-        } catch (InsufficientFundsException ife) {
-            throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
-        } catch (Exception e) {
-            log.warn("Avoidable exception!", e);
-            throw new HandleException(FAIL_INVALID);
+        // validate fields in the transaction body that involves checking with dynamic properties or state
+        final ResponseCodeEnum validationResult = validateSemantics(op);
+        if (validationResult != OK) {
+            throw new HandleException(validationResult);
         }
+
+        // If accounts can't be created, due to the usage of a price regime, throw an exception
+        if (!areCreatableAccounts) {
+            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        }
+
+        // validate payer account exists and has enough balance
+        final var optionalPayer = accountStore.getForModify(
+                txnBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
+        if (optionalPayer.isEmpty()) {
+            throw new HandleException(INVALID_PAYER_ACCOUNT_ID);
+        }
+        final var payer = optionalPayer.get();
+        final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
+        validatePayer(payer, newPayerBalance);
+
+        // Change payer's balance to reflect the deduction of the initial balance for the new
+        // account
+        final var modifiedPayer =
+                payer.copyBuilder().tinybarBalance(newPayerBalance).build();
+        accountStore.put(modifiedPayer);
+
+        // Build the new account to be persisted based on the transaction body
+        final var accountCreated = buildAccount(op, handleContext);
+        accountStore.put(accountCreated);
+
+        // set newly created account number in the record builder
+        final var createdAccountNum = accountCreated.accountNumber();
+        recordBuilder.setCreatedAccount(createdAccountNum);
+
+        // put if any new alias is associated with the account into account store
+        if (op.alias() != Bytes.EMPTY) {
+            accountStore.putAlias(op.alias().toString(), createdAccountNum);
+        }
+    }
+
+    @Override
+    public CryptoCreateRecordBuilder newRecordBuilder() {
+        return new CreateAccountRecordBuilder();
+    }
+
+    /* ----------- Helper Methods ----------- */
+    private ResponseCodeEnum pureChecks(@NonNull final CryptoCreateTransactionBody op) {
+        if (op.initialBalance() < 0L) {
+            return INVALID_INITIAL_BALANCE;
+        }
+        if (!op.hasAutoRenewPeriod()) {
+            return INVALID_RENEWAL_PERIOD;
+        }
+        if (op.sendRecordThreshold() < 0L) {
+            return INVALID_SEND_RECORD_THRESHOLD;
+        }
+        if (op.receiveRecordThreshold() < 0L) {
+            return INVALID_RECEIVE_RECORD_THRESHOLD;
+        }
+        if (op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT)) {
+            return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+        }
+        return OK;
+    }
+
+    private ResponseCodeEnum validateSemantics(CryptoCreateTransactionBody op) {
+        return OK;
     }
 
     /**
      * Validates the payer account exists and has enough balance to cover the initial balance of the
      * account to be created.
      *
-     * @param optionalPayer the payer account
-     * @param initialBalance the initial balance of the account to be created
+     * @param payer the payer account
+     * @param newPayerBalance the initial balance of the account to be created
      */
-    private void validatePayer(@NonNull final Optional<Account> optionalPayer, final long initialBalance) {
-        final var payerAccount = optionalPayer.get();
+    private void validatePayer(@NonNull final Account payer, final long newPayerBalance) {
         // If the payer account is deleted, throw an exception
-        if (payerAccount.deleted()) {
+        if (payer.deleted()) {
             throw new HandleException(ACCOUNT_DELETED);
         }
-        // TODO: check if payer account is detached when we have started expiring accounts ?
-        final long newPayerBalance = payerAccount.tinybarBalance() - initialBalance;
         if (newPayerBalance < 0) {
             throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
         }
+        // TODO: check if payer account is detached when we have started expiring accounts ?
     }
 
     /**
@@ -159,7 +205,7 @@ public class CryptoCreateHandler implements TransactionHandler {
      * @return the account created
      */
     private Account buildAccount(CryptoCreateTransactionBody op, HandleContext handleContext) {
-        long autoRenewPeriod = op.autoRenewPeriod().seconds();
+        long autoRenewPeriod = op.autoRenewPeriodOrThrow().seconds();
         long consensusTime = handleContext.consensusNow().getEpochSecond();
         long expiry = consensusTime + autoRenewPeriod;
         var builder = Account.newBuilder()
@@ -172,9 +218,9 @@ public class CryptoCreateHandler implements TransactionHandler {
                 .declineReward(op.declineReward());
 
         if (onlyKeyProvided(op)) {
-            builder.key(op.key());
+            builder.key(op.keyOrThrow());
         } else if (keyAndAliasProvided(op)) {
-            builder.key(op.key()).alias(op.alias());
+            builder.key(op.keyOrThrow()).alias(op.alias());
         }
 
         if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
@@ -221,10 +267,5 @@ public class CryptoCreateHandler implements TransactionHandler {
             // set
             return -stakedNodeId - 1;
         }
-    }
-
-    @Override
-    public CryptoCreateRecordBuilder newRecordBuilder() {
-        return new CreateAccountRecordBuilder();
     }
 }

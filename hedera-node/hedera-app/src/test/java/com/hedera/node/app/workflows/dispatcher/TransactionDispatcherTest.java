@@ -316,6 +316,7 @@ class TransactionDispatcherTest {
 
     @Mock
     private WritableTokenStore writableTokenStore;
+
     @Mock
     private WritableAccountStore writableAccountStore;
 
@@ -582,8 +583,8 @@ class TransactionDispatcherTest {
         dispatcher.dispatchHandle(HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory);
 
         verify(txnCtx)
-                .setCreated(
-                        PbjConverter.fromPbj(AccountID.newBuilder().accountNum(666L).build()));
+                .setCreated(PbjConverter.fromPbj(
+                        AccountID.newBuilder().accountNum(666L).build()));
         verify(writableAccountStore).commit();
     }
 

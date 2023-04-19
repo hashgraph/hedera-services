@@ -19,6 +19,7 @@ module com.hedera.node.app.service.token.impl.test {
     requires com.hedera.node.app.spi.fixtures;
     requires static com.github.spotbugs.annotations;
     requires com.swirlds.merkle;
+    requires com.hedera.node.app;
 
     opens com.hedera.node.app.service.token.impl.test.util to
             org.junit.platform.commons;
