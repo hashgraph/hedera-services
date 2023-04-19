@@ -57,11 +57,11 @@ public enum SavedStateMetadataField {
      */
     SIGNING_NODES,
     /**
-     * The sum of all signing nodes' stakes.
+     * The sum of all signing nodes' weights.
      */
-    SIGNING_STAKE_SUM,
+    SIGNING_WEIGHT_SUM,
     /**
-     * The total stake of all nodes in the network.
+     * The total weight of all nodes in the network.
      */
-    TOTAL_STAKE
+    TOTAL_WEIGHT
 }

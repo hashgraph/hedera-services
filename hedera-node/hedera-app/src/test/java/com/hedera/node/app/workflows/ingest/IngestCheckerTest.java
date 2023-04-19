@@ -16,21 +16,29 @@
 
 package com.hedera.node.app.workflows.ingest;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentCaptor.forClass;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
@@ -39,18 +47,29 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.node.app.service.mono.txns.submission.SolvencyPrecheck;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.signature.SignaturePreparer;
+import com.hedera.node.app.solvency.SolvencyPreCheck;
+import com.hedera.node.app.spi.info.CurrentPlatformStatus;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.swirlds.common.system.PlatformStatus;
+import java.util.stream.Stream;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -68,22 +87,38 @@ class IngestCheckerTest extends AppTestBase {
     @Mock
     private HederaState state;
 
-    @Mock
+    @Mock(strictness = LENIENT)
+    NodeInfo nodeInfo;
+
+    @Mock(strictness = LENIENT)
+    CurrentPlatformStatus currentPlatformStatus;
+
+    @Mock(strictness = LENIENT)
+    TransactionChecker transactionChecker;
+
+    @Mock(strictness = LENIENT)
+    ThrottleAccumulator throttleAccumulator;
+
+    @Mock(strictness = LENIENT)
     private SignaturePreparer signaturePreparer;
 
-    @Mock
-    private SolvencyPrecheck solvencyPrecheck;
+    @Mock(strictness = LENIENT)
+    private SolvencyPreCheck solvencyPreCheck;
 
+    private TransactionBody txBody;
     private Transaction tx;
 
     private IngestChecker subject;
 
     @BeforeEach
-    void setUp() {
-        final var txBody = TransactionBody.newBuilder()
+    void setUp() throws PreCheckException {
+        when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
+
+        txBody = TransactionBody.newBuilder()
                 .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
                 .transactionID(
                         TransactionID.newBuilder().accountID(MOCK_PAYER_ID).build())
+                .nodeAccountID(MOCK_NODE_ACCOUNT_ID)
                 .build();
         final var signedTx = SignedTransaction.newBuilder()
                 .bodyBytes(asBytes(TransactionBody.PROTOBUF, txBody))
@@ -92,66 +127,247 @@ class IngestCheckerTest extends AppTestBase {
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                 .build();
 
-        subject = new IngestChecker(MOCK_NODE_ACCOUNT_ID, solvencyPrecheck, signaturePreparer);
+        final var transactionInfo =
+                new TransactionInfo(tx, txBody, MOCK_SIGNATURE_MAP, HederaFunctionality.UNCHECKED_SUBMIT);
+        when(transactionChecker.check(tx)).thenReturn(transactionInfo);
+
+        subject = new IngestChecker(
+                MOCK_NODE_ACCOUNT_ID,
+                nodeInfo,
+                currentPlatformStatus,
+                transactionChecker,
+                throttleAccumulator,
+                solvencyPreCheck,
+                signaturePreparer);
+    }
+
+    @Nested
+    @DisplayName("0. Node state pre-checks")
+    class NodeTests {
+
+        @Test
+        @DisplayName("When the node is ok, no exception should be thrown")
+        void testNodeStateSucceeds() {
+            assertThatCode(() -> subject.checkNodeState()).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("When the node is zero stake, the transaction should be rejected")
+        void testCheckNodeStateWithZeroStakeFails() {
+            // Given a node that IS zero stake
+            when(nodeInfo.isSelfZeroStake()).thenReturn(true);
+
+            assertThatThrownBy(() -> subject.checkNodeState())
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INVALID_NODE_ACCOUNT));
+        }
+
+        @ParameterizedTest
+        @EnumSource(PlatformStatus.class)
+        @DisplayName("When the platform is not ACTIVE, the transaction should be rejected")
+        void testParseAndCheckWithInactivePlatformFails(final PlatformStatus status) {
+            // Since the enum source is going over all states, and the ACTIVE state is
+            // actually good, I need to skip that one.
+            if (status != PlatformStatus.ACTIVE) {
+                // Given a platform that is not ACTIVE
+                when(currentPlatformStatus.get()).thenReturn(status);
+
+                assertThatThrownBy(() -> subject.checkNodeState())
+                        .isInstanceOf(PreCheckException.class)
+                        .has(responseCode(PLATFORM_NOT_ACTIVE));
+            }
+        }
     }
 
     @Test
-    void throwsOnInvalidPayerSignatureStatus() {
-        given(signaturePreparer.syncGetPayerSigStatus(any())).willReturn(INVALID_SIGNATURE);
+    @DisplayName("Run all checks successfully")
+    void testRunAllChecksSuccessfully() throws PreCheckException {
+        // given
+        final var expected = new TransactionInfo(tx, txBody, MOCK_SIGNATURE_MAP, HederaFunctionality.UNCHECKED_SUBMIT);
 
-        assertFailsWithPrecheck(
-                INVALID_SIGNATURE, () -> subject.checkPayerSignature(state, tx, MOCK_SIGNATURE_MAP, MOCK_PAYER_ID));
+        // when
+        final var actual = subject.runAllChecks(state, tx);
+
+        // then
+        Assertions.assertThat(actual).isEqualTo(expected);
     }
 
-    @Test
-    void happyPathWithValidPayerSignatureStatus() {
-        given(signaturePreparer.syncGetPayerSigStatus(any())).willReturn(OK);
+    @Nested
+    @DisplayName("1. Check the syntax")
+    class SyntaxCheckTests {
+        /**
+         * It is not necessary to test all the possible failure reasons, just a few to make sure that
+         * the checker is passing the failure reason to the response.
+         * @return a stream of arguments with the failure reason
+         */
+        public static Stream<Arguments> failureReasons() {
+            return Stream.of(Arguments.of(INVALID_TRANSACTION), Arguments.of(INVALID_TRANSACTION_BODY));
+        }
 
-        assertDoesNotThrow(() -> subject.checkPayerSignature(state, tx, MOCK_SIGNATURE_MAP, MOCK_PAYER_ID));
+        @ParameterizedTest(name = "TransactionChecker fails with error code {0}")
+        @MethodSource("failureReasons")
+        @DisplayName("If the transaction fails TransactionChecker, a failure response is returned with the right error")
+        void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException {
+            // Given a TransactionChecker that will throw a PreCheckException with the given failure reason
+            when(transactionChecker.check(any())).thenThrow(new PreCheckException(failureReason));
+
+            // When the transaction is checked
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(failureReason));
+        }
+
+        @Test
+        @DisplayName("If some random exception is thrown from TransactionChecker, the exception is bubbled up")
+        void randomException() throws PreCheckException {
+            // Given a WorkflowOnset that will throw a RuntimeException
+            when(transactionChecker.check(any())).thenThrow(new RuntimeException("check exception"));
+
+            // When the transaction is submitted, then the exception is bubbled up
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("check exception");
+        }
     }
 
-    @Test
-    void checksSolvencyWithMonoHelperHappyPath() {
-        given(solvencyPrecheck.payerAccountStatus2(MOCK_PAYER_NUM)).willReturn(OK);
-        given(solvencyPrecheck.solvencyOfVerifiedPayer(any(), eq(false)))
-                .willReturn(new TxnValidityAndFeeReq(fromPbj(OK), 123L));
+    @Nested
+    @DisplayName("2. Check throttles")
+    class ThrottleTests {
+        @Test
+        @DisplayName("When the transaction is throttled, the transaction should be rejected")
+        void testThrottleFails() {
+            // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
+            when(throttleAccumulator.shouldThrottle(txBody)).thenReturn(true);
 
-        assertDoesNotThrow(() -> subject.checkSolvency(tx));
+            // When the transaction is submitted
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", BUSY);
+        }
+
+        @Test
+        @DisplayName("If some random exception is thrown from ThrottleAccumulator, the exception is bubbled up")
+        void randomException() {
+            // Given a ThrottleAccumulator that will throw a RuntimeException
+            when(throttleAccumulator.shouldThrottle(txBody))
+                    .thenThrow(new RuntimeException("shouldThrottle exception"));
+
+            // When the transaction is submitted, then the exception is bubbled up
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("shouldThrottle exception");
+        }
     }
 
-    @Test
-    void propagatesBadPayerAccountViaPreCheckException() {
-        given(solvencyPrecheck.payerAccountStatus2(MOCK_PAYER_NUM)).willReturn(PAYER_ACCOUNT_DELETED);
+    @Nested
+    @DisplayName("3. Check payer's signature")
+    class PayerSignatureTests {
+        public static Stream<Arguments> failureReasons() {
+            return Stream.of(
+                    Arguments.of(INVALID_SIGNATURE),
+                    Arguments.of(KEY_PREFIX_MISMATCH),
+                    Arguments.of(INVALID_ACCOUNT_ID));
+        }
 
-        assertFailsWithPrecheck(PAYER_ACCOUNT_DELETED, () -> subject.checkSolvency(tx));
+        @ParameterizedTest(name = "SignatureCheck fails with error code {0}")
+        @MethodSource("failureReasons")
+        @DisplayName("If the payer signature is invalid, the transaction should be rejected")
+        void payerSignatureFails(ResponseCodeEnum failureReason) throws PreCheckException {
+            doThrow(new PreCheckException(failureReason))
+                    .when(signaturePreparer)
+                    .syncGetPayerSigStatus(any());
+
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(failureReason));
+        }
+
+        @Test
+        @DisplayName("If some random exception is thrown from checking signatures, the exception is bubbled up")
+        void randomException() throws PreCheckException {
+            // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
+            doThrow(new RuntimeException("checkPayerSignature exception"))
+                    .when(signaturePreparer)
+                    .syncGetPayerSigStatus(any());
+
+            // When the transaction is submitted, then the exception is bubbled up
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("checkPayerSignature exception");
+        }
     }
 
-    @Test
-    void propagatesInsolventPayerAccountViaInsufficientBalanceException() {
-        final ArgumentCaptor<SignedTxnAccessor> captor = forClass(SignedTxnAccessor.class);
-        given(solvencyPrecheck.payerAccountStatus2(MOCK_PAYER_NUM)).willReturn(OK);
-        final var solvencySummary = new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, 123L);
-        given(solvencyPrecheck.solvencyOfVerifiedPayer(captor.capture(), eq(false)))
-                .willReturn(solvencySummary);
+    @Nested
+    @DisplayName("4.a Check account status")
+    class PayerAccountStatusTests {
 
-        assertFailsWithInsufficientBalance(ResponseCodeEnum.INSUFFICIENT_TX_FEE, 123L, () -> subject.checkSolvency(tx));
-        final var accessor = captor.getValue();
-        assertEquals(MOCK_PAYER_ID, toPbj(accessor.getPayer()));
+        public static Stream<Arguments> failureReasons() {
+            return Stream.of(Arguments.of(INVALID_ACCOUNT_ID), Arguments.of(ACCOUNT_DELETED));
+        }
+
+        @ParameterizedTest(name = "Check of account status fails with error code {0}")
+        @MethodSource("failureReasons")
+        @DisplayName("If the status of the payer account is invalid, the transaction should be rejected")
+        void payerAccountStatusFails(ResponseCodeEnum failureReason) throws PreCheckException {
+            doThrow(new PreCheckException(failureReason)).when(solvencyPreCheck).checkPayerAccountStatus(any(), any());
+
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(failureReason));
+        }
+
+        @Test
+        @DisplayName("If some random exception is thrown from account status check, the exception is bubbled up")
+        void randomException() throws PreCheckException {
+            // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
+            doThrow(new RuntimeException("checkPayerAccountStatus exception"))
+                    .when(solvencyPreCheck)
+                    .checkPayerAccountStatus(any(), any());
+
+            // When the transaction is submitted, then the exception is bubbled up
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("checkPayerAccountStatus exception");
+        }
     }
 
-    private static void assertFailsWithPrecheck(final ResponseCodeEnum expected, final ExceptionalRunnable runnable) {
-        final var e = assertThrows(PreCheckException.class, runnable::run);
-        assertEquals(expected, e.responseCode());
-    }
+    @Nested
+    @DisplayName("4.b Check payer solvency")
+    class PayerBalanceTests {
 
-    private static void assertFailsWithInsufficientBalance(
-            final ResponseCodeEnum expected, final long expectedFee, final ExceptionalRunnable runnable) {
-        final var e = assertThrows(InsufficientBalanceException.class, runnable::run);
-        assertEquals(expected, e.responseCode());
-        assertEquals(expectedFee, e.getEstimatedFee());
-    }
+        public static Stream<Arguments> failureReasons() {
+            return Stream.of(
+                    Arguments.of(INSUFFICIENT_TX_FEE),
+                    Arguments.of(INSUFFICIENT_PAYER_BALANCE),
+                    Arguments.of(FAIL_FEE));
+        }
 
-    private interface ExceptionalRunnable {
-        void run() throws PreCheckException;
+        @ParameterizedTest(name = "Check of payer's balance fails with error code {0}")
+        @MethodSource("failureReasons")
+        @DisplayName("If the payer has insufficient funds, the transaction should be rejected")
+        void payerAccountStatusFails(ResponseCodeEnum failureReason) throws PreCheckException {
+            doThrow(new InsufficientBalanceException(failureReason, 123L))
+                    .when(solvencyPreCheck)
+                    .checkSolvencyOfVerifiedPayer(any(), any());
+
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(InsufficientBalanceException.class)
+                    .has(responseCode(failureReason))
+                    .has(estimatedFee(123L));
+        }
+
+        @Test
+        @DisplayName("If some random exception is thrown from checking solvency, the exception is bubbled up")
+        void randomException() throws PreCheckException {
+            // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
+            doThrow(new RuntimeException("checkSolvency exception"))
+                    .when(solvencyPreCheck)
+                    .checkSolvencyOfVerifiedPayer(any(), any());
+
+            // When the transaction is submitted, then the exception is bubbled up
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("checkSolvency exception");
+        }
     }
 }

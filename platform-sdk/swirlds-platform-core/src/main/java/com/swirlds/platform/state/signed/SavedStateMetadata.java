@@ -26,9 +26,9 @@ import static com.swirlds.platform.state.signed.SavedStateMetadataField.NUMBER_O
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.ROUND;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.RUNNING_EVENT_HASH;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_NODES;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_STAKE_SUM;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_WEIGHT_SUM;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.SOFTWARE_VERSION;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.TOTAL_STAKE;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.TOTAL_WEIGHT;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.WALL_CLOCK_TIME;
 
 import com.swirlds.common.crypto.Hash;
@@ -76,10 +76,10 @@ import org.apache.logging.log4j.Logger;
  *                                    {@link SavedStateMetadataField#NODE_ID}
  * @param signingNodes                a comma separated list of node IDs that signed this state, corresponds to
  *                                    {@link SavedStateMetadataField#SIGNING_NODES}
- * @param signingStakeSum             the sum of all signing nodes' stakes, corresponds to
- *                                    {@link SavedStateMetadataField#SIGNING_STAKE_SUM}
- * @param totalStake                  the total stake of all nodes in the network, corresponds to
- *                                    {@link SavedStateMetadataField#TOTAL_STAKE}
+ * @param signingWeightSum             the sum of all signing nodes' weights, corresponds to
+ *                                    {@link SavedStateMetadataField#SIGNING_WEIGHT_SUM}
+ * @param totalWeight                  the total weight of all nodes in the network, corresponds to
+ *                                    {@link SavedStateMetadataField#TOTAL_WEIGHT}
  */
 public record SavedStateMetadata(
         Long round,
@@ -91,8 +91,8 @@ public record SavedStateMetadata(
         Instant wallClockTime,
         Long nodeId,
         List<Long> signingNodes,
-        Long signingStakeSum,
-        Long totalStake) {
+        Long signingWeightSum,
+        Long totalWeight) {
 
     /**
      * The standard file name for the saved state metadata file.
@@ -124,8 +124,8 @@ public record SavedStateMetadata(
                 parseInstant(data, WALL_CLOCK_TIME),
                 parseLong(data, NODE_ID),
                 parseLongList(data, SIGNING_NODES),
-                parseLong(data, SIGNING_STAKE_SUM),
-                parseLong(data, TOTAL_STAKE));
+                parseLong(data, SIGNING_WEIGHT_SUM),
+                parseLong(data, TOTAL_WEIGHT));
     }
 
     /**
@@ -154,8 +154,8 @@ public record SavedStateMetadata(
                 now,
                 selfId,
                 signingNodes,
-                signedState.getSigningStake(),
-                platformState.getAddressBook().getTotalStake());
+                signedState.getSigningWeight(),
+                platformState.getAddressBook().getTotalWeight());
     }
 
     /**
@@ -392,8 +392,8 @@ public record SavedStateMetadata(
         putIfNotNull(map, NODE_ID, nodeId);
         final String signingNodesString = signingNodes == null ? null : formattedList(signingNodes.iterator());
         putIfNotNull(map, SIGNING_NODES, signingNodesString);
-        putIfNotNull(map, SIGNING_STAKE_SUM, signingStakeSum);
-        putIfNotNull(map, TOTAL_STAKE, totalStake);
+        putIfNotNull(map, SIGNING_WEIGHT_SUM, signingWeightSum);
+        putIfNotNull(map, TOTAL_WEIGHT, totalWeight);
 
         return map;
     }

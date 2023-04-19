@@ -46,7 +46,9 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
     public static final AccountID DEFAULT_NODE = asAccount(DEFAULT_NODE_ID);
     public static final String DEFAULT_PAYER_ID = "0.0.13257";
     public static final String MASTER_PAYER_ID = "0.0.50";
+    public static final AccountID MASTER_PAYER = asAccount(MASTER_PAYER_ID);
     public static final String TREASURY_PAYER_ID = "0.0.2";
+    public static final AccountID TREASURY_PAYER = asAccount(TREASURY_PAYER_ID);
     public static final AccountID DEFAULT_PAYER = asAccount(DEFAULT_PAYER_ID);
     public static final String STAKING_FUND_ID = "0.0.800";
     public static final AccountID STAKING_FUND = asAccount("0.0.800");

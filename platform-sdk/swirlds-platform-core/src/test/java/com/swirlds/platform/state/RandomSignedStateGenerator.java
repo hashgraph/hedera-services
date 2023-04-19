@@ -95,7 +95,7 @@ public class RandomSignedStateGenerator {
         final AddressBook addressBookInstance;
         if (addressBook == null) {
             addressBookInstance = new RandomAddressBookGenerator(random)
-                    .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                    .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                     .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
                     .setSequentialIds(true)
                     .build();

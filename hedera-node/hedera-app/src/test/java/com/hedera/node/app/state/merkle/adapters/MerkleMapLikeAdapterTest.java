@@ -130,18 +130,6 @@ class MerkleMapLikeAdapterTest {
     }
 
     @Test
-    void isArchiveDelegates() {
-        setupSubjectAdaptingReal();
-
-        real.copy();
-
-        subject.archive();
-
-        assertTrue(real.isArchived());
-        assertTrue(subject.isArchived());
-    }
-
-    @Test
     void getHashDelegates() {
         setupSubjectAdaptingReal();
 
