@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -74,8 +73,9 @@ public class TokenUpdateHandler implements TransactionHandler {
 
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        final var adminKey = tokenMetadata.adminKey();
-        adminKey.ifPresent(context::requireKey);
+        if (tokenMetadata.hasAdminKey()) {
+            context.requireKey(tokenMetadata.adminKey());
+        }
         if (op.hasAutoRenewAccount()) {
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
@@ -83,8 +83,7 @@ public class TokenUpdateHandler implements TransactionHandler {
             context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_ACCOUNT_ID);
         }
         if (op.hasAdminKey()) {
-            final var newAdminKey = asHederaKey(op.adminKeyOrThrow());
-            newAdminKey.ifPresent(context::requireKey);
+            context.requireKey(op.adminKeyOrThrow());
         }
     }
 

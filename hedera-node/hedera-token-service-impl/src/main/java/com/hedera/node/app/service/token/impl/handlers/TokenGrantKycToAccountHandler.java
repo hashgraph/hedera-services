@@ -59,7 +59,9 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         final var op = context.body().tokenGrantKycOrThrow();
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        tokenMeta.kycKey().ifPresent(context::requireKey);
+        if (tokenMeta.hasKycKey()) {
+            context.requireKey(tokenMeta.kycKey());
+        }
     }
 
     /**
