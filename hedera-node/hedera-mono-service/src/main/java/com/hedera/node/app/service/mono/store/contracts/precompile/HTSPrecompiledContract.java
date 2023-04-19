@@ -141,7 +141,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
     private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
     private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
-    private static final String NOT_SUPPORTED_HRC_OPERATION_REASON = "Invalid operation for HRC token!";
+    private static final String NOT_SUPPORTED_HRC_TOKEN_OPERATION_REASON = "Invalid operation for HRC token!";
     public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
 
     private final EntityCreator creator;
@@ -695,34 +695,36 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             encoder,
                                             evmEncoder,
                                             precompilePricingUtils));
-                            case AbiConstants.ABI_ID_HRC_ASSOCIATE -> checkHRCToken(
-                                    dynamicProperties.isHRCAssociateEnabled()
-                                            && ledgers.tokens().exists(tokenId),
-                                    () -> new AssociatePrecompile(
-                                            tokenId,
-                                            senderAddress,
-                                            ledgers,
-                                            updater.aliases(),
-                                            sigsVerifier,
-                                            sideEffectsTracker,
-                                            syntheticTxnFactory,
-                                            infrastructureFactory,
-                                            precompilePricingUtils,
-                                            feeCalculator));
-                            case AbiConstants.ABI_ID_HRC_DISSOCIATE -> checkHRCToken(
-                                    dynamicProperties.isHRCAssociateEnabled()
-                                            && ledgers.tokens().exists(tokenId),
-                                    () -> new DissociatePrecompile(
-                                            tokenId,
-                                            senderAddress,
-                                            ledgers,
-                                            updater.aliases(),
-                                            sigsVerifier,
-                                            sideEffectsTracker,
-                                            syntheticTxnFactory,
-                                            infrastructureFactory,
-                                            precompilePricingUtils,
-                                            feeCalculator));
+                            case AbiConstants.ABI_ID_HRC_ASSOCIATE -> checkFeatureFlag(
+                                    dynamicProperties.isHRCAssociateEnabled(),
+                                    () -> checkHRCToken(
+                                            ledgers.tokens().exists(tokenId),
+                                            () -> new AssociatePrecompile(
+                                                    tokenId,
+                                                    senderAddress,
+                                                    ledgers,
+                                                    updater.aliases(),
+                                                    sigsVerifier,
+                                                    sideEffectsTracker,
+                                                    syntheticTxnFactory,
+                                                    infrastructureFactory,
+                                                    precompilePricingUtils,
+                                                    feeCalculator)));
+                            case AbiConstants.ABI_ID_HRC_DISSOCIATE -> checkFeatureFlag(
+                                    dynamicProperties.isHRCAssociateEnabled(),
+                                    () -> checkHRCToken(
+                                            ledgers.tokens().exists(tokenId),
+                                            () -> new DissociatePrecompile(
+                                                    tokenId,
+                                                    senderAddress,
+                                                    ledgers,
+                                                    updater.aliases(),
+                                                    sigsVerifier,
+                                                    sideEffectsTracker,
+                                                    syntheticTxnFactory,
+                                                    infrastructureFactory,
+                                                    precompilePricingUtils,
+                                                    feeCalculator)));
                             default -> null;
                         };
                 yield isExplicitRedirectCall
@@ -850,7 +852,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
     private Precompile checkHRCToken(final boolean validToken, final Supplier<Precompile> precompileSupplier) {
         if (!validToken) {
-            throw new InvalidTransactionException(NOT_SUPPORTED_HRC_OPERATION_REASON, INVALID_TOKEN_ID);
+            throw new InvalidTransactionException(NOT_SUPPORTED_HRC_TOKEN_OPERATION_REASON, INVALID_TOKEN_ID);
         } else {
             return precompileSupplier.get();
         }

@@ -663,7 +663,7 @@ class GlobalDynamicPropertiesTest {
         given(properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS))
                 .willReturn(i + 93L);
         given(properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED))
-                .willReturn((i + 93) % 2 == 0);
+                .willReturn((i + 95) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

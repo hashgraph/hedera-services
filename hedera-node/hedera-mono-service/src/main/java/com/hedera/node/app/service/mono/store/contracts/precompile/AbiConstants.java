@@ -111,9 +111,9 @@ public final class AbiConstants {
     public static final int ABI_ID_ERC_OWNER_OF_NFT = 0x6352211e;
     // tokenURI(uint256 tokenId)
     public static final int ABI_ID_ERC_TOKEN_URI_NFT = 0xc87b56dd;
-    // associate().  Should be called as IHFC(tokenAddress).associate()
+    // associate(). Should be called as IHRC(tokenAddress).associate()
     public static final int ABI_ID_HRC_ASSOCIATE = 0x0a754de6;
-    // dissociate(). Should be called as IHFC(tokenAddress).dissociate()
+    // dissociate(). Should be called as IHRC(tokenAddress).dissociate()
     public static final int ABI_ID_HRC_DISSOCIATE = 0x5c9217e0;
     // wipeTokenAccount(address, address, uint32)
     public static final int ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE = 0x9790686d;

@@ -44,7 +44,6 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
-import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
@@ -84,12 +83,10 @@ import com.hedera.node.app.service.mono.txns.token.DissociateLogic;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -182,9 +179,6 @@ class HRCPrecompilesTest {
     private ContractAliases aliases;
 
     @Mock
-    private FeeObject mockFeeObject;
-
-    @Mock
     private UsagePricesProvider resourceCosts;
 
     @Mock
@@ -203,9 +197,6 @@ class HRCPrecompilesTest {
     private HbarCentExchange exchange;
 
     @Mock
-    private ExchangeRate exchangeRate;
-
-    @Mock
     private AccessorFactory accessorFactory;
 
     @Mock
@@ -222,9 +213,6 @@ class HRCPrecompilesTest {
 
     @Mock
     private DissociateLogic dissociateLogic;
-
-    private static final int CENTS_RATE = 12;
-    private static final int HBAR_RATE = 1;
 
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
@@ -293,7 +281,6 @@ class HRCPrecompilesTest {
         final Bytes pretendArguments = givenFrameContext(nestedPretendArguments);
 
         givenLedgers();
-        givenPricingUtilsContext();
 
         given(dynamicProperties.isHRCAssociateEnabled()).willReturn(true);
         given(wrappedLedgers.tokens().exists(any())).willReturn(true);
@@ -314,13 +301,8 @@ class HRCPrecompilesTest {
                         wrappedLedgers,
                         TokenAssociateToAccount))
                 .willReturn(true);
-        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
-                .willReturn(1L);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
-        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -329,7 +311,6 @@ class HRCPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -369,7 +350,6 @@ class HRCPrecompilesTest {
         final Bytes pretendArguments = givenFrameContext(nestedPretendArguments);
 
         givenLedgers();
-        givenPricingUtilsContext();
 
         given(dynamicProperties.isHRCAssociateEnabled()).willReturn(true);
         given(wrappedLedgers.tokens().exists(any())).willReturn(true);
@@ -390,13 +370,8 @@ class HRCPrecompilesTest {
                         wrappedLedgers,
                         TokenAssociateToAccount))
                 .willReturn(true);
-        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
-                .willReturn(1L);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
-        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         // Throw InvalidTransactionException with INVALID_ACCOUNT_ID
@@ -407,7 +382,6 @@ class HRCPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -422,7 +396,6 @@ class HRCPrecompilesTest {
         final Bytes pretendArguments = givenFrameContext(nestedPretendArguments);
 
         givenLedgers();
-        givenPricingUtilsContext();
 
         given(dynamicProperties.isHRCAssociateEnabled()).willReturn(true);
         given(wrappedLedgers.tokens().exists(any())).willReturn(true);
@@ -444,13 +417,8 @@ class HRCPrecompilesTest {
                         wrappedLedgers,
                         TokenDissociateFromAccount))
                 .willReturn(true);
-        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
-                .willReturn(1L);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
-        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -459,7 +427,6 @@ class HRCPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -498,7 +465,6 @@ class HRCPrecompilesTest {
         final Bytes pretendArguments = givenFrameContext(nestedPretendArguments);
 
         givenLedgers();
-        givenPricingUtilsContext();
 
         given(dynamicProperties.isHRCAssociateEnabled()).willReturn(true);
         given(wrappedLedgers.tokens().exists(any())).willReturn(true);
@@ -520,15 +486,10 @@ class HRCPrecompilesTest {
                         wrappedLedgers,
                         TokenDissociateFromAccount))
                 .willReturn(true);
-        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
-                .willReturn(1L);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
-        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(mockFeeObject.serviceFee()).willReturn(1L);
         // Throw InvalidTransactionException with INVALID_ACCOUNT_ID
         doThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID))
                 .when(dissociateLogic)
@@ -537,7 +498,6 @@ class HRCPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -572,12 +532,6 @@ class HRCPrecompilesTest {
         given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
         given(wrappedLedgers.nfts()).willReturn(nfts);
         given(wrappedLedgers.tokens()).willReturn(tokens);
-    }
-
-    private void givenPricingUtilsContext() {
-        given(exchange.rate(any())).willReturn(exchangeRate);
-        given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
-        given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
     }
 
     public static final TokenAllowanceWrapper<TokenID, AccountID, AccountID> ALLOWANCE_WRAPPER =
