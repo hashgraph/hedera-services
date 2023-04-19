@@ -17,56 +17,38 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.base.SignaturePair;
-import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.signature.SignaturePreparer;
+import com.hedera.node.app.signature.SignatureVerificationResult;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.state.HederaAddressBook;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.RecordCache;
+import com.hedera.node.app.state.ReceiptCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
-import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static java.util.Objects.requireNonNull;
 
 /** Implementation of {@link PreHandleWorkflow} */
@@ -97,10 +79,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      */
     private final ExecutorService exe;
     /**
-     * The {@link RecordCache} is used to check if a transaction has already been processed, to avoid processing
+     * The {@link ReceiptCache} is used to check if a transaction has already been processed, to avoid processing
      * the same transaction twice. Each transaction has a {@link TransactionID} that is unique for each transaction.
      */
-    private final RecordCache recordCache;
+    private final ReceiptCache receiptCache;
 
     /**
      * Creates a new instance of {@code PreHandleWorkflowImpl}.
@@ -112,7 +94,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      *                   transaction.
      * @param transactionChecker the {@link TransactionChecker} for parsing and verifying the transaction
      * @param signatureVerifier the {@link SignatureVerifier} to verify signatures
-     * @param recordCache the {@link RecordCache} used to check if a transaction has already been processed
+     * @param receiptCache the {@link ReceiptCache} used to check if a transaction has already been processed
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     @Inject
@@ -121,23 +103,26 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final RecordCache recordCache) {
+            @NonNull final ReceiptCache receiptCache) {
         this.exe = requireNonNull(exe);
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.signatureVerifier = requireNonNull(signatureVerifier);
-        this.recordCache = requireNonNull(recordCache);
+        this.receiptCache = requireNonNull(receiptCache);
     }
 
     /** {@inheritDoc} */
     @Override
     public void preHandle(
-            @NonNull final HederaState state,
+            @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final AccountID creator,
             @NonNull final Iterator<Transaction> transactions) {
 
+        requireNonNull(readableStoreFactory);
+        requireNonNull(creator);
+        requireNonNull(transactions);
+
         // Used for looking up payer account information.
-        final var readableStoreFactory = new ReadableStoreFactory(state);
         final var accountStore = readableStoreFactory.createAccountStore();
 
         // Using the executor service, submit a task for each transaction in the event.
@@ -148,7 +133,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             if (platformTx.isSystem()) continue;
 
             // Submit the task to the executor service and put the resulting Future as the metadata on the transaction
-            final var future = exe.submit(() -> preHandleTransaction(creator, readableStoreFactory, accountStore, state, platformTx));
+            final var future = exe.submit(() ->
+                    preHandleTransaction(creator, readableStoreFactory, accountStore, platformTx));
             tasks.add(new WorkItem(platformTx, future));
         }
 
@@ -177,8 +163,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final AccountID creator,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final ReadableAccountStore accountStore,
-            @NonNull final HederaState state,
             @NonNull final Transaction platformTx) {
+
         // 1. Parse the Transaction and check the syntax
         final var txBytes = Bytes.wrap(platformTx.getContents());
         final TransactionInfo txInfo;
@@ -187,104 +173,113 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         } catch (PreCheckException preCheck) {
             // The node SHOULD have verified the transaction before it was submitted to the network.
             // Since it didn't, it has failed in its due diligence and will be charged accordingly.
-            return PreHandleResult.nodeDueDiligenceFailure(creator, preCheck.responseCode());
+            return PreHandleResult.nodeDueDiligenceFailure(creator, preCheck.responseCode(), null);
         } catch (Throwable th) {
             // If some random exception happened, then we should not charge the node for it. Instead,
             // we will just record the exception and try again during handle. Then if we fail again
             // at handle, then we will throw away the transaction (hopefully, deterministically!)
-            return PreHandleResult.unknownFailure(creator, th);
+            return PreHandleResult.unknownFailure(creator);
         }
 
-        // 2. Deduplicate
+        // 2. Deduplication check
         final var txBody = txInfo.txBody();
         final var txId = txBody.transactionID();
         assert txId != null : "TransactionID should never be null, transactionChecker forbids it";
-        final var duplicate = recordCache.isReceiptPresent(txId);
-        if (duplicate) {
-            // If the transaction is a duplicate, then the creator node has failed a due-diligence check.
-            // It is trying to send multiple transactions through consensus with the same TransactionID!
-            // We'll charge the node for this.
-            return PreHandleResult.nodeDueDiligenceFailure(creator, DUPLICATE_TRANSACTION, txInfo);
+        final var cacheItem = receiptCache.get(txId);
+        // Check whether the transaction is a node-submitted duplicate, or a user-submitted duplicate, or not a
+        // duplicate at all. A node-submitted duplicate ends processing with the node as the payer. A user-submitted
+        // duplicate continues with processing until after we do payer verification, and then terminates. If it isn't
+        // a duplicate at all, then we just keep going.
+        final boolean userSubmittedDuplicate;
+        if (cacheItem != null) {
+            if (cacheItem.nodeAccountIDs().contains(creator)) {
+                // The creator has sent the same transaction more than once! The node has failed a due-diligence check.
+                // We'll charge the node for this.
+                return PreHandleResult.nodeDueDiligenceFailure(creator, DUPLICATE_TRANSACTION, txInfo);
+            } else {
+                userSubmittedDuplicate = true;
+            }
+        } else {
+            userSubmittedDuplicate = false;
         }
-
-        // NOTE: At this point we have completed the due-diligence checks. Any failures from here on out
-        // can be attributed to the transaction itself, and not the node that submitted it. With one exception:
-        // if we fail to get the payer account, then we will charge the node that submitted the transaction
-        // during HANDLE. This is because the node may have submitted the transaction before the payer account
-        // was created, and the node may not have been aware of that.
+        // If we got here, it was either not a duplicate or a user-submitted duplicate, so we need to record
+        // that the creator node has sent us this transaction for further deduplication checks in the future
+        receiptCache.record(txId, creator);
 
         // 3. Get Payer Account
         final var payer = txId.accountID();
         assert payer != null : "Payer account cannot be null, transactionChecker forbids it";
-        final var accountOptional = accountStore.getAccountById(payer);
-        if (accountOptional.isEmpty()) {
-            // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to
+        final var payerAccount = accountStore.getAccountById(payer);
+        if (payerAccount == null) {
+            // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
             // so later during the handle phase. Technically, we could still try to gather and verify the other
             // signatures, but that might be tricky and complicated with little gain. So just throw.
-            return PreHandleResult.preHandleFailure(creator, PAYER_ACCOUNT_NOT_FOUND, txInfo);
+            return PreHandleResult.preHandleFailure(creator, PAYER_ACCOUNT_NOT_FOUND, txInfo, null);
         }
 
-        // 4. Collect payer TransactionSignatures
-        final var payerAccount = accountOptional.get();
-        final var payerVerificationFuture = signatureVerifier.verifySignatures(
+        // 4. Collect payer TransactionSignatures. Any PreHandleResult created from this point on MUST include
+        //    the payerVerificationFuture.
+        final var payerVerificationFuture = new SignatureVerificationResult(List.of(signatureVerifier.verify(
                 txInfo.signedBytes(),
                 txInfo.signatureMap().sigPairOrThrow(),
-                payerAccount.getKey().orElseThrow());
+                payerAccount.getKey())));
 
-        // If this is a duplicate transaction, then we only want to verify the payer signature,
-        // and then we can skip the rest of the pre-handle logic.
-//        if (duplicate) {
-////            payerSig.waitForFuture();
-//            return PreHandleResult.preHandleFailure(payer, DUPLICATE_TRANSACTION, txInfo);
-//        }
-
-        // 5. Call Pre-Transaction Handlers
-        final var context = new PreHandleContext(accountStore, txInfo.txBody(), OK);
-        try {
-            dispatcher.dispatchPreHandle(storeFactory, context);
-
-            // TODO Deal with potential inner context
-            //            final var innerContext = context.getInnerContext();
-            //            TransactionMetadata innerMetadata = null;
-            //            if (innerContext != null) {
-            //                // VERIFY: the txBytes used for inner transactions is the same as the outer transaction
-            //                final var innerPayerSignature = verifyPayerSignature(state, innerContext, txBytes, signatureMap);
-            //                final var innerOtherSignatures = verifyOtherSignatures(state, innerContext, txBytes, signatureMap);
-            //                innerMetadata = createTransactionMetadata(
-            //                        innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
-            //            }
-
-        } catch (PreCheckException preCheck) {
-            // Pre-handle is the time for the service to perform semantic checks on the transaction.
-            // It is quite possible those semantic checks will fail and throw a PreCheckException.
-            // In that case, the payer will end up paying for the transaction.
-            return PreHandleResult.preHandleFailure(payer, payerVerificationFuture, preCheck.responseCode(), txInfo);
+        // 5. Deduplication check (again). If the user submitted a duplicate transaction, then now is the time
+        //    to record that they did so and make them the payer.
+        if (userSubmittedDuplicate) {
+            // The user has submitted the same transaction more than once. This is a perfectly reasonable thing
+            // for the user to do. We will charge the payer, but we won't actually do any work for this
+            // transaction other than the payer check.
+            return PreHandleResult.preHandleFailure(payer, DUPLICATE_TRANSACTION, txInfo, payerVerificationFuture);
         }
 
-        // 6. Collection additional TransactionSignatures
-        final var nonPayerKeys = context.getRequiredNonPayerKeys();
+        // NOTE: At this point we have completed the due-diligence checks. Any failures from here on out
+        // can be attributed to the transaction itself, and not the node that submitted it.
+
+        // 6. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
+        final PreHandleContext context;
+        try {
+            // NOTE: Once PreHandleContext is moved from being a concrete implementation in SPI, to being an Interface/
+            // implementation pair, with the implementation in `hedera-app`, then we will change the constructor,
+            // so I can pass the payer account in directly, since I've already looked it up. But I don't really want
+            // that as a public API in the SPI, so for now, we do a double lookup. Boo.
+            context = new PreHandleContext(accountStore, txInfo.txBody());
+        } catch (PreCheckException preCheck) {
+            // This should NEVER happen. The only way an exception is thrown from the PreHandleContext constructor
+            // is if the payer account doesn't exist, but by the time we reach this line of code, we already know
+            // that it does exist.
+            throw new RuntimeException("Payer account disappeared between preHandle and preHandleContext creation!", preCheck);
+        }
+
+        // 7. Call Pre-Transaction Handlers
+        try {
+            // FUTURE: First, perform semantic checks on the transaction (TBD)
+            // Then gather the signatures from the transaction handler
+            dispatcher.dispatchPreHandle(storeFactory, context);
+            // FUTURE: Finally, let the transaction handler do warm up of other state it may want to use later (TBD)
+        } catch (PreCheckException preCheck) {
+            // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
+            // In that case, the payer will end up paying for the transaction.
+            return PreHandleResult.preHandleFailure(payer, preCheck.responseCode(), txInfo, payerVerificationFuture);
+        }
+
+        // 8. Collect additional TransactionSignatures
+        final var nonPayerKeys = context.requiredNonPayerKeys();
         final var nonPayerFutures = new ArrayList<Future<Boolean>>();
         for (final var key : nonPayerKeys) {
-            final var future = signatureVerifier.verifySignatures(
+            final var future = signatureVerifier.verify(
                     txInfo.signedBytes(),
                     txInfo.signatureMap().sigPairOrThrow(),
                     key);
             nonPayerFutures.add(future);
         }
 
-        // TODO I'd like to have one future that represents ALL the sig checks, and it can delegate to more futures
-
-        // 8. Create and return TransactionMetadata
-        return null;
-
-        // TODO needs to have a generic try/catch so that anything that goes wrong doesn't randomly kill the thread
-        //  but ends up in an orderly death.
+        // 9. Create and return TransactionMetadata
+        final var signatureVerificationResult = new SignatureVerificationResult(nonPayerFutures);
+        return new PreHandleResult(payer, OK, txInfo, payerVerificationFuture, signatureVerificationResult, null);
     }
 
-
-    // TODO Now that we have hollow accounts, if we find that a signature in the sig map is not being used for
-    //  anything else and is a 20-byte key, then we assume it is an ethereum key and verify its signature as well?
-
+    /** A platform transaction and the future that produces its {@link PreHandleResult} */
     private record WorkItem(
         @NonNull Transaction platformTx,
         @NonNull Future<PreHandleResult> future) {

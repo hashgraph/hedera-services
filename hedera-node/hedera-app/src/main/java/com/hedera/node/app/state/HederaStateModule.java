@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state;
 
-import com.hedera.node.app.state.merkle.MerkleRecordCache;
+import com.hedera.node.app.state.merkle.MerkleReceiptCache;
 import dagger.Module;
 import dagger.Provides;
 import javax.inject.Singleton;
@@ -25,8 +25,8 @@ import javax.inject.Singleton;
 public interface HederaStateModule {
     @Provides
     @Singleton
-    static RecordCache provideRecordCache() {
-        return new MerkleRecordCache();
+    static ReceiptCache provideRecordCache() {
+        return new MerkleReceiptCache();
     }
 
     @Provides

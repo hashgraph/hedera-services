@@ -49,11 +49,11 @@ public interface HederaState {
     WritableStates createWritableStates(@NonNull String serviceName);
 
     /**
-     * Gets the {@link RecordCache}, used for storing all in-flight and recently sent records,
+     * Gets the {@link ReceiptCache}, used for storing all in-flight and recently sent records,
      * which is needed for deduplication purposes.
      *
-     * @return A non-null {@link RecordCache}.
+     * @return A non-null {@link ReceiptCache}.
      */
     @NonNull
-    RecordCache getRecordCache();
+    ReceiptCache getReceiptCache();
 }

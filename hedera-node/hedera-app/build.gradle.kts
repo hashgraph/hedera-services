@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+plugins {
+  id("com.hedera.hashgraph.conventions")
+  `java-test-fixtures`
+}
 
 description = "Hedera Application - Implementation"
 
@@ -67,6 +70,13 @@ dependencies {
   testImplementation(testLibs.classgraph)
   testImplementation(testLibs.bundles.testing)
   testCompileOnly(libs.spotbugs.annotations)
+
+  testFixturesImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  testFixturesImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  testFixturesImplementation(project(":hedera-node:hedera-app"))
+  testFixturesImplementation(testLibs.classgraph)
+  testFixturesImplementation(testLibs.bundles.testing)
+  testFixturesCompileOnly(libs.spotbugs.annotations)
 }
 
 tasks.withType<Test> {

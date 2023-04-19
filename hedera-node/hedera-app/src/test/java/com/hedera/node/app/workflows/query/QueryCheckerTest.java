@@ -32,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
-import static utils.TestUtils.randomBytes;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -103,7 +102,7 @@ class QueryCheckerTest {
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CRYPTO_TRANSFER);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CRYPTO_TRANSFER);
 
         // when
         assertThatCode(() -> checker.validateCryptoTransfer(transactionInfo)).doesNotThrowAnyException();
@@ -115,7 +114,7 @@ class QueryCheckerTest {
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CONSENSUS_CREATE_TOPIC);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(transactionInfo))
@@ -129,7 +128,7 @@ class QueryCheckerTest {
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CRYPTO_TRANSFER);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CRYPTO_TRANSFER);
         doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))
                 .when(cryptoTransferHandler)
                 .validate(txBody);

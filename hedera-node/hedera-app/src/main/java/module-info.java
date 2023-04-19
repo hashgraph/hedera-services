@@ -44,7 +44,9 @@ module com.hedera.node.app {
     exports com.hedera.node.app to
             com.swirlds.platform;
     exports com.hedera.node.app.state to
-            com.swirlds.common;
+            com.swirlds.common, com.hedera.node.app.fixtures;
+    exports com.hedera.node.app.workflows to
+            com.hedera.node.app.fixtures;
     exports com.hedera.node.app.state.merkle to
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.disk to

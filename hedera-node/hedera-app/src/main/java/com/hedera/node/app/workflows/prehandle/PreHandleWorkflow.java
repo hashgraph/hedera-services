@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,12 +30,12 @@ public interface PreHandleWorkflow {
     /**
      * Starts the pre-handle transaction workflow of the {@link Event}
      *
-     * @param state the {@link HederaState} that is used
+     * @param readableStoreFactory the {@link ReadableStoreFactory} that is used for looking up stores
      * @param creator The {@link AccountID} of the node that created these transactions
      * @param transactions An {@link Iterator} over all transactions to pre-handle
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    void preHandle(@NonNull final HederaState state,
+    void preHandle(@NonNull final ReadableStoreFactory readableStoreFactory,
                @NonNull final AccountID creator,
                @NonNull final Iterator<Transaction> transactions);
 }

@@ -11,10 +11,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Future;
+import javax.inject.Inject;
 
 public class SignatureVerifierImpl implements SignatureVerifier {
+
+    @Inject
+    public SignatureVerifierImpl() {
+    }
+
     @Override
-    public Future<Boolean> verifySignatures(Bytes signedBytes, List<SignaturePair> sigPairs, HederaKey key) {
+    public Future<Boolean> verify(Bytes signedBytes, List<SignaturePair> sigPairs, HederaKey key) {
         throw new UnsupportedOperationException("Not implemented yet!");
     }
 

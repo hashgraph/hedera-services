@@ -10,5 +10,5 @@ import java.util.concurrent.Future;
  * Asynchronously verifies signatures on a transaction given a set of keys.
  */
 public interface SignatureVerifier {
-    Future<Boolean> verifySignatures(Bytes signedBytes, List<SignaturePair> sigPairs, HederaKey key);
+    Future<Boolean> verify(Bytes signedBytes, List<SignaturePair> sigPairs, HederaKey key);
 }

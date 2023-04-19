@@ -75,7 +75,7 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HandleConsensusRoundListener;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.PreHandleListener;
-import com.hedera.node.app.state.RecordCache;
+import com.hedera.node.app.state.ReceiptCache;
 import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeAdapter;
 import com.hedera.node.app.state.merkle.adapters.ScheduledTransactionsAdapter;
 import com.hedera.node.app.state.merkle.adapters.VirtualMapLikeAdapter;
@@ -173,7 +173,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
 
     /** The cache used for tracking records in flight */
-    private final RecordCache recordCache = new MerkleRecordCache();
+    private final ReceiptCache recordCache = new MerkleReceiptCache();
 
     /**
      * A rebuilt-map of all aliases.
@@ -307,7 +307,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
 
     @NonNull
     @Override
-    public RecordCache getRecordCache() {
+    public ReceiptCache getReceiptCache() {
         return recordCache;
     }
 

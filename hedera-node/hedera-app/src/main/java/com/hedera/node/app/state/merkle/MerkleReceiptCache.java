@@ -16,22 +16,33 @@
 
 package com.hedera.node.app.state.merkle;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.node.app.state.RecordCache;
+import com.hedera.node.app.state.ReceiptCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 
-public class MerkleRecordCache implements RecordCache {
+public class MerkleReceiptCache implements ReceiptCache {
+    /** All receipts filed with the {@link ReceiptCache} before consensus will have this status. */
+    private static final TransactionReceipt UNKNOWN_RECEIPT = TransactionReceipt.newBuilder().status(UNKNOWN).build();
     private final ConcurrentHashMap<TransactionID, TransactionReceipt> receipts = new ConcurrentHashMap<>();
 
     @Override
-    public boolean isReceiptPresent(@NonNull final TransactionID transactionID) {
-        return receipts.containsKey(transactionID);
+    public void record(@NonNull TransactionID transactionID, @NonNull AccountID nodeAccountID) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Nullable
+    @Override
+    public CacheItem get(@NonNull TransactionID transactionID) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public void addPreConsensus(@NonNull final TransactionID transactionID, @NonNull final TransactionReceipt receipt) {
-        receipts.put(transactionID, receipt);
+    public void update(@NonNull TransactionID transactionID, @NonNull TransactionReceipt receipt) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

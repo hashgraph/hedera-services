@@ -16,20 +16,28 @@
 
 package com.hedera.node.app.state.merkle;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.node.app.state.RecordCache;
+import com.hedera.node.app.state.ReceiptCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class MonoRecordCache implements RecordCache {
+public class MonoReceiptCache implements ReceiptCache {
 
     @Override
-    public boolean isReceiptPresent(@NonNull final TransactionID transactionID) {
-        return false; // TODO delegate to the mono service
+    public void record(@NonNull TransactionID transactionID, @NonNull AccountID nodeAccountID) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Nullable
+    @Override
+    public CacheItem get(@NonNull TransactionID transactionID) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public void addPreConsensus(@NonNull final TransactionID transactionID, @NonNull final TransactionReceipt receipt) {
-        // TODO delegate to the mono service
+    public void update(@NonNull TransactionID transactionID, @NonNull TransactionReceipt receipt) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

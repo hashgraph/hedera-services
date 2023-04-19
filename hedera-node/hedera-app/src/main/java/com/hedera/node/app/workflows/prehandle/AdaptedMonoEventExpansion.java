@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.state.HederaAddressBook;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -69,7 +70,8 @@ public class AdaptedMonoEventExpansion {
         if (!forWorkflows.isEmpty()) {
             final var creatorId = event.getCreatorId();
             final var creator = addressBook.getNodeOperatorAccountID(creatorId);
-            preHandleWorkflow.preHandle(state, creator, forWorkflows.iterator());
+            final var readableStoreFactory = new ReadableStoreFactory(state);
+            preHandleWorkflow.preHandle(readableStoreFactory, creator, forWorkflows.iterator());
         }
     }
 }

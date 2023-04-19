@@ -32,7 +32,7 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.RecordCache;
+import com.hedera.node.app.state.ReceiptCache;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
@@ -51,9 +51,9 @@ class SubmissionManagerTest extends AppTestBase {
     /** A mocked {@link Platform} for accepting or rejecting submission of transaction bytes */
     @Mock
     private Platform platform;
-    /** A mocked {@link RecordCache} for tracking submitted transactions */
+    /** A mocked {@link ReceiptCache} for tracking submitted transactions */
     @Mock
-    private RecordCache recordCache;
+    private ReceiptCache recordCache;
     /** Mocked local properties to verify that we ONLY support Unchecked Submit when in PROD mode */
     @Mock
     private NodeLocalProperties nodeLocalProperties;
@@ -118,7 +118,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform actually receives the bytes
             verify(platform).createTransaction(PbjConverter.asBytes(bytes));
             // And the record cache is updated with this transaction
-            verify(recordCache).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
+            verify(recordCache).update(txBody.transactionIDOrThrow(), TransactionReceipt.DEFAULT);
             // And the metrics keeping track of errors submitting are NOT touched
             verify(platformTxnRejections, never()).cycle();
         }
@@ -134,7 +134,7 @@ class SubmissionManagerTest extends AppTestBase {
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
             // And the transaction is NOT added to the record cache
-            verify(recordCache, never()).addPreConsensus(any(), any());
+            verify(recordCache, never()).update(any(), any());
             // And the error metrics HAVE been updated
             verify(platformTxnRejections).cycle();
         }
@@ -188,7 +188,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform actually sees the unchecked bytes
             verify(platform).createTransaction(uncheckedBytes);
             // And the record cache is updated with this transaction
-            verify(recordCache).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
+            verify(recordCache).update(txBody.transactionIDOrThrow(), TransactionReceipt.DEFAULT);
             // And the metrics keeping track of errors submitting are NOT touched
             verify(platformTxnRejections, never()).cycle();
         }
@@ -209,7 +209,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
             // And the record cache is NOT updated with this transaction
-            verify(recordCache, never()).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
+            verify(recordCache, never()).update(txBody.transactionIDOrThrow(), TransactionReceipt.DEFAULT);
             // We never attempted to submit this tx to the platform, so we don't increase the metric
             verify(platformTxnRejections, never()).cycle();
         }
@@ -238,7 +238,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
             // And the record cache is NOT updated with this transaction
-            verify(recordCache, never()).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
+            verify(recordCache, never()).update(txBody.transactionIDOrThrow(), TransactionReceipt.DEFAULT);
         }
     }
 }

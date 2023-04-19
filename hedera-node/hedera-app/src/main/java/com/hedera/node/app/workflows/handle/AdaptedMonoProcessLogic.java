@@ -56,31 +56,32 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private SwirldsTxnAccessor adaptForMono(final ConsensusTransaction platformTxn, final PreHandleResult metadata) {
-        try {
-            final var accessor = PlatformTxnAccessor.from(platformTxn.getContents());
-            // TODO - recompute required keys and compare with metadata
-            accessor.addAllCryptoSigs(metadata.cryptoSignatures());
-            final var preHandleStatus = metadata.status();
-            final var payerKey = metadata.payerKey();
-            if (payerKey != null) {
-                if (preHandleStatus != ResponseCodeEnum.OK) {
-                    accessor.setSigMeta(forPayerOnly((JKey) payerKey, metadata.cryptoSignatures(), accessor));
-                } else {
-                    accessor.setSigMeta(forPayerAndOthers(
-                            (JKey) payerKey,
-                            (List) (metadata.otherPartyKeys().stream().toList()),
-                            metadata.cryptoSignatures(),
-                            accessor));
-                }
-            } else {
-                accessor.setSigMeta(noneAvailable());
-            }
-            // Prevent the mono-service workflow from rationalizing sigs
-            accessor.setExpandedSigStatus(PbjConverter.fromPbj(preHandleStatus));
-            accessor.setLinkedRefs(new LinkedRefs());
-            return accessor;
-        } catch (final InvalidProtocolBufferException e) {
-            throw new IllegalStateException("An unparseable transaction was submitted", e);
-        }
+//        try {
+//            final var accessor = PlatformTxnAccessor.from(platformTxn.getContents());
+//            // TODO - recompute required keys and compare with metadata
+//            accessor.addAllCryptoSigs(metadata.cryptoSignatures());
+//            final var preHandleStatus = metadata.status();
+//            final var payerKey = metadata.payerKey();
+//            if (payerKey != null) {
+//                if (preHandleStatus != ResponseCodeEnum.OK) {
+//                    accessor.setSigMeta(forPayerOnly((JKey) payerKey, metadata.cryptoSignatures(), accessor));
+//                } else {
+//                    accessor.setSigMeta(forPayerAndOthers(
+//                            (JKey) payerKey,
+//                            (List) (metadata.nonPayerKeys().stream().toList()),
+//                            metadata.cryptoSignatures(),
+//                            accessor));
+//                }
+//            } else {
+//                accessor.setSigMeta(noneAvailable());
+//            }
+//            // Prevent the mono-service workflow from rationalizing sigs
+//            accessor.setExpandedSigStatus(PbjConverter.fromPbj(preHandleStatus));
+//            accessor.setLinkedRefs(new LinkedRefs());
+//            return accessor;
+//        } catch (final InvalidProtocolBufferException e) {
+//            throw new IllegalStateException("An unparseable transaction was submitted", e);
+//        }
+        return null;
     }
 }

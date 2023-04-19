@@ -134,6 +134,18 @@ public class TransactionChecker {
     }
 
     /**
+     * Parses and checks the transaction encoded as protobuf in the given buffer.
+     *
+     * @param buffer The buffer containing the protobuf bytes of the transaction
+     * @return The parsed {@link TransactionInfo}
+     * @throws PreCheckException If parsing fails or any of the checks fail.
+     */
+    public TransactionInfo parseAndCheck(@NonNull final Bytes buffer) throws PreCheckException {
+        final var tx = parse(buffer);
+        return check(tx);
+    }
+
+    /**
      * Parse the given {@link Bytes} into a transaction.
      *
      * <p>After verifying that the number of bytes comprising the transaction does not exceed the maximum allowed, the

@@ -80,11 +80,22 @@ public class TestBase {
      */
     @NonNull
     public final Bytes randomBytes(int length) {
+        return Bytes.wrap(randomByteArray(length));
+    }
+
+    /**
+     * Generates some random bytes
+     *
+     * @param length The number of bytes to generate.
+     * @return Some random bytes.
+     */
+    @NonNull
+    public final byte[] randomByteArray(int length) {
         final byte[] data = new byte[length];
         for (int i = 0; i < length; i++) {
             data[i] = (byte) rand.nextInt();
         }
-        return Bytes.wrap(data);
+        return data;
     }
 
     /**

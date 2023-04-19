@@ -20,84 +20,87 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.signature.SignatureVerificationResult;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Future;
 
 /**
- * Metadata collected when transactions are handled as part of "pre-handle". This happens with
- * multiple background threads. Any state read or computed as part of this pre-handle, including any
- * errors, are captured in the {@link PreHandleResult}. This is then made available to the transaction
- * during the "handle" phase as part of the HandleContext.
+ * Metadata collected when transactions are handled as part of "pre-handle". This is then made available to the
+ * transaction during the "handle" phase as part of the {@link HandleContext}.
  *
- * @param txnBody Transaction that is being pre-handled
- * @param payer payer for the transaction
- * @param status {@link ResponseCodeEnum} status of the transaction
- * @param payerKey payer key required to sign the transaction. It is null if payer is missing
- * @param innerResult {@link PreHandleResult} of the inner transaction (where appropriate)
+ * @param payer payer for the transaction, which could be from the transaction body, or could be a node account.
+ *              The payer will always be set.
+ * @param status {@link ResponseCodeEnum} status of the pre-handle result. The status will always be set.
+ * @param txInfo Information about the transaction that is being handled. If the transaction was not parseable, then
+ *               this will be null, and an appropriate error status will be set.
+ * @param payerSignatureVerification Result of the payer signature verification. If the payer refers to a node account,
+ *                                   then this field will be null. Signature verification is performed asynchronously,
+ *                                   so you may have to block on this field while getting the result.
+ * @param nonPayerSignatureVerification Result of the non-payer signature verification. It may be that there were no
+ *                                      non-payer signatures, in which case this field may or may not be null. If there
+ *                                      were any signatures to verify, then this field will give a final result
+ *                                      to whether all signatures were valid.
+ * @param innerResult                   {@link PreHandleResult} of the inner transaction (where appropriate)
  */
 public record PreHandleResult(
-        @Nullable TransactionBody txnBody,
-        @Nullable SignatureMap signatureMap,
-        @Nullable AccountID payer,
+        @NonNull AccountID payer,
         @NonNull ResponseCodeEnum status,
-        @Nullable HederaKey payerKey,
-        @NonNull Set<HederaKey> otherPartyKeys,
-        @Nullable List<TransactionSignature> cryptoSignatures,
+        @Nullable TransactionInfo txInfo,
+        @Nullable SignatureVerificationResult payerSignatureVerification,
+        @Nullable SignatureVerificationResult nonPayerSignatureVerification,
         @Nullable PreHandleResult innerResult) {
 
     public PreHandleResult {
         requireNonNull(status);
+        requireNonNull(payer);
     }
 
-    public PreHandleResult(
-            @NonNull final PreHandleContext context,
+    /**
+     * Creates a new {@link PreHandleResult} in the event of a random failure that should not be automatically
+     * charged to the node. Instead, during the handle phase, we will try again and charge the node if it fails again.
+     * The {@link #status()} will be set to {@link ResponseCodeEnum#UNKNOWN}.
+     *
+     * @param node The node that was responsible for this transaction.
+     * @return A new {@link PreHandleResult} with the given parameters.
+     */
+    public static PreHandleResult unknownFailure(@NonNull final AccountID node) {
+        return new PreHandleResult(node, ResponseCodeEnum.UNKNOWN, null, null, null, null);
+    }
+
+    /**
+     * Creates a new {@link PreHandleResult} in the event of node due diligence failure. The node itself will be
+     * charged for the transaction. If the {@link TransactionInfo} is not available because the failure happened while
+     * parsing the bytes, then it may be omitted as {@code null}.
+     *
+     * @param node The node that is responsible for paying for this due diligence failure.
+     * @param status The status code of the failure.
+     * @param txInfo The transaction info, if available.
+     * @return A new {@link PreHandleResult} with the given parameters.
+     */
+    public static PreHandleResult nodeDueDiligenceFailure(
+            @NonNull final AccountID node,
             @NonNull final ResponseCodeEnum status,
-            @NonNull final SignatureMap signatureMap,
-            @NonNull final List<TransactionSignature> cryptoSignatures,
-            @Nullable final PreHandleResult innerResult) {
-        this(
-                requireNonNull(context).body(),
-                requireNonNull(signatureMap),
-                context.payer(),
-                status,
-                context.payerKey(),
-                context.requiredNonPayerKeys(),
-                requireNonNull(cryptoSignatures),
-                innerResult);
+            @Nullable final TransactionInfo txInfo) {
+        return new PreHandleResult(node, status, txInfo, null, null, null);
     }
 
-    public PreHandleResult(@NonNull final ResponseCodeEnum status) {
-        this(null, null, null, status, null, Collections.emptySet(), Collections.emptyList(), null);
-    }
-
-    public static <T> T preHandleFailure(AccountID payer, ResponseCodeEnum responseCodeEnum, TransactionInfo txInfo) {
-        return null;
-    }
-
-    public static <T> T preHandleFailure(AccountID payer, Future<Boolean> payerVerificationFuture, ResponseCodeEnum responseCodeEnum, TransactionInfo txInfo) {
-        return null;
-    }
-
-    public static <T> T nodeDueDiligenceFailure(AccountID creator, ResponseCodeEnum responseCodeEnum, TransactionInfo txInfo) {
-        return null;
-    }
-
-    public static <T> T unknownFailure(AccountID creator, Throwable th) {
-        return null;
-    }
-
-    public static <T> T nodeDueDiligenceFailure(AccountID creator, ResponseCodeEnum responseCodeEnum) {
-        return null;
+    /**
+     * Creates a new {@link PreHandleResult} in the event of a failure that should be charged to the payer.
+     *
+     * @param payer The account that will pay for this transaction.
+     * @param status The status code of the failure.
+     * @param txInfo The transaction info
+     * @param payerVerificationResult The result of the payer signature verification. May be null if the payer account was not found in state.
+     * @return A new {@link PreHandleResult} with the given parameters.
+     */
+    public static PreHandleResult preHandleFailure(
+            @NonNull final AccountID payer,
+            @NonNull final ResponseCodeEnum status,
+            @NonNull final TransactionInfo txInfo,
+            @Nullable final SignatureVerificationResult payerVerificationResult) {
+        return new PreHandleResult(payer, status, txInfo, payerVerificationResult, null, null);
     }
 
     /**
