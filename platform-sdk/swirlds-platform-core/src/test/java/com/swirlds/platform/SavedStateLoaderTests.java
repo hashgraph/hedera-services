@@ -110,7 +110,7 @@ public class SavedStateLoaderTests {
 
     private void testNullShutdownTrigger() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextFactory.build(),
                         null,
@@ -124,7 +124,7 @@ public class SavedStateLoaderTests {
 
     private void testNullAddressBook() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextFactory.build(),
                         null,
@@ -151,7 +151,7 @@ public class SavedStateLoaderTests {
 
     private void testNullVersion() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextFactory.build(),
                         shutdownTrigger,
@@ -165,7 +165,7 @@ public class SavedStateLoaderTests {
 
     private void testNullEmergencyValidatorSupplier() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextFactory.build(),
                         shutdownTrigger,
@@ -179,7 +179,7 @@ public class SavedStateLoaderTests {
 
     private void testNullEmergencyValidatorValue() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextFactory.build(),
                         shutdownTrigger,
@@ -193,7 +193,7 @@ public class SavedStateLoaderTests {
 
     private void testNullEmergencyRecoveryManager() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         TestPlatformContextFactory.build(),
                         shutdownTrigger,

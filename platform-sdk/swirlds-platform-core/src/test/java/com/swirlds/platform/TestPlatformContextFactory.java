@@ -16,10 +16,13 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.config.ConfigUtils.scanAndRegisterAllConfigTypes;
+
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.test.metrics.NoOpMetrics;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 
 /**
@@ -35,7 +38,7 @@ public final class TestPlatformContextFactory {
      * @return a new {@link PlatformContext} for testing
      */
     public static PlatformContext build() {
-        return new DefaultPlatformContext(
-                ConfigurationBuilder.create().build(), new NoOpMetrics(), CryptographyHolder.get());
+        final Configuration configuration = scanAndRegisterAllConfigTypes(ConfigurationBuilder.create()).build();
+        return new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
     }
 }
