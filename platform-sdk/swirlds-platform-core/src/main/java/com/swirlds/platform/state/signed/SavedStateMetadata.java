@@ -326,8 +326,8 @@ public record SavedStateMetadata(
         final List<Long> list = new ArrayList<>();
 
         if (parts.length == 1 && parts[0].isBlank()) {
-            logInvalidField(field, value, new IllegalArgumentException("List is empty"));
-            return null;
+            // List is empty.
+            return list;
         }
 
         for (final String part : parts) {

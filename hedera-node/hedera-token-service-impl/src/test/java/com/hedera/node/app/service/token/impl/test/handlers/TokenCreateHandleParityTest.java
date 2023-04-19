@@ -56,7 +56,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_S
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -64,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
+import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -76,7 +76,7 @@ class TokenCreateHandleParityTest {
 
     @BeforeEach
     void setUp() {
-        accountStore = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         subject = new TokenCreateHandler();
     }
 
@@ -87,9 +87,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), TOKEN_ADMIN_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -101,9 +101,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), TOKEN_ADMIN_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -115,8 +115,8 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_TREASURY_KT.asPbjKey()));
         basicContextAssertions(context, 1);
     }
 
@@ -135,7 +135,7 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         basicContextAssertions(context, 0);
     }
 
@@ -154,9 +154,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), MISC_ACCOUNT_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -168,8 +168,8 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_TREASURY_KT.asPbjKey()));
         basicContextAssertions(context, 1);
     }
 
@@ -180,9 +180,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -202,8 +202,8 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertTrue(sanityRestoredToPbj(context.requiredNonPayerKeys()).contains(TOKEN_TREASURY_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().contains(TOKEN_TREASURY_KT.asPbjKey()));
         basicContextAssertions(context, 1);
     }
 
@@ -222,9 +222,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -236,9 +236,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), NO_RECEIVER_SIG_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -250,9 +250,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -264,9 +264,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), NO_RECEIVER_SIG_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -278,9 +278,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -292,9 +292,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), NO_RECEIVER_SIG_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -306,9 +306,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -320,8 +320,8 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertTrue(sanityRestoredToPbj(context.requiredNonPayerKeys()).contains(TOKEN_TREASURY_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().contains(TOKEN_TREASURY_KT.asPbjKey()));
         basicContextAssertions(context, 1);
     }
 
@@ -332,9 +332,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -346,8 +346,8 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
         basicContextAssertions(context, 1);
     }
 
@@ -358,8 +358,8 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_TREASURY_KT.asPbjKey()));
         basicContextAssertions(context, 1);
     }
 
@@ -370,8 +370,8 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_TREASURY_KT.asPbjKey()));
         basicContextAssertions(context, 1);
     }
 
@@ -382,9 +382,9 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
+                context.requiredNonPayerKeys(),
                 containsInAnyOrder(TOKEN_TREASURY_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
         basicContextAssertions(context, 2);
     }
@@ -396,8 +396,8 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertTrue(sanityRestoredToPbj(context.requiredNonPayerKeys()).contains(TOKEN_TREASURY_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().contains(TOKEN_TREASURY_KT.asPbjKey()));
         basicContextAssertions(context, 1);
     }
 
@@ -408,8 +408,8 @@ class TokenCreateHandleParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_TREASURY_KT.asPbjKey()));
         basicContextAssertions(context, 1);
     }
 }
