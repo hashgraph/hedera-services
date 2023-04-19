@@ -25,5 +25,4 @@ import com.hedera.node.app.spi.Service;
 public interface ContractService extends Service {
 
     String NAME = "ContractService";
-
 }

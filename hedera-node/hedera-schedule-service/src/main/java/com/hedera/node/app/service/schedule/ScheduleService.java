@@ -25,5 +25,4 @@ import com.hedera.node.app.spi.Service;
 public interface ScheduleService extends Service {
 
     String NAME = "ScheduleService";
-    
 }

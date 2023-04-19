@@ -24,7 +24,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * etc.,
  */
 public interface Service {
-    
 
     /** Registers the schemas for the service with the given {@link SchemaRegistry}. */
     void registerSchemas(@NonNull SchemaRegistry registry);

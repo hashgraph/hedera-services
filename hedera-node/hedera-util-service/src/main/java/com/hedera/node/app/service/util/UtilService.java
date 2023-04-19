@@ -25,5 +25,4 @@ import com.hedera.node.app.spi.Service;
 public interface UtilService extends Service {
 
     String NAME = "UtilService";
-
 }

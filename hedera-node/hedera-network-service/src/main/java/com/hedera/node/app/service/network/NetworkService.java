@@ -25,5 +25,4 @@ import com.hedera.node.app.spi.Service;
 public interface NetworkService extends Service {
 
     String NAME = "NetworkService";
-    
 }

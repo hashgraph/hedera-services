@@ -25,5 +25,4 @@ import com.hedera.node.app.spi.Service;
 public interface FreezeService extends Service {
 
     String NAME = "FreezeService";
-    
 }
