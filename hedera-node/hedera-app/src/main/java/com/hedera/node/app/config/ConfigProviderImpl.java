@@ -20,12 +20,10 @@ import com.hedera.node.app.config.internal.ConfigurationAdaptor;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.config.ConfigProvider;
-import com.swirlds.common.threading.locks.AutoClosableLock;
-import com.swirlds.common.threading.locks.Locks;
-import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Implementation of the {@link ConfigProvider} interface.
@@ -34,11 +32,7 @@ public class ConfigProviderImpl implements ConfigProvider {
 
     private final PropertySource propertySource;
 
-    private Configuration configuration;
-
-    private long version;
-
-    private final AutoClosableLock lock = Locks.createAutoLock();
+    private final AtomicReference<Configuration> configuration;
 
     /**
      * Constructor.
@@ -47,7 +41,7 @@ public class ConfigProviderImpl implements ConfigProvider {
      */
     public ConfigProviderImpl(@NonNull final PropertySource propertySource) {
         this.propertySource = Objects.requireNonNull(propertySource, "propertySource");
-        update();
+        configuration = new AtomicReference<>(new ConfigurationAdaptor(propertySource));
     }
 
     /**
@@ -55,23 +49,11 @@ public class ConfigProviderImpl implements ConfigProvider {
      * This should happen whenever {@link GlobalDynamicProperties#reload()} is called.
      */
     public void update() {
-        try (final Locked ignored = lock.lock()) {
-            configuration = new ConfigurationAdaptor(propertySource);
-            version++;
-        }
+        configuration.set(new ConfigurationAdaptor(propertySource));
     }
 
     @Override
     public Configuration getConfiguration() {
-        try (final Locked ignored = lock.lock()) {
-            return configuration;
-        }
-    }
-
-    @Override
-    public long getVersion() {
-        try (final Locked ignored = lock.lock()) {
-            return version;
-        }
+        return configuration.get();
     }
 }

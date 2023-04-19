@@ -20,10 +20,8 @@ import com.swirlds.config.api.Configuration;
 
 /**
  * The ConfigProvider interface is used to provide the configuration. This interface can be seen as the "config
- * facility". Since some config properties can change at runtime the version of the configuration is also provided.
- * Whenever you want to access a configuration property that can change at runtime you should not store the {@link
- * Configuration} instance and always use this provider to get access to it or check the version by calling {@link
- * #getVersion()}. If the version has changed you should get a new instance of the {@link Configuration}.
+ * facility". Whenever you want to access a configuration property that can change at runtime you should not store the
+ * {@link Configuration} instance.
  */
 public interface ConfigProvider {
 
@@ -33,11 +31,4 @@ public interface ConfigProvider {
      * @return the configuration
      */
     Configuration getConfiguration();
-
-    /**
-     * Returns a version that always changes (counts up) when the configuration changes.
-     *
-     * @return the current version.
-     */
-    long getVersion();
 }

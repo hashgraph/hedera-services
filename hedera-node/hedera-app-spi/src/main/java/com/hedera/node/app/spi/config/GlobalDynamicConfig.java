@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.spi.config;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.services.stream.proto.SidecarType;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.system.address.Address;
 import java.util.Set;
 
