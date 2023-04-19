@@ -216,7 +216,7 @@ public class SavedStateLoaderTests {
         writeEmergencyFile(5L);
         init(savedStateInfos);
         final SignedState stateToLoad =
-                assertDoesNotThrow(() -> savedStateLoader.getSavedStateToLoad().get());
+                assertDoesNotThrow(() -> savedStateLoader.getSavedStateToLoad().getNullable());
         assertNull(stateToLoad, "stateToLoad should be null if the list of saved state files is empty/null");
         assertEquals(0, shutdownCount.get(), "no shutdown request should have been dispatched");
         assertTrue(emergencyRecoveryManager.isEmergencyStateRequired(), "an emergency state should still be required");
@@ -315,7 +315,7 @@ public class SavedStateLoaderTests {
         requireStateLoad(false);
         init(savedStateInfos);
         final SignedState stateToLoad =
-                assertDoesNotThrow(() -> savedStateLoader.getSavedStateToLoad().get());
+                assertDoesNotThrow(() -> savedStateLoader.getSavedStateToLoad().getNullable());
         assertNull(stateToLoad, "stateToLoad should be null if the list of saved state files is null");
 
         requireStateLoad(true);

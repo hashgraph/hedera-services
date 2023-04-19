@@ -28,7 +28,6 @@ import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import java.nio.file.Path;
 import java.time.Duration;

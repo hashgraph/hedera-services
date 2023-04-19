@@ -203,8 +203,7 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {
-                });
+                x -> {});
         manager.start();
 
         manager.saveSignedStateToDisk(signedState.reserve("test"));
@@ -250,8 +249,7 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {
-                });
+                x -> {});
         manager.start();
 
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
@@ -301,8 +299,7 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {
-                });
+                x -> {});
         manager.start();
 
         manager.dumpState(signedState.reserve("test"), "iss", false);
@@ -398,8 +395,7 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {
-                });
+                x -> {});
         manager.start();
 
         final List<SignedState> states = new ArrayList<>();
@@ -470,8 +466,7 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ssw, path, success) -> {
-                },
+                (ssw, path, success) -> {},
                 x -> {
                     assertTrue(x > minimumGenerationNonAncientSetByCallback.get());
                     minimumGenerationNonAncientSetByCallback.set(x);
@@ -606,10 +601,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ssw, path, success) -> {
-                },
-                x -> {
-                });
+                (ssw, path, success) -> {},
+                x -> {});
         manager.start();
 
         final Path statesDirectory =

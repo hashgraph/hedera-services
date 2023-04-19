@@ -18,7 +18,6 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
-import com.swirlds.common.formatting.HorizontalAlignment;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.StackTrace;
@@ -82,9 +81,7 @@ public class SignedStateHistory {
          * @param releasedReservations the set of unique ids of reservations that have been released
          */
         public void generateReport(@NonNull final StringBuilder sb, @NonNull final Set<Long> releasedReservations) {
-            final TextTable table = new TextTable()
-                    .setBordersEnabled(false)
-                    .setExtraPadding(1);
+            final TextTable table = new TextTable().setBordersEnabled(false).setExtraPadding(1);
 
             table.addRow(action);
             if (action == RESERVE && !releasedReservations.contains(uniqueId)) {
@@ -136,7 +133,9 @@ public class SignedStateHistory {
      * @param uniqueId     a unique id for the action, may be null for actions that do not require a unique id
      */
     public void recordAction(
-            @NonNull final SignedStateAction action, int reservations, @Nullable final String reason,
+            @NonNull final SignedStateAction action,
+            int reservations,
+            @Nullable final String reason,
             @Nullable final Long uniqueId) {
         actions.add(new SignedStateActionReport(
                 action,
