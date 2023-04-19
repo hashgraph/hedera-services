@@ -559,7 +559,7 @@ class StateManagementComponentTests {
                 NODE_ID,
                 SWIRLD,
                 systemTransactionConsumer::consume,
-                (ssw, dir, success) -> ssw.close(),
+                (ss, dir, success) -> {},
                 newLatestCompleteStateConsumer::consume,
                 stateLacksSignaturesConsumer::consume,
                 stateHasEnoughSignaturesConsumer::consume,

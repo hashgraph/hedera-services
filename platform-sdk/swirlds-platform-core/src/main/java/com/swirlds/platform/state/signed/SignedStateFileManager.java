@@ -215,8 +215,7 @@ public class SignedStateFileManager implements Startable {
                 writeSignedStateToDisk(selfId.getId(), directory, signedState.get(), taskDescription);
                 metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
-                stateToDiskAttemptConsumer.stateToDiskAttempt(
-                        signedState.getAndReserve("SignedStateFileManager.saveSignedStateToDisk()"), directory, true);
+                stateToDiskAttemptConsumer.stateToDiskAttempt(signedState.get(), directory, true);
 
                 success = true;
             } catch (final Throwable e) {

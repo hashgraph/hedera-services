@@ -41,18 +41,17 @@ public class DefaultAppCommunicationComponent implements AppCommunicationCompone
 
     @Override
     public void stateToDiskAttempt(
-            final ReservedSignedState signedStateWrapper, final Path directory, final boolean success) {
+            @NonNull final SignedState signedState, @NonNull final Path directory, final boolean success) {
         if (success) {
-            final SignedState state = signedStateWrapper.get();
             // Synchronous notification, no need to take an extra reservation
             notificationEngine.dispatch(
                     StateWriteToDiskCompleteListener.class,
                     new StateWriteToDiskCompleteNotification(
-                            state.getRound(),
-                            state.getConsensusTimestamp(),
-                            state.getSwirldState(),
+                            signedState.getRound(),
+                            signedState.getConsensusTimestamp(),
+                            signedState.getSwirldState(),
                             directory,
-                            state.isFreezeState()));
+                            signedState.isFreezeState()));
         }
     }
 

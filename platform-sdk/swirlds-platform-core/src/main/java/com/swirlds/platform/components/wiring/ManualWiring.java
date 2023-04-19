@@ -162,9 +162,9 @@ public class ManualWiring {
         });
 
         // FUTURE WORK: make the call to the app communication component asynchronous
-        stateManagementComponentFactory.stateToDiskConsumer((ssw, path, success) -> {
-            freezeManager.stateToDisk(ssw.get(), path, success);
-            appCommunicationComponent.stateToDiskAttempt(ssw, path, success);
+        stateManagementComponentFactory.stateToDiskConsumer((ss, path, success) -> {
+            freezeManager.stateToDisk(ss, path, success);
+            appCommunicationComponent.stateToDiskAttempt(ss, path, success);
         });
 
         stateManagementComponentFactory.stateLacksSignaturesConsumer(freezeManager::stateLacksSignatures);

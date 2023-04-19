@@ -70,8 +70,7 @@ public class AppCommComponentTests {
         });
 
         final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
-        final ReservedSignedState wrapper = signedState.reserve("test");
-        component.stateToDiskAttempt(wrapper, tmpDir, success);
+        component.stateToDiskAttempt(signedState, tmpDir, success);
 
         if (success) {
             assertEquals(1, numInvocations.get(), "Unexpected number of notifications");

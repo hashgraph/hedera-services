@@ -181,9 +181,8 @@ class SignedStateFileManagerTests {
         final AtomicBoolean saveSucceeded = new AtomicBoolean(false);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        final StateToDiskAttemptConsumer consumer = (ssw, path, success) -> {
+        final StateToDiskAttemptConsumer consumer = (ss, path, success) -> {
             saveSucceeded.set(success);
-            ssw.close();
             latch.countDown();
         };
 
@@ -204,7 +203,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {
+                });
         manager.start();
 
         manager.saveSignedStateToDisk(signedState.reserve("test"));
@@ -234,12 +234,10 @@ class SignedStateFileManagerTests {
         ((DummySwirldState) signedState.getSwirldState()).enableBlockingSerialization();
 
         final AtomicBoolean finished = new AtomicBoolean(false);
-        final StateToDiskAttemptConsumer consumer = (ssw, path, success) -> {
-            if (signedState.getSwirldState() != ssw.get().getState().getSwirldState()) {
+        final StateToDiskAttemptConsumer consumer = (ss, path, success) -> {
+            if (signedState.getSwirldState() != ss.getState().getSwirldState()) {
                 return;
             }
-
-            ssw.close();
             finished.set(true);
         };
 
@@ -252,7 +250,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {
+                });
         manager.start();
 
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
@@ -286,12 +285,10 @@ class SignedStateFileManagerTests {
         final SignedState signedState = new RandomSignedStateGenerator().build();
 
         final AtomicBoolean finished = new AtomicBoolean(false);
-        final StateToDiskAttemptConsumer consumer = (ssw, path, success) -> {
-            if (signedState.getSwirldState() != ssw.get().getState().getSwirldState()) {
+        final StateToDiskAttemptConsumer consumer = (ss, path, success) -> {
+            if (signedState.getSwirldState() != ss.getState().getSwirldState()) {
                 return;
             }
-
-            ssw.close();
             finished.set(true);
         };
 
@@ -304,7 +301,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {
+                });
         manager.start();
 
         manager.dumpState(signedState.reserve("test"), "iss", false);
@@ -379,9 +377,8 @@ class SignedStateFileManagerTests {
     @DisplayName("Max Capacity Test")
     void maxCapacityTest() {
         final AtomicInteger statesWritten = new AtomicInteger(0);
-        final StateToDiskAttemptConsumer consumer = (ssw, path, success) -> {
+        final StateToDiskAttemptConsumer consumer = (ss, path, success) -> {
             statesWritten.getAndIncrement();
-            ssw.close();
         };
 
         final int queueSize = 5;
@@ -401,7 +398,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {
+                });
         manager.start();
 
         final List<SignedState> states = new ArrayList<>();
@@ -472,7 +470,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ssw, path, success) -> ssw.close(),
+                (ssw, path, success) -> {
+                },
                 x -> {
                     assertTrue(x > minimumGenerationNonAncientSetByCallback.get());
                     minimumGenerationNonAncientSetByCallback.set(x);
@@ -607,8 +606,10 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ssw, path, success) -> ssw.close(),
-                x -> {});
+                (ssw, path, success) -> {
+                },
+                x -> {
+                });
         manager.start();
 
         final Path statesDirectory =

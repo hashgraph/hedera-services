@@ -40,5 +40,5 @@ public interface StateToDiskAttemptConsumer {
      * @param directory          The directory where the state was attempted to be written
      * @param success            {@code true} if the attempt was successful, {@code false} otherwise
      */
-    void stateToDiskAttempt(@NonNull ReservedSignedState signedStateWrapper, @NonNull Path directory, boolean success);
+    void stateToDiskAttempt(@NonNull SignedState signedStateWrapper, @NonNull Path directory, boolean success);
 }

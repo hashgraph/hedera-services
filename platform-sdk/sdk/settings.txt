@@ -15,3 +15,4 @@ csvFileName,                      PlatformTesting
 checkSignedStateFromDisk,         true
 loadKeysFromPfxFiles,             false
 event.preconsensus.enableStorage, false
+reconnect.active,                 true
