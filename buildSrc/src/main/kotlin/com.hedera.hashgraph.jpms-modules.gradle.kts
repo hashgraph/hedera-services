@@ -143,22 +143,6 @@ extraJavaModuleInfo {
     module("com.offbynull.portmapper:portmapper", "portmapper") {
         exportAllPackages()
     }
-    module("org.jetbrains.kotlin:kotlin-stdlib-jdk8", "kotlin.stdlib.jdk8") {
-        exportAllPackages()
-        requireAllDefinedDependencies()
-    }
-    module("org.jetbrains.kotlin:kotlin-stdlib-common", "kotlin.stdlib.common") {
-        exportAllPackages()
-        requireAllDefinedDependencies()
-    }
-    module("org.jetbrains.kotlin:kotlin-stdlib", "kotlin.stdlib") {
-        exportAllPackages()
-        requireAllDefinedDependencies()
-    }
-    module("org.jetbrains.kotlinx:kotlinx-metadata-jvm", "kotlinx.metadata.jvm") {
-        exportAllPackages()
-        requires("kotlin.stdlib")
-    }
     module("org.jetbrains:annotations", "org.jetbrains.annotations") {
         exportAllPackages()
         requireAllDefinedDependencies()
@@ -184,7 +168,6 @@ extraJavaModuleInfo {
     knownModule("org.apache.logging.log4j:log4j-api", "org.apache.logging.log4j")
     knownModule("org.apache.logging.log4j:log4j-core", "org.apache.logging.log4j.core")
     knownModule("org.apache.logging.log4j:log4j-slf4j", "org.apache.logging.log4j.slf4j")
-    knownModule("org.jetbrains.kotlin:kotlin-stdlib-jdk8", "kotlin.stdlib.jdk8")
     knownModule("com.google.code.gson:gson", "com.google.code.gson")
     knownModule("io.github.classgraph:classgraph", "io.github.classgraph")
     knownModule("io.helidon.grpc:helidon-grpc-server", "io.helidon.grpc.server")
@@ -196,6 +179,12 @@ extraJavaModuleInfo {
     knownModule("com.swirlds:fcqueue", "com.swirlds.fcqueue")
     knownModule("com.swirlds:jasperdb", "com.swirlds.jasperdb")
     knownModule("com.swirlds:virtualmap", "com.swirlds.virtualmap")
+
+    // Kotlin has to be automatic modules because of split package mess
+    automaticModule("org.jetbrains.kotlin:kotlin-stdlib-jdk8", "kotlin.stdlib.jdk8")
+    automaticModule("org.jetbrains.kotlin:kotlin-stdlib", "kotlin.stdlib")
+    automaticModule("org.jetbrains.kotlin:kotlin-stdlib-common", "kotlin.stdlib.common")
+    automaticModule("org.jetbrains.kotlinx:kotlinx-metadata-jvm", "kotlinx.metadata.jvm")
 
     // These have to be automatic modules as they can not be re-jared because they contain native libraries.
     automaticModule("com.goterl:lazysodium-java", "lazysodium.java")

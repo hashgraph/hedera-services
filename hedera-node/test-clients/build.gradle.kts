@@ -46,18 +46,16 @@ dependencies {
   implementation(project(":hedera-node:hapi-fees"))
   implementation(project(":hedera-node:hedera-evm"))
   implementation(project(":hedera-node:hapi"))
-  implementation(libs.bundles.besu) { exclude("javax.annotation", "javax.annotation-api") }
+  implementation(libs.bundles.besu)
   implementation(libs.bundles.logging)
   implementation(testLibs.besu.internal)
   implementation(testLibs.commons.collections4)
   implementation(libs.commons.io)
   implementation(libs.guava)
   implementation(libs.eddsa)
-
   implementation(libs.io.grpc.stub)
   implementation(libs.io.grpc.protobuf)
   implementation(libs.io.grpc.netty)
-
   implementation(libs.headlong)
   implementation(libs.log4j.core)
   implementation(testLibs.json)
