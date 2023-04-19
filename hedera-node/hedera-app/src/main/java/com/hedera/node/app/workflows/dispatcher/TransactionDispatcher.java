@@ -18,7 +18,7 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.AccountID;import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
@@ -321,15 +321,23 @@ public class TransactionDispatcher {
         tokenStore.commit();
     }
 
+    /**
+     * Dispatches the crypto create transaction to the appropriate handler.
+     * @param cryptoCreate the crypto create transaction body
+     * @param accountStore the writable account store
+     */
     private void dispatchCryptoCreate(
             @NonNull final TransactionBody cryptoCreate, @NonNull final WritableAccountStore accountStore) {
         final var handler = handlers.cryptoCreateHandler();
+        final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
                 handleContext,
                 cryptoCreate,
                 accountStore,
-                handler.newRecordBuilder(),
+                recordBuilder,
                 usageLimits.areCreatableAccounts(1));
+        txnCtx.setCreated(PbjConverter.fromPbj(
+                AccountID.newBuilder().accountNum(recordBuilder.getCreatedAccount()).build()));
         accountStore.commit();
     }
 }

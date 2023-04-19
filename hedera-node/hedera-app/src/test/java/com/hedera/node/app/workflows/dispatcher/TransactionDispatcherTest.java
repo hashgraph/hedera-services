@@ -111,6 +111,7 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
@@ -136,6 +137,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccount
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hedera.node.app.service.token.impl.records.CreateAccountRecordBuilder;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
@@ -314,6 +316,8 @@ class TransactionDispatcherTest {
 
     @Mock
     private WritableTokenStore writableTokenStore;
+    @Mock
+    private WritableAccountStore writableAccountStore;
 
     @Mock
     private WritableTokenRelationStore writableTokenRelStore;
@@ -565,6 +569,22 @@ class TransactionDispatcherTest {
         dispatcher.dispatchHandle(HederaFunctionality.TOKEN_UNPAUSE, transactionBody, writableStoreFactory);
 
         verify(writableTokenStore).commit();
+    }
+
+    @Test
+    void dispatchesCryptoCreateAsExpected() {
+        final var createBuilder = mock(CreateAccountRecordBuilder.class);
+
+        given(cryptoCreateHandler.newRecordBuilder()).willReturn(createBuilder);
+        given(createBuilder.getCreatedAccount()).willReturn(666L);
+        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+
+        dispatcher.dispatchHandle(HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory);
+
+        verify(txnCtx)
+                .setCreated(
+                        PbjConverter.fromPbj(AccountID.newBuilder().accountNum(666L).build()));
+        verify(writableAccountStore).commit();
     }
 
     @Test

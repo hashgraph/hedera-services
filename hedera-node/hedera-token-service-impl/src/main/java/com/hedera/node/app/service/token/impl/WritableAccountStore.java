@@ -53,8 +53,8 @@ public class WritableAccountStore extends ReadableAccountStore {
         super(states);
         requireNonNull(states);
 
-        this.accountState = states.get("ACCOUNTS");
-        this.aliases = states.get("ALIASES");
+        this.accountState = states.get(TokenServiceImpl.ACCOUNTS_KEY);
+        this.aliases = states.get(TokenServiceImpl.ALIASES_KEY);
     }
 
     /**
