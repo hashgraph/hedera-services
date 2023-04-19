@@ -132,7 +132,8 @@ class SignedStateFileManagerTests {
      */
     private void validateSavingOfState(final SignedState originalState, final Path stateDirectory) throws IOException {
 
-        assertEquals(-1, originalState.getReservationCount(), "unexpected number of reservations");
+        assertEventuallyEquals(
+                -1, originalState::getReservationCount, Duration.ofSeconds(1), "invalid reservation count");
 
         final Path stateFile = stateDirectory.resolve(SignedStateFileUtils.SIGNED_STATE_FILE_NAME);
         final Path hashInfoFile = stateDirectory.resolve(SignedStateFileUtils.HASH_INFO_FILE_NAME);
@@ -206,7 +207,7 @@ class SignedStateFileManagerTests {
                 x -> {});
         manager.start();
 
-        manager.saveSignedStateToDisk(signedState.reserve("test"));
+        manager.saveSignedStateToDisk(signedState);
 
         completeBeforeTimeout(() -> latch.await(), Duration.ofSeconds(1), "latch did not complete on time");
 
@@ -253,7 +254,7 @@ class SignedStateFileManagerTests {
         manager.start();
 
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
-                .setInterruptableRunnable(() -> manager.dumpState(signedState.reserve("test"), "fatal", true))
+                .setInterruptableRunnable(() -> manager.dumpState(signedState, "fatal", true))
                 .build(true);
 
         // State writing should be synchronized. So we shouldn't be able to finish until we unblock.
@@ -302,7 +303,7 @@ class SignedStateFileManagerTests {
                 x -> {});
         manager.start();
 
-        manager.dumpState(signedState.reserve("test"), "iss", false);
+        manager.dumpState(signedState, "iss", false);
 
         assertEventuallyTrue(finished::get, Duration.ofSeconds(1), "should eventually be written to disk");
 
@@ -322,11 +323,11 @@ class SignedStateFileManagerTests {
         if (stateIndex < queueSize + 1) {
             // Note that it's actually queueSize + 1. This is because one state will have been removed
             // from the queue for handling.
-            assertTrue(manager.saveSignedStateToDisk(state.reserve("test")), "queue should have capacity");
+            assertTrue(manager.saveSignedStateToDisk(state), "queue should have capacity");
 
             assertEquals(1, state.getReservationCount(), "the state should have an extra reservation");
         } else {
-            assertFalse(manager.saveSignedStateToDisk(state.reserve("test")), "queue should be full");
+            assertFalse(manager.saveSignedStateToDisk(state), "queue should be full");
             assertEquals(-1, state.getReservationCount(), "incorrect reservation count");
         }
 
@@ -519,7 +520,7 @@ class SignedStateFileManagerTests {
                         "timestamp should be after the boundary");
 
                 savedStates.add(signedState);
-                manager.saveSignedStateToDisk(signedState.reserve("test"));
+                manager.saveSignedStateToDisk(signedState);
 
                 assertEventuallyDoesNotThrow(
                         () -> {
@@ -614,7 +615,7 @@ class SignedStateFileManagerTests {
                 getSignedStatesBaseDirectory().resolve("iss").resolve("node" + SELF_ID + "_round" + issRound);
         final SignedState issState =
                 new RandomSignedStateGenerator(random).setRound(issRound).build();
-        manager.dumpState(issState.reserve("test"), "iss", false);
+        manager.dumpState(issState, "iss", false);
         assertEventuallyDoesNotThrow(
                 () -> {
                     try {
@@ -632,7 +633,7 @@ class SignedStateFileManagerTests {
                 getSignedStatesBaseDirectory().resolve("fatal").resolve("node" + SELF_ID + "_round" + fatalRound);
         final SignedState fatalState =
                 new RandomSignedStateGenerator(random).setRound(fatalRound).build();
-        manager.dumpState(fatalState.reserve("test"), "fatal", true);
+        manager.dumpState(fatalState, "fatal", true);
         validateSavingOfState(fatalState, fatalDirectory);
 
         // Save a bunch of states. After each time, check the states that are still on disk.
@@ -641,7 +642,7 @@ class SignedStateFileManagerTests {
             final SignedState signedState =
                     new RandomSignedStateGenerator(random).setRound(round).build();
             states.add(signedState);
-            manager.saveSignedStateToDisk(signedState.reserve("test"));
+            manager.saveSignedStateToDisk(signedState);
 
             // Verify that the states we want to be on disk are still on disk
             for (int i = 1; i <= statesOnDisk; i++) {

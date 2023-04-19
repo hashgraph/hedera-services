@@ -39,6 +39,7 @@ import com.swirlds.common.utility.Startable;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -194,7 +195,7 @@ public class SignedStateFileManager implements Startable {
      * reservation when the state has been fully written to disk (or if state saving fails).
      * </p>
      *
-     * @param signedState      the complete signed state
+     * @param signedState      the signed state to be written
      * @param directory        the directory where the signed state will be written
      * @param taskDescription  a human-readable description of the operation being performed
      * @param finishedCallback a function that is called after state writing is complete. Is passed true if writing
@@ -202,34 +203,41 @@ public class SignedStateFileManager implements Startable {
      * @return true if it will be written to disk, false otherwise
      */
     private boolean saveSignedStateToDisk(
-            final ReservedSignedState signedState,
-            final Path directory,
-            final String taskDescription,
-            final Consumer<Boolean> finishedCallback) {
+            @NonNull SignedState signedState,
+            @NonNull final Path directory,
+            @NonNull final String taskDescription,
+            @Nullable final Consumer<Boolean> finishedCallback) {
+
+        final ReservedSignedState reservedSignedState =
+                signedState.reserve("SignedStateFileManager.saveSignedStateToDisk()");
 
         final boolean accepted = taskQueue.offer(() -> {
             final long start = time.nanoTime();
             boolean success = false;
-            final long round = signedState.get().getRound();
-            try (signedState) {
-                writeSignedStateToDisk(selfId.getId(), directory, signedState.get(), taskDescription);
-                metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+            final long round = reservedSignedState.get().getRound();
+            try (reservedSignedState) {
+                try {
+                    writeSignedStateToDisk(selfId.getId(), directory, reservedSignedState.get(), taskDescription);
+                    metrics.getWriteStateToDiskTimeMetric()
+                            .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
-                stateToDiskAttemptConsumer.stateToDiskAttempt(signedState.get(), directory, true);
+                    stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, true);
 
-                success = true;
-            } catch (final Throwable e) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Unable to write signed state to disk for round {} to {}.",
-                        round,
-                        directory,
-                        e);
-            } finally {
-                if (finishedCallback != null) {
-                    finishedCallback.accept(success);
+                    success = true;
+                } catch (final Throwable e) {
+                    stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, false);
+                    logger.error(
+                            EXCEPTION.getMarker(),
+                            "Unable to write signed state to disk for round {} to {}.",
+                            round,
+                            directory,
+                            e);
+                } finally {
+                    if (finishedCallback != null) {
+                        finishedCallback.accept(success);
+                    }
+                    metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
                 }
-                metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
             }
         });
 
@@ -241,8 +249,8 @@ public class SignedStateFileManager implements Startable {
                     STATE_TO_DISK.getMarker(),
                     "Unable to save signed state to disk for round {} due to backlog of "
                             + "operations in the SignedStateManager task queue.",
-                    signedState.get().getRound());
-            signedState.close();
+                    reservedSignedState.get().getRound());
+            reservedSignedState.close();
         }
         return accepted;
     }
@@ -252,9 +260,9 @@ public class SignedStateFileManager implements Startable {
      *
      * @param signedState the signed state to be written to disk.
      */
-    public boolean saveSignedStateToDisk(final ReservedSignedState signedState) {
+    public boolean saveSignedStateToDisk(final SignedState signedState) {
         return saveSignedStateToDisk(
-                signedState, getSignedStateDir(signedState.get().getRound()), "periodic snapshot", success -> {
+                signedState, getSignedStateDir(signedState.getRound()), "periodic snapshot", success -> {
                     if (success) {
                         deleteOldStates();
                     }
@@ -269,16 +277,15 @@ public class SignedStateFileManager implements Startable {
      *                    part of a file path, so it should not contain whitespace or special characters.
      * @param blocking    if true then block until the state has been fully written to disk
      */
-    public void dumpState(final ReservedSignedState signedState, final String reason, final boolean blocking) {
+    public void dumpState(
+            @NonNull final SignedState signedState, @NonNull final String reason, final boolean blocking) {
         final CountDownLatch latch = new CountDownLatch(1);
 
         saveSignedStateToDisk(
                 signedState,
                 getSignedStatesBaseDirectory()
                         .resolve(reason)
-                        .resolve(String.format(
-                                "node%d_round%d",
-                                selfId.getId(), signedState.get().getRound())),
+                        .resolve(String.format("node%d_round%d", selfId.getId(), signedState.getRound())),
                 reason,
                 success -> latch.countDown());
 

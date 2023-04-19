@@ -297,7 +297,7 @@ class SignedStateFileReadWriteTest {
             final SignedState signedState =
                     new RandomSignedStateGenerator().setRound(round).build();
 
-            manager.saveSignedStateToDisk(signedState.reserve("test"));
+            manager.saveSignedStateToDisk(signedState);
         }
 
         // The states should have been written by now
