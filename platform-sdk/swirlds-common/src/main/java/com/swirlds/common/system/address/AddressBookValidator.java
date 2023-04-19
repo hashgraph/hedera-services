@@ -38,18 +38,18 @@ public final class AddressBookValidator {
     // books at runtime is fully supported.
 
     /**
-     * Make sure the address book has at least some stake.
+     * Make sure the address book has at least some weight.
      *
      * @param addressBook the address book to validate
      * @return if the address book passes this validation
      */
-    public static boolean hasNonZeroStake(final AddressBook addressBook) {
-        if (addressBook.getTotalStake() <= 0) {
+    public static boolean hasNonZeroWeight(final AddressBook addressBook) {
+        if (addressBook.getTotalWeight() <= 0) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "address book for round {} has {} total stake",
+                    "address book for round {} has {} total weight",
                     addressBook.getRound(),
-                    addressBook.getTotalStake());
+                    addressBook.getTotalWeight());
             return false;
         }
         return true;
@@ -126,7 +126,7 @@ public final class AddressBookValidator {
      */
     public static boolean isGenesisAddressBookValid(final AddressBook candidateAddressBook) {
 
-        return hasNonZeroStake(candidateAddressBook) && isNonEmpty(candidateAddressBook);
+        return hasNonZeroWeight(candidateAddressBook) && isNonEmpty(candidateAddressBook);
     }
 
     /**
@@ -140,20 +140,20 @@ public final class AddressBookValidator {
     public static boolean isNextAddressBookValid(
             final AddressBook previousAddressBook, final AddressBook candidateAddressBook) {
 
-        return hasNonZeroStake(candidateAddressBook)
+        return hasNonZeroWeight(candidateAddressBook)
                 && isNonEmpty(candidateAddressBook)
                 && validNextId(previousAddressBook, candidateAddressBook)
                 && noAddressReinsertion(previousAddressBook, candidateAddressBook);
     }
 
     /**
-     * Checks that the addresses between the two address books are identical except for stake value.
+     * Checks that the addresses between the two address books are identical except for weight value.
      *
      * @param addressBook1 An address book to compare for equality.
      * @param addressBook2 An address book to compare for equality.
-     * @return true of the two address books contain the same addresses except for stake values, false otherwise.
+     * @return true of the two address books contain the same addresses except for weight values, false otherwise.
      */
-    public static boolean sameExceptForStake(
+    public static boolean sameExceptForWeight(
             @NonNull final AddressBook addressBook1, @NonNull final AddressBook addressBook2) {
         Objects.requireNonNull(addressBook1, "addressBook1 must not be null");
         Objects.requireNonNull(addressBook2, "addressBook2 must not be null");
@@ -176,7 +176,7 @@ public final class AddressBookValidator {
                         logger.error(EXCEPTION.getMarker(), "Address at index {} is null when accessed in order.", i);
                         throw new IllegalStateException("Address at index " + i + " is null.");
                     }
-                    final boolean equal = address1.equalsWithoutStakeAndOwnHost(address2);
+                    final boolean equal = address1.equalsWithoutWeightAndOwnHost(address2);
                     if (!equal) {
                         logger.error(
                                 EXCEPTION.getMarker(),

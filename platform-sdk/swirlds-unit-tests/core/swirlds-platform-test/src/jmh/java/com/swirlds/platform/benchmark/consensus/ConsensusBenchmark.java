@@ -18,7 +18,7 @@ package com.swirlds.platform.benchmark.consensus;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.test.StakeGenerators;
+import com.swirlds.common.test.WeightGenerators;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -73,7 +73,7 @@ public class ConsensusBenchmark {
     @Setup
     public void setup() {
         final ConsensusTestDefinition testDefinition = new ConsensusTestDefinition(
-                "Performance Test", numNodes, (l, i) -> StakeGenerators.balancedNodeStakes(i), numEvents);
+                "Performance Test", numNodes, (l, i) -> WeightGenerators.balancedNodeWeights(i), numEvents);
         testDefinition.setSeed(seed);
         events = testDefinition.getNode1EventEmitter().emitEvents(numEvents);
 

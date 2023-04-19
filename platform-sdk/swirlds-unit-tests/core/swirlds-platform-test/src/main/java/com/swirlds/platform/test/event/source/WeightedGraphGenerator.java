@@ -20,18 +20,18 @@ import com.swirlds.platform.test.event.generator.GraphGenerator;
 import java.util.List;
 
 /**
- * Generates a {@link GraphGenerator} with {@link EventSource} instances that have the provided node stakes.
+ * Generates a {@link GraphGenerator} with {@link EventSource} instances that have the provided node weights.
  */
 @FunctionalInterface
-public interface StakedGraphGenerator {
+public interface WeightedGraphGenerator {
 
     /**
-     * Provides an event generator containing event sources with the node stakes provided. Node stakes are applied to
-     * event sources in order. For example, event source 0 has a stake equal to {@code nodeStakes.get(0)}.
+     * Provides an event generator containing event sources with the node weights provided. Node weights are applied to
+     * event sources in order. For example, event source 0 has a weight equal to {@code nodeWeights.get(0)}.
      *
-     * @param nodeStakes
-     * 		stakes to apply to the event sources
-     * @return a {@link GraphGenerator} with staked event sources
+     * @param nodeWeights
+     * 		weights to apply to the event sources
+     * @return a {@link GraphGenerator} with weighted event sources
      */
-    GraphGenerator<?> getGraphGenerator(List<Long> nodeStakes);
+    GraphGenerator<?> getGraphGenerator(List<Long> nodeWeights);
 }
