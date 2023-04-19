@@ -37,7 +37,8 @@ public interface QueryFeeCheck {
      * @param queryFee transaction fee
      * @throws InsufficientBalanceException if the transaction is invalid
      */
-    void validateQueryPaymentTransfers(@NonNull TransactionBody txBody, long queryFee) throws InsufficientBalanceException;
+    void validateQueryPaymentTransfers(@NonNull TransactionBody txBody, long queryFee)
+            throws InsufficientBalanceException;
 
     /**
      * Validates node payment transfer transaction before reaching consensus. Validate each payer has enough balance.

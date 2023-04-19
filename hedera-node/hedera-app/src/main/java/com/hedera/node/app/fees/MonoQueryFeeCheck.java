@@ -54,9 +54,8 @@ public class MonoQueryFeeCheck implements QueryFeeCheck {
 
     @Override
     public void nodePaymentValidity(
-            @NonNull final List<AccountAmount> transfers,
-            long queryFee,
-            @NonNull final AccountID node) throws InsufficientBalanceException {
+            @NonNull final List<AccountAmount> transfers, long queryFee, @NonNull final AccountID node)
+            throws InsufficientBalanceException {
         requireNonNull(transfers, "The supplied argument 'transfers' cannot be null!");
         requireNonNull(node, "The supplied argument 'node' cannot be null!");
         final var monoNode = PbjConverter.fromPbj(node);
