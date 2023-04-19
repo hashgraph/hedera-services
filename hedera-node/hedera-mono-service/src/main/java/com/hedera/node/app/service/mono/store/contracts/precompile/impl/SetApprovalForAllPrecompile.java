@@ -62,7 +62,6 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
     private final TokenID tokenId;
     private final Address senderAddress;
     private SetApprovalForAllWrapper setApprovalForAllWrapper;
-    private EntityId ownerId;
 
     public SetApprovalForAllPrecompile(
             final TokenID tokenId,
@@ -90,8 +89,8 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = tokenId == null ? input : input.slice(24);
+        final var ownerId = EntityId.fromAddress(senderAddress);
         setApprovalForAllWrapper = decodeSetApprovalForAll(nestedInput, tokenId, aliasResolver);
-        ownerId = EntityId.fromAddress(senderAddress);
         transactionBody = syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper, ownerId);
         return transactionBody;
     }
