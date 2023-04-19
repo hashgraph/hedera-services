@@ -18,6 +18,7 @@ package com.hedera.node.app.config.internal;
 
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.config.GlobalConfig;
@@ -25,7 +26,6 @@ import com.hedera.node.app.spi.config.GlobalDynamicConfig;
 import com.hedera.node.app.spi.config.NodeConfig;
 import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.config.PropertyNames;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
@@ -230,9 +230,9 @@ public class ConfigurationAdaptor implements Configuration {
     private GlobalDynamicConfig createGlobalDynamicConfig() {
 
         final AccountID fundingAccount = AccountID.newBuilder()
-                .setShardNum(hederaNums.shard())
-                .setRealmNum(hederaNums.realm())
-                .setAccountNum(propertySource.getLongProperty(LEDGER_FUNDING_ACCOUNT))
+                .shardNum(hederaNums.shard())
+                .realmNum(hederaNums.realm())
+                .accountNum(propertySource.getLongProperty(LEDGER_FUNDING_ACCOUNT))
                 .build();
 
         return new GlobalDynamicConfig(
