@@ -17,15 +17,14 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.hapi.node.transaction.CustomFee.FeeOneOfType.ROYALTY_FEE;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -52,15 +51,43 @@ public class ReadableTokenStore {
     }
 
     public record TokenMetadata(
-            Optional<HederaKey> adminKey,
-            Optional<HederaKey> kycKey,
-            Optional<HederaKey> wipeKey,
-            Optional<HederaKey> freezeKey,
-            Optional<HederaKey> supplyKey,
-            Optional<HederaKey> feeScheduleKey,
-            Optional<HederaKey> pauseKey,
+            Key adminKey,
+            Key kycKey,
+            Key wipeKey,
+            Key freezeKey,
+            Key supplyKey,
+            Key feeScheduleKey,
+            Key pauseKey,
             boolean hasRoyaltyWithFallback,
-            long treasuryNum) {}
+            long treasuryNum) {
+        public boolean hasAdminKey() {
+            return adminKey != null && !adminKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasKycKey() {
+            return kycKey != null && !kycKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasWipeKey() {
+            return wipeKey != null && !wipeKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasFreezeKey() {
+            return freezeKey != null && !freezeKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasSupplyKey() {
+            return supplyKey != null && !supplyKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasFeeScheduleKey() {
+            return feeScheduleKey != null && !feeScheduleKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasPauseKey() {
+            return pauseKey != null && !pauseKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+    }
 
     /**
      * Returns the token metadata needed for signing requirements.
@@ -89,13 +116,13 @@ public class ReadableTokenStore {
             }
         }
         return new TokenMetadata(
-                asHederaKey(token.adminKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.kycKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.wipeKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.freezeKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.supplyKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.feeScheduleKeyOrElse(Key.DEFAULT)),
-                asHederaKey(token.pauseKeyOrElse(Key.DEFAULT)),
+                token.adminKeyOrElse(null),
+                token.kycKeyOrElse(null),
+                token.wipeKeyOrElse(null),
+                token.freezeKeyOrElse(null),
+                token.supplyKeyOrElse(null),
+                token.feeScheduleKeyOrElse(null),
+                token.pauseKeyOrElse(null),
                 hasRoyaltyWithFallback,
                 token.treasuryAccountNumber()); // remove this and make it a long
     }

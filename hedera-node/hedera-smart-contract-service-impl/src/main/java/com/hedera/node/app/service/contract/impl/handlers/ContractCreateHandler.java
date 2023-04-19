@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -66,7 +65,7 @@ public class ContractCreateHandler implements TransactionHandler {
         if (op.hasAdminKey()) {
             final var adminKey = op.adminKeyOrThrow();
             if (!adminKey.hasContractID()) {
-                context.requireKey(asHederaKey(adminKey).orElseThrow());
+                context.requireKey(adminKey);
             }
         }
 

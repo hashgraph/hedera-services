@@ -18,7 +18,7 @@ package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.platform.test.event.source.EventSourceFactory.newStandardEventSources;
 
-import com.swirlds.common.test.StakeGenerator;
+import com.swirlds.common.test.WeightGenerator;
 import com.swirlds.platform.test.event.TestSequence;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitterGenerator;
@@ -26,7 +26,7 @@ import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.EventSource;
-import com.swirlds.platform.test.event.source.StakedGraphGenerator;
+import com.swirlds.platform.test.event.source.WeightedGraphGenerator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -46,8 +46,8 @@ public class ConsensusTestDefinition {
     /** The number of events to generate in each test sequence */
     private final int eventsPerPhase;
 
-    /** The stake generator used to generate and assign stake to each node in the network. */
-    private final StakeGenerator stakeGenerator;
+    /** The weight generator used to generate and assign weight to each node in the network. */
+    private final WeightGenerator weightGenerator;
 
     /**
      * A function that creates an event emitter based on a graph generator and a seed. They should produce emitters
@@ -60,21 +60,21 @@ public class ConsensusTestDefinition {
 
     private EventEmitterGenerator node2EventEmitterGenerator;
 
-    /** A function that creates a graph generator with an address book with the provided node stake values */
-    private StakedGraphGenerator graphGeneratorProvider;
+    /** A function that creates a graph generator with an address book with the provided node weight values */
+    private WeightedGraphGenerator graphGeneratorProvider;
 
     /** The generator used to create test sequences based on this configuration. */
     private Function<ConsensusTestDefinition, List<TestSequence>> testSequenceGenerator;
 
     /**
-     * The node stakes generated for each node using the current seed. {@code null} until {@link #setSeed(long)} is
+     * The node weights generated for each node using the current seed. {@code null} until {@link #setSeed(long)} is
      * called.
      */
-    private List<Long> nodeStakes;
+    private List<Long> nodeWeights;
 
     /**
      * The event emitters used to emit events. They wrap a graph generator that creates a graph using sources with the
-     * calculated node stakes. {@code null} until {@link #setSeed(long)} is called. There are two, one for each
+     * calculated node weights. {@code null} until {@link #setSeed(long)} is called. There are two, one for each
      * consensus instance.
      */
     private EventEmitter<?> node1EventEmitter;
@@ -94,27 +94,27 @@ public class ConsensusTestDefinition {
      * 		the name of this test
      * @param numberOfNodes
      * 		the number of nodes in the network
-     * @param stakeGenerator
-     * 		used to generate a stake value for each node in the network
+     * @param weightGenerator
+     * 		used to generate a weight value for each node in the network
      * @param eventsPerPhase
      * 		the number of events per phase/test sequence
      */
     public ConsensusTestDefinition(
             final String testName,
             final int numberOfNodes,
-            final StakeGenerator stakeGenerator,
+            final WeightGenerator weightGenerator,
             final int eventsPerPhase) {
-        Objects.requireNonNull(stakeGenerator);
+        Objects.requireNonNull(weightGenerator);
         this.testName = testName;
         this.numberOfNodes = numberOfNodes;
-        this.stakeGenerator = stakeGenerator;
+        this.weightGenerator = weightGenerator;
         this.eventsPerPhase = eventsPerPhase;
 
         // Default event source generator.
         // There is overlap between this code and EventSourceFactory and EventGeneratorFactory. It should be
         // consolidated at some point.
-        graphGeneratorProvider = stakes -> {
-            final List<EventSource<?>> eventSources = newStandardEventSources(stakes);
+        graphGeneratorProvider = weights -> {
+            final List<EventSource<?>> eventSources = newStandardEventSources(weights);
             // Maybe abstract this so that this code block is reusable by all consensus tests
             return new StandardGraphGenerator(0, eventSources);
         };
@@ -127,7 +127,7 @@ public class ConsensusTestDefinition {
         testSequenceGenerator = c -> List.of(new TestSequence(eventsPerPhase));
     }
 
-    public void setGraphGeneratorProvider(final StakedGraphGenerator graphGeneratorProvider) {
+    public void setGraphGeneratorProvider(final WeightedGraphGenerator graphGeneratorProvider) {
         Objects.requireNonNull(graphGeneratorProvider);
         this.graphGeneratorProvider = graphGeneratorProvider;
     }
@@ -161,18 +161,18 @@ public class ConsensusTestDefinition {
     }
 
     /**
-     * Generates new values for {@link #nodeStakes}, {@link #node1EventEmitter}, {@link #node2EventEmitter}, and {@link
+     * Generates new values for {@link #nodeWeights}, {@link #node1EventEmitter}, {@link #node2EventEmitter}, and {@link
      * #testSequences} using the provided {@code seed}.
      *
      * @param seed
      * 		the seed to use
      */
     public void setSeed(final long seed) {
-        nodeStakes = stakeGenerator.getStakes(seed, numberOfNodes);
+        nodeWeights = weightGenerator.getWeights(seed, numberOfNodes);
         if (debug) {
-            System.out.println("Node Stakes: " + nodeStakes);
+            System.out.println("Node Weights: " + nodeWeights);
         }
-        final GraphGenerator<?> graphGenerator = graphGeneratorProvider.getGraphGenerator(nodeStakes);
+        final GraphGenerator<?> graphGenerator = graphGeneratorProvider.getGraphGenerator(nodeWeights);
         node1EventEmitter = node1EventEmitterGenerator.getEventEmitter(graphGenerator.cleanCopy(), seed);
         node2EventEmitter = node2EventEmitterGenerator.getEventEmitter(graphGenerator.cleanCopy(), seed);
         testSequences = testSequenceGenerator.apply(this);
@@ -194,8 +194,8 @@ public class ConsensusTestDefinition {
         return node2EventEmitter;
     }
 
-    public List<Long> getNodeStakes() {
-        return nodeStakes;
+    public List<Long> getNodeWeights() {
+        return nodeWeights;
     }
 
     public String getTestName() {
