@@ -75,6 +75,7 @@ extraJavaModuleInfo {
     module("com.google.protobuf:protobuf-java", "com.google.protobuf") {
         exportAllPackages()
         requireAllDefinedDependencies()
+        requires("java.logging")
     }
     module("com.google.protobuf:protobuf-java-util", "com.google.protobuf.util") {
         exportAllPackages()

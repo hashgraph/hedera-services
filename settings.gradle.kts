@@ -240,6 +240,8 @@ dependencyResolutionManagement {
 
             library("lazysodium", "com.goterl", "lazysodium-java").versionRef("lazysodium-version")
             library("resource-loader", "com.goterl", "resource-loader").versionRef("resource-loader-version")
+            library("swirlds-test-framework", "com.swirlds", "swirlds-test-framework")
+                    .versionRef("swirlds-version")
         }
 
         // The libs of this catalog can be used for test or build uses.
