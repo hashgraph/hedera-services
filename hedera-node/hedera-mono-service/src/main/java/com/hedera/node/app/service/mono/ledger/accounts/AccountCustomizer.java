@@ -39,6 +39,7 @@ import com.hedera.node.app.service.mono.ledger.properties.BeanProperty;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -165,7 +166,13 @@ public abstract class AccountCustomizer<
         return self();
     }
 
-    public T autoRenewAccount(final EntityId option) {
+    /**
+     * Sets the auto-renew account id to be used for an account (or contract) customized with this instance.
+     *
+     * @param option the id of the auto-renew account, or null if none was set
+     * @return this instance
+     */
+    public T autoRenewAccount(@Nullable final EntityId option) {
         if (option != null) {
             changeManager.update(changes, optionProperties.get(AUTO_RENEW_ACCOUNT_ID), option);
         }

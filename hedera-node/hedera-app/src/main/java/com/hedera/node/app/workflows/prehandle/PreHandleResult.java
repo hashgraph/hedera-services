@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.Utils.asHederaKeys;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;

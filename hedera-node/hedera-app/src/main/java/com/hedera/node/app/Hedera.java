@@ -460,7 +460,7 @@ public final class Hedera implements SwirldMain {
                                 .transaction("deleteTopic")
                                 .query("getTopicInfo")
                                 .transaction("submitMessage")
-                                .build(daggerApp.platform().getMetrics()))
+                                .build(daggerApp.platform().getContext().getMetrics()))
                         .build());
         grpcServer.whenShutdown().thenAccept(server -> shutdownLatch.countDown());
         grpcServer.start();
