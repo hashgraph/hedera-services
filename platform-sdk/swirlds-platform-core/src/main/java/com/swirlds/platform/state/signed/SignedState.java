@@ -141,15 +141,31 @@ public class SignedState implements SignedStateInfo {
      * @param platformContext the platform context
      * @param state           a fast copy of the state resulting from all transactions in consensus order from all
      *                        events with received rounds up through the round this SignedState represents
+     * @param reason          a short description of why this SignedState is being created. Each location where a
+     *                        SignedState is created should attempt to use a unique reason, as this makes debugging
+     *                        reservation bugs easier.
      * @param freezeState     specifies whether this state is the last one saved before the freeze
      */
     public SignedState(
-            @NonNull PlatformContext platformContext, @NonNull final State state, final boolean freezeState) {
-        this(platformContext, state);
+            @NonNull PlatformContext platformContext,
+            @NonNull final State state,
+            @NonNull String reason,
+            final boolean freezeState) {
+        this(platformContext, state, reason);
         this.freezeState = freezeState;
     }
 
-    public SignedState(@NonNull PlatformContext platformContext, @NonNull final State state) {
+    /**
+     * Instantiate a signed state.
+     *
+     * @param platformContext the platform context
+     * @param state           a fast copy of the state resulting from all transactions in consensus order from all
+     *                        events with received rounds up through the round this SignedState represents
+     * @param reason          a short description of why this SignedState is being created. Each location where a
+     *                        SignedState is created should attempt to use a unique reason, as this makes debugging
+     *                        reservation bugs easier.
+     */
+    public SignedState(@NonNull PlatformContext platformContext, @NonNull final State state, @NonNull String reason) {
         state.reserve();
 
         this.state = state;
@@ -160,7 +176,7 @@ public class SignedState implements SignedStateInfo {
                         .getConfiguration()
                         .getConfigData(StateConfig.class)
                         .debugStackTracesEnabled());
-        history.recordAction(CREATION, getReservationCount(), null, null);
+        history.recordAction(CREATION, getReservationCount(), reason, null);
         registryRecord = RuntimeObjectRegistry.createRecord(getClass(), history);
         sigSet = new SigSet();
     }

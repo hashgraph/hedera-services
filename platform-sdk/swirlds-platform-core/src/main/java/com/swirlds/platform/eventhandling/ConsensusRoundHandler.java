@@ -245,8 +245,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * previously saved on disk
      *
      * @param signedState the state to load data from
-     * @param isReconnect if it is true, the reservedSignedState is loaded at reconnect; if it is false, the reservedSignedState is
-     *                    loaded at startup
+     * @param isReconnect if it is true, the reservedSignedState is loaded at reconnect; if it is false, the
+     *                    reservedSignedState is loaded at startup
      */
     public void loadDataFromSignedState(final SignedState signedState, final boolean isReconnect) {
         eventsAndGenerations.loadDataFromSignedState(signedState);
@@ -444,7 +444,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         ssTimingStat.setTimePoint(1);
 
-        final SignedState signedState = new SignedState(platformContext, immutableStateCons, savedStateInFreeze);
+        final SignedState signedState = new SignedState(
+                platformContext, immutableStateCons, "ConsensusHandler.createSignedState()", savedStateInFreeze);
 
         ssTimingStat.setTimePoint(2);
 

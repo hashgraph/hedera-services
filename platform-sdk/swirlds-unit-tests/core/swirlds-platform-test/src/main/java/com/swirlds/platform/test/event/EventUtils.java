@@ -85,7 +85,7 @@ public abstract class EventUtils {
         originalState.setPlatformState(platformState);
         platformState.setPlatformData(platformData);
 
-        return new SignedState(TestPlatformContextFactory.build(), originalState, false);
+        return new SignedState(TestPlatformContextFactory.build(), originalState, "test", false);
     }
 
     /**
@@ -101,7 +101,7 @@ public abstract class EventUtils {
         registry.registerConstructables("com.swirlds.platform.state");
         registry.registerConstructables("com.swirlds.common.*");
         final State stateCopy = MerkleSerializeUtils.serializeDeserialize(dir, signedState.getState());
-        final SignedState signedStateCopy = new SignedState(TestPlatformContextFactory.build(), stateCopy);
+        final SignedState signedStateCopy = new SignedState(TestPlatformContextFactory.build(), stateCopy, "test");
         signedStateCopy.setSigSet(signedState.getSigSet());
         return signedStateCopy;
     }

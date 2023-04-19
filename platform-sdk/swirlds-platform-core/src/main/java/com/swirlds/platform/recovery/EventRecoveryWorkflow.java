@@ -351,8 +351,9 @@ public final class EventRecoveryWorkflow {
             newState.getPlatformDualState().setLastFrozenTimeToBeCurrentFreezeTime();
         }
 
-        final ReservedSignedState signedState =
-                new SignedState(platformContext, newState, isFreezeState).reserve("recovery");
+        final ReservedSignedState signedState = new SignedState(
+                        platformContext, newState, "EventRecoveryWorkflow.handleNextRound()", isFreezeState)
+                .reserve("recovery");
         previousState.close();
 
         return signedState;

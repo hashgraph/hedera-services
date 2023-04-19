@@ -181,7 +181,7 @@ public class ReconnectLearner {
         synchronizer.synchronize();
 
         final State state = (State) synchronizer.getRoot();
-        newSignedState = new SignedState(platformContext, state);
+        newSignedState = new SignedState(platformContext, state, "ReconnectLearner.reconnect()");
         newSignedState.setSigSet(sigSet);
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();

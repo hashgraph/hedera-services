@@ -111,7 +111,7 @@ public class SwirldStateManagerImplTests {
 
     private static SignedState newSignedState() {
         final State state = newState();
-        final SignedState ss = new SignedState(TestPlatformContextFactory.build(), state);
+        final SignedState ss = new SignedState(TestPlatformContextFactory.build(), state, "test");
         assertEquals(
                 1, state.getReservationCount(), "Creating a signed state should increment the state reference count.");
         return ss;

@@ -194,6 +194,7 @@ public class StateEditor {
         final SignedState newSignedState = new SignedState(
                 platformContext,
                 signedState.get().getState().copy(),
+                "StateEditor.getSignedStateCopy()",
                 signedState.get().isFreezeState());
         try {
             return signedState.getAndReserve("StateEditor.getSignedStateCopy() return value");

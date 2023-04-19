@@ -198,8 +198,11 @@ public class RandomSignedStateGenerator {
                 .setCreationSoftwareVersion(softwareVersionInstance)
                 .setRoundsNonAncient(roundsNonAncientInstance);
 
-        final SignedState signedState =
-                new SignedState(TestPlatformContextFactory.build(), stateInstance, freezeStateInstance);
+        final SignedState signedState = new SignedState(
+                TestPlatformContextFactory.build(),
+                stateInstance,
+                "RandomSignedStateGenerator.build()",
+                freezeStateInstance);
 
         MerkleCryptoFactory.getInstance().digestTreeSync(stateInstance);
         if (stateHash != null) {

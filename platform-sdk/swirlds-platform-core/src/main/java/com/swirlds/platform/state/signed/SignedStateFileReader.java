@@ -148,7 +148,8 @@ public final class SignedStateFileReader {
                     return Triple.of(state, hash, sigSet);
                 });
 
-        final SignedState newSignedState = new SignedState(platformContext, data.getLeft());
+        final SignedState newSignedState =
+                new SignedState(platformContext, data.getLeft(), "SignedStateFileReader.readStateFile()");
 
         newSignedState.setSigSet(data.getRight());
 
