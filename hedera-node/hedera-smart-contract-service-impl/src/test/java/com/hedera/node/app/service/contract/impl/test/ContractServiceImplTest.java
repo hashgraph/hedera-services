@@ -19,12 +19,10 @@ package com.hedera.node.app.service.contract.impl.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,27 +31,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractServiceImplTest {
+
     @Mock
     private SchemaRegistry registry;
 
     @Test
-    void testSpi() {
-        // when
-        final ContractService service = ContractService.getInstance();
-
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                ContractServiceImpl.class,
-                service.getClass(),
-                "We must always receive an instance of type " + ContractServiceImpl.class.getName());
-    }
-
-    @Test
     void registersExpectedSchema() {
-        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
+        final ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        final var subject = ContractService.getInstance();
+        final var subject = new ContractServiceImpl();
 
         subject.registerSchemas(registry);
         verify(registry).register(schemaCaptor.capture());

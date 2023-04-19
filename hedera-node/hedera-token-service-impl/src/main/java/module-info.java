@@ -13,10 +13,7 @@ module com.hedera.node.app.service.token.impl {
     requires com.hedera.pbj.runtime;
     requires com.github.spotbugs.annotations;
     requires transitive com.hedera.node.hapi;
-
-    provides com.hedera.node.app.service.token.TokenService with
-            com.hedera.node.app.service.token.impl.TokenServiceImpl;
-
+    
     exports com.hedera.node.app.service.token.impl to
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app;

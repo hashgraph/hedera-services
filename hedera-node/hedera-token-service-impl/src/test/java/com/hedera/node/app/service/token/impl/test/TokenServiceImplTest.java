@@ -19,12 +19,10 @@ package com.hedera.node.app.service.token.impl.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,23 +35,10 @@ class TokenServiceImplTest {
     private SchemaRegistry registry;
 
     @Test
-    void testSpi() {
-        // when
-        final TokenService service = TokenService.getInstance();
-
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        assertEquals(
-                TokenServiceImpl.class,
-                service.getClass(),
-                "We must always receive an instance of type " + TokenServiceImpl.class.getName());
-    }
-
-    @Test
     void registersExpectedSchema() {
-        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
+        final ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        final var subject = TokenService.getInstance();
+        final var subject = new TokenServiceImpl();
 
         subject.registerSchemas(registry);
         verify(registry).register(schemaCaptor.capture());

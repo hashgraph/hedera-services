@@ -1,5 +1,3 @@
-import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
-
 module com.hedera.node.app.service.schedule.impl {
     requires transitive com.hedera.node.app.service.scheduled;
     requires org.apache.commons.lang3;
@@ -19,7 +17,4 @@ module com.hedera.node.app.service.schedule.impl {
             com.hedera.node.app;
     exports com.hedera.node.app.service.schedule.impl.components;
     exports com.hedera.node.app.service.schedule.impl.serdes;
-
-    provides com.hedera.node.app.service.schedule.ScheduleService with
-            ScheduleServiceImpl;
 }

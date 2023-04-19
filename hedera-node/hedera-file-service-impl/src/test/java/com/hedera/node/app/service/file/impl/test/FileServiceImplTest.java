@@ -19,12 +19,10 @@ package com.hedera.node.app.service.file.impl.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.test.utils.SemVerUtils;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -34,27 +32,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FileServiceImplTest {
+
     @Mock
     private SchemaRegistry registry;
-
-    @Test
-    void testSpi() {
-        // when
-        final FileService service = FileService.getInstance();
-
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        assertEquals(
-                FileServiceImpl.class,
-                service.getClass(),
-                "We must always receive an instance of type " + FileServiceImpl.class.getName());
-    }
 
     @Test
     void registersExpectedSchema() {
         final var captor = ArgumentCaptor.forClass(Schema.class);
 
-        subject().registerSchemas(registry);
+        new FileServiceImpl().registerSchemas(registry);
 
         Mockito.verify(registry).register(captor.capture());
         final var schema = captor.getValue();
@@ -65,9 +51,5 @@ class FileServiceImplTest {
         assertEquals(1, requestedStates.size());
         final var legacyBlobsDef = requestedStates.iterator().next();
         assertEquals("BLOBS", legacyBlobsDef.stateKey());
-    }
-
-    private FileService subject() {
-        return FileService.getInstance();
     }
 }

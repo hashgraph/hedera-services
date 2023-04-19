@@ -7,9 +7,6 @@ module com.hedera.node.app.service.network.impl {
     requires com.github.spotbugs.annotations;
     requires com.hedera.pbj.runtime;
 
-    provides com.hedera.node.app.service.network.NetworkService with
-            com.hedera.node.app.service.network.impl.NetworkServiceImpl;
-
     exports com.hedera.node.app.service.network.impl to
             com.hedera.node.app,
             com.hedera.node.app.service.network.impl.test;

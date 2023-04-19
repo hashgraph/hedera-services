@@ -1,5 +1,3 @@
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-
 module com.hedera.node.app.service.contract.impl {
     requires com.hedera.node.app.service.contract;
     requires com.hedera.node.app.service.mono;
@@ -11,9 +9,6 @@ module com.hedera.node.app.service.contract.impl {
     requires javax.inject;
     requires com.github.spotbugs.annotations;
     requires com.hedera.pbj.runtime;
-
-    provides com.hedera.node.app.service.contract.ContractService with
-            ContractServiceImpl;
 
     exports com.hedera.node.app.service.contract.impl to
             com.hedera.node.app,

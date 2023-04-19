@@ -17,32 +17,13 @@
 package com.hedera.node.app.service.consensus;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ServiceLoader;
 
 /**
- * Implements the HAPI <a
- * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/consensus_service.proto">Consensus
+ * Implements the HAPI <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/consensus_service.proto">Consensus
  * Service</a>.
  */
 public interface ConsensusService extends Service {
 
     String NAME = "ConsensusService";
-
-    @NonNull
-    @Override
-    default String getServiceName() {
-        return NAME;
-    }
-
-    /**
-     * Returns the concrete implementation instance of the service
-     *
-     * @return the implementation instance
-     */
-    @NonNull
-    static ConsensusService getInstance() {
-        return ServiceFactory.loadService(ConsensusService.class, ServiceLoader.load(ConsensusService.class));
-    }
+    
 }

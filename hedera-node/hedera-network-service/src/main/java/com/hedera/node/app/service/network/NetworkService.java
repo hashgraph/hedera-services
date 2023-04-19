@@ -17,31 +17,13 @@
 package com.hedera.node.app.service.network;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ServiceLoader;
 
 /**
- * Implements the HAPI <a
- * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/network_service.proto">Network
+ * Implements the HAPI <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/network_service.proto">Network
  * Service</a>.
  */
 public interface NetworkService extends Service {
+
     String NAME = "NetworkService";
-
-    @NonNull
-    @Override
-    default String getServiceName() {
-        return NAME;
-    }
-
-    /**
-     * Returns the concrete implementation instance of the service
-     *
-     * @return the implementation instance
-     */
-    @NonNull
-    static NetworkService getInstance() {
-        return ServiceFactory.loadService(NetworkService.class, ServiceLoader.load(NetworkService.class));
-    }
+    
 }

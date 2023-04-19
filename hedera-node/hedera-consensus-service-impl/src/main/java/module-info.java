@@ -1,5 +1,3 @@
-import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-
 module com.hedera.node.app.service.consensus.impl {
     requires transitive com.hedera.node.app.service.consensus;
     requires com.hedera.node.hapi;
@@ -11,9 +9,6 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.github.spotbugs.annotations;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.config;
-
-    provides com.hedera.node.app.service.consensus.ConsensusService with
-            ConsensusServiceImpl;
 
     exports com.hedera.node.app.service.consensus.impl to
             com.hedera.node.app.service.consensus.impl.test,

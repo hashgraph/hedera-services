@@ -19,12 +19,10 @@ package com.hedera.node.app.service.admin.impl.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,26 +31,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FreezeServiceImplTest {
+
     @Mock
     private SchemaRegistry registry;
 
     @Test
-    void testSpi() {
-        // when
-        final FreezeService service = FreezeService.getInstance();
-
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                FreezeServiceImpl.class,
-                service.getClass(),
-                "We must always receive an instance of type " + FreezeServiceImpl.class.getName());
-    }
-
-    @Test
     void registersExpectedSchema() {
-        final var subject = FreezeService.getInstance();
-        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
+        final var subject = new FreezeServiceImpl();
+        final ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
         subject.registerSchemas(registry);
         verify(registry).register(schemaCaptor.capture());

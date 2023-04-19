@@ -19,12 +19,10 @@ package com.hedera.node.app.service.network.impl.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,23 +35,10 @@ class NetworkServiceImplTest {
     private SchemaRegistry registry;
 
     @Test
-    void testSpi() {
-        // when
-        final NetworkService service = NetworkService.getInstance();
-
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                NetworkServiceImpl.class,
-                service.getClass(),
-                "We must always receive an instance of type " + NetworkServiceImpl.class.getName());
-    }
-
-    @Test
     void registersExpectedSchema() {
-        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
+        final ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        final var subject = NetworkService.getInstance();
+        final var subject = new NetworkServiceImpl();
 
         subject.registerSchemas(registry);
         verify(registry).register(schemaCaptor.capture());

@@ -19,12 +19,10 @@ package com.hedera.node.app.service.schedule.impl.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,25 +31,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
+
     @Mock
     private SchemaRegistry registry;
 
     @Test
-    void testsSpi() {
-        final ScheduleService service = ScheduleService.getInstance();
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                ScheduleServiceImpl.class,
-                service.getClass(),
-                "We must always receive an instance of type " + ScheduleServiceImpl.class.getName());
-        Assertions.assertEquals("ScheduleService", service.getServiceName());
-    }
-
-    @Test
     void registersExpectedSchema() {
-        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
+        final ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        final var subject = ScheduleService.getInstance();
+        final var subject = new ScheduleServiceImpl();
 
         subject.registerSchemas(registry);
         verify(registry).register(schemaCaptor.capture());

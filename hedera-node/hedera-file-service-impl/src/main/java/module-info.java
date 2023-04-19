@@ -1,5 +1,3 @@
-import com.hedera.node.app.service.file.impl.FileServiceImpl;
-
 module com.hedera.node.app.service.file.impl {
     requires com.hedera.node.app.service.file;
     requires com.hedera.node.app.service.mono;
@@ -9,9 +7,6 @@ module com.hedera.node.app.service.file.impl {
     requires dagger;
     requires javax.inject;
     requires com.github.spotbugs.annotations;
-
-    provides com.hedera.node.app.service.file.FileService with
-            FileServiceImpl;
 
     exports com.hedera.node.app.service.file.impl to
             com.hedera.node.app,

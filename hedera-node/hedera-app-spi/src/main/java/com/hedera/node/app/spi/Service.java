@@ -20,18 +20,11 @@ import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A definition of an interface that will be implemented by each conceptual "service" like
- * crypto-service, token-service etc.,
+ * A definition of an interface that will be implemented by each conceptual "service" like crypto-service, token-service
+ * etc.,
  */
 public interface Service {
-    /**
-     * Returns the name of the service. This name must be unique for each service deployed on the
-     * application.
-     *
-     * @return the name
-     */
-    @NonNull
-    String getServiceName();
+    
 
     /** Registers the schemas for the service with the given {@link SchemaRegistry}. */
     void registerSchemas(@NonNull SchemaRegistry registry);

@@ -17,32 +17,13 @@
 package com.hedera.node.app.service.util;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ServiceLoader;
 
 /**
- * Implements the HAPI <a
- * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/util_service.proto">Util
+ * Implements the HAPI <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/util_service.proto">Util
  * Service</a>.
  */
 public interface UtilService extends Service {
 
     String NAME = "UtilService";
 
-    @NonNull
-    @Override
-    default String getServiceName() {
-        return NAME;
-    }
-
-    /**
-     * Returns the concrete implementation instance of the service
-     *
-     * @return the implementation instance
-     */
-    @NonNull
-    static UtilService getInstance() {
-        return ServiceFactory.loadService(UtilService.class, ServiceLoader.load(UtilService.class));
-    }
 }
