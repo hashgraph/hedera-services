@@ -168,7 +168,10 @@ public final class ReservedSignedState
             if (signedState != null) {
                 logger.error(
                         EXCEPTION.getMarker(),
-                        "This ReservedSignedState has already been closed, dumping history\n{},",
+                        "This ReservedSignedState has already been closed, dumping history. "
+                                + "Reservation ID = {}, reservation reason ={}\n{},",
+                        reservationId,
+                        reason,
                         signedState.getHistory());
             }
             throw new ReferenceCountException("This ReservedSignedState has been closed.");
