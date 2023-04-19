@@ -52,7 +52,7 @@ public class StandardizedAttributeValidator implements AttributeValidator {
     @Inject
     public StandardizedAttributeValidator(
             @NonNull final LongSupplier consensusSecondNow,
-            @NonNull final @CompositeProps PropertySource properties,
+            @NonNull @CompositeProps final PropertySource properties,
             @NonNull final GlobalDynamicProperties dynamicProperties) {
         this.maxEntityLifetime = properties.getLongProperty(ENTITIES_MAX_LIFETIME);
         this.consensusSecondNow = consensusSecondNow;

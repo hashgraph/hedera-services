@@ -83,6 +83,8 @@ include(":hedera-node:hedera-evm-impl")
 
 include(":hedera-node:hedera-mono-service")
 
+include(":hedera-node:cli-clients")
+
 include(":hedera-node:test-clients")
 
 // Enable Gradle Build Scan
@@ -115,7 +117,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      version("hapi-version", "0.37.0-services-SNAPSHOT")
+      version("hapi-version", "0.37.0-allowance-SNAPSHOT")
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.5.1")
@@ -142,7 +144,7 @@ dependencyResolutionManagement {
       version("netty-version", "4.1.66.Final")
       version("protobuf-java-version", "3.19.4")
       version("slf4j-version", "2.0.3")
-      version("swirlds-version", "0.36.1")
+      version("swirlds-version", "0.37.0-adhoc.xc76224af")
       version("tuweni-version", "2.2.0")
       version("jna-version", "5.12.1")
       version("jsr305-version", "3.0.2")
@@ -177,7 +179,9 @@ dependencyResolutionManagement {
               "swirlds-merkle",
               "swirlds-fcqueue",
               "swirlds-jasperdb",
-              "swirlds-virtualmap"))
+              "swirlds-virtualmap",
+              "swirlds-test-framework",
+              "swirlds-cli"))
 
       // Define the individual libraries
       library("pbj-runtime", "com.hedera.pbj", "pbj-runtime").versionRef("pbj-version")
@@ -245,6 +249,9 @@ dependencyResolutionManagement {
       library("swirlds-jasperdb", "com.swirlds", "swirlds-jasperdb").versionRef("swirlds-version")
       library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap")
           .versionRef("swirlds-version")
+      library("swirlds-test-framework", "com.swirlds", "swirlds-test-framework")
+          .versionRef("swirlds-version")
+      library("swirlds-cli", "com.swirlds", "swirlds-cli").versionRef("swirlds-version")
       library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
       library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
       library("spotbugs-annotations", "com.github.spotbugs", "spotbugs-annotations")

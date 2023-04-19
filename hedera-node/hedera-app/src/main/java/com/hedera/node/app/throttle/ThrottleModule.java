@@ -14,25 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.state.adapters;
+package com.hedera.node.app.throttle;
 
-import static org.junit.jupiter.api.Assertions.*;
+import dagger.Binds;
+import dagger.Module;
+import javax.inject.Singleton;
 
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Test;
-
-class MerkleMapLikeTest {
-    @Test
-    void canCheckArchival() {
-        final MerkleMap<EntityNum, MerkleAccount> real = new MerkleMap<>();
-
-        real.copy();
-        real.archive();
-
-        final var subject = MerkleMapLike.from(real);
-
-        assertTrue(subject.isArchived());
-    }
+@Module
+public interface ThrottleModule {
+    @Binds
+    @Singleton
+    ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
 }

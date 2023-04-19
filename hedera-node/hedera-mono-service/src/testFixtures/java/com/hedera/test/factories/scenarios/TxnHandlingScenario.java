@@ -445,6 +445,7 @@ public interface TxnHandlingScenario {
     KeyTree DELEGATING_SPENDER_KT = withRoot(ed25519());
 
     String SYS_ACCOUNT_ID = "0.0.666";
+    AccountID SYS_ACCOUNT = asAccount(SYS_ACCOUNT_ID);
 
     String DILIGENT_SIGNING_PAYER_ID = "0.0.1340";
     AccountID DILIGENT_SIGNING_PAYER = asAccount(DILIGENT_SIGNING_PAYER_ID);
@@ -463,6 +464,7 @@ public interface TxnHandlingScenario {
             list(threshold(2, ed25519(), ed25519(), ed25519()))));
 
     String FROM_OVERLAP_PAYER_ID = "0.0.1343";
+    AccountID FROM_OVERLAP_PAYER = asAccount(FROM_OVERLAP_PAYER_ID);
     KeyTree FROM_OVERLAP_PAYER_KT = withRoot(threshold(2, ed25519(true), ed25519(true), ed25519(false)));
 
     KeyTree NEW_ACCOUNT_KT = withRoot(list(ed25519(), threshold(1, ed25519(), ed25519())));
@@ -501,8 +503,10 @@ public interface TxnHandlingScenario {
     ContractID MISC_RECIEVER_SIG_CONTRACT = asContract(MISC_RECIEVER_SIG_CONTRACT_ID);
 
     String IMMUTABLE_CONTRACT_ID = "0.0.9339";
+    ContractID IMMUTABLE_CONTRACT = asContract(IMMUTABLE_CONTRACT_ID);
 
     String MISC_CONTRACT_ID = "0.0.3337";
+    ContractID MISC_CONTRACT = asContract(MISC_CONTRACT_ID);
     KeyTree MISC_ADMIN_KT = withRoot(ed25519());
 
     KeyTree SIMPLE_NEW_ADMIN_KT = withRoot(ed25519());
