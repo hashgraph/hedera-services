@@ -42,7 +42,6 @@ import java.util.function.Consumer;
 
 @Singleton
 public class ReplayFacilityTransactionDispatcher extends TransactionDispatcher {
-    private TransactionBody dispatchedTxn;
     private Consumer<TransactionRecord> assertionForDispatched;
 
     @Inject
@@ -60,7 +59,6 @@ public class ReplayFacilityTransactionDispatcher extends TransactionDispatcher {
             final @NonNull TransactionBody txn,
             final @NonNull WritableStoreFactory writableStoreFactory) {
         try {
-            dispatchedTxn = txn;
             assertionForDispatched = null;
             super.dispatchHandle(function, txn, writableStoreFactory);
         } catch (IllegalArgumentException e) {
