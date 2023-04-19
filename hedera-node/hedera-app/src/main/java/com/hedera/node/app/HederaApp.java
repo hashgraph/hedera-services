@@ -23,6 +23,7 @@ import com.hedera.node.app.authorization.AuthorizerDaggerModule;
 import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.fees.AdaptedFeeCalculatorModule;
+import com.hedera.node.app.info.InfoDaggerModule;
 import com.hedera.node.app.metrics.MetricsDaggerModule;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
@@ -49,8 +50,10 @@ import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
+import com.hedera.node.app.solvency.SolvencyModule;
 import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.throttle.ThrottleModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.prehandle.AdaptedMonoEventExpansion;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;
@@ -101,7 +104,10 @@ import javax.inject.Singleton;
             AdaptedFeeCalculatorModule.class,
             HederaStateModule.class,
             MetricsDaggerModule.class,
-            AuthorizerDaggerModule.class
+            AuthorizerDaggerModule.class,
+            InfoDaggerModule.class,
+            ThrottleModule.class,
+            SolvencyModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */

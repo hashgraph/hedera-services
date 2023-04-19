@@ -173,6 +173,39 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         return key;
     }
 
+    //TEST-008
+    function updateTokenWithoutNameSymbolMemo(
+        address tokenID,
+        address treasury,
+        bytes memory ed25519,
+        bytes memory ecdsa,
+        address contractID,
+        address autoRenewAccount,
+        int64 autoRenewPeriod) public payable {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyType.KYC, KeyValueType.ED25519, ed25519); //admin 3
+        keys[1] = getSingleKey(KeyType.FREEZE, KeyType.WIPE, KeyValueType.SECP256K1, ecdsa); //freeze 12
+        keys[2] = getSingleKey(KeyType.SUPPLY, KeyValueType.CONTRACT_ID, contractID); //supply 16
+        keys[3] = getSingleKey(KeyType.PAUSE, KeyValueType.CONTRACT_ID, contractID); //pause 64
+        keys[4] = getSingleKey(KeyType.FEE, KeyValueType.DELEGETABLE_CONTRACT_ID, contractID); //schedule 32
+
+        IHederaTokenService.Expiry memory expiry;
+        expiry.second = 0;
+        expiry.autoRenewAccount = autoRenewAccount;
+        expiry.autoRenewPeriod = autoRenewPeriod;
+
+        IHederaTokenService.HederaToken memory token;
+        token.treasury = treasury;
+        token.tokenKeys = keys;
+        token.expiry = expiry;
+
+        int responseCode = HederaTokenService.updateTokenInfo(tokenID, token);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of tokenInfo failed!");
+        }
+    }
+
     /** --- HELPERS --- */
 
     function tokenWithExpiry(

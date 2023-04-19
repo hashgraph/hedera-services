@@ -18,10 +18,12 @@ package com.hedera.node.app.service.mono.stats;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
@@ -55,7 +57,9 @@ class EntityUtilGaugesTest {
 
     @Test
     void registersAndUpdatesExpectedGauges() {
-        given(platform.getMetrics()).willReturn(metrics);
+        final var platformContext = mock(PlatformContext.class);
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(pretendGauge);
         given(usageLimits.percentAccountsUsed()).willReturn(2.0);
         given(usageLimits.percentContractsUsed()).willReturn(3.0);

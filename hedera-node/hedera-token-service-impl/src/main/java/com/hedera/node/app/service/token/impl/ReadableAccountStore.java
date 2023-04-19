@@ -16,34 +16,16 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static java.util.Objects.requireNonNull;
-
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
-import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -69,7 +51,7 @@ public class ReadableAccountStore implements AccountAccess {
     }
 
     /** The underlying data storage class that holds the account data. */
-    private final ReadableKVState<EntityNumVirtualKey, MerkleAccount> accountState;
+    private final ReadableKVState<EntityNumVirtualKey, Account> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
     private final ReadableKVState<String, EntityNumValue> aliases;
 
@@ -83,95 +65,22 @@ public class ReadableAccountStore implements AccountAccess {
         this.aliases = states.get("ALIASES");
     }
 
-    /** {@inheritDoc} */
-    @NonNull
-    @Override
-    public KeyOrLookupFailureReason getKey(@NonNull final AccountID id) {
-        requireNonNull(id);
-        if (id.equals(AccountID.DEFAULT)) {
-            return withFailureReason(INVALID_ACCOUNT_ID);
-        }
-        final var account = getAccountLeaf(id);
-        return account == null ? withFailureReason(INVALID_ACCOUNT_ID) : validateKey(account.getAccountKey(), false);
-    }
-
-    /** {@inheritDoc} */
-    @NonNull
-    @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final AccountID id) {
-        requireNonNull(id);
-        if (id.equals(AccountID.DEFAULT)) {
-            return withFailureReason(INVALID_ACCOUNT_ID);
-        }
-
-        final var account = getAccountLeaf(id);
-        if (account == null) {
-            return withFailureReason(INVALID_ACCOUNT_ID);
-        }
-
-        final var responseIgnoringSigReq = validateKey(account.getAccountKey(), false);
-        return (responseIgnoringSigReq.failed() || account.isReceiverSigRequired())
-                ? responseIgnoringSigReq
-                : PRESENT_BUT_NOT_REQUIRED;
-    }
-
-    /** {@inheritDoc} */
-    @NonNull
-    @Override
-    public KeyOrLookupFailureReason getKey(@NonNull final ContractID id) {
-        requireNonNull(id);
-
-        if (id.equals(ContractID.DEFAULT)) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        }
-
-        final var contract = getContractLeaf(id);
-        if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        }
-
-        return validateKey(contract.getAccountKey(), true);
-    }
-
-    /** {@inheritDoc} */
-    @NonNull
-    @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID id) {
-        requireNonNull(id);
-
-        if (id.equals(ContractID.DEFAULT)) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        }
-
-        final var contract = getContractLeaf(id);
-        if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        }
-
-        final var responseIgnoringSigReq = validateKey(contract.getAccountKey(), true);
-        if (responseIgnoringSigReq.failed() || contract.isReceiverSigRequired()) {
-            return responseIgnoringSigReq;
-        }
-        return PRESENT_BUT_NOT_REQUIRED;
+    private static boolean isMirror(final Bytes bytes) {
+        return bytes.matchesPrefix(MIRROR_PREFIX);
     }
 
     /**
      * Returns the {@link Account} for a given {@link AccountID}
      *
-     * @param id the {@code AccountID} which {@code Account is requested}
+     * @param accountID the {@code AccountID} which {@code Account is requested}
      * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
      *     Optional} otherwise
      */
     @Override
-    @NonNull
-    public Optional<Account> getAccountById(@NonNull final AccountID id) {
-        requireNonNull(id);
-        if (id.equals(AccountID.DEFAULT)) {
-            return Optional.empty();
-        }
-        // TODO Make sure we have tests for getAccount for all valid account IDs.
-        final var account = getAccountLeaf(id);
-        return Optional.ofNullable(account).map(accountLeaf -> mapAccount(id, accountLeaf));
+    @Nullable
+    public Account getAccountById(@NonNull final AccountID accountID) {
+        final var account = getAccountLeaf(accountID);
+        return account == null ? null : account;
     }
 
     /* Helper methods */
@@ -184,7 +93,7 @@ public class ReadableAccountStore implements AccountAccess {
      * @return merkle leaf for the given account number
      */
     @Nullable
-    private HederaAccount getAccountLeaf(@NonNull final AccountID id) {
+    private Account getAccountLeaf(@NonNull final AccountID id) {
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =
@@ -213,7 +122,7 @@ public class ReadableAccountStore implements AccountAccess {
      * @return merkle leaf for the given contract number
      */
     @Nullable
-    private HederaAccount getContractLeaf(@NonNull final ContractID id) {
+    private Account getContractLeaf(@NonNull final ContractID id) {
         // Get the contract number based on the contract identifier. It may be null.
         final var contractOneOf = id.contract();
         final Long contractNum =
@@ -250,23 +159,6 @@ public class ReadableAccountStore implements AccountAccess {
         return contractNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(contractNum));
     }
 
-    private KeyOrLookupFailureReason validateKey(@Nullable final JKey key, final boolean isContractKey) {
-        if (key == null || key.isEmpty()) {
-            if (isContractKey) {
-                return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
-            }
-            return withFailureReason(ACCOUNT_IS_IMMUTABLE);
-        } else if (isContractKey && key instanceof JContractIDKey) {
-            return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
-        } else {
-            return withKey(key);
-        }
-    }
-
-    private static boolean isMirror(final Bytes bytes) {
-        return bytes.matchesPrefix(MIRROR_PREFIX);
-    }
-
     private static long numFromEvmAddress(final Bytes bytes) {
         return bytes.getLong(12);
     }
@@ -275,7 +167,7 @@ public class ReadableAccountStore implements AccountAccess {
         return evmAddress.getLong(12);
     }
 
-    private static Long fromMirror(final Bytes evmAddress) {
+    static Long fromMirror(final Bytes evmAddress) {
         return numFromEvmAddress(evmAddress);
     }
 
@@ -288,44 +180,5 @@ public class ReadableAccountStore implements AccountAccess {
         final var buf = new byte[Math.toIntExact(alias.length())];
         alias.getBytes(0, buf);
         return AliasManager.keyAliasToEVMAddress(ByteString.copyFrom(buf));
-    }
-
-    // Converts a HederaAccount into an Account
-    private Account mapAccount(final AccountID idOrAlias, final HederaAccount account) {
-        final var accountNum = idOrAlias.accountNumOrElse(0L);
-        final var builder = new AccountBuilderImpl()
-                .key(account.getAccountKey())
-                .expiry(account.getExpiry())
-                .balance(account.getBalance())
-                .memo(account.getMemo())
-                .deleted(account.isDeleted())
-                .receiverSigRequired(account.isReceiverSigRequired())
-                .numberOfOwnedNfts(account.getNftsOwned())
-                .maxAutoAssociations(account.getMaxAutomaticAssociations())
-                .usedAutoAssociations(account.getUsedAutoAssociations())
-                .numAssociations(account.getNumAssociations())
-                .numPositiveBalances(account.getNumPositiveBalances())
-                .ethereumNonce(account.getEthereumNonce())
-                .stakedToMe(account.getStakedToMe())
-                .stakePeriodStart(account.getStakePeriodStart())
-                .stakedNum(account.totalStake())
-                .declineReward(account.isDeclinedReward())
-                .stakeAtStartOfLastRewardedPeriod(account.getStakePeriodStart())
-                .autoRenewSecs(account.getAutoRenewSecs())
-                .accountNumber(accountNum)
-                .isSmartContract(account.isSmartContract());
-        if (account.getAutoRenewAccount() != null) {
-            builder.autoRenewAccountNumber(account.getAutoRenewAccount().num());
-        }
-        if (account.getAlias() != null) {
-            builder.alias(account.getAlias().toByteArray());
-        }
-        return builder.build();
-    }
-
-    @NonNull
-    public Optional<HederaKey> asHederaKey(@NonNull final Key key) {
-        requireNonNull(key);
-        return Utils.asHederaKey(key);
     }
 }

@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetada
 import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
-import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO;
@@ -3134,36 +3133,6 @@ public class SigRequirementsTest {
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
                 contains(SIMPLE_TOPIC_ADMIN_KEY.asKey(), DEFAULT_PAYER_KT.asKey()));
-    }
-
-    @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsCustomPayer() throws Throwable {
-        // given:
-        setupFor(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(SIMPLE_TOPIC_ADMIN_KEY.asKey(), CUSTOM_PAYER_ACCOUNT_KT.asKey()));
-        assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
-    }
-
-    @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsCustomPayerWithCustomPayer() throws Throwable {
-        // given:
-        setupFor(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(sanityRestored(summary.getOrderedKeys()), contains(SIMPLE_TOPIC_ADMIN_KEY.asKey()));
-        assertFalse(sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test

@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_REPLACE_KT;
@@ -39,234 +42,195 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WI
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TokenUpdateHandlerParityTest extends ParityTestBase {
     private final TokenUpdateHandler subject = new TokenUpdateHandler();
 
+    @BeforeEach
+    void setUp() {
+        super.setUp();
+    }
+
     @Test
-    void tokenUpdateWithoutAffectingKeys() {
+    void tokenUpdateWithoutAffectingKeys() throws PreCheckException {
         final var txn = txnFrom(UPDATE_WITH_NO_KEYS_AFFECTED);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateReplacingTreasury() {
+    void tokenUpdateReplacingTreasury() throws PreCheckException {
         final var txn = txnFrom(UPDATE_REPLACING_TREASURY);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(2, context.getRequiredNonPayerKeys().size());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(2, context.requiredNonPayerKeys().size());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asPbjKey(), TOKEN_TREASURY_KT.asPbjKey()));
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_ADMIN_KT.asPbjKey(), TOKEN_TREASURY_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateReplacingTreasuryWithPayer() {
+    void tokenUpdateReplacingTreasuryWithPayer() throws PreCheckException {
         final var txn = txnFrom(UPDATE_REPLACING_TREASURY_AS_PAYER);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateReplacingTreasuryWithCustomPayer() {
+    void tokenUpdateReplacingTreasuryWithCustomPayer() throws PreCheckException {
         final var txn = txnFrom(UPDATE_REPLACING_TREASURY_AS_CUSTOM_PAYER);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(2, context.getRequiredNonPayerKeys().size());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(2, context.requiredNonPayerKeys().size());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asPbjKey(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_ADMIN_KT.asPbjKey(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateReplacingTreasuryWithNonExistingAccount() {
+    void tokenUpdateReplacingTreasuryWithNonExistingAccount() throws PreCheckException {
         final var txn = txnFrom(UPDATE_REPLACING_WITH_MISSING_TREASURY);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        subject.preHandle(context, readableTokenStore);
-
-        assertTrue(context.failed());
-        assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_ACCOUNT_ID);
     }
 
     @Test
-    void tokenUpdateReplacingAdminKey() {
+    void tokenUpdateReplacingAdminKey() throws PreCheckException {
         final var txn = txnFrom(UPDATE_REPLACING_ADMIN_KEY);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(2, context.getRequiredNonPayerKeys().size());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(2, context.requiredNonPayerKeys().size());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asPbjKey(), TOKEN_REPLACE_KT.asPbjKey()));
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_ADMIN_KT.asPbjKey(), TOKEN_REPLACE_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateWithSupplyKeyedToken() {
+    void tokenUpdateWithSupplyKeyedToken() throws PreCheckException {
         final var txn = txnFrom(UPDATE_WITH_SUPPLY_KEYED_TOKEN);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateWithKYCKeyedToken() {
+    void tokenUpdateWithKYCKeyedToken() throws PreCheckException {
         final var txn = txnFrom(UPDATE_WITH_KYC_KEYED_TOKEN);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateWithFreezeKeyedToken() {
+    void tokenUpdateWithFreezeKeyedToken() throws PreCheckException {
         final var txn = txnFrom(UPDATE_WITH_FREEZE_KEYED_TOKEN);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateWithWipeKeyedToken() {
+    void tokenUpdateWithWipeKeyedToken() throws PreCheckException {
         final var txn = txnFrom(UPDATE_WITH_WIPE_KEYED_TOKEN);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateMissingToken() {
+    void tokenUpdateMissingToken() throws PreCheckException {
         final var txn = txnFrom(UPDATE_WITH_MISSING_TOKEN);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        subject.preHandle(context, readableTokenStore);
-
-        assertTrue(context.failed());
-        assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(0, context.getRequiredNonPayerKeys().size());
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
     }
 
     @Test
-    void tokenUpdateTokenWithoutAdminKey() {
+    void tokenUpdateTokenWithoutAdminKey() throws PreCheckException {
         final var txn = txnFrom(UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(0, context.getRequiredNonPayerKeys().size());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(0, context.requiredNonPayerKeys().size());
     }
 
     @Test
-    void tokenUpdateTokenWithNewAutoRenewAccount() {
+    void tokenUpdateTokenWithNewAutoRenewAccount() throws PreCheckException {
         final var txn = txnFrom(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(2, context.getRequiredNonPayerKeys().size());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(2, context.requiredNonPayerKeys().size());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asPbjKey(), MISC_ACCOUNT_KT.asPbjKey()));
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_ADMIN_KT.asPbjKey(), MISC_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateTokenWithNewAutoRenewAccountAsPayer() {
+    void tokenUpdateTokenWithNewAutoRenewAccountAsPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_PAYER);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateTokenWithNewAutoRenewAccountAsCustomPayer() {
+    void tokenUpdateTokenWithNewAutoRenewAccountAsCustomPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_CUSTOM_PAYER);
         final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(2, context.getRequiredNonPayerKeys().size());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(2, context.requiredNonPayerKeys().size());
         assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asPbjKey(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(TOKEN_ADMIN_KT.asPbjKey(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test
-    void tokenUpdateTokenWithMissingNewAutoRenewAccount() {
+    void tokenUpdateTokenWithMissingNewAutoRenewAccount() throws PreCheckException {
         final var txn = txnFrom(TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT);
         final var context = new PreHandleContext(readableAccountStore, txn);
-        subject.preHandle(context, readableTokenStore);
-
-        assertTrue(context.failed());
-        assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, context.getStatus());
-        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_AUTORENEW_ACCOUNT);
     }
 }

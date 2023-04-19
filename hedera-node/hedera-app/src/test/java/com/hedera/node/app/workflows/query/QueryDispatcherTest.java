@@ -17,11 +17,7 @@
 package com.hedera.node.app.workflows.query;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.contract.ContractGetBytecodeQuery;
@@ -71,10 +67,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetAccountNftInfosHa
 import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
-import com.hedera.node.app.spi.meta.QueryContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
@@ -161,9 +154,6 @@ class QueryDispatcherTest {
     @Mock
     private TokenGetNftInfosHandler tokenGetNftInfosHandler;
 
-    @Mock
-    private QueryContext queryContext;
-
     private QueryHandlers handlers;
 
     private QueryDispatcher dispatcher;
@@ -230,90 +220,6 @@ class QueryDispatcherTest {
         Assertions.assertThat(result).isEqualTo(getter.apply(handlers));
     }
 
-    @SuppressWarnings("ConstantConditions")
-    @Test
-    void testDispatchValidateWithIllegalParameters(@Mock final ReadableStoreFactory storeFactory) {
-        // given
-        final var query = Query.newBuilder().build();
-
-        // then
-        assertThatThrownBy(() -> dispatcher.validate(null, query)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.validate(storeFactory, null)).isInstanceOf(NullPointerException.class);
-    }
-
-    @Test
-    void testDispatchValidateWithNoQuerySet(@Mock final ReadableStoreFactory storeFactory) {
-        // given
-        final var query = Query.newBuilder().build();
-
-        // then
-        assertThatThrownBy(() -> dispatcher.validate(storeFactory, query))
-                .isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    @ParameterizedTest
-    @MethodSource("getDispatchParameters")
-    void testValidate(
-            final Query query, final Function<QueryHandlers, QueryHandler> ignore, final Verification verifyValidate)
-            throws PreCheckException {
-        // given
-        final var storeFactory = mock(ReadableStoreFactory.class);
-
-        // when
-        dispatcher.validate(storeFactory, query);
-
-        // then
-        verifyValidate.verify(handlers);
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    @Test
-    void testDispatchFindResponseWithIllegalParameters(@Mock final ReadableStoreFactory storeFactory) {
-        // given
-        final var query = Query.newBuilder().build();
-        final var header = ResponseHeader.newBuilder().build();
-
-        // then
-        assertThatThrownBy(() -> dispatcher.getResponse(null, query, header, queryContext))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, null, header, queryContext))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, query, null, queryContext))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, query, header, null))
-                .isInstanceOf(NullPointerException.class);
-    }
-
-    @Test
-    void testDispatchFindResponseWithNoQuerySet(@Mock final ReadableStoreFactory storeFactory) {
-        // given
-        final var query = Query.newBuilder().build();
-        final var header = ResponseHeader.newBuilder().build();
-
-        // then
-        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, query, header, queryContext))
-                .isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    @ParameterizedTest
-    @MethodSource("getDispatchParameters")
-    void testFindResponse(
-            final Query query,
-            final Function<QueryHandlers, QueryHandler> ignore1,
-            final Verification ignore,
-            final Verification verifyFindResponse)
-            throws PreCheckException {
-        // given
-        final var storeFactory = mock(ReadableStoreFactory.class);
-        final var header = ResponseHeader.newBuilder().build();
-
-        // when
-        dispatcher.getResponse(storeFactory, query, header, queryContext);
-
-        // then
-        verifyFindResponse.verify(handlers);
-    }
-
     private static Stream<Arguments> getDispatchParameters() {
         return Stream.of(
                 Arguments.of(
@@ -321,219 +227,140 @@ class QueryDispatcherTest {
                                 .consensusGetTopicInfo(
                                         ConsensusGetTopicInfoQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::consensusGetTopicInfoHandler,
-                        (Verification)
-                                h -> verify(h.consensusGetTopicInfoHandler()).validate(any(), any()),
-                        (Verification)
-                                h -> verify(h.consensusGetTopicInfoHandler()).findResponse(any(), any(), any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::consensusGetTopicInfoHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .getBySolidityID(
                                         GetBySolidityIDQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::contractGetBySolidityIDHandler,
-                        (Verification)
-                                h -> verify(h.contractGetBySolidityIDHandler()).validate(any()),
-                        (Verification)
-                                h -> verify(h.contractGetBySolidityIDHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::contractGetBySolidityIDHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .contractCallLocal(
                                         ContractCallLocalQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::contractCallLocalHandler,
-                        (Verification) h -> verify(h.contractCallLocalHandler()).validate(any()),
-                        (Verification) h -> verify(h.contractCallLocalHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::contractCallLocalHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .contractGetInfo(
                                         ContractGetInfoQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::contractGetInfoHandler,
-                        (Verification) h -> verify(h.contractGetInfoHandler()).validate(any()),
-                        (Verification) h -> verify(h.contractGetInfoHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::contractGetInfoHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .contractGetBytecode(
                                         ContractGetBytecodeQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::contractGetBytecodeHandler,
-                        (Verification)
-                                h -> verify(h.contractGetBytecodeHandler()).validate(any()),
-                        (Verification)
-                                h -> verify(h.contractGetBytecodeHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::contractGetBytecodeHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .contractGetRecords(
                                         ContractGetRecordsQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::contractGetRecordsHandler,
-                        (Verification)
-                                h -> verify(h.contractGetRecordsHandler()).validate(any()),
-                        (Verification)
-                                h -> verify(h.contractGetRecordsHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::contractGetRecordsHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .cryptogetAccountBalance(CryptoGetAccountBalanceQuery.newBuilder()
                                         .build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::cryptoGetAccountBalanceHandler,
-                        (Verification)
-                                h -> verify(h.cryptoGetAccountBalanceHandler()).validate(any()),
-                        (Verification)
-                                h -> verify(h.cryptoGetAccountBalanceHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::cryptoGetAccountBalanceHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .cryptoGetInfo(CryptoGetInfoQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::cryptoGetAccountInfoHandler,
-                        (Verification)
-                                h -> verify(h.cryptoGetAccountInfoHandler()).validate(any()),
-                        (Verification)
-                                h -> verify(h.cryptoGetAccountInfoHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::cryptoGetAccountInfoHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .cryptoGetAccountRecords(CryptoGetAccountRecordsQuery.newBuilder()
                                         .build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::cryptoGetAccountRecordsHandler,
-                        (Verification)
-                                h -> verify(h.cryptoGetAccountRecordsHandler()).validate(any()),
-                        (Verification)
-                                h -> verify(h.cryptoGetAccountRecordsHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::cryptoGetAccountRecordsHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .cryptoGetLiveHash(
                                         CryptoGetLiveHashQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::cryptoGetLiveHashHandler,
-                        (Verification) h -> verify(h.cryptoGetLiveHashHandler()).validate(any()),
-                        (Verification) h -> verify(h.cryptoGetLiveHashHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::cryptoGetLiveHashHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .cryptoGetProxyStakers(
                                         CryptoGetStakersQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::cryptoGetStakersHandler,
-                        (Verification) h -> verify(h.cryptoGetStakersHandler()).validate(any()),
-                        (Verification) h -> verify(h.cryptoGetStakersHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::cryptoGetStakersHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .fileGetContents(
                                         FileGetContentsQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::fileGetContentsHandler,
-                        (Verification) h -> verify(h.fileGetContentsHandler()).validate(any()),
-                        (Verification) h -> verify(h.fileGetContentsHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::fileGetContentsHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .fileGetInfo(FileGetInfoQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::fileGetInfoHandler,
-                        (Verification) h -> verify(h.fileGetInfoHandler()).validate(any()),
-                        (Verification) h -> verify(h.fileGetInfoHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::fileGetInfoHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .scheduleGetInfo(
                                         ScheduleGetInfoQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::scheduleGetInfoHandler,
-                        (Verification) h -> verify(h.scheduleGetInfoHandler()).validate(any()),
-                        (Verification) h -> verify(h.scheduleGetInfoHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::scheduleGetInfoHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .tokenGetInfo(TokenGetInfoQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::tokenGetInfoHandler,
-                        (Verification) h -> verify(h.tokenGetInfoHandler()).validate(any()),
-                        (Verification) h -> verify(h.tokenGetInfoHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::tokenGetInfoHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .tokenGetAccountNftInfos(TokenGetAccountNftInfosQuery.newBuilder()
                                         .build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::tokenGetAccountNftInfosHandler,
-                        (Verification)
-                                h -> verify(h.tokenGetAccountNftInfosHandler()).validate(any()),
-                        (Verification)
-                                h -> verify(h.tokenGetAccountNftInfosHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::tokenGetAccountNftInfosHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .tokenGetNftInfo(
                                         TokenGetNftInfoQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::tokenGetNftInfoHandler,
-                        (Verification) h -> verify(h.tokenGetNftInfoHandler()).validate(any()),
-                        (Verification) h -> verify(h.tokenGetNftInfoHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::tokenGetNftInfoHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .tokenGetNftInfos(
                                         TokenGetNftInfosQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::tokenGetNftInfosHandler,
-                        (Verification) h -> verify(h.tokenGetNftInfosHandler()).validate(any()),
-                        (Verification) h -> verify(h.tokenGetNftInfosHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::tokenGetNftInfosHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .accountDetails(
                                         GetAccountDetailsQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkGetAccountDetailsHandler,
-                        (Verification)
-                                h -> verify(h.networkGetAccountDetailsHandler()).validate(any()),
-                        (Verification)
-                                h -> verify(h.networkGetAccountDetailsHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkGetAccountDetailsHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .networkGetVersionInfo(
                                         NetworkGetVersionInfoQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkGetVersionInfoHandler,
-                        (Verification)
-                                h -> verify(h.networkGetVersionInfoHandler()).validate(any()),
-                        (Verification)
-                                h -> verify(h.networkGetVersionInfoHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkGetVersionInfoHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .getByKey(GetByKeyQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkGetByKeyHandler,
-                        (Verification) h -> verify(h.networkGetByKeyHandler()).validate(any()),
-                        (Verification) h -> verify(h.networkGetByKeyHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkGetByKeyHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .networkGetExecutionTime(NetworkGetExecutionTimeQuery.newBuilder()
                                         .build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkGetExecutionTimeHandler,
-                        (Verification)
-                                h -> verify(h.networkGetExecutionTimeHandler()).validate(any()),
-                        (Verification)
-                                h -> verify(h.networkGetExecutionTimeHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkGetExecutionTimeHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .transactionGetReceipt(
                                         TransactionGetReceiptQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkTransactionGetReceiptHandler,
-                        (Verification) h ->
-                                verify(h.networkTransactionGetReceiptHandler()).validate(any()),
-                        (Verification) h ->
-                                verify(h.networkTransactionGetReceiptHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkTransactionGetReceiptHandler),
                 Arguments.of(
                         Query.newBuilder()
                                 .transactionGetRecord(
                                         TransactionGetRecordQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkTransactionGetRecordHandler,
-                        (Verification) h ->
-                                verify(h.networkTransactionGetRecordHandler()).validate(any()),
-                        (Verification) h ->
-                                verify(h.networkTransactionGetRecordHandler()).findResponse(any(), any())));
-    }
-
-    @FunctionalInterface
-    private interface Verification {
-        void verify(QueryHandlers handlers) throws PreCheckException;
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkTransactionGetRecordHandler));
     }
 }

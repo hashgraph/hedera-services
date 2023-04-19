@@ -16,16 +16,18 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.hapi.node.transaction.CustomFee.FeeOneOfType.ROYALTY_FEE;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
@@ -37,7 +39,7 @@ import java.util.Optional;
  */
 public class ReadableTokenStore {
     /** The underlying data storage class that holds the token data. */
-    private final ReadableKVState<Long, MerkleToken> tokenState;
+    private final ReadableKVState<EntityNum, Token> tokenState;
 
     /**
      * Create a new {@link ReadableTokenStore} instance.
@@ -49,39 +51,62 @@ public class ReadableTokenStore {
     }
 
     public record TokenMetadata(
-            Optional<JKey> adminKey,
-            Optional<JKey> kycKey,
-            Optional<JKey> wipeKey,
-            Optional<JKey> freezeKey,
-            Optional<JKey> supplyKey,
-            Optional<JKey> feeScheduleKey,
-            Optional<JKey> pauseKey,
+            Key adminKey,
+            Key kycKey,
+            Key wipeKey,
+            Key freezeKey,
+            Key supplyKey,
+            Key feeScheduleKey,
+            Key pauseKey,
             boolean hasRoyaltyWithFallback,
-            EntityId treasury) {}
+            long treasuryNum) {
+        public boolean hasAdminKey() {
+            return adminKey != null && !adminKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
 
-    public record TokenMetaOrLookupFailureReason(TokenMetadata metadata, ResponseCodeEnum failureReason) {
-        public boolean failed() {
-            return failureReason != null;
+        public boolean hasKycKey() {
+            return kycKey != null && !kycKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasWipeKey() {
+            return wipeKey != null && !wipeKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasFreezeKey() {
+            return freezeKey != null && !freezeKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasSupplyKey() {
+            return supplyKey != null && !supplyKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasFeeScheduleKey() {
+            return feeScheduleKey != null && !feeScheduleKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasPauseKey() {
+            return pauseKey != null && !pauseKey.key().kind().equals(KeyOneOfType.UNSET);
         }
     }
 
     /**
-     * Returns the token metadata needed for signing requirements. If the token doesn't exist
-     * returns failureReason. If the token exists , the failure reason will be null.
+     * Returns the token metadata needed for signing requirements.
      *
      * @param id token id being looked up
      * @return token's metadata
      */
-    public TokenMetaOrLookupFailureReason getTokenMeta(@NonNull final TokenID id) {
+    public TokenMetadata getTokenMeta(@NonNull final TokenID id) throws PreCheckException {
         requireNonNull(id);
-        final var token = getTokenLeaf(id);
-        return token.map(merkleToken -> new TokenMetaOrLookupFailureReason(tokenMetaFrom(merkleToken), null))
-                .orElseGet(() -> new TokenMetaOrLookupFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID));
+        final var token = getTokenLeaf(id.tokenNum());
+        if (token.isEmpty()) {
+            return null;
+        }
+        return tokenMetaFrom(token.get());
     }
 
-    private TokenMetadata tokenMetaFrom(final MerkleToken token) {
+    private TokenMetadata tokenMetaFrom(final Token token) {
         boolean hasRoyaltyWithFallback = false;
-        final var customFees = token.customFeeSchedule();
+        final var customFees = token.customFees();
         if (!customFees.isEmpty()) {
             for (final var customFee : customFees) {
                 if (isRoyaltyWithFallback(customFee)) {
@@ -91,31 +116,30 @@ public class ReadableTokenStore {
             }
         }
         return new TokenMetadata(
-                token.adminKey(),
-                token.kycKey(),
-                token.wipeKey(),
-                token.freezeKey(),
-                token.supplyKey(),
-                token.feeScheduleKey(),
-                token.pauseKey(),
+                token.adminKeyOrElse(null),
+                token.kycKeyOrElse(null),
+                token.wipeKeyOrElse(null),
+                token.freezeKeyOrElse(null),
+                token.supplyKeyOrElse(null),
+                token.feeScheduleKeyOrElse(null),
+                token.pauseKeyOrElse(null),
                 hasRoyaltyWithFallback,
-                token.treasury());
+                token.treasuryAccountNumber()); // remove this and make it a long
     }
 
-    private boolean isRoyaltyWithFallback(final FcCustomFee fee) {
-        return fee.getFeeType() == FcCustomFee.FeeType.ROYALTY_FEE
-                && fee.getRoyaltyFeeSpec().fallbackFee() != null;
+    private boolean isRoyaltyWithFallback(final CustomFee fee) {
+        return fee.fee().kind() == ROYALTY_FEE && fee.royaltyFee().hasFallbackFee();
     }
 
     /**
      * Returns the merkleToken leaf for the given tokenId. If the token doesn't exist returns {@code
      * Optional.empty()}
      *
-     * @param id given tokenId
+     * @param tokenNum given tokenId's number
      * @return merkleToken leaf for the given tokenId
      */
-    private Optional<MerkleToken> getTokenLeaf(final TokenID id) {
-        final var token = tokenState.get(id.tokenNum());
+    private Optional<Token> getTokenLeaf(final long tokenNum) {
+        final var token = tokenState.get(EntityNum.fromLong(tokenNum));
         return Optional.ofNullable(token);
     }
 }

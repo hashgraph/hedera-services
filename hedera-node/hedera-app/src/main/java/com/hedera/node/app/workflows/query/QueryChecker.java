@@ -24,18 +24,16 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import javax.inject.Inject;
@@ -45,7 +43,6 @@ import javax.inject.Singleton;
 @Singleton
 public class QueryChecker {
 
-    private final TransactionChecker transactionChecker;
     private final HederaAccountNumbers accountNumbers;
     private final QueryFeeCheck queryFeeCheck;
     private final Authorizer authorizer;
@@ -54,7 +51,6 @@ public class QueryChecker {
     /**
      * Constructor of {@code QueryChecker}
      *
-     * @param transactionChecker the {@link TransactionChecker} that (eventually) pre-processes the CryptoTransfer
      * @param accountNumbers the {@link HederaAccountNumbers} that contains a list of special accounts
      * @param queryFeeCheck the {@link QueryFeeCheck} that checks if fees can be paid
      * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
@@ -64,12 +60,10 @@ public class QueryChecker {
      */
     @Inject
     public QueryChecker(
-            @NonNull final TransactionChecker transactionChecker,
             @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final QueryFeeCheck queryFeeCheck,
             @NonNull final Authorizer authorizer,
             @NonNull final CryptoTransferHandler cryptoTransferHandler) {
-        this.transactionChecker = requireNonNull(transactionChecker);
         this.accountNumbers = requireNonNull(accountNumbers);
         this.queryFeeCheck = requireNonNull(queryFeeCheck);
         this.authorizer = requireNonNull(authorizer);
@@ -79,23 +73,17 @@ public class QueryChecker {
     /**
      * Validates the {@link HederaFunctionality#CRYPTO_TRANSFER} that is contained in a query
      *
-     * @param session the {@link SessionContext} with all parsers
-     * @param txn the {@link Transaction} that needs to be checked
-     * @return the {@link TransactionBody} that was found in the transaction
+     * @param transactionInfo the {@link TransactionInfo} that contains all data about the transaction
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionBody validateCryptoTransfer(@NonNull final SessionContext session, @NonNull final Transaction txn)
-            throws PreCheckException {
-        requireNonNull(session);
-        requireNonNull(txn);
-        final var onsetResult = transactionChecker.check(session, txn);
-        if (onsetResult.functionality() != CRYPTO_TRANSFER) {
+    public void validateCryptoTransfer(@NonNull final TransactionInfo transactionInfo) throws PreCheckException {
+        requireNonNull(transactionInfo);
+        if (transactionInfo.functionality() != CRYPTO_TRANSFER) {
             throw new PreCheckException(INSUFFICIENT_TX_FEE);
         }
-        final var txBody = onsetResult.txBody();
+        final var txBody = transactionInfo.txBody();
         cryptoTransferHandler.validate(txBody);
-        return txBody;
     }
 
     /**

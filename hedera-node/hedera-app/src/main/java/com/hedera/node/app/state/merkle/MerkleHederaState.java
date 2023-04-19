@@ -17,6 +17,8 @@
 package com.hedera.node.app.state.merkle;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -92,7 +94,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.utility.Labeled;
@@ -108,9 +110,9 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * An implementation of {@link SwirldState2} and {@link HederaState}. The Hashgraph Platform
+ * An implementation of {@link SwirldState} and {@link HederaState}. The Hashgraph Platform
  * communicates with the application through {@link com.swirlds.common.system.SwirldMain} and {@link
- * SwirldState2}. The Hedera application, after startup, only needs the ability to get {@link
+ * SwirldState}. The Hedera application, after startup, only needs the ability to get {@link
  * ReadableStates} and {@link WritableStates} from this object.
  *
  * <p>Among {@link MerkleHederaState}'s child nodes are the various {@link
@@ -125,7 +127,7 @@ import java.util.Set;
  * each child must be part of the state proof. It would be better to have a binary tree. We should
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
-public class MerkleHederaState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState2, HederaState {
+public class MerkleHederaState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState, HederaState {
 
     /** Used when asked for a service's readable states that we don't have */
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
@@ -139,7 +141,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
 
     /**
      * This callback is invoked whenever the consensus round happens. The Hashgraph Platform, today,
-     * only communicates the consensus round through the {@link SwirldState2} interface. In the
+     * only communicates the consensus round through the {@link SwirldState} interface. In the
      * future it will use a callback on a platform created via a platform builder. Until that
      * happens the only way our application will know of new transactions, will be through this
      * callback. Since this is not serialized and saved to state, it must be restored on application
@@ -778,7 +780,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             @Override
             public MerkleSpecialFiles specialFiles() {
                 return ((SingletonNode<MerkleSpecialFiles>)
-                                getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.SPECIAL_FILES_KEY)))
+                                getChild(findNodeIndex(FreezeService.NAME, FreezeServiceImpl.UPGRADE_FILES_KEY)))
                         .getValue();
             }
 

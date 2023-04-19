@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -26,18 +25,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.test.handlers.TokenHandlerTestBase;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import java.util.List;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,32 +43,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ReadableTokenStoreTest {
+class ReadableTokenStoreTest extends TokenHandlerTestBase {
+    private final EntityNum tokenEntityNum = EntityNum.fromLong(2000);
+
     @Mock
-    private ReadableKVState<Long, MerkleToken> tokens;
+    private ReadableKVState<EntityNum, Token> tokens;
+
+    private static final String TOKENS = "TOKENS";
+    private final TokenID tokenId = TokenID.newBuilder().tokenNum(2000).build();
 
     @Mock
     private ReadableStates states;
 
-    private static final String TOKENS = "TOKENS";
-    private final TokenID tokenId = TokenID.newBuilder().tokenNum(2000).build();
-    private final String symbol = "TestToken";
-    private final String name = "TestTokenName";
-    private final int decimals = 2;
-    private final long expiry = 1_234_567L;
-    private final long otherTotalSupply = 1_000_001L;
-    private final boolean freezeDefault = true;
-    private final boolean accountsKycGrantedByDefault = true;
-    private final EntityId treasury = new EntityId(1, 2, 3);
-    private final JKey adminKey = new JEd25519Key("not-a-real-adminKey".getBytes());
-    private final JKey freezeKey = new JEd25519Key("not-a-real-freezeKey".getBytes());
-    private final JKey kycKey = new JEd25519Key("not-a-real-kycKey".getBytes());
-    private final JKey wipeKey = new JEd25519Key("not-a-real-wipeKey".getBytes());
-    private final JKey supplyKey = new JEd25519Key("not-a-real-supplyKey".getBytes());
-    private final JKey feeScheduleKey = new JEd25519Key("not-a-real-feeScheduleKey".getBytes());
-    private final JKey pauseKey = new JEd25519Key("not-a-real-pauseKey".getBytes());
-    private final MerkleToken token = new MerkleToken(
-            expiry, otherTotalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+    private Token token;
 
     private ReadableTokenStore subject;
 
@@ -81,81 +66,58 @@ class ReadableTokenStoreTest {
     }
 
     private void initializeToken() {
-        given(states.<Long, MerkleToken>get(TOKENS)).willReturn(tokens);
-        token.setTotalSupply(100L);
-        token.setAdminKey(adminKey);
-        token.setFreezeKey(freezeKey);
-        token.setKycKey(kycKey);
-        token.setWipeKey(wipeKey);
-        token.setSupplyKey(supplyKey);
-        token.setFeeScheduleKey(feeScheduleKey);
-        token.setPauseKey(pauseKey);
-        token.setDeleted(false);
-        token.setMemo("memo");
-        token.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
-        token.setSupplyType(TokenSupplyType.INFINITE);
-        token.setAccountsFrozenByDefault(true);
-        token.setFeeSchedule(List.of(FcCustomFee.fixedFee(1, new EntityId(1, 2, 5), new EntityId(1, 2, 5), false)));
+        given(states.<EntityNum, Token>get(TOKENS)).willReturn(tokens);
+        token = createToken();
     }
 
     @Test
-    void getsMerkleTokenIfTokenIdPresent() {
-        given(tokens.get(tokenId.tokenNum())).willReturn(token);
+    void getsMerkleTokenIfTokenIdPresent() throws PreCheckException {
+        given(tokens.get(tokenEntityNum)).willReturn(token);
 
-        final var result = subject.getTokenMeta(tokenId);
-
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-
-        final var meta = result.metadata();
-        assertEquals(adminKey, meta.adminKey().get());
-        assertEquals(kycKey, meta.kycKey().get());
-        assertEquals(wipeKey, meta.wipeKey().get());
-        assertEquals(freezeKey, meta.freezeKey().get());
-        assertEquals(supplyKey, meta.supplyKey().get());
-        assertEquals(feeScheduleKey, meta.feeScheduleKey().get());
-        assertEquals(pauseKey, meta.pauseKey().get());
+        final var meta = subject.getTokenMeta(tokenId);
+        assertEquals(adminKey, meta.adminKey());
+        assertEquals(kycKey, meta.kycKey());
+        assertEquals(wipeKey, meta.wipeKey());
+        assertEquals(freezeKey, meta.freezeKey());
+        assertEquals(supplyKey, meta.supplyKey());
+        assertEquals(feeScheduleKey, meta.feeScheduleKey());
+        assertEquals(pauseKey, meta.pauseKey());
         assertFalse(meta.hasRoyaltyWithFallback());
-        assertEquals(treasury, meta.treasury());
+        assertEquals(treasury.accountNum(), meta.treasuryNum());
     }
 
     @Test
-    void getsNullKeyIfMissingAccount() {
-        given(tokens.get(tokenId.tokenNum())).willReturn(null);
-
-        final var result = subject.getTokenMeta(tokenId);
-
-        assertTrue(result.failed());
-        assertEquals(INVALID_TOKEN_ID, result.failureReason());
-        assertNull(result.metadata());
+    void getsNullKeyIfMissingAccount() throws PreCheckException {
+        given(tokens.get(tokenEntityNum)).willReturn(null);
+        assertNull(subject.getTokenMeta(tokenId));
     }
 
     @Test
-    void classifiesRoyaltyWithFallback() {
-        token.setTokenType(NON_FUNGIBLE_UNIQUE);
-        token.setFeeSchedule(
-                List.of(FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
-        given(tokens.get(tokenId.tokenNum())).willReturn(token);
+    void classifiesRoyaltyWithFallback() throws PreCheckException {
+        final var copy = token.copyBuilder();
+        copy.tokenType(NON_FUNGIBLE_UNIQUE);
+        copy.customFees(PbjConverter.fromFcCustomFee(
+                FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
 
-        final var result = subject.getTokenMeta(tokenId);
+        given(tokens.get(tokenEntityNum)).willReturn(copy.build());
 
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-        assertTrue(result.metadata().hasRoyaltyWithFallback());
-        assertSame(treasury, result.metadata().treasury());
+        final var meta = subject.getTokenMeta(tokenId);
+
+        assertTrue(meta.hasRoyaltyWithFallback());
+        assertSame(treasury.accountNum(), meta.treasuryNum());
     }
 
     @Test
-    void classifiesRoyaltyWithNoFallback() {
-        token.setTokenType(NON_FUNGIBLE_UNIQUE);
-        token.setFeeSchedule(List.of(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
-        given(tokens.get(tokenId.tokenNum())).willReturn(token);
+    void classifiesRoyaltyWithNoFallback() throws PreCheckException {
+        final var copy = token.copyBuilder();
+        copy.tokenType(NON_FUNGIBLE_UNIQUE);
+        copy.customFees(PbjConverter.fromFcCustomFee(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
 
-        final var result = subject.getTokenMeta(tokenId);
+        given(tokens.get(tokenEntityNum)).willReturn(copy.build());
 
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-        assertFalse(result.metadata().hasRoyaltyWithFallback());
-        assertSame(treasury, result.metadata().treasury());
+        final var meta = subject.getTokenMeta(tokenId);
+
+        assertFalse(meta.hasRoyaltyWithFallback());
+        assertSame(treasury.accountNum(), meta.treasuryNum());
     }
 }

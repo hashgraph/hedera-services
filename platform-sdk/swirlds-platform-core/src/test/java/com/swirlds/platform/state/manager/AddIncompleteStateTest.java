@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.manager;
 
 import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.platform.reconnect.emergency.EmergencyReconnectTeacher.emergencyStateCriteria;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -33,11 +34,9 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Add Incomplete State Test")
@@ -52,11 +51,9 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
 
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
-            .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+            .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
             .setSequentialIds(true)
             .build();
-
-    private final long selfId = addressBook.getId(0);
 
     private final long firstRound = 50;
 
@@ -87,11 +84,10 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
     }
 
     @Test
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Add Incomplete State Test")
     void addIncompleteStateTest() {
 
-        SignedStateManager manager = new SignedStateManagerBuilder(addressBook, stateConfig, selfId)
+        SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -114,12 +110,13 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
         stateFromDisk.getState().setHash(stateHash);
 
         // The manager should store this state but not assigned it to the last complete signed state
-        manager.addCompleteSignedState(stateFromDisk);
+        manager.addState(stateFromDisk);
 
         assertNull(manager.getLatestSignedState().get());
         assertEquals(-1, manager.getLastCompleteRound());
 
-        try (final AutoCloseableWrapper<SignedState> wrapper = manager.find(stateFromDisk.getRound(), stateHash)) {
+        try (final AutoCloseableWrapper<SignedState> wrapper =
+                manager.find(emergencyStateCriteria(stateFromDisk.getRound(), stateHash))) {
             assertNotNull(wrapper.get(), "Should have returned a state");
             assertEquals(stateFromDisk, wrapper.get(), "Should have returned the state from disk");
         }

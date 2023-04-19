@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
@@ -34,8 +33,6 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -56,7 +53,8 @@ public class ConsensusHandlerTestBase {
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
     protected final byte[] runningHash = "runningHash".getBytes();
 
-    protected final HederaKey adminKey = asHederaKey(key).get();
+    protected final Key adminKey = key;
+    protected final Key autoRenewKey = anotherKey;
     protected final EntityNum topicEntityNum = EntityNum.fromLong(1L);
     protected final TopicID topicId =
             TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();
@@ -84,9 +82,6 @@ public class ConsensusHandlerTestBase {
 
     @Mock
     protected WritableStates writableStates;
-
-    @Mock
-    protected QueryContext queryContext;
 
     protected MapReadableKVState<EntityNum, Topic> readableTopicState;
     protected MapWritableKVState<EntityNum, Topic> writableTopicState;
