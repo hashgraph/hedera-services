@@ -33,6 +33,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
+
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
  * working with Accounts.
@@ -41,7 +43,6 @@ import java.util.Optional;
  */
 public class ReadableAccountStore implements AccountAccess {
 
-    public static final int EVM_ADDRESS_LEN = 20;
     private static final byte[] MIRROR_PREFIX = new byte[12];
 
     static {
@@ -102,7 +103,7 @@ public class ReadableAccountStore implements AccountAccess {
                     case ACCOUNT_NUM -> accountOneOf.as();
                     case ALIAS -> {
                         final Bytes alias = accountOneOf.as();
-                        if (alias.length() == EVM_ADDRESS_LEN && isMirror(alias)) {
+                        if (isOfEvmAddressSize(alias) && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
                             final var entityNum = aliases.get(alias.asUtf8String());
@@ -143,7 +144,7 @@ public class ReadableAccountStore implements AccountAccess {
                         // If we didn't find an alias, we will want to auto-create this account. But
                         // we don't want to auto-create an account if there is already another
                         // account in the system with the same EVM address that we would have auto-created.
-                        if (evmAddress.length() > EVM_ADDRESS_LEN && entityNum == null) {
+                        if (!isOfEvmAddressSize(evmAddress)&& entityNum == null) {
                             // if we don't find entity num for key alias we can try to derive EVM
                             // address from it and look it up
                             final var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
