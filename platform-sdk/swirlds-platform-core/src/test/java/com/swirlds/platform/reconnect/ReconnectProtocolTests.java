@@ -27,11 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -168,8 +164,8 @@ public class ReconnectProtocolTests {
             signedState = null;
         }
 
-        final ReservedSignedState reservedSignedState = signedState == null ?
-                new ReservedSignedState() : signedState.reserve("test");
+        final ReservedSignedState reservedSignedState =
+                signedState == null ? new ReservedSignedState() : signedState.reserve("test");
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
