@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.service.schedule.impl.test;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -27,6 +30,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import java.util.Optional;
@@ -48,10 +52,9 @@ class ReadableScheduleStoreTest {
     @Mock
     ScheduleVirtualValue schedule;
 
-    @Mock
-    JKey adminKey;
-
     private ReadableScheduleStore subject;
+    private Key adminKey = A_COMPLEX_KEY;
+    private HederaKey adminHederaKey = asHederaKey(adminKey).get();
 
     @BeforeEach
     void setUp() {
@@ -78,13 +81,14 @@ class ReadableScheduleStoreTest {
         given(state.get(1L)).willReturn(schedule);
         given(schedule.ordinaryViewOfScheduledTxn())
                 .willReturn(PbjConverter.fromPbj(TransactionBody.newBuilder().build()));
-        given(schedule.adminKey()).willReturn(Optional.of(adminKey));
+        given(schedule.hasAdminKey()).willReturn(true);
+        given(schedule.adminKey()).willReturn(Optional.of((JKey) adminHederaKey));
         given(schedule.hasExplicitPayer()).willReturn(true);
         given(schedule.payer()).willReturn(EntityId.fromNum(2L));
 
         final var meta = subject.get(ScheduleID.newBuilder().scheduleNum(1L).build());
 
-        assertEquals(Optional.of(adminKey), meta.get().adminKey());
+        assertEquals(adminKey, meta.get().adminKey());
         assertEquals(TransactionBody.newBuilder().build(), meta.get().scheduledTxn());
         assertEquals(
                 Optional.of(EntityId.fromNum(2L).toPbjAccountId()), meta.get().designatedPayer());
@@ -95,12 +99,13 @@ class ReadableScheduleStoreTest {
         given(state.get(1L)).willReturn(schedule);
         given(schedule.ordinaryViewOfScheduledTxn())
                 .willReturn(PbjConverter.fromPbj(TransactionBody.newBuilder().build()));
-        given(schedule.adminKey()).willReturn(Optional.of(adminKey));
+        given(schedule.adminKey()).willReturn(Optional.of((JKey) adminHederaKey));
+        given(schedule.hasAdminKey()).willReturn(true);
         given(schedule.hasExplicitPayer()).willReturn(false);
 
         final var meta = subject.get(ScheduleID.newBuilder().scheduleNum(1L).build());
 
-        assertEquals(Optional.of(adminKey), meta.get().adminKey());
+        assertEquals(adminKey, meta.get().adminKey());
         assertEquals(TransactionBody.newBuilder().build(), meta.get().scheduledTxn());
         assertEquals(Optional.empty(), meta.get().designatedPayer());
     }

@@ -26,7 +26,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -58,12 +57,6 @@ public class AdapterUtils {
                 ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
-    public static ReadableAccountStore wellKnownAccountStoreAt() {
-        return new ReadableAccountStore(mockStates(Map.of(
-                ALIASES_KEY, wellKnownAliasState(),
-                ACCOUNTS_KEY, wellKnownAccountsState())));
-    }
-
     public static ReadableStates mockStates(final Map<String, ReadableKVState> keysToMock) {
         final var mockStates = Mockito.mock(ReadableStates.class);
         keysToMock.forEach((key, state) -> given(mockStates.get(key)).willReturn(state));
@@ -75,7 +68,7 @@ public class AdapterUtils {
         return new StateKeyAdapter<>(wrappedState, EntityNumVirtualKey::asEntityNum);
     }
 
-    private static MapReadableKVState<String, EntityNumValue> wellKnownAliasState() {
+    public static MapReadableKVState<String, EntityNumValue> wellKnownAliasState() {
         final Map<String, EntityNumValue> wellKnownAliases = Map.ofEntries(
                 Map.entry(CURRENTLY_UNUSED_ALIAS, new EntityNumValue(MISSING_NUM.longValue())),
                 Map.entry(
