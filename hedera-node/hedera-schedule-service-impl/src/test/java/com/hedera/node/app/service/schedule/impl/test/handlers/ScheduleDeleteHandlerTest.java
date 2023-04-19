@@ -71,6 +71,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     void scheduleDeleteHappyPath() throws DecoderException, PreCheckException {
         final var txn = scheduleDeleteTransaction();
         scheduledTxn = givenSetupForScheduleDelete(txn);
+        BDDMockito.given(schedule.hasAdminKey()).willReturn(true);
         BDDMockito.given(schedule.adminKey()).willReturn(Optional.of(JKey.mapKey(TEST_KEY)));
         BDDMockito.given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
 
@@ -109,7 +110,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         // must be lenient here, because Mockito is a bit too sensitive, and not setting this causes NPE's
         BDDMockito.lenient().when(schedule.ordinaryViewOfScheduledTxn()).thenReturn(PbjConverter.fromPbj(scheduledTxn));
         given(keyLookup.getAccountById(scheduleDeleter)).willReturn(payerAccount);
-        given(payerAccount.getKey()).willReturn(adminKey);
+        given(payerAccount.key()).willReturn(adminKey);
         return scheduledTxn;
     }
 

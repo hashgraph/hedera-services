@@ -73,14 +73,14 @@ public class RoundHashValidator {
      * 		a dispatch method should be called when there is a hash disagreement
      * @param round
      * 		the round number
-     * @param roundStake
-     * 		the total stake for this round
+     * @param roundWeight
+     * 		the total weight for this round
      */
     public RoundHashValidator(
-            final StateHashValidityTrigger stateHashValidityDispatcher, final long round, final long roundStake) {
+            final StateHashValidityTrigger stateHashValidityDispatcher, final long round, final long roundWeight) {
 
         this.round = round;
-        hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, round, roundStake);
+        hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, round, roundWeight);
     }
 
     /**
@@ -142,17 +142,17 @@ public class RoundHashValidator {
      *
      * @param nodeId
      * 		the node ID that is reporting the hash
-     * @param nodeStake
-     * 		the stake of the node
+     * @param nodeWeight
+     * 		the weight of the node
      * @param stateHash
      * 		the hash of this round's state as computed by the node in question
      * @return if the execution of this method caused us to reach a conclusion on the validity of the hash. After this
      * 		method returns true, then {@link #getStatus()} will return a value that is not
      *        {@link HashValidityStatus#UNDECIDED}.
      */
-    public synchronized boolean reportHashFromNetwork(final long nodeId, final long nodeStake, final Hash stateHash) {
+    public synchronized boolean reportHashFromNetwork(final long nodeId, final long nodeWeight, final Hash stateHash) {
         throwArgNull(stateHash, "stateHash");
-        hashFinder.addHash(nodeId, nodeStake, stateHash);
+        hashFinder.addHash(nodeId, nodeWeight, stateHash);
         return decide();
     }
 
@@ -209,7 +209,7 @@ public class RoundHashValidator {
                         + "a conclusion about this node's hash validity should have already been reached");
             }
         } else if (hashFinder.getStatus() == ConsensusHashStatus.UNDECIDED) {
-            if (isSuperMajority(hashFinder.getHashReportedStake(), hashFinder.getTotalStake())) {
+            if (isSuperMajority(hashFinder.getHashReportedWeight(), hashFinder.getTotalWeight())) {
                 // We have collected many signatures, but were still unable to find a consensus hash.
                 status = HashValidityStatus.CATASTROPHIC_LACK_OF_DATA;
             } else {

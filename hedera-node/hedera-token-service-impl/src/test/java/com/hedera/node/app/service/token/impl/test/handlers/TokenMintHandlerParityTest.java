@@ -23,7 +23,6 @@ import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_WITH_M
 import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_WITH_SUPPLY_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,9 +42,9 @@ class TokenMintHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_SUPPLY_KT.asPbjKey()));
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_SUPPLY_KT.asPbjKey()));
     }
 
     @Test
@@ -63,7 +62,7 @@ class TokenMintHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(0, context.requiredNonPayerKeys().size());
     }
 }

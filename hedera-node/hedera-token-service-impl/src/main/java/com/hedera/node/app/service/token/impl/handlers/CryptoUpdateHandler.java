@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -63,8 +62,7 @@ public class CryptoUpdateHandler implements TransactionHandler {
             context.requireKeyOrThrow(updateAccountId, INVALID_ACCOUNT_ID);
         }
         if (newAccountKeyMustSign && op.hasKey()) {
-            final var candidate = asHederaKey(op.keyOrThrow());
-            candidate.ifPresent(context::requireKey);
+            context.requireKey(op.keyOrThrow());
         }
     }
 

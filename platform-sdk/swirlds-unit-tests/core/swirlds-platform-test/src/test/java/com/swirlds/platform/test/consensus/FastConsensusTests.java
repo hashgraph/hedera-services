@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.StakeGenerators.INCREMENTING;
-import static com.swirlds.common.test.StakeGenerators.RANDOM;
-import static com.swirlds.platform.test.consensus.ConsensusTestArgs.INCREMENTAL_NODE_STAKE_DESC;
-import static com.swirlds.platform.test.consensus.ConsensusTestArgs.RANDOM_STAKE_DESC;
+import static com.swirlds.common.test.WeightGenerators.INCREMENTING;
+import static com.swirlds.common.test.WeightGenerators.RANDOM;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.INCREMENTAL_NODE_WEIGHT_DESC;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.RANDOM_WEIGHT_DESC;
 import static com.swirlds.platform.test.consensus.ConsensusTestDefinitions.areAllEventsReturned;
 import static com.swirlds.platform.test.consensus.ConsensusTestDefinitions.cliqueTests;
 import static com.swirlds.platform.test.consensus.ConsensusTestDefinitions.fewNodesTests;
@@ -70,7 +70,7 @@ class FastConsensusTests {
     @Tag(TIME_CONSUMING)
     @DisplayName("Reconnect Simulation")
     void fastReconnectSimulation(final ConsensusTestParams params) {
-        reconnectSimulation(testDirectory, params.numNodes(), params.stakeGenerator(), 1);
+        reconnectSimulation(testDirectory, params.numNodes(), params.weightGenerator(), 1);
     }
 
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#staleEvent")
@@ -81,7 +81,7 @@ class FastConsensusTests {
     @DisplayName("Stale Events Tests")
     @ParameterizedTest
     void staleEvent(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.staleEvent(params.numNodes(), params.stakeGenerator(), 1, params.seeds());
+        ConsensusTestDefinitions.staleEvent(params.numNodes(), params.weightGenerator(), 1, params.seeds());
     }
 
     @ParameterizedTest
@@ -93,7 +93,7 @@ class FastConsensusTests {
     @Tag(TIME_CONSUMING)
     @DisplayName("All Events Returned Tests")
     void fastAreAllEventsReturned(final ConsensusTestParams params) {
-        areAllEventsReturned(params.numNodes(), params.stakeGenerator());
+        areAllEventsReturned(params.numNodes(), params.weightGenerator());
     }
 
     @ParameterizedTest
@@ -105,7 +105,7 @@ class FastConsensusTests {
     @Tag(TIME_CONSUMING)
     @DisplayName("Fast Order Invariance Tests")
     void FastOrderInvarianceTests(final ConsensusTestParams params) {
-        orderInvarianceTests(params.numNodes(), params.stakeGenerator(), 1);
+        orderInvarianceTests(params.numNodes(), params.weightGenerator(), 1);
     }
 
     @Disabled("Failing - documented in swirlds/swirlds-platform/issues/4995")
@@ -117,7 +117,7 @@ class FastConsensusTests {
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Fast Forking Tests")
     void fastForkingTests(final ConsensusTestParams params) {
-        forkingTests(params.numNodes(), params.stakeGenerator(), 1);
+        forkingTests(params.numNodes(), params.weightGenerator(), 1);
     }
 
     @ParameterizedTest
@@ -128,7 +128,7 @@ class FastConsensusTests {
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Fast Partition Tests")
     void fastPartitionTests(final ConsensusTestParams params) {
-        partitionTests(params.numNodes(), params.stakeGenerator(), 1);
+        partitionTests(params.numNodes(), params.weightGenerator(), 1);
     }
 
     @ParameterizedTest
@@ -140,7 +140,7 @@ class FastConsensusTests {
     @Tag(TIME_CONSUMING)
     @DisplayName("Fast Sub Quorum Partition Tests")
     void fastSubQuorumPartitionTests(final ConsensusTestParams params) {
-        subQuorumPartitionTests(params.numNodes(), params.stakeGenerator(), 1);
+        subQuorumPartitionTests(params.numNodes(), params.weightGenerator(), 1);
     }
 
     @ParameterizedTest
@@ -152,7 +152,7 @@ class FastConsensusTests {
     @Tag(TIME_CONSUMING)
     @DisplayName("Fast Clique Tests")
     void fastCliqueTests(final ConsensusTestParams params) {
-        cliqueTests(params.numNodes(), params.stakeGenerator(), 1);
+        cliqueTests(params.numNodes(), params.weightGenerator(), 1);
     }
 
     @ParameterizedTest
@@ -163,7 +163,7 @@ class FastConsensusTests {
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Fast Variable Rate Tests")
     void fastVariableRateTests(final ConsensusTestParams params) {
-        variableRateTests(params.numNodes(), params.stakeGenerator(), 1);
+        variableRateTests(params.numNodes(), params.weightGenerator(), 1);
     }
 
     @ParameterizedTest
@@ -174,7 +174,7 @@ class FastConsensusTests {
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Fast Node Uses Stale Other Parents")
     void fastNodeUsesStaleOtherParents(final ConsensusTestParams params) {
-        nodeUsesStaleOtherParents(params.numNodes(), params.stakeGenerator(), 1);
+        nodeUsesStaleOtherParents(params.numNodes(), params.weightGenerator(), 1);
     }
 
     @ParameterizedTest
@@ -185,7 +185,7 @@ class FastConsensusTests {
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Fast Node Provides Stale Other Parents")
     void fastNodeProvidesStaleOtherParents(final ConsensusTestParams params) {
-        nodeProvidesStaleOtherParents(params.numNodes(), params.stakeGenerator(), 1);
+        nodeProvidesStaleOtherParents(params.numNodes(), params.weightGenerator(), 1);
     }
 
     @ParameterizedTest
@@ -197,11 +197,11 @@ class FastConsensusTests {
     @Tag(TIME_CONSUMING)
     @DisplayName("Fast Quorum Of Nodes Go Down Tests")
     void fastQuorumOfNodesGoDownTests(final ConsensusTestParams params) {
-        quorumOfNodesGoDownTests(params.numNodes(), params.stakeGenerator(), 1);
+        quorumOfNodesGoDownTests(params.numNodes(), params.weightGenerator(), 1);
     }
 
     private static Stream<Arguments> manyNodeTestParams() {
-        return Stream.of(Arguments.of(new ConsensusTestParams(0, RANDOM, RANDOM_STAKE_DESC)));
+        return Stream.of(Arguments.of(new ConsensusTestParams(0, RANDOM, RANDOM_WEIGHT_DESC)));
     }
 
     @ParameterizedTest
@@ -213,11 +213,11 @@ class FastConsensusTests {
     @Tag(TIME_CONSUMING)
     @DisplayName("Fast Many Node Tests")
     void fastManyNodeTests(final ConsensusTestParams params) {
-        manyNodeTests(params.stakeGenerator(), 1);
+        manyNodeTests(params.weightGenerator(), 1);
     }
 
     private static Stream<Arguments> fewNodesTestParams() {
-        return Stream.of(Arguments.of(new ConsensusTestParams(0, INCREMENTING, INCREMENTAL_NODE_STAKE_DESC)));
+        return Stream.of(Arguments.of(new ConsensusTestParams(0, INCREMENTING, INCREMENTAL_NODE_WEIGHT_DESC)));
     }
 
     @ParameterizedTest
@@ -229,7 +229,7 @@ class FastConsensusTests {
     @Tag(TIME_CONSUMING)
     @DisplayName("Fast Few Node Tests")
     void fastFewNodesTests(final ConsensusTestParams params) {
-        fewNodesTests(params.stakeGenerator(), 1);
+        fewNodesTests(params.weightGenerator(), 1);
     }
 
     @ParameterizedTest
@@ -241,13 +241,13 @@ class FastConsensusTests {
     @Tag(TIME_CONSUMING)
     @DisplayName("Fast Sub-Quorum Of Nodes Go Down Tests")
     void fastSubQuorumOfNodesGoDownTests(final ConsensusTestParams params) {
-        subQuorumOfNodesGoDownTests(params.numNodes(), params.stakeGenerator(), 1);
+        subQuorumOfNodesGoDownTests(params.numNodes(), params.weightGenerator(), 1);
     }
 
     private static Stream<Arguments> restartWithEventsParams() {
         return Stream.of(
-                Arguments.of(new ConsensusTestParams(0, INCREMENTING, INCREMENTAL_NODE_STAKE_DESC)),
-                Arguments.of(new ConsensusTestParams(0, RANDOM, RANDOM_STAKE_DESC)));
+                Arguments.of(new ConsensusTestParams(0, INCREMENTING, INCREMENTAL_NODE_WEIGHT_DESC)),
+                Arguments.of(new ConsensusTestParams(0, RANDOM, RANDOM_WEIGHT_DESC)));
     }
 
     @Disabled("Seed 8711987114711702791L fails. Ticket is 5156")
@@ -266,6 +266,6 @@ class FastConsensusTests {
         final int maxPerSeq = 5_000;
 
         ConsensusTestDefinitions.restart(
-                seed, testDirectory, params.stakeGenerator(), minNodes, maxNodes, minPerSeq, maxPerSeq);
+                seed, testDirectory, params.weightGenerator(), minNodes, maxNodes, minPerSeq, maxPerSeq);
     }
 }

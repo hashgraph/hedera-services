@@ -37,13 +37,16 @@ public class ExpiryStats {
     }
 
     public void registerWith(final Platform platform) {
-        contractsRemoved = platform.getMetrics()
+        contractsRemoved = platform.getContext()
+                .getMetrics()
                 .getOrCreate(new Counter.Config(STAT_CATEGORY, Names.CONTRACTS_REMOVED_SINCE_RESTART)
                         .withDescription(Descriptions.CONTRACTS_REMOVED_SINCE_RESTART));
-        contractsRenewed = platform.getMetrics()
+        contractsRenewed = platform.getContext()
+                .getMetrics()
                 .getOrCreate(new Counter.Config(STAT_CATEGORY, Names.CONTRACTS_RENEWED_SINCE_RESTART)
                         .withDescription(Descriptions.CONTRACTS_RENEWED_SINCE_RESTART));
-        idsScannedPerConsSec = platform.getMetrics()
+        idsScannedPerConsSec = platform.getContext()
+                .getMetrics()
                 .getOrCreate(new RunningAverageMetric.Config(STAT_CATEGORY, Names.IDS_SCANNED_PER_CONSENSUS_SEC)
                         .withDescription(Descriptions.IDS_SCANNED_PER_CONSENSUS_SEC)
                         .withFormat(RUNNING_AVG_FORMAT)
