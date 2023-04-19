@@ -16,17 +16,17 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler.noThrowSha384HashOf;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.AdapterUtils.PARITY_DEFAULT_PAYER;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusCreateTopicHandlerTest.ACCOUNT_ID_3;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.ACCOUNT_ID_4;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.newTopicMeta;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_SCENARIO;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
@@ -55,18 +55,16 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
-import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TxnUtils;
 import java.time.Instant;
-import java.util.List;
+import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -103,73 +101,44 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     @DisplayName("Topic submission key sig required")
-    void submissionKeySigRequired() {
+    void submissionKeySigRequired() throws PreCheckException {
         readableStore = mock(ReadableTopicStore.class);
         // given:
         final var payerKey = mockPayerLookup();
         mockTopicLookup(SIMPLE_KEY_A);
-        final var context =
-                new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum), PARITY_DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
 
         // when:
         subject.preHandle(context, readableStore);
 
         // then:
-        assertOkResponse(context);
-        assertThat(context.getPayerKey()).isEqualTo(payerKey);
-        final var expectedHederaAdminKey = Utils.asHederaKey(SIMPLE_KEY_A).orElseThrow();
-        assertThat(context.getRequiredNonPayerKeys()).containsExactly(expectedHederaAdminKey);
+        assertThat(context.payerKey()).isEqualTo(payerKey);
+        final var expectedHederaAdminKey = SIMPLE_KEY_A;
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(expectedHederaAdminKey);
     }
 
     @Test
     @DisplayName("Topic not found returns error")
-    void topicIdNotFound() {
+    void topicIdNotFound() throws PreCheckException {
         mockPayerLookup();
         readableTopicState = emptyReadableTopicState();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStore(readableStates);
-        final var context =
-                new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum), PARITY_DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
 
-        subject.preHandle(context, readableStore);
-
-        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TOPIC_ID);
-        assertThat(context.failed()).isTrue();
-    }
-
-    @Test
-    @DisplayName("Returns error when payer not found")
-    void payerNotFound() {
-        readableStore = mock(ReadableTopicStore.class);
-
-        given(keyLookup.getKey(TEST_DEFAULT_PAYER))
-                .willReturn(KeyOrLookupFailureReason.withFailureReason(
-                        ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
-        mockTopicLookup(SIMPLE_KEY_A);
-        final var context =
-                new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum), TEST_DEFAULT_PAYER);
-
-        subject.preHandle(context, readableStore);
-
-        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
-        assertThat(context.failed()).isTrue();
-        assertThat(context.getPayerKey()).isNull();
+        assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
     }
 
     @Test
     @DisplayName("Topic without submit key does not error")
-    void noTopicSubmitKey() {
+    void noTopicSubmitKey() throws PreCheckException {
         readableStore = mock(ReadableTopicStore.class);
         mockPayerLookup();
         mockTopicLookup(null);
-        final var context =
-                new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum), TEST_DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
 
         // when:
-        subject.preHandle(context, readableStore);
-
-        // then:
-        assertOkResponse(context);
+        assertDoesNotThrow(() -> subject.preHandle(context, readableStore));
     }
 
     @Nested
@@ -181,57 +150,48 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         }
 
         @Test
-        void getsConsensusSubmitMessageNoSubmitKey() {
+        void getsConsensusSubmitMessageNoSubmitKey() throws PreCheckException {
             final var txn = CONSENSUS_SUBMIT_MESSAGE_SCENARIO.pbjTxnBody();
 
             var topicMeta = newTopicMeta(null);
-            given(readableStore.getTopicMetadata(notNull()))
-                    .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(topicMeta));
-            final var context = new PreHandleContext(keyLookup, txn, TEST_DEFAULT_PAYER);
+            given(readableStore.getTopicMetadata(notNull())).willReturn(topicMeta);
+            final var context = new PreHandleContext(keyLookup, txn);
 
             // when:
             subject.preHandle(context, readableStore);
 
             // then:
-            assertOkResponse(context);
             assertDefaultPayer(context);
-            assertThat(context.getRequiredNonPayerKeys()).isEmpty();
+            assertThat(context.requiredNonPayerKeys()).isEmpty();
         }
 
         @Test
-        void getsConsensusSubmitMessageWithSubmitKey() {
+        void getsConsensusSubmitMessageWithSubmitKey() throws PreCheckException {
             final var txn = CONSENSUS_SUBMIT_MESSAGE_SCENARIO.pbjTxnBody();
+            final var key = A_COMPLEX_KEY;
 
-            var topicMeta = newTopicMeta(A_NONNULL_KEY);
-            given(readableStore.getTopicMetadata(notNull()))
-                    .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(topicMeta));
-            final var context = new PreHandleContext(keyLookup, txn, TEST_DEFAULT_PAYER);
+            var topicMeta = newTopicMeta(key);
+            given(readableStore.getTopicMetadata(notNull())).willReturn(topicMeta);
+            final var context = new PreHandleContext(keyLookup, txn);
 
             // when:
             subject.preHandle(context, readableStore);
 
             // then:
-            ConsensusTestUtils.assertOkResponse(context);
             ConsensusTestUtils.assertDefaultPayer(context);
-            Assertions.assertThat(context.getRequiredNonPayerKeys()).isEqualTo(List.of(A_NONNULL_KEY));
+            Assertions.assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(key));
         }
 
         @Test
-        void reportsConsensusSubmitMessageMissingTopic() {
+        void reportsConsensusSubmitMessageMissingTopic() throws PreCheckException {
             // given:
             final var txn = CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO.pbjTxnBody();
 
-            given(readableStore.getTopicMetadata(notNull()))
-                    .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(
-                            ResponseCodeEnum.INVALID_TOPIC_ID));
-            final var context = new PreHandleContext(keyLookup, txn, TEST_DEFAULT_PAYER);
+            given(readableStore.getTopicMetadata(notNull())).willReturn(null);
+            final var context = new PreHandleContext(keyLookup, txn);
 
             // when:
-            subject.preHandle(context, readableStore);
-
-            // then:
-            Assertions.assertThat(context.failed()).isTrue();
-            Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TOPIC_ID);
+            assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
         }
     }
 
@@ -322,7 +282,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
         final var msg = assertThrows(
                 HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
-        assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, msg.getStatus());
+        assertEquals(INVALID_TOPIC_ID, msg.getStatus());
     }
 
     @Test
@@ -389,15 +349,15 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
     /* ----------------- Helper Methods ------------------- */
 
-    private HederaKey mockPayerLookup() {
+    private Key mockPayerLookup() throws PreCheckException {
         return ConsensusTestUtils.mockPayerLookup(A_COMPLEX_KEY, PARITY_DEFAULT_PAYER, keyLookup);
     }
 
-    private void mockTopicLookup(Key submitKey) {
+    private void mockTopicLookup(Key submitKey) throws PreCheckException {
         ConsensusTestUtils.mockTopicLookup(null, submitKey, readableStore);
     }
 
-    private static ReadableTopicStore.TopicMetadata newTopicMeta(HederaKey submit) {
+    private static ReadableTopicStore.TopicMetadata newTopicMeta(Key submit) {
         return ConsensusTestUtils.newTopicMeta(null, submit);
     }
 
@@ -408,7 +368,8 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     }
 
     private TransactionBody newSubmitMessageTxn(final EntityNum topicEntityNum, final String message) {
-        final var txnId = TransactionID.newBuilder().accountID(ACCOUNT_ID_4).build();
+        final var txnId =
+                TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
         final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .topicID(TopicID.newBuilder()
                         .topicNum(topicEntityNum.longValue())
@@ -430,7 +391,8 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
             final int currentChunk,
             final int totalChunk,
             final TransactionID initialTxnId) {
-        final var txnId = TransactionID.newBuilder().accountID(ACCOUNT_ID_4).build();
+        final var txnId =
+                TransactionID.newBuilder().accountID(PARITY_DEFAULT_PAYER).build();
         final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .topicID(TopicID.newBuilder()
                         .topicNum(topicEntityNum.longValue())

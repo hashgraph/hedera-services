@@ -106,18 +106,17 @@ public interface SwirldState extends MerkleNode {
 
     /**
      * Implementations of the SwirldState should always override this method in production.  The AddressBook returned
-     * should have the same Adddress entries as the configuration AddressBook, but with the stake values updated. The
-     * AddressBook previously saved in the state, if it exists, is provided for reference.
+     * should have the same Adddress entries as the configuration AddressBook, but with the weight values updated.
      * <p>
      * The default implementation of this method is provided for use in testing and to prevent compilation failure of
      * implementing classes that have not yet implemented this method.
      *
      * @param configAddressBook the address book as loaded from config.txt. This address book may contain new nodes not
      *                          present in the stateAddressBook. Must not be null.
-     * @return a copy of the configuration address book with updated stake.
+     * @return a copy of the configuration address book with updated weight.
      */
     @NonNull
-    default AddressBook updateStake(@NonNull final AddressBook configAddressBook) {
+    default AddressBook updateWeight(@NonNull final AddressBook configAddressBook) {
         Objects.requireNonNull(configAddressBook, "configAddressBook must not be null");
         return configAddressBook;
     }

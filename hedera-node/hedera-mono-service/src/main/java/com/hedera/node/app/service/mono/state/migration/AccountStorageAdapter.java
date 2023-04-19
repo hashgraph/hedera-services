@@ -104,12 +104,6 @@ public class AccountStorageAdapter {
                 : inMemoryAccounts.containsKey(num);
     }
 
-    public void archive() {
-        if (!accountsOnDisk) {
-            inMemoryAccounts.archive();
-        }
-    }
-
     public Hash getHash() {
         return accountsOnDisk ? onDiskAccounts.getHash() : inMemoryAccounts.getHash();
     }

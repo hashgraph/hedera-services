@@ -17,11 +17,9 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenPauseTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -29,6 +27,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.records.BaseRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,23 +58,21 @@ public class TokenUnpauseHandler implements TransactionHandler {
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
+            throws PreCheckException {
         requireNonNull(context);
         requireNonNull(tokenStore);
 
-        final var preCheckStatus = preCheck(context);
-        if (preCheckStatus != OK) {
-            context.status(preCheckStatus);
-            return;
-        }
+        preCheck(context);
 
-        final var op = context.getTxn().tokenUnpause();
+        final var op = context.body().tokenUnpause();
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
-        if (tokenMeta.failed()) {
-            context.status(tokenMeta.failureReason());
-            return;
+        if (tokenMeta == null) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
         }
-        tokenMeta.metadata().pauseKey().ifPresent(context::addToReqNonPayerKeys);
+        if (tokenMeta.hasPauseKey()) {
+            context.requireKey(tokenMeta.pauseKey());
+        }
     }
 
     /**
@@ -104,15 +101,14 @@ public class TokenUnpauseHandler implements TransactionHandler {
      * Validate semantics for the given transaction body.
      * @param context the {@link PreHandleContext} which collects all information that will be
      *                passed to {@link #handle}
-     * @return {@link ResponseCodeEnum} the result of the validation
      * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws PreCheckException if the transaction body is invalid
      */
-    private ResponseCodeEnum preCheck(@NonNull final PreHandleContext context) {
-        final var op = context.getTxn().tokenUnpause();
+    private void preCheck(@NonNull final PreHandleContext context) throws PreCheckException {
+        final var op = context.body().tokenUnpause();
         if (!op.hasToken()) {
-            return INVALID_TOKEN_ID;
+            throw new PreCheckException(INVALID_TOKEN_ID);
         }
-        return OK;
     }
 
     @Override

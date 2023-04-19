@@ -16,23 +16,23 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.spi.workflows.PreHandleContextListUpdatesTest.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
-import java.util.List;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -42,44 +42,38 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PreHandleContextTest {
     private static final AccountID PAYER = AccountID.newBuilder().accountNum(3L).build();
 
-    @Mock
-    private HederaKey payerKey;
+    private Key payerKey = A_COMPLEX_KEY;
 
-    @Mock
-    private HederaKey otherKey;
+    private Key otherKey = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(1)
+                    .keys(KeyList.newBuilder()
+                            .keys(Key.newBuilder()
+                                    .contractID(ContractID.newBuilder()
+                                            .contractNum(123456L)
+                                            .build())
+                                    .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+                                    .build())))
+            .build();
 
     @Mock
     AccountAccess accountAccess;
 
+    @Mock
+    Account account;
+
     private PreHandleContext subject;
 
     @Test
-    void gettersWork() {
-        given(accountAccess.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
+    void gettersWork() throws PreCheckException {
+        given(accountAccess.getAccountById(PAYER)).willReturn(account);
+        given(account.key()).willReturn(payerKey);
         final var txn = createAccountTransaction();
-        subject = new PreHandleContext(accountAccess, txn, PAYER).addToReqNonPayerKeys(otherKey);
+        subject = new PreHandleContext(accountAccess, txn).requireKey(otherKey);
 
-        assertFalse(subject.failed());
-        assertEquals(txn, subject.getTxn());
-        assertEquals(ResponseCodeEnum.OK, subject.getStatus());
-        assertEquals(payerKey, subject.getPayerKey());
-        assertEquals(List.of(otherKey), subject.getRequiredNonPayerKeys());
-    }
-
-    @Test
-    void gettersWorkOnFailure() {
-        given(accountAccess.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
-        final var txn = createAccountTransaction();
-        subject = new PreHandleContext(accountAccess, txn, PAYER)
-                .status(INVALID_ACCOUNT_ID)
-                .addToReqNonPayerKeys(otherKey);
-
-        assertTrue(subject.failed());
-        assertEquals(txn, subject.getTxn());
-        assertEquals(INVALID_ACCOUNT_ID, subject.getStatus());
-        assertEquals(payerKey, subject.getPayerKey());
-        assertEquals(List.of(), subject.getRequiredNonPayerKeys()); // otherKey is not added as there is failure
-        // status set
+        assertEquals(txn, subject.body());
+        assertEquals(payerKey, subject.payerKey());
+        assertEquals(Set.of(otherKey), subject.requiredNonPayerKeys());
     }
 
     private TransactionBody createAccountTransaction() {
@@ -87,7 +81,7 @@ class PreHandleContextTest {
                 .accountID(PAYER)
                 .transactionValidStart(Timestamp.newBuilder().seconds(123_456L).build());
         final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
-                .key(A_COMPLEX_KEY)
+                .key(otherKey)
                 .receiverSigRequired(true)
                 .memo("Create Account")
                 .build();

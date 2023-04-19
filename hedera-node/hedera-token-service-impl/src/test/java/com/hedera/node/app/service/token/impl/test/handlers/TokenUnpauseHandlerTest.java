@@ -17,8 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -26,10 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUnpauseTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -40,6 +39,7 @@ import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.records.BaseRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,14 +56,17 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     @Mock
     private AccountAccess accountAccess;
 
+    @Mock
+    private Account account;
+
     @BeforeEach
-    void setUp() {
-        given(accountAccess.getKey(AccountID.newBuilder().accountNum(3L).build()))
-                .willReturn(withKey(payerHederaKey));
+    void setUp() throws PreCheckException {
+        given(accountAccess.getAccountById(payerId)).willReturn(account);
+        given(account.key()).willReturn(payerKey);
         subject = new TokenUnpauseHandler();
         givenValidTxn();
         refreshStoresWithCurrentTokenInWritable();
-        preHandleContext = new PreHandleContext(accountAccess, tokenUnpauseTxn, payerId);
+        preHandleContext = new PreHandleContext(accountAccess, tokenUnpauseTxn);
     }
 
     @Test
@@ -99,49 +102,38 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void validatesTokenExistsInPreHandle() {
+    void validatesTokenExistsInPreHandle() throws PreCheckException {
         givenInvalidTokenInTxn();
-        preHandleContext = new PreHandleContext(accountAccess, tokenUnpauseTxn, payerId);
-        assertEquals(OK, preHandleContext.getStatus());
-
-        subject.preHandle(preHandleContext, readableStore);
-
-        assertEquals(INVALID_TOKEN_ID, preHandleContext.getStatus());
+        preHandleContext = new PreHandleContext(accountAccess, tokenUnpauseTxn);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test
-    void failsInPreCheckIfTxnBodyHasNoToken() {
+    void failsInPreCheckIfTxnBodyHasNoToken() throws PreCheckException {
         final var txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payerId).build())
                 .tokenUnpause(TokenUnpauseTransactionBody.newBuilder())
                 .build();
-        preHandleContext = new PreHandleContext(accountAccess, txn, payerId);
-        assertEquals(OK, preHandleContext.getStatus());
-
-        subject.preHandle(preHandleContext, readableStore);
-
-        assertEquals(INVALID_TOKEN_ID, preHandleContext.getStatus());
+        preHandleContext = new PreHandleContext(accountAccess, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test
-    void preHandleAddsPauseKeyToContext() {
+    void preHandleAddsPauseKeyToContext() throws PreCheckException {
         subject.preHandle(preHandleContext, readableStore);
 
-        assertEquals(1, preHandleContext.getRequiredNonPayerKeys().size());
+        assertEquals(1, preHandleContext.requiredNonPayerKeys().size());
     }
 
     @Test
-    void preHandleSetsStatusWhenTokenMissing() {
+    void preHandleSetsStatusWhenTokenMissing() throws PreCheckException {
         givenInvalidTokenInTxn();
-        preHandleContext = new PreHandleContext(accountAccess, tokenUnpauseTxn, payerId);
-        subject.preHandle(preHandleContext, readableStore);
-
-        assertEquals(0, preHandleContext.getRequiredNonPayerKeys().size());
-        assertEquals(INVALID_TOKEN_ID, preHandleContext.getStatus());
+        preHandleContext = new PreHandleContext(accountAccess, tokenUnpauseTxn);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
     }
 
     @Test
-    void doesntAddAnyKeyIfPauseKeyMissing() {
+    void doesntAddAnyKeyIfPauseKeyMissing() throws PreCheckException {
         final var copy = token.copyBuilder().pauseKey(Key.DEFAULT).build();
         readableTokenState = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
                 .value(tokenEntityNum, copy)
@@ -150,19 +142,19 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
         readableStore = new ReadableTokenStore(readableStates);
 
         subject.preHandle(preHandleContext, readableStore);
-
-        assertEquals(0, preHandleContext.getRequiredNonPayerKeys().size());
-        assertEquals(OK, preHandleContext.getStatus());
+        assertEquals(0, preHandleContext.requiredNonPayerKeys().size());
     }
 
     private void givenValidTxn() {
         tokenUnpauseTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerId).build())
                 .tokenUnpause(TokenUnpauseTransactionBody.newBuilder().token(tokenId))
                 .build();
     }
 
     private void givenInvalidTokenInTxn() {
         tokenUnpauseTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerId).build())
                 .tokenUnpause(TokenUnpauseTransactionBody.newBuilder()
                         .token(TokenID.newBuilder().tokenNum(2).build()))
                 .build();

@@ -14,24 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.accounts;
+package com.hedera.node.app.solvency;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.mock;
+import dagger.Binds;
+import dagger.Module;
+import javax.inject.Singleton;
 
-import org.junit.jupiter.api.Test;
-
-class AccountTest {
-    @Test
-    void balanceInHbarWorks() {
-        final var account = mock(Account.class);
-
-        doCallRealMethod().when(account).balanceInHbar();
-
-        given(account.balanceInTinyBar()).willReturn(100_000_000L * 123);
-
-        assertEquals(123, account.balanceInHbar());
-    }
+@Module
+public interface SolvencyModule {
+    @Binds
+    @Singleton
+    SolvencyPreCheck bindSolvencyPreCheck(MonoSolvencyPreCheck solvencyPreCheck);
 }

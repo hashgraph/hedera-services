@@ -17,6 +17,8 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.node.app.service.mono.Utils.asHederaKeys;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -115,8 +117,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         while (itr.hasNext()) {
             final var platformTx = itr.next();
             final var future = runner.apply(() -> {
-                final var metadata = securePreHandle(state, platformTx);
-                platformTx.setMetadata(metadata);
+                try {
+                    final var metadata = securePreHandle(state, platformTx);
+                    platformTx.setMetadata(metadata);
+                } catch (final PreCheckException e) {
+                    platformTx.setMetadata(createInvalidResult(e.responseCode()));
+                }
             });
             futures.add(future);
         }
@@ -127,7 +133,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     private PreHandleResult securePreHandle(
-            final HederaState state, final com.swirlds.common.system.transaction.Transaction platformTx) {
+            final HederaState state, final com.swirlds.common.system.transaction.Transaction platformTx)
+            throws PreCheckException {
         try {
             return preHandle(state, platformTx);
         } catch (Exception ex) {
@@ -135,7 +142,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // end up with an ISS. It is critical that I log whatever happened, because we should
             // have caught all legitimate failures in another catch block.
             LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return createInvalidResult(ResponseCodeEnum.UNKNOWN);
+            return createInvalidResult(UNKNOWN);
         }
     }
 
@@ -147,24 +154,25 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final var txBytes = Bytes.wrap(platformTx.getContents());
 
             // 1. Parse the Transaction and check the syntax
-            final var onsetResult = transactionChecker.parseAndCheck(txBytes);
-            txBody = onsetResult.txBody();
+            final var tx = transactionChecker.parse(txBytes);
+            final var transactionInfo = transactionChecker.check(tx);
+            txBody = transactionInfo.txBody();
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
             final var storeFactory = new ReadableStoreFactory(state);
             final var accountStore = storeFactory.createAccountStore();
-            final var context = new PreHandleContext(accountStore, txBody, OK);
+            final var context = new PreHandleContext(accountStore, txBody);
             dispatcher.dispatchPreHandle(storeFactory, context);
 
             // 3. Prepare and verify signature-data
-            final var signatureMap = onsetResult.signatureMap();
-            final var txBodyBytes = onsetResult.transaction().bodyBytes();
+            final var signatureMap = transactionInfo.signatureMap();
+            final var txBodyBytes = transactionInfo.transaction().bodyBytes();
             final var payerSignature = verifyPayerSignature(state, context, txBodyBytes, signatureMap);
             final var otherSignatures = verifyOtherSignatures(state, context, txBodyBytes, signatureMap);
 
             // 4. Eventually prepare and verify signatures of inner transaction
-            final var innerContext = context.getInnerContext();
+            final var innerContext = context.innerContext();
             PreHandleResult innerResult = null;
             if (innerContext != null) {
                 // VERIFY: the txBytes used for inner transactions is the same as the outer transaction
@@ -183,7 +191,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // end up with an ISS. It is critical that I log whatever happened, because we should
             // have caught all legitimate failures in another catch block.
             LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return createInvalidResult(ResponseCodeEnum.UNKNOWN);
+            return createInvalidResult(UNKNOWN);
         }
     }
 
@@ -193,12 +201,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final PreHandleContext context,
             @NonNull Bytes bytes,
             @NonNull SignatureMap signatureMap) {
-        if (context.getPayerKey() == null) {
+        if (context.payerKey() == null) {
             return null;
         }
 
-        final var payerSignature = signaturePreparer.prepareSignature(
-                state, PbjConverter.asBytes(bytes), signatureMap, context.getPayer());
+        final var payerSignature =
+                signaturePreparer.prepareSignature(state, PbjConverter.asBytes(bytes), signatureMap, context.payer());
         cryptography.verifyAsync(payerSignature);
         return payerSignature;
     }
@@ -210,7 +218,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final Bytes txBodyBytes,
             @NonNull final SignatureMap signatureMap) {
         final var otherSignatures = signaturePreparer.prepareSignatures(
-                state, PbjConverter.asBytes(txBodyBytes), signatureMap, context.getRequiredNonPayerKeys());
+                state, PbjConverter.asBytes(txBodyBytes), signatureMap, asHederaKeys(context.requiredNonPayerKeys()));
         cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
         return otherSignatures;
     }
@@ -228,7 +236,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             allSigs.add(payerSignature);
         }
         allSigs.addAll(otherSigs);
-        return new PreHandleResult(context, signatureMap, allSigs, innerResult);
+        return new PreHandleResult(context, OK, signatureMap, allSigs, innerResult);
     }
 
     @NonNull

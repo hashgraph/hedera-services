@@ -16,10 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromGrpcKey;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -29,7 +26,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
@@ -39,6 +35,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.test.handlers.TokenHandlerTestBase;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,15 +44,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReadableTokenStoreTest extends TokenHandlerTestBase {
+    private final EntityNum tokenEntityNum = EntityNum.fromLong(2000);
+
     @Mock
     private ReadableKVState<EntityNum, Token> tokens;
+
+    private static final String TOKENS = "TOKENS";
+    private final TokenID tokenId = TokenID.newBuilder().tokenNum(2000).build();
 
     @Mock
     private ReadableStates states;
 
-    private static final String TOKENS = "TOKENS";
-    private final TokenID tokenId = TokenID.newBuilder().tokenNum(2000).build();
-    private final EntityNum tokenEntityNum = EntityNum.fromLong(2000);
     private Token token;
 
     private ReadableTokenStore subject;
@@ -72,42 +71,29 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void getsMerkleTokenIfTokenIdPresent() {
+    void getsMerkleTokenIfTokenIdPresent() throws PreCheckException {
         given(tokens.get(tokenEntityNum)).willReturn(token);
 
-        final var result = subject.getTokenMeta(tokenId);
-
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-
-        final var meta = result.metadata();
-        assertEquals(adminKey, fromGrpcKey(asKeyUnchecked((JKey) meta.adminKey().get())));
-        assertEquals(kycKey, fromGrpcKey(asKeyUnchecked((JKey) meta.kycKey().get())));
-        assertEquals(wipeKey, fromGrpcKey(asKeyUnchecked((JKey) meta.wipeKey().get())));
-        assertEquals(
-                freezeKey, fromGrpcKey(asKeyUnchecked((JKey) meta.freezeKey().get())));
-        assertEquals(
-                supplyKey, fromGrpcKey(asKeyUnchecked((JKey) meta.supplyKey().get())));
-        assertEquals(feeScheduleKey, fromGrpcKey(asKeyUnchecked((JKey)
-                meta.feeScheduleKey().get())));
-        assertEquals(pauseKey, fromGrpcKey(asKeyUnchecked((JKey) meta.pauseKey().get())));
+        final var meta = subject.getTokenMeta(tokenId);
+        assertEquals(adminKey, meta.adminKey());
+        assertEquals(kycKey, meta.kycKey());
+        assertEquals(wipeKey, meta.wipeKey());
+        assertEquals(freezeKey, meta.freezeKey());
+        assertEquals(supplyKey, meta.supplyKey());
+        assertEquals(feeScheduleKey, meta.feeScheduleKey());
+        assertEquals(pauseKey, meta.pauseKey());
         assertFalse(meta.hasRoyaltyWithFallback());
         assertEquals(treasury.accountNum(), meta.treasuryNum());
     }
 
     @Test
-    void getsNullKeyIfMissingAccount() {
+    void getsNullKeyIfMissingAccount() throws PreCheckException {
         given(tokens.get(tokenEntityNum)).willReturn(null);
-
-        final var result = subject.getTokenMeta(tokenId);
-
-        assertTrue(result.failed());
-        assertEquals(INVALID_TOKEN_ID, result.failureReason());
-        assertNull(result.metadata());
+        assertNull(subject.getTokenMeta(tokenId));
     }
 
     @Test
-    void classifiesRoyaltyWithFallback() {
+    void classifiesRoyaltyWithFallback() throws PreCheckException {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
         copy.customFees(PbjConverter.fromFcCustomFee(
@@ -115,27 +101,23 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
 
         given(tokens.get(tokenEntityNum)).willReturn(copy.build());
 
-        final var result = subject.getTokenMeta(tokenId);
+        final var meta = subject.getTokenMeta(tokenId);
 
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-        assertTrue(result.metadata().hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), result.metadata().treasuryNum());
+        assertTrue(meta.hasRoyaltyWithFallback());
+        assertSame(treasury.accountNum(), meta.treasuryNum());
     }
 
     @Test
-    void classifiesRoyaltyWithNoFallback() {
+    void classifiesRoyaltyWithNoFallback() throws PreCheckException {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
         copy.customFees(PbjConverter.fromFcCustomFee(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
 
         given(tokens.get(tokenEntityNum)).willReturn(copy.build());
 
-        final var result = subject.getTokenMeta(tokenId);
+        final var meta = subject.getTokenMeta(tokenId);
 
-        assertFalse(result.failed());
-        assertNull(result.failureReason());
-        assertFalse(result.metadata().hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), result.metadata().treasuryNum());
+        assertFalse(meta.hasRoyaltyWithFallback());
+        assertSame(treasury.accountNum(), meta.treasuryNum());
     }
 }

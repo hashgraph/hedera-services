@@ -126,7 +126,7 @@ public final class ApplicationDefinitionLoader {
                 bookData.size(), // Id
                 addressConfig.nickname(), // nickname
                 addressConfig.selfName(), // selfName
-                addressConfig.stake(), // stake
+                addressConfig.weight(), // weight
                 isOwnHost, // ownHost
                 addressConfig.internalInetAddressName().getAddress(), // addressInternalIpv4
                 addressConfig.internalPort(), // portInternalIpv4
