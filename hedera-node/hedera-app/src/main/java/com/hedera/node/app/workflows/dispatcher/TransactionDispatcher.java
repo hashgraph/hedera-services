@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
@@ -112,6 +113,8 @@ public class TransactionDispatcher {
                     txn.consensusDeleteTopicOrThrow(), writableStoreFactory.createTopicStore());
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(
                     txn, writableStoreFactory.createTopicStore());
+            case TOKEN_GRANT_KYC_TO_ACCOUNT -> dispatchTokenGrantKycToAccount(
+                    txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
@@ -225,13 +228,13 @@ public class TransactionDispatcher {
         return context -> dispatchPreHandle(storeFactory, context);
     }
 
+    // TODO: In all the below methods, commit will be called in workflow or some other place
+    //  when handle workflow is implemented
     private void dispatchConsensusDeleteTopic(
             @NonNull final ConsensusDeleteTopicTransactionBody topicDeletion,
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusDeleteTopicHandler();
         handler.handle(topicDeletion, topicStore);
-        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
-        // This is temporary solution to make sure that topic is created
         topicStore.commit();
     }
 
@@ -240,8 +243,6 @@ public class TransactionDispatcher {
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusUpdateTopicHandler();
         handler.handle(handleContext, topicUpdate, topicStore);
-        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
-        // This is temporary solution to make sure that topic is created
         topicStore.commit();
     }
 
@@ -261,8 +262,6 @@ public class TransactionDispatcher {
         txnCtx.setCreated(PbjConverter.fromPbj(
                 TopicID.newBuilder().topicNum(recordBuilder.getCreatedTopic()).build()));
         usageLimits.refreshTopics();
-        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
-        // This is temporary solution to make sure that topic is created
         topicStore.commit();
     }
 
@@ -279,6 +278,19 @@ public class TransactionDispatcher {
                 topicStore);
         txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
         topicStore.commit();
+    }
+
+    /**
+     * Dispatches the token grant KYC transaction to the appropriate handler.
+     *
+     * @param tokenGrantKyc the token grant KYC transaction
+     * @param tokenRelStore the token relation store
+     */
+    private void dispatchTokenGrantKycToAccount(
+            TransactionBody tokenGrantKyc, WritableTokenRelationStore tokenRelStore) {
+        final var handler = handlers.tokenGrantKycToAccountHandler();
+        handler.handle(tokenGrantKyc, tokenRelStore);
+        tokenRelStore.commit();
     }
 
     /**
