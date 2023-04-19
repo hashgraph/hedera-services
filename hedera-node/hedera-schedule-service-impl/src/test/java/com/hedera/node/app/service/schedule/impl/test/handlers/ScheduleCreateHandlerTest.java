@@ -41,9 +41,9 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleCreateTransaction(payer);
 
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.getKey()).willReturn(schedulerKey);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
         given(keyLookup.getAccountById(payer)).willReturn(payerAccount);
-        given(payerAccount.getKey()).willReturn(payerKey);
+        given(payerAccount.key()).willReturn(payerKey);
 
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context, dispatcher);
@@ -67,9 +67,9 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
 
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.getKey()).willReturn(schedulerKey);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
         given(keyLookup.getAccountById(payer)).willReturn(payerAccount);
-        given(payerAccount.getKey()).willReturn(payerKey);
+        given(payerAccount.key()).willReturn(payerKey);
 
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context, dispatcher);
@@ -91,7 +91,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final var subject = new ScheduleCreateHandler();
         final var txn = scheduleCreateTransaction(null);
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.getKey()).willReturn(schedulerKey);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
 
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context, dispatcher);
@@ -113,7 +113,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final var subject = new ScheduleCreateHandler();
         final var txn = scheduleTxnNotRecognized();
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.getKey()).willReturn(schedulerKey);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
 
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context, dispatcher);
@@ -126,7 +126,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         //       non-whitelist situation so much as a missing key.  This requires careful
         //       thought and rework.
         //        final var innerContext = context.innerContext();
-        //        basicContextAssertions(innerContext, 0, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        //        basicContextAssertions(innerContext, 0, true,
+        // SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         //        assertEquals(scheduler, innerContext.payer());
         //        assertEquals(schedulerKey, innerContext.payerKey());
         //        verify(dispatcher, never()).dispatch(any());
@@ -138,7 +139,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleCreateTransaction(payer);
 
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.getKey()).willReturn(schedulerKey);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
         given(keyLookup.getAccountById(payer)).willReturn(null);
 
         final var context = new PreHandleContext(keyLookup, txn);

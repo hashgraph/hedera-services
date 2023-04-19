@@ -86,7 +86,7 @@ public class MapValueFCQTests {
         Platform platform = Mockito.spy(PlatformWithDeprecatedMethods.class);
         when(platform.getSelfId()).thenReturn(NodeId.createMain(0));
         AddressBook addressBook = Mockito.spy(AddressBook.class);
-        when(addressBook.getNumberWithStake()).thenReturn(4);
+        when(addressBook.getNumberWithWeight()).thenReturn(4);
         when(platform.getAddressBook()).thenReturn(addressBook);
         state.init(platform, new DualStateImpl(), InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
         state.initChildren();

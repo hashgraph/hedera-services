@@ -22,10 +22,12 @@ import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import io.grpc.ManagedChannelBuilder;
 import io.helidon.grpc.client.ClientServiceDescriptor;
 import io.helidon.grpc.client.GrpcServiceClient;
@@ -99,8 +101,12 @@ abstract class GrpcTestBase extends TestBase {
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure
      * they are being set correctly for different types of calls.
      */
-    protected Metrics metrics =
-            new DefaultMetrics(nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory());
+    protected Metrics metrics = new DefaultMetrics(
+            nodeSelfId,
+            new MetricKeyRegistry(),
+            METRIC_EXECUTOR,
+            new DefaultMetricsFactory(),
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class));
 
     /** The host of our gRPC server. */
     protected String host = "127.0.0.1";

@@ -86,8 +86,8 @@ class SavedStateMetadataTests {
         for (int i = 0; i < random.nextInt(1, 10); i++) {
             signingNodes.add(random.nextLong());
         }
-        final long signingStakeSum = random.nextLong();
-        final long totalStake = random.nextLong();
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
@@ -99,8 +99,8 @@ class SavedStateMetadataTests {
                 wallClockTime,
                 nodeId,
                 signingNodes,
-                signingStakeSum,
-                totalStake);
+                signingWeightSum,
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -113,8 +113,8 @@ class SavedStateMetadataTests {
         assertEquals(wallClockTime, deserialized.wallClockTime());
         assertEquals(nodeId, deserialized.nodeId());
         assertEquals(signingNodes, deserialized.signingNodes());
-        assertEquals(signingStakeSum, deserialized.signingStakeSum());
-        assertEquals(totalStake, deserialized.totalStake());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
     }
 
     @Test
@@ -188,18 +188,18 @@ class SavedStateMetadataTests {
             signingNodes = null;
         }
 
-        final Long signingStakeSum;
+        final Long signingWeightSum;
         if (random.nextBoolean()) {
-            signingStakeSum = random.nextLong();
+            signingWeightSum = random.nextLong();
         } else {
-            signingStakeSum = null;
+            signingWeightSum = null;
         }
 
-        final Long totalStake;
+        final Long totalWeight;
         if (random.nextBoolean()) {
-            totalStake = random.nextLong();
+            totalWeight = random.nextLong();
         } else {
-            totalStake = null;
+            totalWeight = null;
         }
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
@@ -212,8 +212,8 @@ class SavedStateMetadataTests {
                 wallClockTime,
                 nodeId,
                 signingNodes,
-                signingStakeSum,
-                totalStake);
+                signingWeightSum,
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -230,8 +230,8 @@ class SavedStateMetadataTests {
         assertEquals(wallClockTime, deserialized.wallClockTime());
         assertEquals(nodeId, deserialized.nodeId());
         assertEquals(signingNodes, deserialized.signingNodes());
-        assertEquals(signingStakeSum, deserialized.signingStakeSum());
-        assertEquals(totalStake, deserialized.totalStake());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
     }
 
     @Test
@@ -272,8 +272,8 @@ class SavedStateMetadataTests {
         for (int i = 0; i < random.nextInt(1, 10); i++) {
             signingNodes.add(random.nextLong());
         }
-        final long signingStakeSum = random.nextLong();
-        final long totalStake = random.nextLong();
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
@@ -285,8 +285,8 @@ class SavedStateMetadataTests {
                 wallClockTime,
                 nodeId,
                 signingNodes,
-                signingStakeSum,
-                totalStake);
+                signingWeightSum,
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -299,8 +299,8 @@ class SavedStateMetadataTests {
         assertEquals(wallClockTime, deserialized.wallClockTime());
         assertEquals(nodeId, deserialized.nodeId());
         assertEquals(signingNodes, deserialized.signingNodes());
-        assertEquals(signingStakeSum, deserialized.signingStakeSum());
-        assertEquals(totalStake, deserialized.totalStake());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
     }
 
     private interface FileUpdater {
@@ -329,8 +329,8 @@ class SavedStateMetadataTests {
         for (int i = 0; i < random.nextInt(1, 10); i++) {
             signingNodes.add(random.nextLong());
         }
-        final long signingStakeSum = random.nextLong();
-        final long totalStake = random.nextLong();
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
@@ -342,8 +342,8 @@ class SavedStateMetadataTests {
                 wallClockTime,
                 nodeId,
                 signingNodes,
-                signingStakeSum,
-                totalStake);
+                signingWeightSum,
+                totalWeight);
 
         final Path path = testDirectory.resolve("metadata.txt");
         metadata.write(path);
@@ -415,16 +415,16 @@ class SavedStateMetadataTests {
             assertEquals(signingNodes, deserialized.signingNodes());
         }
 
-        if (invalidFields.contains(SavedStateMetadataField.SIGNING_STAKE_SUM)) {
-            assertNull(deserialized.signingStakeSum());
+        if (invalidFields.contains(SavedStateMetadataField.SIGNING_WEIGHT_SUM)) {
+            assertNull(deserialized.signingWeightSum());
         } else {
-            assertEquals(signingStakeSum, deserialized.signingStakeSum());
+            assertEquals(signingWeightSum, deserialized.signingWeightSum());
         }
 
-        if (invalidFields.contains(SavedStateMetadataField.TOTAL_STAKE)) {
-            assertNull(deserialized.totalStake());
+        if (invalidFields.contains(SavedStateMetadataField.TOTAL_WEIGHT)) {
+            assertNull(deserialized.totalWeight());
         } else {
-            assertEquals(totalStake, deserialized.totalStake());
+            assertEquals(totalWeight, deserialized.totalWeight());
         }
     }
 
