@@ -115,7 +115,7 @@ public class ReconnectProtocol implements Protocol {
         // released by the ReconnectTeacher (or by this component if we don't fail first).
         teacherState = lastCompleteSignedState.get();
 
-        if (teacherState == null) {
+        if (teacherState.isNull()) {
             logger.info(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} due to lack of a fully signed state",
