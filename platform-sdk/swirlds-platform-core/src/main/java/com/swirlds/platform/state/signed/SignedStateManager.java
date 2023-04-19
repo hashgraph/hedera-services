@@ -211,10 +211,6 @@ public class SignedStateManager implements SignedStateFinder {
     public synchronized void addState(@NonNull final SignedState signedState) {
         throwArgNull(signedState, "reservedSignedState");
 
-        if (signedState.getRound() == 100) {
-            signedState.reserve("derp!"); // TODO: remove this
-        }
-
         if (signedState.getState().getHash() == null) {
             throw new IllegalArgumentException(
                     "Unhashed state for round " + signedState.getRound() + " added to the signed state manager");

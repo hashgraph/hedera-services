@@ -16,6 +16,10 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
+
+import com.swirlds.common.formatting.HorizontalAlignment;
+import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.StackTrace;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -77,28 +81,31 @@ public class SignedStateHistory {
          * @param sb                   the string builder to add the report to
          * @param releasedReservations the set of unique ids of reservations that have been released
          */
-        public void generateReport(final StringBuilder sb, final Set<Long> releasedReservations) {
-            sb.append(action);
+        public void generateReport(@NonNull final StringBuilder sb, @NonNull final Set<Long> releasedReservations) {
+            final TextTable table = new TextTable()
+                    .setBordersEnabled(false)
+                    .setExtraPadding(1);
 
-            if (action == SignedStateAction.RESERVE) {
-                if (!releasedReservations.contains(uniqueId)) {
-                    sb.append(" (unreleased)");
-                }
+            table.addRow(action);
+            if (action == RESERVE && !releasedReservations.contains(uniqueId)) {
+                table.addToRow("", "*** UNRELEASED ***");
             }
 
             if (reason != null) {
-                sb.append("\n   reason: ").append(reason);
+                table.addRow("   reason", reason);
             }
-            sb.append("\n   timestamp: ").append(timestamp);
-            sb.append("\n   initial reservations: ").append(reservations);
+            table.addRow("   timestamp", timestamp);
+            table.addRow("   initial reservations", reservations);
             if (uniqueId != null) {
-                sb.append("\n   reservation ID: ").append(uniqueId);
+                table.addRow("   reservation ID", uniqueId);
             }
+            table.render(sb);
+
             if (stackTrace != null) {
                 sb.append("\n").append(stackTrace);
             }
 
-            sb.append("\n\n");
+            sb.append("\n");
         }
     }
 
@@ -114,7 +121,7 @@ public class SignedStateHistory {
      * @param round              the round number of the signed state
      * @param stackTracesEnabled whether stack traces should be recorded
      */
-    public SignedStateHistory(final Time time, final long round, final boolean stackTracesEnabled) {
+    public SignedStateHistory(@NonNull final Time time, final long round, final boolean stackTracesEnabled) {
         this.time = time;
         this.round = round;
         this.stackTracesEnabled = stackTracesEnabled;
@@ -129,7 +136,8 @@ public class SignedStateHistory {
      * @param uniqueId     a unique id for the action, may be null for actions that do not require a unique id
      */
     public void recordAction(
-            final SignedStateAction action, int reservations, final String reason, final Long uniqueId) {
+            @NonNull final SignedStateAction action, int reservations, @Nullable final String reason,
+            @Nullable final Long uniqueId) {
         actions.add(new SignedStateActionReport(
                 action,
                 reason,

@@ -147,7 +147,9 @@ public class ManualWiring {
             final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");
 
             boolean success = asyncLatestCompleteStateQueue.offer(() -> {
-                appCommunicationComponent.newLatestCompleteStateEvent(ss);
+                try (reservedSignedState) {
+                    appCommunicationComponent.newLatestCompleteStateEvent(reservedSignedState.get());
+                }
             });
             if (!success) {
                 logger.error(
@@ -155,6 +157,7 @@ public class ManualWiring {
                         "Unable to add new latest complete state task " + "(state round = {}) to {} because it is full",
                         ss.getRound(),
                         asyncLatestCompleteStateQueue.getName());
+                reservedSignedState.close();
             }
         });
 
