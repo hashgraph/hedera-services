@@ -19,6 +19,7 @@ module com.hedera.node.app.hapi.fees {
     requires com.fasterxml.jackson.databind;
     requires org.apache.logging.log4j;
     requires javax.inject;
+    requires dagger;
     requires com.google.protobuf;
     requires org.apache.commons.lang3;
     requires com.google.common;

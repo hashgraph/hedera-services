@@ -16,6 +16,7 @@ module com.hedera.node.app.service.evm {
     requires javax.inject;
     requires com.github.spotbugs.annotations;
     requires com.hedera.node.hapi;
+    requires dagger;
 
     exports com.hedera.node.app.service.evm.store.contracts.utils;
     exports com.hedera.node.app.service.evm.contracts.execution;

@@ -23,21 +23,6 @@ group = "com.hedera.evm"
 
 description = "Hedera EVM - API"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
-  exclude("com.google.code.findbugs", "jsr305")
-  exclude("org.jetbrains", "annotations")
-  exclude("org.checkerframework", "checker-qual")
-  exclude("com.google.errorprone", "error_prone_annotations")
-  exclude("com.google.j2objc", "j2objc-annotations")
-
-  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
-  exclude("io.grpc", "grpc-stub")
-}
-
 dependencies {
   annotationProcessor(libs.dagger.compiler)
 

@@ -278,10 +278,11 @@ module com.hedera.node.app.service.mono {
     requires com.swirlds.logging;
     requires org.bouncycastle.provider;
     requires tuweni.units;
-    requires commons.collections4;
+    requires org.apache.commons.collections4;
     requires org.eclipse.collections.impl;
     requires org.apache.commons.io;
-    requires grpc.stub;
     requires org.eclipse.collections.api;
+    requires io.netty.handler;
     requires io.netty.transport.epoll;
+    requires io.grpc;
 }

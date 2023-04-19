@@ -22,20 +22,6 @@ plugins {
 
 description = "Hedera Application - MONO Service Implementation"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
-  exclude("com.google.code.findbugs", "jsr305")
-  exclude("org.jetbrains", "annotations")
-  exclude("org.checkerframework", "checker-qual")
-
-//  exclude("io.grpc", "grpc-core")
-//  exclude("io.grpc", "grpc-context")
-//  exclude("io.grpc", "grpc-api")
-//  exclude("io.grpc", "grpc-testing")
-
-  exclude("org.hamcrest", "hamcrest-core")
-}
-
 dependencies {
   annotationProcessor(libs.dagger.compiler)
 
@@ -61,11 +47,12 @@ dependencies {
   implementation(libs.bundles.logging)
   implementation(libs.bundles.swirlds)
   implementation(libs.caffeine)
-  implementation(libs.grpc.stub)
-  implementation(libs.grpc.netty)
+//  implementation(libs.grpc.stub)
+  implementation(libs.io.grpc.netty)
 //  implementation(libs.helidon.io.grpc)
   implementation(libs.headlong)
   implementation(variantOf(libs.netty.transport.native.epoll) { classifier("linux-x86_64") })
+  implementation(libs.netty.handler)
   implementation(libs.commons.codec)
   implementation(libs.commons.io)
   implementation(libs.commons.collections4)

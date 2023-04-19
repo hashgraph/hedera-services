@@ -1,10 +1,13 @@
-@SuppressWarnings("requires-transitive-automatic")
 module com.hedera.node.hapi {
     requires com.github.spotbugs.annotations;
     requires com.hedera.pbj.runtime;
+    requires transitive io.grpc;
+    requires transitive grpc.stub;
+    requires transitive grpc.netty;
+    requires transitive grpc.services;
+    requires transitive grpc.protobuf;
+    requires transitive grpc.protobuf.lite;
     requires transitive com.google.protobuf;
-    requires grpc.stub;
-    requires grpc.protobuf;
 
     // Export protoc generated classes
     exports com.hedera.services.stream.proto;

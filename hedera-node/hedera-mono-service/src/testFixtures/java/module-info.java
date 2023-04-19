@@ -20,4 +20,5 @@ module com.hedera.node.app.service.mono.testFixtures {
     requires com.google.common;
     requires com.github.spotbugs.annotations;
     requires com.hedera.pbj.runtime;
+    requires net.i2p.crypto.eddsa;
 }

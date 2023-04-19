@@ -26,6 +26,7 @@ repositories {
     mavenLocal()
 }
 
+// Gradle Plugin Dependencies
 dependencies {
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.5.0.2730")
     implementation("me.champeau.jmh:jmh-gradle-plugin:0.6.6")

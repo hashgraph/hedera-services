@@ -23,39 +23,24 @@ plugins {
   `java-test-fixtures`
 }
 
+group = "com.hedera.node"
 description = "Hedera API"
-
-configurations.all {
-  exclude("com.google.code.findbugs", "jsr305")
-//  exclude("javax.annotation", "javax.annotation-api")
-
-//  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-//  exclude("io.grpc", "grpc-api")
-//  exclude("io.grpc", "grpc-testing")
-}
 
 dependencies {
   api(libs.spotbugs.annotations)
+  api(libs.io.grpc.api)
+  api(libs.io.grpc.netty)
+  api(libs.io.grpc.services)
+  api(libs.io.grpc.stub)
+  api(libs.io.grpc.protobuf)
+  api(libs.io.grpc.protobuf.lite)
+  api(libs.guava)
   api(libs.protobuf.java)
   implementation(libs.pbj.runtime)
   implementation(libs.bundles.di)
+  compileOnly(libs.jsr305.annotation)
   testImplementation(testLibs.bundles.testing)
   testFixturesImplementation(libs.pbj.runtime)
-
-
-  compileOnly(libs.javax.annotation)
-//  compileOnly(libs.jsr305.annotation)
-//  runtimeOnly("io.grpc:grpc-netty-shaded:1.54.0")
-//  implementation("io.grpc:grpc-protobuf:1.54.0")
-//  implementation("io.grpc:grpc-stub:1.54.0")
-  implementation(libs.grpc.protobuf)
-  implementation(libs.grpc.stub)
-  implementation(libs.helidon.io.grpc)
-//  implementation(libs.grpc.protobuf)
-//  implementation(libs.grpc.stub)
-//  implementation(libs.grpc.netty)
-//  compileOnly("org.apache.tomcat:annotations-api:6.0.53")
 }
 
 // Configure Protobuf Plugin to download protoc executable rather than using local installed version
