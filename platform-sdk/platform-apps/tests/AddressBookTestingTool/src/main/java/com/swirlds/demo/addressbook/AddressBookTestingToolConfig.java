@@ -33,4 +33,4 @@ import com.swirlds.config.api.ConfigProperty;
 public record AddressBookTestingToolConfig(
         @ConfigProperty(defaultValue = "1") int softwareVersion,
         @ConfigProperty(defaultValue = "0") int weightingBehavior,
-        @ConfigProperty(defaultValue = "skipValidation") String testScenario) {}
+        @ConfigProperty(defaultValue = "SKIP_VALIDATION") String testScenario) {}

@@ -312,23 +312,23 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             throw new IllegalStateException("platform is null, init has not been called.");
         }
         logWeightingBehavior.set(false);
-        final String testScenario = testingToolConfig.testScenario();
+        final AddressBookTestScenario testScenario = AddressBookTestScenario.valueOf(testingToolConfig.testScenario());
         try {
             logger.info(DEMO_INFO.getMarker(), "Validating test scenario {}.", testScenario);
             switch (testScenario) {
-                case "genesisForceUseOfConfigAddressBookTrue":
+                case GENESIS_FORCE_CONFIG_AB:
                     return genesisForceUseOfConfigAddressBookTrue(testScenario);
-                case "genesisForceUseOfConfigAddressBookFalse":
+                case GENESIS_NORMAL:
                     return genesisForceUseOfConfigAddressBookFalse(testScenario);
-                case "noSoftwareUpgradeUseSavedStateAddressBook":
+                case NO_UPGRADE_USE_SAVED_STATE:
                     return noSoftwareUpgradeUseSavedStateAddressBook(testScenario);
-                case "noSoftwareUpgradeForceUseOfConfigAddressBook":
+                case NO_UPGRADE_FORCE_CONFIG_AB:
                     return noSoftwareUpgradeForceUseOfConfigAddressBook(testScenario);
-                case "softwareUpgradeWeightingBehavior2":
+                case UPGRADE_WEIGHT_BEHAVIOR_2:
                     return softwareUpgradeWeightingBehavior2(testScenario);
-                case "softwareUpgradeForceUseOfConfigAddressBook":
+                case UPGRADE_FORCE_CONFIG_AB:
                     return softwareUpgradeForceUseOfConfigAddressBook(testScenario);
-                case "skipValidation":
+                case SKIP_VALIDATION:
                     // fall into default case. No validation performed.
                 default:
                     logger.info(DEMO_INFO.getMarker(), "Test Scenario {}: no validation performed.", testScenario);
@@ -340,7 +340,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         }
     }
 
-    private boolean softwareUpgradeForceUseOfConfigAddressBook(@NonNull final String testScenario)
+    private boolean softwareUpgradeForceUseOfConfigAddressBook(@NonNull final AddressBookTestScenario testScenario)
             throws IOException, ParseException {
         if (!checkTestScenarioConditions(true, testScenario, 2, 2)) {
             return false;
@@ -359,7 +359,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && theConfigurationAddressBookWasUsed();
     }
 
-    private boolean softwareUpgradeWeightingBehavior2(@NonNull final String testScenario)
+    private boolean softwareUpgradeWeightingBehavior2(@NonNull final AddressBookTestScenario testScenario)
             throws IOException, ParseException {
         if (!checkTestScenarioConditions(false, testScenario, 2, 2)) {
             return false;
@@ -377,7 +377,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && equalsAsConfigText(platformAddressBook, updatedAddressBook, true);
     }
 
-    private boolean noSoftwareUpgradeForceUseOfConfigAddressBook(@NonNull final String testScenario)
+    private boolean noSoftwareUpgradeForceUseOfConfigAddressBook(@NonNull final AddressBookTestScenario testScenario)
             throws IOException, ParseException {
         if (!checkTestScenarioConditions(true, testScenario, 1, 1)) {
             return false;
@@ -396,7 +396,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && theConfigurationAddressBookWasUsed();
     }
 
-    private boolean noSoftwareUpgradeUseSavedStateAddressBook(String testScenario) throws IOException, ParseException {
+    private boolean noSoftwareUpgradeUseSavedStateAddressBook(AddressBookTestScenario testScenario)
+            throws IOException, ParseException {
         if (!checkTestScenarioConditions(false, testScenario, 1, 1)) {
             return false;
         }
@@ -414,7 +415,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && theStateAddressBookWasUsed();
     }
 
-    private boolean genesisForceUseOfConfigAddressBookFalse(@NonNull final String testScenario)
+    private boolean genesisForceUseOfConfigAddressBookFalse(@NonNull final AddressBookTestScenario testScenario)
             throws IOException, ParseException {
         if (!checkTestScenarioConditions(false, testScenario, 1, 1)) {
             return false;
@@ -431,7 +432,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                 && theStateAddressBookWasNull(true);
     }
 
-    private boolean genesisForceUseOfConfigAddressBookTrue(@NonNull final String testScenario)
+    private boolean genesisForceUseOfConfigAddressBookTrue(@NonNull final AddressBookTestScenario testScenario)
             throws IOException, ParseException {
         if (!checkTestScenarioConditions(true, testScenario, 1, 1)) {
             return false;
@@ -460,7 +461,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     private boolean checkTestScenarioConditions(
             final boolean forceUseConfigAddressBook,
-            final String testScenario,
+            final AddressBookTestScenario testScenario,
             final int softwareVersion,
             final int weightingBehavior) {
         boolean passed = true;
@@ -471,7 +472,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     forceUseConfigAddressBook);
             passed = false;
         }
-        if (testingToolConfig.testScenario() != testScenario) {
+        if (!testScenario.toString().equals(testingToolConfig.testScenario())) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "The test scenario requires the setting `testingTool.testScenario, {}`",
