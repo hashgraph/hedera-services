@@ -59,8 +59,8 @@ class AddressBookTests {
 
         final int size = addressBook.getSize();
 
-        long totalStake = 0;
-        int numberWithStake = 0;
+        long totalWeight = 0;
+        int numberWithWeight = 0;
         final Set<Long> nodeIds = new HashSet<>();
 
         long previousId = -1;
@@ -78,15 +78,15 @@ class AddressBookTests {
             assertSame(address, addressBook.getAddress(address.getId()), "invalid address returned");
 
             nodeIds.add(address.getId());
-            totalStake += address.getStake();
-            if (address.getStake() != 0) {
-                numberWithStake++;
+            totalWeight += address.getWeight();
+            if (address.getWeight() != 0) {
+                numberWithWeight++;
             }
         }
 
         assertEquals(size, nodeIds.size(), "size metric is incorrect");
-        assertEquals(totalStake, addressBook.getTotalStake(), "incorrect total stake");
-        assertEquals(numberWithStake, addressBook.getNumberWithStake(), "incorrect number with stake");
+        assertEquals(totalWeight, addressBook.getTotalWeight(), "incorrect total weight");
+        assertEquals(numberWithWeight, addressBook.getNumberWithWeight(), "incorrect number with weight");
 
         if (!addressBook.isEmpty()) {
             final Address lastAddress = addressBook.getAddress(addressBook.getId(addressBook.getSize() - 1));
@@ -120,29 +120,29 @@ class AddressBookTests {
     }
 
     @Test
-    @DisplayName("Address Book Update Stake Test")
-    void validateAddressBookUpdateStakeTest() {
+    @DisplayName("Address Book Update Weight Test")
+    void validateAddressBookUpdateWeightTest() {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed()).setSize(10);
         final AddressBook addressBook = generator.build();
         final Address address = addressBook.getAddress(addressBook.getId(0));
-        final long totalStake = addressBook.getTotalStake();
-        final long newStake = address.getStake() + 1;
+        final long totalWeight = addressBook.getTotalWeight();
+        final long newWeight = address.getWeight() + 1;
 
-        addressBook.updateStake(address.getId(), newStake);
+        addressBook.updateWeight(address.getId(), newWeight);
 
         final Address updatedAddress = addressBook.getAddress(addressBook.getId(0));
-        assertEquals(newStake, updatedAddress.getStake(), "stake should be updated");
-        assertEquals(totalStake + 1, addressBook.getTotalStake(), "total stake should be updated by 1");
-        final Address reverted = updatedAddress.copySetStake(newStake - 1);
+        assertEquals(newWeight, updatedAddress.getWeight(), "weight should be updated");
+        assertEquals(totalWeight + 1, addressBook.getTotalWeight(), "total weight should be updated by 1");
+        final Address reverted = updatedAddress.copySetWeight(newWeight - 1);
         assertEquals(address, reverted, "reverted address should be equal to original");
         assertThrows(
                 IllegalArgumentException.class,
-                () -> addressBook.updateStake(address.getId(), -1),
-                "should not be able to set negative stake");
+                () -> addressBook.updateWeight(address.getId(), -1),
+                "should not be able to set negative weight");
         assertThrows(
                 NoSuchElementException.class,
-                () -> addressBook.updateStake(addressBook.getNextNodeId(), 1),
-                "should not be able to set stake for non-existent node");
+                () -> addressBook.updateWeight(addressBook.getNextNodeId(), 1),
+                "should not be able to set weight for non-existent node");
     }
 
     @Test
@@ -228,9 +228,9 @@ class AddressBookTests {
         final Random random = getRandomPrintSeed();
 
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(random)
-                .setMinimumStake(0)
-                .setAverageStake(100)
-                .setStakeStandardDeviation(50)
+                .setMinimumWeight(0)
+                .setAverageWeight(100)
+                .setWeightStandardDeviation(50)
                 .setSize(100);
 
         final AddressBook addressBook = generator.build();
@@ -351,18 +351,18 @@ class AddressBookTests {
     void clearTest() {
         final AddressBook addressBook = new RandomAddressBookGenerator(getRandomPrintSeed())
                 .setSize(100)
-                .setMinimumStake(0)
-                .setMaximumStake(10)
-                .setAverageStake(5)
-                .setStakeStandardDeviation(5)
+                .setMinimumWeight(0)
+                .setMaximumWeight(10)
+                .setAverageWeight(5)
+                .setWeightStandardDeviation(5)
                 .build();
 
         validateAddressBookConsistency(addressBook);
 
         addressBook.clear();
 
-        assertEquals(0, addressBook.getTotalStake(), "there should be no stake");
-        assertEquals(0, addressBook.getNumberWithStake(), "there should be no nodes with any stake");
+        assertEquals(0, addressBook.getTotalWeight(), "there should be no weight");
+        assertEquals(0, addressBook.getNumberWithWeight(), "there should be no nodes with any weight");
         assertEquals(0, addressBook.getSize());
 
         validateAddressBookConsistency(addressBook);
@@ -484,7 +484,7 @@ class AddressBookTests {
 
         // bad parsing of parts.
         validateParseException("not an address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000", 0);
-        validateParseException("address, nickname, selfname, not a stake, 192.168.0.1, 5000, 8.8.8.8, 5000", 3);
+        validateParseException("address, nickname, selfname, not a weight, 192.168.0.1, 5000, 8.8.8.8, 5000", 3);
         validateParseException("address, nickname, selfname, 10, 192.168.0.1, not a port, 8.8.8.8, 5000", 5);
         validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, not a port", 7);
     }
