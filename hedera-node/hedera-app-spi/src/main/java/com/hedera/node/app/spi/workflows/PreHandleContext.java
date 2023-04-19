@@ -17,16 +17,18 @@
 package com.hedera.node.app.spi.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -47,7 +49,7 @@ import java.util.Set;
  * transaction). {@link TransactionHandler}s must add any additional required signing keys. Several convenience
  * methods have been created for this purpose.
  *
- * <p>{@link #requireKey(HederaKey)} is used to add a required non-payer signing key (remember, the payer signing
+ * <p>{@link #requireKey(Key)} is used to add a required non-payer signing key (remember, the payer signing
  * key was added when the context was created). Some basic validation is performed (the key cannot be null or empty).
  */
 public final class PreHandleContext {
@@ -58,13 +60,13 @@ public final class PreHandleContext {
     /** The payer account ID. Specified in the transaction body, extracted and stored separately for convenience. */
     private final AccountID payer;
     /** The payer's key, as found in state */
-    private final HederaKey payerKey;
+    private final Key payerKey;
     /**
      * The set of all required non-payer keys. A {@link LinkedHashSet} is used to maintain a consistent ordering.
      * While not strictly necessary, it is useful at the moment to ensure tests are deterministic. The tests should
      * be updated to compare set contents rather than ordering.
      */
-    private final Set<HederaKey> requiredNonPayerKeys = new LinkedHashSet<>();
+    private final Set<Key> requiredNonPayerKeys = new LinkedHashSet<>();
     /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
     private PreHandleContext innerContext;
 
@@ -99,7 +101,7 @@ public final class PreHandleContext {
         mustExist(account, responseCode);
         // NOTE: While it is true that the key can be null on some special accounts like
         // account 800, those accounts cannot be the payer.
-        this.payerKey = account.getKey();
+        this.payerKey = account.key();
         mustExist(this.payerKey, responseCode);
     }
 
@@ -138,7 +140,7 @@ public final class PreHandleContext {
      *
      * @return the {@link Set} with the required non-payer keys
      */
-    public Set<HederaKey> requiredNonPayerKeys() {
+    public Set<Key> requiredNonPayerKeys() {
         return Collections.unmodifiableSet(requiredNonPayerKeys);
     }
 
@@ -148,7 +150,7 @@ public final class PreHandleContext {
      * @return the payer key
      */
     @Nullable
-    public HederaKey payerKey() {
+    public Key payerKey() {
         return payerKey;
     }
 
@@ -161,8 +163,8 @@ public final class PreHandleContext {
      * @throws NullPointerException if the key is null
      */
     @NonNull
-    public PreHandleContext requireKey(@NonNull final HederaKey key) {
-        if (!key.equals(payerKey)) {
+    public PreHandleContext requireKey(@NonNull final Key key) {
+        if (!key.equals(payerKey) && isValid(key)) {
             requiredNonPayerKeys.add(key);
         }
         return this;
@@ -179,10 +181,10 @@ public final class PreHandleContext {
      * @throws PreCheckException if the key is null or empty
      */
     @NonNull
-    public PreHandleContext requireKeyOrThrow(
-            @Nullable final HederaKey key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException {
+    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException {
         requireNonNull(responseCode);
-        if (key == null || key.isEmpty()) {
+        if (!isValid(key)) {
             throw new PreCheckException(responseCode);
         }
         return requireKey(key);
@@ -216,9 +218,9 @@ public final class PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
-        final var key = account.getKey();
-        if (key == null
-                || key.isEmpty()) { // Or if it is a Contract Key? Or if it is an empty key? Or a KeyList with no
+        final var key = account.key();
+        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
@@ -249,9 +251,9 @@ public final class PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
-        final var key = account.getKey();
-        if (key == null
-                || key.isEmpty()) { // Or if it is a Contract Key? Or if it is an empty key? Or a KeyList with no
+        final var key = account.key();
+        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
@@ -287,14 +289,15 @@ public final class PreHandleContext {
         }
 
         // If the account exists but does not require a signature, then there is no key to require.
-        if (!account.isReceiverSigRequired()) {
+        if (!account.receiverSigRequired()) {
             return this;
         }
 
         // We will require the key. If the key isn't present, then we will throw the given response code.
-        final var key = account.getKey();
+        final var key = account.key();
         if (key == null
-                || key.isEmpty()) { // Or if it is a Contract Key? Or if it is an empty key? Or a KeyList with no
+                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
@@ -327,14 +330,14 @@ public final class PreHandleContext {
         }
 
         // If the account exists but does not require a signature, then there is no key to require.
-        if (!account.isReceiverSigRequired()) {
+        if (!account.receiverSigRequired()) {
             return this;
         }
 
         // We will require the key. If the key isn't present, then we will throw the given response code.
-        final var key = account.getKey();
-        if (key == null
-                || key.isEmpty()) { // Or if it is a Contract Key? Or if it is an empty key? Or a KeyList with no
+        final var key = account.key();
+        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }

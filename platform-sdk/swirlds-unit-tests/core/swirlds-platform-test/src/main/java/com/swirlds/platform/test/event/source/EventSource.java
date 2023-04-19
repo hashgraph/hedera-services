@@ -56,9 +56,9 @@ public interface EventSource<T extends EventSource<T>> {
     T setNodeId(int nodeId);
 
     /**
-     * Get the stake held by this event source.
+     * Get the weight held by this event source.
      */
-    long getStake();
+    long getWeight();
 
     /**
      * Get the probabilistic weight that this node will create the next new event. A node with a weight of 1 will
