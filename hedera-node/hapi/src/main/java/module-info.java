@@ -1,6 +1,4 @@
 module com.hedera.node.hapi {
-    requires com.hedera.pbj.runtime;
-
     exports com.hedera.hapi.node.base;
     exports com.hedera.hapi.node.base.codec;
     exports com.hedera.hapi.node.base.schema;
@@ -34,10 +32,10 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.streams;
     exports com.hedera.hapi.streams.codec;
     exports com.hedera.hapi.streams.schema;
-
-    requires com.github.spotbugs.annotations;
-
     exports com.hedera.hapi.node.state.consensus.codec;
     exports com.hedera.hapi.node.state.consensus;
     exports com.hedera.hapi.node.state.token;
+
+    requires com.hedera.pbj.runtime;
+    requires static com.github.spotbugs.annotations;
 }

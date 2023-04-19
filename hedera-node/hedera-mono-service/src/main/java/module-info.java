@@ -246,7 +246,7 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.pbj;
     exports com.hedera.node.app.service.mono.sigs.sourcing;
 
-    requires com.github.spotbugs.annotations;
+    requires static com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
     requires dagger;

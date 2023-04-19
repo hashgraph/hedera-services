@@ -2,7 +2,7 @@ import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 
 module com.hedera.node.app.service.admin.impl {
     requires transitive com.hedera.node.app.service.admin;
-    requires com.github.spotbugs.annotations;
+    requires static com.github.spotbugs.annotations;
     requires dagger;
     requires javax.inject;
     requires com.hedera.pbj.runtime;

@@ -8,7 +8,7 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.swirlds.common;
     requires dagger;
     requires javax.inject;
-    requires com.github.spotbugs.annotations;
+    requires static com.github.spotbugs.annotations;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.config;
 

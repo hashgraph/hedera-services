@@ -9,7 +9,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires dagger;
     requires javax.inject;
     requires com.swirlds.common;
-    requires com.github.spotbugs.annotations;
+    requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.service.schedule.impl to
             com.hedera.node.app.service.schedule.impl.test,

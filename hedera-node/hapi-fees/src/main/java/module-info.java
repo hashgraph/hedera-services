@@ -15,7 +15,7 @@ module com.hedera.node.app.hapi.fees {
     exports com.hedera.node.app.hapi.fees.usage.token.entities;
 
     requires transitive com.hedera.node.app.hapi.utils;
-    requires com.github.spotbugs.annotations;
+    requires static com.github.spotbugs.annotations;
     requires com.fasterxml.jackson.databind;
     requires org.apache.logging.log4j;
     requires javax.inject;

@@ -36,7 +36,7 @@ module com.hedera.node.app {
     requires org.apache.logging.log4j;
     requires org.apache.commons.lang3;
     requires com.google.common;
-    requires com.github.spotbugs.annotations;
+    requires static com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.hapi;

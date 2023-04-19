@@ -4,7 +4,7 @@ module com.hedera.node.app.spi {
     requires com.swirlds.common;
     requires com.google.protobuf;
     requires com.swirlds.config;
-    requires com.github.spotbugs.annotations;
+    requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.spi;
     exports com.hedera.node.app.spi.state;
