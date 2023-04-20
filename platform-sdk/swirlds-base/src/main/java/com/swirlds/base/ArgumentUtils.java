@@ -21,6 +21,9 @@ package com.swirlds.base;
  */
 public final class ArgumentUtils {
 
+    public static final String ERROR_ARGUMENT_NULL = "The supplied argument '%s' cannot be null!";
+    public static final String ERROR_ARGUMENT_BLANK = "The supplied argument '%s' cannot be blank!";
+
     /**
      * Private constructor to prevent instantiation.
      */
@@ -36,7 +39,7 @@ public final class ArgumentUtils {
      */
     public static <T> T throwArgNull(final T argument, final String argumentName) {
         if (argument == null) {
-            throw new NullPointerException("The supplied argument '%s' cannot be null!".formatted(argumentName));
+            throw new NullPointerException(ERROR_ARGUMENT_NULL.formatted(argumentName));
         }
         return argument;
     }
@@ -50,8 +53,7 @@ public final class ArgumentUtils {
     public static String throwArgBlank(final String argument, final String argumentName) {
         throwArgNull(argument, argumentName);
         if (argument.isBlank()) {
-            throw new IllegalArgumentException(
-                    String.format("The supplied argument '%s' cannot be blank!", argumentName));
+            throw new IllegalArgumentException(ERROR_ARGUMENT_BLANK.formatted(argumentName));
         }
         return argument;
     }
