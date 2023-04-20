@@ -97,11 +97,11 @@ public class AddressBookInitializer {
      * Constructs an AddressBookInitializer to initialize an address book from config.txt, the saved state from disk, or
      * the SwirldState on upgrade.
      *
-     * @param currentVersion    The current version of the application. Must not be null.
+     * @param currentVersion    The current version of the application.
      * @param softwareUpgrade   Indicate that the software version has upgraded.
-     * @param signedState       The signed state loaded from disk.  May be null.
-     * @param configAddressBook The address book derived from config.txt. Must not be null.
-     * @param platformContext   The context for the platform. Must not be null.
+     * @param signedState       The signed state loaded from disk.
+     * @param configAddressBook The address book derived from config.txt.
+     * @param platformContext   The context for the platform.
      */
     public AddressBookInitializer(
             @NonNull final SoftwareVersion currentVersion,

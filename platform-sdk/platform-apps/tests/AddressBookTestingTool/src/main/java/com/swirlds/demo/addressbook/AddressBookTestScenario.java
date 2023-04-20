@@ -16,6 +16,9 @@
 
 package com.swirlds.demo.addressbook;
 
+/**
+ * Enumerated values for the test scenarios that can be run for validation of AddressBook Initialization
+ */
 public enum AddressBookTestScenario {
     /** Skip validation of the address book initialization. */
     SKIP_VALIDATION,

@@ -179,16 +179,11 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         }
 
         if (!validationPerformed.getAndSet(true)) {
+            String testScenario = testingToolConfig.testScenario();
             if (validateTestScenario()) {
-                logger.info(
-                        STARTUP.getMarker(),
-                        "Test scenario {}: finished without errors.",
-                        testingToolConfig.testScenario());
+                logger.info(STARTUP.getMarker(), "Test scenario {}: finished without errors.", testScenario);
             } else {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Test scenario {}: validation failed with errors.",
-                        testingToolConfig.testScenario());
+                logger.error(EXCEPTION.getMarker(), "Test scenario {}: validation failed with errors.", testScenario);
             }
         }
     }
@@ -258,7 +253,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final int weightingBehavior = context.getConfiguration()
                 .getConfigData(AddressBookTestingToolConfig.class)
                 .weightingBehavior();
-        logger.info("updateWeight called in State. Weighting Behavior: {}", weightingBehavior);
+        logger.info(DEMO_INFO.getMarker(), "updateWeight called in State. Weighting Behavior: {}", weightingBehavior);
         switch (weightingBehavior) {
             case 1:
                 return weightingBehavior1(addressBook);
@@ -687,11 +682,11 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             if (files[i].getName().endsWith(suffix)) {
                 final String fileName = files[i].getName();
                 final Path lastAddressBookDebugFilePath = lastAddressBookDebugFile.get();
-                if (lastAddressBookDebugFilePath == null) {
-                    lastAddressBookDebugFile.set(files[i].toPath());
-                } else if (fileName.compareTo(
-                                lastAddressBookDebugFilePath.getFileName().toString())
-                        > 0) {
+                if (lastAddressBookDebugFilePath == null
+                        || fileName.compareTo(lastAddressBookDebugFilePath
+                                        .getFileName()
+                                        .toString())
+                                > 0) {
                     lastAddressBookDebugFile.set(files[i].toPath());
                 }
             }

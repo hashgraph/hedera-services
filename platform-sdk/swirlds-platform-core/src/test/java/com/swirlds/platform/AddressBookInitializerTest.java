@@ -36,12 +36,12 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -492,13 +492,11 @@ class AddressBookInitializerTest {
      * @return the PlatformContext object.
      */
     private PlatformContext getPlatformContext(boolean forceUseOfConfigAddressBook) {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("addressBook.forceUseOfConfigAddressBook", forceUseOfConfigAddressBook)
-                .withValue("addressBook.addressBookDirectory", testDirectory.toString())
-                .withValue("addressBook.maxRecordedAddressBookFiles", 50)
-                .getOrCreateConfig();
-        final PlatformContext platformContext = mock(PlatformContext.class);
-        when(platformContext.getConfiguration()).thenReturn(configuration);
-        return platformContext;
+        return TestPlatformContextBuilder.create()
+                .withConfigBuilder(new TestConfigBuilder()
+                        .withValue("addressBook.forceUseOfConfigAddressBook", forceUseOfConfigAddressBook)
+                        .withValue("addressBook.addressBookDirectory", testDirectory.toString())
+                        .withValue("addressBook.maxRecordedAddressBookFiles", 50))
+                .build();
     }
 }
