@@ -17,6 +17,22 @@ This means that there is a difference in how some situations, like accidental tr
 
 For more information about EVM addresses, aliases and how they are used in Hedera see [Auto Account Creation](https://docs.hedera.com/hedera/core-concepts/accounts/auto-account-creation).
 
+### Example user story
+
+As a dApp developer, I have written some contracts and tests for these contracts.
+
+In Ethereum:
+- While executing tests against different environments, using some default private test keys (e.g. the ones configured with Hardhat) to create and interact with accounts, I accidentally executed my tests on Mainnet and transferred some funds to an account with public address derived from one of the default test keys.
+- As those default private test keys are well-known, anyone can use them to withdraw the funds from the account, so in effect, the funds are lost.
+
+In Hedera (current behavior):
+- While executing tests against different environments, using some default private test keys (e.g. the ones configured with Hedera Local Node) to create and interact with accounts, I accidentally executed my tests on Mainnet and transferred some funds to an account with alias derived from one of the Hedera Local Node keys.
+- As those default private test keys are well-known, anyone could have used them to create an account with the same alias but with different account admin key, leaving me with no control over the funds.
+
+In Hedera (desired behavior):
+- While executing tests against different environments, using some default private test keys (e.g. the ones configured with Hedera Local Node) to create and interact with accounts, I accidentally executed my tests on Mainnet and transferred some funds to an account with alias derived from one of the Hedera Local Node keys.
+- As those default private test keys are well-known, the ledger can be configured to own those EVM addresses and block any transfers to them, so that I cannot accidentally send funds to them.
+
 ## Goals
 
 - We want to block a list of known addresses, so that no one can “squat” on them and exercise full control on any accidentally sent and blocked funds. Sending funds to such blocked addresses should not be successful as these accounts are considered “compromised”.
