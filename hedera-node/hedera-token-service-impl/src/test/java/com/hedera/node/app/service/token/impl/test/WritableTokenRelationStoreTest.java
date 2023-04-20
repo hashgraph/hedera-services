@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -50,7 +51,8 @@ class WritableTokenRelationStoreTest {
 
     @BeforeEach
     void setUp() {
-        given(states.<EntityNumPair, TokenRelation>get("TOKEN_RELATIONS")).willReturn(tokenRelState);
+        given(states.<EntityNumPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
+                .willReturn(tokenRelState);
 
         subject = new WritableTokenRelationStore(states);
     }
