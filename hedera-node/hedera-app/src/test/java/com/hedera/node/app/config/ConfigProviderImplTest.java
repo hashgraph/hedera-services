@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.config.VersionedConfiguration;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,6 +74,7 @@ class ConfigProviderImplTest {
 
         // then
         assertThat(configuration).isNotNull();
+        assertThat(configuration.getVersion()).isZero();
     }
 
     @Test
@@ -87,5 +89,7 @@ class ConfigProviderImplTest {
 
         // then
         assertThat(configuration1).isNotSameAs(configuration2);
+        assertThat(configuration1).returns(0L, VersionedConfiguration::getVersion);
+        assertThat(configuration2).returns(1L, VersionedConfiguration::getVersion);
     }
 }

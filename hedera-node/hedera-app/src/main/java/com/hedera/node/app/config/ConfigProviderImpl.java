@@ -17,9 +17,13 @@
 package com.hedera.node.app.config;
 
 import com.hedera.node.app.config.internal.ConfigurationAdaptor;
+import com.hedera.node.app.config.internal.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.config.ConfigProvider;
+import com.hedera.node.app.spi.config.VersionedConfiguration;
+import com.swirlds.common.threading.locks.AutoClosableLock;
+import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -32,7 +36,9 @@ public class ConfigProviderImpl implements ConfigProvider {
 
     private final PropertySource propertySource;
 
-    private final AtomicReference<Configuration> configuration;
+    private final AtomicReference<VersionedConfiguration> configuration;
+
+    private final AutoClosableLock updateLock = Locks.createAutoLock();
 
     /**
      * Constructor.
@@ -41,7 +47,8 @@ public class ConfigProviderImpl implements ConfigProvider {
      */
     public ConfigProviderImpl(@NonNull final PropertySource propertySource) {
         this.propertySource = Objects.requireNonNull(propertySource, "propertySource");
-        configuration = new AtomicReference<>(new ConfigurationAdaptor(propertySource));
+        final Configuration config = new ConfigurationAdaptor(propertySource);
+        configuration = new AtomicReference<>(new VersionedConfigImpl(config, 0));
     }
 
     /**
@@ -49,11 +56,16 @@ public class ConfigProviderImpl implements ConfigProvider {
      * This should happen whenever {@link GlobalDynamicProperties#reload()} is called.
      */
     public void update() {
-        configuration.set(new ConfigurationAdaptor(propertySource));
+        try (final var lock = updateLock.lock()) {
+            final Configuration config = new ConfigurationAdaptor(propertySource);
+            final VersionedConfiguration versionedConfig =
+                    new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1);
+            configuration.set(versionedConfig);
+        }
     }
 
     @Override
-    public Configuration getConfiguration() {
+    public VersionedConfiguration getConfiguration() {
         return configuration.get();
     }
 }

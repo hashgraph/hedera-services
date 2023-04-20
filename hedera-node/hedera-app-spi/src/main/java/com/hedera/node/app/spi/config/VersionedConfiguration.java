@@ -19,16 +19,14 @@ package com.hedera.node.app.spi.config;
 import com.swirlds.config.api.Configuration;
 
 /**
- * The ConfigProvider interface is used to provide the configuration. This interface can be seen as the "config
- * facility". Whenever you want to access a configuration property that can change at runtime you should not store the
- * {@link Configuration} instance.
+ * An interface that extends the {@link Configuration} interface with a version.
  */
-public interface ConfigProvider {
+public interface VersionedConfiguration extends Configuration {
 
     /**
-     * Returns the configuration.
+     * Returns the version of the configuration.
      *
-     * @return the configuration
+     * @return the version of the configuration
      */
-    VersionedConfiguration getConfiguration();
+    long getVersion();
 }
