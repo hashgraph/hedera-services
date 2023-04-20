@@ -47,8 +47,7 @@ class SyncProtocolTests {
     private NodeId peerId;
     private ShadowGraphSynchronizer shadowGraphSynchronizer;
     private FallenBehindManager fallenBehindManager;
-    private SyncPermitProvider outgoingPermitProvider;
-    private SyncPermitProvider incomingPermitProvider;
+    private SyncPermitProvider permitProvider;
     private CriticalQuorum criticalQuorum;
     private PeerAgnosticSyncChecks peerAgnosticSyncChecks;
     private Duration sleepAfterSync;
@@ -59,8 +58,7 @@ class SyncProtocolTests {
         peerId = new NodeId(false, 1);
         shadowGraphSynchronizer = mock(ShadowGraphSynchronizer.class);
         fallenBehindManager = mock(FallenBehindManager.class);
-        outgoingPermitProvider = new SyncPermitProvider(1);
-        incomingPermitProvider = new SyncPermitProvider(2);
+        permitProvider = new SyncPermitProvider(2);
         criticalQuorum = mock(CriticalQuorum.class);
         sleepAfterSync = Duration.ofMillis(0);
         syncMetrics = mock(SyncMetrics.class);
@@ -84,16 +82,15 @@ class SyncProtocolTests {
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
-        assertEquals(0, outgoingPermitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -103,21 +100,22 @@ class SyncProtocolTests {
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         // obtain the only existing permit, so it isn't available to the protocol
-        final MaybeLocked wastedPermit = outgoingPermitProvider.tryAcquire();
-        assertTrue(wastedPermit.isLockAcquired());
-        assertEquals(0, outgoingPermitProvider.getNumAvailable());
+        final MaybeLocked wastedPermit1 = permitProvider.tryAcquire();
+        final MaybeLocked wastedPermit2 = permitProvider.tryAcquire();
+        assertTrue(wastedPermit1.isLockAcquired());
+        assertTrue(wastedPermit2.isLockAcquired());
+        assertEquals(0, permitProvider.getNumAvailable());
 
         assertFalse(protocol.shouldInitiate());
-        assertEquals(0, outgoingPermitProvider.getNumAvailable());
+        assertEquals(0, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -127,17 +125,16 @@ class SyncProtocolTests {
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 // peer agnostic checks fail
                 new PeerAgnosticSyncChecks(List.of(() -> false)),
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -150,16 +147,15 @@ class SyncProtocolTests {
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -173,16 +169,15 @@ class SyncProtocolTests {
                 new NodeId(false, 6),
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -196,16 +191,15 @@ class SyncProtocolTests {
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
-        assertEquals(0, outgoingPermitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -216,68 +210,65 @@ class SyncProtocolTests {
                 new NodeId(false, 6),
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
-        assertEquals(0, outgoingPermitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getNumAvailable());
     }
 
     @Test
     @DisplayName("Protocol should accept connection")
     void shouldAccept() {
-        assertEquals(2, incomingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         // obtain the 1 of the permits, but 1 will still be available to accept
-        final MaybeLocked wastedPermit = incomingPermitProvider.tryAcquire();
+        final MaybeLocked wastedPermit = permitProvider.tryAcquire();
         assertTrue(wastedPermit.isLockAcquired());
-        assertEquals(1, incomingPermitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getNumAvailable());
 
         final SyncProtocol protocol = new SyncProtocol(
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
         assertTrue(protocol.shouldAccept());
-        assertEquals(0, incomingPermitProvider.getNumAvailable());
+        assertEquals(0, permitProvider.getNumAvailable());
     }
 
     @Test
     @DisplayName("Protocol doesn't initiate without a permit")
     void noPermitAvailableToAccept() {
-        assertEquals(2, incomingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
 
         // waste both available permits
-        final MaybeLocked wastedPermit1 = incomingPermitProvider.tryAcquire();
+        final MaybeLocked wastedPermit1 = permitProvider.tryAcquire();
         assertTrue(wastedPermit1.isLockAcquired());
-        final MaybeLocked wastedPermit2 = incomingPermitProvider.tryAcquire();
+        final MaybeLocked wastedPermit2 = permitProvider.tryAcquire();
         assertTrue(wastedPermit2.isLockAcquired());
 
-        assertEquals(0, incomingPermitProvider.getNumAvailable());
+        assertEquals(0, permitProvider.getNumAvailable());
 
         final SyncProtocol protocol = new SyncProtocol(
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
         assertFalse(protocol.shouldAccept());
-        assertEquals(0, incomingPermitProvider.getNumAvailable());
+        assertEquals(0, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -287,17 +278,16 @@ class SyncProtocolTests {
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 // peer agnostic checks fail
                 new PeerAgnosticSyncChecks(List.of(() -> false)),
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(2, incomingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldAccept());
-        assertEquals(2, incomingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -310,16 +300,15 @@ class SyncProtocolTests {
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(2, incomingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldAccept());
-        assertEquals(2, incomingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -329,18 +318,17 @@ class SyncProtocolTests {
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
-        assertEquals(0, outgoingPermitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getNumAvailable());
         protocol.initiateFailed();
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -350,18 +338,17 @@ class SyncProtocolTests {
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         protocol.shouldInitiate();
-        assertEquals(0, outgoingPermitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getNumAvailable());
         assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
-        assertEquals(1, outgoingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -371,18 +358,17 @@ class SyncProtocolTests {
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics);
 
-        assertEquals(2, incomingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
         protocol.shouldAccept();
-        assertEquals(1, incomingPermitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getNumAvailable());
         assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
-        assertEquals(2, incomingPermitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getNumAvailable());
     }
 
     @Test
@@ -392,8 +378,7 @@ class SyncProtocolTests {
                 peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
-                outgoingPermitProvider,
-                incomingPermitProvider,
+                permitProvider,
                 criticalQuorum,
                 peerAgnosticSyncChecks,
                 sleepAfterSync,

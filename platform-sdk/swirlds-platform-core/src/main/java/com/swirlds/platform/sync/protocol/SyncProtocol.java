@@ -75,14 +75,9 @@ public class SyncProtocol implements Protocol {
     private final SyncMetrics syncMetrics;
 
     /**
-     * The provider for outgoing sync permits
+     * The provider for sync permits
      */
-    private final SyncPermitProvider outgoingPermitProvider;
-
-    /**
-     * The provider for incoming sync permits
-     */
-    private final SyncPermitProvider incomingPermitProvider;
+    private final SyncPermitProvider permitProvider;
 
     /**
      * A permit to sync, which may or may not be acquired
@@ -96,21 +91,19 @@ public class SyncProtocol implements Protocol {
     /**
      * Constructs a new sync protocol
      *
-     * @param peerId                     the id of the peer being synced with in this protocol
-     * @param synchronizer               the shadow graph synchronizer, responsible for actually doing the sync
-     * @param fallenBehindManager        manager to determine whether this node has fallen behind
-     * @param outgoingSyncPermitProvider provides permits to initiate syncs
-     * @param incomingSyncPermitProvider provides permits to receive syncs
-     * @param criticalQuorum             determines whether a peer is a good candidate to sync with
-     * @param peerAgnosticSyncChecks     peer agnostic checks to determine whether this node should sync
-     * @param syncMetrics                metrics tracking syncing
+     * @param peerId                 the id of the peer being synced with in this protocol
+     * @param synchronizer           the shadow graph synchronizer, responsible for actually doing the sync
+     * @param fallenBehindManager    manager to determine whether this node has fallen behind
+     * @param permitProvider         provides permits to sync
+     * @param criticalQuorum         determines whether a peer is a good candidate to sync with
+     * @param peerAgnosticSyncChecks peer agnostic checks to determine whether this node should sync
+     * @param syncMetrics            metrics tracking syncing
      */
     public SyncProtocol(
             @NonNull final NodeId peerId,
             @NonNull final ShadowGraphSynchronizer synchronizer,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final SyncPermitProvider outgoingSyncPermitProvider,
-            @NonNull final SyncPermitProvider incomingSyncPermitProvider,
+            @NonNull final SyncPermitProvider permitProvider,
             @NonNull final CriticalQuorum criticalQuorum,
             @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
             @NonNull final Duration sleepAfterSync,
@@ -119,8 +112,7 @@ public class SyncProtocol implements Protocol {
         this.peerId = throwArgNull(peerId, "peerId");
         this.synchronizer = throwArgNull(synchronizer, "synchronizer");
         this.fallenBehindManager = throwArgNull(fallenBehindManager, "fallenBehindManager");
-        this.outgoingPermitProvider = throwArgNull(outgoingSyncPermitProvider, "outgoingSyncPermitProvider");
-        this.incomingPermitProvider = throwArgNull(incomingSyncPermitProvider, "incomingSyncPermitProvider");
+        this.permitProvider = throwArgNull(permitProvider, "permitProvider");
         this.criticalQuorum = throwArgNull(criticalQuorum, "criticalQuorum");
         this.peerAgnosticSyncChecks = throwArgNull(peerAgnosticSyncChecks, "peerAgnosticSyncCheck");
         this.sleepAfterSync = throwArgNull(sleepAfterSync, "sleepAfterSync");
@@ -148,13 +140,16 @@ public class SyncProtocol implements Protocol {
     @Override
     public boolean shouldInitiate() {
         // are there any reasons not to initiate?
-        if (!syncCooldownComplete() || permit.isLockAcquired() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
+        if (!syncCooldownComplete()
+                || permit.isLockAcquired()
+                || !peerAgnosticSyncChecks.shouldSync()
+                || fallenBehindManager.hasFallenBehind()) {
             return false;
         }
 
         // is there a reason to initiate?
         if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId.getId())) {
-            permit = outgoingPermitProvider.tryAcquire();
+            permit = permitProvider.tryAcquire();
 
             return permit.isLockAcquired();
         } else {
@@ -168,12 +163,15 @@ public class SyncProtocol implements Protocol {
     @Override
     public boolean shouldAccept() {
         // are there any reasons not to accept?
-        if (!syncCooldownComplete() || permit.isLockAcquired() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
+        if (!syncCooldownComplete()
+                || permit.isLockAcquired()
+                || !peerAgnosticSyncChecks.shouldSync()
+                || fallenBehindManager.hasFallenBehind()) {
             syncMetrics.updateRejectedSyncRatio(true);
             return false;
         }
 
-        permit = incomingPermitProvider.tryAcquire();
+        permit = permitProvider.tryAcquire();
         final boolean isLockAcquired = permit.isLockAcquired();
 
         syncMetrics.updateRejectedSyncRatio(!isLockAcquired);

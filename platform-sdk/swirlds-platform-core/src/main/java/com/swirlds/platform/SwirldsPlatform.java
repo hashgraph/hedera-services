@@ -422,14 +422,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
 
     /**
-     * The permit provider for outgoing syncs. Only relevant when sync is running as a protocol
+     * The permit provider for syncs. Only relevant when sync is running as a protocol
      */
-    private SyncPermitProvider outgoingSyncPermitProvider;
-
-    /**
-     * The permit provider for incoming syncs. Only relevant when sync is running as a protocol
-     */
-    private SyncPermitProvider incomingSyncPermitProvider;
+    private SyncPermitProvider syncPermitProvider;
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -1300,9 +1295,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 !basicConfig.syncAsProtocolEnabled(),
                 () -> {});
 
-        outgoingSyncPermitProvider = new SyncPermitProvider(settings.getMaxOutgoingSyncs());
-        incomingSyncPermitProvider =
-                new SyncPermitProvider(settings.getMaxOutgoingSyncs() + settings.getMaxIncomingSyncsInc());
+        // TODO this number was chosen to exactly match how many syncs could be performed with the old sync strategy.
+        //  it should be reevaluated before merging
+        syncPermitProvider = new SyncPermitProvider(settings.getMaxOutgoingSyncs() * 2 + settings.getMaxIncomingSyncsInc());
 
         final Runnable stopGossip;
         if (settings.getChatter().isChatterUsed()) {
@@ -1312,8 +1307,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 gossipHalted.set(true);
                 // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
                 // we've fallen behind
-                outgoingSyncPermitProvider.join();
-                incomingSyncPermitProvider.join();
+                syncPermitProvider.join();
             };
         } else {
             // wait and acquire all sync ongoing locks and release them immediately
@@ -1680,8 +1674,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             reconnectController.get().start();
         }
 
-        final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
-                List.of(() -> !gossipHalted.get(), () -> intakeQueue.size() <= settings.getEventIntakeQueueSize()));
+        final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
+                () -> !gossipHalted.get(), () -> intakeQueue.size() < settings.getEventIntakeQueueThrottleSize()));
 
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
@@ -1725,8 +1719,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             otherId,
                                             shadowgraphSynchronizer,
                                             fallenBehindManager,
-                                            outgoingSyncPermitProvider,
-                                            incomingSyncPermitProvider,
+                                            syncPermitProvider,
                                             criticalQuorum,
                                             peerAgnosticSyncChecks,
                                             Duration.ofMillis(getSleepAfterSync()),
