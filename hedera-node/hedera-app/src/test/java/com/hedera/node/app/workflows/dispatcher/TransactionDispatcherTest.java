@@ -137,6 +137,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -161,6 +162,9 @@ class TransactionDispatcherTest {
 
     @Mock(strictness = LENIENT)
     private ReadableAccountStore accountStore;
+
+    @Mock(strictness = LENIENT)
+    private ReadableStoreFactory readableStoreFactory;
 
     @Mock
     private ConsensusCreateTopicHandler consensusCreateTopicHandler;
@@ -341,6 +345,7 @@ class TransactionDispatcherTest {
         when(state.createReadableStates(any())).thenReturn(readableStates);
         when(accountStore.getAccountById(any(AccountID.class))).thenReturn(account);
         lenient().when(account.key()).thenReturn(payerKey);
+        when(readableStoreFactory.createStore(AccountAccess.class)).thenReturn(accountStore);
 
         handlers = new TransactionHandlers(
                 consensusCreateTopicHandler,
@@ -424,30 +429,28 @@ class TransactionDispatcherTest {
         final var payer = AccountID.newBuilder().build();
         final var tracker = new ReadableStoreFactory(state);
         final var validContext = new PreHandleContext(
-                accountStore,
+                readableStoreFactory,
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder().build())
                         .build());
         final var invalidSystemDelete = new PreHandleContext(
-                accountStore,
+                readableStoreFactory,
                 TransactionBody.newBuilder()
                         .systemDelete(SystemDeleteTransactionBody.newBuilder().build())
                         .build());
         final var invalidSystemUndelete = new PreHandleContext(
-                accountStore,
+                readableStoreFactory,
                 TransactionBody.newBuilder()
                         .systemUndelete(
                                 SystemUndeleteTransactionBody.newBuilder().build())
                         .build());
 
         // then
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null, validContext))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null)).isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, invalidSystemDelete))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(invalidSystemDelete))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, invalidSystemUndelete))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(invalidSystemUndelete))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -456,10 +459,10 @@ class TransactionDispatcherTest {
         // given
         final var txBody = TransactionBody.newBuilder().build();
         final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody);
+        final var context = new PreHandleContext(readableStoreFactory, txBody);
 
         // then
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(context))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -470,10 +473,10 @@ class TransactionDispatcherTest {
                 .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder())
                 .build();
         final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody);
+        final var context = new PreHandleContext(readableStoreFactory, txBody);
 
         // then
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(context))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -580,10 +583,10 @@ class TransactionDispatcherTest {
             throws PreCheckException {
         // given
         final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody);
+        final var context = new PreHandleContext(readableStoreFactory, txBody);
 
         // when
-        dispatcher.dispatchPreHandle(tracker, context);
+        dispatcher.dispatchPreHandle(context);
 
         // then
         verification.dispatchTo(this.handlers, context);

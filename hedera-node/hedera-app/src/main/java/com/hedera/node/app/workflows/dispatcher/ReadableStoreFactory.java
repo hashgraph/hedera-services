@@ -27,30 +27,66 @@ import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.
+ *
+ * <p>The initial implementation creates all known stores hard-coded. In a future version, this will be replaced by a
+ * dynamic approach.
  */
-public class ReadableStoreFactory {
+public class ReadableStoreFactory implements PreHandleContext.ReadableStoreFactory {
+
+    // This is the hard-coded part that needs to be replaced by a dynamic approach later,
+    // e.g. services have to register their stores
+    private static final Map<Class<?>, StoreEntry> STORE_FACTORY = Map.of(
+            AccountAccess.class, new StoreEntry(TokenService.NAME, ReadableAccountStore::new),
+            ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStore::new),
+            ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStore::new),
+            ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStore::new),
+            ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStore::new),
+            ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStore::new));
 
     private final HederaState state;
 
+    /**
+     * Constructor of {@code ReadableStoreFactory}
+     *
+     * @param state the {@link HederaState} to use
+     */
     public ReadableStoreFactory(@NonNull final HederaState state) {
-        this.state = requireNonNull(state);
+        this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
     }
 
     /**
-     * Get a {@link ReadableAccountStore}
+     * Create a new store given the store's interface. This gives read-only access to the store.
      *
-     * @return a new {@link ReadableAccountStore}
+     * @param storeInterface The store interface to find and create a store for
+     * @param <C> Interface class for a Store
+     * @return An implementation of the provided store interface
+     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
+     * @throws NullPointerException if {@code clazz} is {@code null}
      */
+    @Override
     @NonNull
-    public ReadableAccountStore createAccountStore() {
-        final var tokenStates = state.createReadableStates(TokenService.NAME);
-        return new ReadableAccountStore(tokenStates);
+    public <C> C createStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
+        final var entry = STORE_FACTORY.get(storeInterface);
+        if (entry != null) {
+            final var readableStates = state.createReadableStates(entry.name);
+            final var store = entry.factory.apply(readableStates);
+            assert storeInterface.isInstance(store); // This needs to be ensured while stores are registered
+            return storeInterface.cast(store);
+        }
+        throw new IllegalArgumentException("No store of the given class is available");
     }
+
+    private record StoreEntry(@NonNull String name, @NonNull Function<ReadableStates, ?> factory) {}
 
     /**
      * Get a {@link ReadableTopicStore}
@@ -61,38 +97,5 @@ public class ReadableStoreFactory {
     public ReadableTopicStore createTopicStore() {
         final var topicStates = state.createReadableStates(ConsensusService.NAME);
         return new ReadableTopicStore(topicStates);
-    }
-
-    /**
-     * Get a {@link ReadableScheduleStore}
-     *
-     * @return a new {@link ReadableScheduleStore}
-     */
-    @NonNull
-    public ReadableScheduleStore createScheduleStore() {
-        final var scheduleStates = state.createReadableStates(ScheduleService.NAME);
-        return new ReadableScheduleStore(scheduleStates);
-    }
-
-    /**
-     * Get a {@link ReadableScheduleStore}
-     *
-     * @return a new {@link ReadableScheduleStore}
-     */
-    @NonNull
-    public ReadableSpecialFileStore createSpecialFileStore() {
-        final var freezeStates = state.createReadableStates(FreezeService.NAME);
-        return new ReadableSpecialFileStore(freezeStates);
-    }
-
-    /**
-     * Get a {@link ReadableTokenStore}
-     *
-     * @return a new {@link ReadableTokenStore}
-     */
-    @NonNull
-    public ReadableTokenStore createTokenStore() {
-        final var tokenStates = state.createReadableStates(TokenService.NAME);
-        return new ReadableTokenStore(tokenStates);
     }
 }
