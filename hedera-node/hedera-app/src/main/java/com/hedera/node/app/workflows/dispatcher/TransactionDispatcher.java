@@ -289,7 +289,7 @@ public class TransactionDispatcher {
      * @param tokenRelStore the token relation store
      */
     private void dispatchTokenGrantKycToAccount(
-            TransactionBody tokenGrantKyc, WritableTokenRelationStore tokenRelStore) {
+            @NonNull final TransactionBody tokenGrantKyc, @NonNull final WritableTokenRelationStore tokenRelStore) {
         final var handler = handlers.tokenGrantKycToAccountHandler();
         handler.handle(tokenGrantKyc, tokenRelStore);
         tokenRelStore.commit();
