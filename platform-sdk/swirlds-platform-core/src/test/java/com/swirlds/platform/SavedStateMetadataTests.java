@@ -118,6 +118,51 @@ class SavedStateMetadataTests {
     }
 
     @Test
+    @DisplayName("Random Data Empty ListTest")
+    void randomDataEmptyListTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final long round = random.nextLong();
+        final long numberOfConsensusEvents = random.nextLong();
+        final Instant timestamp = RandomUtils.randomInstant(random);
+        final Hash runningEventHash = RandomUtils.randomHash(random);
+        final long minimumGenerationNonAncient = random.nextLong();
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
+        final Instant wallClockTime = RandomUtils.randomInstant(random);
+        final long nodeId = random.nextLong();
+        final List<Long> signingNodes = new ArrayList<>();
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
+
+        final SavedStateMetadata metadata = new SavedStateMetadata(
+                round,
+                numberOfConsensusEvents,
+                timestamp,
+                runningEventHash,
+                minimumGenerationNonAncient,
+                softwareVersion.toString(),
+                wallClockTime,
+                nodeId,
+                signingNodes,
+                signingWeightSum,
+                totalWeight);
+
+        final SavedStateMetadata deserialized = serializeDeserialize(metadata);
+
+        assertEquals(round, deserialized.round());
+        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
+        assertEquals(timestamp, deserialized.consensusTimestamp());
+        assertEquals(runningEventHash, deserialized.runningEventHash());
+        assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
+        assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
+        assertEquals(wallClockTime, deserialized.wallClockTime());
+        assertEquals(nodeId, deserialized.nodeId());
+        assertEquals(signingNodes, deserialized.signingNodes());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
+    }
+
+    @Test
     @DisplayName("Random Data Some Missing Test")
     void randomDataSomeMissingTest() throws IOException {
         final Random random = getRandomPrintSeed();
@@ -309,8 +354,9 @@ class SavedStateMetadataTests {
 
     /**
      * Test the parsing of a mal-formatted file
-     * @param random a source of randomness
-     * @param fileUpdater updates a file in some way
+     *
+     * @param random        a source of randomness
+     * @param fileUpdater   updates a file in some way
      * @param invalidFields the fields expected to be invalid in the mal-formatted file
      */
     private void testMalFormedFile(
@@ -509,23 +555,6 @@ class SavedStateMetadataTests {
                     for (final String line : s.split("\n")) {
                         if (line.contains(SavedStateMetadataField.SIGNING_NODES.toString())) {
                             sb.append(SavedStateMetadataField.SIGNING_NODES + ": 1,2,3,4,,6,7,8\n");
-                        } else {
-                            sb.append(line).append("\n");
-                        }
-                    }
-
-                    return sb.toString();
-                },
-                Set.of(SavedStateMetadataField.SIGNING_NODES));
-
-        testMalFormedFile(
-                random,
-                (s, m) -> {
-                    final StringBuilder sb = new StringBuilder();
-
-                    for (final String line : s.split("\n")) {
-                        if (line.contains(SavedStateMetadataField.SIGNING_NODES.toString())) {
-                            sb.append(SavedStateMetadataField.SIGNING_NODES + ": \n");
                         } else {
                             sb.append(line).append("\n");
                         }
