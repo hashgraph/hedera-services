@@ -18,8 +18,13 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,10 +60,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * Tests the following:
  * <ul>
  *     <li>preHandle works when there is a receiverSigRequired</li>
- *     <li>preHandle works when there is no receiverSigRequired</li>
- *     <li>handle fails when account cannot be created if usage limit exceeded</li>
- *     <li>handle works when account can be created</li>
- *     <li>handle works when account can be created with a receiverSigRequired</li>
  * </ul>
  */
 @ExtendWith(MockitoExtension.class)
@@ -78,7 +79,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     public void setUp() {
         super.setUp();
         refreshStoresWithCurrentTokenInWritable();
-        txn = new Builder().build();
+        txn = new CryptoCreateBuilder().build();
         recordBuilder = subject.newRecordBuilder();
     }
 
@@ -94,9 +95,87 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
+    @DisplayName("preHandle fails when initial balance is not greater than zero")
+    void preHandleFailsWhenInitialBalanceIsNegative() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withInitialBalance(-1L).build();
+        final var context = new PreHandleContext(readableStore, txn);
+        final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(context));
+
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 0);
+        assertEquals(key, context.payerKey());
+        assertEquals(INVALID_INITIAL_BALANCE, msg.responseCode());
+    }
+
+    @Test
+    @DisplayName("preHandle fails without auto-renew period specified")
+    void preHandleFailsWhenNoAutoRenewPeriodSpecified() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withNoAutoRenewPeriod().build();
+        final var context = new PreHandleContext(readableStore, txn);
+        final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(context));
+
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 0);
+        assertEquals(key, context.payerKey());
+        assertEquals(INVALID_RENEWAL_PERIOD, msg.responseCode());
+    }
+
+    @Test
+    @DisplayName("preHandle fails when negative send record threshold is specified")
+    void preHandleFailsWhenSendRecordThresholdIsNegative() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withSendRecordThreshold(-1).build();
+        final var context = new PreHandleContext(readableStore, txn);
+        final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(context));
+
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 0);
+        assertEquals(key, context.payerKey());
+        assertEquals(INVALID_SEND_RECORD_THRESHOLD, msg.responseCode());
+    }
+
+    @Test
+    @DisplayName("preHandle fails when negative receive record threshold is specified")
+    void preHandleFailsWhenReceiveRecordThresholdIsNegative() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withReceiveRecordThreshold(-1).build();
+        final var context = new PreHandleContext(readableStore, txn);
+        final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(context));
+
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 0);
+        assertEquals(key, context.payerKey());
+        assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, msg.responseCode());
+    }
+
+    @Test
+    @DisplayName("preHandle fails when proxy accounts id is specified")
+    void preHandleFailsWhenProxyAccountIdIsSpecified() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withProxyAccountNum(1).build();
+        final var context = new PreHandleContext(readableStore, txn);
+        final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(context));
+
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 0);
+        assertEquals(key, context.payerKey());
+        assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, msg.responseCode());
+    }
+
+    @Test
+    @DisplayName("preHandle succeeds when initial balance is zero")
+    void preHandleWorksWhenInitialBalanceIsZero() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withInitialBalance(0L).build();
+        final var context = new PreHandleContext(readableStore, txn);
+        subject.preHandle(context);
+
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 1);
+        assertEquals(key, context.payerKey());
+    }
+
+    @Test
     @DisplayName("preHandle works when there is no receiverSigRequired")
     void noReceiverSigRequiredPreHandleCryptoCreate() throws PreCheckException {
-        final var noReceiverSigTxn = new Builder().withReceiverSigReq(false).build();
+        final var noReceiverSigTxn =
+                new CryptoCreateBuilder().withReceiverSigReq(false).build();
         final var expected = new PreHandleContext(readableStore, noReceiverSigTxn);
 
         final var context = new PreHandleContext(readableStore, noReceiverSigTxn);
@@ -188,7 +267,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
             + " be a semantic check in `preHandle` and handle workflow should reject the "
             + "transaction before reaching handle")
     void handleFailsWhenAutoRenewPeriodNotSet() {
-        txn = new Builder().withNoAutoRenewPeriod().build();
+        txn = new CryptoCreateBuilder().withNoAutoRenewPeriod().build();
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
@@ -202,7 +281,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("handle fails when payer account can't pay for the newly created account initial balance")
     void handleFailsWhenPayerHasInsufficientBalance() {
-        txn = new Builder().withInitialBalance(payerBalance + 1L).build();
+        txn = new CryptoCreateBuilder().withInitialBalance(payerBalance + 1L).build();
 
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
@@ -242,7 +321,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("handle fails when payer account doesn't exist")
     void handleFailsWhenPayerInvalid() {
-        txn = new Builder()
+        txn = new CryptoCreateBuilder()
                 .withPayer(AccountID.newBuilder().accountNum(600L).build())
                 .build();
 
@@ -261,7 +340,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("handle commits when any alias is mentioned in the transaction")
     void handleCommitsAnyAlias() {
-        txn = new Builder().withAlias(Bytes.wrap("alias")).build();
+        txn = new CryptoCreateBuilder().withAlias(Bytes.wrap("alias")).build();
 
         given(handleContext.consensusNow()).willReturn(consensusInstant);
         given(handleContext.newEntityNumSupplier()).willReturn(() -> 1000L);
@@ -291,14 +370,20 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         writableStore = new WritableAccountStore(writableStates);
     }
 
-    private class Builder {
+    /**
+     * A builder for {@link TransactionBody} instances.
+     */
+    private class CryptoCreateBuilder {
         private AccountID payer = id;
         private long initialBalance = defaultInitialBalance;
         private long autoRenewPeriod = defaultAutoRenewPeriod;
         private boolean receiverSigReq = true;
         private Bytes alias = null;
+        private long sendRecordThreshold = 0;
+        private long receiveRecordThreshold = 0;
+        private AccountID proxyAccountId = null;
 
-        private Builder() {}
+        private CryptoCreateBuilder() {}
 
         public TransactionBody build() {
             final var transactionID =
@@ -307,7 +392,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                     .key(otherKey)
                     .receiverSigRequired(receiverSigReq)
                     .initialBalance(initialBalance)
-                    .memo("Create Account");
+                    .memo("Create Account")
+                    .sendRecordThreshold(sendRecordThreshold)
+                    .receiveRecordThreshold(receiveRecordThreshold);
 
             if (autoRenewPeriod > 0) {
                 createTxnBody.autoRenewPeriod(
@@ -316,6 +403,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
             if (alias != null) {
                 createTxnBody.alias(alias);
             }
+            if (proxyAccountId != null) {
+                createTxnBody.proxyAccountID(proxyAccountId);
+            }
 
             return TransactionBody.newBuilder()
                     .transactionID(transactionID)
@@ -323,32 +413,48 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                     .build();
         }
 
-        public Builder withPayer(final AccountID payer) {
+        public CryptoCreateBuilder withPayer(final AccountID payer) {
             this.payer = payer;
             return this;
         }
 
-        public Builder withInitialBalance(final long initialBalance) {
+        public CryptoCreateBuilder withInitialBalance(final long initialBalance) {
             this.initialBalance = initialBalance;
             return this;
         }
 
-        public Builder withAutoRenewPeriod(final long autoRenewPeriod) {
+        public CryptoCreateBuilder withAutoRenewPeriod(final long autoRenewPeriod) {
             this.autoRenewPeriod = autoRenewPeriod;
             return this;
         }
 
-        public Builder withAlias(final Bytes alias) {
+        public CryptoCreateBuilder withProxyAccountNum(final long proxyAccountNum) {
+            this.proxyAccountId =
+                    AccountID.newBuilder().accountNum(proxyAccountNum).build();
+            return this;
+        }
+
+        public CryptoCreateBuilder withSendRecordThreshold(final long threshold) {
+            this.sendRecordThreshold = threshold;
+            return this;
+        }
+
+        public CryptoCreateBuilder withReceiveRecordThreshold(final long threshold) {
+            this.receiveRecordThreshold = threshold;
+            return this;
+        }
+
+        public CryptoCreateBuilder withAlias(final Bytes alias) {
             this.alias = alias;
             return this;
         }
 
-        public Builder withNoAutoRenewPeriod() {
+        public CryptoCreateBuilder withNoAutoRenewPeriod() {
             this.autoRenewPeriod = -1;
             return this;
         }
 
-        public Builder withReceiverSigReq(final boolean receiverSigReq) {
+        public CryptoCreateBuilder withReceiverSigReq(final boolean receiverSigReq) {
             this.receiverSigReq = receiverSigReq;
             return this;
         }

@@ -109,7 +109,8 @@ public class CryptoCreateHandler implements TransactionHandler {
             @NonNull final boolean areCreatableAccounts) {
         final var op = txnBody.cryptoCreateAccount();
 
-        // validate fields in the transaction body that involves checking with dynamic properties or state
+        // validate fields in the transaction body that involves checking with
+        // dynamic properties or state
         final ResponseCodeEnum validationResult = validateSemantics(op);
         if (validationResult != OK) {
             throw new HandleException(validationResult);
@@ -156,6 +157,13 @@ public class CryptoCreateHandler implements TransactionHandler {
     }
 
     /* ----------- Helper Methods ----------- */
+
+    /**
+     * Validate the basic fields in the transaction body that does not involve checking with dynamic
+     * properties or state. This check is done as part of the pre-handle workflow.
+     * @param op the transaction body
+     * @return OK if the transaction body is valid, otherwise return the appropriate error code
+     */
     private ResponseCodeEnum pureChecks(@NonNull final CryptoCreateTransactionBody op) {
         if (op.initialBalance() < 0L) {
             return INVALID_INITIAL_BALANCE;
@@ -164,10 +172,10 @@ public class CryptoCreateHandler implements TransactionHandler {
             return INVALID_RENEWAL_PERIOD;
         }
         if (op.sendRecordThreshold() < 0L) {
-            return INVALID_SEND_RECORD_THRESHOLD;
+            return INVALID_SEND_RECORD_THRESHOLD; // should this return SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
         }
         if (op.receiveRecordThreshold() < 0L) {
-            return INVALID_RECEIVE_RECORD_THRESHOLD;
+            return INVALID_RECEIVE_RECORD_THRESHOLD; // should this return RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
         }
         if (op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT)) {
             return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
@@ -175,7 +183,14 @@ public class CryptoCreateHandler implements TransactionHandler {
         return OK;
     }
 
+    /**
+     * Validate the fields in the transaction body that involves checking with dynamic
+     * properties or state. This check is done as part of the handle workflow.
+     * @param op the transaction body
+     * @return OK if the transaction body is valid, otherwise return the appropriate error code
+     */
     private ResponseCodeEnum validateSemantics(CryptoCreateTransactionBody op) {
+        // TODO : Need to add validations that involve dynamic properties or state
         return OK;
     }
 
