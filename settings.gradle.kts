@@ -123,7 +123,7 @@ dependencyResolutionManagement {
       version("pbj-version", "0.5.1")
       version("besu-version", "22.10.1")
       version("besu-native-version", "0.6.1")
-      version("bouncycastle-version", "1.73")
+      version("bouncycastle-version", "1.71")
       version("caffeine-version", "3.0.6")
       version("eclipse-collections-version", "10.4.0")
       version("commons-codec-version", "1.15")

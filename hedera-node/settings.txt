@@ -1,7 +1,7 @@
 checkSignedStateFromDisk,                      1
 csvFileName,                                   MainNetStats
 doUpnp,                                        false
-loadKeysFromPfxFiles,                          0
+loadKeysFromPfxFiles,                          false
 maxOutgoingSyncs,                              1
 reconnect.active,                              1
 reconnect.asyncStreamTimeoutMilliseconds,      60000
