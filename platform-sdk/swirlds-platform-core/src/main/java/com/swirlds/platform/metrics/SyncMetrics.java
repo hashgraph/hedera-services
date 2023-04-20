@@ -43,9 +43,15 @@ import java.time.temporal.ChronoUnit;
  * Interface to update relevant sync statistics
  */
 public class SyncMetrics {
+    private static final RunningAverageMetric.Config PERMITS_AVAILABLE_CONFIG = new RunningAverageMetric.Config(
+            PLATFORM_CATEGORY, "syncPermits")
+            .withDescription("number of sync permits available")
+            .withFormat(FORMAT_16_2);
+    private final RunningAverageMetric permitsAvailable;
+
     private static final RunningAverageMetric.Config AVG_BYTES_PER_SEC_SYNC_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "bytes/sec_sync")
-            .withDescription("average number of bytes per second transfered during a sync")
+            .withDescription("average number of bytes per second transferred during a sync")
             .withFormat(FORMAT_16_2);
     private final RunningAverageMetric avgBytesPerSecSync;
 
@@ -182,6 +188,8 @@ public class SyncMetrics {
                 "the averaged ratio of rejected syncs to accepted syncs over time",
                 FORMAT_1_3,
                 AverageStat.WEIGHT_VOLATILE);
+
+        permitsAvailable = metrics.getOrCreate(PERMITS_AVAILABLE_CONFIG);
     }
 
     /**
@@ -308,5 +316,14 @@ public class SyncMetrics {
      */
     public void updateRejectedSyncRatio(final boolean syncRejected) {
         rejectedSyncRatio.update(syncRejected);
+    }
+
+    /**
+     * Updates the number of permits available for syncs
+     *
+     * @param permits the number of permits available
+     */
+    public void updateSyncPermitsAvailable(final int permits) {
+        permitsAvailable.update(permits);
     }
 }

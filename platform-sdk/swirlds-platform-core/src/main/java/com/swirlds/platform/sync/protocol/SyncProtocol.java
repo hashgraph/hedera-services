@@ -151,6 +151,10 @@ public class SyncProtocol implements Protocol {
         if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId.getId())) {
             permit = permitProvider.tryAcquire();
 
+            if (permit.isLockAcquired()) {
+                syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+            }
+
             return permit.isLockAcquired();
         } else {
             return false;
@@ -174,6 +178,10 @@ public class SyncProtocol implements Protocol {
         permit = permitProvider.tryAcquire();
         final boolean isLockAcquired = permit.isLockAcquired();
 
+        if (isLockAcquired) {
+            syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+        }
+
         syncMetrics.updateRejectedSyncRatio(!isLockAcquired);
 
         return isLockAcquired;
@@ -185,6 +193,8 @@ public class SyncProtocol implements Protocol {
     private void closePermit() {
         permit.close();
         permit = MaybeLocked.NOT_ACQUIRED;
+
+        syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
     }
 
     /**
