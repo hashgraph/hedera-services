@@ -66,7 +66,7 @@ public class CryptoHandlerTestBase {
     protected final HederaKey accountHederaKey = asHederaKey(accountKey).get();
     protected final Long accountNum = id.accountNum();
     protected final EntityNumVirtualKey accountEntityNumVirtualKey = new EntityNumVirtualKey(accountNum);
-    private final AccountID alias =
+    protected final AccountID alias =
             AccountID.newBuilder().alias(Bytes.wrap("testAlias")).build();
     protected final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
     protected final ContractID contractAlias =

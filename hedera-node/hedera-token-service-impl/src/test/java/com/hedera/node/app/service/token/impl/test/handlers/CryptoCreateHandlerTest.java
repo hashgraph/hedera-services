@@ -191,10 +191,10 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("handle fails when account cannot be created if usage limit exceeded")
     void failsWhenAccountCannotBeCreated() {
+        final var recordBuilder = subject.newRecordBuilder();
         final var msg = assertThrows(
                 HandleException.class,
-                () -> subject.handle(
-                        handleContext, txn, writableStore, subject.newRecordBuilder(), NON_CREATABLE_ACCOUNTS));
+                () -> subject.handle(handleContext, txn, writableStore, recordBuilder, NON_CREATABLE_ACCOUNTS));
         assertThat(msg.getStatus()).isEqualTo(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
     }
 

@@ -74,6 +74,32 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     }
 
     @Test
+    void getForModifyLooksForAlias() {
+        assertEquals(0, writableStore.sizeOfAliasesState());
+
+        writableStore.put(account);
+        writableStore.putAlias(alias.alias().asUtf8String(), accountNum);
+
+        final var maybeReadAccount = writableStore.getForModify(alias);
+
+        assertTrue(maybeReadAccount.isPresent());
+        final var readaccount = maybeReadAccount.get();
+        assertEquals(account, readaccount);
+        assertEquals(1, writableStore.sizeOfAliasesState());
+        assertEquals(Set.of(alias.alias().asUtf8String()), writableStore.modifiedAliasesInState());
+    }
+
+    @Test
+    void getForModifyReturnEmptyIfAliasNotPresent() {
+        writableStore.put(account);
+
+        final var maybeReadAccount = writableStore.getForModify(alias);
+
+        assertFalse(maybeReadAccount.isPresent());
+        assertEquals(0, writableStore.sizeOfAliasesState());
+    }
+
+    @Test
     void putsAccountChangesToStateInModifications() {
         assertFalse(writableStore.get(id).isPresent());
 

@@ -125,7 +125,7 @@ public class WritableAccountStore extends ReadableAccountStore {
                 };
 
         return accountNum == null
-                ? null
+                ? Optional.empty()
                 : Optional.ofNullable(accountState.getForModify(EntityNumVirtualKey.fromLong(accountNum)));
     }
 

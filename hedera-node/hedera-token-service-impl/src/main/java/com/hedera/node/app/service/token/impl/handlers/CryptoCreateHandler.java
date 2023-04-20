@@ -48,8 +48,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -57,8 +55,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class CryptoCreateHandler implements TransactionHandler {
-    private static final Logger log = LogManager.getLogger(CryptoCreateHandler.class);
-
     @Inject
     public CryptoCreateHandler() {
         // Exists for injection
@@ -111,7 +107,7 @@ public class CryptoCreateHandler implements TransactionHandler {
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state
-        final ResponseCodeEnum validationResult = validateSemantics(op);
+        final ResponseCodeEnum validationResult = validateSemantics();
         if (validationResult != OK) {
             throw new HandleException(validationResult);
         }
@@ -186,10 +182,9 @@ public class CryptoCreateHandler implements TransactionHandler {
     /**
      * Validate the fields in the transaction body that involves checking with dynamic
      * properties or state. This check is done as part of the handle workflow.
-     * @param op the transaction body
      * @return OK if the transaction body is valid, otherwise return the appropriate error code
      */
-    private ResponseCodeEnum validateSemantics(CryptoCreateTransactionBody op) {
+    private ResponseCodeEnum validateSemantics() {
         // TODO : Need to add validations that involve dynamic properties or state
         return OK;
     }

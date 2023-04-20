@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hedera.node.app.service.token.impl.records.CreateAccountRecordBuilder;
 import org.junit.jupiter.api.Test;
 
-public class CreateAccountRecordBuilderTest {
+class CreateAccountRecordBuilderTest {
     @Test
     void setterAndGetterWorks() {
         var subject = new CreateAccountRecordBuilder();
