@@ -139,24 +139,32 @@ public class SyncProtocol implements Protocol {
      */
     @Override
     public boolean shouldInitiate() {
+        syncMetrics.opportunityToInitiateSync();
+
         // are there any reasons not to initiate?
         if (!syncCooldownComplete()
                 || permit.isLockAcquired()
                 || !peerAgnosticSyncChecks.shouldSync()
                 || fallenBehindManager.hasFallenBehind()) {
+            syncMetrics.updateDeclinedToInitiateSyncRatio(true);
             return false;
         }
 
         // is there a reason to initiate?
         if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId.getId())) {
             permit = permitProvider.tryAcquire();
+            final boolean isLockAcquired = permit.isLockAcquired();
 
-            if (permit.isLockAcquired()) {
+            if (isLockAcquired) {
                 syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+                syncMetrics.outgoingSyncRequestSent();
             }
 
-            return permit.isLockAcquired();
+            syncMetrics.updateDeclinedToInitiateSyncRatio(!isLockAcquired);
+
+            return isLockAcquired;
         } else {
+            syncMetrics.updateDeclinedToInitiateSyncRatio(true);
             return false;
         }
     }
@@ -166,6 +174,8 @@ public class SyncProtocol implements Protocol {
      */
     @Override
     public boolean shouldAccept() {
+        syncMetrics.incomingSyncRequestReceived();
+
         // are there any reasons not to accept?
         if (!syncCooldownComplete()
                 || permit.isLockAcquired()
@@ -180,6 +190,7 @@ public class SyncProtocol implements Protocol {
 
         if (isLockAcquired) {
             syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+            syncMetrics.acceptedSyncRequest();
         }
 
         syncMetrics.updateRejectedSyncRatio(!isLockAcquired);
