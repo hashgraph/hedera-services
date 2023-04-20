@@ -15,6 +15,8 @@ This means that there is a difference in how some situations, like accidental tr
 - In Ethereum, everyone that knows the corresponding private key will be able to authorize a transaction from the known address, and the first to send a transaction would be eligible to withdraw the funds.
 - In Hedera, only the account with the associated corresponding alias would be eligible to withdraw the funds. If another key controls this account, then only that key can be used to withdraw the funds.
 
+For more information about EVM addresses, aliases and how they are used in Hedera see [Auto Account Creation](https://docs.hedera.com/hedera/core-concepts/accounts/auto-account-creation).
+
 ## Goals
 
 - We want to block a list of known addresses, so that no one can “squat” on them and exercise full control on any accidentally sent and blocked funds. Sending funds to such blocked addresses should not be successful as these accounts are considered “compromised”.
