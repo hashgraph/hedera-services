@@ -75,6 +75,10 @@ public class SignedStateMap {
      */
     public @NonNull ReservedSignedState getLatestAndReserve(@NonNull final String reason) {
         try (final Locked l = lock.lock()) {
+            if (map.isEmpty()) {
+                return new ReservedSignedState();
+            }
+
             final ReservedSignedState reservedSignedState = map.get(map.lastKey());
             if (reservedSignedState == null) {
                 return new ReservedSignedState();

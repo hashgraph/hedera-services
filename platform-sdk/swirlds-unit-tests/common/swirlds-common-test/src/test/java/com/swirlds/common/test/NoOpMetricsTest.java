@@ -39,7 +39,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
-import com.swirlds.common.statistics.StatsBuffered;
 import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.utility.NoOpMetricsBuilder;
 import java.time.Duration;

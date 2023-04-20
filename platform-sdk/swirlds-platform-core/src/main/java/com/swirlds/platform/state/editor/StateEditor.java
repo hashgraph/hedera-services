@@ -61,9 +61,7 @@ public class StateEditor {
     public StateEditor(final Path statePath) throws IOException {
 
         platformContext = new DefaultPlatformContext(
-                ConfigurationBuilder.create().build(),
-                NoOpMetricsBuilder.buildNoOpMetrics(),
-                CryptographyHolder.get());
+                ConfigurationBuilder.create().build(), NoOpMetricsBuilder.buildNoOpMetrics(), CryptographyHolder.get());
 
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);

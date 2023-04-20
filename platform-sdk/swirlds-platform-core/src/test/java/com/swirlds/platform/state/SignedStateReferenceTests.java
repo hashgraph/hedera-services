@@ -22,14 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,29 +37,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 class SignedStateReferenceTests {
 
     /**
-     * Build a mock signed state.
-     *
-     * @param refCountDelta an atomic integer that is incremented/decremented whenever a reservation is taken/released
+     * Build a signed state.
      */
-    public static SignedState buildSignedState(final AtomicInteger refCountDelta) {
-
-        final SignedState signedState = mock(SignedState.class);
-
-        doAnswer(invocation -> {
-                    refCountDelta.getAndIncrement();
-                    return null;
-                })
-                .when(signedState)
-                .reserve("test");
-
-        doAnswer(invocation -> {
-                    assertTrue(refCountDelta.decrementAndGet() >= 0, "reference count should never be negative");
-                    return null;
-                })
-                .when(signedState);
-        //                .release(); TODO fix this
-
-        return signedState;
+    public static SignedState buildSignedState() {
+        return new RandomSignedStateGenerator().build();
     }
 
     @ParameterizedTest
@@ -80,17 +59,17 @@ class SignedStateReferenceTests {
 
         final ReservedSignedState wrapper1 = reference.getAndReserve("test");
         assertNotNull(wrapper1, "wrapper should never be null");
-        assertNull(wrapper1.get(), "state should be null");
+        assertNull(wrapper1.getNullable(), "state should be null");
         wrapper1.close();
 
         final ReservedSignedState wrapper2 = reference.getAndReserve("test");
         assertNotNull(wrapper2, "wrapper should never be null");
-        assertNull(wrapper2.get(), "state should be null");
+        assertNull(wrapper2.getNullable(), "state should be null");
         wrapper2.close();
 
         final ReservedSignedState wrapper3 = reference.getAndReserve("test");
         assertNotNull(wrapper3, "wrapper should never be null");
-        assertNull(wrapper3.get(), "state should be null");
+        assertNull(wrapper3.getNullable(), "state should be null");
         wrapper3.close();
 
         // This should not break anything
@@ -102,9 +81,7 @@ class SignedStateReferenceTests {
     @DisplayName("Initial Value Constructor Test")
     void initialValueTest(final boolean defaultValue) {
 
-        final AtomicInteger count = new AtomicInteger();
-
-        final SignedState state = buildSignedState(count);
+        final SignedState state = spy(buildSignedState());
         doReturn(1234L).when(state).getRound();
 
         final SignedStateReference reference;
@@ -117,56 +94,60 @@ class SignedStateReferenceTests {
 
         assertFalse(reference.isNull(), "should not be null");
         assertEquals(1234, reference.getRound(), "invalid round");
-        assertEquals(1, count.get(), "invalid reference count");
+        assertEquals(1, state.getReservationCount(), "invalid reference count");
 
         final ReservedSignedState wrapper1 = reference.getAndReserve("test");
         assertNotNull(wrapper1, "wrapper should never be null");
         assertSame(state, wrapper1.get(), "incorrect state");
-        assertEquals(2, count.get(), "incorrect reference count");
+        assertEquals(2, state.getReservationCount(), "incorrect reference count");
         wrapper1.close();
-        assertEquals(1, count.get(), "incorrect reference count");
+        assertEquals(1, state.getReservationCount(), "incorrect reference count");
 
         reference.set(null, "test");
 
-        assertEquals(0, count.get(), "incorrect reference count");
+        assertEquals(-1, state.getReservationCount(), "incorrect reference count");
     }
 
     @Test
     @DisplayName("Replacement Test")
     void replacementTest() {
-        final AtomicInteger count1 = new AtomicInteger();
-        final SignedState state1 = buildSignedState(count1);
-
-        final AtomicInteger count2 = new AtomicInteger();
-        final SignedState state2 = buildSignedState(count2);
+        final SignedState state1 = buildSignedState();
+        final SignedState state2 = buildSignedState();
+        final SignedState state3 = buildSignedState();
 
         final SignedStateReference reference = new SignedStateReference(state1, "test");
-        assertEquals(1, count1.get(), "incorrect reference count");
-        assertEquals(0, count2.get(), "incorrect reference count");
+        assertEquals(1, state1.getReservationCount(), "incorrect reference count");
+        assertEquals(0, state2.getReservationCount(), "incorrect reference count");
+        assertEquals(0, state3.getReservationCount(), "incorrect reference count");
 
         // replace value with itself
         reference.set(state1, "test");
-        assertEquals(1, count1.get(), "incorrect reference count");
-        assertEquals(0, count2.get(), "incorrect reference count");
+        assertEquals(1, state1.getReservationCount(), "incorrect reference count");
+        assertEquals(0, state2.getReservationCount(), "incorrect reference count");
+        assertEquals(0, state3.getReservationCount(), "incorrect reference count");
 
         // replace non-null value with non-null value
         reference.set(state2, "test");
-        assertEquals(0, count1.get(), "incorrect reference count");
-        assertEquals(1, count2.get(), "incorrect reference count");
+        assertEquals(-1, state1.getReservationCount(), "incorrect reference count");
+        assertEquals(1, state2.getReservationCount(), "incorrect reference count");
+        assertEquals(0, state3.getReservationCount(), "incorrect reference count");
 
         // replace non-null value with null
         reference.set(null, "test");
-        assertEquals(0, count1.get(), "incorrect reference count");
-        assertEquals(0, count2.get(), "incorrect reference count");
+        assertEquals(-1, state1.getReservationCount(), "incorrect reference count");
+        assertEquals(-1, state2.getReservationCount(), "incorrect reference count");
+        assertEquals(0, state3.getReservationCount(), "incorrect reference count");
 
         // replace null with null
         reference.set(null, "test");
-        assertEquals(0, count1.get(), "incorrect reference count");
-        assertEquals(0, count2.get(), "incorrect reference count");
+        assertEquals(-1, state1.getReservationCount(), "incorrect reference count");
+        assertEquals(-1, state2.getReservationCount(), "incorrect reference count");
+        assertEquals(0, state3.getReservationCount(), "incorrect reference count");
 
         // replace null with non-null value
-        reference.set(state1, "test");
-        assertEquals(1, count1.get(), "incorrect reference count");
-        assertEquals(0, count2.get(), "incorrect reference count");
+        reference.set(state3, "test");
+        assertEquals(-1, state1.getReservationCount(), "incorrect reference count");
+        assertEquals(-1, state2.getReservationCount(), "incorrect reference count");
+        assertEquals(1, state3.getReservationCount(), "incorrect reference count");
     }
 }

@@ -572,7 +572,8 @@ public class SignedState implements SignedStateInfo {
      * @return true if the signed state is now complete as a result of the signature being added, false if the signed
      * state is either not complete or was previously complete prior to this signature
      */
-    private boolean addSignature(@NonNull final AddressBook addressBook, final long nodeId, @NonNull final Signature signature) {
+    private boolean addSignature(
+            @NonNull final AddressBook addressBook, final long nodeId, @NonNull final Signature signature) {
         Objects.requireNonNull(addressBook, "addressBook");
         Objects.requireNonNull(signature, "signature");
 
@@ -636,7 +637,8 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the reservation history
      */
-    @NonNull SignedStateHistory getHistory() {
+    @NonNull
+    SignedStateHistory getHistory() {
         return history;
     }
 }

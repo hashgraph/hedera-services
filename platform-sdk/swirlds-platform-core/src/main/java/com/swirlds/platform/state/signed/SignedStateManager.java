@@ -76,8 +76,7 @@ public class SignedStateManager implements SignedStateFinder {
     /**
      * A signature that was received when there was no state with a matching round.
      */
-    private record SavedSignature(long round, long memberId, @NonNull Signature signature) {
-    }
+    private record SavedSignature(long round, long memberId, @NonNull Signature signature) {}
 
     /**
      * Signatures for rounds in the future.

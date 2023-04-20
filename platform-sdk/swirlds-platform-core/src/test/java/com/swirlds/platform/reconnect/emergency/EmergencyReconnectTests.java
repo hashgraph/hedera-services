@@ -294,7 +294,7 @@ public class EmergencyReconnectTests {
 
     private void mockTeacherHasCompatibleState(
             final EmergencyRecoveryFile emergencyRecoveryFile, final SignedState teacherState) {
-                when(signedStateManager.find(any(), any())).thenAnswer(i -> teacherState.reserve("test"));
+        when(signedStateManager.find(any(), any())).thenAnswer(i -> teacherState.reserve("test"));
     }
 
     private AddressBook newAddressBook(final Random random, final int numNodes) {

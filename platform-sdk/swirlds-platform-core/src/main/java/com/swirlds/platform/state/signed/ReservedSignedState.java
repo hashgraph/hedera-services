@@ -104,6 +104,9 @@ public class ReservedSignedState implements AutoCloseableNonThrowing { // TODO t
      */
     public @NonNull ReservedSignedState getAndReserve(@NonNull final String reason) {
         throwIfClosed();
+        if (signedState == null) {
+            return new ReservedSignedState();
+        }
         return new ReservedSignedState(signedState, reason);
     }
 

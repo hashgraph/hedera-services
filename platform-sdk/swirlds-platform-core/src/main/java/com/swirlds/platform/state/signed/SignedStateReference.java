@@ -83,7 +83,7 @@ public class SignedStateReference {
      */
     public boolean isNull() {
         try (final Locked l = lock.lock()) {
-            return reservedSignedState == null;
+            return reservedSignedState.isNull();
         }
     }
 

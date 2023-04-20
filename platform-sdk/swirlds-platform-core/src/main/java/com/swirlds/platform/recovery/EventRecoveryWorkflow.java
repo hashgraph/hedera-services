@@ -26,7 +26,6 @@ import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
-import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -128,9 +127,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
 
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration,
-                NoOpMetricsBuilder.buildNoOpMetrics(),
-                CryptographyHolder.get());
+                configuration, NoOpMetricsBuilder.buildNoOpMetrics(), CryptographyHolder.get());
 
         final ReservedSignedState initialState = SignedStateFileReader.readStateFile(platformContext, signedStateFile)
                 .reservedSignedState();
