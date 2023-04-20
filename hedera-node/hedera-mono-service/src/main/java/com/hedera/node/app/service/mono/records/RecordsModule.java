@@ -75,6 +75,7 @@ public interface RecordsModule {
             final GlobalDynamicProperties globalDynamicProperties,
             final InitTrigger initTrigger) {
         try {
+            // The RecordStreamManager only needs a RecoveryRecordsWriter during event stream recovery
             final RecoveryRecordsWriter recoveryRecordsWriter;
             if (initTrigger == InitTrigger.EVENT_STREAM_RECOVERY) {
                 final var blockPeriodMs = nodeLocalProperties.recordLogPeriod() * Units.SECONDS_TO_MILLISECONDS;

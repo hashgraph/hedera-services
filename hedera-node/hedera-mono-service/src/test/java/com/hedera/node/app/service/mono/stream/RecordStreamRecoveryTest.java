@@ -77,7 +77,7 @@ class RecordStreamRecoveryTest {
     private static final long START_TEST_ASSET_BLOCK_NO = 2;
     private static final long BLOCK_PERIOD_MS = 2000L;
     private static final String MEMO = "0.0.3";
-    private static final String RECOVERY_ASSETS_LOC = "src/test/resources/recovery";
+    static final String RECOVERY_ASSETS_LOC = "src/test/resources/recovery";
     static final String ON_DISK_FILES_LOC = RECOVERY_ASSETS_LOC + File.separator + "onDiskFiles";
     static final String ON_DISK_FILES_AND_SIDECARS_LOC =
             RECOVERY_ASSETS_LOC + File.separator + "onDiskFilesAndSidecars";

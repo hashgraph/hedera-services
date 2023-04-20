@@ -42,7 +42,7 @@ public class PerpetualTransfers extends HapiSuite {
 
     private AtomicLong duration = new AtomicLong(15);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-    private AtomicInteger maxOpsPerSec = new AtomicInteger(5);
+    private AtomicInteger maxOpsPerSec = new AtomicInteger(10);
 
     public static void main(String... args) {
         new PerpetualTransfers().runSuiteSync();

@@ -40,23 +40,28 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A helper class for {@link RecordStreamFileWriter} to use when generating record stream
- * files during recovery. Given the first item in the recovery stream, this class will scan
- * any on-disk record stream files and make appropriate calls to
- * {@link RecordStreamFileWriter#addObject(RecordStreamObject)} to ensure the first "golden"
- * record file written during recovery is a full 2-second block.
+ * A helper class for {@link RecordStreamManager} to use when generating record stream files
+ * (and sidecars) during recovery.
+ *
+ * <p>Given the first item in the recovery event stream, this class will scan any on-disk record
+ * stream files to detect if one of them "overlaps" with the first recovery item's consensus time.
+ *
+ * <p>If it finds an overlap file, it will read the "prefix" of items from this file that <b>precede</b>
+ * event recovery, and call {@link MultiStream#addObject(RunningHashable)} with each item to ensure the
+ * first golden record file written during recovery is a full 2-second block that includes not just the
+ * items replayed during recovery, but <b>also</b> the prefix of items on disk from the overlap file.
  */
 @Singleton
 public class RecoveryRecordsWriter {
     private static final Logger logger = LogManager.getLogger(RecoveryRecordsWriter.class);
 
-    private final long blockPeriodMs;
     /**
-     * The directory containing record files that were written near the recovery state's consensus time.
-     *
-     * <p><b>Important:</b> Any record stream items in this directory from before the recovery state's
-     * consensus time must be trustworthy, as they might be repackaged as the prefix of a "golden" record
-     * stream file generated during recovery.
+     * The period of time that each record file/block includes items for.
+     */
+    private final long blockPeriodMs;
+
+    /**
+     * The directory containing stream files (both records and sidecars) from before the recovery.
      */
     private final String onDiskRecordsLoc;
 
@@ -67,16 +72,17 @@ public class RecoveryRecordsWriter {
 
     /**
      * Given the first item in the recovery stream, scans any on-disk record stream files to
-     * see if one (at most) of these files contains record stream items that should make up
-     * the leading prefix of the first "golden" record file written during recovery.
+     * see if one of these files contains record stream items that should make up the leading
+     * prefix of the first "golden" record file written during recovery.
      *
      * <p>If such a file exists, updates the {@link RecordStreamManager} with the initial
-     * hash from the overlap file. For the file's items, calls
-     * {@link MultiStream#addObject(RunningHashable)} to add each to the recovery stream.
+     * hash from the overlap file. For the file's items, calls {@link MultiStream#addObject(RunningHashable)}
+     * to add each to the recovery stream.
      *
      * @param firstItem the first item in the recovery stream
      * @param recordStreamManager the {@link RecordStreamManager} to update the initial hash
      * @param multiStream the {@link MultiStream} to add the overlap items to
+     * @throws IllegalStateException if there are multiple overlap files on disk
      */
     public void writeAnyPrefixRecordsGiven(
             final RecordStreamObject firstItem,
@@ -90,7 +96,7 @@ public class RecoveryRecordsWriter {
 
             final var entries = parseV6RecordStreamEntriesIn(onDiskRecordsLoc, filter);
             // It's inefficient to read all sidecar files here, since we only need them for
-            // a single file; but fine for recovery, which happens approximately never
+            // a single file; but this is fine for recovery, which happens almost never
             final var sidecarRecords = parseV6SidecarRecordsByConsTimeIn(onDiskRecordsLoc);
 
             // We only want to mark the first record stream item in the prefix as the start of a new file
@@ -105,7 +111,6 @@ public class RecoveryRecordsWriter {
                                             .map(TransactionSidecarRecord::toBuilder)
                                             .toList())
                             .withBlockNumber(overlapBlockNo.get());
-                    // The first item we encounter must necessarily be the first in the file with the items prefix
                     if (itemIsFirst.get()) {
                         rso.setWriteNewFile();
                         itemIsFirst.set(false);
@@ -115,23 +120,6 @@ public class RecoveryRecordsWriter {
             });
         } catch (IOException e) {
             throw new UncheckedIOException("Unable to determine record prefix for recovery", e);
-        }
-    }
-
-    private void computeOverlapMetadata(
-            @NonNull final AtomicLong overlapBlockNo,
-            @NonNull final RecordStreamManager recordStreamManager,
-            @NonNull final Predicate<String> filter)
-            throws IOException {
-        final var overlappingFilesOnDisk = orderedRecordFilesFrom(onDiskRecordsLoc, filter);
-        if (!overlappingFilesOnDisk.isEmpty()) {
-            final var overlapFile = overlappingFilesOnDisk.get(0);
-            readMaybeCompressedRecordStreamFile(overlapFile).getValue().ifPresent(f -> {
-                overlapBlockNo.set(f.getBlockNumber());
-                final var startHash = new ImmutableHash(
-                        f.getStartObjectRunningHash().getHash().toByteArray());
-                recordStreamManager.setInitialHash(startHash);
-            });
         }
     }
 
@@ -154,5 +142,26 @@ public class RecoveryRecordsWriter {
             }
             return includesFirstRecoveryTime;
         };
+    }
+
+    private void computeOverlapMetadata(
+            @NonNull final AtomicLong overlapBlockNo,
+            @NonNull final RecordStreamManager recordStreamManager,
+            @NonNull final Predicate<String> filter)
+            throws IOException {
+        final var overlappingFilesOnDisk = orderedRecordFilesFrom(onDiskRecordsLoc, filter);
+        if (overlappingFilesOnDisk.size() > 1) {
+            throw new IllegalStateException(
+                    "At most one overlap record file should be possible, but found " + overlappingFilesOnDisk);
+        }
+        if (!overlappingFilesOnDisk.isEmpty()) {
+            final var overlapFile = overlappingFilesOnDisk.get(0);
+            readMaybeCompressedRecordStreamFile(overlapFile).getValue().ifPresent(f -> {
+                overlapBlockNo.set(f.getBlockNumber());
+                final var startHash = new ImmutableHash(
+                        f.getStartObjectRunningHash().getHash().toByteArray());
+                recordStreamManager.setInitialHash(startHash);
+            });
+        }
     }
 }

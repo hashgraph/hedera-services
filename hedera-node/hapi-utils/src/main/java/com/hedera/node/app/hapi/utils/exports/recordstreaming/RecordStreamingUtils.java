@@ -130,6 +130,15 @@ public class RecordStreamingUtils {
                 .toList();
     }
 
+    /**
+     * Given a directory that may contain record stream files, and a predicate to filter any found record
+     * files, return the list of filtered record files in order of consensus time.
+     *
+     * @param streamDir the directory to search for record files
+     * @param inclusionTest a predicate to filter the record files
+     * @return the list of filtered record files in order of consensus time
+     * @throws IOException if there is an error reading the directory
+     */
     public static List<String> orderedRecordFilesFrom(
             final String streamDir, final @NonNull Predicate<String> inclusionTest) throws IOException {
         return filteredFilesFrom(

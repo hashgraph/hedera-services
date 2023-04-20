@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.utility.CommonUtils;
+import java.io.File;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
@@ -42,6 +43,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RecoveryRecordsWriterTest {
+    static final String CORRUPT_ON_DISK_FILES_LOC =
+            RecordStreamRecoveryTest.RECOVERY_ASSETS_LOC + File.separator + "corruptOnDiskFiles";
     private static final Hash START_HASH = new Hash(CommonUtils.unhex(
             "459f257ef8a57cbd2cd9023f9da6b1eb90aac1a1a52c76076e3fa8d9ec2bd377a363e9be021e66a21ebd11ac7141d47b"));
 
@@ -56,6 +59,18 @@ class RecoveryRecordsWriterTest {
     @BeforeEach
     void setUp() {
         subject = new RecoveryRecordsWriter(2_000L, ON_DISK_FILES_LOC);
+    }
+
+    @Test
+    void throwsIfOnDiskLocationIncludesMultipleOverlapFiles() {
+        subject = new RecoveryRecordsWriter(2_000L, CORRUPT_ON_DISK_FILES_LOC);
+
+        final var mockFirstTime = Instant.parse("2023-04-18T14:08:20.888888888Z");
+        final var mockFirstRso = new RecordStreamObject(
+                TransactionRecord.getDefaultInstance(), Transaction.getDefaultInstance(), mockFirstTime);
+        assertThrows(
+                IllegalStateException.class,
+                () -> subject.writeAnyPrefixRecordsGiven(mockFirstRso, recordStreamManager, multiStream));
     }
 
     @Test

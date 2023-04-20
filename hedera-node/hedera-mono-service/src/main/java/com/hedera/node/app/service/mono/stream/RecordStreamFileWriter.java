@@ -63,6 +63,26 @@ import java.util.zip.GZIPOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * <i>IMPORTANT:</i> This class does not guarantee that every written record file is a complete
+ * 2-second block. That guarantee only holds <b>if the node's JVM has been running and handling
+ * transactions since the (consensus) start of the 2-second block</b>.
+ *
+ * <p>In particular, if a node restarts, and the first record stream {@code item} it gives this
+ * class is in a 2-second block {@code B}, but not the first {@code item} in {@code B}; then
+ * this class will <b>skip all items received for block {@code B}, and only begin writing items
+ * in block {@code B + 1}</b>.
+ *
+ * <p>Since we only need {@code 1/3} of trustworthy nodes to avoid restarting in the middle of
+ * a given block {@code B} to have enough signatures on the resulting record file, this still
+ * provides many 9's of availability for the record stream in the absence of a separate
+ * catastrophic event.
+ *
+ * <p>If more than {@code 2/3} of trustworthy nodes <i>did</i> all restart in the middle of a
+ * given block (and these were not correlated failures due to a separate catastrophic event
+ * that already required event stream recovery); then this exceptional bad luck would require
+ * some manual steps to gather signatures on the problem block.
+ */
 class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
 
@@ -331,7 +351,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             for (final var value : fileHeader) {
                 dosMeta.writeInt(value);
             }
-            final Hash startRunningHash = runningHash.getFutureHash().get();
+            final var startRunningHash = runningHash.getFutureHash().get();
             recordStreamFileBuilder.setStartObjectRunningHash(toProto(startRunningHash.getValue()));
             dosMeta.write(startRunningHash.getValue());
             LOG.debug(
