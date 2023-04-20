@@ -70,6 +70,21 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * This unit test does "live" testing of a full event stream recovery. The only mocks
+ * are the property sources and the {@link Platform#sign(byte[])} method; but the
+ * {@link RecordStreamManager} internals are fully exercised, reading and writing from
+ * a temporary directory.
+ *
+ * <p>First we copy the {@code .rcd.gz} files from a test resource directory into the
+ * temporary directory. Then we run the recovery process, intentionally <b>skipping</b>
+ * the first 4 record stream items from the first {@code .rcd.gz} file.
+ *
+ * <p>Because the {@link RecordStreamManager} is started in recovery mode, it must
+ * still find and include these 4 items (and their sidecars) from the files on disk
+ * in its newly created "golden" record files, <b>even though</b> the 4 items were not
+ * replayed during event recovery.
+ */
 @ExtendWith(MockitoExtension.class)
 class RecordStreamRecoveryTest {
     private static final String RECOVERY_STATE_RUNNING_HASH =
@@ -86,6 +101,10 @@ class RecordStreamRecoveryTest {
 
     private static final ObjectMapper om = new ObjectMapper();
 
+    /**
+     * A temporary directory that serves as the record stream directory for the test; we first
+     * copy the assets from the test resources to this directory, and then run the test.
+     */
     @TempDir
     private File tmpDir;
 
@@ -104,18 +123,21 @@ class RecordStreamRecoveryTest {
     private RecordStreamManager subject;
 
     @BeforeEach
-    void setUp() throws NoSuchAlgorithmException, IOException {
+    void setUp() {
         given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
         final var mockSig = new Signature(SignatureType.RSA, new byte[0]);
         given(platform.sign(any())).willReturn(mockSig);
 
         given(nodeLocalProperties.isRecordStreamEnabled()).willReturn(true);
         given(nodeLocalProperties.recordLogDir()).willReturn(tmpDir.toString());
+        given(nodeLocalProperties.sidecarDir()).willReturn("");
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(true);
     }
 
     private void givenSubjectRecoveringFrom(final String onDiskLocForTest)
             throws NoSuchAlgorithmException, IOException {
-        final var recoveryWriter = new RecoveryRecordsWriter(2_000L, onDiskLocForTest);
+        cpAssetsToTmpDirFrom(onDiskLocForTest);
+        final var recoveryWriter = new RecoveryRecordsWriter(2_000L, tmpDir.getAbsolutePath());
         subject = new RecordStreamManager(
                 platform,
                 runningAvgs,
@@ -130,7 +152,6 @@ class RecordStreamRecoveryTest {
     @Test
     void directRsoReplayAlsoReproducesSidecars()
             throws IOException, NoSuchAlgorithmException, ExecutionException, InterruptedException {
-        given(nodeLocalProperties.sidecarDir()).willReturn("");
         given(globalDynamicProperties.getSidecarMaxSizeMb()).willReturn(256);
         givenSubjectRecoveringFrom(ON_DISK_FILES_AND_SIDECARS_LOC);
         // and:
@@ -143,9 +164,30 @@ class RecordStreamRecoveryTest {
         final var actualSidecars = allSidecarFilesFrom(tmpDir.getAbsolutePath());
         for (final var compressedSidecarFile : expectedSidecars.keySet()) {
             final var expectedSidecar = expectedSidecars.get(compressedSidecarFile);
-            final var uncompressedSidecarFile = compressedSidecarFile.replace(".gz", "");
-            final var actualSidecar = actualSidecars.get(uncompressedSidecarFile);
+            final var actualSidecar = actualSidecars.get(compressedSidecarFile);
             assertEquals(expectedSidecar, actualSidecar, "Wrong sidecar for " + compressedSidecarFile);
+        }
+    }
+
+    @Test
+    void includesRecordFilePrefixesSkippedByRecoveryStreamWithIndependentRsoSource()
+            throws IOException, InterruptedException, ExecutionException, NoSuchAlgorithmException {
+        givenSubjectRecoveringFrom(ON_DISK_FILES_LOC);
+        // and:
+        final var expectedMeta = allRecordFileMetaFrom(ON_DISK_FILES_LOC);
+        final var allExpectedRsos = loadRsosFrom(ALL_EXPECTED_RSOS_ASSET);
+
+        // when:
+        replayRecoveryRsosAndFreeze();
+        // and:
+        final var actualMeta = allRecordFileMetaFrom(tmpDir.getAbsolutePath());
+
+        // then:
+        assertEntriesMatch(allExpectedRsos, tmpDir.getAbsolutePath());
+        for (final var compressedRecordFile : expectedMeta.keySet()) {
+            final var expectedFileMeta = expectedMeta.get(compressedRecordFile);
+            final var actualFileMeta = actualMeta.get(compressedRecordFile);
+            assertEquals(expectedFileMeta, actualFileMeta, "Wrong meta for " + compressedRecordFile);
         }
     }
 
@@ -183,34 +225,12 @@ class RecordStreamRecoveryTest {
         }
     }
 
-    @Test
-    void includesRecordFilePrefixesSkippedByRecoveryStreamWithIndependentRsoSource()
-            throws IOException, InterruptedException, ExecutionException, NoSuchAlgorithmException {
-        givenSubjectRecoveringFrom(ON_DISK_FILES_LOC);
-        // and:
-        final var expectedMeta = allRecordFileMetaFrom(ON_DISK_FILES_LOC);
-        final var allExpectedRsos = loadRsosFrom(ALL_EXPECTED_RSOS_ASSET);
-
-        // when:
-        replayRecoveryRsosAndFreeze();
-        // and:
-        final var actualMeta = allRecordFileMetaFrom(tmpDir.getAbsolutePath());
-
-        // then:
-        assertEntriesMatch(allExpectedRsos, tmpDir.getAbsolutePath());
-        for (final var compressedRecordFile : expectedMeta.keySet()) {
-            final var expectedFileMeta = expectedMeta.get(compressedRecordFile);
-            final var uncompressedRecordFile = compressedRecordFile.replace(".gz", "");
-            final var actualFileMeta = actualMeta.get(uncompressedRecordFile);
-            assertEquals(expectedFileMeta, actualFileMeta, "Wrong meta for " + compressedRecordFile);
-        }
-    }
-
     private Map<String, RecordStreamFile> allRecordFileMetaFrom(final String loc) throws IOException {
         final var files = orderedRecordFilesFrom(loc, f -> true).stream().toList();
         final Map<String, RecordStreamFile> ans = new HashMap<>();
         for (final var f : files) {
             var recordFile = readMaybeCompressedRecordStreamFile(f).getRight().get();
+            // We don't care about the version; and we already compare the items one-by-one (plus their running hashes)
             recordFile = recordFile.toBuilder()
                     .clearHapiProtoVersion()
                     .clearRecordStreamItems()
@@ -303,5 +323,21 @@ class RecordStreamRecoveryTest {
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void cpAssetsToTmpDirFrom(@NonNull final String sourceLoc) throws IOException {
+        final var nodeScopedDir = new File(RecordStreamManager.effectiveLogDir(tmpDir.getAbsolutePath(), MEMO));
+        Files.createDirectories(nodeScopedDir.toPath());
+        Files.list(Paths.get(sourceLoc)).forEach(path -> {
+            try {
+                Files.copy(
+                        path,
+                        Paths.get(
+                                nodeScopedDir.getAbsolutePath(),
+                                path.getFileName().toString()));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 }

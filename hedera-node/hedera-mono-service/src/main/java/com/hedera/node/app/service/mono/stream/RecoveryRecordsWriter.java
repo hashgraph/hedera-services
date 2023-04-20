@@ -138,12 +138,29 @@ public class RecoveryRecordsWriter {
                     !requireNonNull(firstRecoveryTime).isBefore(fileTime)
                             && fileTime.plusMillis(blockPeriodMs).isAfter(firstRecoveryTime);
             if (includesFirstRecoveryTime) {
-                logger.info("Found record file '{}' with a possible prefix for the recovery stream", recordFile);
+                logger.info(
+                        "Found overlap record file '{}' with a possible prefix for the recovery stream", recordFile);
             }
             return includesFirstRecoveryTime;
         };
     }
 
+    /**
+     * Updates its parameters with information from any overlap file it finds in the {@code onDiskRecordsLoc} directory,
+     * that also passes the given {@code filter}.
+     *
+     * <p>Specifically, if this method finds an overlap file {@code F}, it will:
+     * <ul>
+     *     <li>Update the {@code overlapBlockNo} with {@code F}'s block number.</li>
+     *     <li>Update the {@link RecordStreamManager}'s initial hash to the start running hash of {@code F}.</li>
+     * </ul>
+     *
+     * @param overlapBlockNo a reference to hold the block number of the overlap file
+     * @param recordStreamManager the {@link RecordStreamManager} to update the initial hash
+     * @param filter the filter to apply to any record files
+     * @throws IOException if there is an error reading the record files
+     * @throws IllegalStateException if there are multiple overlap files on disk
+     */
     private void computeOverlapMetadata(
             @NonNull final AtomicLong overlapBlockNo,
             @NonNull final RecordStreamManager recordStreamManager,

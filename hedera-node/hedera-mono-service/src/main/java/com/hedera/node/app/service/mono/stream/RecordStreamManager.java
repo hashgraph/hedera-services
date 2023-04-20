@@ -133,6 +133,9 @@ public class RecordStreamManager {
                     streamType,
                     nodeScopedSidecarDir,
                     globalDynamicProperties.getSidecarMaxSizeMb() * MB_TO_BYTES,
+                    // If in recovery mode, we want to overwrite any on-disk files that already exist with
+                    // the "golden" records we re-generate from the recovery event stream
+                    recoveryRecordsWriter != null,
                     globalDynamicProperties);
             writeQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>(getStaticThreadManager())
                     .setNodeId(platform.getSelfId().getId())

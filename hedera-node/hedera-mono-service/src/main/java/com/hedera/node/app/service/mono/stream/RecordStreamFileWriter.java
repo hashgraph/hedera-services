@@ -160,6 +160,8 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private final String sidecarDirPath;
 
+    private final boolean overwriteFilesDuringRecovery;
+
     private int recordFileVersion;
     private RecordStreamFile.Builder recordStreamFileBuilder;
     private SidecarFile.Builder sidecarFileBuilder;
@@ -172,11 +174,13 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             final RecordStreamType streamType,
             final String sidecarDirPath,
             final int maxSidecarFileSize,
+            final boolean overwriteFilesDuringRecovery,
             final GlobalDynamicProperties globalDynamicProperties)
             throws NoSuchAlgorithmException {
         this.dirPath = dirPath;
         this.signer = signer;
         this.streamType = streamType;
+        this.overwriteFilesDuringRecovery = overwriteFilesDuringRecovery;
         this.streamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
         this.metadataStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
         this.sidecarStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
@@ -219,9 +223,16 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                             ? uncompressedRecordFilePath + COMPRESSION_ALGORITHM_EXTENSION
                             : uncompressedRecordFilePath);
             final var recordFileNameShort = recordFile.getName(); // for logging purposes
-            if (recordFile.exists() && !recordFile.isDirectory()) {
+            final var fileExists = recordFile.exists() && !recordFile.isDirectory();
+            if (fileExists && !overwriteFilesDuringRecovery) {
                 LOG.debug(OBJECT_STREAM.getMarker(), "Stream file already exists {}", recordFileNameShort);
             } else {
+                if (fileExists) {
+                    if (!recordFile.delete()) {
+                        throw new IllegalStateException("Could not delete existing record file '" + recordFileNameShort
+                                + "' to replace during recovery, aborting");
+                    }
+                }
                 try {
                     // write endRunningHash
                     final var endRunningHash = runningHash.getFutureHash().get();
