@@ -21,6 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -141,8 +143,8 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // then we fail with ACCOUNT_IS_IMMUTABLE. And if the account is being debited and has no key,
                 // then we also fail with the same error. It should be that being credited value DOES NOT require
                 // a key, unless `receiverSigRequired` is true.
-                final var accountKey = account.getKey();
-                if ((accountKey == null || accountKey.isEmpty()) && (isDebit || isCredit && !hbarTransfer)) {
+                final var accountKey = account.key();
+                if ((isEmpty(accountKey)) && (isDebit || isCredit && !hbarTransfer)) {
                     throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
                 }
 
@@ -152,9 +154,9 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // signing requirements were met ("isApproval" is a way for the client to say "I don't need a key
                 // because I'm approved which you will see when you handle this transaction").
                 if (isDebit && !accountAmount.isApproval()) {
-                    ctx.requireKeyOrThrow(account.getKey(), ACCOUNT_IS_IMMUTABLE);
-                } else if (isCredit && account.isReceiverSigRequired()) {
-                    ctx.requireKeyOrThrow(account.getKey(), INVALID_TRANSFER_ACCOUNT_ID);
+                    ctx.requireKeyOrThrow(account.key(), ACCOUNT_IS_IMMUTABLE);
+                } else if (isCredit && account.receiverSigRequired()) {
+                    ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
                 }
             } else if (hbarTransfer) {
                 // It is possible for the transfer to be valid even if the account is not found. For example, we
@@ -213,11 +215,11 @@ public class CryptoTransferHandler implements TransactionHandler {
             }
         }
 
-        final var receiverKey = receiverAccount.getKey();
-        if (receiverKey == null || receiverKey.isEmpty()) {
+        final var receiverKey = receiverAccount.key();
+        if (isEmpty(receiverKey)) {
             // If the receiver account has no key, then fail with ACCOUNT_IS_IMMUTABLE.
             throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
-        } else if (receiverAccount.isReceiverSigRequired()) {
+        } else if (receiverAccount.receiverSigRequired()) {
             // If receiverSigRequired is set, and if there is no key on the receiver's account, then fail with
             // INVALID_TRANSFER_ACCOUNT_ID. Otherwise, add the key.
             meta.requireKeyOrThrow(receiverKey, INVALID_TRANSFER_ACCOUNT_ID);
@@ -248,8 +250,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
 
         // If the sender account is immutable, then we throw an exception.
-        final var key = senderAccount.getKey();
-        if (key == null || key.isEmpty()) {
+        final var key = senderAccount.key();
+        if (key == null || !isValid(key)) {
             // If the sender account has no key, then fail with ACCOUNT_IS_IMMUTABLE.
             throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
         } else if (!nftTransfer.isApproval()) {

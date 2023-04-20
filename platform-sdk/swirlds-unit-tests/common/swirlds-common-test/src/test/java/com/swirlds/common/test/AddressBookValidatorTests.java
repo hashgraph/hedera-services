@@ -16,7 +16,7 @@
 
 package com.swirlds.common.test;
 
-import static com.swirlds.common.system.address.AddressBookValidator.hasNonZeroStake;
+import static com.swirlds.common.system.address.AddressBookValidator.hasNonZeroWeight;
 import static com.swirlds.common.system.address.AddressBookValidator.isGenesisAddressBookValid;
 import static com.swirlds.common.system.address.AddressBookValidator.isNextAddressBookValid;
 import static com.swirlds.common.system.address.AddressBookValidator.isNonEmpty;
@@ -33,23 +33,23 @@ import org.junit.jupiter.api.Test;
 class AddressBookValidatorTests {
 
     @Test
-    @DisplayName("hasNonZeroStake Test")
-    void hasNonZeroStakeTest() {
+    @DisplayName("hasNonZeroWeight Test")
+    void hasNonZeroWeightTest() {
         final AddressBook emptyAddressBook =
                 new RandomAddressBookGenerator().setSize(0).build();
-        final AddressBook zeroStakeAddressBook = new RandomAddressBookGenerator()
+        final AddressBook zeroWeightAddressBook = new RandomAddressBookGenerator()
                 .setSize(10)
-                .setCustomStakeGenerator(n -> 0)
+                .setCustomWeightGenerator(n -> 0)
                 .build();
         final AddressBook validAddressBook =
                 new RandomAddressBookGenerator().setSize(10).build();
 
-        assertFalse(hasNonZeroStake(emptyAddressBook), "should fail validation");
+        assertFalse(hasNonZeroWeight(emptyAddressBook), "should fail validation");
         assertFalse(isGenesisAddressBookValid(emptyAddressBook), "should fail validation");
-        assertFalse(hasNonZeroStake(zeroStakeAddressBook), "should fail validation");
-        assertFalse(isGenesisAddressBookValid(zeroStakeAddressBook), "should fail validation");
+        assertFalse(hasNonZeroWeight(zeroWeightAddressBook), "should fail validation");
+        assertFalse(isGenesisAddressBookValid(zeroWeightAddressBook), "should fail validation");
 
-        assertTrue(hasNonZeroStake(validAddressBook), "should pass validation");
+        assertTrue(hasNonZeroWeight(validAddressBook), "should pass validation");
         assertTrue(isGenesisAddressBookValid(validAddressBook), "should pass validation");
     }
 

@@ -136,9 +136,9 @@ public class ConsensusHashManager {
             roundData.shiftWindow(oldestRoundToValidate, this::handleRemovedRound);
         }
 
-        final long roundStake = addressBook.getTotalStake();
+        final long roundWeight = addressBook.getTotalWeight();
         previousRound = round;
-        roundData.put(round, new RoundHashValidator(stateHashValidityDispatcher, round, roundStake));
+        roundData.put(round, new RoundHashValidator(stateHashValidityDispatcher, round, roundWeight));
     }
 
     /**
@@ -190,7 +190,7 @@ public class ConsensusHashManager {
      */
     public void postConsensusSignatureObserver(final Long round, final Long signerId, final Hash hash) {
 
-        final long nodeStake = addressBook.getAddress(signerId).getStake();
+        final long nodeWeight = addressBook.getAddress(signerId).getWeight();
 
         final RoundHashValidator roundValidator = roundData.get(round);
         if (roundValidator == null) {
@@ -199,7 +199,7 @@ public class ConsensusHashManager {
             return;
         }
 
-        final boolean decided = roundValidator.reportHashFromNetwork(signerId, nodeStake, hash);
+        final boolean decided = roundValidator.reportHashFromNetwork(signerId, nodeWeight, hash);
         if (decided) {
             checkValidity(roundValidator);
         }

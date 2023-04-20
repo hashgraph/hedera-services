@@ -243,10 +243,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @Override
     @NonNull
-    public AddressBook updateStake(@NonNull final AddressBook addressBook) {
+    public AddressBook updateWeight(@NonNull final AddressBook addressBook) {
         Objects.requireNonNull(addressBook, "the address book cannot be null");
         final int stakingBehavior = testingToolConfig.stakingBehavior();
-        logger.info("updateStake called in State. Staking Behavior: {}", stakingBehavior);
+        logger.info("updateWeight called in State. Staking Behavior: {}", stakingBehavior);
         switch (stakingBehavior) {
             case 1:
                 return stakingBehavior1(addressBook);
@@ -259,7 +259,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     }
 
     /**
-     * All nodes received 10 stake.
+     * All nodes received 10 weight.
      *
      * @param addressBook the address book to update.
      * @return the updated address book.
@@ -267,16 +267,16 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     @NonNull
     private AddressBook stakingBehavior1(@NonNull final AddressBook addressBook) {
         if (logStakingBehavior.get()) {
-            logger.info(STARTUP.getMarker(), "Staking Behavior 1: updating all nodes to have 10 stake.");
+            logger.info(STARTUP.getMarker(), "Staking Behavior 1: updating all nodes to have 10 weight.");
         }
         for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateStake(i, 10);
+            addressBook.updateWeight(i, 10);
         }
         return addressBook;
     }
 
     /**
-     * All nodes received stake equal to their nodeId.
+     * All nodes received weight equal to their nodeId.
      *
      * @param addressBook the address book to update.
      * @return the updated address book.
@@ -285,10 +285,11 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     private AddressBook stakingBehavior2(@NonNull final AddressBook addressBook) {
         if (logStakingBehavior.get()) {
             logger.info(
-                    STARTUP.getMarker(), "Staking Behavior 2: updating all nodes to have stake equal to their nodeId.");
+                    STARTUP.getMarker(),
+                    "Staking Behavior 2: updating all nodes to have weight equal to their nodeId.");
         }
         for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateStake(i, i);
+            addressBook.updateWeight(i, i);
         }
         return addressBook;
     }
@@ -333,7 +334,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
@@ -351,7 +352,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, false)
                 && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
@@ -368,7 +369,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, stateAddressBook, false)
@@ -386,7 +387,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, false)
                 && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
@@ -402,7 +403,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook platformAddressBook = platform.getAddressBook();
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
@@ -418,7 +419,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AddressBook platformAddressBook = platform.getAddressBook();
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
-        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
+        final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy());
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)

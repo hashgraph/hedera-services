@@ -113,7 +113,7 @@ public interface ExpectedFCMFamily extends Serializable {
     void setFcmConfig(final FCMConfig fcmConfig);
 
     /**
-     * Set the number of non-zero-stake nodes in the address book.
+     * Set the number of non-zero-weight nodes in the address book.
      */
-    void setStakedNodeNum(final int stakedNodeNum);
+    void setWeightedNodeNum(final int weightedNodeNum);
 }
