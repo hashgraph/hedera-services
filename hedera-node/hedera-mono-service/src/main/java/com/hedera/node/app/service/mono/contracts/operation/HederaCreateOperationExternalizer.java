@@ -100,7 +100,7 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
         if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
             final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
                     createdContractId,
-                    childFrame.getCode().getContainerBytes().toArrayUnsafe(),
+                    childFrame.getCode().getBytes().toArrayUnsafe(),
                     updater.get(childFrame.getContractAddress()).getCode().toArrayUnsafe());
             updater.manageInProgressRecord(
                     recordsHistorian, childRecord, syntheticOp, List.of(contractBytecodeSidecar));
