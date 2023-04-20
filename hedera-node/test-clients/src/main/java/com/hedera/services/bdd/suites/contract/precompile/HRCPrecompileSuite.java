@@ -101,7 +101,6 @@ public class HRCPrecompileSuite extends HapiSuite {
         return defaultHapiSpec("hrcNftAndFungibleTokenAssociateFromEOA")
                 .given(
                         newKeyNamed(MULTI_KEY),
-                        newKeyNamed(RANDOM_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -137,7 +136,6 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                     ASSOCIATE,
                                                     HRC))
                                     .payingWith(ACCOUNT)
-                                    .signingWith(RANDOM_KEY) // should still work when signed by random key
                                     .gas(1_000_000)
                                     .via(ASSOCIATE_TXN),
                             // Associate non-fungible token
@@ -148,7 +146,6 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                     ASSOCIATE,
                                                     HRC))
                                     .payingWith(ACCOUNT)
-                                    .signingWith(RANDOM_KEY) // should still work when signed by random key
                                     .gas(1_000_000)
                                     .via(ASSOCIATE_TXN_2),
                             // Dissociate fungible token
@@ -159,7 +156,6 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                     DISSOCIATE,
                                                     HRC))
                                     .payingWith(ACCOUNT)
-                                    .signingWith(RANDOM_KEY) // should still work when signed by random key
                                     .gas(1_000_000)
                                     .via(DISSOCIATE_TXN),
                             // Dissociate non-fungible token
@@ -170,7 +166,6 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                     DISSOCIATE,
                                                     HRC))
                                     .payingWith(ACCOUNT)
-                                    .signingWith(RANDOM_KEY) // should still work when signed by random key
                                     .gas(1_000_000)
                                     .via(DISSOCIATE_TXN_2));
                 }))
@@ -214,7 +209,6 @@ public class HRCPrecompileSuite extends HapiSuite {
         return defaultHapiSpec("hrcNFTAndFungibleTokenAssociateFromContract")
                 .given(
                         newKeyNamed(MULTI_KEY),
-                        newKeyNamed(RANDOM_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -246,7 +240,6 @@ public class HRCPrecompileSuite extends HapiSuite {
                                 .payingWith(ACCOUNT)
                                 .via(ASSOCIATE_TXN)
                                 .gas(4_000_000)
-                                .signingWith(RANDOM_KEY) // should still work when signed by random key
                                 .hasKnownStatus(SUCCESS)
                                 .logged(),
                         // Associate non-fungible token
@@ -258,7 +251,6 @@ public class HRCPrecompileSuite extends HapiSuite {
                                 .payingWith(ACCOUNT)
                                 .via(ASSOCIATE_TXN_2)
                                 .gas(4_000_000)
-                                .signingWith(RANDOM_KEY) // should still work when signed by random key
                                 .hasKnownStatus(SUCCESS)
                                 .logged(),
                         // Dissociate fungible token
@@ -270,7 +262,6 @@ public class HRCPrecompileSuite extends HapiSuite {
                                 .payingWith(ACCOUNT)
                                 .via(DISSOCIATE_TXN)
                                 .gas(4_000_000)
-                                .signingWith(RANDOM_KEY) // should still work when signed by random key
                                 .hasKnownStatus(SUCCESS)
                                 .logged(),
                         // Dissociate non-fungible token
@@ -282,7 +273,6 @@ public class HRCPrecompileSuite extends HapiSuite {
                                 .payingWith(ACCOUNT)
                                 .via(DISSOCIATE_TXN_2)
                                 .gas(4_000_000)
-                                .signingWith(RANDOM_KEY) // should still work when signed by random key
                                 .hasKnownStatus(SUCCESS)
                                 .logged())))
                 .then(withOpContext((spec, ignore) -> allRunFor(
