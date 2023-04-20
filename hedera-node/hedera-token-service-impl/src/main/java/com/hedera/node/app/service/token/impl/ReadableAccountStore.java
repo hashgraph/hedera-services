@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isKeyAlias;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 
 import com.google.common.primitives.Longs;
@@ -144,7 +145,7 @@ public class ReadableAccountStore implements AccountAccess {
                         // If we didn't find an alias, we will want to auto-create this account. But
                         // we don't want to auto-create an account if there is already another
                         // account in the system with the same EVM address that we would have auto-created.
-                        if (!isOfEvmAddressSize(evmAddress) && entityNum == null) {
+                        if (isKeyAlias(evmAddress) && entityNum == null) {
                             // if we don't find entity num for key alias we can try to derive EVM
                             // address from it and look it up
                             final var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
