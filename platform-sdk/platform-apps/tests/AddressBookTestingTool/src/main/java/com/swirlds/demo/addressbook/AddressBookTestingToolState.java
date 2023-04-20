@@ -685,8 +685,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         final AtomicReference<Path> lastAddressBookDebugFile = new AtomicReference<>(null);
         for (int i = 0; i < files.length; i++) {
             if (files[i].getName().endsWith(suffix)) {
-                String fileName = files[i].getName();
-                Path lastAddressBookDebugFilePath = lastAddressBookDebugFile.get();
+                final String fileName = files[i].getName();
+                final Path lastAddressBookDebugFilePath = lastAddressBookDebugFile.get();
                 if (lastAddressBookDebugFilePath == null) {
                     lastAddressBookDebugFile.set(files[i].toPath());
                 } else if (fileName.compareTo(
