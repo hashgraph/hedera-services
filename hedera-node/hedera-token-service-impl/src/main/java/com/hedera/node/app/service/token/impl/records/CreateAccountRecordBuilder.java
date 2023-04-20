@@ -19,13 +19,17 @@ package com.hedera.node.app.service.token.impl.records;
 import com.hedera.node.app.spi.records.UniversalRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
+ * transaction.
+ */
 public class CreateAccountRecordBuilder extends UniversalRecordBuilder<CryptoCreateRecordBuilder>
         implements CryptoCreateRecordBuilder {
     private long createdAccountNum = 0;
 
     /** {@inheritDoc} */
     @Override
-    protected CryptoCreateRecordBuilder self() {
+    public CryptoCreateRecordBuilder self() {
         return this;
     }
 

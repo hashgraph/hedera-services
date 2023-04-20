@@ -20,7 +20,7 @@ import com.hedera.node.app.spi.records.RecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side-effects of a {@code CryptoCreate}
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
 public interface CryptoCreateRecordBuilder extends RecordBuilder<CryptoCreateRecordBuilder> {

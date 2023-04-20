@@ -234,7 +234,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertFalse(createdAccount.deleted());
         assertEquals(0L, createdAccount.stakedToMe());
         assertEquals(0L, createdAccount.stakePeriodStart());
-        assertEquals(0L, createdAccount.stakedNumber());
+        // staked node id is stored in state as negative long
+        assertEquals(-3 -1, createdAccount.stakedNumber());
         assertFalse(createdAccount.declineReward());
         assertTrue(createdAccount.receiverSigRequired());
         assertEquals(0L, createdAccount.headTokenNumber());
@@ -261,7 +262,71 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         // validate payer balance reduced
         assertEquals(9_900L, writableStore.get(id).get().tinybarBalance());
     }
+    @Test
+    @DisplayName("handle works when account can be created without any alias using staked account id")
+    void handleCryptoCreateVanillaWithStakedAccountId() {
+        txn = new CryptoCreateBuilder().withStakedAccountId(1000).build();
+        given(handleContext.consensusNow()).willReturn(consensusInstant);
+        given(handleContext.newEntityNumSupplier()).willReturn(() -> 1000L);
 
+        // newly created account and payer account are not modified. Validate payers balance
+        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
+        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
+        assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
+
+        subject.handle(handleContext, txn, writableStore, recordBuilder, CREATABLE_ACCOUNTS);
+
+        // newly created account and payer account are modified
+        assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
+        assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
+
+        // Validate created account exists and check record builder has created account recorded
+        final var optionalAccount =
+                writableStore.get(AccountID.newBuilder().accountNum(1000L).build());
+        assertTrue(optionalAccount.isPresent());
+        assertEquals(1000L, recordBuilder.getCreatedAccount());
+
+        // validate fields on created account
+        final var createdAccount = optionalAccount.get();
+
+        assertTrue(createdAccount.receiverSigRequired());
+        assertEquals(1000L, createdAccount.accountNumber());
+        assertEquals(Bytes.EMPTY, createdAccount.alias());
+        assertEquals(otherKey, createdAccount.key());
+        assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expiry());
+        assertEquals(defaultInitialBalance, createdAccount.tinybarBalance());
+        assertEquals("Create Account", createdAccount.memo());
+        assertFalse(createdAccount.deleted());
+        assertEquals(0L, createdAccount.stakedToMe());
+        assertEquals(0L, createdAccount.stakePeriodStart());
+        // staked node id is stored in state as negative long
+        assertEquals(1000L, createdAccount.stakedNumber());
+        assertFalse(createdAccount.declineReward());
+        assertTrue(createdAccount.receiverSigRequired());
+        assertEquals(0L, createdAccount.headTokenNumber());
+        assertEquals(0L, createdAccount.headNftId());
+        assertEquals(0L, createdAccount.headNftSerialNumber());
+        assertEquals(0L, createdAccount.numberOwnedNfts());
+        assertEquals(0, createdAccount.maxAutoAssociations());
+        assertEquals(0, createdAccount.usedAutoAssociations());
+        assertEquals(0, createdAccount.numberAssociations());
+        assertFalse(createdAccount.smartContract());
+        assertEquals(0, createdAccount.numberPositiveBalances());
+        assertEquals(0L, createdAccount.ethereumNonce());
+        assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
+        assertEquals(0L, createdAccount.autoRenewAccountNumber());
+        assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSecs());
+        assertEquals(0, createdAccount.contractKvPairsNumber());
+        assertTrue(createdAccount.cryptoAllowances().isEmpty());
+        assertTrue(createdAccount.approveForAllNftAllowances().isEmpty());
+        assertTrue(createdAccount.tokenAllowances().isEmpty());
+        assertEquals(0, createdAccount.numberTreasuryTitles());
+        assertFalse(createdAccount.expiredAndPendingRemoval());
+        assertNull(createdAccount.firstContractStorageKey());
+
+        // validate payer balance reduced
+        assertEquals(9_900L, writableStore.get(id).get().tinybarBalance());
+    }
     @Test
     @DisplayName("handle fails when autoRenewPeriod is not set. This should not happen as there should"
             + " be a semantic check in `preHandle` and handle workflow should reject the "
@@ -382,6 +447,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         private long sendRecordThreshold = 0;
         private long receiveRecordThreshold = 0;
         private AccountID proxyAccountId = null;
+        private long stakeNodeId = 3;
+        private long stakedAccountId = 0;
 
         private CryptoCreateBuilder() {}
 
@@ -405,6 +472,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
             }
             if (proxyAccountId != null) {
                 createTxnBody.proxyAccountID(proxyAccountId);
+            }
+            if(stakedAccountId > 0){
+                createTxnBody.stakedAccountId(AccountID.newBuilder().accountNum(stakedAccountId).build());
+            } else {
+                createTxnBody.stakedNodeId(stakeNodeId);
             }
 
             return TransactionBody.newBuilder()
@@ -451,6 +523,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         public CryptoCreateBuilder withNoAutoRenewPeriod() {
             this.autoRenewPeriod = -1;
+            return this;
+        }
+
+        public CryptoCreateBuilder withStakedAccountId(final long id) {
+            this.stakedAccountId = id;
             return this;
         }
 

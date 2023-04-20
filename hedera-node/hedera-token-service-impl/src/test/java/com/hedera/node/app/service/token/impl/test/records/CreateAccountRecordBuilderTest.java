@@ -37,4 +37,11 @@ public class CreateAccountRecordBuilderTest {
 
         assertThatThrownBy(() -> subject.getCreatedAccount(), "No new account number was recorded");
     }
+
+    @Test
+    void selfReturnsSameObject(){
+        var subject = new CreateAccountRecordBuilder();
+
+        assertThat(subject.self()).isSameAs(subject);
+    }
 }

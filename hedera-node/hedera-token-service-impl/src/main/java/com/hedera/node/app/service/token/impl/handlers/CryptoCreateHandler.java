@@ -239,7 +239,7 @@ public class CryptoCreateHandler implements TransactionHandler {
         }
 
         if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
-            final var stakeNumber = getStakedId(op.stakedId().kind(), op.stakedAccountId(), op.stakedNodeId());
+            final var stakeNumber = getStakedId(op);
             builder.stakedNumber(stakeNumber);
         }
         // set the new account number
@@ -269,18 +269,23 @@ public class CryptoCreateHandler implements TransactionHandler {
 
     /**
      * Gets the stakedId from the provided staked_account_id or staked_node_id.
+     * When staked_node_id is provided, it is stored as negative number in state to
+     * distinguish it from staked_account_id. It will be converted back to positive number
+     * when it is retrieved from state.
      *
-     * @param stakedAccountId given staked_account_id
-     * @param stakedNodeId given staked_node_id
+     * To distinguish for node 0, it will be stored as - node_id -1.
+     * For example, if staked_node_id is 0, it will be stored as -1 in state.
+     *
+     * @param op given transaction body
      * @return valid staked id
      */
-    private long getStakedId(final StakedIdOneOfType idCase, final AccountID stakedAccountId, final long stakedNodeId) {
-        if (idCase.equals(StakedIdOneOfType.STAKED_ACCOUNT_ID)) {
-            return stakedAccountId.accountNum();
+    private long getStakedId(final CryptoCreateTransactionBody op) {
+        if (StakedIdOneOfType.STAKED_ACCOUNT_ID.equals(op.stakedId().kind())) {
+            return op.stakedAccountIdOrThrow().accountNum();
         } else {
             // return a number less than the given node Id, in order to recognize the if nodeId 0 is
             // set
-            return -stakedNodeId - 1;
+            return -op.stakedNodeIdOrThrow() - 1;
         }
     }
 }
