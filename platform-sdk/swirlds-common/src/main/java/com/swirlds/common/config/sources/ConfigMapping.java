@@ -16,8 +16,6 @@
 
 package com.swirlds.common.config.sources;
 
-import static com.swirlds.logging.LogMarker.CONFIG;
-
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -35,17 +33,26 @@ public record ConfigMapping(@NonNull String mappedName, @NonNull String original
 
     private static final Logger logger = LogManager.getLogger(MappedConfigSource.class);
 
+    /**
+     * Creates a new {@code ConfigMapping}
+     *
+     * @param mappedName   new property name
+     * @param originalName original property name
+     * @throws IllegalArgumentException If {@code mappedName} and {@code originalName} are equal
+     */
     public ConfigMapping {
         CommonUtils.throwArgBlank(mappedName, "mappedName");
         CommonUtils.throwArgBlank(originalName, "originalName");
         if (Objects.equals(originalName, mappedName)) {
-            logger.warn(
-                    CONFIG.getMarker(),
-                    "originalName and mappedName are the same ({})! Will not create an mappedName",
-                    mappedName);
+            throw new IllegalArgumentException(
+                    "originalName and mappedName are the same (%s)! Will not create an mappedName"
+                            .formatted(mappedName));
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return "'" + mappedName + "'<->'" + originalName + "'";

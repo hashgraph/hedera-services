@@ -56,9 +56,9 @@ import org.apache.logging.log4j.Logger;
  * @see ConfigMapping
  */
 public class MappedConfigSource extends AbstractConfigSource {
-    private static final String PROPERTY_NOT_FOUND = "Property '%s' not found in original config source";
+    private static final String PROPERTY_NOT_FOUND = "Property '{}' not found in original config source";
     private static final String PROPERTY_ALREADY_DEFINED = "Property '%s' already defined";
-    private static final String DUPLICATE_PROPERTY = "Property '%s' already found in original config source";
+    private static final String DUPLICATE_PROPERTY = "Property '{}' already found in original config source";
     private static final String PROPERTY_ALREADY_MAPPED = "Property '%s' has already a mapping defined";
     private static final Logger logger = LogManager.getLogger(MappedConfigSource.class);
 
@@ -111,6 +111,9 @@ public class MappedConfigSource extends AbstractConfigSource {
         configMappings.add(configMapping);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     protected Map<String, String> getInternalProperties() {
@@ -120,9 +123,9 @@ public class MappedConfigSource extends AbstractConfigSource {
 
             configMappings.forEach(configMapping -> {
                 if (internalProperties.containsKey(configMapping.mappedName())) {
-                    logger.info(DUPLICATE_PROPERTY.formatted(configMapping.mappedName()));
+                    logger.warn(DUPLICATE_PROPERTY, configMapping.mappedName());
                 } else if (!internalProperties.containsKey(configMapping.originalName())) {
-                    logger.info(PROPERTY_NOT_FOUND.formatted(configMapping.originalName()));
+                    logger.warn(PROPERTY_NOT_FOUND, configMapping.originalName());
                 } else {
                     mappedProperties.put(
                             configMapping.mappedName(), internalProperties.get(configMapping.originalName()));
@@ -136,6 +139,9 @@ public class MappedConfigSource extends AbstractConfigSource {
         return Collections.unmodifiableMap(properties);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getOrdinal() {
         return wrappedSource.getOrdinal();

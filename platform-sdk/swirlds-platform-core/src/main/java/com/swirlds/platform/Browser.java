@@ -43,7 +43,6 @@ import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
-import com.swirlds.common.config.sources.MappedConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -185,7 +184,6 @@ public class Browser {
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
         final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
-        final ConfigSource mappedConfigPropertiesConfigSource = new MappedConfigSource(configPropertiesConfigSource);
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
@@ -197,7 +195,7 @@ public class Browser {
         // Load Configuration Definitions
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(mappedSettingsConfigSource)
-                .withSource(mappedConfigPropertiesConfigSource)
+                .withSource(configPropertiesConfigSource)
                 .withConfigDataType(BasicConfig.class)
                 .withConfigDataType(StateConfig.class)
                 .withConfigDataType(CryptoConfig.class)
