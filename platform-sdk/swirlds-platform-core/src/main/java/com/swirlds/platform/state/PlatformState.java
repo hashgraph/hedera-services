@@ -16,9 +16,15 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.virtualmap.VirtualMap.ClassVersion.ORIGINAL;
+
 import com.swirlds.common.merkle.MerkleInternal;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.uptime.UptimeData;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * This subtree contains state data which is managed and used exclusively by the platform.
@@ -29,11 +35,13 @@ public class PlatformState extends PartialBinaryMerkleInternal implements Merkle
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        public static final int UPTIME_DATA = 2;
     }
 
     private static final class ChildIndices {
         public static final int PLATFORM_DATA = 0;
         public static final int ADDRESS_BOOK = 1;
+        public static final int UPTIME_DATA = 2;
     }
 
     public PlatformState() {}
@@ -52,6 +60,7 @@ public class PlatformState extends PartialBinaryMerkleInternal implements Merkle
         if (that.getAddressBook() != null) {
             this.setAddressBook(that.getAddressBook().copy());
         }
+        this.setUptimeData(that.getUptimeData().copy());
     }
 
     /**
@@ -67,7 +76,19 @@ public class PlatformState extends PartialBinaryMerkleInternal implements Merkle
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.UPTIME_DATA;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void addDeserializedChildren(final @NonNull List<MerkleNode> children, final int version) {
+        super.addDeserializedChildren(children, version);
+
+        if (version == ORIGINAL) {
+            setUptimeData(new UptimeData());
+        }
     }
 
     /**
@@ -83,6 +104,20 @@ public class PlatformState extends PartialBinaryMerkleInternal implements Merkle
      */
     public AddressBook getAddressBook() {
         return getChild(ChildIndices.ADDRESS_BOOK);
+    }
+
+    /**
+     * Get the uptime data.
+     */
+    public @NonNull UptimeData getUptimeData() {
+        return getChild(ChildIndices.UPTIME_DATA);
+    }
+
+    /**
+     * Set the uptime data.
+     */
+    public void setUptimeData(@NonNull final UptimeData uptimeData) {
+        setChild(ChildIndices.UPTIME_DATA, uptimeData);
     }
 
     /**

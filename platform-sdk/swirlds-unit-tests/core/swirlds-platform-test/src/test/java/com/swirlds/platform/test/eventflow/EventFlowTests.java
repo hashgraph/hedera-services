@@ -603,6 +603,8 @@ class EventFlowTests {
                         .build();
 
         swirldStateManager = new SwirldStateManagerImpl(
+                TestPlatformContextBuilder.create().build(),
+                mock(AddressBook.class),
                 selfNodeId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
