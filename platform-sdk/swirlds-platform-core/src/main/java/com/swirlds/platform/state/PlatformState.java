@@ -21,6 +21,7 @@ import static com.swirlds.virtualmap.VirtualMap.ClassVersion.ORIGINAL;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
+import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.uptime.UptimeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,7 +30,7 @@ import java.util.List;
 /**
  * This subtree contains state data which is managed and used exclusively by the platform.
  */
-public class PlatformState extends PartialBinaryMerkleInternal implements MerkleInternal {
+public class PlatformState extends PartialNaryMerkleInternal implements MerkleInternal {
 
     public static final long CLASS_ID = 0x483ae5404ad0d0bfL;
 
