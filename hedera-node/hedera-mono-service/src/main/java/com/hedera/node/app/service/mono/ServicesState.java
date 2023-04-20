@@ -564,7 +564,6 @@ public class ServicesState extends PartialNaryMerkleInternal
         setChild(StateChildIndices.SPECIAL_FILES, new MerkleSpecialFiles());
         setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions());
         setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
-        //        setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
         setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
         setChild(
                 StateChildIndices.STAKING_INFO,
