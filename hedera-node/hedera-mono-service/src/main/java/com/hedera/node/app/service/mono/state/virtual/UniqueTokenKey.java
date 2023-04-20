@@ -23,12 +23,11 @@ import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /** Represents a key for a unique token (NFT). */
-public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
+public class UniqueTokenKey implements VirtualKey {
     private static final long CLASS_ID = 0x17f77b311f6L;
 
     /** Current version of the encoding scheme. */
@@ -100,18 +99,6 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
         // Min value here is ceil((64 - 63)/8) = 1
         final var nonZeroBits = Long.SIZE - Long.numberOfLeadingZeros(value);
         return (nonZeroBits / 8) + Math.min(1, nonZeroBits % 8);
-    }
-
-    @Override
-    public int compareTo(@NonNull final UniqueTokenKey other) {
-        if (this == other) {
-            return 0;
-        }
-        // Sort by entity num first, followed by token serial number.
-        if (this.entityNum == other.entityNum) {
-            return Long.compare(this.tokenSerial, other.tokenSerial);
-        }
-        return Long.compare(this.entityNum, other.entityNum);
     }
 
     /* package */ interface ByteConsumer {

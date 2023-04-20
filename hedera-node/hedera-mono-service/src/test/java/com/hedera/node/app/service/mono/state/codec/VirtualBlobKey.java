@@ -19,14 +19,13 @@ package com.hedera.node.app.service.mono.state.codec;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /** Copied here as a test class to serve as a realistic example of a {@link VirtualKey}
  * from the Hedera codebase. */
-public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
+public class VirtualBlobKey implements VirtualKey {
     static final int CURRENT_VERSION = 1;
     static final int BYTES_IN_SERIALIZED_FORM = 5;
     static final long CLASS_ID = 0x408d7e7ed170419cL;
@@ -115,18 +114,6 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
 
     public int getEntityNumCode() {
         return entityNumCode;
-    }
-
-    @Override
-    public int compareTo(@NonNull final VirtualBlobKey that) {
-        if (this == that) {
-            return 0;
-        }
-        final int order = Integer.compare(this.entityNumCode, that.entityNumCode);
-        if (order != 0) {
-            return order;
-        }
-        return this.type.compareTo(that.type);
     }
 
     @Override

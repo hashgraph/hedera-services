@@ -29,7 +29,7 @@ import java.util.Set;
  * @param <V> The value, which must be of the appropriate kind depending on whether it is stored in
  *     memory, or on disk.
  */
-public interface WritableKVState<K extends Comparable<? super K>, V> extends ReadableKVState<K, V> {
+public interface WritableKVState<K, V> extends ReadableKVState<K, V> {
 
     /**
      * Gets the value associated with the given key in a <strong>READ-WRITE</strong> way. The

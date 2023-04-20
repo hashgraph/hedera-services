@@ -58,8 +58,8 @@ class BasicSubmissionFlowTest {
     private BasicSubmissionFlow subject;
 
     @Test
-    void rejectsAllOnZeroStakeNode() {
-        setupZeroStakeNode();
+    void rejectsAllOnZeroWeightNode() {
+        setupZeroWeightNode();
 
         final var response = subject.submit(someTxn);
 
@@ -68,7 +68,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void rejectsPrecheckFailures() {
-        setupStakedNode();
+        setupNonZeroWeightNode();
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someFailure, null));
 
         final var response = subject.submit(someTxn);
@@ -79,7 +79,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void translatesPlatformCreateFailure() {
-        setupStakedNode();
+        setupNonZeroWeightNode();
         givenValidPrecheck();
         given(submissionManager.trySubmission(any())).willReturn(PLATFORM_TRANSACTION_NOT_CREATED);
 
@@ -90,7 +90,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void rejectsInvalidAccessor() {
-        setupStakedNode();
+        setupNonZeroWeightNode();
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, null));
 
         final var response = subject.submit(someTxn);
@@ -101,7 +101,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void followsHappyPathToOk() {
-        setupStakedNode();
+        setupNonZeroWeightNode();
         givenValidPrecheck();
         givenOkSubmission();
 
@@ -118,12 +118,12 @@ class BasicSubmissionFlowTest {
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, someAccessor));
     }
 
-    private void setupStakedNode() {
+    private void setupNonZeroWeightNode() {
         subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
     }
 
-    private void setupZeroStakeNode() {
-        given(nodeInfo.isSelfZeroStake()).willReturn(true);
+    private void setupZeroWeightNode() {
+        given(nodeInfo.isSelfZeroWeight()).willReturn(true);
         subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
     }
 }

@@ -126,7 +126,7 @@ public class MonoServicesMain implements SwirldMain {
 
     private void validateLedgerState() {
         app.ledgerValidator().validate(app.workingState().accounts());
-        app.nodeInfo().validateSelfAccountIfStaked();
+        app.nodeInfo().validateSelfAccountIfNonZeroWeight();
         final var notifications = app.notificationEngine().get();
         notifications.register(PlatformStatusChangeListener.class, app.statusChangeListener());
         notifications.register(ReconnectCompleteListener.class, app.reconnectListener());

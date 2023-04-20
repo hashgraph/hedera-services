@@ -185,7 +185,7 @@ final class ServicesMainTest {
 
         // then:
         verify(ledgerValidator).validate(accounts);
-        verify(nodeInfo).validateSelfAccountIfStaked();
+        verify(nodeInfo).validateSelfAccountIfNonZeroWeight();
         // and:
         verify(notificationEngine).register(PlatformStatusChangeListener.class, statusChangeListener);
         verify(notificationEngine).register(IssListener.class, issListener);

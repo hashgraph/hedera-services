@@ -26,8 +26,7 @@ import java.util.*;
  * @param <K> The key type
  * @param <V> The value type
  */
-public abstract class WritableKVStateBase<K extends Comparable<? super K>, V> extends ReadableKVStateBase<K, V>
-        implements WritableKVState<K, V> {
+public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
     /** A map of all modified values buffered in this mutable state */
     private final Map<K, V> modifications = new LinkedHashMap<>();
 
@@ -242,7 +241,7 @@ public abstract class WritableKVStateBase<K extends Comparable<? super K>, V> ex
      *
      * @param <K> The type of key
      */
-    private static final class KVStateKeyIterator<K extends Comparable<? super K>> implements Iterator<K> {
+    private static final class KVStateKeyIterator<K> implements Iterator<K> {
         private final Iterator<K> backendItr;
         private final Set<K> removedKeys;
         private final Set<K> maybeAddedKeys;

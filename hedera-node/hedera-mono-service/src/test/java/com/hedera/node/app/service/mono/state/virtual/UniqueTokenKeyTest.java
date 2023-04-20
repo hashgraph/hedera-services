@@ -167,25 +167,12 @@ class UniqueTokenKeyTest {
     @Test
     void comparing_comparesProperly() {
         final UniqueTokenKey key1 = new UniqueTokenKey(123L, 789L);
-        final UniqueTokenKey key2 = new UniqueTokenKey(456L, 789L);
         final UniqueTokenKey key3 = new UniqueTokenKey(123L, 456L);
         final UniqueTokenKey key4 = new UniqueTokenKey(123L, 456L);
 
         // Check equality works
         assertThat(key1).isEqualTo(key1); // same instance
         assertThat(key3).isEqualTo(key4); // differing instances
-
-        // Check less-than result is valid
-        assertThat(key1).isLessThan(key2); // due to num field
-        assertThat(key3).isLessThan(key1); // due to serial field
-
-        // Check greater-than result is valid
-        assertThat(key2).isGreaterThan(key1); // due to num field
-        assertThat(key1).isGreaterThan(key3); // due to serial field
-
-        // In case above isEqualTo is a reference comparison, we also do the following to confirm
-        assertThat(key1.compareTo(key1)).isEqualTo(0); // same instance
-        assertThat(key3.compareTo(key4)).isEqualTo(0); // differing instances
     }
 
     private static ByteBuffer asByteBuffer(final int value) {

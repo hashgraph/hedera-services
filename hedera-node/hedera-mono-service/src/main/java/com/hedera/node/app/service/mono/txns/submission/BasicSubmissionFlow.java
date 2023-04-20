@@ -50,7 +50,7 @@ public final class BasicSubmissionFlow implements SubmissionFlow {
 
     @Override
     public TransactionResponse submit(final Transaction signedTxn) {
-        if (nodeInfo.isSelfZeroStake()) {
+        if (nodeInfo.isSelfZeroWeight()) {
             return responseWith(INVALID_NODE_ACCOUNT);
         }
 

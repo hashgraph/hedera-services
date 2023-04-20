@@ -47,7 +47,7 @@ public final class VirtualMapLikeAdapter {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static <K extends VirtualKey<? super K>, V extends VirtualValue> VirtualMapLike<K, V> unwrapping(
+    public static <K extends VirtualKey, V extends VirtualValue> VirtualMapLike<K, V> unwrapping(
             final StateMetadata<K, V> md, final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> real) {
         return new VirtualMapLike<>() {
             @Override
