@@ -71,6 +71,31 @@ public class SyncMetrics {
                     INTERNAL_CATEGORY, PlatformStatNames.TIPS_PER_SYNC)
             .withDescription("the average number of tips per sync at the start of each sync")
             .withFormat(FORMAT_15_3);
+
+    private static final SpeedometerMetric.Config INCOMING_SYNC_REQUESTS_CONFIG = new SpeedometerMetric.Config(
+            PLATFORM_CATEGORY, "incomingSyncRequests/sec")
+            .withDescription("Incoming sync requests received per second")
+            .withFormat(FORMAT_14_7);
+    private final SpeedometerMetric incomingSyncRequestsPerSec;
+
+    private static final SpeedometerMetric.Config ACCEPTED_SYNC_REQUESTS_CONFIG = new SpeedometerMetric.Config(
+            PLATFORM_CATEGORY, "acceptedSyncRequests/sec")
+            .withDescription("Incoming sync requests accepted per second")
+            .withFormat(FORMAT_14_7);
+    private final SpeedometerMetric acceptedSyncRequestsPerSec;
+
+    private static final SpeedometerMetric.Config OPPORTUNITIES_TO_INITIATE_SYNC_CONFIG = new SpeedometerMetric.Config(
+            PLATFORM_CATEGORY, "opportunitiesToInitiateSync/sec")
+            .withDescription("Opportunities to initiate an outgoing sync per second")
+            .withFormat(FORMAT_14_7);
+    private final SpeedometerMetric opportunitiesToInitiateSyncPerSec;
+
+    private static final SpeedometerMetric.Config OUTGOING_SYNC_REQUESTS_CONFIG = new SpeedometerMetric.Config(
+            PLATFORM_CATEGORY, "outgoingSyncRequests/sec")
+            .withDescription("Outgoing sync requests sent per second")
+            .withFormat(FORMAT_14_7);
+    private final SpeedometerMetric outgoingSyncRequestsPerSec;
+
     private final RunningAverageMetric tipsPerSync;
 
     private final AverageStat syncGenerationDiff;
@@ -89,6 +114,11 @@ public class SyncMetrics {
     private final AverageStat rejectedSyncRatio;
 
     /**
+     * The ratio of opportunities to initiate an outgoing sync that were declined
+     */
+    private final AverageStat declinedToInitiateSyncRatio;
+
+    /**
      * Constructor of {@code SyncMetrics}
      *
      * @param metrics
@@ -101,6 +131,11 @@ public class SyncMetrics {
         callSyncsPerSecond = metrics.getOrCreate(CALL_SYNCS_PER_SECOND_CONFIG);
         recSyncsPerSecond = metrics.getOrCreate(REC_SYNCS_PER_SECOND_CONFIG);
         tipsPerSync = metrics.getOrCreate(TIPS_PER_SYNC_CONFIG);
+
+        incomingSyncRequestsPerSec = metrics.getOrCreate(INCOMING_SYNC_REQUESTS_CONFIG);
+        acceptedSyncRequestsPerSec = metrics.getOrCreate(ACCEPTED_SYNC_REQUESTS_CONFIG);
+        opportunitiesToInitiateSyncPerSec = metrics.getOrCreate(OPPORTUNITIES_TO_INITIATE_SYNC_CONFIG);
+        outgoingSyncRequestsPerSec = metrics.getOrCreate(OUTGOING_SYNC_REQUESTS_CONFIG);
 
         avgSyncDuration = new AverageAndMaxTimeStat(
                 metrics,
@@ -186,6 +221,13 @@ public class SyncMetrics {
                 INTERNAL_CATEGORY,
                 PlatformStatNames.REJECTED_SYNC_RATIO,
                 "the averaged ratio of rejected syncs to accepted syncs over time",
+                FORMAT_1_3,
+                AverageStat.WEIGHT_VOLATILE);
+        declinedToInitiateSyncRatio = new AverageStat(
+                metrics,
+                INTERNAL_CATEGORY,
+                "declinedToInitiateSyncRatio",
+                "the ratio of declining to initiate a sync when given the opportunity to do so",
                 FORMAT_1_3,
                 AverageStat.WEIGHT_VOLATILE);
 
@@ -325,5 +367,42 @@ public class SyncMetrics {
      */
     public void updateSyncPermitsAvailable(final int permits) {
         permitsAvailable.update(permits);
+    }
+
+    /**
+     * Indicate that a request to sync has been received
+     */
+    public void incomingSyncRequestReceived() {
+        incomingSyncRequestsPerSec.cycle();
+    }
+
+    /**
+     * Indicate that a request to sync has been accepted
+     */
+    public void acceptedSyncRequest() {
+        acceptedSyncRequestsPerSec.cycle();
+    }
+
+    /**
+     * Indicate that a request to sync has been sent
+     */
+    public void opportunityToInitiateSync() {
+        opportunitiesToInitiateSyncPerSec.cycle();
+    }
+
+    /**
+     * Indicate that a request to sync has been sent
+     */
+    public void outgoingSyncRequestSent() {
+        outgoingSyncRequestsPerSec.cycle();
+    }
+
+    /**
+     * Indicate whether an opportunity to initiate a sync was declined
+     *
+     * @param declinedToInitiate true if the opportunity was declined, false otherwise
+     */
+    public void updateDeclinedToInitiateSyncRatio(final boolean declinedToInitiate) {
+        declinedToInitiateSyncRatio.update(declinedToInitiate);
     }
 }
