@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.
 import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.VALID_GRANT_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_KYC;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -41,7 +40,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.entity.AccountImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -75,33 +73,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         subject.preHandle(context, readableStore);
 
         assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_KYC_KT.asPbjKey()));
-    }
-
-    private AccountImpl newPayerAccount() {
-        return new AccountImpl(
-                0,
-                null,
-                payerHederaKey,
-                0,
-                0,
-                "test payer",
-                false,
-                false,
-                false,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                false,
-                0,
-                0,
-                0);
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_KYC_KT.asPbjKey()));
     }
 
     private ReadableTokenStore mockKnownKycTokenStore() {

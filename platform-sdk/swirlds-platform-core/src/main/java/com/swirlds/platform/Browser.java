@@ -726,7 +726,12 @@ public class Browser {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final AddressBook configAddressBook,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
-        final SavedStateInfo[] savedStateFiles = getSavedStateFiles(mainClassName, selfId, swirldName);
+
+        final String actualMainClassName =
+                configuration.getConfigData(StateConfig.class).getMainClassName(mainClassName);
+
+        final SavedStateInfo[] savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+
         // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
         // time this class is used.
         final SavedStateLoader savedStateLoader = new SavedStateLoader(

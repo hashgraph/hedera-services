@@ -91,12 +91,13 @@ public class SavedStateLoader {
             final SoftwareVersion currentSoftwareVersion,
             final Supplier<EmergencySignedStateValidator> emergencyStateValidator,
             final EmergencyRecoveryManager emergencyRecoveryManager) {
-        Objects.requireNonNull(shutdownRequestedTrigger);
-        Objects.requireNonNull(addressBook);
-        Objects.requireNonNull(currentSoftwareVersion);
-        Objects.requireNonNull(emergencyStateValidator);
-        Objects.requireNonNull(emergencyStateValidator.get());
-        Objects.requireNonNull(emergencyRecoveryManager);
+        Objects.requireNonNull(shutdownRequestedTrigger, "shutdownRequestedTrigger");
+        Objects.requireNonNull(addressBook, "addressBook");
+        Objects.requireNonNull(currentSoftwareVersion, "currentSoftwareVersion");
+        Objects.requireNonNull(emergencyStateValidator, "emergencyStateValidator");
+        Objects.requireNonNull(emergencyStateValidator.get(), "emergencyStateValidator value");
+        Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
+
         this.platformContext = Objects.requireNonNull(platformContext);
         this.shutdownRequestedTrigger = shutdownRequestedTrigger;
         this.addressBook = addressBook;
@@ -104,6 +105,18 @@ public class SavedStateLoader {
         this.currentSoftwareVersion = currentSoftwareVersion;
         this.emergencyStateValidator = emergencyStateValidator;
         this.emergencyRecoveryManager = emergencyRecoveryManager;
+
+        if (savedStateFiles == null || savedStateFiles.length == 0) {
+            logger.info(STARTUP.getMarker(), "No saved states were found on disk");
+        } else {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("The following saved states were found on disk:");
+            for (final SavedStateInfo savedStateFile : savedStateFiles) {
+                sb.append("\n  - ").append(savedStateFile.stateFile());
+            }
+
+            logger.info(STARTUP.getMarker(), sb.toString());
+        }
     }
 
     /**
@@ -158,7 +171,7 @@ public class SavedStateLoader {
         }
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            final SignedStateWithHashes stateWithHashes = readAndRehashState(savedStateFile);
+            final SignedStateWithHashes stateWithHashes = readAndRehashState(platformContext, savedStateFile);
             final Hash oldHash = stateWithHashes.oldHash;
             final Hash newHash = stateWithHashes.newHash;
 
@@ -264,7 +277,7 @@ public class SavedStateLoader {
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
             if (savedStateFile.round() <= maxRound) {
-                final SignedStateWithHashes stateWithHashes = readAndRehashState(savedStateFile);
+                final SignedStateWithHashes stateWithHashes = readAndRehashState(platformContext, savedStateFile);
 
                 if (settings.isCheckSignedStateFromDisk()) {
                     evaluateLoadedStateHash(stateWithHashes, currentSoftwareVersion);
@@ -276,8 +289,13 @@ public class SavedStateLoader {
         return new ReservedSignedState();
     }
 
-    private SignedStateWithHashes readAndRehashState(final SavedStateInfo file) throws IOException {
+    private static SignedStateWithHashes readAndRehashState(
+            @NonNull final PlatformContext platformContext, @NonNull final SavedStateInfo file) throws IOException {
+
+        logger.info(STARTUP.getMarker(), "Loading signed state from disk: {}", file.stateFile());
+
         final DeserializedSignedState deserializedSignedState = readStateFile(platformContext, file.stateFile());
+
         final Hash oldHash = deserializedSignedState.originalHash();
 
         // When loading from disk, we should hash the state every time so that the first fast copy will
