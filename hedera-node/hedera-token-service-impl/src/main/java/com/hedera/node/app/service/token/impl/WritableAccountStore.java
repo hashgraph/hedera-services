@@ -89,13 +89,12 @@ public class WritableAccountStore extends ReadableAccountStore {
      * Returns the {@link Account} with the given number. If no such account exists, returns {@code
      * Optional.empty()}
      *
-     * @param accountNum - the number of the Account to be retrieved.
+     * @param accountID - the id of the Account to be retrieved.
      */
     @NonNull
-    public Optional<Account> get(final long accountNum) {
-        requireNonNull(accountNum);
-        final var account =
-                getAccountLeaf(AccountID.newBuilder().accountNum(accountNum).build());
+    public Optional<Account> get(final AccountID accountID) {
+        requireNonNull(accountID);
+        final var account = getAccountLeaf(accountID);
         return Optional.ofNullable(account);
     }
 
@@ -156,7 +155,17 @@ public class WritableAccountStore extends ReadableAccountStore {
      * @return the set of accounts modified in existing state
      */
     @NonNull
-    public Set<EntityNumVirtualKey> modifiedAccountsInAccountState() {
+    public Set<EntityNumVirtualKey> modifiedAccountsInState() {
         return accountState.modifiedKeys();
+    }
+
+    /**
+     * Returns the set of aliases modified in existing state.
+     *
+     * @return the set of aliases modified in existing state
+     */
+    @NonNull
+    public Set<String> modifiedAliasesInState() {
+        return aliases.modifiedKeys();
     }
 }

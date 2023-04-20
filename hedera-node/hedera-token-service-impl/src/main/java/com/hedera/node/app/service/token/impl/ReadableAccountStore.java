@@ -65,7 +65,7 @@ public class ReadableAccountStore implements AccountAccess {
         this.aliases = states.get("ALIASES");
     }
 
-    static boolean isMirror(final Bytes bytes) {
+    protected static boolean isMirror(final Bytes bytes) {
         return bytes.matchesPrefix(MIRROR_PREFIX);
     }
 
@@ -93,7 +93,7 @@ public class ReadableAccountStore implements AccountAccess {
      * @return merkle leaf for the given account number
      */
     @Nullable
-    Account getAccountLeaf(@NonNull final AccountID id) {
+    protected Account getAccountLeaf(@NonNull final AccountID id) {
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =

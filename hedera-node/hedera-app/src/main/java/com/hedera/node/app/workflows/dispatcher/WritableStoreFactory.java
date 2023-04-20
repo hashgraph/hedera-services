@@ -64,8 +64,7 @@ public class WritableStoreFactory {
      */
     @NonNull
     public WritableTokenStore createTokenStore() {
-        final var tokenStates =
-                stateAccessor.getHederaState().createWritableStates(TokenServiceImpl.TOKENS_KEY);
+        final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenServiceImpl.TOKENS_KEY);
         return new WritableTokenStore(tokenStates);
     }
 
