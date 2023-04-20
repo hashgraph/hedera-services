@@ -44,7 +44,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app.service.network.impl,
             com.hedera.node.app.service.consensus.impl.test,
-            com.hedera.node.app.service.network.impl.test;
+            com.hedera.node.app.service.network.impl.test,
+            com.hedera.services.cli;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app;

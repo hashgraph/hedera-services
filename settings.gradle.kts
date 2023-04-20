@@ -83,6 +83,8 @@ include(":hedera-node:hedera-evm-impl")
 
 include(":hedera-node:hedera-mono-service")
 
+include(":hedera-node:cli-clients")
+
 include(":hedera-node:test-clients")
 
 // Enable Gradle Build Scan
@@ -186,7 +188,8 @@ dependencyResolutionManagement {
               "swirlds-fcqueue",
               "swirlds-jasperdb",
               "swirlds-virtualmap",
-              "swirlds-test-framework"))
+              "swirlds-test-framework",
+              "swirlds-cli"))
 
       // Define the individual libraries
       library("pbj-runtime", "com.hedera.pbj", "pbj-runtime").versionRef("pbj-version")
@@ -257,6 +260,7 @@ dependencyResolutionManagement {
       library("swirlds-jasperdb", "com.swirlds", "swirlds-jasperdb").versionRef("swirlds-version")
       library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap")
           .versionRef("swirlds-version")
+      library("swirlds-cli", "com.swirlds", "swirlds-cli").versionRef("swirlds-version")
       library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
       library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
       library("spotbugs-annotations", "com.github.spotbugs", "spotbugs-annotations")
