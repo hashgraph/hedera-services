@@ -19,7 +19,9 @@ package com.hedera.node.app.workflows.ingest;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.config.Profile;
@@ -48,10 +50,12 @@ public class SubmissionManager {
     private final ReceiptCache recordCache;
     private final boolean isProduction;
     private final SpeedometerMetric platformTxnRejections;
+    private final AccountID nodeSelfID;
 
     /**
      * Constructor of {@code SubmissionManager}
      *
+     * @param nodeSelfID the {@link AccountID} for referring to this node's operator account'
      * @param platform the {@link Platform} to which transactions will be submitted
      * @param recordCache the {@link ReceiptCache} that tracks submitted transactions
      * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
@@ -59,10 +63,12 @@ public class SubmissionManager {
      */
     @Inject
     public SubmissionManager(
+            @NodeSelfId @NonNull final AccountID nodeSelfID,
             @NonNull final Platform platform,
             @NonNull final ReceiptCache recordCache,
             @NonNull final NodeLocalProperties nodeLocalProperties,
             @NonNull final Metrics metrics) {
+        this.nodeSelfID = requireNonNull(nodeSelfID);
         this.platform = requireNonNull(platform);
         this.recordCache = requireNonNull(recordCache);
         this.isProduction = requireNonNull(nodeLocalProperties).activeProfile() == Profile.PROD;
@@ -104,7 +110,7 @@ public class SubmissionManager {
 
         final var success = platform.createTransaction(PbjConverter.asBytes(payload));
         if (success) {
-            recordCache.record(txBody.transactionIDOrThrow(), null); // TODO I need to pass the node account ID into this constructor so I can use it here!!!
+            recordCache.record(txBody.transactionIDOrThrow(), nodeSelfID);
         } else {
             platformTxnRejections.cycle();
             throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);

@@ -21,11 +21,10 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
+import com.hedera.node.app.signature.HapiSignatureVerifierImpl;
 import com.hedera.node.app.signature.MonoSignaturePreparer;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.signature.SignatureVerifierImpl;
-import com.hedera.node.app.state.merkle.MerkleAddressBook;
 import com.hedera.node.app.workflows.handle.AdaptedMonoProcessLogic;
 import dagger.Binds;
 import dagger.Module;
@@ -48,7 +47,7 @@ public interface PreHandleWorkflowModule {
     SignaturePreparer bindSignaturePreparer(MonoSignaturePreparer signaturePreparer);
 
     @Binds
-    SignatureVerifier bindSignatureVerifier(SignatureVerifierImpl signatureVerifier);
+    SignatureVerifier bindSignatureVerifier(HapiSignatureVerifierImpl signatureVerifier);
 
     @Binds
     ProcessLogic bindProcessLogic(AdaptedMonoProcessLogic processLogic);
@@ -56,10 +55,5 @@ public interface PreHandleWorkflowModule {
     @Provides
     static ExecutorService provideExecutorService() {
         return ForkJoinPool.commonPool();
-    }
-
-    @Provides
-    static MerkleAddressBook provideAddressBook() {
-        return new MerkleAddressBook();
     }
 }

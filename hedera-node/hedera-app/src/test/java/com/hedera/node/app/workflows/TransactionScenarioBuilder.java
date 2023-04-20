@@ -1,11 +1,28 @@
-package com.hedera.node.app.fixtures.workflows;
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.workflows;
+
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
@@ -14,35 +31,28 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fixtures.Scenarios;
-import com.hedera.node.app.spi.fixtures.TestNode;
-import com.hedera.node.app.spi.fixtures.TestUser;
-import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import static java.util.Objects.requireNonNull;
 
-// Allows you to construct the transaction body, signed transaction, and transaction and creates
-// a TransactionInfo (as though it had been parsed by PreHandle).
+/**
+ * A very useful class for generating TransactionInfo's that can be used for testing.
+ */
 public class TransactionScenarioBuilder implements Scenarios {
     private TransactionBody body;
-    private List<SignaturePair> sigPairs = new ArrayList<>();
     private HederaFunctionality function;
 
     public TransactionScenarioBuilder() {
         this(goodDefaultBody(), HederaFunctionality.CRYPTO_TRANSFER);
     }
 
-    public TransactionScenarioBuilder(@NonNull final TransactionBody body, @NonNull final HederaFunctionality function) {
+    public TransactionScenarioBuilder(
+            @NonNull final TransactionBody body, @NonNull final HederaFunctionality function) {
         this.body = requireNonNull(body);
         this.function = function;
     }
 
-    public TransactionScenarioBuilder(@NonNull final TransactionBody body, @NonNull final SignatureMap sigMap) {
-        this.body = requireNonNull(body);
-        this.sigPairs.addAll(sigMap.sigPairOrElse(Collections.emptyList()));
+    public static TransactionScenarioBuilder scenario() {
+        return new TransactionScenarioBuilder();
     }
 
     public TransactionScenarioBuilder withTransactionID(@Nullable final TransactionID transactionID) {
@@ -61,13 +71,20 @@ public class TransactionScenarioBuilder implements Scenarios {
     public TransactionScenarioBuilder withTransactionValidStart(@Nullable final Timestamp transactionValidStart) {
         final var oldId = body.transactionID();
         final var id = oldId == null
-                ? TransactionID.newBuilder().transactionValidStart(transactionValidStart).build()
-                : body.transactionID().copyBuilder().transactionValidStart(transactionValidStart).build();
+                ? TransactionID.newBuilder()
+                        .transactionValidStart(transactionValidStart)
+                        .build()
+                : body.transactionID()
+                        .copyBuilder()
+                        .transactionValidStart(transactionValidStart)
+                        .build();
         return withTransactionID(id);
     }
 
     public TransactionScenarioBuilder withTransactionValidDuration(@Nullable final Duration transactionValidDuration) {
-        body = body.copyBuilder().transactionValidDuration(transactionValidDuration).build();
+        body = body.copyBuilder()
+                .transactionValidDuration(transactionValidDuration)
+                .build();
         return this;
     }
 
@@ -89,9 +106,8 @@ public class TransactionScenarioBuilder implements Scenarios {
     @NonNull
     public TransactionInfo txInfo() {
         final var signedbytes = asBytes(TransactionBody.PROTOBUF, body);
-        final var signedTx = SignedTransaction.newBuilder()
-                .bodyBytes(signedbytes)
-                .build();
+        final var signedTx =
+                SignedTransaction.newBuilder().bodyBytes(signedbytes).build();
         final var tx = Transaction.newBuilder()
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                 .build();
@@ -123,6 +139,4 @@ public class TransactionScenarioBuilder implements Scenarios {
                 .transactionValidDuration(Duration.newBuilder().seconds(60).build())
                 .build();
     }
-
-
 }

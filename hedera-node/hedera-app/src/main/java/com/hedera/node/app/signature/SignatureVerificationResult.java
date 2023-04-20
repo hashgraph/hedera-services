@@ -1,4 +1,22 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.signature;
+
+import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -6,28 +24,63 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import static java.util.Objects.requireNonNull;
 
+/**
+ * Contains the result of a List of signature verifications. This class aggregates each of those individual
+ * verification tasks and returns a single boolean indicating whether the verifications succeeded, or failed.
+ */
 public class SignatureVerificationResult implements Future<Boolean> {
-    private final List<Future<Boolean>> futures;
+    /** The list of {@link Future}s for each individual verification */
+    private final List<? extends Future<Boolean>> futures;
 
-    public SignatureVerificationResult(@NonNull final List<Future<Boolean>> futures) {
+    private boolean canceled = false;
+
+    /** Create a new instance */
+    public SignatureVerificationResult(@NonNull final List<? extends Future<Boolean>> futures) {
         this.futures = requireNonNull(futures);
     }
 
     @Override
-    public boolean cancel(boolean mayInterruptIfRunning) {
-        throw new UnsupportedOperationException("Not implemented yet!");
+    public boolean cancel(final boolean mayInterruptIfRunning) {
+        // If we're already done, then we can't cancel (including if we canceled previously)
+        if (isDone()) {
+            return false;
+        }
+
+        // Try to cancel each underlying future (I go ahead and try canceling all of them, even if one fails)
+        boolean result = true;
+        for (final var future : futures) {
+            final var couldBeCanceled = future.cancel(mayInterruptIfRunning);
+            if (!couldBeCanceled) {
+                result = false;
+            }
+        }
+
+        // Record that we have had "canceled" called already, so we don't do it again, and so that "done" is right.
+        canceled = true;
+
+        // We only return true if we got "true" from each sub-future
+        return result;
     }
 
     @Override
     public boolean isCancelled() {
-        throw new UnsupportedOperationException("Not implemented yet!");
+        return canceled;
     }
 
     @Override
     public boolean isDone() {
-        throw new UnsupportedOperationException("Not implemented yet!");
+        if (canceled || futures.isEmpty()) {
+            return true;
+        }
+
+        for (final var future : futures) {
+            if (future.isDone()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -43,8 +96,11 @@ public class SignatureVerificationResult implements Future<Boolean> {
         return passed;
     }
 
+    // Should to millisRemaining or nanos remaining like completable future?
+    // Should we rely on the underlying futures to throw the timeout if "millisRemaining" is negative?
     @Override
-    public Boolean get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+    public Boolean get(final long timeout, @NonNull final TimeUnit unit)
+            throws InterruptedException, ExecutionException, TimeoutException {
         var millisRemaining = unit.toMillis(timeout);
         var passed = true;
         for (final var future : futures) {

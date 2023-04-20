@@ -47,5 +47,4 @@ public record TransactionInfo(
         @NonNull TransactionBody txBody,
         @NonNull SignatureMap signatureMap,
         @NonNull Bytes signedBytes,
-        @NonNull HederaFunctionality functionality) {
-}
+        @NonNull HederaFunctionality functionality) {}

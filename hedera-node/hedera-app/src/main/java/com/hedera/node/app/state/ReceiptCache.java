@@ -43,6 +43,12 @@ import java.util.Set;
  */
 /*@ThreadSafe*/
 public interface ReceiptCache {
+    /**
+     * Represents a single item in the cache.
+     * @param transactionID The transaction ID associated with the receipt
+     * @param nodeAccountIDs The list nodes which have independently submitted events with the same transaction ID
+     * @param receipt The receipt for the transaction associated with the transaction ID
+     */
     record CacheItem(
             @NonNull TransactionID transactionID,
             @NonNull Set<AccountID> nodeAccountIDs,

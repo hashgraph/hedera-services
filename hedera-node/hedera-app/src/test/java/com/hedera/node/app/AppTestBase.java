@@ -40,7 +40,6 @@ public class AppTestBase extends TestBase implements TransactionFactory {
 
     /** Represents "this node" in our tests. */
     private final NodeId nodeSelfId = new NodeId(false, 7);
-
     /** The AccountID of "this node" in our tests. */
     protected final AccountID nodeSelfAccountId =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();

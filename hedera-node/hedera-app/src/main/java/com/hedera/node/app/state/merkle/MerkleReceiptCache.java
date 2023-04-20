@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
@@ -23,11 +25,13 @@ import com.hedera.node.app.state.ReceiptCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 
+/** An implementation of {@link ReceiptCache} */
 public class MerkleReceiptCache implements ReceiptCache {
     /** All receipts filed with the {@link ReceiptCache} before consensus will have this status. */
-    private static final TransactionReceipt UNKNOWN_RECEIPT = TransactionReceipt.newBuilder().status(UNKNOWN).build();
+    private static final TransactionReceipt UNKNOWN_RECEIPT =
+            TransactionReceipt.newBuilder().status(UNKNOWN).build();
+
     private final ConcurrentHashMap<TransactionID, TransactionReceipt> receipts = new ConcurrentHashMap<>();
 
     @Override

@@ -225,13 +225,7 @@ public class TransactionDispatcher {
     }
 
     private PreHandleDispatcher setupPreHandleDispatcher(@NonNull final ReadableStoreFactory storeFactory) {
-        return context -> {
-            try {
-                dispatchPreHandle(storeFactory, context);
-            } catch (PreCheckException e) {
-                throw new RuntimeException(e);
-            }
-        };
+        return context -> dispatchPreHandle(storeFactory, context);
     }
 
     // TODO: In all the below methods, commit will be called in workflow or some other place

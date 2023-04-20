@@ -16,28 +16,16 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.swirlds.common.crypto.TransactionSignature;
-import java.util.List;
-import java.util.Set;
+import com.hedera.node.app.workflows.TransactionInfo;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -45,80 +33,67 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleResultTest {
-    private Key payerKey = A_COMPLEX_KEY;
-    private Key otherKey = A_COMPLEX_KEY;
-
-    private HederaKey validHederaKey = asHederaKey(payerKey).get();
-
-    private final TransactionBody txBody = TransactionBody.newBuilder().build();
-    private final AccountID payer = AccountID.newBuilder().accountNum(42L).build();
-
-    @Test
-    void testPreHandleContextConstructor(
-            @Mock PreHandleContext context,
-            @Mock TransactionSignature payerSignature,
-            @Mock TransactionSignature otherSignature) {
-//        // given
-//        when(context.body()).thenReturn(txBody);
-//        when(context.payer()).thenReturn(payer);
-//        when(context.payerKey()).thenReturn(payerKey);
-//        when(context.requiredNonPayerKeys()).thenReturn(Set.of(otherKey));
-//        final var signatureMap = SignatureMap.newBuilder().build();
-//        final var innerResult = new PreHandleResult(null, null, null, OK, null, null, List.of(), null);
-//        final var expectedSigs = List.of(payerSignature, otherSignature);
-//
-//        // when
-//        final var metadata = new PreHandleResult(context, OK, signatureMap, expectedSigs, innerResult);
-//
-//        // then
-//        assertThat(metadata.txnBody()).isEqualTo(txBody);
-//        assertThat(metadata.payer()).isEqualTo(payer);
-//        assertThat(metadata.signatureMap()).isEqualTo(signatureMap);
-//        // Since equals method is not implemented for JKey, converting to PBJ key and comparing
-//        // JKey and HederaKey will be removed in future.
-//        assertEquals(payerKey, toPbj(asKeyUnchecked((JKey) metadata.payerKey())));
-//        assertThat(metadata.cryptoSignatures()).isEqualTo(expectedSigs);
-    }
-
     @SuppressWarnings("ConstantConditions")
     @Test
-    void testPreHandleContextConstructorWithIllegalArguments(@Mock PreHandleContext context) {
-//        // given
-//        when(context.body()).thenReturn(txBody);
-//        when(context.payer()).thenReturn(payer);
-//        final var signatureMap = SignatureMap.newBuilder().build();
-//        final List<TransactionSignature> signatures = List.of();
-//
-//        // then
-//        assertThatCode(() -> new PreHandleResult(context, OK, signatureMap, signatures, null))
-//                .doesNotThrowAnyException();
-//        assertThatThrownBy(() -> new PreHandleResult(null, OK, signatureMap, signatures, null))
-//                .isInstanceOf(NullPointerException.class);
-//        assertThatThrownBy(() -> new PreHandleResult(context, null, signatureMap, signatures, null))
-//                .isInstanceOf(NullPointerException.class);
-//        assertThatThrownBy(() -> new PreHandleResult(context, OK, null, signatures, null))
-//                .isInstanceOf(NullPointerException.class);
-//        assertThatThrownBy(() -> new PreHandleResult(context, OK, signatureMap, null, null))
-//                .isInstanceOf(NullPointerException.class);
+    void statusMustNotBeNull(@Mock AccountID payer, @Mock TransactionInfo txInfo, @Mock PreHandleResult innerResult) {
+        final var future = completedFuture(true);
+        assertThatThrownBy(() -> new PreHandleResult(payer, null, txInfo, future, future, innerResult))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    void testErrorConstructor() {
-//        // when
-//        final var metadata = new PreHandleResult(INVALID_ACCOUNT_ID);
-//
-//        // then
-//        assertThat(metadata.txnBody()).isNull();
-//        assertThat(metadata.payer()).isNull();
-//        assertThat(metadata.signatureMap()).isNull();
-//        assertThat(metadata.status()).isEqualTo(INVALID_ACCOUNT_ID);
-//        assertThat(metadata.payerKey()).isNull();
-//        assertThat(metadata.cryptoSignatures()).isEmpty();
+    @DisplayName("Unknown failures only set the status to UNKNOWN")
+    void unknownFailure() {
+        final var result = PreHandleResult.unknownFailure();
+
+        assertThat(result.status()).isEqualTo(UNKNOWN);
+        assertThat(result.failed()).isTrue();
+        assertThat(result.innerResult()).isNull();
+        assertThat(result.payer()).isNull();
+        assertThat(result.txInfo()).isNull();
+        assertThat(result.payerSignatureVerification()).isNull();
+        assertThat(result.nonPayerSignatureVerification()).isNull();
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
-    void testErrorConstructorWithInvalidArguments() {
-//        assertThatThrownBy(() -> new PreHandleResult(null)).isInstanceOf(NullPointerException.class);
+    @DisplayName("Node Diligence Failures only set the status and the payer to be the node and the tx info")
+    void nodeDiligenceFailure(@Mock TransactionInfo txInfo) {
+        final var nodeAccountId = AccountID.newBuilder().accountNum(3).build();
+        final var status = INVALID_PAYER_ACCOUNT_ID;
+        final var result = PreHandleResult.nodeDueDiligenceFailure(nodeAccountId, status, txInfo);
+
+        assertThat(result.status()).isEqualTo(status);
+        assertThat(result.failed()).isTrue();
+        assertThat(result.innerResult()).isNull();
+        assertThat(result.payer()).isEqualTo(nodeAccountId);
+        assertThat(result.txInfo()).isSameAs(txInfo);
+        assertThat(result.payerSignatureVerification()).isNull();
+        assertThat(result.nonPayerSignatureVerification()).isNull();
+    }
+
+    @Test
+    @DisplayName("Pre-Handle Failures set the payer, status, txInfo, and payer verification future")
+    void preHandleFailure(@Mock TransactionInfo txInfo) {
+        final var payer = AccountID.newBuilder().accountNum(1001).build();
+        final var status = INVALID_PAYER_ACCOUNT_ID;
+        final var payerFuture = completedFuture(true);
+        final var result = PreHandleResult.preHandleFailure(payer, status, txInfo, payerFuture);
+
+        assertThat(result.status()).isEqualTo(status);
+        assertThat(result.failed()).isTrue();
+        assertThat(result.innerResult()).isNull();
+        assertThat(result.payer()).isEqualTo(payer);
+        assertThat(result.txInfo()).isSameAs(txInfo);
+        assertThat(result.payerSignatureVerification()).isSameAs(payerFuture);
+        assertThat(result.nonPayerSignatureVerification()).isNull();
+    }
+
+    @Test
+    @DisplayName("Not Failed if OK")
+    void notFailedIfOk(@Mock AccountID payer, @Mock TransactionInfo txInfo, @Mock PreHandleResult innerResult) {
+        final var future = completedFuture(true);
+        final var result = new PreHandleResult(payer, OK, txInfo, future, future, innerResult);
+
+        assertThat(result.failed()).isFalse();
     }
 }

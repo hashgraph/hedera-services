@@ -16,19 +16,13 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willAnswer;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import java.util.Set;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,18 +89,18 @@ class AdaptedMonoEventExpansionTest {
 
     @Test
     void worksAroundUnparseableTxn() {
-//        final var workflows = Set.of(ConsensusCreateTopic);
-//        given(staticProperties.workflowsEnabled()).willReturn(workflows);
-//        given(nonsenseTxn.getContents()).willReturn("NONSENSE".getBytes());
-//        willAnswer(invocation -> {
-//                    final Consumer<com.swirlds.common.system.transaction.Transaction> consumer =
-//                            invocation.getArgument(0);
-//                    consumer.accept(nonsenseTxn);
-//                    return null;
-//                })
-//                .given(event)
-//                .forEachTransaction(any());
-//
-//        assertDoesNotThrow(() -> subject.expand(event, state));
+        //        final var workflows = Set.of(ConsensusCreateTopic);
+        //        given(staticProperties.workflowsEnabled()).willReturn(workflows);
+        //        given(nonsenseTxn.getContents()).willReturn("NONSENSE".getBytes());
+        //        willAnswer(invocation -> {
+        //                    final Consumer<com.swirlds.common.system.transaction.Transaction> consumer =
+        //                            invocation.getArgument(0);
+        //                    consumer.accept(nonsenseTxn);
+        //                    return null;
+        //                })
+        //                .given(event)
+        //                .forEachTransaction(any());
+        //
+        //        assertDoesNotThrow(() -> subject.expand(event, state));
     }
 }

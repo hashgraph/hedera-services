@@ -16,24 +16,22 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.Utils.asHederaKeys;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.signature.SignatureVerificationResult;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.concurrent.Future;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This is then made available to the
  * transaction during the "handle" phase as part of the {@link HandleContext}.
  *
  * @param payer payer for the transaction, which could be from the transaction body, or could be a node account.
- *              The payer will always be set.
+ *              The payer **may be null** only in the event of a catastrophic unknown exception.
  * @param status {@link ResponseCodeEnum} status of the pre-handle result. The status will always be set.
  * @param txInfo Information about the transaction that is being handled. If the transaction was not parseable, then
  *               this will be null, and an appropriate error status will be set.
@@ -47,16 +45,15 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param innerResult                   {@link PreHandleResult} of the inner transaction (where appropriate)
  */
 public record PreHandleResult(
-        @NonNull AccountID payer,
+        @Nullable AccountID payer,
         @NonNull ResponseCodeEnum status,
         @Nullable TransactionInfo txInfo,
-        @Nullable SignatureVerificationResult payerSignatureVerification,
-        @Nullable SignatureVerificationResult nonPayerSignatureVerification,
+        @Nullable Future<Boolean> payerSignatureVerification,
+        @Nullable Future<Boolean> nonPayerSignatureVerification,
         @Nullable PreHandleResult innerResult) {
 
     public PreHandleResult {
         requireNonNull(status);
-        requireNonNull(payer);
     }
 
     /**
@@ -64,11 +61,10 @@ public record PreHandleResult(
      * charged to the node. Instead, during the handle phase, we will try again and charge the node if it fails again.
      * The {@link #status()} will be set to {@link ResponseCodeEnum#UNKNOWN}.
      *
-     * @param node The node that was responsible for this transaction.
      * @return A new {@link PreHandleResult} with the given parameters.
      */
-    public static PreHandleResult unknownFailure(@NonNull final AccountID node) {
-        return new PreHandleResult(node, ResponseCodeEnum.UNKNOWN, null, null, null, null);
+    public static PreHandleResult unknownFailure() {
+        return new PreHandleResult(null, ResponseCodeEnum.UNKNOWN, null, null, null, null);
     }
 
     /**
@@ -101,7 +97,7 @@ public record PreHandleResult(
             @NonNull final AccountID payer,
             @NonNull final ResponseCodeEnum status,
             @NonNull final TransactionInfo txInfo,
-            @Nullable final SignatureVerificationResult payerVerificationResult) {
+            @Nullable final Future<Boolean> payerVerificationResult) {
         return new PreHandleResult(payer, status, txInfo, payerVerificationResult, null, null);
     }
 
@@ -111,6 +107,8 @@ public record PreHandleResult(
      * @return returns true if status is not OK
      */
     public boolean failed() {
+        // HMMM.... it seems to me that this is misleading if the sig check failed. Not sure what
+        // the right call here is. Maybe remove the method? TBD by the handle workflow implementation.
         return status != ResponseCodeEnum.OK;
     }
 }

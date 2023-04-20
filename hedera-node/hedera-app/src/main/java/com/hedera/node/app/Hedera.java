@@ -57,7 +57,6 @@ import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.state.HederaAddressBook;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
@@ -483,13 +482,8 @@ public final class Hedera implements SwirldMain {
     private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
         // For now, we will delegate pre-handle to the mono-service. But this needs to be moved to
         // use the Pre-Handle workflow instead.
-        daggerApp.adaptedMonoEventExpansion().expand(event, new HederaAddressBook() {
-            @NonNull
-            @Override
-            public AccountID getNodeOperatorAccountID(long nodeId) {
-                return null;
-            }
-        }, state);
+        final var nodeSelfId = PbjConverter.toPbj(daggerApp.nodeInfo().selfAccount());
+        daggerApp.adaptedMonoEventExpansion().expand(event, nodeSelfId, state);
     }
 
     /**

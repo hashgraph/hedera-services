@@ -16,6 +16,11 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
@@ -24,7 +29,6 @@ import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.ReceiptCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -34,11 +38,8 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -46,10 +47,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static java.util.Objects.requireNonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link PreHandleWorkflow} */
 @Singleton
@@ -133,8 +132,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             if (platformTx.isSystem()) continue;
 
             // Submit the task to the executor service and put the resulting Future as the metadata on the transaction
-            final var future = exe.submit(() ->
-                    preHandleTransaction(creator, readableStoreFactory, accountStore, platformTx));
+            final var future =
+                    exe.submit(() -> preHandleTransaction(creator, readableStoreFactory, accountStore, platformTx));
             tasks.add(new WorkItem(platformTx, future));
         }
 
@@ -148,10 +147,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 // The thread should only ever be interrupted during shutdown, so we can just log the error.
                 logger.error("Interrupted while waiting for a transaction to be pre handled.");
                 Thread.currentThread().interrupt();
+                task.platformTx.setMetadata(PreHandleResult.unknownFailure());
             } catch (ExecutionException e) {
                 logger.error("Unexpected error while pre handling a transaction!", e);
+                task.platformTx.setMetadata(PreHandleResult.unknownFailure());
             } catch (TimeoutException e) {
                 logger.error("Timed out while waiting for a transaction to be pre handled!", e);
+                task.platformTx.setMetadata(PreHandleResult.unknownFailure());
             }
         }
     }
@@ -178,7 +180,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // If some random exception happened, then we should not charge the node for it. Instead,
             // we will just record the exception and try again during handle. Then if we fail again
             // at handle, then we will throw away the transaction (hopefully, deterministically!)
-            return PreHandleResult.unknownFailure(creator);
+            return PreHandleResult.unknownFailure();
         }
 
         // 2. Deduplication check
@@ -219,10 +221,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // 4. Collect payer TransactionSignatures. Any PreHandleResult created from this point on MUST include
         //    the payerVerificationFuture.
-        final var payerVerificationFuture = new SignatureVerificationResult(List.of(signatureVerifier.verify(
-                txInfo.signedBytes(),
-                txInfo.signatureMap().sigPairOrThrow(),
-                payerAccount.getKey())));
+        final var payerVerificationFuture = signatureVerifier.verify(
+                txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow(), payerAccount.keyOrThrow());
 
         // 5. Deduplication check (again). If the user submitted a duplicate transaction, then now is the time
         //    to record that they did so and make them the payer.
@@ -248,7 +248,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // This should NEVER happen. The only way an exception is thrown from the PreHandleContext constructor
             // is if the payer account doesn't exist, but by the time we reach this line of code, we already know
             // that it does exist.
-            throw new RuntimeException("Payer account disappeared between preHandle and preHandleContext creation!", preCheck);
+            throw new RuntimeException(
+                    "Payer account disappeared between preHandle and preHandleContext creation!", preCheck);
         }
 
         // 7. Call Pre-Transaction Handlers
@@ -268,9 +269,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final var nonPayerFutures = new ArrayList<Future<Boolean>>();
         for (final var key : nonPayerKeys) {
             final var future = signatureVerifier.verify(
-                    txInfo.signedBytes(),
-                    txInfo.signatureMap().sigPairOrThrow(),
-                    key);
+                    txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow(), key);
             nonPayerFutures.add(future);
         }
 
@@ -280,8 +279,5 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     /** A platform transaction and the future that produces its {@link PreHandleResult} */
-    private record WorkItem(
-        @NonNull Transaction platformTx,
-        @NonNull Future<PreHandleResult> future) {
-    }
+    private record WorkItem(@NonNull Transaction platformTx, @NonNull Future<PreHandleResult> future) {}
 }

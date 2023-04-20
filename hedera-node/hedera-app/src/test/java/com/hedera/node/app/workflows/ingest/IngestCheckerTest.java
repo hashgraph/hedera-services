@@ -127,8 +127,8 @@ class IngestCheckerTest extends AppTestBase {
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                 .build();
 
-        final var transactionInfo =
-                new TransactionInfo(tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
+        final var transactionInfo = new TransactionInfo(
+                tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
         when(transactionChecker.check(tx)).thenReturn(transactionInfo);
 
         subject = new IngestChecker(
@@ -183,7 +183,8 @@ class IngestCheckerTest extends AppTestBase {
     @DisplayName("Run all checks successfully")
     void testRunAllChecksSuccessfully() throws PreCheckException {
         // given
-        final var expected = new TransactionInfo(tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
+        final var expected = new TransactionInfo(
+                tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
 
         // when
         final var actual = subject.runAllChecks(state, tx);
