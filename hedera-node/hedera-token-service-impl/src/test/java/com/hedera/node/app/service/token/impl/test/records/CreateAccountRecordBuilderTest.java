@@ -39,7 +39,7 @@ public class CreateAccountRecordBuilderTest {
     }
 
     @Test
-    void selfReturnsSameObject(){
+    void selfReturnsSameObject() {
         var subject = new CreateAccountRecordBuilder();
 
         assertThat(subject.self()).isSameAs(subject);

@@ -235,7 +235,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0L, createdAccount.stakedToMe());
         assertEquals(0L, createdAccount.stakePeriodStart());
         // staked node id is stored in state as negative long
-        assertEquals(-3 -1, createdAccount.stakedNumber());
+        assertEquals(-3 - 1, createdAccount.stakedNumber());
         assertFalse(createdAccount.declineReward());
         assertTrue(createdAccount.receiverSigRequired());
         assertEquals(0L, createdAccount.headTokenNumber());
@@ -262,6 +262,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         // validate payer balance reduced
         assertEquals(9_900L, writableStore.get(id).get().tinybarBalance());
     }
+
     @Test
     @DisplayName("handle works when account can be created without any alias using staked account id")
     void handleCryptoCreateVanillaWithStakedAccountId() {
@@ -327,6 +328,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         // validate payer balance reduced
         assertEquals(9_900L, writableStore.get(id).get().tinybarBalance());
     }
+
     @Test
     @DisplayName("handle fails when autoRenewPeriod is not set. This should not happen as there should"
             + " be a semantic check in `preHandle` and handle workflow should reject the "
@@ -473,8 +475,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
             if (proxyAccountId != null) {
                 createTxnBody.proxyAccountID(proxyAccountId);
             }
-            if(stakedAccountId > 0){
-                createTxnBody.stakedAccountId(AccountID.newBuilder().accountNum(stakedAccountId).build());
+            if (stakedAccountId > 0) {
+                createTxnBody.stakedAccountId(
+                        AccountID.newBuilder().accountNum(stakedAccountId).build());
             } else {
                 createTxnBody.stakedNodeId(stakeNodeId);
             }
