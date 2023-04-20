@@ -50,7 +50,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
 import com.swirlds.logging.LogMarker;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -69,7 +68,9 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
     private static final DigestType currentDigestType = Cryptography.DEFAULT_DIGEST_TYPE;
 
-    /** < * the current record stream type; used to obtain file extensions and versioning */
+    /**
+     * < * the current record stream type; used to obtain file extensions and versioning
+     */
     private final RecordStreamType streamType;
 
     /**
@@ -85,22 +86,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private final MessageDigest metadataStreamDigest;
 
-    /** a messageDigest object for digesting sidecar files and generating sidecar file hash */
-    private final MessageDigest sidecarStreamDigest;
     /**
-     * If non-null, indicates we are in recovery mode, and the writer will use this to helper to ensure
-     * its generated record files include any items from a record file on disk whose 2-second range of
-     * consensus timestamps <i>includes</i>the first consensus transaction in the recovery event stream.
-     * That is, suppose:
-     * <ol>
-     *     <li>There is a record file {@code F} on disk with consensus times in the range {@code [X, X + 2s)}</li>
-     *     <li>The recovery event stream begins at time {@code T}, where {@code T > X} and {@code T < X + 2s}.</li>
-     * </ol>
-     * Then the writer needs to ensure the first record file it generates includes the items from {@code F}
-     * in the time range {@code [X, T)}.
+     * a messageDigest object for digesting sidecar files and generating sidecar file hash
      */
-    @Nullable
-    private RecoveryRecordsWriter recoveryRecordsWriter;
+    private final MessageDigest sidecarStreamDigest;
 
     /**
      * Output stream for digesting metaData. Metadata should be written to this stream. Any data
@@ -114,7 +103,9 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private RunningHash runningHash;
 
-    /** signer for generating signatures */
+    /**
+     * signer for generating signatures
+     */
     private final Signer signer;
 
     /**
@@ -129,16 +120,24 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private int currentSidecarFileSize;
 
-    /** the max file size (in bytes) a sidecar file can have */
+    /**
+     * the max file size (in bytes) a sidecar file can have
+     */
     private final int maxSidecarFileSize;
 
-    /** The instant of the first transaction in the current period */
+    /**
+     * The instant of the first transaction in the current period
+     */
     private Instant firstTxnInstant;
 
-    /** the path to which we write record stream files and signature files */
+    /**
+     * the path to which we write record stream files and signature files
+     */
     private final String dirPath;
 
-    /** the path to which we write sidecar record stream files */
+    /**
+     * the path to which we write sidecar record stream files
+     */
     private final String sidecarDirPath;
 
     private int recordFileVersion;
@@ -148,7 +147,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private final GlobalDynamicProperties dynamicProperties;
 
     public RecordStreamFileWriter(
-            final @Nullable RecoveryRecordsWriter recoveryRecordsWriter,
             final String dirPath,
             final Signer signer,
             final RecordStreamType streamType,
@@ -156,7 +154,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             final int maxSidecarFileSize,
             final GlobalDynamicProperties globalDynamicProperties)
             throws NoSuchAlgorithmException {
-        this.recoveryRecordsWriter = recoveryRecordsWriter;
         this.dirPath = dirPath;
         this.signer = signer;
         this.streamType = streamType;
@@ -181,17 +178,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
         }
 
         if (recordStreamFileBuilder != null) {
-            consume(object);
-        } else if (recoveryRecordsWriter != null) {
-            final var memory = recoveryRecordsWriter;
-            recoveryRecordsWriter = null;
-            // Recover the prefix of this block that was already written to disk prior to
-            // the start of the recovery stream (if there was no prefix on disk, then we could
-            // not get here, since that would mean no transactions were handled in the previous
-            // 2-second block; and the item passed to this addObject() call would have
-            // necessarily started a new block, hence making recordStreamFileBuilder non-null)
-            memory.writeRecordPrefixForRecoveryStartingWith(object, this);
-            // Now we're ready to include this item
             consume(object);
         }
 
@@ -345,8 +331,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             for (final var value : fileHeader) {
                 dosMeta.writeInt(value);
             }
-            // write startRunningHash
-            final var startRunningHash = runningHash.getFutureHash().get();
+            final Hash startRunningHash = runningHash.getFutureHash().get();
             recordStreamFileBuilder.setStartObjectRunningHash(toProto(startRunningHash.getValue()));
             dosMeta.write(startRunningHash.getValue());
             LOG.debug(
@@ -434,8 +419,8 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      * generate full sidecar file path from given Instant object
      *
      * @param consensusTimestamp the consensus timestamp of the first transaction in the record file
-     *     this sidecar file is associated with
-     * @param sidecarId the sidecar id of this sidecar file
+     *                           this sidecar file is associated with
+     * @param sidecarId          the sidecar id of this sidecar file
      * @return the new sidecar file path
      */
     String generateSidecarFilePath(final Instant consensusTimestamp, final int sidecarId) {

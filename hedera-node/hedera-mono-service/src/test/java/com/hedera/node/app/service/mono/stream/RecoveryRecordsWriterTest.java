@@ -19,13 +19,17 @@ package com.hedera.node.app.service.mono.stream;
 import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.ALL_EXPECTED_RSOS_ASSET;
 import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.ON_DISK_FILES_LOC;
 import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.RECOVERY_STREAM_ONLY_RSOS_ASSET;
-import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.loadRecoveryRsosFrom;
+import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.loadRsosFrom;
 import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.rsoFrom;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.stream.MultiStream;
+import com.swirlds.common.utility.CommonUtils;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
@@ -34,13 +38,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RecoveryRecordsWriterTest {
+    private static final Hash START_HASH = new Hash(CommonUtils.unhex(
+            "459f257ef8a57cbd2cd9023f9da6b1eb90aac1a1a52c76076e3fa8d9ec2bd377a363e9be021e66a21ebd11ac7141d47b"));
+
     @Mock
-    private RecordStreamFileWriter recordStreamFileWriter;
+    private RecordStreamManager recordStreamManager;
+
+    @Mock
+    private MultiStream<RecordStreamObject> multiStream;
 
     private RecoveryRecordsWriter subject;
 
@@ -51,19 +60,20 @@ class RecoveryRecordsWriterTest {
 
     @Test
     void replaysMissingPrefix() throws InvalidProtocolBufferException {
-        final var allExpectedRsos = loadRecoveryRsosFrom(ALL_EXPECTED_RSOS_ASSET);
-        final var recoveryRsos = loadRecoveryRsosFrom(RECOVERY_STREAM_ONLY_RSOS_ASSET);
+        final var allExpectedRsos = loadRsosFrom(ALL_EXPECTED_RSOS_ASSET);
+        final var recoveryRsos = loadRsosFrom(RECOVERY_STREAM_ONLY_RSOS_ASSET);
 
         final var numOmittedInRecoveryStream = allExpectedRsos.size() - recoveryRsos.size();
         final var firstRso = rsoFrom(recoveryRsos.get(numOmittedInRecoveryStream));
         System.out.println("First RSO: " + firstRso.getTimestamp());
-        subject.writeRecordPrefixForRecoveryStartingWith(firstRso, recordStreamFileWriter);
+        subject.writeAnyPrefixRecordsGiven(firstRso, recordStreamManager, multiStream);
 
+        verify(recordStreamManager).setInitialHash(START_HASH);
         final var onDiskPrefix = applicableOnDiskPrefixGiven(allExpectedRsos, numOmittedInRecoveryStream);
         // Verify the first RSO is marked as starting a new file
         onDiskPrefix.get(0).setWriteNewFile();
         for (final var rso : onDiskPrefix) {
-            Mockito.verify(recordStreamFileWriter).addObject(rso);
+            verify(multiStream).addObject(rso);
         }
     }
 
@@ -75,7 +85,7 @@ class RecoveryRecordsWriterTest {
                 TransactionRecord.getDefaultInstance(), Transaction.getDefaultInstance(), Instant.now());
         assertThrows(
                 UncheckedIOException.class,
-                () -> subject.writeRecordPrefixForRecoveryStartingWith(mockFirstRso, recordStreamFileWriter));
+                () -> subject.writeAnyPrefixRecordsGiven(mockFirstRso, recordStreamManager, multiStream));
     }
 
     @Test
@@ -85,7 +95,7 @@ class RecoveryRecordsWriterTest {
         final var tooLateFileTime = "2023-04-18T14_08_22.967161003Z.rcd.gz";
         final var firstRecoveryTime = Instant.parse("2023-04-18T14:08:21.968217003Z");
 
-        final var filterSubject = RecoveryRecordsWriter.inclusionTestFor(firstRecoveryTime, 2_000L);
+        final var filterSubject = RecoveryRecordsWriter.timeOverlapTestFor(firstRecoveryTime, 2_000L);
 
         Assertions.assertFalse(filterSubject.test(tooEarlyFileTime));
         Assertions.assertFalse(filterSubject.test(tooLateFileTime));

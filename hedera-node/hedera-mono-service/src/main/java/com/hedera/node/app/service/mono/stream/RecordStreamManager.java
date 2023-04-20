@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.stream;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.Units.MB_TO_BYTES;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
@@ -76,6 +77,22 @@ public class RecordStreamManager {
     /** initial running Hash of records */
     private Hash initialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
+    /**
+     * If non-null, indicates we are in recovery mode, and the manager should use this writer to ensure
+     * the first generated recovery record includes "prefix" items from any record file on disk whose
+     * 2-second time range includes the first consensus time in the recovery event stream.
+     *
+     * <p>That is, suppose:
+     * <ol>
+     *     <li>There is a record file {@code F} on disk with consensus times in the range {@code [X, X + 2s)}</li>
+     *     <li>The recovery event stream begins at time {@code T}, where {@code T > X} and {@code T < X + 2s}.</li>
+     * </ol>
+     * Then we need to ensure the first record file we generate includes the prefix of items from
+     * {@code F} in the time range {@code [X, T)}.
+     */
+    @Nullable
+    private RecoveryRecordsWriter recoveryRecordsWriter;
+
     /** whether the platform is in freeze period */
     private volatile boolean inFreeze = false;
 
@@ -111,7 +128,6 @@ public class RecordStreamManager {
             Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
             Files.createDirectories(Paths.get(nodeScopedSidecarDir));
             protobufStreamFileWriter = new RecordStreamFileWriter(
-                    recoveryRecordsWriter,
                     nodeScopedRecordLogDir,
                     platform,
                     streamType,
@@ -128,6 +144,7 @@ public class RecordStreamManager {
         }
 
         this.runningAvgs = runningAvgs;
+        this.recoveryRecordsWriter = recoveryRecordsWriter;
 
         // receives {@link RecordStreamObject}s from hashCalculator, calculates and set runningHash
         // for this object
@@ -195,6 +212,10 @@ public class RecordStreamManager {
      */
     public void addRecordStreamObject(final RecordStreamObject recordStreamObject) {
         if (!inFreeze) {
+            if (recoveryRecordsWriter != null) {
+                recoveryRecordsWriter.writeAnyPrefixRecordsGiven(recordStreamObject, this, multiStream);
+                recoveryRecordsWriter = null;
+            }
             try {
                 multiStream.addObject(recordStreamObject);
             } catch (Exception e) {
@@ -306,5 +327,11 @@ public class RecordStreamManager {
      */
     public Hash getInitialHash() {
         return new Hash(initialHash);
+    }
+
+    @Nullable
+    @VisibleForTesting
+    public RecoveryRecordsWriter getRecoveryRecordsWriter() {
+        return recoveryRecordsWriter;
     }
 }

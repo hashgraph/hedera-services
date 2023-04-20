@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.records;
 
+import static com.hedera.node.app.service.mono.stream.RecordStreamManager.effectiveLogDir;
+
 import com.google.common.cache.Cache;
 import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -24,9 +26,12 @@ import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
 import com.hedera.node.app.service.mono.stream.CurrentRecordStreamType;
 import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.stream.RecordStreamType;
+import com.hedera.node.app.service.mono.stream.RecoveryRecordsWriter;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.utility.Units;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -67,8 +72,17 @@ public interface RecordsModule {
             final @StaticAccountMemo String accountMemo,
             final Hash initialHash,
             final RecordStreamType streamType,
-            final GlobalDynamicProperties globalDynamicProperties) {
+            final GlobalDynamicProperties globalDynamicProperties,
+            final InitTrigger initTrigger) {
         try {
+            final RecoveryRecordsWriter recoveryRecordsWriter;
+            if (initTrigger == InitTrigger.EVENT_STREAM_RECOVERY) {
+                final var blockPeriodMs = nodeLocalProperties.recordLogPeriod() * Units.SECONDS_TO_MILLISECONDS;
+                final var onDiskRecordsLoc = effectiveLogDir(nodeLocalProperties.recordLogDir(), accountMemo);
+                recoveryRecordsWriter = new RecoveryRecordsWriter(blockPeriodMs, onDiskRecordsLoc);
+            } else {
+                recoveryRecordsWriter = null;
+            }
             return new RecordStreamManager(
                     platform,
                     runningAvgs,
@@ -77,7 +91,7 @@ public interface RecordsModule {
                     initialHash,
                     streamType,
                     globalDynamicProperties,
-                    null);
+                    recoveryRecordsWriter);
         } catch (NoSuchAlgorithmException | IOException fatal) {
             throw new IllegalStateException("Could not construct record stream manager", fatal);
         }

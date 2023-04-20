@@ -16,18 +16,24 @@
 
 package com.hedera.node.app.service.mono.stream;
 
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.orderedRecordFilesFrom;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseRecordFileConsensusTime;
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6SidecarRecordsByConsTimeIn;
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.visitWithSidecars;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.swirlds.common.crypto.ImmutableHash;
+import com.swirlds.common.crypto.RunningHashable;
+import com.swirlds.common.stream.MultiStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -61,22 +67,30 @@ public class RecoveryRecordsWriter {
 
     /**
      * Given the first item in the recovery stream, scans any on-disk record stream files to
-     * detect record stream items that should make up the leading prefix of the first "golden"
-     * record file written during recovery.
+     * see if one (at most) of these files contains record stream items that should make up
+     * the leading prefix of the first "golden" record file written during recovery.
      *
-     * <p>For any such items, calls {@link RecordStreamFileWriter#addObject(RecordStreamObject)} to
-     * add them to the recovery stream.
+     * <p>If such a file exists, updates the {@link RecordStreamManager} with the initial
+     * hash from the overlap file. For the file's items, calls
+     * {@link MultiStream#addObject(RunningHashable)} to add each to the recovery stream.
      *
      * @param firstItem the first item in the recovery stream
-     * @param recordStreamFileWriter the {@link RecordStreamFileWriter} to use for writing the recovery stream
+     * @param recordStreamManager the {@link RecordStreamManager} to update the initial hash
+     * @param multiStream the {@link MultiStream} to add the overlap items to
      */
-    public void writeRecordPrefixForRecoveryStartingWith(
-            final RecordStreamObject firstItem, final RecordStreamFileWriter recordStreamFileWriter) {
+    public void writeAnyPrefixRecordsGiven(
+            final RecordStreamObject firstItem,
+            final RecordStreamManager recordStreamManager,
+            final MultiStream<RecordStreamObject> multiStream) {
         try {
             final var recoveryStartTime = firstItem.getTimestamp();
-            final var filter = inclusionTestFor(recoveryStartTime, blockPeriodMs);
+            final var filter = timeOverlapTestFor(recoveryStartTime, blockPeriodMs);
+            final var overlapBlockNo = new AtomicLong();
+            computeOverlapMetadata(overlapBlockNo, recordStreamManager, filter);
+
             final var entries = parseV6RecordStreamEntriesIn(onDiskRecordsLoc, filter);
-            // It's obviously inefficient to read all sidecar files, but nbd for recovery
+            // It's inefficient to read all sidecar files here, since we only need them for
+            // a single file; but fine for recovery, which happens approximately never
             final var sidecarRecords = parseV6SidecarRecordsByConsTimeIn(onDiskRecordsLoc);
 
             // We only want to mark the first record stream item in the prefix as the start of a new file
@@ -84,22 +98,40 @@ public class RecoveryRecordsWriter {
             visitWithSidecars(entries, sidecarRecords, (entry, sidecars) -> {
                 if (entry.consensusTime().isBefore(recoveryStartTime)) {
                     final var rso = new RecordStreamObject(
-                            entry.txnRecord(),
-                            entry.submittedTransaction(),
-                            entry.consensusTime(),
-                            sidecars.stream()
-                                    .map(TransactionSidecarRecord::toBuilder)
-                                    .toList());
+                                    entry.txnRecord(),
+                                    entry.submittedTransaction(),
+                                    entry.consensusTime(),
+                                    sidecars.stream()
+                                            .map(TransactionSidecarRecord::toBuilder)
+                                            .toList())
+                            .withBlockNumber(overlapBlockNo.get());
                     // The first item we encounter must necessarily be the first in the file with the items prefix
                     if (itemIsFirst.get()) {
                         rso.setWriteNewFile();
                         itemIsFirst.set(false);
                     }
-                    recordStreamFileWriter.addObject(rso);
+                    multiStream.addObject(rso);
                 }
             });
         } catch (IOException e) {
             throw new UncheckedIOException("Unable to determine record prefix for recovery", e);
+        }
+    }
+
+    private void computeOverlapMetadata(
+            @NonNull final AtomicLong overlapBlockNo,
+            @NonNull final RecordStreamManager recordStreamManager,
+            @NonNull final Predicate<String> filter)
+            throws IOException {
+        final var overlappingFilesOnDisk = orderedRecordFilesFrom(onDiskRecordsLoc, filter);
+        if (!overlappingFilesOnDisk.isEmpty()) {
+            final var overlapFile = overlappingFilesOnDisk.get(0);
+            readMaybeCompressedRecordStreamFile(overlapFile).getValue().ifPresent(f -> {
+                overlapBlockNo.set(f.getBlockNumber());
+                final var startHash = new ImmutableHash(
+                        f.getStartObjectRunningHash().getHash().toByteArray());
+                recordStreamManager.setInitialHash(startHash);
+            });
         }
     }
 
@@ -111,7 +143,7 @@ public class RecoveryRecordsWriter {
      * @param blockPeriodMs the block period in milliseconds
      * @return a predicate that will return true for a record file with a prefix for the recovery stream
      */
-    static Predicate<String> inclusionTestFor(@NonNull final Instant firstRecoveryTime, final long blockPeriodMs) {
+    static Predicate<String> timeOverlapTestFor(@NonNull final Instant firstRecoveryTime, final long blockPeriodMs) {
         return recordFile -> {
             final var fileTime = parseRecordFileConsensusTime(recordFile);
             final var includesFirstRecoveryTime =

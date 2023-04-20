@@ -16,8 +16,14 @@
 
 package com.hedera.node.app.service.mono.stream;
 
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.orderedRecordFilesFrom;
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.orderedSidecarFilesFrom;
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedSidecarFile;
 import static com.hedera.node.app.service.mono.stream.Release038xStreamType.RELEASE_038x_STREAM_TYPE;
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
+import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6SidecarRecordsByConsTimeIn;
+import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.visitWithSidecars;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,14 +35,18 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
+import com.hedera.node.app.service.mono.utils.forensics.RecordParsers;
+import com.hedera.services.stream.proto.RecordStreamFile;
+import com.hedera.services.stream.proto.SidecarFile;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
@@ -46,9 +56,13 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import org.apache.commons.lang3.RandomUtils;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,14 +71,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class RecordStreamRecoveryTest {
+class RecordStreamRecoveryTest {
+    private static final String RECOVERY_STATE_RUNNING_HASH =
+            "9bc31589bd39af924deda8e8ed58e54d2d0127286211782cc195d8cc0e89f1078120a5596bc903642ae11c008811029b";
+    private static final long START_TEST_ASSET_BLOCK_NO = 2;
     private static final long BLOCK_PERIOD_MS = 2000L;
     private static final String MEMO = "0.0.3";
     private static final String RECOVERY_ASSETS_LOC = "src/test/resources/recovery";
     static final String ON_DISK_FILES_LOC = RECOVERY_ASSETS_LOC + File.separator + "onDiskFiles";
+    static final String ON_DISK_FILES_AND_SIDECARS_LOC =
+            RECOVERY_ASSETS_LOC + File.separator + "onDiskFilesAndSidecars";
     static final String RECOVERY_STREAM_ONLY_RSOS_ASSET = "recovery-stream-only.txt";
     static final String ALL_EXPECTED_RSOS_ASSET = "full-stream.txt";
-    private static final Hash INITIAL_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
 
     private static final ObjectMapper om = new ObjectMapper();
 
@@ -93,46 +111,144 @@ public class RecordStreamRecoveryTest {
 
         given(nodeLocalProperties.isRecordStreamEnabled()).willReturn(true);
         given(nodeLocalProperties.recordLogDir()).willReturn(tmpDir.toString());
+    }
 
-        final var recoveryWriter = new RecoveryRecordsWriter(2_000L, ON_DISK_FILES_LOC);
+    private void givenSubjectRecoveringFrom(final String onDiskLocForTest)
+            throws NoSuchAlgorithmException, IOException {
+        final var recoveryWriter = new RecoveryRecordsWriter(2_000L, onDiskLocForTest);
         subject = new RecordStreamManager(
                 platform,
                 runningAvgs,
                 nodeLocalProperties,
                 MEMO,
-                INITIAL_HASH,
+                new Hash(CommonUtils.unhex(RECOVERY_STATE_RUNNING_HASH)),
                 RELEASE_038x_STREAM_TYPE,
                 globalDynamicProperties,
                 recoveryWriter);
     }
 
     @Test
-    void includesRecordFilePrefixesSkippedByRecoveryStream()
-            throws IOException, InterruptedException, ExecutionException {
-        // given:
-        final var allExpectedRsos = loadRecoveryRsosFrom(ALL_EXPECTED_RSOS_ASSET);
+    void directRsoReplayAlsoReproducesSidecars()
+            throws IOException, NoSuchAlgorithmException, ExecutionException, InterruptedException {
+        given(nodeLocalProperties.sidecarDir()).willReturn("");
+        given(globalDynamicProperties.getSidecarMaxSizeMb()).willReturn(256);
+        givenSubjectRecoveringFrom(ON_DISK_FILES_AND_SIDECARS_LOC);
+        // and:
+        final var expectedSidecars = allSidecarFilesFrom(ON_DISK_FILES_AND_SIDECARS_LOC);
+
+        // when:
+        replayDirectlyFromRsos(ON_DISK_FILES_AND_SIDECARS_LOC, 4);
+
+        // then:
+        final var actualSidecars = allSidecarFilesFrom(tmpDir.getAbsolutePath());
+        for (final var compressedSidecarFile : expectedSidecars.keySet()) {
+            final var expectedSidecar = expectedSidecars.get(compressedSidecarFile);
+            final var uncompressedSidecarFile = compressedSidecarFile.replace(".gz", "");
+            final var actualSidecar = actualSidecars.get(uncompressedSidecarFile);
+            assertEquals(expectedSidecar, actualSidecar, "Wrong sidecar for " + compressedSidecarFile);
+        }
+    }
+
+    private void replayDirectlyFromRsos(final String loc, final int rsosToSkip)
+            throws IOException, ExecutionException, InterruptedException {
+        final var entries = RecordParsers.parseV6RecordStreamEntriesIn(loc);
+        final var sidecarRecords = parseV6SidecarRecordsByConsTimeIn(loc);
+
+        final var numSkipped = new AtomicInteger();
+        final AtomicReference<Instant> firstConsTimeInBlock = new AtomicReference<>(null);
+        final var blockNo = new AtomicLong(1);
+        final AtomicReference<RecordStreamObject> lastAdded = new AtomicReference<>(null);
+        visitWithSidecars(entries, sidecarRecords, (entry, records) -> {
+            if (numSkipped.getAndIncrement() < rsosToSkip) {
+                return;
+            }
+            final var sidecars =
+                    records.stream().map(TransactionSidecarRecord::toBuilder).toList();
+            final var rso = new RecordStreamObject(
+                    entry.txnRecord(), entry.submittedTransaction(), entry.consensusTime(), sidecars);
+            if (firstConsTimeInBlock.get() == null) {
+                firstConsTimeInBlock.set(rso.getTimestamp());
+            } else if (!inSamePeriod(firstConsTimeInBlock.get(), rso.getTimestamp())) {
+                blockNo.getAndIncrement();
+                rso.setWriteNewFile();
+                firstConsTimeInBlock.set(rso.getTimestamp());
+            }
+            rso.withBlockNumber(blockNo.get());
+            subject.addRecordStreamObject(rso);
+            lastAdded.set(rso);
+        });
+        subject.setInFreeze(true);
+        if (lastAdded.get() != null) {
+            lastAdded.get().getRunningHash().getFutureHash().get();
+        }
+    }
+
+    @Test
+    void includesRecordFilePrefixesSkippedByRecoveryStreamWithIndependentRsoSource()
+            throws IOException, InterruptedException, ExecutionException, NoSuchAlgorithmException {
+        givenSubjectRecoveringFrom(ON_DISK_FILES_LOC);
+        // and:
+        final var expectedMeta = allRecordFileMetaFrom(ON_DISK_FILES_LOC);
+        final var allExpectedRsos = loadRsosFrom(ALL_EXPECTED_RSOS_ASSET);
 
         // when:
         replayRecoveryRsosAndFreeze();
+        // and:
+        final var actualMeta = allRecordFileMetaFrom(tmpDir.getAbsolutePath());
 
         // then:
         assertEntriesMatch(allExpectedRsos, tmpDir.getAbsolutePath());
+        for (final var compressedRecordFile : expectedMeta.keySet()) {
+            final var expectedFileMeta = expectedMeta.get(compressedRecordFile);
+            final var uncompressedRecordFile = compressedRecordFile.replace(".gz", "");
+            final var actualFileMeta = actualMeta.get(uncompressedRecordFile);
+            assertEquals(expectedFileMeta, actualFileMeta, "Wrong meta for " + compressedRecordFile);
+        }
+    }
+
+    private Map<String, RecordStreamFile> allRecordFileMetaFrom(final String loc) throws IOException {
+        final var files = orderedRecordFilesFrom(loc, f -> true).stream().toList();
+        final Map<String, RecordStreamFile> ans = new HashMap<>();
+        for (final var f : files) {
+            var recordFile = readMaybeCompressedRecordStreamFile(f).getRight().get();
+            recordFile = recordFile.toBuilder()
+                    .clearHapiProtoVersion()
+                    .clearRecordStreamItems()
+                    .build();
+            final var p = Paths.get(f);
+            ans.put(p.getName(p.getNameCount() - 1).toString(), recordFile);
+        }
+        return ans;
+    }
+
+    private Map<String, SidecarFile> allSidecarFilesFrom(final String loc) throws IOException {
+        final var files = orderedSidecarFilesFrom(loc).stream().toList();
+        final Map<String, SidecarFile> ans = new HashMap<>();
+        for (final var f : files) {
+            var sidecarFile = readMaybeCompressedSidecarFile(f);
+            final var p = Paths.get(f);
+            ans.put(p.getName(p.getNameCount() - 1).toString(), sidecarFile);
+        }
+        return ans;
     }
 
     private void replayRecoveryRsosAndFreeze()
             throws InvalidProtocolBufferException, InterruptedException, ExecutionException {
-        final var recoveryRsos = loadRecoveryRsosFrom(RECOVERY_STREAM_ONLY_RSOS_ASSET);
+        final var recoveryRsos = loadRsosFrom(RECOVERY_STREAM_ONLY_RSOS_ASSET);
         Instant firstConsTimeInBlock = null;
 
+        var blockNo = START_TEST_ASSET_BLOCK_NO;
         RecordStreamObject lastAdded = null;
         for (final var recoveryRso : recoveryRsos) {
             final var rso = rsoFrom(recoveryRso);
             if (firstConsTimeInBlock == null) {
                 firstConsTimeInBlock = rso.getTimestamp();
             } else if (!inSamePeriod(firstConsTimeInBlock, rso.getTimestamp())) {
+                blockNo++;
                 rso.setWriteNewFile();
                 firstConsTimeInBlock = rso.getTimestamp();
             }
+            rso.withBlockNumber(blockNo);
             subject.addRecordStreamObject(rso);
             lastAdded = rso;
         }
@@ -160,7 +276,6 @@ public class RecordStreamRecoveryTest {
 
     private void assertEntriesMatch(final List<RecoveryRSO> expected, final String filesLoc) throws IOException {
         final var actualEntries = parseV6RecordStreamEntriesIn(filesLoc);
-        System.out.println("Loaded " + actualEntries.size() + " entries from " + filesLoc);
         assertEquals(expected.size(), actualEntries.size());
         for (int i = 0; i < expected.size(); i++) {
             final var expectedEntry = expected.get(i);
@@ -179,7 +294,7 @@ public class RecordStreamRecoveryTest {
         }
     }
 
-    static List<RecoveryRSO> loadRecoveryRsosFrom(final String assetName) {
+    static List<RecoveryRSO> loadRsosFrom(final String assetName) {
         try {
             try (final var lines = Files.lines(Paths.get(RECOVERY_ASSETS_LOC, assetName))) {
                 return lines.map(line -> readJsonValueUnchecked(line, RecoveryRSO.class))

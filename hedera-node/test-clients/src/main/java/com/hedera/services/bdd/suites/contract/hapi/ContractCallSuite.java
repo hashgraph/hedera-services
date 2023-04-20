@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -746,7 +747,7 @@ public class ContractCallSuite extends HapiSuite {
         final var remove2 = "remove2";
         final var gasToOffer = 400_000;
 
-        return defaultHapiSpec("ImapUserExercise")
+        return onlyDefaultHapiSpec("ImapUserExercise")
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(

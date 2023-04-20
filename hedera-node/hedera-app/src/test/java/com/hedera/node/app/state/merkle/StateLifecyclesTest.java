@@ -147,6 +147,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
 
     private static HederaApp createApp(final Platform platform) {
         return DaggerHederaApp.builder()
+                .initTrigger(InitTrigger.GENESIS)
                 .initialHash(new Hash())
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
