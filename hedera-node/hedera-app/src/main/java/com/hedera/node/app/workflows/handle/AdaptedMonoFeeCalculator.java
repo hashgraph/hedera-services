@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUp
 import com.hedera.node.app.fees.MonoGetTopicInfoUsage;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
@@ -163,7 +164,7 @@ public class AdaptedMonoFeeCalculator implements FeeCalculator {
             final Map<SubType, FeeData> prices,
             final ExchangeRate rate) {
         final var storeFactory = new ReadableStoreFactory(state);
-        final var topicStore = storeFactory.createTopicStore();
+        final var topicStore = storeFactory.createStore(ReadableTopicStore.class);
         final var topic = topicStore.getTopicLeaf(
                 toPbj(accessor.getTxn().getConsensusUpdateTopic().getTopicID()));
         try {

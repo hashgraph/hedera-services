@@ -87,15 +87,4 @@ public class ReadableStoreFactory implements PreHandleContext.ReadableStoreFacto
     }
 
     private record StoreEntry(@NonNull String name, @NonNull Function<ReadableStates, ?> factory) {}
-
-    /**
-     * Get a {@link ReadableTopicStore}
-     *
-     * @return a new {@link ReadableTopicStore}
-     */
-    @NonNull
-    public ReadableTopicStore createTopicStore() {
-        final var topicStates = state.createReadableStates(ConsensusService.NAME);
-        return new ReadableTopicStore(topicStates);
-    }
 }
