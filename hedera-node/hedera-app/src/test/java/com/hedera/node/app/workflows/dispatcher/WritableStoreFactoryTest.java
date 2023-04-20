@@ -73,7 +73,7 @@ class WritableStoreFactoryTest {
     @Test
     void returnsTokenStore() {
         workingStateAccessor.setHederaState(state);
-        given(state.createWritableStates("TokenService")).willReturn(writableStates);
+        given(state.createWritableStates(TokenServiceImpl.TOKENS_KEY)).willReturn(writableStates);
         final var store = subject.createTokenStore();
         assertNotNull(store);
     }
@@ -81,7 +81,7 @@ class WritableStoreFactoryTest {
     @Test
     void returnsTokenRelStore() {
         workingStateAccessor.setHederaState(state);
-        given(state.createWritableStates("TokenRelations")).willReturn(writableStates);
+        given(state.createWritableStates(TokenServiceImpl.TOKEN_RELS_KEY)).willReturn(writableStates);
         final var store = subject.createTokenRelStore();
         assertNotNull(store);
     }

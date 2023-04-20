@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
@@ -64,13 +64,14 @@ public class WritableStoreFactory {
      */
     @NonNull
     public WritableTokenStore createTokenStore() {
-        final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
+        final var tokenStates =
+                stateAccessor.getHederaState().createWritableStates(TokenServiceImpl.TOKENS_KEY);
         return new WritableTokenStore(tokenStates);
     }
 
     @NonNull
     public WritableTokenRelationStore createTokenRelStore() {
-        final var tokenRelStates = stateAccessor.getHederaState().createWritableStates("TokenRelations");
+        final var tokenRelStates = stateAccessor.getHederaState().createWritableStates(TokenServiceImpl.TOKEN_RELS_KEY);
         return new WritableTokenRelationStore(tokenRelStates);
     }
 
@@ -81,7 +82,7 @@ public class WritableStoreFactory {
      */
     @NonNull
     public WritableAccountStore createAccountStore() {
-        final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
+        final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenServiceImpl.ACCOUNTS_KEY);
         return new WritableAccountStore(tokenStates);
     }
 }
