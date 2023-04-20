@@ -29,7 +29,7 @@ import java.util.List;
  * Continuously runs protocol negotiation and protocols over connections supplied by the connection manager
  */
 public class NegotiatorThread implements InterruptableRunnable {
-    private static final int SLEEP_MS = 50;
+    private static final int SLEEP_MS = 25;
     private final ConnectionManager connectionManager;
     private final List<ProtocolRunnable> handshakeProtocols;
     private final NegotiationProtocols protocols;
