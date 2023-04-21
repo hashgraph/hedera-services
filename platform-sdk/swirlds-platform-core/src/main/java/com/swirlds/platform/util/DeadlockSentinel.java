@@ -18,12 +18,12 @@ package com.swirlds.platform.util;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.StackTrace;
-import com.swirlds.common.utility.Startable;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.error.DeadlockTrigger;
 import java.lang.management.LockInfo;

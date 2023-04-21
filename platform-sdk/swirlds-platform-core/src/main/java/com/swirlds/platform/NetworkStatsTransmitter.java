@@ -19,12 +19,12 @@ package com.swirlds.platform;
 import static com.swirlds.common.utility.Units.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.base.state.Startable;
+import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
-import com.swirlds.common.utility.Startable;
-import com.swirlds.common.utility.Stoppable;
 import com.swirlds.platform.components.common.query.SystemTransactionSubmitter;
 import com.swirlds.platform.network.NetworkMetrics;
 import java.util.concurrent.ScheduledExecutorService;

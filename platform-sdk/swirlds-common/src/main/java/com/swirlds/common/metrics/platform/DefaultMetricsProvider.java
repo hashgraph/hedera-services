@@ -19,6 +19,8 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.sun.net.httpserver.HttpServer;
+import com.swirlds.base.state.Lifecycle;
+import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsFactory;
@@ -28,8 +30,6 @@ import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.common.utility.Lifecycle;
-import com.swirlds.common.utility.LifecyclePhase;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
 import java.net.InetSocketAddress;

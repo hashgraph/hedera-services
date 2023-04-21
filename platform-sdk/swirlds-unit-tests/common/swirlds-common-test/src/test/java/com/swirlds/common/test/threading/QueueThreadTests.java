@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
@@ -273,7 +273,7 @@ class QueueThreadTests {
 
         qt.stop();
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        final ExecutorService executorService = Executors.newSingleThreadExecutor();
         final Future<Void> future = executorService.submit(() -> {
             qt.clear();
             return null;
@@ -281,7 +281,7 @@ class QueueThreadTests {
 
         try {
             future.get(5, TimeUnit.SECONDS);
-        } catch (ExecutionException | TimeoutException e) {
+        } catch (final ExecutionException | TimeoutException e) {
             fail("clear() hung on stopped thread queue.");
         }
         assertEquals(0, qt.size());
@@ -386,15 +386,15 @@ class QueueThreadTests {
         qt.start();
         qt.add(1);
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<Void> future = executorService.submit(() -> {
+        final ExecutorService executorService = Executors.newSingleThreadExecutor();
+        final Future<Void> future = executorService.submit(() -> {
             qt.stop();
             return null;
         });
 
         try {
             future.get(5, TimeUnit.SECONDS);
-        } catch (ExecutionException | TimeoutException e) {
+        } catch (final ExecutionException | TimeoutException e) {
             fail("QueueThread was configured to be interruptable but could not be interrupted.");
         }
 
@@ -493,8 +493,8 @@ class QueueThreadTests {
         qt.start();
         qt.add(1);
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<Void> future = executorService.submit(() -> {
+        final ExecutorService executorService = Executors.newSingleThreadExecutor();
+        final Future<Void> future = executorService.submit(() -> {
             // Stop with interruptable behavior instead of default blocking behavior
             qt.stop(Stoppable.StopBehavior.INTERRUPTABLE);
             return null;
@@ -535,7 +535,7 @@ class QueueThreadTests {
     @DisplayName("QueueTest")
     void queueTest(final BlockingQueue<Integer> queue) throws InterruptedException {
 
-        Queue<Integer> handledInts = new LinkedList<>();
+        final Queue<Integer> handledInts = new LinkedList<>();
 
         final QueueThread<Integer> qt = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
                 .setThreadName(THREAD_NAME)
@@ -882,7 +882,7 @@ class QueueThreadTests {
         IntStream.range(0, 70).boxed().forEach(x -> {
             try {
                 queueThread.put(x);
-            } catch (InterruptedException ignored) {
+            } catch (final InterruptedException ignored) {
             }
         });
         maxSizeMetric.takeSnapshot();
@@ -897,7 +897,7 @@ class QueueThreadTests {
         IntStream.range(0, 20).boxed().forEach(x -> {
             try {
                 queueThread.take();
-            } catch (InterruptedException ignored) {
+            } catch (final InterruptedException ignored) {
             }
         });
 
