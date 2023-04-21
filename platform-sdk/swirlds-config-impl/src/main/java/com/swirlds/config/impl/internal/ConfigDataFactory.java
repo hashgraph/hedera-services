@@ -19,7 +19,6 @@ package com.swirlds.config.impl.internal;
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
@@ -53,14 +52,15 @@ class ConfigDataFactory {
     private final ConverterService converterService;
 
     ConfigDataFactory(@NonNull final Configuration configuration, @NonNull final ConverterService converterService) {
-        this.configuration = CommonUtils.throwArgNull(configuration, "configuration");
-        this.converterService = CommonUtils.throwArgNull(converterService, "converterService");
+        this.configuration = throwArgNull(configuration, "configuration");
+        this.converterService = throwArgNull(converterService, "converterService");
     }
 
     @SuppressWarnings("unchecked")
-    <T extends Record> T createConfigInstance(final Class<T> type)
+    @NonNull
+    <T extends Record> T createConfigInstance(@NonNull final Class<T> type)
             throws InvocationTargetException, InstantiationException, IllegalAccessException {
-        CommonUtils.throwArgNull(type, "type");
+        throwArgNull(type, "type");
 
         if (!type.isAnnotationPresent(ConfigData.class)) {
             throw new IllegalArgumentException("Can not create config instance for '" + type + "' since "
@@ -87,7 +87,10 @@ class ConfigDataFactory {
         return constructor.newInstance(paramValues);
     }
 
-    private Object getValueForRecordComponent(final String namePrefix, final RecordComponent component) {
+    @Nullable
+    private Object getValueForRecordComponent(
+            @NonNull final String namePrefix, @NonNull final RecordComponent component) {
+        throwArgNull(component, "component");
         final String name = createPropertyName(namePrefix, component);
         final Class<?> valueType = component.getType();
         if (hasDefaultValue(component)) {
@@ -129,17 +132,23 @@ class ConfigDataFactory {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> Class<T> getGenericListType(final RecordComponent component) {
+    @NonNull
+    private static <T> Class<T> getGenericListType(@NonNull final RecordComponent component) {
+        throwArgNull(component, "component");
         if (!isGenericType(component, List.class)) {
             throw new IllegalArgumentException("Only List interface is supported");
         }
-        return (Class<T>)
+        final Class<T> cls = (Class<T>)
                 ConfigReflectionUtils.getSingleGenericTypeArgument((ParameterizedType) component.getGenericType());
+        if (cls == null) {
+            throw new IllegalArgumentException("No generic class found!");
+        }
+        return cls;
     }
 
     @Nullable
     private <T> Set<T> getDefaultValueSet(@NonNull final RecordComponent component) {
-        CommonUtils.throwArgNull(component, "component");
+        throwArgNull(component, "component");
         final Class<?> type = getGenericSetType(component);
         final String rawValue = getRawValue(component);
         if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
@@ -151,8 +160,9 @@ class ConfigDataFactory {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> List<T> getDefaultValues(final RecordComponent component) {
-        CommonUtils.throwArgNull(component, "component");
+    @Nullable
+    private <T> List<T> getDefaultValues(@NonNull final RecordComponent component) {
+        throwArgNull(component, "component");
         final Class<?> type = getGenericListType(component);
         final String rawValue = getRawValue(component);
         if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
@@ -172,14 +182,18 @@ class ConfigDataFactory {
         return rawDefaultValue.get();
     }
 
-    private static <T extends Record> String getNamePrefix(final Class<T> type) {
+    @NonNull
+    private static <T extends Record> String getNamePrefix(@NonNull final Class<T> type) {
+        throwArgNull(type, "type");
         return Optional.ofNullable(type.getAnnotation(ConfigData.class))
                 .map(ConfigData::value)
                 .orElse("");
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T getDefaultValue(final RecordComponent component) {
+    @Nullable
+    private <T> T getDefaultValue(@NonNull final RecordComponent component) {
+        throwArgNull(component, "component");
         final String rawValue = getRawValue(component);
         if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
             return null;
@@ -187,20 +201,25 @@ class ConfigDataFactory {
         return (T) converterService.convert(rawValue, component.getType());
     }
 
-    private static Optional<String> getRawDefaultValue(final RecordComponent component) {
+    @NonNull
+    private static Optional<String> getRawDefaultValue(@NonNull final RecordComponent component) {
+        throwArgNull(component, "component");
         return Optional.ofNullable(component.getAnnotation(ConfigProperty.class))
                 .map(ConfigProperty::defaultValue)
                 .filter(defaultValue -> !Objects.equals(ConfigProperty.UNDEFINED_DEFAULT_VALUE, defaultValue));
     }
 
-    private static boolean hasDefaultValue(final RecordComponent component) {
+    private static boolean hasDefaultValue(@NonNull final RecordComponent component) {
+        throwArgNull(component, "component");
         return Optional.ofNullable(component.getAnnotation(ConfigProperty.class))
                 .map(propertyAnnotation ->
                         !Objects.equals(ConfigProperty.UNDEFINED_DEFAULT_VALUE, propertyAnnotation.defaultValue()))
                 .orElse(false);
     }
 
-    private static String createPropertyName(final String prefix, final RecordComponent component) {
+    @NonNull
+    private static String createPropertyName(@NonNull final String prefix, @NonNull final RecordComponent component) {
+        throwArgNull(component, "component");
         return Optional.ofNullable(component.getAnnotation(ConfigProperty.class))
                 .map(propertyAnnotation -> {
                     if (!propertyAnnotation.value().isBlank()) {
@@ -212,7 +231,10 @@ class ConfigDataFactory {
                 .orElseGet(() -> createPropertyName(prefix, component.getName()));
     }
 
-    private static String createPropertyName(final String prefix, final String name) {
+    @NonNull
+    private static String createPropertyName(@NonNull final String prefix, @NonNull final String name) {
+        throwArgNull(prefix, "prefix");
+        throwArgNull(name, "name");
         if (prefix.isBlank()) {
             return name;
         }

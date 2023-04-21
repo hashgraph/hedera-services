@@ -16,6 +16,7 @@
 
 package com.swirlds.config.impl.internal;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,28 +44,30 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
             @NonNull final ConfigPropertiesService propertiesService,
             @NonNull final ConverterService converterService,
             @NonNull final ConfigValidationService validationService) {
-        this.propertiesService = CommonUtils.throwArgNull(propertiesService, "propertiesService");
-        this.converterService = CommonUtils.throwArgNull(converterService, "converterService");
-        this.validationService = CommonUtils.throwArgNull(validationService, "validationService");
+        this.propertiesService = ArgumentUtils.throwArgNull(propertiesService, "propertiesService");
+        this.converterService = ArgumentUtils.throwArgNull(converterService, "converterService");
+        this.validationService = ArgumentUtils.throwArgNull(validationService, "validationService");
         this.configDataService = new ConfigDataService(this, converterService);
     }
 
+    @NonNull
     @Override
     public Stream<String> getPropertyNames() {
         return propertiesService.getPropertyNames();
     }
 
     @Override
-    public boolean exists(final String propertyName) {
+    public boolean exists(@NonNull final String propertyName) {
         CommonUtils.throwArgBlank(propertyName, "propertyName");
         return propertiesService.containsKey(propertyName);
     }
 
     @SuppressWarnings("unchecked")
+    @Nullable
     @Override
-    public <T> T getValue(final String propertyName, final Class<T> propertyType) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
-        CommonUtils.throwArgNull(propertyType, "propertyType");
+    public <T> T getValue(@NonNull final String propertyName, @NonNull final Class<T> propertyType) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        ArgumentUtils.throwArgNull(propertyType, "propertyType");
         final String rawValue = getValue(propertyName);
         if (Objects.equals(propertyType, String.class)) {
             return (T) rawValue;
@@ -72,19 +75,22 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
         return converterService.convert(rawValue, propertyType);
     }
 
+    @Nullable
     @Override
-    public <T> T getValue(final String propertyName, final Class<T> propertyType, final T defaultValue) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
-        CommonUtils.throwArgNull(propertyType, "propertyType");
+    public <T> T getValue(
+            @NonNull final String propertyName, @NonNull final Class<T> propertyType, @Nullable final T defaultValue) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        ArgumentUtils.throwArgNull(propertyType, "propertyType");
         if (!exists(propertyName)) {
             return defaultValue;
         }
         return getValue(propertyName, propertyType);
     }
 
+    @Nullable
     @Override
-    public List<String> getValues(final String propertyName) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+    public List<String> getValues(@NonNull final String propertyName) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         final String rawValue = getValue(propertyName);
         if (rawValue == null) {
             return null;
@@ -92,19 +98,21 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
         return ConfigListUtils.createList(rawValue);
     }
 
+    @Nullable
     @Override
-    public List<String> getValues(final String propertyName, final List<String> defaultValue) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+    public List<String> getValues(@NonNull final String propertyName, @Nullable final List<String> defaultValue) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         if (!exists(propertyName)) {
             return defaultValue;
         }
         return getValues(propertyName);
     }
 
+    @Nullable
     @Override
-    public <T> List<T> getValues(final String propertyName, final Class<T> propertyType) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
-        CommonUtils.throwArgNull(propertyType, "propertyType");
+    public <T> List<T> getValues(@NonNull final String propertyName, @NonNull final Class<T> propertyType) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        ArgumentUtils.throwArgNull(propertyType, "propertyType");
         final List<String> values = getValues(propertyName);
         if (values == null) {
             return null;
@@ -114,10 +122,14 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
                 .toList();
     }
 
+    @Nullable
     @Override
-    public <T> List<T> getValues(final String propertyName, final Class<T> propertyType, final List<T> defaultValue) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
-        CommonUtils.throwArgNull(propertyType, "propertyType");
+    public <T> List<T> getValues(
+            @NonNull final String propertyName,
+            @NonNull final Class<T> propertyType,
+            @Nullable final List<T> defaultValue) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        ArgumentUtils.throwArgNull(propertyType, "propertyType");
         if (!exists(propertyName)) {
             return defaultValue;
         }
@@ -167,26 +179,29 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
         return getValueSet(propertyName, propertyType);
     }
 
+    @Nullable
     @Override
-    public String getValue(final String propertyName) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+    public String getValue(@NonNull final String propertyName) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         if (!exists(propertyName)) {
             throw new NoSuchElementException("Property '" + propertyName + "' not defined in configuration");
         }
         return propertiesService.getProperty(propertyName);
     }
 
+    @Nullable
     @Override
-    public String getValue(final String propertyName, final String defaultValue) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+    public String getValue(@NonNull final String propertyName, @Nullable final String defaultValue) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         if (!exists(propertyName)) {
             return defaultValue;
         }
         return propertiesService.getProperty(propertyName);
     }
 
+    @NonNull
     @Override
-    public <T extends Record> T getConfigData(final Class<T> type) {
+    public <T extends Record> T getConfigData(@NonNull final Class<T> type) {
         return configDataService.getConfigData(type);
     }
 
@@ -209,10 +224,11 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
         return initialized;
     }
 
-    public <T extends Record> void addConfigDataType(final Class<T> type) {
+    public <T extends Record> void addConfigDataType(@NonNull final Class<T> type) {
         configDataService.addConfigDataType(type);
     }
 
+    @NonNull
     @Override
     public Collection<Class<? extends Record>> getConfigDataTypes() {
         return configDataService.getConfigDataTypes();

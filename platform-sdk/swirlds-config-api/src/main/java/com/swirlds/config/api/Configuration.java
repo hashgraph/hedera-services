@@ -40,6 +40,7 @@ public interface Configuration {
      *
      * @return the stream of all property names
      */
+    @NonNull
     Stream<String> getPropertyNames();
 
     /**
@@ -48,7 +49,7 @@ public interface Configuration {
      * @param propertyName the name of the property that should be checked
      * @return true if the property exists, false otherwise
      */
-    boolean exists(String propertyName);
+    boolean exists(@NonNull String propertyName);
 
     /**
      * Returns the {@link String} value of the property with the given name.
@@ -57,7 +58,8 @@ public interface Configuration {
      * @return the value of the property
      * @throws NoSuchElementException if the property does not exist.
      */
-    String getValue(final String propertyName) throws NoSuchElementException;
+    @Nullable
+    String getValue(@NonNull final String propertyName) throws NoSuchElementException;
 
     /**
      * Returns the {@link String} value of the property with the given name or the given default value if the property
@@ -67,7 +69,8 @@ public interface Configuration {
      * @param defaultValue the default value that will be used if the property does not exist.
      * @return the value of the property or the given default value if the property does not exist
      */
-    String getValue(final String propertyName, String defaultValue);
+    @Nullable
+    String getValue(@NonNull final String propertyName, @Nullable String defaultValue);
 
     /**
      * Returns the value of the property with the given name.
@@ -80,7 +83,9 @@ public interface Configuration {
      * @throws IllegalArgumentException if the raw {@code String} value of the property can not be converted to the
      *                                  given type
      */
-    <T> T getValue(String propertyName, Class<T> propertyType) throws NoSuchElementException, IllegalArgumentException;
+    @Nullable
+    <T> T getValue(@NonNull String propertyName, @NonNull Class<T> propertyType)
+            throws NoSuchElementException, IllegalArgumentException;
 
     /**
      * Returns the value of the property with the given name or the given default value if the property does not exist.
@@ -93,7 +98,9 @@ public interface Configuration {
      * @throws IllegalArgumentException if the raw {@code String} value of the property can not be converted to the
      *                                  given type
      */
-    <T> T getValue(String propertyName, Class<T> propertyType, T defaultValue) throws IllegalArgumentException;
+    @Nullable
+    <T> T getValue(@NonNull String propertyName, @NonNull Class<T> propertyType, @Nullable T defaultValue)
+            throws IllegalArgumentException;
 
     /**
      * Returns a {@link List} of string elements of the property with the given name
@@ -104,7 +111,8 @@ public interface Configuration {
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
      *                                  or the given type
      */
-    List<String> getValues(String propertyName);
+    @Nullable
+    List<String> getValues(@NonNull String propertyName);
 
     /**
      * Returns a {@link List} of string elements of the property with the given name or the given default {@link List}
@@ -116,7 +124,8 @@ public interface Configuration {
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
      *                                  or the given type
      */
-    List<String> getValues(String propertyName, List<String> defaultValue);
+    @Nullable
+    List<String> getValues(@NonNull String propertyName, @Nullable List<String> defaultValue);
 
     /**
      * Returns a {@link List} of elements of the property with the given name
@@ -129,7 +138,8 @@ public interface Configuration {
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
      *                                  or the given type
      */
-    <T> List<T> getValues(String propertyName, Class<T> propertyType)
+    @Nullable
+    <T> List<T> getValues(@NonNull String propertyName, @NonNull Class<T> propertyType)
             throws NoSuchElementException, IllegalArgumentException;
 
     /**
@@ -143,7 +153,8 @@ public interface Configuration {
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
      *                                  or the given type
      */
-    <T> List<T> getValues(String propertyName, Class<T> propertyType, List<T> defaultValue)
+    @Nullable
+    <T> List<T> getValues(@NonNull String propertyName, @NonNull Class<T> propertyType, @Nullable List<T> defaultValue)
             throws IllegalArgumentException;
 
     /**
@@ -216,12 +227,14 @@ public interface Configuration {
      * @return instance of the record that contains the config values for all config properties that are defined in the
      * record definition.
      */
-    <T extends Record> T getConfigData(Class<T> type);
+    @NonNull
+    <T extends Record> T getConfigData(@NonNull Class<T> type);
 
     /**
      * Returns all types that are registered as config data types (see {@link #getConfigData(Class)}).
      *
      * @return all types that are registered as config data types
      */
+    @NonNull
     Collection<Class<? extends Record>> getConfigDataTypes();
 }
