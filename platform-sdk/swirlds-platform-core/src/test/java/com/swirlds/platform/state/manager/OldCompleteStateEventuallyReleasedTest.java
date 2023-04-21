@@ -109,7 +109,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
 
                 if (round >= roundsToKeepForSigning) {
-                    assertNull(lastCompletedState.get(), "initial state should have been released");
+                    assertNull(lastCompletedState.getNullable(), "initial state should have been released");
                 } else {
                     assertSame(lastCompletedState.get(), stateFromDisk);
                 }

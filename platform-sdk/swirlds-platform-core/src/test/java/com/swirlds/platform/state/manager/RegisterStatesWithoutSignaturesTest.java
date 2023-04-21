@@ -99,7 +99,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");
             }
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
-                assertNull(lastCompletedState.get(), "no states should be completed in this test");
+                assertNull(lastCompletedState.getNullable(), "no states should be completed in this test");
             }
 
             final int expectedUnsignedStates = Math.max(0, round - roundsToKeepForSigning + 1);

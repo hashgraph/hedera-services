@@ -108,7 +108,7 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
         // The manager should store this state but not assigned it to the last complete signed state
         manager.addState(stateFromDisk);
 
-        assertNull(manager.getLatestSignedState("test").get());
+        assertNull(manager.getLatestSignedState("test").getNullable());
         assertEquals(-1, manager.getLastCompleteRound());
 
         try (final ReservedSignedState wrapper =

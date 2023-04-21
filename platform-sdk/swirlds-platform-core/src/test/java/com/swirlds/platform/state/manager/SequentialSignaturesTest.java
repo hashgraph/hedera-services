@@ -115,7 +115,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
                     assertSame(
                             signedStates.get(roundToSign), lastCompletedState.get(), "unexpected last completed state");
                 } else {
-                    assertNull(lastCompletedState.get(), "no states should be completed yet");
+                    assertNull(lastCompletedState.getNullable(), "no states should be completed yet");
                 }
             }
 
@@ -131,7 +131,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
             final long finalRound = round;
             try (final ReservedSignedState wrapper = manager.find(state -> state.getRound() == finalRound, "test")) {
 
-                final SignedState foundState = wrapper.get();
+                final SignedState foundState = wrapper.getNullable();
 
                 if (round < count - roundsToKeepAfterSigning - 1) {
                     assertNull(foundState);

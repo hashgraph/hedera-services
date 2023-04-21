@@ -123,7 +123,7 @@ public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
                 // Search for a round later than the last complete round with a hash that doesn't match any state
                 try (final ReservedSignedState actualWrapper =
                         manager.find(emergencyStateCriteria(i, RandomUtils.randomHash(random)), "test")) {
-                    final SignedState actual = actualWrapper.get();
+                    final SignedState actual = actualWrapper.getNullable();
                     assertNull(
                             actual,
                             "Requesting a round later than the last complete "

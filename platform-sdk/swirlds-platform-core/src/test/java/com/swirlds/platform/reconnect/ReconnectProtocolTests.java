@@ -368,7 +368,7 @@ public class ReconnectProtocolTests {
                 getStaticThreadManager(),
                 new NodeId(false, 0),
                 reconnectThrottle,
-                () -> null,
+                ReservedSignedState::new,
                 100,
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
