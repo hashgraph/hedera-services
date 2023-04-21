@@ -16,15 +16,17 @@
 
 package com.swirlds.config.api.converter;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 /**
  * Interface that provides the functionality to convert a raw {@link String} value of a property to a specific data
  * type.
  * <p>
- * Implementations of the interface can be added to the configuration setup by calling
- * {@link com.swirlds.config.api.ConfigurationBuilder#withConverter(ConfigConverter)}
+ * Implementations of the interface can be added to the configuration setup by calling {@link
+ * com.swirlds.config.api.ConfigurationBuilder#withConverter(ConfigConverter)}
  *
- * @param <T>
- * 		The data type of the converter
+ * @param <T> The data type of the converter
  */
 @FunctionalInterface
 public interface ConfigConverter<T> {
@@ -34,10 +36,9 @@ public interface ConfigConverter<T> {
      *
      * @param value
      * @return the converted value
-     * @throws IllegalArgumentException
-     * 		if the given String value can not be converted
-     * @throws NullPointerException
-     * 		if the given String value is null
+     * @throws IllegalArgumentException if the given String value can not be converted
+     * @throws NullPointerException     if the given String value is null
      */
-    T convert(String value) throws IllegalArgumentException, NullPointerException;
+    @Nullable
+    T convert(@NonNull String value) throws IllegalArgumentException, NullPointerException;
 }
