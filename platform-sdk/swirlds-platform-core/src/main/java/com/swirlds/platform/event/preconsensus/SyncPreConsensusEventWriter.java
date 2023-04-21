@@ -17,13 +17,14 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
+import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
+import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.common.utility.Stoppable;
-import com.swirlds.common.utility.Units;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -84,14 +85,26 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     private final LongRunningAverage averageGenerationalSpanUtilization;
 
     /**
-     * Use this value as a stand-in for the running average if we haven't yet collected any data for the running
-     * average.
+     * The previous generational span. Set to a constant at bootstrap time.
      */
-    private final int bootstrapGenerationalSpan;
+    private long previousGenerationalSpan;
 
     /**
-     * Multiply this value by the running average when deciding the generation span for a new file (i.e. the difference
-     * between the maximum and the minimum legal generation).
+     * If true then use {@link #bootstrapGenerationalSpanOverlapFactor} to compute the maximum generation for new files.
+     * If false then use {@link #generationalSpanOverlapFactor} to compute the maximum generation for new files.
+     * Bootstrap mode is used until we create the first file that exceeds the preferred file size.
+     */
+    private boolean bootstrapMode = true;
+
+    /**
+     * During bootstrap mode, multiply this value by the running average when deciding the generation span for a new
+     * file (i.e. the difference between the maximum and the minimum legal generation).
+     */
+    private final double bootstrapGenerationalSpanOverlapFactor;
+
+    /**
+     * When not in boostrap mode, multiply this value by the running average when deciding the generation span for a new
+     * file (i.e. the difference between the maximum and the minimum legal generation).
      */
     private final double generationalSpanOverlapFactor;
 
@@ -114,7 +127,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * Create a new PreConsensusEventWriter.
      *
      * @param platformContext the platform context
-     * @param fileManager manages all preconsensus event stream files currently on disk
+     * @param fileManager     manages all preconsensus event stream files currently on disk
      */
     public SyncPreConsensusEventWriter(
             @NonNull final PlatformContext platformContext, @NonNull final PreConsensusEventFileManager fileManager) {
@@ -129,7 +142,8 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
 
         averageGenerationalSpanUtilization =
                 new LongRunningAverage(config.generationalUtilizationSpanRunningAverageLength());
-        bootstrapGenerationalSpan = config.bootstrapGenerationalSpan();
+        previousGenerationalSpan = config.bootstrapGenerationalSpan();
+        bootstrapGenerationalSpanOverlapFactor = config.bootstrapGenerationalSpanOverlapFactor();
         generationalSpanOverlapFactor = config.generationalSpanOverlapFactor();
         minimumGenerationalCapacity = config.minimumGenerationalCapacity();
 
@@ -310,7 +324,10 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      */
     private void closeFile() {
         try {
-            averageGenerationalSpanUtilization.add(currentMutableFile.getUtilizedGenerationalSpan());
+            previousGenerationalSpan = currentMutableFile.getUtilizedGenerationalSpan();
+            if (!bootstrapMode) {
+                averageGenerationalSpanUtilization.add(previousGenerationalSpan);
+            }
             currentMutableFile.close();
 
             // Future work: "compactify" file name here
@@ -331,12 +348,16 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * Calculate the generation span for a new file that is about to be created.
      */
     private long computeNewFileSpan(final long minimumFileGeneration, final long nextGenerationToWrite) {
-        if (averageGenerationalSpanUtilization.isEmpty()) {
-            return bootstrapGenerationalSpan;
-        }
 
-        final long desiredSpan =
-                (long) (averageGenerationalSpanUtilization.getAverage() * generationalSpanOverlapFactor);
+        // The running average updated until after bootstrapping is finished
+        final long basisSpan = bootstrapMode ? previousGenerationalSpan :
+                averageGenerationalSpanUtilization.getAverage();
+
+        // In bootstrap mode, we use the more aggressive overlap factor to converge faster.
+        final double overlapFactor = bootstrapMode ?
+                bootstrapGenerationalSpanOverlapFactor : generationalSpanOverlapFactor;
+
+        final long desiredSpan = (long) (basisSpan * overlapFactor);
 
         final long minimumSpan = (nextGenerationToWrite + minimumGenerationalCapacity) - minimumFileGeneration;
 
@@ -349,10 +370,18 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * @param eventToWrite the event that is about to be written
      */
     private void prepareOutputStream(@NonNull final EventImpl eventToWrite) throws IOException {
-        if (currentMutableFile != null
-                && (!currentMutableFile.canContain(eventToWrite)
-                        || currentMutableFile.fileSize() * Units.BYTES_TO_MEBIBYTES >= preferredFileSizeMegabytes)) {
-            closeFile();
+        if (currentMutableFile != null) {
+            final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite);
+            final boolean fileIsFull = UNIT_BYTES.convertTo(currentMutableFile.fileSize(), UNIT_MEGABYTES)
+                    >= preferredFileSizeMegabytes;
+
+            if (!fileCanContainEvent || fileIsFull) {
+                closeFile();
+            }
+
+            if (fileIsFull) {
+                bootstrapMode = false;
+            }
         }
 
         if (currentMutableFile == null) {
