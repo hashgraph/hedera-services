@@ -17,13 +17,17 @@
 package com.swirlds.virtualmap.internal.merkle;
 
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createRoot;
+import static org.apache.commons.lang3.RandomUtils.nextInt;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
@@ -36,17 +40,18 @@ import com.swirlds.virtualmap.datasource.InMemoryBuilder;
 import com.swirlds.virtualmap.datasource.InMemoryDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 @SuppressWarnings("ALL")
 class VirtualRootNodeTest extends VirtualTestBase {
@@ -79,8 +84,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @DisplayName("A new map with a datasource with a root hash reveals it")
     void mapWithExistingHashedDataHasNonNullRootHash() throws ExecutionException, InterruptedException {
         // The builder I will use with this map is unique in that each call to "build" returns THE SAME DATASOURCE.
-        final InMemoryDataSource<TestKey, TestValue> ds = new InMemoryDataSource<>(
-                "mapWithExistingHashedDataHasNonNullRootHash", TestKey.BYTES, TestKey::new, 1024, TestValue::new);
+        final InMemoryDataSource<TestKey, TestValue> ds =
+                new InMemoryDataSource<>("mapWithExistingHashedDataHasNonNullRootHash");
         final VirtualDataSourceBuilder<TestKey, TestValue> builder = new InMemoryBuilder();
 
         final VirtualRootNode<TestKey, TestValue> fcm = new VirtualRootNode<>(builder);
@@ -330,4 +335,89 @@ class VirtualRootNodeTest extends VirtualTestBase {
         root.release();
         VirtualMapSettingsFactory.configure(settings);
     }
+
+    @Test
+    @DisplayName("Copy of a root node with terminated pipeline")
+    void copyOfRootNodeWithTerminatedPipeline() {
+        VirtualRootNode<TestKey, TestValue> root = createRoot();
+        root.getPipeline().terminate();
+        assertThrows(IllegalStateException.class, () -> root.copy());
+    }
+
+    @Test
+    @DisplayName("Calculate hashes for persisted leaf nodes")
+    void testFullRehash() throws InterruptedException {
+        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
+
+        root.fullLeafRehash();
+
+        // make sure that the elements have hashes
+        IntStream.range(1, 101).forEach(index -> {
+            assertNotNull(root.getRecords().findHash(index));
+        });
+    }
+
+    @Test
+    @DisplayName("Fail to do full rehash because of save failure")
+    void testFullRehash_failOnSave() throws InterruptedException {
+        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
+        ((InMemoryDataSource) root.getDataSource()).setFailureOnSave(true);
+
+        assertThrows(MerkleSynchronizationException.class, () -> root.fullLeafRehash());
+    }
+
+    @Test
+    @DisplayName("Fail to do full rehash because of load failure")
+    void testFullRehash_failOnLeafLookup() throws InterruptedException {
+        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
+        ((InMemoryDataSource) root.getDataSource()).setFailureOnLeafRecordLookup(true);
+
+        assertThrows(UncheckedIOException.class, () -> root.fullLeafRehash());
+    }
+
+    @Test
+    @DisplayName("Fail to do full rehash because of hash lookup failure")
+    void testFullRehash_failOnHashLookup() throws InterruptedException {
+        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
+        ((InMemoryDataSource) root.getDataSource()).setFailureOnHashLookup(true);
+
+        assertThrows(UncheckedIOException.class, () -> root.fullLeafRehash());
+    }
+
+    private static VirtualRootNode<TestKey, TestValue> prepareRootForFullRehash() {
+        final VirtualRootNode<TestKey, TestValue> root = createRoot();
+        root.enableFlush();
+
+        // add 100 elements
+        IntStream.range(1, 101).forEach(index -> {
+            root.put(new TestKey(index), new TestValue(nextInt()));
+        });
+
+        // make sure that the elements have no hashes
+        IntStream.range(1, 101).forEach(index -> {
+            assertNull(root.getRecords().findHash(index));
+        });
+
+        // prepare the root for h full leaf rehash
+        root.setImmutable(true);
+        root.getCache().seal();
+        root.flush();
+
+        return root;
+    }
+
+    @Test
+    void getVersion() {
+        assertEquals(1, createRoot().getVersion());
+    }
+
+    @Test
+    void postInitNoOpIfLearnerTreeViewIsSet() {
+        VirtualRootNode<TestKey, TestValue> root = createRoot();
+        VirtualRootNode<TestKey, TestValue> anotherRoot = createRoot();
+        anotherRoot.computeHash();
+        root.setupWithOriginalNode(anotherRoot);
+        assertDoesNotThrow(() -> root.postInit(null));
+    }
+
 }

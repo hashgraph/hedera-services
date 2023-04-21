@@ -259,9 +259,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         this.tableConfig = tableConfig;
         this.compactionEnabled = compactionEnabled;
 
-        // updated count of open databases
-        COUNT_OF_OPEN_DATABASES.increment();
-
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
         // create scheduledThreadPool for executing merges
@@ -437,6 +434,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 storageDir,
                 tableConfig.getMaxNumberOfKeys(),
                 tableConfig.getHashesRamToDiskThreshold());
+        // updated count of open databases
+        COUNT_OF_OPEN_DATABASES.increment();
     }
 
     /**

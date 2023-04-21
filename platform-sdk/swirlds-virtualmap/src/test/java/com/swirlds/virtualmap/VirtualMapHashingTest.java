@@ -17,9 +17,12 @@
 package com.swirlds.virtualmap;
 
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
+import static org.apache.commons.lang3.RandomUtils.nextInt;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -29,8 +32,10 @@ import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -338,5 +343,50 @@ class VirtualMapHashingTest {
             }
         }
         assertEquals(numInternals, deletedInternals, "The number of deleted internals doesn't match");
+    }
+
+    @Test
+    void fullLeavesRehash() {
+        final VirtualMap<TestKey, TestValue> map = createMap();
+
+        // add 100 elements
+        IntStream.range(1, 101).forEach(index -> {
+            map.put(new TestKey(index), new TestValue(nextInt()));
+        });
+
+        VirtualRootNode<TestKey, TestValue> root = map.getRoot();
+        root.enableFlush();
+        // make sure that the elements have no hashes
+        IntStream.range(1, 101).forEach(index -> {
+            assertNull(root.getRecords().findHash(index));
+        });
+
+        // prepare the root for h full leaf rehash
+        doFullRehash(root);
+
+        // make sure that the elements have hashes
+        IntStream.range(1, 101).forEach(index -> {
+            assertNotNull(root.getRecords().findHash(index));
+        });
+
+        // should not throw any exceptions
+        map.fullLeafRehash();
+    }
+
+    private static void doFullRehash(VirtualRootNode<TestKey, TestValue> root) {
+        root.setImmutable(true);
+        root.getCache().seal();
+        root.flush();
+        root.fullLeafRehash();
+    }
+
+    @Test
+    void fullLeavesRehashOnEmptyMap() {
+        final VirtualMap<TestKey, TestValue> map = createMap();
+
+        VirtualRootNode<TestKey, TestValue> root = map.getRoot();
+        root.enableFlush();
+        // shouldn't throw any exceptions
+        assertDoesNotThrow(() -> doFullRehash(root));
     }
 }

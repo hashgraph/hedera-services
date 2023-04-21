@@ -36,6 +36,7 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -172,7 +173,7 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
             try {
                 hash = root.getDataSource().loadHash(path);
             } catch (final IOException ex) {
-                throw new RuntimeException("Failed to read a internal record from the data source", ex);
+                throw new UncheckedIOException("Failed to read a internal record from the data source", ex);
             }
         }
 
@@ -221,7 +222,7 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
             try {
                 hash = root.getDataSource().loadHash(path);
             } catch (final IOException ex) {
-                throw new RuntimeException("Failed to read a hash from the data source", ex);
+                throw new UncheckedIOException("Failed to read a hash from the data source", ex);
             }
         }
 

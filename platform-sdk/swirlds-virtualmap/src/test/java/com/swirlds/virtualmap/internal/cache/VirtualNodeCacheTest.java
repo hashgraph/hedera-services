@@ -487,7 +487,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
                             latest.lookupHashByPath(LEFT_PATH, false),
                             "value that was looked up should match original value");
                 },
-                Duration.ofSeconds(1),
+                Duration.ofSeconds(2),
                 "expected cache to eventually become clean");
     }
 

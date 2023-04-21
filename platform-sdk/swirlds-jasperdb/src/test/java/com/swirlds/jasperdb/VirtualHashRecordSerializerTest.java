@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkledb;
+package com.swirlds.jasperdb;
 
+import static org.apache.commons.lang3.RandomUtils.nextInt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -25,9 +26,11 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
-import com.swirlds.merkledb.serialize.DataItemHeader;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.jasperdb.files.DataItemHeader;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +56,7 @@ class VirtualHashRecordSerializerTest {
 
     @Test
     void serializeEnforcesDefaultDigest() {
-        final ByteBuffer bbuf = mock(ByteBuffer.class);
+        final SerializableDataOutputStream bbuf = mock(SerializableDataOutputStream.class);
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
         final VirtualHashRecord data = new VirtualHashRecord(1L, nonDefaultHash);
         assertEquals(Long.BYTES, subject.getHeaderSize(), "Header size should be 8 bytes");
@@ -75,8 +78,24 @@ class VirtualHashRecordSerializerTest {
         when(bb.getLong()).thenReturn(42L);
         when(bb.get(any())).thenReturn(bb);
         final DataItemHeader expectedHeader = new DataItemHeader(56, 42L);
-        assertEquals(expectedHeader, subject.deserializeHeader(bb), "Deserialized header should match serialized");
+        assertEquals(expectedHeader, subject.deserializeHeader(bb, -1), "Deserialized header should match serialized");
         assertEquals(expectedData, subject.deserialize(bb, 1L), "Deserialized data should match serialized");
+    }
+
+    @Test
+    void testVersion() {
+        assertEquals(1, subject.getVersion(), "Version should be 1");
+    }
+
+    @Test
+    void testSerializeDeserialize() throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        final SerializableDataOutputStream out = new SerializableDataOutputStream(byteArrayOutputStream);
+        // no op
+        subject.serialize(out);
+        assertEquals(0, byteArrayOutputStream.toByteArray().length, "No data is expected");
+        // no op
+        subject.deserialize((SerializableDataInputStream) null, nextInt());
     }
 
     @Test
@@ -90,7 +109,7 @@ class VirtualHashRecordSerializerTest {
 
     @Test
     void testHashCode() {
-        final VirtualHashRecordSerializer other = new VirtualHashRecordSerializer();
-        assertEquals(subject.hashCode(), other.hashCode(), "Should have same hash code");
+        VirtualHashRecordSerializer v = new VirtualHashRecordSerializer();
+        assertEquals(87, v.hashCode());
     }
 }

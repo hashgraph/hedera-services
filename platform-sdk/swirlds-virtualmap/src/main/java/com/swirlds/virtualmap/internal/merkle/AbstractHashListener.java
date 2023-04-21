@@ -79,7 +79,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      * @param dataSource
      * 		The data source. Cannot be null.
      */
-    public AbstractHashListener(
+    protected AbstractHashListener(
             final long firstLeafPath, final long lastLeafPath, final VirtualDataSource<K, V> dataSource) {
 
         if (firstLeafPath != Path.INVALID_PATH && !(firstLeafPath > 0 && firstLeafPath <= lastLeafPath)) {
@@ -87,7 +87,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
                     + ", lastLeafPath=" + lastLeafPath);
         }
 
-        if (lastLeafPath != Path.INVALID_PATH && !(lastLeafPath > 0)) {
+        if (lastLeafPath != Path.INVALID_PATH && lastLeafPath <= 0) {
             throw new IllegalArgumentException(
                     "The last leaf path is invalid. firstLeafPath=" + firstLeafPath + ", lastLeafPath=" + lastLeafPath);
         }

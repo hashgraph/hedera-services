@@ -86,7 +86,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     @Override
     public int getSerializedSizeForVersion(long version) {
         final int hashSerializationVersion = (int) (0x000000000000FFFFL & version);
-        if (hashSerializationVersion != 0) {
+        if (hashSerializationVersion != 0 && !isVariableSize()) {
             return getSerializedSize() + hashSize;
         }
         return getSerializedSize();

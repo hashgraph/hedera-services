@@ -413,6 +413,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     /**
      * Do a full rehash of the persisted leaves of the map.
      * This will iterate over all the leaf nodes from the disk and rehash them.
+     * The main difference between this and {@link VirtualRootNode#computeHash()} is that {@code computeHash}
+     * update hashes for dirty leaves that are in the cache, while this method will rehash all the leaves from the disk.
+     * {@code computeHash} doesn't have to take memory consumption into account because the cache is already in memory and
+     * for this method it is critical to not load all the leaves into memory because there are too many of them.
      */
     public void fullLeafRehash() {
         Objects.requireNonNull(records, "Records must be initialized before rehashing");
@@ -420,7 +424,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final ConcurrentBlockingIterator<VirtualLeafRecord<K, V>> rehashIterator =
                 new ConcurrentBlockingIterator<>(MAX_REHASHING_BUFFER_SIZE, Integer.MAX_VALUE, MILLISECONDS);
         final CompletableFuture<Hash> fullRehashFuture = new CompletableFuture<>();
-        VirtualDataSource<K, V> dataSource = records.getDataSource();
         // getting a range that is relevant for the data source
         final long firstLeafPath = dataSource.getFirstLeafPath();
         final long lastLeafPath = dataSource.getLastLeafPath();
@@ -485,7 +488,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                     }
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException(e);
             }
         }
         rehashIterator.close();

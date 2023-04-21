@@ -140,7 +140,7 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
     }
 
     public long getClassId() {
-        return 6484134134848452L;
+        return 6484134134848453L;
     }
 
     public int getVersion() {
@@ -195,9 +195,11 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
         return (byte) Math.ceil((double) (Long.SIZE - Long.numberOfLeadingZeros(num)) / 8D);
     }
 
-    public static class Serializer implements KeySerializer<ExampleLongLongKeyVariableSize> {
+    public static class Serializer
+            implements KeySerializer<ExampleLongLongKeyVariableSize>,
+                    SelfSerializableSupplier<ExampleLongLongKeyVariableSize> {
 
-        private static final long CLASS_ID = 0x6687e6bfe46404e9L;
+        private static final long CLASS_ID = 0x6687e6bfe46404f0L;
 
         private static final class ClassVersion {
             public static final int ORIGINAL = 1;
@@ -302,6 +304,11 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
         @Override
         public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
 
+        @Override
+        public ExampleLongLongKeyVariableSize get() {
+            return new ExampleLongLongKeyVariableSize();
+        }
+
         /**
          * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the
          * buffer is assumed to be starting at the current buffer position and in the format written
@@ -347,7 +354,7 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
         /** {@inheritDoc} */
         @Override
         public int hashCode() {
-            return super.hashCode();
+            return (int) CLASS_ID;
         }
 
         /** {@inheritDoc} */

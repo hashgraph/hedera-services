@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkledb;
+package com.swirlds.jasperdb;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.SelfSerializableSupplier;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,67 +26,61 @@ import java.util.Objects;
 import java.util.Random;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
-public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtualValue
-        implements SelfSerializableSupplier<ExampleVariableSizeVirtualValue> {
+public final class ExampleFixedSizeVirtualValue extends ExampleByteArrayVirtualValue
+        implements SelfSerializableSupplier<ExampleFixedSizeVirtualValue> {
 
-    private static final int RANDOM_BYTES = 1024;
-    private static final byte[] RANDOM_DATA = new byte[RANDOM_BYTES];
-    private static final Random RANDOM = new Random(12234);
-    public static final int SERIALIZATION_VERSION = 865;
+    public static final int RANDOM_BYTES = 32;
+    static final byte[] RANDOM_DATA = new byte[RANDOM_BYTES];
+    public static final int SERIALIZATION_VERSION = 287;
+    public static final long CLASS_ID = 1438455686395470L;
 
     static {
-        RANDOM.nextBytes(RANDOM_DATA);
+        new Random(12234).nextBytes(RANDOM_DATA);
     }
 
     private int id;
     private byte[] data;
 
-    public ExampleVariableSizeVirtualValue() {}
+    public ExampleFixedSizeVirtualValue() {}
 
-    public ExampleVariableSizeVirtualValue(final int id) {
+    public ExampleFixedSizeVirtualValue(final int id) {
         this.id = id;
-        data = new byte[256 + (id % 768)];
-        System.arraycopy(RANDOM_DATA, 0, data, 0, data.length);
+        this.data = RANDOM_DATA;
     }
 
-    public ExampleVariableSizeVirtualValue(final int id, final byte[] data) {
+    public ExampleFixedSizeVirtualValue(final int id, final byte[] data) {
         this.id = id;
         this.data = new byte[data.length];
         System.arraycopy(data, 0, this.data, 0, data.length);
     }
 
+    @Override
     public int getId() {
         return id;
     }
 
+    @Override
     public byte[] getData() {
         return data;
-    }
-
-    public int getDataLength() {
-        return data.length;
     }
 
     @Override
     public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
         assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
         id = inputStream.readInt();
-        final int dataLength = inputStream.readInt();
-        data = new byte[dataLength];
+        data = new byte[RANDOM_BYTES];
         inputStream.read(data);
     }
 
     @Override
     public void serialize(final SerializableDataOutputStream outputStream) throws IOException {
         outputStream.writeInt(id);
-        outputStream.writeInt(data.length);
         outputStream.write(data);
     }
 
     @Override
     public void serialize(final ByteBuffer buffer) {
         buffer.putInt(id);
-        buffer.putInt(data.length);
         buffer.put(data);
     }
 
@@ -95,20 +88,18 @@ public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtu
     public void deserialize(final ByteBuffer buffer, final int dataVersion) {
         assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
         id = buffer.getInt();
-        final int dataLength = buffer.getInt();
-        assert dataLength > 0 : "DataLength[" + dataLength + "] should never be 0 or less";
-        data = new byte[dataLength];
+        data = new byte[RANDOM_BYTES];
         buffer.get(data);
     }
 
     @Override
     public VirtualValue copy() {
-        return this;
+        return get();
     }
 
     @Override
-    public ExampleVariableSizeVirtualValue get() {
-        return this;
+    public ExampleFixedSizeVirtualValue get() {
+        return new ExampleFixedSizeVirtualValue(id);
     }
 
     @Override
@@ -118,7 +109,7 @@ public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtu
 
     @Override
     public long getClassId() {
-        return 846821551352L;
+        return CLASS_ID;
     }
 
     @Override
@@ -134,7 +125,7 @@ public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtu
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final ExampleVariableSizeVirtualValue that = (ExampleVariableSizeVirtualValue) o;
+        final ExampleFixedSizeVirtualValue that = (ExampleFixedSizeVirtualValue) o;
         return id == that.id && Arrays.equals(data, that.data);
     }
 
@@ -147,6 +138,6 @@ public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtu
 
     @Override
     public String toString() {
-        return "ExampleVariableSizeVirtualValue{" + "id=" + id + ", data=" + Arrays.toString(data) + '}';
+        return "TestLeafData{" + "id=" + id + ", data=" + Arrays.toString(data) + '}';
     }
 }

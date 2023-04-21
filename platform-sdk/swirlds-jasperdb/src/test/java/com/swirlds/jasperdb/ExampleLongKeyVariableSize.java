@@ -61,20 +61,6 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         }
     }
 
-    // [0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 80,
-    // -69, 72, 20, 36,
-    // -106, -79, -64, -127, 4, 49, -84, -102, 77, -47, 70, -106, 113, -70, 8, -66, 43, 86, 116,
-    // -25, -12, -1, 75, 14,
-    // -122, -42, 65, 0, 0, +4,194,204 more]
-    // [0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, -82,
-    // 25, 2, 43, -51,
-    // 119, -30, 62, -66, 52, -42, -36, 32, 11, 0, -36, 48, 117, 27, -16, -81, 9, 126, -25, -116,
-    // -124, 27, 32, -44,
-    // 3, -49, 100]
     @Override
     public void deserialize(final ByteBuffer buffer, final int dataVersion) throws IOException {
         assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
@@ -91,8 +77,8 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         setValue(value);
     }
 
-    public ExampleLongKeyFixedSize copy() {
-        return new ExampleLongKeyFixedSize(this.value);
+    public ExampleLongKeyVariableSize copy() {
+        return new ExampleLongKeyVariableSize(this.value);
     }
 
     public void serialize(final SerializableDataOutputStream outputStream) throws IOException {
@@ -119,7 +105,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
     }
 
     public long getClassId() {
-        return 5614541343884544469L;
+        return 5614541343884544470L;
     }
 
     public int getVersion() {
@@ -165,9 +151,10 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         return (byte) Math.ceil((double) (Long.SIZE - Long.numberOfLeadingZeros(num)) / 8D);
     }
 
-    public static class Serializer implements KeySerializer<ExampleLongKeyVariableSize> {
+    public static class Serializer
+            implements KeySerializer<ExampleLongKeyVariableSize>, SelfSerializableSupplier<ExampleLongKeyVariableSize> {
 
-        private static final long CLASS_ID = 0x8cc51b9601c706e7L;
+        private static final long CLASS_ID = 0x8cc51b9601c706e8L;
 
         private static final class ClassVersion {
             public static final int ORIGINAL = 1;
@@ -250,6 +237,11 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
             return 1 + computeNonZeroBytes(data.getKeyAsLong());
         }
 
+        @Override
+        public ExampleLongKeyVariableSize get() {
+            return new ExampleLongKeyVariableSize();
+        }
+
         /**
          * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the
          * buffer is assumed to be starting at the current buffer position and in the format written
@@ -293,7 +285,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         /** {@inheritDoc} */
         @Override
         public int hashCode() {
-            return super.hashCode();
+            return (int) CLASS_ID;
         }
 
         /** {@inheritDoc} */

@@ -21,8 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.test.merkle.dummy.DummyBinaryMerkleInternal;
 import com.swirlds.virtualmap.TestKey;
@@ -121,6 +123,29 @@ class VirtualInternalNodeTest extends VirtualTestBase {
         assertEquals(A_KEY, leftChild.getKey(), "key should match original");
         assertEquals(E_KEY, rightChild.getKey(), "key should match original");
         assertNull(internalNode.getChild(2), "value should be null");
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @Tags({@Tag("VirtualMerkle")})
+    @DisplayName("Getting a child that isn't 0 or 1")
+    void getInternalNodeFromCacheAndFromDisk() {
+        final VirtualRootNode<TestKey, TestValue> root = createRoot();
+        root.put(A_KEY, APPLE);
+        root.put(B_KEY, BANANA);
+        root.put(C_KEY, CHERRY);
+        root.put(D_KEY, DATE);
+        root.put(E_KEY, EGGPLANT);
+        root.put(F_KEY, FIG);
+        root.put(G_KEY, GRAPE);
+
+        MerkleNode child = root.getChild(1);
+        assertTrue(child instanceof VirtualInternalNode, "child should be an internal node");
+        VirtualInternalNode internalNode = (VirtualInternalNode) child;
+
+        assertEquals(5, ((VirtualInternalNode) internalNode.getChild(0)).getPath());
+        root.getCache().release();
+        assertEquals(5, ((VirtualInternalNode) internalNode.getChild(0)).getPath());
     }
 
     /**

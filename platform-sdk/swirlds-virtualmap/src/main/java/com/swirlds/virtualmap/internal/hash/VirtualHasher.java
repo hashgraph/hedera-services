@@ -664,7 +664,6 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                                         throw new IllegalStateException("Failed to find leaf hash for " + siblingPath
                                                 + ", which is a sibling of " + nodePath);
                                     }
-
                                     final Hash leftHash = nodePath < siblingPath ? hashJob.getHash() : siblingHash;
                                     final Hash rightHash = nodePath < siblingPath ? siblingHash : hashJob.getHash();
                                     pendingQueue

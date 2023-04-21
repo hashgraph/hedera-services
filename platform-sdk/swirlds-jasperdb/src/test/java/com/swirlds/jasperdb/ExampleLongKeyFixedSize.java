@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 
 public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
 
-    private static final long CLASS_ID = 0x6ec21ff5ab56811fL;
+    private static final long CLASS_ID = 0x6ec21ff5ab568120L;
 
     /** random so that for testing we are sure we are getting same version */
     private static final int CURRENT_SERIALIZATION_VERSION = 3054;
@@ -108,9 +108,10 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
         return value;
     }
 
-    public static class Serializer implements KeySerializer<ExampleLongKeyFixedSize> {
+    public static class Serializer
+            implements KeySerializer<ExampleLongKeyFixedSize>, SelfSerializableSupplier<ExampleLongKeyFixedSize> {
 
-        private static final long CLASS_ID = 0x58a0db3356d8ec69L;
+        private static final long CLASS_ID = 0x58a0db3356d8ec70L;
 
         private static final class ClassVersion {
             public static final int ORIGINAL = 1;
@@ -163,6 +164,11 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
                     : "dataVersion=" + dataVersion + " != getCurrentDataVersion()=" + getCurrentDataVersion();
             final long value = buffer.getLong();
             return new ExampleLongKeyFixedSize(value);
+        }
+
+        @Override
+        public ExampleLongKeyFixedSize get() {
+            return new ExampleLongKeyFixedSize();
         }
 
         /**
@@ -226,7 +232,7 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
         /** {@inheritDoc} */
         @Override
         public int hashCode() {
-            return super.hashCode();
+            return (int) CLASS_ID;
         }
 
         /** {@inheritDoc} */

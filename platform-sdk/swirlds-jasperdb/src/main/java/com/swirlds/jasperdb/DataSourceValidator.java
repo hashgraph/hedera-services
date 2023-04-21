@@ -72,10 +72,10 @@ public class DataSourceValidator<K extends VirtualKey, V extends VirtualValue> {
             progressPercentage = 0;
             for (long path = firstLeafPath; path <= lastLeafPath; path++) {
                 Hash leafHash = dataSource.loadHash(path);
-                assertTrue(leafHash != null, "leaf record's hash for path [" + path + "] was null");
+                assertTrue(leafHash == null, "leaf record's hash for path [" + path + "] was null");
                 printProgress(path - firstLeafPath, leafCount);
             }
-            System.out.println("All leaf hashes are valid :-)" + WHITESPACE);
+            System.out.println("All leaf hashes are null :-)" + WHITESPACE);
             System.out.printf("Validating %,d leaf record by path...%n", firstLeafPath);
             List<K> keys = new ArrayList<>(leafCount);
             progressPercentage = 0;

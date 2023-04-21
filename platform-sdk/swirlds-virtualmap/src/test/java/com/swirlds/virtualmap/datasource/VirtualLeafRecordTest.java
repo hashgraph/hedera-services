@@ -193,6 +193,20 @@ class VirtualLeafRecordTest {
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
+    @DisplayName("Test copy")
+    void testCopy() {
+        final long keyId = RANDOM.nextLong();
+        final TestKey key = new TestKey(keyId);
+        final TestValue value = new TestValue("This is a custom value");
+
+        final VirtualLeafRecord<TestKey, TestValue> leafRecord = new VirtualLeafRecord<>(1329, key, value);
+
+        assertEquals(leafRecord, leafRecord.copy(), "Copy should be equal to original");
+    }
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.VMAP)
     @DisplayName("Serialization and deserialization")
     void serializesAndDeserializes() throws IOException {
         final long keyId = RANDOM.nextLong();

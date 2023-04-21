@@ -32,6 +32,8 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
     /** random so that for testing we are sure we are getting same version */
     private static final int CURRENT_SERIALIZATION_VERSION = 4685;
 
+    public static final long CLASS_ID = 654838434445546361L;
+
     private long value1;
     private long value2;
 
@@ -85,7 +87,7 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
     }
 
     public long getClassId() {
-        return 654838434445546360L;
+        return CLASS_ID;
     }
 
     public int getVersion() {
@@ -121,9 +123,11 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
         return value1;
     }
 
-    public static class Serializer implements KeySerializer<ExampleLongLongKeyFixedSize> {
+    public static class Serializer
+            implements KeySerializer<ExampleLongLongKeyFixedSize>,
+                    SelfSerializableSupplier<ExampleLongLongKeyFixedSize> {
 
-        private static final long CLASS_ID = 0xee6fa2534c50d634L;
+        private static final long CLASS_ID = 0xee6fa2534c50d635L;
 
         private static final class ClassVersion {
             public static final int ORIGINAL = 1;
@@ -188,6 +192,11 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
         }
 
         @Override
+        public ExampleLongLongKeyFixedSize get() {
+            return new ExampleLongLongKeyFixedSize();
+        }
+
+        @Override
         public void serialize(SerializableDataOutputStream out) throws IOException {
             // no op
         }
@@ -240,7 +249,7 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
         /** {@inheritDoc} */
         @Override
         public int hashCode() {
-            return super.hashCode();
+            return (int) CLASS_ID;
         }
 
         /** {@inheritDoc} */

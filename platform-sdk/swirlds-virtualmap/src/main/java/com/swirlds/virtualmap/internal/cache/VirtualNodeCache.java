@@ -149,12 +149,12 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     /**
      * A singleton comparator used for sorting dirty leaf mutations.
      */
-    final Comparator<Mutation<K, VirtualLeafRecord<K, V>>> DIRTY_LEAF_COMPARATOR = new LeafMutationComparator<>();
+    final Comparator<Mutation<K, VirtualLeafRecord<K, V>>> dirtyLeafComparator = new LeafMutationComparator<>();
 
     /**
      * A singleton comparator used for sorting dirty hash mutations.
      */
-    final Comparator<Mutation<Long, Hash>> DIRTY_HASH_COMPARATOR = new HashMutationComparator();
+    final Comparator<Mutation<Long, Hash>> dirtyHashComparator = new HashMutationComparator();
 
     /**
      * The number of threads to use when cleaning. Can either be supplied by a system property, or
@@ -756,7 +756,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
         final AtomicReference<Mutation<K, VirtualLeafRecord<K, V>>> lastSeen = new AtomicReference<>();
         return dirtyLeaves
-                .sortedStream(DIRTY_LEAF_COMPARATOR)
+                .sortedStream(dirtyLeafComparator)
                 .filter(mutation -> {
                     final long path = mutation.value.getPath();
                     return path >= firstLeafPath && path <= lastLeafPath;
@@ -940,7 +940,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
         final AtomicReference<Mutation<Long, Hash>> lastSeen = new AtomicReference<>();
         return dirtyHashes
-                .sortedStream(DIRTY_HASH_COMPARATOR)
+                .sortedStream(dirtyHashComparator)
                 .filter(mutation -> mutation.key <= lastLeafPath)
                 .filter(mutation -> dedupeHashByPath(mutation, lastSeen))
                 .filter(mutation -> !mutation.deleted)
@@ -1270,19 +1270,19 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * 		Map that contains the original mutations
      * @param dst
      * 		Map that acts as the destination of mutations
-     * @param <LK>
+     * @param <K2>
      * 		Key type
-     * @param <LV>
+     * @param <L2>
      * 		Value type
      */
-    private <LK, LV> void setMapSnapshotAndArray(
-            final Map<LK, Mutation<LK, LV>> src,
-            final Map<LK, Mutation<LK, LV>> dst,
-            final ConcurrentArray<Mutation<LK, LV>> array) {
+    private <K2, L2> void setMapSnapshotAndArray(
+            final Map<K2, Mutation<K2, L2>> src,
+            final Map<K2, Mutation<K2, L2>> dst,
+            final ConcurrentArray<Mutation<K2, L2>> array) {
         final long accepted = fastCopyVersion.get();
         final long rejected = lastReleased.get();
-        for (final Map.Entry<LK, Mutation<LK, LV>> entry : src.entrySet()) {
-            Mutation<LK, LV> mutation = entry.getValue();
+        for (final Map.Entry<K2, Mutation<K2, L2>> entry : src.entrySet()) {
+            Mutation<K2, L2> mutation = entry.getValue();
 
             while (mutation != null && mutation.version > accepted) {
                 mutation = mutation.next;

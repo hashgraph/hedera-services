@@ -352,7 +352,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
 
         this.label = label;
         // updated count of open databases
-        COUNT_OF_OPEN_DATABASES.increment();
+
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("JasperDB-" + label);
         // create scheduledThreadPool for executing merges
@@ -524,6 +524,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                 storageDir,
                 maxNumOfKeys,
                 hashesRamToDiskThreshold);
+        COUNT_OF_OPEN_DATABASES.increment();
     }
 
     // ==================================================================================================================

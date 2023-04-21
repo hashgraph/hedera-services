@@ -31,6 +31,8 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * VirtualLeafRecordSerializer serializer responsible for serializing and deserializing virtual leaf records. It depends
@@ -47,9 +49,11 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
 
     private static final long CLASS_ID = 0x39f4704ad17104fL;
 
-    private static final class ClassVersion {
+    static final class ClassVersion {
         public static final int ORIGINAL = 1;
         public static final int REMOVED_LEAF_HASHES = 2;
+
+        private ClassVersion() {}
     }
 
     private static final int DEFAULT_TYPICAL_VARIABLE_SIZE = 1024;
@@ -311,10 +315,10 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
         // if the instance was created by deserializing, we need to adjust parameters to match the new serialization
         // for all the newly serialized objects
         if (version < ClassVersion.REMOVED_LEAF_HASHES) {
-            // FIXME: incorrect calculation for variable size
-            // make sure that the hash version is there
             assert ((int) 0x000000000000FFFFL & currentVersion) != 0;
-            totalSerializedSize -= DEFAULT_DIGEST.digestLength();
+            if (!hasVariableDataSize) {
+                totalSerializedSize -= DEFAULT_DIGEST.digestLength();
+            }
             currentVersion = currentVersion & 0xFFFFFFFFFFFF0000L;
         }
     }
@@ -353,5 +357,16 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
                 totalSerializedSize,
                 headerSize,
                 byteMaxSize);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("currentVersion", currentVersion)
+                .append("hasVariableDataSize", hasVariableDataSize)
+                .append("totalSerializedSize", totalSerializedSize)
+                .append("headerSize", headerSize)
+                .append("byteMaxSize", byteMaxSize)
+                .toString();
     }
 }

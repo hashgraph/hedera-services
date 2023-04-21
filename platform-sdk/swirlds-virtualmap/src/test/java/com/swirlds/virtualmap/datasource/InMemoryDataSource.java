@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.imageio.IIOException;
 
@@ -49,26 +48,17 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
     private volatile long lastLeafPath = -1;
     private volatile boolean closed = false;
 
+    private boolean failureOnHashLookup = false;
+    private boolean failureOnSave = false;
+    private boolean failureOnLeafRecordLookup = false;
+
     /**
      * Create a new InMemoryDataSource
      *
      * @param name
      * 		data source name
-     * @param keySizeBytes
-     * 		the number of bytes a key takes when serialized
-     * @param keyConstructor
-     * 		constructor to create new keys for deserialization
-     * @param valueSizeBytes
-     * 		the number of bytes a value takes when serialized
-     * @param valueConstructor
-     * 		constructor to create new values for deserialization
      */
-    public InMemoryDataSource(
-            final String name,
-            int keySizeBytes,
-            Supplier<K> keyConstructor,
-            int valueSizeBytes,
-            Supplier<V> valueConstructor) {
+    public InMemoryDataSource(final String name) {
         this.name = name;
     }
 
@@ -123,6 +113,10 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
             throws IOException {
+
+        if (failureOnSave) {
+            throw new IOException("Preconfigured failure on save");
+        }
 
         if (closed) {
             throw new IOException("Data Source is closed");
@@ -189,6 +183,10 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
             throw new IllegalArgumentException(NEGATIVE_PATH_MESSAGE);
         }
 
+        if (failureOnLeafRecordLookup) {
+            throw new IOException("Preconfigured failure on leaf record lookup");
+        }
+
         if (path < firstLeafPath) {
             throw new IllegalArgumentException(
                     "path[" + path + "] is less than the firstLeafPath[" + firstLeafPath + "]");
@@ -223,7 +221,11 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
      * {@inheritDoc}
      */
     @Override
-    public Hash loadHash(long path) {
+    public Hash loadHash(long path) throws IOException {
+        if (failureOnHashLookup) {
+            throw new IOException("Preconfigured failure on hash lookup");
+        }
+
         if (path < 0) {
             throw new IllegalArgumentException(NEGATIVE_PATH_MESSAGE);
         }
@@ -349,5 +351,17 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
     @Override
     public long getLastLeafPath() {
         return lastLeafPath;
+    }
+
+    public void setFailureOnHashLookup(boolean failureOnHashLookup) {
+        this.failureOnHashLookup = failureOnHashLookup;
+    }
+
+    public void setFailureOnSave(boolean failureOnSave) {
+        this.failureOnSave = failureOnSave;
+    }
+
+    public void setFailureOnLeafRecordLookup(boolean failureOnLeafRecordLookup) {
+        this.failureOnLeafRecordLookup = failureOnLeafRecordLookup;
     }
 }
