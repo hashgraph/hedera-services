@@ -16,7 +16,8 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.base.ArgumentUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
@@ -29,18 +30,19 @@ public final class ConfigNumberUtils {
     /**
      * Compares the given value with the given number
      *
-     * @param value
-     * 		the value
-     * @param valueType
-     * 		the type of the value
-     * @param number
-     * 		the number
-     * @param <T>
-     * 		the type of the value
-     * @return a negative integer, zero, or a positive integer as the value
-     * 		is less than, equal to, or greater than the number.
+     * @param value     the value
+     * @param valueType the type of the value
+     * @param number    the number
+     * @param <T>       the type of the value
+     * @return a negative integer, zero, or a positive integer as the value is less than, equal to, or greater than the
+     * number.
      */
-    public static <T extends Number> int compare(T value, Class<T> valueType, Number number) {
+    public static <T extends Number> int compare(
+            @NonNull final T value, @NonNull final Class<T> valueType, @NonNull final Number number) {
+        ArgumentUtils.throwArgNull(value, "value");
+        ArgumentUtils.throwArgNull(valueType, "valueType");
+        ArgumentUtils.throwArgNull(number, "number");
+
         if (Objects.equals(valueType, Integer.class) || Objects.equals(valueType, Integer.TYPE)) {
             return Integer.compare(value.intValue(), number.intValue());
         }
@@ -65,14 +67,12 @@ public final class ConfigNumberUtils {
     /**
      * Returns the given object as a long value (if possible) or throws an {@link IllegalArgumentException}
      *
-     * @param value
-     * 		the object
+     * @param value the object
      * @return the object as long value
-     * @throws IllegalArgumentException
-     * 		if the given value is not a valid number
+     * @throws IllegalArgumentException if the given value is not a valid number
      */
-    public static long getLongValue(final Object value) {
-        CommonUtils.throwArgNull(value, "value");
+    public static long getLongValue(@NonNull final Object value) {
+        ArgumentUtils.throwArgNull(value, "value");
         if (value instanceof Number number) {
             return number.longValue();
         }
@@ -82,11 +82,11 @@ public final class ConfigNumberUtils {
     /**
      * Returns true if the given class is a class that represents a number
      *
-     * @param cls
-     * 		the class to check
+     * @param cls the class to check
      * @return true if the given class represents a number
      */
-    public static boolean isNumber(final Class<?> cls) {
+    public static boolean isNumber(@NonNull final Class<?> cls) {
+        ArgumentUtils.throwArgNull(cls, "cls");
         if (Number.class.isAssignableFrom(cls)) {
             return true;
         }
