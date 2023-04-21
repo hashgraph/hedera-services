@@ -96,6 +96,7 @@ dependencies {
 }
 
 tasks.withType<JavaCompile> { options.annotationProcessorPath = apt }
+tasks.withType<Test> { maxHeapSize = "4096m" }
 
 val jmhDaggerSources = file("build/generated/sources/annotationProcessor/java/jmh")
 
