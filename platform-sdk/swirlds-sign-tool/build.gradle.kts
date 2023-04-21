@@ -18,6 +18,7 @@ plugins {
   id("com.swirlds.platform.conventions")
   id("com.swirlds.platform.library")
   id("com.swirlds.platform.maven-publish")
+  id("com.swirlds.platform.application")
 }
 
 dependencies {
