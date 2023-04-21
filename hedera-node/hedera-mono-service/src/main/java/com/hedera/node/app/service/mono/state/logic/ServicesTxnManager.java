@@ -89,7 +89,7 @@ public class ServicesTxnManager {
         this.blocklistAccountCreator = Objects.requireNonNull(blocklistAccountCreator);
     }
 
-    private boolean needToPublishMigrationRecords = true;
+    private boolean isMigrationRecordNeeded = true;
     private boolean createdStreamableRecord;
 
     public void process(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
@@ -104,7 +104,7 @@ public class ServicesTxnManager {
             rewardCalculator.reset();
             ledger.begin();
 
-            if (needToPublishMigrationRecords) {
+            if (isMigrationRecordNeeded) {
                 if (bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED)) {
                     blocklistAccountCreator.createMissingAccounts();
                 }
@@ -113,7 +113,7 @@ public class ServicesTxnManager {
                 // state) shows that it needs to do so; our responsibility here is just to give it
                 // the opportunity
                 migrationRecordsManager.publishMigrationRecords(consensusTime);
-                needToPublishMigrationRecords = false;
+                isMigrationRecordNeeded = false;
             }
             if (accessor.isTriggeredTxn()) {
                 scopedTriggeredProcessing.run();
