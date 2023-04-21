@@ -330,8 +330,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             }
             currentMutableFile.close();
 
-            // Future work: "compactify" file name here
-
             fileManager.finishedWritingFile(currentMutableFile);
             markEventsAsFlushed();
             currentMutableFile = null;
@@ -349,11 +347,9 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      */
     private long computeNewFileSpan(final long minimumFileGeneration, final long nextGenerationToWrite) {
 
-        // The running average updated until after bootstrapping is finished
-        final long basisSpan = bootstrapMode ? previousGenerationalSpan :
-                averageGenerationalSpanUtilization.getAverage();
+        final long basisSpan = (bootstrapMode || averageGenerationalSpanUtilization.isEmpty()) ?
+                previousGenerationalSpan : averageGenerationalSpanUtilization.getAverage();
 
-        // In bootstrap mode, we use the more aggressive overlap factor to converge faster.
         final double overlapFactor = bootstrapMode ?
                 bootstrapGenerationalSpanOverlapFactor : generationalSpanOverlapFactor;
 

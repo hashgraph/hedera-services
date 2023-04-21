@@ -30,25 +30,25 @@ public class PreconsensusEventMetrics {
     private static final String CATEGORY = "platform";
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_COUNT_CONFIG = new LongGauge.Config(
-                    CATEGORY, "preconsensusEventFileCount")
+            CATEGORY, "preconsensusEventFileCount")
             .withUnit("count")
             .withDescription("The number of preconsensus event files currently being stored");
     private final LongGauge preconsensusEventFileCount;
 
     private static final DoubleGauge.Config PRECONSENSUS_EVENT_FILE_AVERAGE_SIZE_MB_CONFIG = new DoubleGauge.Config(
-                    CATEGORY, "preconsensusEventFileAverageSizeMB")
+            CATEGORY, "preconsensusEventFileAverageSizeMB")
             .withUnit("megabytes")
             .withDescription("The average size of preconsensus event files, in megabytes.");
     private final DoubleGauge preconsensusEventFileAverageSizeMB;
 
     private static final DoubleGauge.Config PRECONSENSUS_EVENT_FILE_TOTAL_SIZE_GB_CONFIG = new DoubleGauge.Config(
-                    CATEGORY, "preconsensusEventFileTotalSizeGB")
+            CATEGORY, "preconsensusEventFileTotalSizeGB")
             .withUnit("gigabytes")
             .withDescription("The total size of all preconsensus event files, in gigabytes.");
     private final DoubleGauge preconsensusEventFileTotalSizeGB;
 
     private static final SpeedometerMetric.Config PRECONSENSUS_EVENT_FILE_RATE_CONFIG = new SpeedometerMetric.Config(
-                    CATEGORY, "preconsensusEventFileRate")
+            CATEGORY, "preconsensusEventFileRate")
             .withUnit("hertz")
             .withDescription("The number of preconsensus event files written per second.");
     private final SpeedometerMetric preconsensusEventFileRate;
@@ -63,24 +63,24 @@ public class PreconsensusEventMetrics {
     private static final RunningAverageMetric.Config PRECONSENSUS_EVENT_AVERAGE_UN_UTILIZED_FILE_SPAN_CONFIG =
             new RunningAverageMetric.Config(CATEGORY, "preconsensusEventAverageUnutilizedFileSpan")
                     .withUnit("generations")
-                    .withDescription("The average unutilized generational span of preconsensus event files. "
-                            + "Only reflects files written since the last restart. Smaller is better.");
+                    .withDescription("The average unutilized generational span of preconsensus event files prior "
+                            + "to span compaction. Only reflects files written since the last restart. Smaller is better.");
     private final RunningAverageMetric preconsensusEventAverageUnUtilizedFileSpan;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_GENERATION_CONFIG = new LongGauge.Config(
-                    CATEGORY, "preconsensusEventFileOldestGeneration")
+            CATEGORY, "preconsensusEventFileOldestGeneration")
             .withUnit("oldest generation")
             .withDescription("The oldest possible generation that is being " + "stored in preconsensus event files.");
     private final LongGauge preconsensusEventFileOldestGeneration;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_YOUNGEST_GENERATION_CONFIG = new LongGauge.Config(
-                    CATEGORY, "preconsensusEventFileYoungestGeneration")
+            CATEGORY, "preconsensusEventFileYoungestGeneration")
             .withUnit("youngest generation")
             .withDescription("The youngest possible generation that is being " + "stored in preconsensus event files.");
     private final LongGauge preconsensusEventFileYoungestGeneration;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_SECONDS_CONFIG = new LongGauge.Config(
-                    CATEGORY, "preconsensusEventFileOldestSeconds")
+            CATEGORY, "preconsensusEventFileOldestSeconds")
             .withUnit("seconds")
             .withDescription("The age of the oldest preconsensus event file, in seconds.");
     private final LongGauge preconsensusEventFileOldestSeconds;
@@ -88,8 +88,7 @@ public class PreconsensusEventMetrics {
     /**
      * Construct preconsensus event metrics.
      *
-     * @param metrics
-     * 		the metrics manager for the platform
+     * @param metrics the metrics manager for the platform
      */
     public PreconsensusEventMetrics(final Metrics metrics) {
         preconsensusEventFileCount = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_COUNT_CONFIG);

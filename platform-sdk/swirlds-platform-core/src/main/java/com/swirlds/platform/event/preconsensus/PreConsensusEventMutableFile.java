@@ -23,7 +23,9 @@ import com.swirlds.platform.internal.EventImpl;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 /**
  * Represents a pre-consensus event file that can be written to.
@@ -43,7 +45,7 @@ public class PreConsensusEventMutableFile {
     /**
      * The highest generation of all events written to the file.
      */
-    private long highestGenerationInFile = Long.MIN_VALUE;
+    private long highestGenerationInFile;
 
     /**
      * The output stream to write to.
@@ -53,8 +55,7 @@ public class PreConsensusEventMutableFile {
     /**
      * Create a new pre-consensus event file that can be written to.
      *
-     * @param descriptor
-     * 		a description of the file
+     * @param descriptor a description of the file
      */
     PreConsensusEventMutableFile(final PreConsensusEventFile descriptor) throws IOException {
         if (Files.exists(descriptor.path())) {
@@ -67,13 +68,13 @@ public class PreConsensusEventMutableFile {
         counter = new CountingStreamExtension(false);
         out = new SerializableDataOutputStream(new ExtendableOutputStream(
                 new BufferedOutputStream(new FileOutputStream(descriptor.path().toFile())), counter));
+        highestGenerationInFile = descriptor.minimumGeneration();
     }
 
     /**
      * Check if this file is eligible to contain an event based on generational bounds.
      *
-     * @param event
-     * 		the event in question
+     * @param event the event in question
      * @return true if this file is eligible to contain the event
      */
     public boolean canContain(final EventImpl event) {
@@ -83,8 +84,7 @@ public class PreConsensusEventMutableFile {
     /**
      * Write an event to the file.
      *
-     * @param event
-     * 		the event to write
+     * @param event the event to write
      */
     public void writeEvent(final EventImpl event) throws IOException {
         if (!descriptor.canContain(event)) {
@@ -93,6 +93,28 @@ public class PreConsensusEventMutableFile {
         }
         out.writeSerializable(event, false);
         highestGenerationInFile = Math.max(highestGenerationInFile, event.getGeneration());
+    }
+
+    /**
+     * Atomically rename this file so that its un-utilized span is 0. TODO unit test for gaps between files
+     *
+     * @return the new span compressed file
+     */
+    public PreConsensusEventFile compressGenerationalSpan() { // TODO unit test
+        if (highestGenerationInFile == descriptor.maximumGeneration()) {
+            // No need to compress, we used the entire span.
+            return descriptor;
+        }
+
+        final PreConsensusEventFile newDescriptor = descriptor.buildFileWithCompressedSpan(highestGenerationInFile);
+
+        try {
+            Files.move(descriptor.path(), newDescriptor.path(), StandardCopyOption.ATOMIC_MOVE);
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        return newDescriptor;
     }
 
     /**
@@ -119,23 +141,16 @@ public class PreConsensusEventMutableFile {
     }
 
     /**
-     * Get the difference between the highest generation written to the
-     * file and the lowest legal generation for this file. Higher values
-     * mean that the maximum generation was chosen well.
+     * Get the difference between the highest generation written to the file and the lowest legal generation for this
+     * file. Higher values mean that the maximum generation was chosen well.
      */
     public long getUtilizedGenerationalSpan() {
-        if (highestGenerationInFile == Long.MIN_VALUE) {
-            return 0;
-        }
-
         return highestGenerationInFile - descriptor.minimumGeneration();
     }
 
     /**
-     * Get the generational span that is unused in this file. Low values
-     * mean that the maximum generation was chosen well, resulting
-     * in less overlap between files. A value of 0 represents a
-     * "perfect" choice.
+     * Get the generational span that is unused in this file. Low values mean that the maximum generation was chosen
+     * well, resulting in less overlap between files. A value of 0 represents a "perfect" choice.
      */
     public long getUnUtilizedGenerationalSpan() {
         return descriptor.maximumGeneration() - highestGenerationInFile;

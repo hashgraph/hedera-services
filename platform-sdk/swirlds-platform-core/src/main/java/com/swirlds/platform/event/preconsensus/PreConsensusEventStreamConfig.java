@@ -89,12 +89,12 @@ import java.time.Duration;
  *                                                        previously reached consensus to be "forgotten" and effectively
  *                                                        rolled back.
  */
-@ConfigData("event.preconsensus") // TODO make sure all settings are used!
+@ConfigData("event.preconsensus")
 public record PreConsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "1000") int writeQueueCapacity,
         @ConfigProperty(defaultValue = "1h") Duration minimumRetentionPeriod,
         @ConfigProperty(defaultValue = "10") int preferredFileSizeMegabytes,
-        @ConfigProperty(defaultValue = "10") int bootstrapGenerationalSpan, // TODO use larger number
+        @ConfigProperty(defaultValue = "50") int bootstrapGenerationalSpan,
         @ConfigProperty(defaultValue = "5") int generationalUtilizationSpanRunningAverageLength,
         @Min(1) @ConfigProperty(defaultValue = "10") double bootstrapGenerationalSpanOverlapFactor,
         @Min(1) @ConfigProperty(defaultValue = "1.2") double generationalSpanOverlapFactor,

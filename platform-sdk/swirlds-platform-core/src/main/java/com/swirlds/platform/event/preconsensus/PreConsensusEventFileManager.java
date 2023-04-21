@@ -421,18 +421,21 @@ public class PreConsensusEventFileManager {
     }
 
     /**
-     * The event file writer calls this method when it finishes writing an event file. This allows metrics to be
-     * updated.
+     * The event file writer calls this method when it finishes writing an event file.
      *
      * @param file the file that has been completely written
      */
     public void finishedWritingFile(@NonNull final PreConsensusEventMutableFile file) {
-        totalFileByteCount += file.fileSize();
 
+        // Compress the generational span of the file. Reduces overlap between files.
+        final PreConsensusEventFile compressedDescriptor = file.compressGenerationalSpan();
+        files.set(files.size() - 1, compressedDescriptor);
+
+        // Update metrics
+        totalFileByteCount += file.fileSize();
         metrics.getPreconsensusEventFileRate().cycle();
         metrics.getPreconsensusEventAverageFileSpan().update(file.getGenerationalSpan());
         metrics.getPreconsensusEventAverageUnUtilizedFileSpan().update(file.getUnUtilizedGenerationalSpan());
-
         updateFileSizeMetrics();
     }
 

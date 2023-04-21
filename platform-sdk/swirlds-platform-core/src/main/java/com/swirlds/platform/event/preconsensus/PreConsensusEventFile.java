@@ -117,6 +117,35 @@ public record PreConsensusEventFile(
     }
 
     /**
+     * Create a new event file descriptor for span compaction.
+     *
+     * @param maximumGenerationInFile the maximum generation that is actually in the file
+     * @return a description of the new file
+     */
+    public  PreConsensusEventFile buildFileWithCompressedSpan(final long maximumGenerationInFile) {
+
+        if (maximumGenerationInFile < minimumGeneration) {
+            throw new IllegalArgumentException("maximumGenerationInFile < originalFile.minimumGeneration");
+        }
+
+        if (maximumGenerationInFile > maximumGeneration) {
+            throw new IllegalArgumentException("maximumGenerationInFile > originalFile.maximumGeneration");
+        }
+
+        final Path parentDirectory = path.getParent();
+        final String fileName = buildFileName(sequenceNumber(), minimumGeneration,
+                maximumGenerationInFile, timestamp);
+        final Path newPath = parentDirectory.resolve(fileName);
+
+        return new PreConsensusEventFile(
+                sequenceNumber(),
+                minimumGeneration,
+                maximumGenerationInFile,
+                timestamp,
+                newPath);
+    }
+
+    /**
      * Create a new event file descriptor by parsing a file path.
      *
      * @param filePath the path to the file
