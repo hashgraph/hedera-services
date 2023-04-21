@@ -344,7 +344,7 @@ public class TransactionDispatcher {
      * @param tokenRelStore the token relation store
      */
     private void dispatchTokenRevokeKycFromAccount(
-            TransactionBody tokenRevokeKyc, WritableTokenRelationStore tokenRelStore) {
+            @NonNull TransactionBody tokenRevokeKyc, @NonNull WritableTokenRelationStore tokenRelStore) {
         final var handler = handlers.tokenRevokeKycFromAccountHandler();
         handler.handle(tokenRevokeKyc, tokenRelStore);
         tokenRelStore.commit();
