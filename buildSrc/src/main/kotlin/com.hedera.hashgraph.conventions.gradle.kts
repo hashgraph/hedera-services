@@ -63,6 +63,11 @@ repositories {
     }
     maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven")
+        content { includeGroupByRegex("org\\.hyperledger\\..*") }
+    }
+    maven {
+        url = uri("https://artifacts.consensys.net/public/maven/maven/")
+        content { includeGroupByRegex("tech\\.pegasys(\\..*)?") }
     }
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1502")
