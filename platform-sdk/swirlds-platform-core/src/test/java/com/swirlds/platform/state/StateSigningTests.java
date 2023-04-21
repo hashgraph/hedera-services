@@ -57,14 +57,14 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Add Valid Signatures Test")
-    void addValidSignaturesTest(final boolean evenStaking) {
+    void addValidSignaturesTest(final boolean evenWeighting) {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking
+                        evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)
@@ -158,14 +158,14 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Add Invalid Signatures Test")
-    void addInvalidSignaturesTest(final boolean evenStaking) {
+    void addInvalidSignaturesTest(final boolean evenWeighting) {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking
+                        evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)
@@ -252,14 +252,14 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Signature Becomes Invalid Test")
-    void signatureBecomesInvalidTest(final boolean evenStaking) {
+    void signatureBecomesInvalidTest(final boolean evenWeighting) {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking
+                        evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)
@@ -334,14 +334,14 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("All Signatures Become Invalid Test")
-    void allSignaturesBecomeInvalidTest(final boolean evenStaking) {
+    void allSignaturesBecomeInvalidTest(final boolean evenWeighting) {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking
+                        evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)
@@ -386,14 +386,14 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Signatures Invalid With Different Address Book Test")
-    void signaturesInvalidWithDifferentAddressBookTest(final boolean evenStaking) {
+    void signaturesInvalidWithDifferentAddressBookTest(final boolean evenWeighting) {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking
+                        evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)
@@ -445,14 +445,14 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Signatures Invalid Due To Zero Weight")
-    void signaturesInvalidDueToZeroWeightTest(final boolean evenStaking) {
+    void signaturesInvalidDueToZeroWeightTest(final boolean evenWeighting) {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setWeightDistributionStrategy(
-                        evenStaking
+                        evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSequentialIds(false)

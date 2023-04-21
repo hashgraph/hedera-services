@@ -36,6 +36,7 @@ open module com.swirlds.jasperdb {
     exports com.swirlds.merkledb.settings;
     exports com.swirlds.merkledb.utilities;
 
+    requires com.swirlds.base;
     requires com.swirlds.common;
     requires com.swirlds.logging;
     requires com.swirlds.virtualmap;

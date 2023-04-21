@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.test.framework.TestComponentTags;
@@ -284,7 +284,7 @@ class ThreadTests {
     @DisplayName("Factory Test")
     void factoryTest() {
 
-        Thread.UncaughtExceptionHandler exceptionHandler = (a, b) -> {};
+        final Thread.UncaughtExceptionHandler exceptionHandler = (a, b) -> {};
 
         final ThreadGroup group = new ThreadGroup("threadGroup1");
         final ClassLoader classLoader =
