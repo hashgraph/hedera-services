@@ -292,7 +292,6 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long maxNumWithHapiSigsAccess;
     private Set<Address> contractsWithSpecialHapiSigsAccess;
     private LegacyContractIdActivations legacyContractIdActivations;
-
     private int cacheWarmThreads;
 
     @Inject
