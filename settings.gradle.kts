@@ -102,7 +102,7 @@ gitRepositories {
     // choose tag or branch of HAPI you would like to test with
     // this looks for a tag in hedera-protobufs repo
     // This version needs to match tha HAPI version below in versionCatalogs
-    tag.set("add-pbj-types-for-state")
+    tag.set("pbj-with-node-weight")
     // do not load project from repo
     autoInclude.set(false)
   }
@@ -117,7 +117,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      version("hapi-version", "0.37.0-allowance-SNAPSHOT")
+      version("hapi-version", "0.38.0-node-weight-SNAPSHOT")
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.5.1")
