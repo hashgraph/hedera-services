@@ -17,25 +17,21 @@
 package com.hedera.node.app.workflows.handle;
 
 import com.hedera.node.app.meta.MonoHandleContext;
-import com.hedera.node.app.service.admin.impl.components.AdminComponent;
-import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
-import com.hedera.node.app.service.contract.impl.components.ContractComponent;
-import com.hedera.node.app.service.file.impl.components.FileComponent;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.sigs.Expansion;
 import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.txns.TransactionLastStep;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.node.app.service.network.impl.components.NetworkComponent;
-import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
-import com.hedera.node.app.service.token.impl.components.TokenComponent;
-import com.hedera.node.app.service.util.impl.components.UtilComponent;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
+import com.hedera.node.app.workflows.dispatcher.WorkingStateWritableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
+import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import dagger.Binds;
@@ -43,10 +39,11 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
-@Module
+@Module(includes = {HandlersModule.class})
 public interface HandleWorkflowModule {
     @Provides
     static Expansion.CryptoSigsCreation provideCryptoSigsCreation() {
@@ -70,6 +67,14 @@ public interface HandleWorkflowModule {
     @Singleton
     ExpiryValidator bindEntityExpiryValidator(MonoExpiryValidator monoEntityExpiryValidator);
 
+    @Binds
+    @Singleton
+    AttributeValidator bindAttributeValidator(StandardizedAttributeValidator attributeValidator);
+
+    @Binds
+    @Singleton
+    WritableStoreFactory bindWritableStoreFactory(WorkingStateWritableStoreFactory writableStoreFactory);
+
     @Provides
     @SuppressWarnings({"unchecked", "rawtypes"})
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
@@ -79,61 +84,7 @@ public interface HandleWorkflowModule {
 
     @Provides
     @Singleton
-    static TransactionHandlers provideTransactionHandlers(
-            @NonNull AdminComponent adminComponent,
-            @NonNull ConsensusComponent consensusComponent,
-            @NonNull FileComponent fileComponent,
-            @NonNull NetworkComponent networkComponent,
-            @NonNull ContractComponent contractComponent,
-            @NonNull ScheduleComponent scheduleComponent,
-            @NonNull TokenComponent tokenComponent,
-            @NonNull UtilComponent utilComponent) {
-        return new TransactionHandlers(
-                consensusComponent.consensusCreateTopicHandler(),
-                consensusComponent.consensusUpdateTopicHandler(),
-                consensusComponent.consensusDeleteTopicHandler(),
-                consensusComponent.consensusSubmitMessageHandler(),
-                contractComponent.contractCreateHandler(),
-                contractComponent.contractUpdateHandler(),
-                contractComponent.contractCallHandler(),
-                contractComponent.contractDeleteHandler(),
-                contractComponent.contractSystemDeleteHandler(),
-                contractComponent.contractSystemUndeleteHandler(),
-                contractComponent.etherumTransactionHandler(),
-                tokenComponent.cryptoCreateHandler(),
-                tokenComponent.cryptoUpdateHandler(),
-                tokenComponent.cryptoTransferHandler(),
-                tokenComponent.cryptoDeleteHandler(),
-                tokenComponent.cryptoApproveAllowanceHandler(),
-                tokenComponent.cryptoDeleteAllowanceHandler(),
-                tokenComponent.cryptoAddLiveHashHandler(),
-                tokenComponent.cryptoDeleteLiveHashHandler(),
-                fileComponent.fileCreateHandler(),
-                fileComponent.fileUpdateHandler(),
-                fileComponent.fileDeleteHandler(),
-                fileComponent.fileAppendHandler(),
-                fileComponent.fileSystemDeleteHandler(),
-                fileComponent.fileSystemUndeleteHandler(),
-                adminComponent.freezeHandler(),
-                networkComponent.networkUncheckedSubmitHandler(),
-                scheduleComponent.scheduleCreateHandler(),
-                scheduleComponent.scheduleSignHandler(),
-                scheduleComponent.scheduleDeleteHandler(),
-                tokenComponent.tokenCreateHandler(),
-                tokenComponent.tokenUpdateHandler(),
-                tokenComponent.tokenMintHandler(),
-                tokenComponent.tokenBurnHandler(),
-                tokenComponent.tokenDeleteHandler(),
-                tokenComponent.tokenAccountWipeHandler(),
-                tokenComponent.tokenFreezeAccountHandler(),
-                tokenComponent.tokenUnfreezeAccountHandler(),
-                tokenComponent.tokenGrantKycToAccountHandler(),
-                tokenComponent.tokenRevokeKycFromAccountHandler(),
-                tokenComponent.tokenAssociateToAccountHandler(),
-                tokenComponent.tokenDissociateFromAccountHandler(),
-                tokenComponent.tokenFeeScheduleUpdateHandler(),
-                tokenComponent.tokenPauseHandler(),
-                tokenComponent.tokenUnpauseHandler(),
-                utilComponent.prngHandler());
+    static LongSupplier provideConsensusSecond(@NonNull final TransactionContext txnCtx) {
+        return () -> txnCtx.consensusTime().getEpochSecond();
     }
 }
