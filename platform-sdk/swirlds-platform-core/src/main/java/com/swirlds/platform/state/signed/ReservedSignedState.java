@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
  * This class is not thread safe. That is, it is not safe for one thread to access this object while another thread is
  * asynchronously closing it. Each thread should hold its own reservation on a state if it needs to access a state.
  */
-public class ReservedSignedState implements AutoCloseableNonThrowing { // TODO test this class
+public class ReservedSignedState implements AutoCloseableNonThrowing {
 
     private static final Logger logger = LogManager.getLogger(ReservedSignedState.class);
 
