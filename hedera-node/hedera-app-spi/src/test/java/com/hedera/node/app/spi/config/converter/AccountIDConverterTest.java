@@ -48,6 +48,12 @@ class AccountIDConverterTest {
         assertThatThrownBy(() -> converter.convert(input)).isInstanceOf(IllegalArgumentException.class);
     }
 
+    /**
+     * The given tests does not work. From my point of view the expected behavior is to throw an exception but the
+     * values would be converted without an issue. We should have a look at this in future.
+     *
+     * @param input
+     */
     @Disabled
     @ParameterizedTest
     @ValueSource(strings = {"1.2.3.", "1.2.3.."})

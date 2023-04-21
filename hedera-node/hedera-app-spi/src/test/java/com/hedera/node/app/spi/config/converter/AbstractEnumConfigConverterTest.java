@@ -26,6 +26,8 @@ import com.swirlds.config.api.converter.ConfigConverter;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.RetentionPolicy;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class AbstractEnumConfigConverterTest {
 
@@ -73,16 +75,17 @@ class AbstractEnumConfigConverterTest {
         assertThatThrownBy(() -> converter.convert("not-supported-value")).isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test
-    void testValidValue() {
+    @ParameterizedTest
+    @EnumSource(value = RetentionPolicy.class)
+    void testValidValue(final RetentionPolicy value) {
         // given
         final RetentionPolicyConverter converter = new RetentionPolicyConverter();
 
         // when
-        final RetentionPolicy source = converter.convert("SOURCE");
+        final RetentionPolicy source = converter.convert(value.name());
 
         // then
-        assertThat(source).isEqualTo(RetentionPolicy.SOURCE);
+        assertThat(source).isEqualTo(value);
     }
 
     @Test

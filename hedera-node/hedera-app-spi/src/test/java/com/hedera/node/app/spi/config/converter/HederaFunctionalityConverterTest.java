@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class HederaFunctionalityConverterTest {
 
@@ -42,15 +44,16 @@ class HederaFunctionalityConverterTest {
         assertThatThrownBy(() -> converter.convert("null")).isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test
-    void testValidParam() {
+    @ParameterizedTest
+    @EnumSource(HederaFunctionality.class)
+    void testValidParam(final HederaFunctionality functionality) {
         // given
         final HederaFunctionalityConverter converter = new HederaFunctionalityConverter();
 
         // when
-        final HederaFunctionality cryptoTransfer = converter.convert("CRYPTO_TRANSFER");
+        final HederaFunctionality cryptoTransfer = converter.convert(functionality.name());
 
         // then
-        assertThat(cryptoTransfer).isEqualTo(HederaFunctionality.CRYPTO_TRANSFER);
+        assertThat(cryptoTransfer).isEqualTo(functionality);
     }
 }

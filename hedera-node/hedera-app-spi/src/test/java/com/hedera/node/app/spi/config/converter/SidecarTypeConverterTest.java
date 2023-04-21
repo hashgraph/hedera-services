@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.streams.SidecarType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class SidecarTypeConverterTest {
 
@@ -42,15 +44,16 @@ class SidecarTypeConverterTest {
         assertThatThrownBy(() -> converter.convert("null")).isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test
-    void testValidParam() {
+    @ParameterizedTest
+    @EnumSource(SidecarType.class)
+    void testValidParam(final SidecarType value) {
         // given
         final SidecarTypeConverter converter = new SidecarTypeConverter();
 
         // when
-        final SidecarType sidecarType = converter.convert("SIDECAR_TYPE_UNKNOWN");
+        final SidecarType sidecarType = converter.convert(value.name());
 
         // then
-        assertThat(sidecarType).isEqualTo(SidecarType.SIDECAR_TYPE_UNKNOWN);
+        assertThat(sidecarType).isEqualTo(value);
     }
 }
