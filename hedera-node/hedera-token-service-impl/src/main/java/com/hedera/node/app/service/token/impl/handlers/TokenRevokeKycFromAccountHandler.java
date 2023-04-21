@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -48,14 +49,9 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     /**
      * This method is called during the pre-handle workflow.
      *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, and warms the cache.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param context    the {@link PreHandleContext} which collects all information
+     * @param context the {@link PreHandleContext} which collects all information
      * @param tokenStore the {@link ReadableTokenStore}
+     * @throws PreCheckException for invalid tokens or if the token has no KYC key
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
@@ -63,18 +59,19 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.body().tokenRevokeKycOrThrow();
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
-        if (tokenMeta == null) throw new PreCheckException(ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY);
+        if (tokenMeta == null) throw new PreCheckException(ResponseCodeEnum.INVALID_TOKEN_ID);
         if (tokenMeta.hasKycKey()) {
             context.requireKey(tokenMeta.kycKey());
+        } else {
+            throw new PreCheckException(TOKEN_HAS_NO_KYC_KEY);
         }
     }
 
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
+     * @param txn the {@link TransactionBody} of the active transaction
+     * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull TransactionBody txn, @NonNull WritableTokenRelationStore tokenRelStore) {

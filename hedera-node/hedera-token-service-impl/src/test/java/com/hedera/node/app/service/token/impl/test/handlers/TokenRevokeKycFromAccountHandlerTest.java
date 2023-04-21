@@ -106,7 +106,7 @@ class TokenRevokeKycFromAccountHandlerTest {
             final var txn = txnFrom(REVOKE_WITH_INVALID_TOKEN);
 
             final var context = new PreHandleContext(accountStore, txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context, tokenStore), TOKEN_HAS_NO_KYC_KEY);
+            assertThrowsPreCheck(() -> subject.preHandle(context, tokenStore), INVALID_TOKEN_ID);
             assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
             assertTrue(context.requiredNonPayerKeys().isEmpty());
         }
@@ -116,8 +116,7 @@ class TokenRevokeKycFromAccountHandlerTest {
             final var txn = txnFrom(REVOKE_FOR_TOKEN_WITHOUT_KYC);
 
             final var context = new PreHandleContext(accountStore, txn);
-            subject.preHandle(context, tokenStore);
-
+            assertThrowsPreCheck(() -> subject.preHandle(context, tokenStore), TOKEN_HAS_NO_KYC_KEY);
             assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
             assertTrue(context.requiredNonPayerKeys().isEmpty());
         }

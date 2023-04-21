@@ -344,8 +344,7 @@ public class TransactionDispatcher {
      *
      * @param topicStore the token rel store used for the message submission
      */
-    protected void finishTokenGrantKycToAccount(
-            @NonNull final WritableTokenRelationStore tokenRelStore) {
+    protected void finishTokenGrantKycToAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
         // No-op by default
     }
 
@@ -369,8 +368,7 @@ public class TransactionDispatcher {
      *
      * @param topicStore the token rel store used for the message submission
      */
-    protected void finishTokenRevokeKycFromAccount(
-            @NonNull final WritableTokenRelationStore tokenRelStore) {
+    protected void finishTokenRevokeKycFromAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
         // No-op by default
     }
 

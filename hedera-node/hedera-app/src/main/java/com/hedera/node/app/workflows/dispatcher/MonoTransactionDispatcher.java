@@ -91,14 +91,12 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     }
 
     @Override
-    protected void finishTokenGrantKycToAccount(
-            @NonNull final WritableTokenRelationStore tokenRelStore) {
+    protected void finishTokenGrantKycToAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
         tokenRelStore.commit();
     }
 
     @Override
-    protected void finishTokenRevokeKycFromAccount(
-            @NonNull final WritableTokenRelationStore tokenRelStore) {
+    protected void finishTokenRevokeKycFromAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
         tokenRelStore.commit();
     }
 }
