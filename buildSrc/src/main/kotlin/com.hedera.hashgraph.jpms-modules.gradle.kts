@@ -167,8 +167,6 @@ extraJavaModuleInfo {
 
     // These are libraries that are ACTUALY! Java Modules :-)
     knownModule("com.github.ben-manes.caffeine:caffeine", "com.github.benmanes.caffeine")
-    knownModule("org.bouncycastle:bcprov-jdk15on", "org.bouncycastle.provider")
-    knownModule("org.bouncycastle:bcpkix-jdk15on", "org.bouncycastle.pkix")
     knownModule("org.slf4j:slf4j-api", "org.slf4j")
     knownModule("org.apache.logging.log4j:log4j-api", "org.apache.logging.log4j")
     knownModule("org.apache.logging.log4j:log4j-core", "org.apache.logging.log4j.core")
@@ -209,6 +207,8 @@ extraJavaModuleInfo {
     automaticModule("io.netty:netty-handler", "io.netty.handler")
     automaticModule("io.netty:netty-handler-proxy", "io.netty.handler.proxy")
     automaticModule("io.netty:netty-codec-http2", "io.netty.codec.http2")
+    automaticModule("org.bouncycastle:bcprov-jdk15on", "org.bouncycastle.provider")
+    automaticModule("org.bouncycastle:bcpkix-jdk15on", "org.bouncycastle.pkix")
 
     // automatic modules to make it build, might be able to move them full modules
     automaticModule("com.google.android:annotations", "com.google.android.annotations")

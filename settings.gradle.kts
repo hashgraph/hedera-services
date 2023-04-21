@@ -125,7 +125,7 @@ dependencyResolutionManagement {
       version("pbj-version", "0.5.1")
       version("besu-version", "23.1.2")
       version("besu-native-version", "0.6.1")
-      version("bouncycastle-version", "1.71")
+      version("bouncycastle-version", "1.70")
       version("caffeine-version", "3.0.6")
       version("eclipse-collections-version", "10.4.0")
       version("commons-codec-version", "1.15")
@@ -168,7 +168,7 @@ dependencyResolutionManagement {
           "besu",
           listOf("besu-bls12-381", "besu-evm", "besu-datatypes", "besu-secp256k1", "tuweni-units"))
       // Use when you need to use bouncy castle
-      bundle("bouncycastle", listOf("bouncycastle-bcprov-jdk18on", "bouncycastle-bcpkix-jdk18on"))
+      bundle("bouncycastle", listOf("bouncycastle-bcprov-jdk15on", "bouncycastle-bcpkix-jdk15on"))
       // Use when you need to make use of dependency injection.
       bundle("di", listOf("javax-inject", "dagger-api"))
       // Use when you need a grpc server
@@ -199,9 +199,9 @@ dependencyResolutionManagement {
           .versionRef("besu-native-version")
       library("besu-evm", "org.hyperledger.besu", "evm").versionRef("besu-version")
       library("besu-datatypes", "org.hyperledger.besu", "besu-datatypes").versionRef("besu-version")
-      library("bouncycastle-bcprov-jdk18on", "org.bouncycastle", "bcprov-jdk18on")
+      library("bouncycastle-bcprov-jdk15on", "org.bouncycastle", "bcprov-jdk15on")
           .versionRef("bouncycastle-version")
-      library("bouncycastle-bcpkix-jdk18on", "org.bouncycastle", "bcpkix-jdk18on")
+      library("bouncycastle-bcpkix-jdk15on", "org.bouncycastle", "bcpkix-jdk15on")
           .versionRef("bouncycastle-version")
       library("caffeine", "com.github.ben-manes.caffeine", "caffeine")
           .versionRef("caffeine-version")
