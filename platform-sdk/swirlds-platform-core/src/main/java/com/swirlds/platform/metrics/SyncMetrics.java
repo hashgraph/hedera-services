@@ -44,7 +44,7 @@ import java.time.temporal.ChronoUnit;
  */
 public class SyncMetrics {
     private static final RunningAverageMetric.Config PERMITS_AVAILABLE_CONFIG = new RunningAverageMetric.Config(
-            PLATFORM_CATEGORY, "syncPermits")
+            PLATFORM_CATEGORY, "syncPermitsAvailable")
             .withDescription("number of sync permits available")
             .withFormat(FORMAT_16_2);
     private final RunningAverageMetric permitsAvailable;
@@ -96,6 +96,12 @@ public class SyncMetrics {
             .withFormat(FORMAT_14_7);
     private final SpeedometerMetric outgoingSyncRequestsPerSec;
 
+    private static final SpeedometerMetric.Config SYNCS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
+            PLATFORM_CATEGORY, "syncs/sec")
+            .withDescription("Total number of syncs completed per second")
+            .withFormat(FORMAT_14_7);
+    private final SpeedometerMetric syncsPerSec;
+
     private final RunningAverageMetric tipsPerSync;
 
     private final AverageStat syncGenerationDiff;
@@ -136,6 +142,7 @@ public class SyncMetrics {
         acceptedSyncRequestsPerSec = metrics.getOrCreate(ACCEPTED_SYNC_REQUESTS_CONFIG);
         opportunitiesToInitiateSyncPerSec = metrics.getOrCreate(OPPORTUNITIES_TO_INITIATE_SYNC_CONFIG);
         outgoingSyncRequestsPerSec = metrics.getOrCreate(OUTGOING_SYNC_REQUESTS_CONFIG);
+        syncsPerSec = metrics.getOrCreate(SYNCS_PER_SECOND_CONFIG);
 
         avgSyncDuration = new AverageAndMaxTimeStat(
                 metrics,
@@ -384,7 +391,7 @@ public class SyncMetrics {
     }
 
     /**
-     * Indicate that a request to sync has been sent
+     * Indicate that there was an opportunity to sync with a peer. The protocol may or may not take the opportunity
      */
     public void opportunityToInitiateSync() {
         opportunitiesToInitiateSyncPerSec.cycle();
@@ -395,6 +402,13 @@ public class SyncMetrics {
      */
     public void outgoingSyncRequestSent() {
         outgoingSyncRequestsPerSec.cycle();
+    }
+
+    /**
+     * Indicate that a sync has completed
+     */
+    public void syncCompleted() {
+        syncsPerSec.cycle();
     }
 
     /**

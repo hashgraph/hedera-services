@@ -255,6 +255,7 @@ public class SyncProtocol implements Protocol {
             throw new NetworkProtocolException(e);
         } finally {
             closePermit();
+            syncMetrics.syncCompleted();
 
             lastSyncTime = Instant.now();
         }
