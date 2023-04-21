@@ -81,6 +81,7 @@ public class PropertyNames {
     public static final String BALANCES_NODE_BALANCE_WARN_THRESHOLD = "balances.nodeBalanceWarningThreshold";
     public static final String BALANCES_COMPRESS_ON_CREATION = "balances.compressOnCreation";
     public static final String CACHE_RECORDS_TTL = "cache.records.ttl";
+    public static final String CACHE_CRYPTO_TRANSFER_WARM_THREADS = "cache.cryptoTransfer.warmThreads";
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";
     public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
     public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME = "contracts.referenceSlotLifetime";

@@ -56,6 +56,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
@@ -556,7 +557,8 @@ public final class BootstrapProperties implements PropertySource {
             UTIL_PRNG_IS_ENABLED,
             TOKENS_AUTO_CREATIONS_ENABLED,
             ACCOUNTS_BLOCKLIST_ENABLED,
-            ACCOUNTS_BLOCKLIST_RESOURCE);
+            ACCOUNTS_BLOCKLIST_RESOURCE,
+            CACHE_CRYPTO_TRANSFER_WARM_THREADS);
 
     static final Set<String> NODE_PROPS = Set.of(
             DEV_ONLY_DEFAULT_NODE_LISTENS,
@@ -808,5 +810,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
-            entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING));
+            entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING),
+            entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT));
 }
