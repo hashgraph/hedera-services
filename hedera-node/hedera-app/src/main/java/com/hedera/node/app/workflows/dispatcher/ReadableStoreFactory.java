@@ -71,11 +71,12 @@ public class ReadableStoreFactory implements PreHandleContext.ReadableStoreFacto
      * @param <C> Interface class for a Store
      * @return An implementation of the provided store interface
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code clazz} is {@code null}
+     * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
     @Override
     @NonNull
     public <C> C createStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
+        requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null) {
             final var readableStates = state.createReadableStates(entry.name);

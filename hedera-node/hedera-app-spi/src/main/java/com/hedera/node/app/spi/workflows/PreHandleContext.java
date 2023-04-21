@@ -127,10 +127,10 @@ public final class PreHandleContext {
      * @return An implementation of store interface provided, or null if the store
      * @param <C> Interface class for a Store
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code clazz} is {@code null}
+     * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
     @NonNull
-    public <C> C createStore(@NonNull Class<C> storeInterface) {
+    public <C> C createStore(@NonNull final Class<C> storeInterface) {
         return storeFactory.createStore(storeInterface);
     }
 
@@ -431,21 +431,24 @@ public final class PreHandleContext {
          * @param <C> Interface class for a Store
          * @return An implementation of the provided store interface
          * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-         * @throws NullPointerException if {@code clazz} is {@code null}
+         * @throws NullPointerException if {@code storeInterface} is {@code null}
          */
         @NonNull
-        <C> C createStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException;
+        <C> C createStore(@NonNull Class<C> storeInterface) throws IllegalArgumentException;
     }
 
+    @Deprecated(forRemoval = true)
     private static class ReadableStoreFactoryHack implements ReadableStoreFactory {
         private final AccountAccess accountAccess;
 
         private ReadableStoreFactoryHack(@NonNull final AccountAccess accountAccess) {
-            this.accountAccess = accountAccess;
+            this.accountAccess = requireNonNull(accountAccess, "The supplied argument 'accountAccess' cannot be null!");
         }
 
         @Override
-        public <C> C createStore(final Class<C> storeInterface) {
+        @NonNull
+        public <C> C createStore(@NonNull final Class<C> storeInterface) {
+            requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
             if (storeInterface == AccountAccess.class) {
                 return (C) accountAccess;
             }
