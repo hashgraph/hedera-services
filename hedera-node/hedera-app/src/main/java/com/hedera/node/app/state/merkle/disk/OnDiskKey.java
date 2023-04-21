@@ -45,7 +45,7 @@ import java.util.Objects;
  *
  * @param <K> The type of key
  */
-public final class OnDiskKey<K extends Comparable<? super K>> implements VirtualKey<OnDiskKey<K>> {
+public final class OnDiskKey<K> implements VirtualKey {
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x2929238293892373L;
     /** The metadata */
@@ -126,12 +126,6 @@ public final class OnDiskKey<K extends Comparable<? super K>> implements Virtual
     @Override
     public int getVersion() {
         return 1;
-    }
-
-    @Override
-    public int compareTo(@NonNull final OnDiskKey<K> o) {
-        // By contract, throw NPE if o or o.key are null
-        return key.compareTo(o.key);
     }
 
     @Override

@@ -60,8 +60,8 @@ class HapiOpCountersTest {
 
         txnCtx = mock(TransactionContext.class);
         counter = mock(Counter.class);
-        Platform platform = mock(Platform.class);
-        Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
+        final Platform platform = mock(Platform.class);
+        final Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
         runningAvgs = mock(MiscRunningAvgs.class);
         metrics = mock(Metrics.class);
 

@@ -24,7 +24,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -38,7 +37,7 @@ import org.apache.tuweni.units.bigints.UInt256;
  * <p>We only store the number part of the contract ID as the ideas ia there will be a virtual
  * merkle tree for each shard and realm.
  */
-public final class ContractKey implements VirtualKey<ContractKey> {
+public final class ContractKey implements VirtualKey {
     /** The shifts required to deserialize a big-endian contractId with leading zeros omitted */
     private static final int[] BIT_SHIFTS = {0, 8, 16, 24, 32, 40, 48, 56};
     /** The estimated average size for a contract key when serialized */
@@ -309,18 +308,6 @@ public final class ContractKey implements VirtualKey<ContractKey> {
      */
     public byte getUint256Byte(final int byteIndex) {
         return KeyPackingUtils.extractByte(uint256Key, byteIndex);
-    }
-
-    @Override
-    public int compareTo(@NonNull final ContractKey that) {
-        if (this == that) {
-            return 0;
-        }
-        final var order = Long.compare(this.contractId, that.contractId);
-        if (order != 0) {
-            return order;
-        }
-        return Arrays.compare(uint256Key, that.uint256Key);
     }
 
     @Override

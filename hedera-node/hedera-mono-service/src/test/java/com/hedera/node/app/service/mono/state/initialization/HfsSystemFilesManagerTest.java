@@ -249,8 +249,8 @@ class HfsSystemFilesManagerTest {
         final var book = legacyBookConstruction(currentBook);
         given(data.get(detailsId)).willReturn(book.toByteArray());
 
-        given(addressA.getStake()).willReturn(123L);
-        given(addressB.getStake()).willReturn(456L);
+        given(addressA.getWeight()).willReturn(123L);
+        given(addressB.getWeight()).willReturn(456L);
 
         subject.updateStakeDetails();
 
@@ -688,7 +688,7 @@ class HfsSystemFilesManagerTest {
                     .setMemo(ByteString.copyFromUtf8(memo))
                     .setRSAPubKey(CommonUtils.hex(publicKey.getEncoded()))
                     .setNodeId(address.getId())
-                    .setStake(address.getStake());
+                    .setStake(address.getWeight());
 
             final var serviceEndpoint = ServiceEndpoint.newBuilder()
                     .setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))

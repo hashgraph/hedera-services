@@ -47,7 +47,7 @@ public final class MerkleMapLikeAdapter {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static <K extends Comparable<? super K>, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> unwrapping(
+    public static <K, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> unwrapping(
             final StateMetadata<K, V> md, final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> real) {
         return new MerkleMapLike<>() {
             @Override

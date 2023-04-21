@@ -79,7 +79,7 @@ public class WritableTopicStore extends TopicStore {
     }
 
     /**
-     * Returns the {@link Topic} with the given number using {@link WritableKVState#getForModify(Comparable K)}.
+     * Returns the {@link Topic} with the given number using {@link WritableKVState#getForModify}.
      * If no such topic exists, returns {@code Optional.empty()}
      * @param topicNum - the number of the topic to be retrieved.
      */
