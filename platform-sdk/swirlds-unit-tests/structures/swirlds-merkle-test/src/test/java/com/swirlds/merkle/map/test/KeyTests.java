@@ -44,7 +44,7 @@ class KeyTests {
 
         registry.registerConstructables("com.swirlds.merkle.map");
 
-        // TODO this is a hack
+        // FUTURE WORK this is a hack
         // It is required for when this test is run via an intellij configuration
         registry.registerConstructable(new ClassConstructorPair(Key.class, Key::new));
     }

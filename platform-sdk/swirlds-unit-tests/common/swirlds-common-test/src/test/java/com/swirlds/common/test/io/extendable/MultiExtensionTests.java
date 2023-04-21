@@ -44,7 +44,7 @@ class MultiExtensionTests {
                 new HashingStreamExtension(DigestType.SHA_384),
                 new MaxSizeStreamExtension(Long.MAX_VALUE) /*,
 						new ThrottleStreamExtension(Long.MAX_VALUE),
-						new TimeoutStreamExtension(Duration.ofHours(1))TODO*/));
+						new TimeoutStreamExtension(Duration.ofHours(1))FUTURE WORK*/));
     }
 
     @Test
@@ -57,6 +57,6 @@ class MultiExtensionTests {
                 new HashingStreamExtension(DigestType.SHA_384),
                 new MaxSizeStreamExtension(Long.MAX_VALUE) /*,
 						new ThrottleStreamExtension(Long.MAX_VALUE),
-						new TimeoutStreamExtension(Duration.ofHours(1))TODO*/));
+						new TimeoutStreamExtension(Duration.ofHours(1))FUTURE WORK*/));
     }
 }

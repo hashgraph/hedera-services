@@ -54,7 +54,7 @@ public class SignedStateSynchronizationTests {
         SettingsCommon.transactionMaxBytes = 1024;
 
         SignedState state = SignedStateUtils.randomSignedState(1234);
-        state.getState().setHash(null); // TODO root has a hash but other parts do not...
+        state.getState().setHash(null); // FUTURE WORK root has a hash but other parts do not...
         MerkleTestUtils.hashAndTestSynchronization(null, state.getState());
     }
 }

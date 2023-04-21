@@ -16,12 +16,10 @@
 
 package com.swirlds.platform.test;
 
-import static org.mockito.Mockito.mock;
-
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.utility.NoOpMetricsBuilder;
 import com.swirlds.config.api.ConfigurationBuilder;
 
 /**
@@ -38,8 +36,6 @@ public final class TestPlatformContextFactory {
      */
     public static PlatformContext build() {
         return new DefaultPlatformContext(
-                ConfigurationBuilder.create().build(),
-                mock(Metrics.class), // TODO this should be NoOpMetrics!
-                CryptographyHolder.get());
+                ConfigurationBuilder.create().build(), NoOpMetricsBuilder.buildNoOpMetrics(), CryptographyHolder.get());
     }
 }

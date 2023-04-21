@@ -266,7 +266,7 @@ public class SequenceMapTests {
                 key -> -key);
     }
 
-    // TODO negative sequence number tests
+    // FUTURE WORK negative sequence number tests
 
     @ParameterizedTest
     @MethodSource("testConfiguration")
@@ -305,7 +305,7 @@ public class SequenceMapTests {
                 key -> -key);
     }
 
-    // TODO start at high positive number
+    // FUTURE WORK start at high positive number
 
     @ParameterizedTest
     @MethodSource("testConfiguration")

@@ -41,7 +41,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class VirtualRootNodeHashingTest {
     private static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
 
-    // TODO tests to write:
+    // FUTURE WORK tests to write:
     //  - deterministic hashing
     //  - hash does not change after fast copy
     //    - check nodes inside the tree

@@ -1960,7 +1960,8 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         }
     }
 
-    // TODO Write a test that verifies that a snapshot cannot be mutated by either leaf or internal changes... ? Is
+    // FUTURE WORK Write a test that verifies that a snapshot cannot be mutated by either leaf or internal changes... ?
+    // Is
     //  this right? Maybe not?
 
     // ----------------------------------------------------------------------

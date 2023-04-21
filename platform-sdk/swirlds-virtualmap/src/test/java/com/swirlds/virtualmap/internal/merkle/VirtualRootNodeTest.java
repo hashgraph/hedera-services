@@ -137,7 +137,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final TestValue removed = copy.remove(A_KEY);
         assertEquals(APPLE, removed, "Wrong value");
 
-        // TODO validate hashing works as expected
+        // FUTURE WORK validate hashing works as expected
 
         copy.release();
     }
@@ -195,7 +195,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         //        assertLeafOrder(fcm, A_KEY);
         assertEquals(APPLE, copy.remove(A_KEY), "Wrong value");
 
-        // TODO validate hashing works as expected
+        // FUTURE WORK validate hashing works as expected
 
         copy.release();
     }

@@ -176,7 +176,7 @@ public abstract class EventUtils {
             throw new IllegalArgumentException("Total weight must be greater than 0.0.");
         }
 
-        // TODO this can be done in logn time with a binary search
+        // FUTURE WORK this can be done in logn time with a binary search
 
         final double randomValue = random.nextDouble() * totalWeight;
         double sum = 0.0;
