@@ -319,6 +319,8 @@ public class SyncMetrics {
         } else {
             recSyncsPerSecond.cycle();
         }
+        syncsPerSec.cycle();
+
         avgEventsPerSyncSent.update(info.getEventsWritten());
         avgEventsPerSyncRec.update(info.getEventsRead());
     }
@@ -402,13 +404,6 @@ public class SyncMetrics {
      */
     public void outgoingSyncRequestSent() {
         outgoingSyncRequestsPerSec.cycle();
-    }
-
-    /**
-     * Indicate that a sync has completed
-     */
-    public void syncCompleted() {
-        syncsPerSec.cycle();
     }
 
     /**
