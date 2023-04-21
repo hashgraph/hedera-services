@@ -647,16 +647,13 @@ public class Browser {
                 final boolean softwareUpgrade =
                         BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.getNullable());
 
-                final AddressBookConfig addressBookConfig =
-                        platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
-
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
                         appVersion,
                         softwareUpgrade,
                         loadedSignedState.getNullable(),
                         addressBook.copy(),
-                        addressBookConfig);
+                        platformContext);
 
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
