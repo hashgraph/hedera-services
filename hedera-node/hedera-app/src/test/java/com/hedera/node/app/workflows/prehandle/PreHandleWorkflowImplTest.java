@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -28,11 +27,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -43,7 +40,6 @@ import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.state.ReceiptCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -115,8 +111,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                 new MapReadableKVState<String, Long>("ALIASES", Collections.emptyMap()));
 
         storeFactory = new ReadableStoreFactory(fakeHederaState);
-        final var receiptCache = fakeHederaState.getReceiptCache();
-        workflow = new PreHandleWorkflowImpl(executor, dispatcher, transactionChecker, signatureVerifier, receiptCache);
+        workflow = new PreHandleWorkflowImpl(executor, dispatcher, transactionChecker, signatureVerifier);
     }
 
     /**
@@ -126,20 +121,16 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @DisplayName("Null constructor args throw NPE")
     @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
     void nullConstructorArgsTest() {
-        final var receiptCache = mock(ReceiptCache.class);
         assertThatThrownBy(() -> new PreHandleWorkflowImpl(
-                        null, dispatcher, transactionChecker, signatureVerifier, receiptCache))
+                        null, dispatcher, transactionChecker, signatureVerifier))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() ->
-                        new PreHandleWorkflowImpl(executor, null, transactionChecker, signatureVerifier, receiptCache))
+                        new PreHandleWorkflowImpl(executor, null, transactionChecker, signatureVerifier))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executor, dispatcher, null, signatureVerifier, receiptCache))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executor, dispatcher, null, signatureVerifier))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
-                        () -> new PreHandleWorkflowImpl(executor, dispatcher, transactionChecker, null, receiptCache))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new PreHandleWorkflowImpl(executor, dispatcher, transactionChecker, signatureVerifier, null))
+                        () -> new PreHandleWorkflowImpl(executor, dispatcher, transactionChecker, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -220,41 +211,6 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         }
 
         /**
-         * If a dishonest node sends the same transaction two or more times, then the node must detect this as a
-         * duplicate transaction and charge the node for the duplicate transaction. We don't need payer information
-         * for the duplicate. The first transaction will have the payer as contained in the {@link TransactionID},
-         * but the duplicate will have the node as the payer in the {@link PreHandleResult}.
-         */
-        @Test
-        @DisplayName("Fail pre-handle the second time because the node sent a duplicate transaction")
-        void preHandleDuplicateTransaction() throws PreCheckException {
-            // Given a dishonest node that sends the same valid transaction twice
-            // (Alice might be any payer, including an honest payer)
-            final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
-            final var txBytes = asByteArray(txInfo.transaction());
-            final Transaction platformTx = new SwirldTransaction(txBytes);
-            final Transaction duplicatePlatformTx = new SwirldTransaction(txBytes);
-            when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(), any(), any())).thenReturn(CompletableFuture.completedFuture(true));
-
-            // When we pre-handle the transactions
-            workflow.preHandle(
-                    storeFactory,
-                    NODE_1.nodeAccountID(),
-                    List.of(platformTx, duplicatePlatformTx).iterator());
-
-            // Then the first transaction is fine
-            final PreHandleResult result1 = platformTx.getMetadata();
-            assertThat(result1.status()).isEqualTo(OK);
-            assertThat(result1.payer()).isEqualTo(ALICE.accountID());
-
-            // But the second transaction is a duplicate
-            final PreHandleResult result2 = duplicatePlatformTx.getMetadata();
-            assertThat(result2.status()).isEqualTo(DUPLICATE_TRANSACTION);
-            assertThat(result2.payer()).isEqualTo(NODE_1.nodeAccountID());
-        }
-
-        /**
          * It may be that when the transaction is pre-handled, it refers to an account that does not yet exist.
          * This may happen because the transaction is bad, or it may happen because we do not yet have an account
          * object (maybe another in-flight transaction will create it). But every node as part of its due-diligence
@@ -322,42 +278,6 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @Nested
     @DisplayName("Transaction Handler pre-handle tests")
     final class TransactionHandlerPreHandleTests {
-        /**
-         * It may be that the user has submitted two or more transactions to the network by submitting two or
-         * more transactions with the same {@link TransactionID} to two or more nodes. In that case, both transactions
-         * will be paid for by the payer, but only the first will second, the others will be duplicates and will
-         * fail with a {@link ResponseCodeEnum#DUPLICATE_TRANSACTION} with the user as the payer.
-         */
-        @Test
-        @DisplayName("Payer submitted duplicate transactions")
-        void payerDuplicateTransaction() throws PreCheckException {
-            // Given a transaction (with duplicate transaction ID) that is sent to multiple nodes
-            final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
-            final var txBytes = asByteArray(txInfo.transaction());
-            final Transaction platformTx = new SwirldTransaction(txBytes);
-            final Transaction duplicatePlatformTx = new SwirldTransaction(txBytes);
-            when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(), any(), any())).thenReturn(CompletableFuture.completedFuture(true));
-
-            // When we pre-handle the transactions (using different "creator" nodes)
-            workflow.preHandle(
-                    storeFactory, NODE_1.nodeAccountID(), List.of(platformTx).iterator());
-            workflow.preHandle(
-                    storeFactory,
-                    NODE_2.nodeAccountID(),
-                    List.of(duplicatePlatformTx).iterator());
-
-            // Then the first transaction is fine
-            final PreHandleResult result1 = platformTx.getMetadata();
-            assertThat(result1.status()).isEqualTo(OK);
-            assertThat(result1.payer()).isEqualTo(ALICE.accountID());
-
-            // But the second transaction is a duplicate charged to the user
-            final PreHandleResult result2 = duplicatePlatformTx.getMetadata();
-            assertThat(result2.status()).isEqualTo(DUPLICATE_TRANSACTION);
-            assertThat(result2.payer()).isEqualTo(ALICE.accountID());
-        }
-
         /**
          * The transaction has a valid payer (although we still may not know if the signature check succeeded). So now
          * we need to perform the pre-handle call on the dispatcher. It may fail with a {@link PreCheckException}.

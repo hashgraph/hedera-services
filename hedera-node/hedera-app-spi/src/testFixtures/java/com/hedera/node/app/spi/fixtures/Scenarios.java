@@ -42,7 +42,7 @@ import java.util.Map;
  *     and Carol.
  * </ol>
  *
- * <p>Two additional accounts do not exist yet, but have keys associated with them so they can be used in various
+ * <p>Two additional accounts do not exist yet, but have keys associated with them, so they can be used in various
  * transaction scenarios. These include Erin and Frank.
  */
 public interface Scenarios extends TransactionFactory {

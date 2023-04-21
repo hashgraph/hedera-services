@@ -16,20 +16,17 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.signature.SignatureVerificationResult;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.state.ReceiptCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -77,11 +74,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * for proper configuration.
      */
     private final ExecutorService exe;
-    /**
-     * The {@link ReceiptCache} is used to check if a transaction has already been processed, to avoid processing
-     * the same transaction twice. Each transaction has a {@link TransactionID} that is unique for each transaction.
-     */
-    private final ReceiptCache receiptCache;
 
     /**
      * Creates a new instance of {@code PreHandleWorkflowImpl}.
@@ -93,7 +85,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      *                   transaction.
      * @param transactionChecker the {@link TransactionChecker} for parsing and verifying the transaction
      * @param signatureVerifier the {@link SignatureVerifier} to verify signatures
-     * @param receiptCache the {@link ReceiptCache} used to check if a transaction has already been processed
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     @Inject
@@ -101,13 +92,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final ExecutorService exe,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final TransactionChecker transactionChecker,
-            @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final ReceiptCache receiptCache) {
+            @NonNull final SignatureVerifier signatureVerifier) {
         this.exe = requireNonNull(exe);
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.signatureVerifier = requireNonNull(signatureVerifier);
-        this.receiptCache = requireNonNull(receiptCache);
     }
 
     /** {@inheritDoc} */
@@ -183,32 +172,9 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             return PreHandleResult.unknownFailure();
         }
 
-        // 2. Deduplication check
-        final var txBody = txInfo.txBody();
-        final var txId = txBody.transactionID();
+        // 2. Get Payer Account
+        final var txId = txInfo.txBody().transactionID();
         assert txId != null : "TransactionID should never be null, transactionChecker forbids it";
-        final var cacheItem = receiptCache.get(txId);
-        // Check whether the transaction is a node-submitted duplicate, or a user-submitted duplicate, or not a
-        // duplicate at all. A node-submitted duplicate ends processing with the node as the payer. A user-submitted
-        // duplicate continues with processing until after we do payer verification, and then terminates. If it isn't
-        // a duplicate at all, then we just keep going.
-        final boolean userSubmittedDuplicate;
-        if (cacheItem != null) {
-            if (cacheItem.nodeAccountIDs().contains(creator)) {
-                // The creator has sent the same transaction more than once! The node has failed a due-diligence check.
-                // We'll charge the node for this.
-                return PreHandleResult.nodeDueDiligenceFailure(creator, DUPLICATE_TRANSACTION, txInfo);
-            } else {
-                userSubmittedDuplicate = true;
-            }
-        } else {
-            userSubmittedDuplicate = false;
-        }
-        // If we got here, it was either not a duplicate or a user-submitted duplicate, so we need to record
-        // that the creator node has sent us this transaction for further deduplication checks in the future
-        receiptCache.record(txId, creator);
-
-        // 3. Get Payer Account
         final var payer = txId.accountID();
         assert payer != null : "Payer account cannot be null, transactionChecker forbids it";
         final var payerAccount = accountStore.getAccountById(payer);
@@ -219,24 +185,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             return PreHandleResult.preHandleFailure(creator, PAYER_ACCOUNT_NOT_FOUND, txInfo, null);
         }
 
-        // 4. Collect payer TransactionSignatures. Any PreHandleResult created from this point on MUST include
+        // 3. Collect payer signature checks. Any PreHandleResult created from this point on MUST include
         //    the payerVerificationFuture.
         final var payerVerificationFuture = signatureVerifier.verify(
                 txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow(), payerAccount.keyOrThrow());
 
-        // 5. Deduplication check (again). If the user submitted a duplicate transaction, then now is the time
-        //    to record that they did so and make them the payer.
-        if (userSubmittedDuplicate) {
-            // The user has submitted the same transaction more than once. This is a perfectly reasonable thing
-            // for the user to do. We will charge the payer, but we won't actually do any work for this
-            // transaction other than the payer check.
-            return PreHandleResult.preHandleFailure(payer, DUPLICATE_TRANSACTION, txInfo, payerVerificationFuture);
-        }
-
-        // NOTE: At this point we have completed the due-diligence checks. Any failures from here on out
-        // can be attributed to the transaction itself, and not the node that submitted it.
-
-        // 6. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
+        // 4. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
         try {
             // NOTE: Once PreHandleContext is moved from being a concrete implementation in SPI, to being an Interface/
@@ -252,7 +206,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                     "Payer account disappeared between preHandle and preHandleContext creation!", preCheck);
         }
 
-        // 7. Call Pre-Transaction Handlers
+        // 5. Call Pre-Transaction Handlers
         try {
             // FUTURE: First, perform semantic checks on the transaction (TBD)
             // Then gather the signatures from the transaction handler
@@ -264,7 +218,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             return PreHandleResult.preHandleFailure(payer, preCheck.responseCode(), txInfo, payerVerificationFuture);
         }
 
-        // 8. Collect additional TransactionSignatures
+        // 6. Collect additional TransactionSignatures
         final var nonPayerKeys = context.requiredNonPayerKeys();
         final var nonPayerFutures = new ArrayList<Future<Boolean>>();
         for (final var key : nonPayerKeys) {
@@ -273,7 +227,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             nonPayerFutures.add(future);
         }
 
-        // 9. Create and return TransactionMetadata
+        // 7. Create and return TransactionMetadata
         final var signatureVerificationResult = new SignatureVerificationResult(nonPayerFutures);
         return new PreHandleResult(payer, OK, txInfo, payerVerificationFuture, signatureVerificationResult, null);
     }
