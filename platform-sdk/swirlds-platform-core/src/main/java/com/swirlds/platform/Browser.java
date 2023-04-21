@@ -163,11 +163,13 @@ public class Browser {
 
     private final Configuration configuration;
 
+    //@formatter:off
     private static final String STARTUP_MESSAGE =
-            """
-                      //////////////////////
-                     // Node is Starting //
-                    //////////////////////""";
+    """
+              //////////////////////
+             // Node is Starting //
+            //////////////////////""";
+    //@formatter:on
 
     /**
      * Prevent this class from being instantiated.
