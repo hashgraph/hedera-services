@@ -16,7 +16,7 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.impl.converters.BigDecimalConverter;
 import com.swirlds.config.impl.converters.BigIntegerConverter;
@@ -35,6 +35,8 @@ import com.swirlds.config.impl.converters.StringConverter;
 import com.swirlds.config.impl.converters.UriConverter;
 import com.swirlds.config.impl.converters.UrlConverter;
 import com.swirlds.config.impl.converters.ZonedDateTimeConverter;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
@@ -97,8 +99,9 @@ class ConverterService implements ConfigLifecycle {
         this.converters = new HashMap<>();
     }
 
-    private <T, C extends ConfigConverter<T>> Class<T> getConverterType(final Class<C> converterClass) {
-        CommonUtils.throwArgNull(converterClass, "converterClass");
+    @NonNull
+    private <T, C extends ConfigConverter<T>> Class<T> getConverterType(@NonNull final Class<C> converterClass) {
+        ArgumentUtils.throwArgNull(converterClass, "converterClass");
         return Arrays.stream(converterClass.getGenericInterfaces())
                 .filter(ParameterizedType.class::isInstance)
                 .map(ParameterizedType.class::cast)
@@ -115,9 +118,10 @@ class ConverterService implements ConfigLifecycle {
     }
 
     @SuppressWarnings("unchecked")
-    <T> T convert(final String value, final Class<T> targetClass) {
+    @Nullable
+    <T> T convert(@Nullable final String value, @NonNull final Class<T> targetClass) {
         throwIfNotInitialized();
-        CommonUtils.throwArgNull(targetClass, "targetClass");
+        ArgumentUtils.throwArgNull(targetClass, "targetClass");
         if (value == null) {
             return null;
         }
@@ -135,15 +139,18 @@ class ConverterService implements ConfigLifecycle {
         }
     }
 
-    <T> void addConverter(final ConfigConverter<T> converter) {
+    <T> void addConverter(@NonNull final ConfigConverter<T> converter) {
         throwIfInitialized();
-        CommonUtils.throwArgNull(converter, "converter");
+        ArgumentUtils.throwArgNull(converter, "converter");
         final Class<T> converterType = getConverterType(converter.getClass());
         add(converterType, converter);
     }
 
-    private <T> void add(final Class<T> converterType, final ConfigConverter<T> converter) {
+    private <T> void add(@NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
         throwIfInitialized();
+        ArgumentUtils.throwArgNull(converterType, "converterType");
+        ArgumentUtils.throwArgNull(converter, "converter");
+
         if (converters.containsKey(converterType)) {
             throw new IllegalStateException("Converter for type '" + converterType + "' already registered");
         }
@@ -154,6 +161,7 @@ class ConverterService implements ConfigLifecycle {
         this.converters.clear();
     }
 
+    @Override
     public void init() {
         throwIfInitialized();
         // Primitives
@@ -197,9 +205,10 @@ class ConverterService implements ConfigLifecycle {
     }
 
     @SuppressWarnings("unchecked")
-    <T> ConfigConverter<T> getConverterForType(final Class<T> valueType) {
+    @Nullable
+    <T> ConfigConverter<T> getConverterForType(@NonNull final Class<T> valueType) {
         throwIfNotInitialized();
-        CommonUtils.throwArgNull(valueType, "valueType");
+        ArgumentUtils.throwArgNull(valueType, "valueType");
         return (ConfigConverter<T>) converters.get(valueType);
     }
 }
