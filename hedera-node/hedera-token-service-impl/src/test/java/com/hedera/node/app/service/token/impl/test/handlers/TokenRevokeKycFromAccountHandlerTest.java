@@ -215,7 +215,6 @@ class TokenRevokeKycFromAccountHandlerTest {
         private TransactionBody newTxnBody(final boolean tokenPresent, final boolean accountPresent) {
             TokenRevokeKycTransactionBody.Builder builder = TokenRevokeKycTransactionBody.newBuilder();
             if (tokenPresent) {
-
                 builder.token(TOKEN_10);
             }
             if (accountPresent) {
