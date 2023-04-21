@@ -23,7 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /** Standard implementation of the {@link UtilService} {@link com.hedera.node.app.spi.Service}. */
 public final class UtilServiceImpl implements UtilService {
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
         // No-op
     }
 }
