@@ -16,14 +16,10 @@
 
 package com.swirlds.platform.test;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.common.test.state.DummySwirldState;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -37,11 +33,8 @@ public class SignedStateSynchronizationTests {
 
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
-        // This hack is required to run this test from intellij
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(State.class, State::new));
-        registry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));
-        registry.registerConstructable(new ClassConstructorPair(DummySwirldState.class, DummySwirldState::new));
+        registry.registerConstructables("");
     }
 
     @Test

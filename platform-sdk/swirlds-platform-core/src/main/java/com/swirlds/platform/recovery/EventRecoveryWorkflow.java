@@ -255,9 +255,7 @@ public final class EventRecoveryWorkflow {
                                 .getCreationSoftwareVersion());
         initialState.get().getState().markAsInitialized();
 
-        if (appMain != null) {
-            appMain.init(platform, platform.getSelfId());
-        }
+        appMain.init(platform, platform.getSelfId());
 
         ReservedSignedState signedState = initialState;
 

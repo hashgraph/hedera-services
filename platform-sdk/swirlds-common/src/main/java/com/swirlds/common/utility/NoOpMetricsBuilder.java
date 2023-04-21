@@ -125,6 +125,8 @@ public final class NoOpMetricsBuilder {
         public void execute(Runnable command) {}
     }
 
+    private NoOpMetricsBuilder() {}
+
     /**
      * Build a {@link Metrics} implementation that does nothing.
      */

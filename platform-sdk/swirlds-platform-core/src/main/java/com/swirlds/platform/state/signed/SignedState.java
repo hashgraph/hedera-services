@@ -295,9 +295,7 @@ public class SignedState implements SignedStateInfo {
      */
     private void onReferenceCountException() {
         logger.error(
-                EXCEPTION.getMarker(),
-                "SignedState reference count error detected, dumping history.\n{}",
-                history.toString());
+                EXCEPTION.getMarker(), "SignedState reference count error detected, dumping history.\n{}", history);
     }
 
     /**
