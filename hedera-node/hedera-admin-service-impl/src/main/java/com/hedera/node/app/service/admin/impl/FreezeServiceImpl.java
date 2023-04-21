@@ -33,7 +33,7 @@ public final class FreezeServiceImpl implements FreezeService {
             SemanticVersion.newBuilder().minor(34).build();
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
         registry.register(adminSchema());
     }
 

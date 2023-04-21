@@ -30,7 +30,6 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -117,7 +116,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
                 .address(to)
                 .contract(to)
                 .inputData(Bytes.EMPTY)
-                .code(CodeFactory.createCode(payload, Hash.hash(payload), 0, false))
+                .code(CodeFactory.createCode(payload, 0, false))
                 .build();
     }
 }
