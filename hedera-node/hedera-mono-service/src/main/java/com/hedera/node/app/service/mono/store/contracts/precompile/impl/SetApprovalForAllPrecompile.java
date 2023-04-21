@@ -30,6 +30,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
@@ -88,8 +89,9 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = tokenId == null ? input : input.slice(24);
+        final var ownerId = EntityId.fromAddress(senderAddress);
         setApprovalForAllWrapper = decodeSetApprovalForAll(nestedInput, tokenId, aliasResolver);
-        transactionBody = syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper);
+        transactionBody = syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper, ownerId);
         return transactionBody;
     }
 

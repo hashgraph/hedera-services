@@ -194,7 +194,7 @@ class MerkleMapLikeAdapterTest {
         final var tokenService = new TokenServiceImpl();
         final ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        tokenService.registerSchemas(schemaRegistry);
+        tokenService.registerMonoAdapterSchemas(schemaRegistry);
 
         verify(schemaRegistry).register(schemaCaptor.capture());
         final var schema = schemaCaptor.getValue();

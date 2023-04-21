@@ -33,6 +33,23 @@ public interface Service {
     @NonNull
     String getServiceName();
 
-    /** Registers the schemas for the service with the given {@link SchemaRegistry}. */
-    void registerSchemas(@NonNull SchemaRegistry registry);
+    /**
+     * Registers the schemas this service uses when running with {@code mono-service} adapters
+     * with the given {@link SchemaRegistry}. We can remove this method once we are no longer
+     * relying on EET's with {@code workflows.enabled} to validate behavior.
+     *
+     * @deprecated because this method is only used when running with {@code mono-service} adapters
+     * @param registry the registry to register the schemas with
+     * */
+    @Deprecated(forRemoval = true)
+    void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry);
+
+    /**
+     * Registers the schemas this service really uses with the given {@link SchemaRegistry}.
+     *
+     * @param registry the registry to register the schemas with
+     */
+    default void registerSchemas(@NonNull SchemaRegistry registry) {
+        // No-op
+    }
 }
