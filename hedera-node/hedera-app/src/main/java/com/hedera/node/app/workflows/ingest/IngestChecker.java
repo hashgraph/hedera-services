@@ -89,7 +89,7 @@ public class IngestChecker {
      */
     public void checkNodeState() throws PreCheckException {
         if (nodeInfo.isSelfZeroStake()) {
-            // Zero weight nodes are currently not supported
+            // Zero stake nodes are currently not supported
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
         if (currentPlatformStatus.get() != ACTIVE) {
