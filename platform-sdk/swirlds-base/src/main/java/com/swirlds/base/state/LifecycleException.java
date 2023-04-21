@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.utility;
+package com.swirlds.base.state;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * An object that can be started.
+ * An exception type thrown when something is in the wrong {@link LifecyclePhase}.
  */
-@FunctionalInterface
-public interface Startable {
+public class LifecycleException extends IllegalStateException {
 
-    /**
-     * Start this object.
-     */
-    void start();
+    public LifecycleException(@NonNull final String s) {
+        super(s);
+    }
+
+    public LifecycleException(@NonNull final String message, @NonNull final Throwable cause) {
+        super(message, cause);
+    }
 }

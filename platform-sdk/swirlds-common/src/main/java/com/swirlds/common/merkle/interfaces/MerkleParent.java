@@ -16,7 +16,7 @@
 
 package com.swirlds.common.merkle.interfaces;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.exceptions.MerkleRouteException;
 import com.swirlds.common.merkle.route.MerkleRoute;
@@ -185,7 +185,7 @@ public interface MerkleParent {
      * @param version
      * 		The version of the node when these children were serialized.
      */
-    default void addDeserializedChildren(List<MerkleNode> children, final int version) {
+    default void addDeserializedChildren(final List<MerkleNode> children, final int version) {
         for (int childIndex = 0; childIndex < children.size(); childIndex++) {
             setChild(childIndex, children.get(childIndex));
         }

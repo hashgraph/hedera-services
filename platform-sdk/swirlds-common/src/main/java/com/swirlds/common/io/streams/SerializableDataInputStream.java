@@ -21,13 +21,13 @@ import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_LIS
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_VERSION;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.SERIALIZATION_PROTOCOL_VERSION;
 
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.io.exceptions.ClassNotFoundException;
 import com.swirlds.common.io.exceptions.InvalidVersionException;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.common.utility.ThrowingFunction;
 import com.swirlds.common.utility.ValueReference;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -140,7 +140,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * Same as {@link #readSerializable(boolean, Supplier)} except that the constructor takes a class ID
      */
     private <T extends SelfSerializable> T readSerializable(
-            final boolean readClassId, final ThrowingFunction<Long, T, IOException> serializableConstructor)
+            final boolean readClassId, final CheckedFunction<Long, T, IOException> serializableConstructor)
             throws IOException {
 
         final Long classId;
@@ -180,7 +180,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     public <T extends SelfSerializable> void readSerializableIterableWithSize(
             final int maxSize, final Consumer<T> callback) throws IOException {
 
-        int size = readInt();
+        final int size = readInt();
         checkLengthLimit(size, maxSize);
         readSerializableIterableWithSizeInternal(
                 size, true, SerializableDataInputStream::registryConstructor, callback);
@@ -228,7 +228,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     private <T extends SelfSerializable> void readSerializableIterableWithSizeInternal(
             final int size,
             final boolean readClassId,
-            final ThrowingFunction<Long, T, IOException> serializableConstructor,
+            final CheckedFunction<Long, T, IOException> serializableConstructor,
             final Consumer<T> callback)
             throws IOException {
 
@@ -276,7 +276,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
             final boolean readClassId,
             final ValueReference<Long> classId,
             final ValueReference<Integer> version,
-            final ThrowingFunction<Long, T, IOException> serializableConstructor)
+            final CheckedFunction<Long, T, IOException> serializableConstructor)
             throws IOException {
 
         if (!allSameClass) {
@@ -315,7 +315,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * @throws IOException
      * 		thrown if any IO problems occur
      */
-    public <T extends SelfSerializable> List<T> readSerializableList(int maxListSize) throws IOException {
+    public <T extends SelfSerializable> List<T> readSerializableList(final int maxListSize) throws IOException {
         return readSerializableList(maxListSize, true, SerializableDataInputStream::registryConstructor);
     }
 
@@ -359,17 +359,17 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     private <T extends SelfSerializable> List<T> readSerializableList(
             final int maxListSize,
             final boolean readClassId,
-            final ThrowingFunction<Long, T, IOException> serializableConstructor)
+            final CheckedFunction<Long, T, IOException> serializableConstructor)
             throws IOException {
 
-        int length = readInt();
+        final int length = readInt();
         if (length == NULL_LIST_ARRAY_LENGTH) {
             return null;
         }
         checkLengthLimit(length, maxListSize);
 
         // ArrayList is used by default, we can add support for different list types in the future
-        List<T> list = new ArrayList<>(length);
+        final List<T> list = new ArrayList<>(length);
         if (length == 0) {
             return list;
         }

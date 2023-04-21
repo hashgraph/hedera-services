@@ -18,8 +18,8 @@ package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.utility.Startable;
 import java.util.Collection;
 
 /**

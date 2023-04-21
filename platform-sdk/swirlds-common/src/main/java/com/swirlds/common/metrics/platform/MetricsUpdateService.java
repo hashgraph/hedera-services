@@ -19,8 +19,8 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.EXCEPTION_RATE_THRESHOLD;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.common.utility.Startable;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import java.util.Queue;
 import java.util.concurrent.CancellationException;
