@@ -36,7 +36,7 @@ public final class FileServiceImpl implements FileService {
     public static final String BLOBS_KEY = "BLOBS";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
         registry.register(fileServiceSchema());
     }
 
