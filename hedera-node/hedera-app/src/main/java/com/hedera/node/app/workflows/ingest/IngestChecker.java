@@ -88,8 +88,8 @@ public class IngestChecker {
      * @throws PreCheckException if the node is unable to process queries
      */
     public void checkNodeState() throws PreCheckException {
-        if (nodeInfo.isSelfZeroStake()) {
-            // Zero stake nodes are currently not supported
+        if (nodeInfo.isSelfZeroWeight()) {
+            // Zero weight nodes are currently not supported
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
         if (currentPlatformStatus.get() != ACTIVE) {

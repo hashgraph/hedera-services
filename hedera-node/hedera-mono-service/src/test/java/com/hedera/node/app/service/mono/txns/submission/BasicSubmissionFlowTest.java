@@ -58,8 +58,8 @@ class BasicSubmissionFlowTest {
     private BasicSubmissionFlow subject;
 
     @Test
-    void rejectsAllOnZeroWeightNode() {
-        setupZeroWeightNode();
+    void rejectsAllOnZeroStakeNode() {
+        setupZeroStakeNode();
 
         final var response = subject.submit(someTxn);
 
@@ -68,7 +68,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void rejectsPrecheckFailures() {
-        setupNonZeroWeightNode();
+        setupNonZeroStakeNode();
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someFailure, null));
 
         final var response = subject.submit(someTxn);
@@ -79,7 +79,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void translatesPlatformCreateFailure() {
-        setupNonZeroWeightNode();
+        setupNonZeroStakeNode();
         givenValidPrecheck();
         given(submissionManager.trySubmission(any())).willReturn(PLATFORM_TRANSACTION_NOT_CREATED);
 
@@ -90,7 +90,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void rejectsInvalidAccessor() {
-        setupNonZeroWeightNode();
+        setupNonZeroStakeNode();
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, null));
 
         final var response = subject.submit(someTxn);
@@ -101,7 +101,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void followsHappyPathToOk() {
-        setupNonZeroWeightNode();
+        setupNonZeroStakeNode();
         givenValidPrecheck();
         givenOkSubmission();
 
@@ -118,11 +118,11 @@ class BasicSubmissionFlowTest {
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, someAccessor));
     }
 
-    private void setupNonZeroWeightNode() {
+    private void setupNonZeroStakeNode() {
         subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
     }
 
-    private void setupZeroWeightNode() {
+    private void setupZeroStakeNode() {
         given(nodeInfo.isSelfZeroWeight()).willReturn(true);
         subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
     }

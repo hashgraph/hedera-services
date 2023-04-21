@@ -30,5 +30,5 @@ public interface NodeInfo {
      *
      * @return whether this node has zero stake.
      */
-    boolean isSelfZeroStake();
+    boolean isSelfZeroWeight();
 }
