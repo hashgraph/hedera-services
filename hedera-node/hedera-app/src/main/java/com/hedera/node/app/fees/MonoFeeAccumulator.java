@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
@@ -73,7 +74,7 @@ public class MonoFeeAccumulator implements FeeAccumulator {
         // states will have PBJ Topic's as keys, not MerkleTopic's; so the mono-service
         // resource estimator would hit a ClassCastException
         if (functionality == HederaFunctionality.CONSENSUS_GET_TOPIC_INFO) {
-            final var topicStore = readableStoreFactory.createTopicStore();
+            final var topicStore = readableStoreFactory.createStore(ReadableTopicStore.class);
             final var usage = getTopicInfoUsage.computeUsage(monoQuery, topicStore);
             return feeCalculator.computeFromQueryResourceUsage(usage, usagePrices, monoNow);
         }
