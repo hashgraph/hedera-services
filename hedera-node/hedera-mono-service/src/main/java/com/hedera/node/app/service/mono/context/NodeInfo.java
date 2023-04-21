@@ -39,7 +39,7 @@ public class NodeInfo {
     private boolean bookIsRead = false;
 
     private int numberOfNodes;
-    private boolean[] isZeroWeight;
+    private boolean[] isZeroStake;
     private AccountID[] accounts;
     private EntityNum[] accountKeys;
 
@@ -53,26 +53,26 @@ public class NodeInfo {
     }
 
     /**
-     * For a non-zero weight node, validates presence of a self-account in the address book.
+     * For a non-zero stake node, validates presence of a self-account in the address book.
      *
-     * @throws IllegalStateException if the node has a non-zero weight but has no account
+     * @throws IllegalStateException if the node has a non-zero stake but has no account
      */
-    public void validateSelfAccountIfNonZeroWeight() {
-        if (!isSelfZeroWeight() && !hasSelfAccount()) {
-            throw new IllegalStateException("Node is not zero-weight, but has no known account");
+    public void validateSelfAccountIfNonZeroStake() {
+        if (!isSelfZeroStake() && !hasSelfAccount()) {
+            throw new IllegalStateException("Node is not zero-stake, but has no known account");
         }
     }
 
     /**
      * Returns true if the node in the address book at the given index (casting the argument as an
-     * {@code int}) has zero weight.
+     * {@code int}) has zero stake.
      *
      * @param nodeId the id of interest
-     * @return whether or not the node of interest has zero weight.
+     * @return whether or not the node of interest has zero stake.
      * @throws IllegalArgumentException if the {@code nodeId} cast to an {@code int} is not a usable
      *     index
      */
-    public boolean isZeroWeight(long nodeId) {
+    public boolean isZeroStake(long nodeId) {
         if (!bookIsRead) {
             readBook();
         }
@@ -81,16 +81,16 @@ public class NodeInfo {
         if (isIndexOutOfBounds(index)) {
             throw new IllegalArgumentException("The address book does not have a node at index " + index);
         }
-        return isZeroWeight[index];
+        return isZeroStake[index];
     }
 
     /**
-     * Convenience method to check if this node is zero-weight.
+     * Convenience method to check if this node is zero-stake.
      *
-     * @return whether or not this node has zero weight (i.e. stake is zero).
+     * @return whether or not this node has zero stake.
      */
-    public boolean isSelfZeroWeight() {
-        return isZeroWeight(selfId);
+    public boolean isSelfZeroStake() {
+        return isZeroStake(selfId);
     }
 
     /**
@@ -170,16 +170,16 @@ public class NodeInfo {
         numberOfNodes = staticBook.getSize();
         accounts = new AccountID[numberOfNodes];
         accountKeys = new EntityNum[numberOfNodes];
-        isZeroWeight = new boolean[numberOfNodes];
+        isZeroStake = new boolean[numberOfNodes];
 
         for (int i = 0; i < numberOfNodes; i++) {
             final var address = staticBook.getAddress(i);
-            isZeroWeight[i] = address.getWeight() <= 0;
+            isZeroStake[i] = address.getWeight() <= 0;
             try {
                 accounts[i] = parseAccount(address.getMemo());
                 accountKeys[i] = EntityNum.fromAccountId(accounts[i]);
             } catch (IllegalArgumentException e) {
-                if (!isZeroWeight[i]) {
+                if (!isZeroStake[i]) {
                     log.error("Cannot parse account for staked node id {}, potentially fatal!", i, e);
                 }
             }

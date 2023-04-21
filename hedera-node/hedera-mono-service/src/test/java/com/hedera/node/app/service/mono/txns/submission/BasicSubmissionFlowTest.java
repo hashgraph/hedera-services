@@ -123,7 +123,7 @@ class BasicSubmissionFlowTest {
     }
 
     private void setupZeroStakeNode() {
-        given(nodeInfo.isSelfZeroWeight()).willReturn(true);
+        given(nodeInfo.isSelfZeroStake()).willReturn(true);
         subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
     }
 }

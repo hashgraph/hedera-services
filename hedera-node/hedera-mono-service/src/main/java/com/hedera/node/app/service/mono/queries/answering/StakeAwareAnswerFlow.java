@@ -38,7 +38,7 @@ public class StakeAwareAnswerFlow implements AnswerFlow {
 
     @Override
     public Response satisfyUsing(final AnswerService service, final Query query) {
-        return nodeInfo.isSelfZeroWeight()
+        return nodeInfo.isSelfZeroStake()
                 ? zeroStakeAnswerFlow.satisfyUsing(service, query)
                 : stakedAnswerFlow.satisfyUsing(service, query);
     }

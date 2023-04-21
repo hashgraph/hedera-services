@@ -39,7 +39,7 @@ public class MonoNodeInfo implements NodeInfo {
     }
 
     @Override
-    public boolean isSelfZeroWeight() {
-        return delegate.isSelfZeroWeight();
+    public boolean isSelfZeroStake() {
+        return delegate.isSelfZeroStake();
     }
 }

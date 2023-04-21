@@ -61,7 +61,7 @@ public class InvariantChecks {
             return false;
         }
 
-        if (nodeInfo.isZeroWeight(submittingMember)) {
+        if (nodeInfo.isZeroStake(submittingMember)) {
             log.warn(
                     "Invariant failure! Zero-stake node {} submitted {}",
                     submittingMember,

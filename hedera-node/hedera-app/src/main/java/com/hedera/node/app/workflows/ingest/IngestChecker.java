@@ -88,7 +88,7 @@ public class IngestChecker {
      * @throws PreCheckException if the node is unable to process queries
      */
     public void checkNodeState() throws PreCheckException {
-        if (nodeInfo.isSelfZeroWeight()) {
+        if (nodeInfo.isSelfZeroStake()) {
             // Zero weight nodes are currently not supported
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }

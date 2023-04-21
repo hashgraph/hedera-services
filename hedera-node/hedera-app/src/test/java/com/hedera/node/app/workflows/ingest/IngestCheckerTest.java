@@ -155,7 +155,7 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("When the node is zero weight, the transaction should be rejected")
         void testCheckNodeStateWithZeroWeightFails() {
             // Given a node that IS zero weight
-            when(nodeInfo.isSelfZeroWeight()).thenReturn(true);
+            when(nodeInfo.isSelfZeroStake()).thenReturn(true);
 
             assertThatThrownBy(() -> subject.checkNodeState())
                     .isInstanceOf(PreCheckException.class)

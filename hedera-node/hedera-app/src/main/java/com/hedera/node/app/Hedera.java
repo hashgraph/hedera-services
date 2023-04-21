@@ -406,7 +406,7 @@ public final class Hedera implements SwirldMain {
 
     private void validateLedgerState() {
         daggerApp.ledgerValidator().validate(daggerApp.workingState().accounts());
-        daggerApp.nodeInfo().validateSelfAccountIfNonZeroWeight();
+        daggerApp.nodeInfo().validateSelfAccountIfNonZeroStake();
         final var notifications = daggerApp.notificationEngine().get();
         notifications.register(PlatformStatusChangeListener.class, daggerApp.statusChangeListener());
         notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());

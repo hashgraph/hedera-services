@@ -55,7 +55,7 @@ class StakeAwareAnswerFlowTest {
 
     @Test
     void delegatesToZeroStakeAsExpected() {
-        given(nodeInfo.isSelfZeroWeight()).willReturn(true);
+        given(nodeInfo.isSelfZeroStake()).willReturn(true);
         given(zeroStakeAnswerFlow.satisfyUsing(service, mockQuery)).willReturn(mockResponse);
 
         assertSame(mockResponse, subject.satisfyUsing(service, mockQuery));

@@ -63,28 +63,28 @@ class NodeInfoTest {
     }
 
     @Test
-    void understandsNonZeroWeight() {
+    void understandsNonZeroStake() {
         givenEntryWithWeight(nodeId, 1L);
 
         // expect:
-        assertFalse(subject.isZeroWeight(nodeId));
-        assertFalse(subject.isSelfZeroWeight());
+        assertFalse(subject.isZeroStake(nodeId));
+        assertFalse(subject.isSelfZeroStake());
     }
 
     @Test
-    void understandsZeroWeight() {
+    void understandsZeroStake() {
         givenEntryWithWeight(nodeId, 0L);
 
         // expect:
-        assertTrue(subject.isZeroWeight(nodeId));
-        assertTrue(subject.isSelfZeroWeight());
+        assertTrue(subject.isZeroStake(nodeId));
+        assertTrue(subject.isSelfZeroStake());
     }
 
     @Test
-    void interpretsMissingAsZeroWeight() {
+    void interpretsMissingAsZeroStake() {
         // expect:
-        assertThrows(IllegalArgumentException.class, () -> subject.isZeroWeight(-1));
-        assertThrows(IllegalArgumentException.class, () -> subject.isZeroWeight(1));
+        assertThrows(IllegalArgumentException.class, () -> subject.isZeroStake(-1));
+        assertThrows(IllegalArgumentException.class, () -> subject.isZeroStake(1));
     }
 
     @Test
@@ -105,7 +105,7 @@ class NodeInfoTest {
     }
 
     @Test
-    void logsErrorOnMissingAccountForNonZeroWeight() {
+    void logsErrorOnMissingAccountForNonZeroStake() {
         givenEntryWithMemoAndWeight(nodeId, "Oops!", 1L);
 
         // when:
@@ -119,7 +119,7 @@ class NodeInfoTest {
     }
 
     @Test
-    void doesNotLogErrorOnMissingAccountForZeroWeight() {
+    void doesNotLogErrorOnMissingAccountForZeroStake() {
         givenEntryWithMemoAndWeight(nodeId, "Oops!", 0L);
 
         // when:
@@ -130,27 +130,27 @@ class NodeInfoTest {
     }
 
     @Test
-    void throwsIseOnWeightedNodeNoAccount() {
+    void throwsIseOnStakedNodeNoAccount() {
         givenEntryWithMemoAndWeight(nodeId, "LULZ", 1L);
 
         // expect:
-        assertThrows(IllegalStateException.class, subject::validateSelfAccountIfNonZeroWeight);
+        assertThrows(IllegalStateException.class, subject::validateSelfAccountIfNonZeroStake);
     }
 
     @Test
-    void doesntThrowIseOnZeroWeightNodeNoAccount() {
+    void doesntThrowIseOnZeroStakeNodeNoAccount() {
         givenEntryWithMemoAndWeight(nodeId, "LULZ", 0L);
 
         // expect:
-        assertDoesNotThrow(subject::validateSelfAccountIfNonZeroWeight);
+        assertDoesNotThrow(subject::validateSelfAccountIfNonZeroStake);
     }
 
     @Test
-    void doesntThrowIseOnWeightedNodeWithAccount() {
+    void doesntThrowIseOnStakedNodeWithAccount() {
         givenEntryWithMemoAndWeight(nodeId, "0.0.3", 1L);
 
         // expect:
-        assertDoesNotThrow(subject::validateSelfAccountIfNonZeroWeight);
+        assertDoesNotThrow(subject::validateSelfAccountIfNonZeroStake);
     }
 
     @Test

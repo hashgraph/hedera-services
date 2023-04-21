@@ -109,7 +109,7 @@ class InvariantChecksTest {
 
     @Test
     void rejectsZeroStake() {
-        given(nodeInfo.isZeroWeight(submittingMember)).willReturn(true);
+        given(nodeInfo.isZeroStake(submittingMember)).willReturn(true);
 
         // when:
         final var result = subject.holdFor(accessor, lastConsensusTime.plusNanos(1_000L), submittingMember);
