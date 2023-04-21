@@ -17,6 +17,7 @@
 package com.swirlds.config.impl.internal;
 
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -31,11 +32,11 @@ final class ConfigListUtils {
     /**
      * Returns a list based on the raw value
      *
-     * @param rawValue
-     * 		the raw value
+     * @param rawValue the raw value
      * @return the list
      */
-    static List<String> createList(final String rawValue) {
+    @Nullable
+    static List<String> createList(@Nullable final String rawValue) {
         if (rawValue == null) {
             return null;
         }

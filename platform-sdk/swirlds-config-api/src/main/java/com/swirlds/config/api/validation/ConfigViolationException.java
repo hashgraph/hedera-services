@@ -16,6 +16,8 @@
 
 package com.swirlds.config.api.validation;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -30,12 +32,10 @@ public class ConfigViolationException extends IllegalStateException {
     /**
      * Creates a new instance based on violations
      *
-     * @param message
-     * 		message of the exception
-     * @param violations
-     * 		the violations
+     * @param message    message of the exception
+     * @param violations the violations
      */
-    public ConfigViolationException(final String message, final List<ConfigViolation> violations) {
+    public ConfigViolationException(@Nullable final String message, @NonNull final List<ConfigViolation> violations) {
         super(message);
         Objects.requireNonNull(violations, "violations should not be null");
         this.violations = Collections.unmodifiableList(violations);

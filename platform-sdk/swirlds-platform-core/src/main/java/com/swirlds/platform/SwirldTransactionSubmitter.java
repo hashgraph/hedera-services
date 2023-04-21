@@ -18,9 +18,9 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 
+import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.utility.BooleanFunction;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import java.util.function.Supplier;
 

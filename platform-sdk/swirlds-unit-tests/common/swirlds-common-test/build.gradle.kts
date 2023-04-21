@@ -25,6 +25,7 @@ extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 
 dependencies {
   // Individual Dependencies
+  implementation(project(":swirlds-base"))
   implementation(project(":swirlds-common"))
   implementation(project(":swirlds-base"))
   api(testLibs.junit.jupiter.api)

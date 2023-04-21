@@ -16,7 +16,7 @@
 
 package com.swirlds.common.merkle.impl;
 
-import com.swirlds.common.Mutable;
+import com.swirlds.base.state.Mutable;
 import com.swirlds.common.Reservable;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.interfaces.HasMerkleRoute;

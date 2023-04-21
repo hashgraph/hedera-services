@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.state.signed;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.utility.Startable;
 import java.time.Duration;
 
 /**
