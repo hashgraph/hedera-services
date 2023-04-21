@@ -48,7 +48,7 @@ public record GlobalDynamicConfig(
         boolean shouldExportBalances,
         boolean shouldExportTokenBalances,
         AccountID fundingAccount,
-        // Address fundingAccountAddress,
+        // Address fundingAccountAddress, <- we currently do not support the data type (will be added by another PR)
         int maxTransfersLen,
         int maxTokenTransfersLen,
         int maxMemoUtf8Bytes,
@@ -56,21 +56,22 @@ public record GlobalDynamicConfig(
         long minTxnDuration,
         int minValidityBuffer,
         long maxGasPerSec,
-        // byte[] chainIdBytes,
-        // Bytes32 chainIdBytes32,
+        // byte[] chainIdBytes, <- we currently do not support the data type (will be added by another PR)
+        // Bytes32 chainIdBytes32, <- we currently do not support the data type (will be added by another PR)
         long defaultContractLifetime,
         String evmVersion,
         boolean dynamicEvmVersion,
         int feesTokenTransferUsageMultiplier,
-        // boolean atLeastOneAutoRenewTargetType,
-        // boolean expireAccounts,
-        // boolean expireContracts,
+        // boolean atLeastOneAutoRenewTargetType, <- we currently do not support the data type (will be added by another
+        // PR)
+        // boolean expireAccounts, <- we currently do not support the data type (will be added by another PR)
+        // boolean expireContracts, <- we currently do not support the data type (will be added by another PR)
         int autoRenewNumberOfEntitiesToScan,
         int autoRenewMaxNumberOfEntitiesToRenewOrDelete,
         long autoRenewGracePeriod,
         long maxAutoRenewDuration,
         long minAutoRenewDuration,
-        // Duration grpcMinAutoRenewDuration,
+        // Duration grpcMinAutoRenewDuration, <- we currently do not support the data type (will be added by another PR)
         int localCallEstRetBytes,
         boolean schedulingLongTermEnabled,
         long schedulingMaxTxnPerSecond,
@@ -81,13 +82,14 @@ public record GlobalDynamicConfig(
         long maxFollowingRecords,
         Set<HederaFunctionality> schedulingWhitelist,
         Set<HederaFunctionality> systemContractsWithTopLevelSigsAccess,
-        // CongestionMultipliers congestionMultipliers,
+        // CongestionMultipliers congestionMultipliers, <- we currently do not support the data type (will be added by
+        // another PR)
         int feesMinCongestionPeriod,
         boolean areNftsEnabled,
         long maxNftMints,
         int maxXferBalanceChanges,
         int maxCustomFeeDepth,
-        // ScaleFactor nftMintScaleFactor,
+        // ScaleFactor nftMintScaleFactor, <- we currently do not support the data type (will be added by another PR)
         String upgradeArtifactsLoc,
         boolean throttleByGas,
         int contractMaxRefundPercentOfGasLimit,
@@ -108,7 +110,7 @@ public record GlobalDynamicConfig(
         boolean limitTokenAssociations,
         boolean enableHTSPrecompileCreate,
         boolean atomicCryptoTransferEnabled,
-        // KnownBlockValues knownBlockValues,
+        // KnownBlockValues knownBlockValues, <- we currently do not support the data type (will be added by another PR)
         long exchangeRateGasReq,
         long stakingRewardRate,
         long stakingStartThreshold,
@@ -130,10 +132,12 @@ public record GlobalDynamicConfig(
         Set<SidecarType> enabledSidecars,
         boolean sidecarValidationEnabled,
         boolean requireMinStakeToReward,
-        // Map<Long, Long> nodeMaxMinStakeRatios,
+        // Map<Long, Long> nodeMaxMinStakeRatios, <- we currently do not support the data type (will be added by another
+        // PR)
         int sidecarMaxSizeMb,
         boolean itemizeStorageFees,
-        // ContractStoragePriceTiers storagePriceTiers,
+        // ContractStoragePriceTiers storagePriceTiers, <- we currently do not support the data type (will be added by
+        // another PR)
         boolean compressRecordFilesOnCreation,
         boolean tokenAutoCreationsEnabled,
         boolean doTraceabilityExport,
@@ -144,7 +148,9 @@ public record GlobalDynamicConfig(
         boolean cryptoCreateWithAliasEnabled,
         boolean enforceContractCreationThrottle,
         Set<Address> permittedDelegateCallers,
-        // EntityScaleFactors entityScaleFactors,
+        // EntityScaleFactors entityScaleFactors, <- we currently do not support the data type (will be added by another
+        // PR)
         long maxNumWithHapiSigsAccess,
-        // LegacyContractIdActivations legacyContractIdActivations,
+        // LegacyContractIdActivations legacyContractIdActivations, <- we currently do not support the data type (will
+        // be added by another PR)
         Set<Address> contractsWithSpecialHapiSigsAccess) {}

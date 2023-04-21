@@ -42,6 +42,10 @@ import java.util.stream.Stream;
  *
  * <p>This implementation is backed by a {@link PropertySource} instance and all calls will be
  * forwarded to that instance.
+ *
+ * <p>NOTE: This class is deprecated and will be removed in a future release. I just wanted to have a basic
+ * implementation of the {@link Configuration} interface to be able to use the API and write tests. Next to this the
+ * change of introducing the full config support with only 1 PR would have become too big.
  */
 @Deprecated(forRemoval = true)
 public class ConfigurationAdaptor implements Configuration {
