@@ -18,6 +18,7 @@ package com.swirlds.platform;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.test.framework.ResourceLoader;
@@ -59,7 +60,7 @@ public class CryptoArgsProvider {
     private static AddressBook createAddressBook() {
         final AddressBook addresses = new RandomAddressBookGenerator()
                 .setSize(NUMBER_OF_ADDRESSES)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setSequentialIds(true)
                 .build();
 

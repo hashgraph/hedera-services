@@ -51,7 +51,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Tests that the {@link DefaultSignedStateValidator} uses stake correctly to determine the validity of the signed state.
+ * Tests that the {@link DefaultSignedStateValidator} uses weight correctly to determine the validity of the signed state.
  */
 class DefaultSignedStateValidatorTests {
 
@@ -60,8 +60,8 @@ class DefaultSignedStateValidatorTests {
     /** The maximum number of nodes in the network (inclusive) in randomized tests. */
     private static final int MAX_NODES_IN_RANDOMIZED_TESTS = 20;
 
-    /** The maximum amount of stake to allocate to a single node (inclusive) in randomized tests. */
-    private static final int MAX_STAKE_PER_NODE = 100;
+    /** The maximum amount of weight to allocate to a single node (inclusive) in randomized tests. */
+    private static final int MAX_WEIGHT_PER_NODE = 100;
 
     private static final int ROUND = 0;
 
@@ -70,7 +70,7 @@ class DefaultSignedStateValidatorTests {
     private DefaultSignedStateValidator validator;
 
     /**
-     * Test params to test specific scenarios of node signatures and stake values.
+     * Test params to test specific scenarios of node signatures and weight values.
      *
      * @return stream of arguments to test specific scenarios
      */
@@ -83,10 +83,10 @@ class DefaultSignedStateValidatorTests {
         // All state signatures are valid but do not make up a majority
         arguments.add(allValidSigsNoMajority());
 
-        // 1/2 stake of valid signatures, 1/2 of stake invalid signatures
+        // 1/2 weight of valid signatures, 1/2 of weight invalid signatures
         arguments.add(someNodeValidSigsMajority());
 
-        // less than 1/2 stake of valid signatures, more than 1/2 of stake invalid signatures
+        // less than 1/2 weight of valid signatures, more than 1/2 of weight invalid signatures
         arguments.add(someNodeValidSigsNoMajority());
 
         return arguments.stream();
@@ -97,7 +97,7 @@ class DefaultSignedStateValidatorTests {
      * </p>
      * <ul>
      *     <li>network size</li>
-     *     <li>stake per node</li>
+     *     <li>weight per node</li>
      *     <li>which nodes sign the state</li>
      *     <li>if a nodes signs the state, do they use a valid or invalid signature</li>
      * </ul>
@@ -112,10 +112,11 @@ class DefaultSignedStateValidatorTests {
             final RandomGenerator r = RandomUtils.initRandom(seed);
             final List<Node> nodes = initRandomizedNodes(r);
             final List<Node> signingNodes = getRandomizedSigningNodes(r, nodes);
-            final long validSigningStake = getValidSignatureStake(signingNodes);
-            final long totalState = getTotalStake(nodes);
+            final long validSigningWeight = getValidSignatureWeight(signingNodes);
+            final long totalWeight = getTotalWeight(nodes);
             final String desc = String.format(
-                    "\nseed: %sL:, valid signing stake: %s, total stake: %s\n", seed, validSigningStake, totalState);
+                    "\nseed: %sL:, valid signing weight: %s, total weight: %s\n",
+                    seed, validSigningWeight, totalWeight);
             arguments.add(Arguments.of(desc, nodes, signingNodes));
         }
 
@@ -136,10 +137,10 @@ class DefaultSignedStateValidatorTests {
         final int numNodes = r.nextInt(1, MAX_NODES_IN_RANDOMIZED_TESTS);
         final List<Node> nodes = new LinkedList<>();
         for (int i = 0; i < numNodes; i++) {
-            // Allow zero-stake
-            final int stake = r.nextInt(MAX_STAKE_PER_NODE);
+            // Allow zero-weight
+            final int weight = r.nextInt(MAX_WEIGHT_PER_NODE);
             final boolean hasValidSig = r.nextBoolean();
-            nodes.add(new Node(i, stake, hasValidSig));
+            nodes.add(new Node(i, weight, hasValidSig));
         }
         return nodes;
     }
@@ -178,7 +179,7 @@ class DefaultSignedStateValidatorTests {
      * 		constitute a majority.
      */
     private static Arguments someNodeValidSigsMajority() {
-        // >1/2 stake of valid signatures, <1/2 of stake invalid signatures
+        // >1/2 weight of valid signatures, <1/2 of weight invalid signatures
         final List<Node> majorityValidSigs = initNodes(List.of(true, false, true, false, false, false, true));
         final Long seed = new Random().nextLong();
         return Arguments.of(formatSeedDesc(seed), majorityValidSigs, majorityValidSigs);
@@ -235,7 +236,7 @@ class DefaultSignedStateValidatorTests {
     void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) {
         addressBook = new RandomAddressBookGenerator()
                 .setSize(nodes.size())
-                .setCustomStakeGenerator(id -> nodes.get((int) id).stake)
+                .setCustomWeightGenerator(id -> nodes.get((int) id).weight)
                 .setSequentialIds(true)
                 .build();
 
@@ -245,52 +246,52 @@ class DefaultSignedStateValidatorTests {
         final SignedStateValidationData originalData = new SignedStateValidationData(
                 signedState.getState().getPlatformState().getPlatformData(), addressBook);
 
-        final boolean shouldSucceed = stateHasEnoughStake(nodes, signingNodes);
+        final boolean shouldSucceed = stateHasEnoughWeight(nodes, signingNodes);
         if (shouldSucceed) {
             assertDoesNotThrow(
                     () -> validator.validate(signedState, addressBook, originalData),
-                    "State signed with a majority of stake (%s out of %s) should pass validation."
-                            .formatted(getValidSignatureStake(signingNodes), getTotalStake(nodes)));
+                    "State signed with a majority of weight (%s out of %s) should pass validation."
+                            .formatted(getValidSignatureWeight(signingNodes), getTotalWeight(nodes)));
         } else {
             assertThrows(
                     SignedStateInvalidException.class,
                     () -> validator.validate(signedState, addressBook, originalData),
-                    "State not signed with a majority of stake (%s out of %s) should NOT pass validation."
-                            .formatted(getValidSignatureStake(signingNodes), getTotalStake(nodes)));
+                    "State not signed with a majority of weight (%s out of %s) should NOT pass validation."
+                            .formatted(getValidSignatureWeight(signingNodes), getTotalWeight(nodes)));
         }
     }
 
     /**
-     * Determines if the nodes in {@code signingNodes} with valid signatures have enough stake to make up a strong
-     * minority of the total stake.
+     * Determines if the nodes in {@code signingNodes} with valid signatures have enough weight to make up a strong
+     * minority of the total weight.
      *
      * @param nodes
-     * 		all the nodes in the network, used to calculate the total stake
+     * 		all the nodes in the network, used to calculate the total weight
      * @param signingNodes
      * 		all the nodes that signed the state
-     * @return true if the state has a majority of stake from valid signatures
+     * @return true if the state has a majority of weight from valid signatures
      */
-    private boolean stateHasEnoughStake(final List<Node> nodes, final List<Node> signingNodes) {
-        final long totalStake = getTotalStake(nodes);
-        final long signingStake = getValidSignatureStake(signingNodes);
+    private boolean stateHasEnoughWeight(final List<Node> nodes, final List<Node> signingNodes) {
+        final long totalWeight = getTotalWeight(nodes);
+        final long signingWeight = getValidSignatureWeight(signingNodes);
 
-        return Utilities.isMajority(signingStake, totalStake);
+        return Utilities.isMajority(signingWeight, totalWeight);
     }
 
-    private static long getTotalStake(final List<Node> nodes) {
-        long totalStake = 0;
+    private static long getTotalWeight(final List<Node> nodes) {
+        long totalWeight = 0;
         for (final Node node : nodes) {
-            totalStake += node.stake;
+            totalWeight += node.weight;
         }
-        return totalStake;
+        return totalWeight;
     }
 
-    private static long getValidSignatureStake(final List<Node> signingNodes) {
-        long signingStake = 0;
+    private static long getValidSignatureWeight(final List<Node> signingNodes) {
+        long signingWeight = 0;
         for (final Node signingNode : signingNodes) {
-            signingStake += signingNode.validSignature ? signingNode.stake : 0;
+            signingWeight += signingNode.validSignature ? signingNode.weight : 0;
         }
-        return signingStake;
+        return signingWeight;
     }
 
     /**
@@ -341,14 +342,14 @@ class DefaultSignedStateValidatorTests {
     }
 
     /**
-     * A record representing a simple node that holds its id, amount of stake, and if is signs states with a valid
+     * A record representing a simple node that holds its id, amount of weight, and if is signs states with a valid
      * signature.
      */
-    private record Node(long id, long stake, boolean validSignature) {
+    private record Node(long id, long weight, boolean validSignature) {
 
         @Override
         public String toString() {
-            return String.format("NodeId: %s,\tStake: %s,\tValidSig: %s", id, stake, validSignature);
+            return String.format("NodeId: %s,\tWeight: %s,\tValidSig: %s", id, weight, validSignature);
         }
     }
 }

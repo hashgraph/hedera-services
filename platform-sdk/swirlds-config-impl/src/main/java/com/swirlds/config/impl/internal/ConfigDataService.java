@@ -16,8 +16,9 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,19 +39,19 @@ class ConfigDataService implements ConfigLifecycle {
     /**
      * A set of all regisstered data object types
      */
-    private Queue<Class<? extends Record>> registeredTypes;
+    private final Queue<Class<? extends Record>> registeredTypes;
 
     /**
      * A map that contains all created data objects
      */
-    private Map<Class<? extends Record>, Record> configDataCache;
+    private final Map<Class<? extends Record>, Record> configDataCache;
 
     /**
      * Defines if the service is initialized
      */
     private boolean initialized = false;
 
-    ConfigDataService(final Configuration configuration, final ConverterService converterService) {
+    ConfigDataService(@NonNull final Configuration configuration, @NonNull final ConverterService converterService) {
         this.configDataFactory = new ConfigDataFactory(configuration, converterService);
         configDataCache = new HashMap<>();
         registeredTypes = new ConcurrentLinkedQueue<>();
@@ -59,13 +60,11 @@ class ConfigDataService implements ConfigLifecycle {
     /**
      * Adds the given type as a config data object type. This is only possible if the service is not initialized
      *
-     * @param type
-     * 		the type that should be added as a supported config data object
-     * @param <T>
-     * 		generic type of the config data object
+     * @param type the type that should be added as a supported config data object
+     * @param <T>  generic type of the config data object
      */
-    <T extends Record> void addConfigDataType(final Class<T> type) {
-        CommonUtils.throwArgNull(type, "type");
+    <T extends Record> void addConfigDataType(@NonNull final Class<T> type) {
+        ArgumentUtils.throwArgNull(type, "type");
         throwIfInitialized();
         registeredTypes.add(type);
     }
@@ -97,17 +96,16 @@ class ConfigDataService implements ConfigLifecycle {
     }
 
     /**
-     * Returns the instance of the given config data type. If the given type is not registered (see
-     * {@link #addConfigDataType(Class)}) the method throws an {@link IllegalArgumentException}
+     * Returns the instance of the given config data type. If the given type is not registered (see {@link
+     * #addConfigDataType(Class)}) the method throws an {@link IllegalArgumentException}
      *
-     * @param type
-     * 		the config data type
-     * @param <T>
-     * 		the config data type
+     * @param type the config data type
+     * @param <T>  the config data type
      * @return the instance of the given config data type
      */
-    <T extends Record> T getConfigData(final Class<T> type) {
-        CommonUtils.throwArgNull(type, "type");
+    @NonNull
+    <T extends Record> T getConfigData(@NonNull final Class<T> type) {
+        ArgumentUtils.throwArgNull(type, "type");
         throwIfNotInitialized();
         if (!configDataCache.containsKey(type)) {
             throw new IllegalArgumentException("No config data record available of type '" + type + "'");
@@ -120,6 +118,7 @@ class ConfigDataService implements ConfigLifecycle {
      *
      * @return all config data types that are registered
      */
+    @NonNull
     public Collection<Class<? extends Record>> getConfigDataTypes() {
         return registeredTypes;
     }

@@ -16,53 +16,32 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
-import static java.util.Objects.requireNonNull;
-
-import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.WorkingStateAccessor;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
 
 /**
- * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
+ * Factory for all writable stores.
  */
-public class WritableStoreFactory {
-    private final WorkingStateAccessor stateAccessor;
-
+public interface WritableStoreFactory {
     /**
-     * Constructor of {@link WritableStoreFactory}
-     *
-     * @param stateAccessor the {@link WorkingStateAccessor} that all stores are based upon
-     * @throws NullPointerException if one of the parameters is {@code null}
-     */
-    @Inject
-    public WritableStoreFactory(@NonNull final WorkingStateAccessor stateAccessor) {
-        this.stateAccessor = requireNonNull(stateAccessor);
-    }
-
-    /**
-     * Get a {@link WritableTopicStore} from the {@link HederaState}
+     * Get a {@link WritableTopicStore}.
      *
      * @return a new {@link WritableTopicStore}
      */
-    @NonNull
-    public WritableTopicStore createTopicStore() {
-        final var topicStates = stateAccessor.getHederaState().createWritableStates(ConsensusService.NAME);
-        return new WritableTopicStore(topicStates);
-    }
+    WritableTopicStore createTopicStore();
 
     /**
-     * Get a {@link WritableTokenStore} from the {@link HederaState}
+     * Get a {@link WritableTokenStore}.
      *
      * @return a new {@link WritableTokenStore}
      */
-    @NonNull
-    public WritableTokenStore createTokenStore() {
-        final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
-        return new WritableTokenStore(tokenStates);
-    }
+    WritableTokenStore createTokenStore();
+
+    /**
+     * Get a {@link WritableTokenRelationStore}.
+     *
+     * @return a new {@link WritableTokenRelationStore}
+     */
+    public WritableTokenRelationStore createTokenRelStore();
 }

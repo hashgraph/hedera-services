@@ -39,6 +39,11 @@ public final class ConsensusServiceImpl implements ConsensusService {
     public static final String TOPICS_KEY = "TOPICS";
 
     @Override
+    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
+        registerSchemas(registry);
+    }
+
+    @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
         registry.register(consensusSchema());
     }

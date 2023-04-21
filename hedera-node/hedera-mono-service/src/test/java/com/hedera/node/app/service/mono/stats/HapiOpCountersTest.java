@@ -36,6 +36,7 @@ import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
@@ -45,11 +46,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class HapiOpCountersTest {
-    private Platform platform;
     private Counter counter;
     private MiscRunningAvgs runningAvgs;
     private TransactionContext txnCtx;
-    private Function<HederaFunctionality, String> statNameFn;
     private Metrics metrics;
 
     private HapiOpCounters subject;
@@ -61,14 +60,16 @@ class HapiOpCountersTest {
 
         txnCtx = mock(TransactionContext.class);
         counter = mock(Counter.class);
-        platform = mock(Platform.class);
-        statNameFn = HederaFunctionality::toString;
+        Platform platform = mock(Platform.class);
+        Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
         runningAvgs = mock(MiscRunningAvgs.class);
         metrics = mock(Metrics.class);
 
         subject = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
-        given(platform.getMetrics()).willReturn(metrics);
+        final var platformContext = mock(PlatformContext.class);
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(counter);
 
         subject.registerWith(platform);

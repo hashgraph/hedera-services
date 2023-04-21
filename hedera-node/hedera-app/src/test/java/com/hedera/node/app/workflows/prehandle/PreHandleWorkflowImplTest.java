@@ -29,15 +29,15 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
@@ -77,7 +77,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
     private TransactionSignature cryptoSig;
 
     @Mock(strictness = LENIENT)
-    private JKey payerKey;
+    private Key payerKey;
 
     @Mock(strictness = LENIENT)
     private SwirldTransaction transaction;
@@ -110,7 +110,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
     private ReadableKVState accountState;
 
     @Mock
-    private MerkleAccount payerAccount;
+    private Account payerAccount;
 
     @Mock
     private ConsensusTransactionImpl workflowTxn;
@@ -169,8 +169,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
         given(readableStates.get("ACCOUNTS")).willReturn(accountState);
         given(accountState.get(any())).willReturn(payerAccount);
-        given(payerAccount.getAccountKey()).willReturn(payerKey);
-        given(payerAccount.getMemo()).willReturn("");
+        given(payerAccount.key()).willReturn(payerKey);
 
         final var meta = workflow.preHandle(state, workflowTxn);
 
@@ -257,7 +256,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         verify(transaction).setMetadata(captor.capture());
         AssertionsForClassTypes.assertThat(captor.getValue())
                 .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
-        verify(dispatcher, never()).dispatchPreHandle(any(), any());
+        verify(dispatcher, never()).dispatchPreHandle(any());
     }
 
     @Test
@@ -290,15 +289,14 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
         given(readableStates.get("ACCOUNTS")).willReturn(accountState);
         given(accountState.get(any())).willReturn(payerAccount);
-        given(payerAccount.getAccountKey()).willReturn(payerKey);
-        given(payerAccount.getMemo()).willReturn("");
+        given(payerAccount.key()).willReturn(payerKey);
 
         workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
         workflow.start(state, event);
 
-        verify(dispatcher).dispatchPreHandle(any(), any());
+        verify(dispatcher).dispatchPreHandle(any());
     }
 
     private byte[] cryptoTransferContents() {

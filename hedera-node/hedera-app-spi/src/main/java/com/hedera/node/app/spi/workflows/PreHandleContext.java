@@ -17,16 +17,18 @@
 package com.hedera.node.app.spi.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -47,10 +49,11 @@ import java.util.Set;
  * transaction). {@link TransactionHandler}s must add any additional required signing keys. Several convenience
  * methods have been created for this purpose.
  *
- * <p>{@link #requireKey(HederaKey)} is used to add a required non-payer signing key (remember, the payer signing
+ * <p>{@link #requireKey(Key)} is used to add a required non-payer signing key (remember, the payer signing
  * key was added when the context was created). Some basic validation is performed (the key cannot be null or empty).
  */
 public final class PreHandleContext {
+    private final ReadableStoreFactory storeFactory;
     /** Used to get keys for accounts and contracts. */
     private final AccountAccess accountAccess;
     /** The transaction body. */
@@ -58,13 +61,13 @@ public final class PreHandleContext {
     /** The payer account ID. Specified in the transaction body, extracted and stored separately for convenience. */
     private final AccountID payer;
     /** The payer's key, as found in state */
-    private final HederaKey payerKey;
+    private final Key payerKey;
     /**
      * The set of all required non-payer keys. A {@link LinkedHashSet} is used to maintain a consistent ordering.
      * While not strictly necessary, it is useful at the moment to ensure tests are deterministic. The tests should
      * be updated to compare set contents rather than ordering.
      */
-    private final Set<HederaKey> requiredNonPayerKeys = new LinkedHashSet<>();
+    private final Set<Key> requiredNonPayerKeys = new LinkedHashSet<>();
     /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
     private PreHandleContext innerContext;
 
@@ -74,11 +77,22 @@ public final class PreHandleContext {
      * @param accountAccess used to get keys for accounts and contracts
      * @param txn the transaction body
      * @throws PreCheckException if the payer account ID is invalid or the key is null
+     * @deprecated Use {@link #PreHandleContext(ReadableStoreFactory, TransactionBody)} instead.
      */
+    @Deprecated(forRemoval = true)
     public PreHandleContext(@NonNull final AccountAccess accountAccess, @NonNull final TransactionBody txn)
             throws PreCheckException {
         this(
-                accountAccess,
+                new ReadableStoreFactoryHack(accountAccess),
+                txn,
+                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                INVALID_PAYER_ACCOUNT_ID);
+    }
+
+    public PreHandleContext(@NonNull final ReadableStoreFactory storeFactory, @NonNull final TransactionBody txn)
+            throws PreCheckException {
+        this(
+                storeFactory,
                 txn,
                 txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
                 INVALID_PAYER_ACCOUNT_ID);
@@ -86,28 +100,47 @@ public final class PreHandleContext {
 
     /** Create a new instance */
     private PreHandleContext(
-            @NonNull final AccountAccess accountAccess,
+            @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
             @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
-        this.accountAccess = requireNonNull(accountAccess);
-        this.txn = requireNonNull(txn);
-        this.payer = requireNonNull(payer);
+        this.storeFactory = requireNonNull(storeFactory, "The supplied argument 'storeFactory' cannot be null!");
+        this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
+        this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
+
+        this.accountAccess = storeFactory.createStore(AccountAccess.class);
+
         // Find the account, which must exist or throw a PreCheckException with the given response code.
         final var account = accountAccess.getAccountById(payer);
         mustExist(account, responseCode);
         // NOTE: While it is true that the key can be null on some special accounts like
         // account 800, those accounts cannot be the payer.
-        this.payerKey = account.getKey();
+        this.payerKey = account.key();
         mustExist(this.payerKey, responseCode);
+    }
+
+    /**
+     * Create a new store given the store's interface. This gives read-only access to the store.
+     *
+     * @param storeInterface The store interface to find and create a store for
+     * @return An implementation of store interface provided, or null if the store
+     * @param <C> Interface class for a Store
+     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
+     * @throws NullPointerException if {@code storeInterface} is {@code null}
+     */
+    @NonNull
+    public <C> C createStore(@NonNull final Class<C> storeInterface) {
+        return storeFactory.createStore(storeInterface);
     }
 
     /**
      * Gets the {@link AccountAccess}.
      *
      * @return the {@link AccountAccess}
+     * @deprecated Use {@link #createStore(Class)} instead.
      */
+    @Deprecated(forRemoval = true)
     @NonNull
     public AccountAccess accountAccess() {
         return accountAccess;
@@ -138,7 +171,7 @@ public final class PreHandleContext {
      *
      * @return the {@link Set} with the required non-payer keys
      */
-    public Set<HederaKey> requiredNonPayerKeys() {
+    public Set<Key> requiredNonPayerKeys() {
         return Collections.unmodifiableSet(requiredNonPayerKeys);
     }
 
@@ -148,7 +181,7 @@ public final class PreHandleContext {
      * @return the payer key
      */
     @Nullable
-    public HederaKey payerKey() {
+    public Key payerKey() {
         return payerKey;
     }
 
@@ -161,8 +194,8 @@ public final class PreHandleContext {
      * @throws NullPointerException if the key is null
      */
     @NonNull
-    public PreHandleContext requireKey(@NonNull final HederaKey key) {
-        if (!key.equals(payerKey)) {
+    public PreHandleContext requireKey(@NonNull final Key key) {
+        if (!key.equals(payerKey) && isValid(key)) {
             requiredNonPayerKeys.add(key);
         }
         return this;
@@ -179,10 +212,10 @@ public final class PreHandleContext {
      * @throws PreCheckException if the key is null or empty
      */
     @NonNull
-    public PreHandleContext requireKeyOrThrow(
-            @Nullable final HederaKey key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException {
+    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException {
         requireNonNull(responseCode);
-        if (key == null || key.isEmpty()) {
+        if (!isValid(key)) {
             throw new PreCheckException(responseCode);
         }
         return requireKey(key);
@@ -216,9 +249,9 @@ public final class PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
-        final var key = account.getKey();
-        if (key == null
-                || key.isEmpty()) { // Or if it is a Contract Key? Or if it is an empty key? Or a KeyList with no
+        final var key = account.key();
+        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
@@ -249,9 +282,9 @@ public final class PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
-        final var key = account.getKey();
-        if (key == null
-                || key.isEmpty()) { // Or if it is a Contract Key? Or if it is an empty key? Or a KeyList with no
+        final var key = account.key();
+        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
@@ -287,14 +320,15 @@ public final class PreHandleContext {
         }
 
         // If the account exists but does not require a signature, then there is no key to require.
-        if (!account.isReceiverSigRequired()) {
+        if (!account.receiverSigRequired()) {
             return this;
         }
 
         // We will require the key. If the key isn't present, then we will throw the given response code.
-        final var key = account.getKey();
+        final var key = account.key();
         if (key == null
-                || key.isEmpty()) { // Or if it is a Contract Key? Or if it is an empty key? Or a KeyList with no
+                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
@@ -327,14 +361,14 @@ public final class PreHandleContext {
         }
 
         // If the account exists but does not require a signature, then there is no key to require.
-        if (!account.isReceiverSigRequired()) {
+        if (!account.receiverSigRequired()) {
             return this;
         }
 
         // We will require the key. If the key isn't present, then we will throw the given response code.
-        final var key = account.getKey();
-        if (key == null
-                || key.isEmpty()) { // Or if it is a Contract Key? Or if it is an empty key? Or a KeyList with no
+        final var key = account.key();
+        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
+            // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
@@ -359,7 +393,7 @@ public final class PreHandleContext {
             @NonNull final AccountID payerForNested,
             @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
-        this.innerContext = new PreHandleContext(accountAccess, nestedTxn, payerForNested, responseCode);
+        this.innerContext = new PreHandleContext(storeFactory, nestedTxn, payerForNested, responseCode);
         return this.innerContext;
     }
 
@@ -381,5 +415,46 @@ public final class PreHandleContext {
                 + requiredNonPayerKeys + ", status="
                 + payerKey + ", innerContext="
                 + innerContext + '}';
+    }
+
+    /**
+     * A factory for creating readable stores.
+     *
+     * <p>This interface is only a temporary solution. In the future, we probably want to turn {@code PreHandleContext}
+     * into an interface and have the implementation in hedera-app. Unfortunately this cannot easily be done,
+     * because many unit-tests in services rely on implementation details of {@code PreHandleContext}.
+     */
+    public interface ReadableStoreFactory {
+
+        /**
+         * Create a new store given the store's interface. This gives read-only access to the store.
+         *
+         * @param storeInterface The store interface to find and create a store for
+         * @param <C> Interface class for a Store
+         * @return An implementation of the provided store interface
+         * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
+         * @throws NullPointerException if {@code storeInterface} is {@code null}
+         */
+        @NonNull
+        <C> C createStore(@NonNull Class<C> storeInterface) throws IllegalArgumentException;
+    }
+
+    @Deprecated(forRemoval = true)
+    private static class ReadableStoreFactoryHack implements ReadableStoreFactory {
+        private final AccountAccess accountAccess;
+
+        private ReadableStoreFactoryHack(@NonNull final AccountAccess accountAccess) {
+            this.accountAccess = requireNonNull(accountAccess, "The supplied argument 'accountAccess' cannot be null!");
+        }
+
+        @Override
+        @NonNull
+        public <C> C createStore(@NonNull final Class<C> storeInterface) {
+            requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
+            if (storeInterface == AccountAccess.class) {
+                return (C) accountAccess;
+            }
+            throw new UnsupportedOperationException("Not implemented yet");
+        }
     }
 }

@@ -208,7 +208,7 @@ public final class Hedera implements SwirldMain {
             final var serviceName = entry.getKey();
             final var service = entry.getValue();
             final var registry = new MerkleSchemaRegistry(constructableRegistry, storageDir, serviceName);
-            service.registerSchemas(registry);
+            service.registerMonoAdapterSchemas(registry);
             map.put(serviceName, new ServiceRegistration(serviceName, service, registry));
         }
 
@@ -459,7 +459,7 @@ public final class Hedera implements SwirldMain {
                                 .transaction("deleteTopic")
                                 .query("getTopicInfo")
                                 .transaction("submitMessage")
-                                .build(daggerApp.platform().getMetrics()))
+                                .build(daggerApp.platform().getContext().getMetrics()))
                         .build());
         grpcServer.whenShutdown().thenAccept(server -> shutdownLatch.countDown());
         grpcServer.start();

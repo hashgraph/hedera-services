@@ -87,7 +87,7 @@ public class EntityUtilGauges {
 
     public void registerWith(final Platform platform) {
         utils.forEach(util -> {
-            final var gauge = platform.getMetrics().getOrCreate(util.config());
+            final var gauge = platform.getContext().getMetrics().getOrCreate(util.config());
             util.gauge().set(gauge);
         });
     }
