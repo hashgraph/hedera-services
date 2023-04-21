@@ -121,7 +121,7 @@ dependencyResolutionManagement {
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.5.1")
-      version("besu-version", "22.10.1")
+      version("besu-version", "23.1.2")
       version("besu-native-version", "0.6.1")
       version("bouncycastle-version", "1.70")
       version("caffeine-version", "3.0.6")
