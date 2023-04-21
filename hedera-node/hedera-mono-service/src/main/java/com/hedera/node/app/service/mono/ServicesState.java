@@ -283,6 +283,13 @@ public class ServicesState extends PartialNaryMerkleInternal
         metadata.app().eventExpansion().expandAllSigs(event, this);
     }
 
+    @Override
+    public AddressBook updateStake(@NonNull AddressBook configAddressBook) {
+        throwIfImmutable();
+        stakingInfo().forEach((k, v) -> configAddressBook.updateStake(k.longValue(), v.getWeight()));
+        return configAddressBook;
+    }
+
     private ServicesApp deserializedInit(
             final Platform platform,
             final SwirldDualState dualState,

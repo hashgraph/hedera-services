@@ -112,6 +112,13 @@ public class EndOfStakingPeriodCalculator {
         long newTotalStakedStart = 0L;
         long newTotalStakedRewardStart = 0L;
         final List<NodeStake> nodeStakingInfos = new ArrayList<>();
+
+        // Calculate the new totalStakedStart based on node's stake at the end of the period
+        for (final var nodeNum : curStakingInfos.keySet().stream().sorted().toList()) {
+            final var stakingInfo = curStakingInfos.get(nodeNum);
+            newTotalStakedStart += stakingInfo.getStake();
+        }
+
         for (final var nodeNum : curStakingInfos.keySet().stream().sorted().toList()) {
             final var stakingInfo = curStakingInfos.getForModify(nodeNum);
 
@@ -139,11 +146,16 @@ public class EndOfStakingPeriodCalculator {
             stakingInfo.resetUnclaimedStakeRewardStart();
 
             newTotalStakedRewardStart += newStakeRewardStart;
-            newTotalStakedStart += stakingInfo.getStake();
+
+            // Update consensus weights of the nodes based on the total stake of the node
+            final var updatedWeight = getWeight(stakingInfo.getStake(), stakingInfo.getMinStake(), newTotalStakedStart);
+            stakingInfo.setWeight(updatedWeight);
+            log.info("Node {} has weight updated to {}", nodeNum, updatedWeight);
+
             nodeStakingInfos.add(NodeStake.newBuilder()
                     .setNodeId(nodeNum.longValue())
                     .setRewardRate(nodeRewardRate)
-                    .setStake(stakingInfo.getStake())
+                    .setStake(updatedWeight)
                     .setMinStake(stakingInfo.getMinStake())
                     .setMaxStake(stakingInfo.getMaxStake())
                     .setStakeRewarded(stakingInfo.getStakeToReward())
@@ -167,6 +179,22 @@ public class EndOfStakingPeriodCalculator {
                 syntheticNodeStakeUpdateTxn,
                 creator.createSuccessfulSyntheticRecord(
                         NO_CUSTOM_FEES, NO_OTHER_SIDE_EFFECTS, END_OF_STAKING_PERIOD_CALCULATIONS_MEMO));
+    }
+
+    /**
+     * Calculates consensus weight of the node. The network normalizes the weights of nodes
+     * above minStake so that the total sum of weight is approximately 500. If stake is less than minStake
+     * the weight of a node A  will be 0. If stake is greater than minStake, the weight of a node A
+     * will be computed so that every node above minStake has weight at least 1; but any node
+     * that has staked at least 1 out of every 250 whole hbars staked will have weight >= 2.
+     * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
+     */
+    private int getWeight(long stake, long minStake, long totalStakeOfAllNodes) {
+        if (stake < minStake) {
+            return 0;
+        } else {
+            return (int) Math.max(Math.floor((stake * 500) / totalStakeOfAllNodes), 1);
+        }
     }
 
     @VisibleForTesting

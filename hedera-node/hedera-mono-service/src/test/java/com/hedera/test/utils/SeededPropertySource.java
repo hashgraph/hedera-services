@@ -501,7 +501,8 @@ public class SeededPropertySource {
                 nextLong(),
                 nextLong(),
                 nextLong(),
-                nextLongs(MAX_REWARD_HISTORY));
+                nextLongs(MAX_REWARD_HISTORY),
+                nextInt());
         return ans;
     }
 

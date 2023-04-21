@@ -866,6 +866,17 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertSame(mmap, subject.uniqueTokens().merkleMap());
     }
 
+    @Test
+    void updatesAddressBookWithNewWeight() {
+        final var servicesState = tracked(new ServicesState());
+        final var platform = createMockPlatformWithCrypto();
+        final var addressBook = createPretendBookFrom(platform, true);
+        final var stakingMap = stakingInfoBuilder.buildStakingInfoMap(addressBook, bootstrapProperties);
+
+        subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
+        assertTrue(stakingMap.size() > 0);
+    }
+
     private static ServicesApp createApp(final Platform platform) {
         return DaggerServicesApp.builder()
                 .initialHash(new Hash())
