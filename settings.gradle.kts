@@ -83,6 +83,8 @@ include(":hedera-node:hedera-evm-impl")
 
 include(":hedera-node:hedera-mono-service")
 
+include(":hedera-node:cli-clients")
+
 include(":hedera-node:test-clients")
 
 // Enable Gradle Build Scan
@@ -119,7 +121,7 @@ dependencyResolutionManagement {
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.5.1")
-      version("besu-version", "22.10.1")
+      version("besu-version", "23.1.2")
       version("besu-native-version", "0.6.1")
       version("bouncycastle-version", "1.70")
       version("caffeine-version", "3.0.6")
@@ -178,7 +180,8 @@ dependencyResolutionManagement {
               "swirlds-fcqueue",
               "swirlds-jasperdb",
               "swirlds-virtualmap",
-              "swirlds-test-framework"))
+              "swirlds-test-framework",
+              "swirlds-cli"))
 
       // Define the individual libraries
       library("pbj-runtime", "com.hedera.pbj", "pbj-runtime").versionRef("pbj-version")
@@ -248,6 +251,7 @@ dependencyResolutionManagement {
           .versionRef("swirlds-version")
       library("swirlds-test-framework", "com.swirlds", "swirlds-test-framework")
           .versionRef("swirlds-version")
+      library("swirlds-cli", "com.swirlds", "swirlds-cli").versionRef("swirlds-version")
       library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
       library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
       library("spotbugs-annotations", "com.github.spotbugs", "spotbugs-annotations")

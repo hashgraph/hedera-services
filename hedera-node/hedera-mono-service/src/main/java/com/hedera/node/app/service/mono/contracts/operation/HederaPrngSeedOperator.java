@@ -37,7 +37,7 @@ public class HederaPrngSeedOperator extends AbstractOperation {
 
     @Inject
     public HederaPrngSeedOperator(PrngLogic prngLogic, GasCalculator gasCalculator) {
-        super(0x44, "PRNGSEED", 0, 1, 1, gasCalculator);
+        super(0x44, "PRNGSEED", 0, 1, gasCalculator);
         this.prngLogic = prngLogic;
         this.gasCost = gasCalculator.getBaseTierGasCost();
         this.successResponse = new OperationResult(gasCost, null);

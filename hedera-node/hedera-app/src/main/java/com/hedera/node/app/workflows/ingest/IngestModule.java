@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.workflows.ingest;
 
+import com.hedera.node.app.components.IngestComponent;
 import dagger.Binds;
 import dagger.Module;
 
 /**
  * Module for Ingest processing.
  */
-@Module
+@Module(subcomponents = {IngestComponent.class})
 public interface IngestModule {
     @Binds
     IngestWorkflow bindIngestWorkflow(IngestWorkflowImpl ingestWorkflow);
