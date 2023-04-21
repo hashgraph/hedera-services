@@ -60,7 +60,6 @@ import java.util.List;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -147,7 +146,7 @@ class HederaCreateOperationExternalizerTest {
                 .thenReturn(sidecarRecord);
         given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
         given(childFrame.getContractAddress()).willReturn(PRETEND_CONTRACT_ADDRESS);
-        given(childFrame.getCode()).willReturn(CodeFactory.createCode(Bytes.wrap(initCode), Hash.EMPTY, 0, false));
+        given(childFrame.getCode()).willReturn(CodeFactory.createCode(Bytes.wrap(initCode), 0, false));
 
         // when
         subject.externalize(frame, childFrame);
@@ -231,7 +230,7 @@ class HederaCreateOperationExternalizerTest {
                 .thenReturn(sidecarRecord);
         given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
         given(childFrame.getContractAddress()).willReturn(PRETEND_CONTRACT_ADDRESS);
-        given(childFrame.getCode()).willReturn(CodeFactory.createCode(Bytes.wrap(initCode), Hash.EMPTY, 0, false));
+        given(childFrame.getCode()).willReturn(CodeFactory.createCode(Bytes.wrap(initCode), 0, false));
 
         // when:
         subject.externalize(frame, childFrame);
