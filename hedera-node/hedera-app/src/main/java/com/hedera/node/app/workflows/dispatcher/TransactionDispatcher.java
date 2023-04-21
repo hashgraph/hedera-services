@@ -19,17 +19,15 @@ package com.hedera.node.app.workflows.dispatcher;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
-import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -56,17 +54,14 @@ import javax.inject.Singleton;
 public class TransactionDispatcher {
     public static final String TYPE_NOT_SUPPORTED = "This transaction type is not supported";
     private final HandleContext handleContext;
-    private final TransactionContext txnCtx;
     private final TransactionHandlers handlers;
     private final CryptoSignatureWaivers cryptoSignatureWaivers;
     private final GlobalDynamicProperties dynamicProperties;
-    private final UsageLimits usageLimits;
 
     /**
      * Creates a {@code TransactionDispatcher}.
      *
      * @param handleContext     the context of the handle workflow
-     * @param txnCtx            the mono context of the transaction
      * @param handlers          the handlers for all transaction types
      * @param accountNumbers    the account numbers of the system
      * @param dynamicProperties the dynamic properties of the system
@@ -74,17 +69,13 @@ public class TransactionDispatcher {
     @Inject
     public TransactionDispatcher(
             @NonNull final HandleContext handleContext,
-            @NonNull final TransactionContext txnCtx,
             @NonNull final TransactionHandlers handlers,
             @NonNull final HederaAccountNumbers accountNumbers,
-            @NonNull final GlobalDynamicProperties dynamicProperties,
-            @NonNull final UsageLimits usageLimits) {
-        this.txnCtx = requireNonNull(txnCtx);
+            @NonNull final GlobalDynamicProperties dynamicProperties) {
         this.handlers = requireNonNull(handlers);
         this.handleContext = requireNonNull(handleContext);
         this.dynamicProperties = requireNonNull(dynamicProperties);
         this.cryptoSignatureWaivers = new CryptoSignatureWaiversImpl(requireNonNull(accountNumbers));
-        this.usageLimits = requireNonNull(usageLimits);
     }
 
     /**
@@ -106,7 +97,7 @@ public class TransactionDispatcher {
             @NonNull final WritableStoreFactory writableStoreFactory) {
         switch (function) {
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(
-                    txn.consensusCreateTopicOrThrow(), writableStoreFactory.createTopicStore(), usageLimits);
+                    txn.consensusCreateTopicOrThrow(), writableStoreFactory.createTopicStore());
             case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(
                     txn.consensusUpdateTopicOrThrow(), writableStoreFactory.createTopicStore());
             case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(
@@ -235,7 +226,18 @@ public class TransactionDispatcher {
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusDeleteTopicHandler();
         handler.handle(topicDeletion, topicStore);
-        topicStore.commit();
+        finishConsensusDeleteTopic(topicStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param topicStore the topic store used for the update
+     */
+    protected void finishConsensusDeleteTopic(@NonNull final WritableTopicStore topicStore) {
+        // No-op by default
     }
 
     private void dispatchConsensusUpdateTopic(
@@ -243,13 +245,23 @@ public class TransactionDispatcher {
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusUpdateTopicHandler();
         handler.handle(handleContext, topicUpdate, topicStore);
-        topicStore.commit();
+        finishConsensusUpdateTopic(topicStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param topicStore the topic store used for the update
+     */
+    protected void finishConsensusUpdateTopic(@NonNull final WritableTopicStore topicStore) {
+        // No-op by default
     }
 
     private void dispatchConsensusCreateTopic(
             @NonNull final ConsensusCreateTopicTransactionBody topicCreation,
-            @NonNull final WritableTopicStore topicStore,
-            @NonNull final UsageLimits usageLimits) {
+            @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusCreateTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
@@ -259,10 +271,21 @@ public class TransactionDispatcher {
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
                 recordBuilder,
                 topicStore);
-        txnCtx.setCreated(PbjConverter.fromPbj(
-                TopicID.newBuilder().topicNum(recordBuilder.getCreatedTopic()).build()));
-        usageLimits.refreshTopics();
-        topicStore.commit();
+        finishConsensusCreateTopic(recordBuilder, topicStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param recordBuilder the completed record builder for the creation
+     * @param topicStore the topic store used for the creation
+     */
+    protected void finishConsensusCreateTopic(
+            @NonNull final ConsensusCreateTopicRecordBuilder recordBuilder,
+            @NonNull final WritableTopicStore topicStore) {
+        // No-op by default
     }
 
     private void dispatchConsensusSubmitMessage(
@@ -276,8 +299,21 @@ public class TransactionDispatcher {
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
                 recordBuilder,
                 topicStore);
-        txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
-        topicStore.commit();
+        finishConsensusSubmitMessage(recordBuilder, topicStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param recordBuilder the completed record builder for the message submission
+     * @param topicStore the topic store used for the message submission
+     */
+    protected void finishConsensusSubmitMessage(
+            @NonNull final ConsensusSubmitMessageRecordBuilder recordBuilder,
+            @NonNull final WritableTopicStore topicStore) {
+        // No-op by default
     }
 
     /**
