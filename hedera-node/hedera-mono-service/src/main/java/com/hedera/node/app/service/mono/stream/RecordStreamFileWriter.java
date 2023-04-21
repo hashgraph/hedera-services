@@ -50,6 +50,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
 import com.swirlds.logging.LogMarker;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -59,6 +60,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 import java.util.zip.GZIPOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -160,7 +162,17 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private final String sidecarDirPath;
 
+    /**
+     * Whether we should overwrite an existing record file on disk, because we are doing recovery.
+     * (If false, this class just skips any record files that already exist.)
+     */
     private final boolean overwriteFilesDuringRecovery;
+
+    /**
+     * The functional that will be used to try to delete a file; we only have this as a field so
+     * pass in a failing deletion functional for unit tests.
+     */
+    private final Predicate<File> tryDeletion;
 
     private int recordFileVersion;
     private RecordStreamFile.Builder recordStreamFileBuilder;
@@ -175,12 +187,14 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             final String sidecarDirPath,
             final int maxSidecarFileSize,
             final boolean overwriteFilesDuringRecovery,
+            @NonNull final Predicate<File> tryDeletion,
             final GlobalDynamicProperties globalDynamicProperties)
             throws NoSuchAlgorithmException {
         this.dirPath = dirPath;
         this.signer = signer;
         this.streamType = streamType;
         this.overwriteFilesDuringRecovery = overwriteFilesDuringRecovery;
+        this.tryDeletion = tryDeletion;
         this.streamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
         this.metadataStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
         this.sidecarStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
@@ -227,11 +241,9 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             if (fileExists && !overwriteFilesDuringRecovery) {
                 LOG.debug(OBJECT_STREAM.getMarker(), "Stream file already exists {}", recordFileNameShort);
             } else {
-                if (fileExists) {
-                    if (!recordFile.delete()) {
-                        throw new IllegalStateException("Could not delete existing record file '" + recordFileNameShort
-                                + "' to replace during recovery, aborting");
-                    }
+                if (fileExists && !tryDeletion.test(recordFile)) {
+                    throw new IllegalStateException("Could not delete existing record file '" + recordFileNameShort
+                            + "' to replace during recovery, aborting");
                 }
                 try {
                     // write endRunningHash

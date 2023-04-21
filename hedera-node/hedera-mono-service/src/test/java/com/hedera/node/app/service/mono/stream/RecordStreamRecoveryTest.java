@@ -26,6 +26,7 @@ import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.par
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.visitWithSidecars;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -63,6 +64,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -120,13 +122,14 @@ class RecordStreamRecoveryTest {
     @Mock
     private GlobalDynamicProperties globalDynamicProperties;
 
+    @Mock
+    private Predicate<File> tryDeletion;
+
     private RecordStreamManager subject;
 
     @BeforeEach
     void setUp() {
         given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
-        final var mockSig = new Signature(SignatureType.RSA, new byte[0]);
-        given(platform.sign(any())).willReturn(mockSig);
 
         given(nodeLocalProperties.isRecordStreamEnabled()).willReturn(true);
         given(nodeLocalProperties.recordLogDir()).willReturn(tmpDir.toString());
@@ -134,8 +137,26 @@ class RecordStreamRecoveryTest {
         given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(true);
     }
 
-    private void givenSubjectRecoveringFrom(final String onDiskLocForTest)
-            throws NoSuchAlgorithmException, IOException {
+    private void givenRealSubjectRecoveringFrom(final String onDiskLocForTest)
+            throws IOException, NoSuchAlgorithmException {
+        cpAssetsToTmpDirFrom(onDiskLocForTest);
+        final var recoveryWriter = new RecoveryRecordsWriter(2_000L, tmpDir.getAbsolutePath());
+        final var mockSig = new Signature(SignatureType.RSA, new byte[0]);
+        given(platform.sign(any())).willReturn(mockSig);
+        subject = new RecordStreamManager(
+                platform,
+                runningAvgs,
+                nodeLocalProperties,
+                MEMO,
+                new Hash(CommonUtils.unhex(RECOVERY_STATE_RUNNING_HASH)),
+                RELEASE_038x_STREAM_TYPE,
+                globalDynamicProperties,
+                recoveryWriter,
+                File::delete);
+    }
+
+    private void givenDeletionIncapableSubjectRecoveringFrom(final String onDiskLocForTest)
+            throws IOException, NoSuchAlgorithmException {
         cpAssetsToTmpDirFrom(onDiskLocForTest);
         final var recoveryWriter = new RecoveryRecordsWriter(2_000L, tmpDir.getAbsolutePath());
         subject = new RecordStreamManager(
@@ -146,14 +167,15 @@ class RecordStreamRecoveryTest {
                 new Hash(CommonUtils.unhex(RECOVERY_STATE_RUNNING_HASH)),
                 RELEASE_038x_STREAM_TYPE,
                 globalDynamicProperties,
-                recoveryWriter);
+                recoveryWriter,
+                tryDeletion);
     }
 
     @Test
     void directRsoReplayAlsoReproducesSidecars()
             throws IOException, NoSuchAlgorithmException, ExecutionException, InterruptedException {
         given(globalDynamicProperties.getSidecarMaxSizeMb()).willReturn(256);
-        givenSubjectRecoveringFrom(ON_DISK_FILES_AND_SIDECARS_LOC);
+        givenRealSubjectRecoveringFrom(ON_DISK_FILES_AND_SIDECARS_LOC);
         // and:
         final var expectedSidecars = allSidecarFilesFrom(ON_DISK_FILES_AND_SIDECARS_LOC);
 
@@ -172,7 +194,7 @@ class RecordStreamRecoveryTest {
     @Test
     void includesRecordFilePrefixesSkippedByRecoveryStreamWithIndependentRsoSource()
             throws IOException, InterruptedException, ExecutionException, NoSuchAlgorithmException {
-        givenSubjectRecoveringFrom(ON_DISK_FILES_LOC);
+        givenRealSubjectRecoveringFrom(ON_DISK_FILES_LOC);
         // and:
         final var expectedMeta = allRecordFileMetaFrom(ON_DISK_FILES_LOC);
         final var allExpectedRsos = loadRsosFrom(ALL_EXPECTED_RSOS_ASSET);
@@ -189,6 +211,18 @@ class RecordStreamRecoveryTest {
             final var actualFileMeta = actualMeta.get(compressedRecordFile);
             assertEquals(expectedFileMeta, actualFileMeta, "Wrong meta for " + compressedRecordFile);
         }
+    }
+
+    @Test
+    void failsFastIfUnableToDeleteExistingFileDuringRecovery() throws IOException, NoSuchAlgorithmException {
+        givenDeletionIncapableSubjectRecoveringFrom(ON_DISK_FILES_LOC);
+
+        final var e = assertThrows(IllegalStateException.class, this::replayRecoveryRsosAndFreeze);
+
+        assertEquals(
+                "Could not delete existing record file '2023-04-18T14_08_20.465612003Z.rcd.gz' "
+                        + "to replace during recovery, aborting",
+                e.getMessage());
     }
 
     private void replayDirectlyFromRsos(final String loc, final int rsosToSkip)

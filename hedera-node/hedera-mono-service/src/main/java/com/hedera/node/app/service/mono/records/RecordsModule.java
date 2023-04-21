@@ -35,6 +35,7 @@ import com.swirlds.common.utility.Units;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
@@ -92,7 +93,8 @@ public interface RecordsModule {
                     initialHash,
                     streamType,
                     globalDynamicProperties,
-                    recoveryRecordsWriter);
+                    recoveryRecordsWriter,
+                    File::delete);
         } catch (NoSuchAlgorithmException | IOException fatal) {
             throw new IllegalStateException("Could not construct record stream manager", fatal);
         }

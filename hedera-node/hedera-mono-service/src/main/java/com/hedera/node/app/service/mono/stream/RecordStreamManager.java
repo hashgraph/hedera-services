@@ -33,6 +33,7 @@ import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.system.Platform;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -119,7 +121,8 @@ public class RecordStreamManager {
             final Hash initialHash,
             final RecordStreamType streamType,
             final GlobalDynamicProperties globalDynamicProperties,
-            final @Nullable RecoveryRecordsWriter recoveryRecordsWriter)
+            final @Nullable RecoveryRecordsWriter recoveryRecordsWriter,
+            final @NonNull Predicate<File> tryDeletion)
             throws NoSuchAlgorithmException, IOException {
         final var nodeScopedRecordLogDir = effectiveLogDir(nodeLocalProperties.recordLogDir(), accountMemo);
         final var nodeScopedSidecarDir = effectiveSidecarDir(nodeScopedRecordLogDir, nodeLocalProperties.sidecarDir());
@@ -136,6 +139,7 @@ public class RecordStreamManager {
                     // If in recovery mode, we want to overwrite any on-disk files that already exist with
                     // the "golden" records we re-generate from the recovery event stream
                     recoveryRecordsWriter != null,
+                    tryDeletion,
                     globalDynamicProperties);
             writeQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>(getStaticThreadManager())
                     .setNodeId(platform.getSelfId().getId())
