@@ -41,7 +41,7 @@ public final class NetworkServiceImpl implements NetworkService {
             SemanticVersion.newBuilder().minor(34).build();
 
     @Override
-    public void registerSchemas(final @NonNull SchemaRegistry registry) {
+    public void registerMonoAdapterSchemas(final @NonNull SchemaRegistry registry) {
         registry.register(networkSchema());
     }
 

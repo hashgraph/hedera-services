@@ -196,6 +196,8 @@ extraJavaModuleInfo {
     automaticModule("com.goterl:resource-loader", "resource.loader")
     automaticModule("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.secp256k1")
     automaticModule("org.hyperledger.besu.internal:crypto", "org.hyperledger.besu.crypto")
+    automaticModule("tech.pegasys:jc-kzg-4844", "tech.pegasys.jckzg4844")
+
     automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.util")
     automaticModule("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.bls12.for381")
     automaticModule("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.secp256r1")
@@ -222,6 +224,8 @@ extraJavaModuleInfo {
     automaticModule("com.google.errorprone:javac-shaded", "com.google.errorprone.javac.shaded")
     automaticModule("com.google.googlejavaformat:google-java-format", "com.google.googlejavaformat")
     automaticModule("com.google.devtools.ksp:symbol-processing-api", "com.google.devtools.ksp.symbolprocessingapi")
+    automaticModule("org.hyperledger.besu:arithmetic", "org.hyperledger.besu.arithmetic")
+    
     automaticModule("com.squareup:javapoet", "com.squareup.javapoet")
     automaticModule("org.checkerframework:checker-qual", "org.checkerframework.checker.qual")
     automaticModule("org.checkerframework:checker-compat-qual", "org.checkerframework.checker.compat.qual")
