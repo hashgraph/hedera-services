@@ -16,6 +16,8 @@
 
 package com.swirlds.config.api;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -37,137 +39,121 @@ public interface Configuration {
      *
      * @return the stream of all property names
      */
+    @NonNull
     Stream<String> getPropertyNames();
 
     /**
      * Checks if a property with the given name exists and returns true in that case.
      *
-     * @param propertyName
-     * 		the name of the property that should be checked
+     * @param propertyName the name of the property that should be checked
      * @return true if the property exists, false otherwise
      */
-    boolean exists(String propertyName);
+    boolean exists(@NonNull String propertyName);
 
     /**
      * Returns the {@link String} value of the property with the given name.
      *
-     * @param propertyName
-     * 		the name of the property
+     * @param propertyName the name of the property
      * @return the value of the property
-     * @throws NoSuchElementException
-     * 		if the property does not exist.
+     * @throws NoSuchElementException if the property does not exist.
      */
-    String getValue(final String propertyName) throws NoSuchElementException;
+    @Nullable
+    String getValue(@NonNull final String propertyName) throws NoSuchElementException;
 
     /**
      * Returns the {@link String} value of the property with the given name or the given default value if the property
      * does not exist.
      *
-     * @param propertyName
-     * 		the name of the property
-     * @param defaultValue
-     * 		the default value that will be used if the property does not exist.
+     * @param propertyName the name of the property
+     * @param defaultValue the default value that will be used if the property does not exist.
      * @return the value of the property or the given default value if the property does not exist
      */
-    String getValue(final String propertyName, String defaultValue);
+    @Nullable
+    String getValue(@NonNull final String propertyName, @Nullable String defaultValue);
 
     /**
      * Returns the value of the property with the given name.
      *
-     * @param propertyName
-     * 		the name of the property
-     * @param propertyType
-     * 		the type of the property
-     * @param <T>
-     * 		the generic type of the property
+     * @param propertyName the name of the property
+     * @param propertyType the type of the property
+     * @param <T>          the generic type of the property
      * @return the value of the property
-     * @throws NoSuchElementException
-     * 		if the property does not exist.
-     * @throws IllegalArgumentException
-     * 		if the raw {@code String} value of the property can not be converted to the given type
+     * @throws NoSuchElementException   if the property does not exist.
+     * @throws IllegalArgumentException if the raw {@code String} value of the property can not be converted to the
+     *                                  given type
      */
-    <T> T getValue(String propertyName, Class<T> propertyType) throws NoSuchElementException, IllegalArgumentException;
+    @Nullable
+    <T> T getValue(@NonNull String propertyName, @NonNull Class<T> propertyType)
+            throws NoSuchElementException, IllegalArgumentException;
 
     /**
-     * Returns the value of the property with the given name or the given default value if the property
-     * does not exist.
+     * Returns the value of the property with the given name or the given default value if the property does not exist.
      *
-     * @param propertyName
-     * 		the name of the property
-     * @param propertyType
-     * 		the type of the property
-     * @param defaultValue
-     * 		the default value that will be used if the property does not exist.
-     * @param <T>
-     * 		the generic type of the property
+     * @param propertyName the name of the property
+     * @param propertyType the type of the property
+     * @param defaultValue the default value that will be used if the property does not exist.
+     * @param <T>          the generic type of the property
      * @return the value of the property or the given default value if the property does not exist
-     * @throws IllegalArgumentException
-     * 		if the raw {@code String} value of the property can not be converted to the given type
+     * @throws IllegalArgumentException if the raw {@code String} value of the property can not be converted to the
+     *                                  given type
      */
-    <T> T getValue(String propertyName, Class<T> propertyType, T defaultValue) throws IllegalArgumentException;
+    @Nullable
+    <T> T getValue(@NonNull String propertyName, @NonNull Class<T> propertyType, @Nullable T defaultValue)
+            throws IllegalArgumentException;
 
     /**
      * Returns a {@link List} of string elements of the property with the given name
      *
-     * @param propertyName
-     * 		the name of the property
+     * @param propertyName the name of the property
      * @return a {@link List} of elements of the property with the given name
-     * @throws NoSuchElementException
-     * 		if the property does not exist.
-     * @throws IllegalArgumentException
-     * 		if the raw {@link String} value of the property can not be converted to a list or the given type
+     * @throws NoSuchElementException   if the property does not exist.
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
+     *                                  or the given type
      */
-    List<String> getValues(String propertyName);
+    @Nullable
+    List<String> getValues(@NonNull String propertyName);
 
     /**
      * Returns a {@link List} of string elements of the property with the given name or the given default {@link List}
      *
-     * @param propertyName
-     * 		the name of the property
-     * @param defaultValue
-     * 		the default {@link List}
+     * @param propertyName the name of the property
+     * @param defaultValue the default {@link List}
      * @return a {@link List} of elements of the property with the given name
-     * @throws NoSuchElementException
-     * 		if the property does not exist.
-     * @throws IllegalArgumentException
-     * 		if the raw {@link String} value of the property can not be converted to a list or the given type
+     * @throws NoSuchElementException   if the property does not exist.
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
+     *                                  or the given type
      */
-    List<String> getValues(String propertyName, List<String> defaultValue);
+    @Nullable
+    List<String> getValues(@NonNull String propertyName, @Nullable List<String> defaultValue);
 
     /**
      * Returns a {@link List} of elements of the property with the given name
      *
-     * @param propertyName
-     * 		the name of the property
-     * @param propertyType
-     * 		the type of the elements
-     * @param <T>
-     * 		the generic type of the elements
+     * @param propertyName the name of the property
+     * @param propertyType the type of the elements
+     * @param <T>          the generic type of the elements
      * @return a {@link List} of elements of the property with the given name
-     * @throws NoSuchElementException
-     * 		if the property does not exist.
-     * @throws IllegalArgumentException
-     * 		if the raw {@link String} value of the property can not be converted to a list or the given type
+     * @throws NoSuchElementException   if the property does not exist.
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
+     *                                  or the given type
      */
-    <T> List<T> getValues(String propertyName, Class<T> propertyType)
+    @Nullable
+    <T> List<T> getValues(@NonNull String propertyName, @NonNull Class<T> propertyType)
             throws NoSuchElementException, IllegalArgumentException;
 
     /**
      * Returns a {@link List} of elements of the property with the given name or the given default {@link List}
      *
-     * @param propertyName
-     * 		the name of the property
-     * @param propertyType
-     * 		the type of the elements
-     * @param defaultValue
-     * 		the default {@link List}
-     * @param <T>
-     * 		the generic type of the elements
+     * @param propertyName the name of the property
+     * @param propertyType the type of the elements
+     * @param defaultValue the default {@link List}
+     * @param <T>          the generic type of the elements
      * @return a {@link List} of elements of the property with the given name or the given default list
-     * @throws IllegalArgumentException
-     * 		if the raw {@link String} value of the property can not be converted to a list or the given type
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
+     *                                  or the given type
      */
-    <T> List<T> getValues(String propertyName, Class<T> propertyType, List<T> defaultValue)
+    @Nullable
+    <T> List<T> getValues(@NonNull String propertyName, @NonNull Class<T> propertyType, @Nullable List<T> defaultValue)
             throws IllegalArgumentException;
 
     /**
@@ -180,19 +166,19 @@ public interface Configuration {
      * properties.The result of this method is an instance of the given {@link Record} that provides the values for all
      * properties that are specified in the record definition.
      *
-     * @param type
-     * 		type of the record
-     * @param <T>
-     * 		type of the record
+     * @param type type of the record
+     * @param <T>  type of the record
      * @return instance of the record that contains the config values for all config properties that are defined in the
-     * 		record definition.
+     * record definition.
      */
-    <T extends Record> T getConfigData(Class<T> type);
+    @NonNull
+    <T extends Record> T getConfigData(@NonNull Class<T> type);
 
     /**
      * Returns all types that are registered as config data types (see {@link #getConfigData(Class)}).
      *
      * @return all types that are registered as config data types
      */
+    @NonNull
     Collection<Class<? extends Record>> getConfigDataTypes();
 }
