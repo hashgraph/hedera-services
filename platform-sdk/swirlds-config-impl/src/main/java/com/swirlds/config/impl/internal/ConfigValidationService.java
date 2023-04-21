@@ -16,7 +16,7 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.validation.ConfigPropertyConstraint;
 import com.swirlds.config.api.validation.ConfigValidator;
@@ -27,6 +27,7 @@ import com.swirlds.config.impl.validators.annotation.internal.MaxConstraintsVali
 import com.swirlds.config.impl.validators.annotation.internal.MinConstraintsValidation;
 import com.swirlds.config.impl.validators.annotation.internal.NegativeConstraintsValidation;
 import com.swirlds.config.impl.validators.annotation.internal.PositiveConstraintsValidation;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -52,17 +53,18 @@ class ConfigValidationService implements ConfigLifecycle {
      */
     private boolean initialized = false;
 
-    ConfigValidationService(final ConverterService converterService) {
+    ConfigValidationService(@NonNull final ConverterService converterService) {
         this.constraintValidator = new ConstraintValidator(converterService);
         this.validators = new ConcurrentLinkedQueue<>();
     }
 
-    void addValidator(final ConfigValidator validator) {
+    void addValidator(@NonNull final ConfigValidator validator) {
         throwIfInitialized();
-        CommonUtils.throwArgNull(validator, "validator");
+        ArgumentUtils.throwArgNull(validator, "validator");
         validators.add(validator);
     }
 
+    @Override
     public void init() {
         throwIfInitialized();
         // General Validator for constraints
@@ -87,9 +89,9 @@ class ConfigValidationService implements ConfigLifecycle {
         return initialized;
     }
 
-    void validate(final Configuration configuration) {
+    void validate(@NonNull final Configuration configuration) {
         throwIfNotInitialized();
-        CommonUtils.throwArgNull(configuration, "configuration");
+        ArgumentUtils.throwArgNull(configuration, "configuration");
         final List<ConfigViolation> violations =
                 validators.stream().flatMap(v -> v.validate(configuration)).collect(Collectors.toList());
         if (!violations.isEmpty()) {
@@ -100,11 +102,13 @@ class ConfigValidationService implements ConfigLifecycle {
     }
 
     <T> void addConstraint(
-            final String propertyName, final Class<T> valueType, final ConfigPropertyConstraint<T> validator) {
+            @NonNull final String propertyName,
+            @NonNull final Class<T> valueType,
+            @NonNull final ConfigPropertyConstraint<T> validator) {
         throwIfInitialized();
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
-        CommonUtils.throwArgNull(valueType, "valueType");
-        CommonUtils.throwArgNull(validator, "validator");
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        ArgumentUtils.throwArgNull(valueType, "valueType");
+        ArgumentUtils.throwArgNull(validator, "validator");
         constraintValidator.addConstraint(propertyName, valueType, validator);
     }
 }
