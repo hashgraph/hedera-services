@@ -88,7 +88,7 @@ class AbstractEvmRecordingCreateOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new Subject(0xF0, "ħCREATE", 3, 1, 1, gasCalculator, externalizer);
+        subject = new Subject(0xF0, "ħCREATE", 3, 1, gasCalculator, externalizer);
     }
 
     @Test
@@ -173,6 +173,8 @@ class AbstractEvmRecordingCreateOperationTest {
         final var captor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
+        final var initCode = "initCode".getBytes();
+        given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
@@ -246,10 +248,9 @@ class AbstractEvmRecordingCreateOperationTest {
                 final String name,
                 final int stackItemsConsumed,
                 final int stackItemsProduced,
-                final int opSize,
                 final GasCalculator gasCalculator,
                 final CreateOperationExternalizer externalizer) {
-            super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator, externalizer);
+            super(opcode, name, stackItemsConsumed, stackItemsProduced, gasCalculator, externalizer);
         }
 
         @Override

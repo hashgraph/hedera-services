@@ -69,7 +69,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.api.SoftAssertions;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.account.EvmAccount;
@@ -92,7 +91,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class HederaTracerTest {
 
-    private static final Code code = CodeFactory.createCode(Bytes.of(4), Hash.EMPTY, 0, false);
+    private static final Code code = CodeFactory.createCode(Bytes.of(4), 0, false);
     private static final Wei value = Wei.of(1L);
     private static final long initialGas = 1000L;
     private static final Bytes input = Bytes.of("inputData".getBytes());
