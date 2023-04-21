@@ -334,7 +334,19 @@ public class TransactionDispatcher {
             @NonNull final TransactionBody tokenGrantKyc, @NonNull final WritableTokenRelationStore tokenRelStore) {
         final var handler = handlers.tokenGrantKycToAccountHandler();
         handler.handle(tokenGrantKyc, tokenRelStore);
-        tokenRelStore.commit();
+        finishTokenGrantKycToAccount(tokenRelStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param topicStore the token rel store used for the message submission
+     */
+    protected void finishTokenGrantKycToAccount(
+            @NonNull final WritableTokenRelationStore tokenRelStore) {
+        // No-op by default
     }
 
     /**
@@ -347,7 +359,19 @@ public class TransactionDispatcher {
             @NonNull TransactionBody tokenRevokeKyc, @NonNull WritableTokenRelationStore tokenRelStore) {
         final var handler = handlers.tokenRevokeKycFromAccountHandler();
         handler.handle(tokenRevokeKyc, tokenRelStore);
-        tokenRelStore.commit();
+        finishTokenRevokeKycFromAccount(tokenRelStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param topicStore the token rel store used for the message submission
+     */
+    protected void finishTokenRevokeKycFromAccount(
+            @NonNull final WritableTokenRelationStore tokenRelStore) {
+        // No-op by default
     }
 
     /**

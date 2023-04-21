@@ -63,7 +63,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.body().tokenRevokeKycOrThrow();
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
-        if (tokenMeta == null) throw new PreCheckException(ResponseCodeEnum.INVALID_TOKEN_ID);
+        if (tokenMeta == null) throw new PreCheckException(ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY);
         if (tokenMeta.hasKycKey()) {
             context.requireKey(tokenMeta.kycKey());
         }
