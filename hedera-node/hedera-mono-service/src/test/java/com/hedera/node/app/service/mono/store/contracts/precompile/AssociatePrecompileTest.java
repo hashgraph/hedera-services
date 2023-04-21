@@ -701,6 +701,11 @@ class AssociatePrecompileTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final Bytes pretendArguments = Bytes.ofUnsignedInt(ABI_ID_ASSOCIATE_TOKEN);
+        associatePrecompile
+                .when(() -> decodeAssociation(eq(pretendArguments), any()))
+                .thenReturn(HTSTestsUtil.associateOp);
+
         final var builder = TokenAssociateTransactionBody.newBuilder();
         builder.setAccount(HTSTestsUtil.associateOp.accountId());
         builder.addAllTokens(HTSTestsUtil.associateOp.tokenIds());

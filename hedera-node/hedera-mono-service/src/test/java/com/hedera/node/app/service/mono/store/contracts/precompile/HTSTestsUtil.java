@@ -117,6 +117,7 @@ public class HTSTestsUtil {
             Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
     public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
     public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
+    public static final Bytes invalidAccountId = UInt256.valueOf(ResponseCodeEnum.INVALID_ACCOUNT_ID_VALUE);
     public static final Bytes invalidAutoRenewAccountResult = UInt256.valueOf(INVALID_AUTORENEW_ACCOUNT_VALUE);
     public static final Bytes invalidTokenIdResult = UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_ID_VALUE);
     public static final Bytes invalidSerialNumberResult =
@@ -127,6 +128,7 @@ public class HTSTestsUtil {
     public static final Bytes missingNftResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
     public static final Association associateOp = Association.singleAssociation(accountMerkleId, tokenMerkleId);
+    public static final Dissociation dissociateOp = Dissociation.singleDissociation(accountMerkleId, tokenMerkleId);
     public static final TokenID fungible = IdUtils.asToken("0.0.888");
     public static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
