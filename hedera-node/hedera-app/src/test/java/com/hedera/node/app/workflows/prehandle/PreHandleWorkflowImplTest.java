@@ -256,7 +256,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         verify(transaction).setMetadata(captor.capture());
         AssertionsForClassTypes.assertThat(captor.getValue())
                 .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
-        verify(dispatcher, never()).dispatchPreHandle(any(), any());
+        verify(dispatcher, never()).dispatchPreHandle(any());
     }
 
     @Test
@@ -296,7 +296,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         // when
         workflow.start(state, event);
 
-        verify(dispatcher).dispatchPreHandle(any(), any());
+        verify(dispatcher).dispatchPreHandle(any());
     }
 
     private byte[] cryptoTransferContents() {

@@ -21,8 +21,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionResponse;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -37,7 +35,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 
@@ -83,17 +80,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
     @Override
     public void submitTransaction(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
-        submitTransaction(requestBuffer, responseBuffer, ReadableAccountStore::new);
-    }
-
-    // Package-private for testing
-    void submitTransaction(
-            @NonNull final Bytes requestBuffer,
-            @NonNull final BufferedData responseBuffer,
-            @NonNull final Function<ReadableStates, ReadableAccountStore> storeSupplier) {
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
-        requireNonNull(storeSupplier);
 
         ResponseCodeEnum result = ResponseCodeEnum.OK;
         long estimatedFee = 0L;
