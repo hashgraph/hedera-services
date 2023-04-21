@@ -99,6 +99,7 @@ public class KeyUtils {
             for (Key keys : ((ThresholdKey) key.value()).keys().keys()) {
                 if (!isValid(keys)) {
                     isKeyListValid = false;
+                    break;
                 }
             }
             return (threshold >= 1 && threshold <= length && isKeyListValid);

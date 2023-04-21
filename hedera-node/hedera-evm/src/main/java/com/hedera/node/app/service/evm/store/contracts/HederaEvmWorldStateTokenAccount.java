@@ -46,7 +46,7 @@ public class HederaEvmWorldStateTokenAccount implements Account {
 
     @Override
     public Bytes getCode() {
-        return interpolatedCode().getContainerBytes();
+        return interpolatedCode().getBytes();
     }
 
     @Override
@@ -102,7 +102,7 @@ public class HederaEvmWorldStateTokenAccount implements Account {
     private Code interpolatedCode() {
         if (interpolatedCode == null) {
             final var interpolatedBytecode = proxyBytecodeFor(address);
-            interpolatedCode = CodeFactory.createCode(interpolatedBytecode, Hash.hash(interpolatedBytecode), 0, false);
+            interpolatedCode = CodeFactory.createCode(interpolatedBytecode, 0, false);
         }
         return interpolatedCode;
     }
