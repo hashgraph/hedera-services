@@ -24,7 +24,7 @@ import java.time.ZoneId;
  * A clock that is accurate to the nanosecond, as compared to the standard Java "Instant" clock, which is only
  * accurate to the nearest millisecond.
  */
-final class NanoClock extends Clock {
+public final class NanoClock extends Clock {
 
     private final Clock clock;
     private final long initialNanos;

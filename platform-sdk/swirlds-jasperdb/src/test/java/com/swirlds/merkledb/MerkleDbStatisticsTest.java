@@ -20,7 +20,6 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.merkledb.MerkleDbStatistics.STAT_CATEGORY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -37,6 +36,8 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.concurrent.ScheduledExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class MerkleDbStatisticsTest {
 
@@ -55,80 +56,70 @@ class MerkleDbStatisticsTest {
         when(registry.register(any(), any(), any())).thenReturn(true);
         metrics = new DefaultMetrics(
                 null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
-        statistics = new MerkleDbStatistics(LABEL, false);
+        statistics = new MerkleDbStatistics(LABEL);
         statistics.registerMetrics(metrics);
     }
 
     @Test
     void testInitialState() {
-        assertDoesNotThrow(statistics::cycleInternalNodeWritesPerSecond);
-        assertDoesNotThrow(statistics::cycleInternalNodeReadsPerSecond);
-        assertDoesNotThrow(statistics::cycleLeafWritesPerSecond);
-        assertDoesNotThrow(statistics::cycleLeafByKeyReadsPerSecond);
-        assertDoesNotThrow(statistics::cycleLeafByPathReadsPerSecond);
-        assertDoesNotThrow(() -> statistics.setInternalHashesStoreFileCount(42));
-        assertDoesNotThrow(() -> statistics.setInternalHashesStoreTotalFileSizeInMB(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreFileCount(42));
-        assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreTotalFileSizeInMB(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafPathToHashKeyValueStoreFileCount(42));
-        assertDoesNotThrow(() -> statistics.setLeafPathToHashKeyValueStoreTotalFileSizeInMB(Math.PI));
-        assertDoesNotThrow(() -> statistics.setInternalHashesStoreSmallMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setInternalHashesStoreMediumMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setInternalHashesStoreLargeMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreSmallMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreMediumMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreLargeMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafPathToHashKeyValueStoreSmallMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafPathToHashKeyValueStoreMediumMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafPathToHashKeyValueStoreLargeMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setOffHeapMemoryInternalNodesListInMB(42));
-        assertDoesNotThrow(() -> statistics.setOffHeapMemoryLeafNodesListInMB(42));
-        assertDoesNotThrow(() -> statistics.setOffHeapMemoryKeyToPathListInMB(42));
-        assertDoesNotThrow(() -> statistics.setOffHeapMemoryDataSourceInMB(42));
-    }
-
-    @Test
-    void testNonLongKeyMode() {
-        // given
-
-        // then
-        assertNull(metrics.getMetric(STAT_CATEGORY, "leafKeyToPathFileCount_" + LABEL));
-        assertNull(metrics.getMetric(STAT_CATEGORY, "leafKeyToPathFileSizeMb_" + LABEL));
-        assertNull(metrics.getMetric(STAT_CATEGORY, "leafKeyToPathSmallMergeTime_" + LABEL));
-        assertNull(metrics.getMetric(STAT_CATEGORY, "leafKeyToPathMediumMergeTime_" + LABEL));
-        assertNull(metrics.getMetric(STAT_CATEGORY, "leafKeyToPathLargeMergeTime_" + LABEL));
-
-        assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreFileCount(42));
-        assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreTotalFileSizeInMB(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreSmallMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreMediumMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreLargeMergeTime(Math.PI));
+        assertDoesNotThrow(statistics::countHashWrites);
+        assertDoesNotThrow(statistics::countHashReads);
+        assertDoesNotThrow(statistics::countLeafWrites);
+        assertDoesNotThrow(statistics::countLeafReads);
+        assertDoesNotThrow(statistics::countLeafKeyReads);
+        assertDoesNotThrow(() -> statistics.setHashesStoreFileCount(42));
+        assertDoesNotThrow(() -> statistics.setHashesStoreFileSizeMb(31415));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreFileCount(42));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreFileSizeMb(31415));
+        assertDoesNotThrow(() -> statistics.setLeavesStoreFileCount(42));
+        assertDoesNotThrow(() -> statistics.setLeavesStoreFileSizeMb(31415));
+        assertDoesNotThrow(() -> statistics.setTotalFileSizeMb(314159));
+        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionTimeMs(CompactionType.SMALL, 314));
+        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionSavedSpaceMb(CompactionType.SMALL, Math.PI));
+        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionTimeMs(CompactionType.MEDIUM, 3141));
+        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionSavedSpaceMb(CompactionType.MEDIUM, Math.PI));
+        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionTimeMs(CompactionType.FULL, 31415));
+        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionSavedSpaceMb(CompactionType.FULL, Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionTimeMs(CompactionType.SMALL, 314));
+        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionSavedSpaceMb(CompactionType.SMALL, Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionTimeMs(CompactionType.MEDIUM, 3141));
+        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionSavedSpaceMb(CompactionType.MEDIUM, Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionTimeMs(CompactionType.FULL, 31415));
+        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionSavedSpaceMb(CompactionType.FULL, Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionTimeMs(CompactionType.SMALL, 314));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionSavedSpaceMb(CompactionType.SMALL, Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionTimeMs(CompactionType.MEDIUM, 3141));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionSavedSpaceMb(CompactionType.MEDIUM, Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionTimeMs(CompactionType.FULL, 31415));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionSavedSpaceMb(CompactionType.FULL, Math.PI));
+        assertDoesNotThrow(() -> statistics.setOffHeapHashesIndexMb(42));
+        assertDoesNotThrow(() -> statistics.setOffHeapLeavesIndexMb(42));
+        assertDoesNotThrow(() -> statistics.setOffHeapLongKeysIndexMb(42));
+        assertDoesNotThrow(() -> statistics.setOffHeapObjectKeyBucketsIndexMb(42));
+        assertDoesNotThrow(() -> statistics.setOffHeapHashesListMb(42));
+        assertDoesNotThrow(() -> statistics.setOffHeapDataSourceMb(42));
     }
 
     @Test
     void testConstructorWithNullParameter() {
-        assertThrows(IllegalArgumentException.class, () -> new MerkleDbStatistics(null, true));
+        assertThrows(IllegalArgumentException.class, () -> new MerkleDbStatistics(null));
     }
 
     @Test
     void testRegisterWithNullParameter() {
         // given
-        final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL, false);
+        final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL);
 
         // then
         assertThrows(IllegalArgumentException.class, () -> statistics.registerMetrics(null));
     }
 
-    @Test
-    void testCycleInternalNodeWritesPerSecond() {
-        // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalNodeWrites/s_" + LABEL);
+    private Metric getMetric(final String section, final String suffix) {
+        return getMetric(metrics, section, suffix);
+    }
 
-        // when
-        statistics.cycleInternalNodeWritesPerSecond();
-
-        // then
-        assertValueSet(metric);
+    private Metric getMetric(final Metrics metrics, final String section, final String suffix) {
+        return metrics.getMetric(STAT_CATEGORY, "ds_" + section + suffix);
     }
 
     private static void assertValueSet(final Metric metric) {
@@ -136,13 +127,21 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
+    void testCycleInternalNodeWritesPerSecond() {
+        // given
+        final Metric metric = getMetric("queries_", "hashWrites/s_" + LABEL);
+        // when
+        statistics.countHashWrites();
+        // then
+        assertValueSet(metric);
+    }
+
+    @Test
     void testCycleInternalNodeReadsPerSecond() {
         // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalNodeReads/s_" + LABEL);
-
+        final Metric metric = getMetric("queries_", "hashReads/s_" + LABEL);
         // when
-        statistics.cycleInternalNodeReadsPerSecond();
-
+        statistics.countHashReads();
         // then
         assertValueSet(metric);
     }
@@ -150,11 +149,9 @@ class MerkleDbStatisticsTest {
     @Test
     void testCycleLeafWritesPerSecond() {
         // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafWrites/s_" + LABEL);
-
+        final Metric metric = getMetric("queries_", "leafWrites/s_" + LABEL);
         // when
-        statistics.cycleLeafWritesPerSecond();
-
+        statistics.countLeafWrites();
         // then
         assertValueSet(metric);
     }
@@ -162,254 +159,215 @@ class MerkleDbStatisticsTest {
     @Test
     void testCycleLeafByKeyReadsPerSecond() {
         // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafByKeyReads/s_" + LABEL);
-
+        final Metric metric = getMetric("queries_", "leafReads/s_" + LABEL);
         // when
-        statistics.cycleLeafByKeyReadsPerSecond();
-
+        statistics.countLeafReads();
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testCycleLeafByPathReadsPerSecond() {
+    void testCycleLeafKeyWritesPerSecond() {
         // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafByPathReads/s_" + LABEL);
-
+        final Metric metric = getMetric("queries_", "leafKeyWrites/s_" + LABEL);
         // when
-        statistics.cycleLeafByPathReadsPerSecond();
-
+        statistics.countLeafKeyWrites();
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetInternalHashesStoreFileCount() {
+    void testCycleLeafKeyReadsPerSecond() {
         // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalHashFileCount_" + LABEL);
-
+        final Metric metric = getMetric("queries_", "leafKeyReads/s_" + LABEL);
         // when
-        statistics.setInternalHashesStoreFileCount(42);
-
+        statistics.countLeafKeyReads();
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetInternalHashesStoreTotalFileSizeInMB() {
+    void testSetHashesStoreFileCount() {
         // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalHashFileSizeMb_" + LABEL);
-
+        final Metric metric = getMetric("files_", "hashesStoreFileCount_" + LABEL);
         // when
-        statistics.setInternalHashesStoreTotalFileSizeInMB(42);
-
+        statistics.setHashesStoreFileCount(42);
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetLeafKeyToPathStoreFileCount() {
+    void testSetHashesStoreTotalFileSizeMb() {
         // given
-        statistics = new MerkleDbStatistics(LABEL, true);
+        final Metric metric = getMetric("files_", "hashesStoreFileSizeMb_" + LABEL);
+        // when
+        statistics.setHashesStoreFileSizeMb(42);
+        // then
+        assertValueSet(metric);
+    }
+
+    @Test
+    void testSetLeavesStoreFileCount() {
+        // given
+        final Metric metric = getMetric("files_", "leavesStoreFileCount_" + LABEL);
+        // when
+        statistics.setLeavesStoreFileCount(42);
+        // then
+        assertValueSet(metric);
+    }
+
+    @Test
+    void testSetLeavesStoreTotalFileSizeMb() {
+        // given
+        final Metric metric = getMetric("files_", "leavesStoreFileSizeMb_" + LABEL);
+        // when
+        statistics.setLeavesStoreFileSizeMb(31415);
+        // then
+        assertValueSet(metric);
+    }
+
+    @Test
+    void testSetLeafKeysStoreFileCount() {
+        // given
+        statistics = new MerkleDbStatistics(LABEL);
         statistics.registerMetrics(metrics);
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafKeyToPathFileCount_" + LABEL);
-
+        final Metric metric = getMetric("files_", "leafKeysStoreFileCount_" + LABEL);
         // when
-        statistics.setLeafKeyToPathStoreFileCount(42);
-
+        statistics.setLeafKeysStoreFileCount(42);
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetLeafKeyToPathStoreTotalFileSizeInMB() {
+    void testSetLeafKeysStoreTotalFileSizeMb() {
         // given
-        statistics = new MerkleDbStatistics(LABEL, true);
+        statistics = new MerkleDbStatistics(LABEL);
         statistics.registerMetrics(metrics);
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafKeyToPathFileSizeMb_" + LABEL);
-
+        final Metric metric = getMetric("files_", "leafKeysStoreFileSizeMb_" + LABEL);
         // when
-        statistics.setLeafKeyToPathStoreTotalFileSizeInMB(Math.PI);
-
+        statistics.setLeafKeysStoreFileSizeMb(31415);
         // then
         assertValueSet(metric);
     }
 
-    @Test
-    void testSetLeafPathToHashKeyValueStoreFileCount() {
+    private static String ctypeStr(final CompactionType c) {
+        return switch (c) {
+            case SMALL -> "Small";
+            case MEDIUM -> "Medium";
+            case FULL -> "Full";
+        };
+    }
+
+    @ParameterizedTest
+    @EnumSource(CompactionType.class)
+    void testSetHashesStoreMergeTime(final CompactionType compactionType) {
         // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafHKVFileCount_" + LABEL);
-
+        final Metric metric = getMetric("compactions_", "hashes" + ctypeStr(compactionType) + "TimeMs_" + LABEL);
         // when
-        statistics.setLeafPathToHashKeyValueStoreFileCount(42);
-
+        statistics.setHashesStoreCompactionTimeMs(compactionType, 31415);
         // then
         assertValueSet(metric);
     }
 
-    @Test
-    void testSetLeafPathToHashKeyValueStoreTotalFileSizeInMB() {
+    @ParameterizedTest
+    @EnumSource(CompactionType.class)
+    void testSetHashesStoreSavedSpace(final CompactionType compactionType) {
         // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafHKVFileSizeMb_" + LABEL);
-
+        final Metric metric = getMetric("compactions_", "hashes" + ctypeStr(compactionType) + "SavedSpaceMb_" + LABEL);
         // when
-        statistics.setLeafPathToHashKeyValueStoreTotalFileSizeInMB(Math.PI);
-
+        statistics.setHashesStoreCompactionSavedSpaceMb(compactionType, Math.PI);
         // then
         assertValueSet(metric);
     }
 
-    @Test
-    void testSetInternalHashesStoreSmallMergeTime() {
-        // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalHashSmallMergeTime_" + LABEL);
-
-        // when
-        statistics.setInternalHashesStoreSmallMergeTime(Math.PI);
-
-        // then
-        assertValueSet(metric);
-    }
-
-    @Test
-    void testSetInternalHashesStoreMediumMergeTime() {
-        // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalHashMediumMergeTime_" + LABEL);
-
-        // when
-        statistics.setInternalHashesStoreMediumMergeTime(Math.PI);
-
-        // then
-        assertValueSet(metric);
-    }
-
-    @Test
-    void testSetInternalHashesStoreLargeMergeTime() {
-        // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalHashLargeMergeTime_" + LABEL);
-
-        // when
-        statistics.setInternalHashesStoreLargeMergeTime(Math.PI);
-
-        // then
-        assertValueSet(metric);
-    }
-
-    @Test
-    void testSetLeafKeyToPathStoreSmallMergeTime() {
+    @ParameterizedTest
+    @EnumSource(CompactionType.class)
+    void testSetLeafKeysStoreMergeTime(final CompactionType compactionType) {
         // given
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
                 null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
-        final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL, true);
+        final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL);
         statistics.registerMetrics(metrics);
-
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafKeyToPathSmallMergeTime_" + LABEL);
-
+        final Metric metric =
+                getMetric(metrics, "compactions_", "leafKeys" + ctypeStr(compactionType) + "TimeMs_" + LABEL);
         // when
-        statistics.setLeafKeyToPathStoreSmallMergeTime(Math.PI);
+        statistics.setLeafKeysStoreCompactionTimeMs(compactionType, 31415);
+        // then
+        assertValueSet(metric);
+    }
 
+    @ParameterizedTest
+    @EnumSource(CompactionType.class)
+    void testSetLeafKeysStoreSavedSpace(final CompactionType compactionType) {
+        // given
+        final Metric metric =
+                getMetric("compactions_", "leafKeys" + ctypeStr(compactionType) + "SavedSpaceMb_" + LABEL);
+        // when
+        statistics.setLeafKeysStoreCompactionSavedSpaceMb(compactionType, Math.PI);
+        // then
+        assertValueSet(metric);
+    }
+
+    @ParameterizedTest
+    @EnumSource(CompactionType.class)
+    void testSetLeavesStoreMergeTime(final CompactionType compactionType) {
+        // given
+        final Metric metric = getMetric("compactions_", "leaves" + ctypeStr(compactionType) + "TimeMs_" + LABEL);
+        // when
+        statistics.setLeavesStoreCompactionTimeMs(compactionType, 31415);
+        // then
+        assertValueSet(metric);
+    }
+
+    @ParameterizedTest
+    @EnumSource(CompactionType.class)
+    void testSetLeavesStoreSavedSpace(final CompactionType compactionType) {
+        // given
+        final Metric metric = getMetric("compactions_", "leaves" + ctypeStr(compactionType) + "SavedSpaceMb_" + LABEL);
+        // when
+        statistics.setLeavesStoreCompactionSavedSpaceMb(compactionType, Math.PI);
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetLeafKeyToPathStoreMediumMergeTime() {
+    public void testOffHeapHashesIndex() {
         // given
-        statistics = new MerkleDbStatistics(LABEL, true);
-        statistics.registerMetrics(metrics);
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafKeyToPathMediumMergeTime_" + LABEL);
-
+        final Metric metric = getMetric("offheap_", "hashesIndexMb_" + LABEL);
         // when
-        statistics.setLeafKeyToPathStoreMediumMergeTime(Math.PI);
-
+        statistics.setOffHeapHashesIndexMb(42);
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetLeafKeyToPathStoreLargeMergeTime() {
+    public void testOffHeapLeavesIndex() {
         // given
-        statistics = new MerkleDbStatistics(LABEL, true);
-        statistics.registerMetrics(metrics);
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafKeyToPathLargeMergeTime_" + LABEL);
-
+        final Metric metric = getMetric("offheap_", "leavesIndexMb_" + LABEL);
         // when
-        statistics.setLeafKeyToPathStoreLargeMergeTime(Math.PI);
-
+        statistics.setOffHeapLeavesIndexMb(42);
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetLeafPathToHashKeyValueStoreSmallMergeTime() {
+    public void testOffHeapLongKeysIndex() {
         // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafHKVSmallMergeTime_" + LABEL);
-
+        final Metric metric = getMetric("offheap_", "longKeysIndexMb_" + LABEL);
         // when
-        statistics.setLeafPathToHashKeyValueStoreSmallMergeTime(Math.PI);
-
+        statistics.setOffHeapLongKeysIndexMb(42);
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetLeafPathToHashKeyValueStoreMediumMergeTime() {
+    public void testOffHeapObjectKeyBucketsIndex() {
         // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafHKVMediumMergeTime_" + LABEL);
-
+        final Metric metric = getMetric("offheap_", "objectKeyBucketsIndexMb_" + LABEL);
         // when
-        statistics.setLeafPathToHashKeyValueStoreMediumMergeTime(Math.PI);
-
-        // then
-        assertValueSet(metric);
-    }
-
-    @Test
-    void testSetLeafPathToHashKeyValueStoreLargeMergeTime() {
-        // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafHKVLargeMergeTime_" + LABEL);
-
-        // when
-        statistics.setLeafPathToHashKeyValueStoreLargeMergeTime(Math.PI);
-
-        // then
-        assertValueSet(metric);
-    }
-
-    @Test
-    public void testOffHeapInternal() {
-        // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "offHeapInternalMb_" + LABEL);
-
-        // when
-        statistics.setOffHeapMemoryInternalNodesListInMB(42);
-
-        // then
-        assertValueSet(metric);
-    }
-
-    @Test
-    public void testOffHeapLeaf() {
-        // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "offHeapLeafMb_" + LABEL);
-
-        // when
-        statistics.setOffHeapMemoryLeafNodesListInMB(42);
-
-        // then
-        assertValueSet(metric);
-    }
-
-    @Test
-    public void testOffHeapKeyToPath() {
-        // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "offHeapInternalMb_" + LABEL);
-
-        // when
-        statistics.setOffHeapMemoryKeyToPathListInMB(42);
-
+        statistics.setOffHeapObjectKeyBucketsIndexMb(42);
         // then
         assertValueSet(metric);
     }
@@ -417,11 +375,9 @@ class MerkleDbStatisticsTest {
     @Test
     public void testOffHeadDataSource() {
         // given
-        final Metric metric = metrics.getMetric(STAT_CATEGORY, "offHeapDataSourceMb_" + LABEL);
-
+        final Metric metric = getMetric("offheap_", "dataSourceMb_" + LABEL);
         // when
-        statistics.setOffHeapMemoryDataSourceInMB(42);
-
+        statistics.setOffHeapDataSourceMb(42);
         // then
         assertValueSet(metric);
     }

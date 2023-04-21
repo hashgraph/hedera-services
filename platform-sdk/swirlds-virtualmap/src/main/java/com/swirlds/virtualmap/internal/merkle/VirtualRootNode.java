@@ -358,6 +358,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         this.records = null;
 
         this.statistics = source.statistics;
+        // this.statistics.resetEntityCounters();
     }
 
     /**
@@ -390,7 +391,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // At this point in time the copy knows if it should be flushed or merged, and so it is safe
         // to register with the pipeline.
         if (pipeline == null) {
-            pipeline = new VirtualPipeline();
+            pipeline = new VirtualPipeline(state.getLabel());
         }
         pipeline.registerCopy(this);
     }
@@ -522,7 +523,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             cache.seal();
         }
 
-        statistics.recordFlushBacklogSize(pipeline.getFlushBacklogSize());
         return copy;
     }
 
@@ -607,6 +607,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     public boolean containsKey(final K key) {
         Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
         final long path = records.findKey(key);
+        statistics.countReadEntities();
         return path != INVALID_PATH;
     }
 
@@ -624,6 +625,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         throwIfImmutable();
         Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
         final VirtualLeafRecord<K, V> rec = records.findLeafRecord(key, true);
+        statistics.countUpdatedEntities();
         return rec == null ? null : rec.getValue();
     }
 
@@ -639,6 +641,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
         final VirtualLeafRecord<K, V> rec = records.findLeafRecord(key, false);
         final V value = rec == null ? null : rec.getValue();
+        statistics.countReadEntities();
         //noinspection unchecked
         return value == null ? null : (V) value.asReadOnly();
     }
@@ -659,9 +662,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
         final long path = records.findKey(key);
         if (path == INVALID_PATH) {
+            statistics.countAddedEntities();
             // The key is not stored. So add a new entry and return.
             add(key, value);
             return;
+        } else {
+            statistics.countUpdatedEntities();
         }
 
         final VirtualLeafRecord<K, V> rec = new VirtualLeafRecord<>(path, null, key, value);
@@ -687,6 +693,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         throwIfImmutable();
         Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
 
+        statistics.countUpdatedEntities();
         // Attempt to replace the existing leaf
         final boolean success = replaceImpl(key, value);
         if (success) {
@@ -714,6 +721,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         if (leafToDelete == null) {
             return null;
         }
+
+        statistics.countRemovedEntities();
 
         // Mark the leaf as being deleted.
         cache.deleteLeaf(leafToDelete);
@@ -827,9 +836,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         merged.set(true);
 
         final long end = System.currentTimeMillis();
-        if (statistics != null) {
-            statistics.recordMergeLatency(end - (double) start);
-        }
+        statistics.recordMerge(end - start);
     }
 
     /**
@@ -903,9 +910,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final long end = System.currentTimeMillis();
         flushed.set(true);
         flushLatch.countDown();
-        if (statistics != null) {
-            statistics.recordFlush(end - (double) start);
-        }
+        statistics.recordFlush(end - start);
         logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flushed in {} ms", end - start);
     }
 
@@ -1027,6 +1032,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             return;
         }
 
+        final long start = System.currentTimeMillis();
+
         // Make sure the cache is immutable for leaf changes but mutable for internal node changes
         cache.prepareForHashing();
 
@@ -1056,6 +1063,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         }
 
         super.setHash(virtualHash);
+
+        final long end = System.currentTimeMillis();
+        statistics.recordHash(end - start);
 
         // There are no remaining changes to be made to the cache, so we can seal it.
         cache.seal();
@@ -1193,6 +1203,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     public void registerMetrics(final Metrics metrics) {
         statistics.registerMetrics(metrics);
+        pipeline.registerMetrics(metrics);
         dataSource.registerMetrics(metrics);
     }
 
@@ -1404,9 +1415,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             state.setLastLeafPath(leafPath);
             state.setFirstLeafPath(nextFirstLeafPath);
         }
-        if (statistics != null) {
-            statistics.setSize(state.size());
-        }
+        statistics.setSize(state.size());
 
         final VirtualLeafRecord<K, V> newLeaf = new VirtualLeafRecord<>(leafPath, null, key, value);
         markDirty(newLeaf);

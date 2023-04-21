@@ -195,7 +195,7 @@ class VirtualPipelineTests {
         DummyVirtualRoot mutableCopy = null;
         for (int index = 0; index < copyCount; index++) {
             if (mutableCopy == null) {
-                mutableCopy = new DummyVirtualRoot();
+                mutableCopy = new DummyVirtualRoot("VirtualPipelineTests");
             } else {
                 mutableCopy = mutableCopy.copy();
             }
@@ -217,7 +217,7 @@ class VirtualPipelineTests {
     @Tag(TestComponentTags.VMAP)
     @DisplayName("registerCopy rejects nulls")
     void registerCopyRejectsNull() {
-        final DummyVirtualRoot root = new DummyVirtualRoot();
+        final DummyVirtualRoot root = new DummyVirtualRoot("registerCopyRejectsNull");
         final VirtualPipeline pipeline = root.getPipeline();
         assertNotNull(pipeline, "Pipeline should never be null");
         assertThrows(NullPointerException.class, () -> pipeline.registerCopy(null), "Should have thrown NPE");
@@ -298,7 +298,7 @@ class VirtualPipelineTests {
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Reject Immutable Registration")
     void rejectImmutableRegistration() throws InterruptedException {
-        final VirtualPipeline pipeline = new VirtualPipeline();
+        final VirtualPipeline pipeline = new VirtualPipeline("rejectImmutableRegistration");
         final NoOpVirtualRoot root = new NoOpVirtualRoot();
         root.makeImmutable();
 
@@ -368,7 +368,7 @@ class VirtualPipelineTests {
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Terminate waits for jobs to complete")
     void terminateWaitsForJobs() {
-        final SlowVirtualRoot root = new SlowVirtualRoot();
+        final SlowVirtualRoot root = new SlowVirtualRoot("terminateWaitsForJobs");
         final SlowVirtualRoot copy1 = root.copy();
         final SlowVirtualRoot copy2 = copy1.copy();
         final SlowVirtualRoot copy3 = copy2.copy();
@@ -546,8 +546,8 @@ class VirtualPipelineTests {
         private final CountDownLatch flushFinishedLatch = new CountDownLatch(1);
         private final CountDownLatch mergeFinishedLatch = new CountDownLatch(1);
 
-        private SlowVirtualRoot() {
-            super();
+        private SlowVirtualRoot(final String label) {
+            super(label);
         }
 
         private SlowVirtualRoot(SlowVirtualRoot other) {
@@ -746,7 +746,7 @@ class VirtualPipelineTests {
 
         final Deque<DummyVirtualRoot> copies = new LinkedList<>();
 
-        final DummyVirtualRoot originalCopy = new DummyVirtualRoot();
+        final DummyVirtualRoot originalCopy = new DummyVirtualRoot("flushThrottle");
         originalCopy.setShouldFlushPredicate(i -> i % 2 == 1); // flush odd copies
         copies.add(originalCopy);
 

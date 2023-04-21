@@ -64,8 +64,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      */
     private volatile boolean releaseInIsDetached;
 
-    public DummyVirtualRoot() {
-        this.pipeline = new VirtualPipeline();
+    public DummyVirtualRoot(final String label) {
+        this.pipeline = new VirtualPipeline(label);
         flushLatch = new CountDownLatch(1);
         mergeLatch = new CountDownLatch(1);
 

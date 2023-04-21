@@ -21,12 +21,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.merkledb.ExampleLongKeyFixedSize;
+import com.swirlds.merkledb.NanoClock;
 import com.swirlds.merkledb.files.FilesTestType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -151,7 +154,8 @@ class HalfDiskHashMapTest {
         createSomeData(testType, map, 1111, 10_000, 1);
         checkData(testType, map, 1, 10_000, 1);
         // do a merge
-        map.merge(dataFileReaders -> dataFileReaders, 2);
+        final Clock clock = new NanoClock();
+        map.merge(clock, Instant.now(clock), dataFileReaders -> dataFileReaders, 2, null, null);
         // check all data after
         checkData(testType, map, 1, 10_000, 1);
     }

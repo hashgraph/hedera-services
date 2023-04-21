@@ -21,9 +21,11 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.VIRTUAL_MERKLE_STATS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.virtualmap.VirtualMapSettingsFactory;
+import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
@@ -123,6 +125,9 @@ public class VirtualPipeline {
      */
     private final PipelineList<VirtualRoot> copies;
 
+    /** Virtual map name */
+    private final String label;
+
     private final AtomicInteger undestroyedCopies = new AtomicInteger();
 
     /**
@@ -156,10 +161,14 @@ public class VirtualPipeline {
      */
     private final AtomicInteger flushBacklog = new AtomicInteger(0);
 
+    private final VirtualMapStatistics statistics;
+
     /**
      * Create a new pipeline for a family of fast copies on a virtual root.
      */
-    public VirtualPipeline() {
+    public VirtualPipeline(final String label) {
+        this.label = label;
+
         copies = new PipelineList<>();
         unhashedCopies = new ConcurrentLinkedDeque<>();
 
@@ -169,6 +178,18 @@ public class VirtualPipeline {
                 .setThreadName(PIPELINE_THREAD_NAME)
                 .setExceptionHandler((t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception ", ex))
                 .buildFactory());
+
+        statistics = new VirtualMapStatistics(label);
+    }
+
+    /**
+     * Register all statistics with an object that manages statistics.
+     *
+     * @param metrics
+     * 		reference to the metrics system
+     */
+    public void registerMetrics(final Metrics metrics) {
+        statistics.registerMetrics(metrics);
     }
 
     /**
@@ -184,23 +205,14 @@ public class VirtualPipeline {
     }
 
     /**
-     * Get the number of copies that need to be flushed but have not yet been flushed. If a copy is currently in the
-     * process of being flushed then it is included in this count.
-     *
-     * @return the number of copies awaiting flushing
-     */
-    public int getFlushBacklogSize() {
-        return flushBacklog.get();
-    }
-
-    /**
      * Slow down the fast copy operation if there are too many copies that need to be flushed.
      */
     private void applyFlushBackpressure() {
-        final int backlogExcess =
-                flushBacklog.get() - VirtualMapSettingsFactory.get().getPreferredFlushQueueSize();
+        final int backlogSize = flushBacklog.get();
+        final int backlogExcess = backlogSize - VirtualMapSettingsFactory.get().getPreferredFlushQueueSize();
 
         if (backlogExcess <= 0) {
+            statistics.recordFlushBacklog(backlogSize, 0);
             return;
         }
 
@@ -211,9 +223,10 @@ public class VirtualPipeline {
 
         final Duration maxSleepTime = VirtualMapSettingsFactory.get().getMaximumFlushThrottlePeriod();
         final Duration sleepTime = CompareTo.min(computedSleepTime, maxSleepTime);
-
+        final int sleepTimeMillis = (int) sleepTime.toMillis();
+        statistics.recordFlushBacklog(backlogSize, sleepTimeMillis);
         try {
-            MILLISECONDS.sleep(sleepTime.toMillis());
+            MILLISECONDS.sleep(sleepTimeMillis);
         } catch (final InterruptedException ex) {
             Thread.currentThread().interrupt();
         }
@@ -258,6 +271,8 @@ public class VirtualPipeline {
                 executorService.submit(this::doWork);
             }
         }
+
+        statistics.setPipelineSize(copies.getSize());
 
         applyFlushBackpressure();
     }
@@ -502,6 +517,7 @@ public class VirtualPipeline {
 
             if (shouldBeRemovedFromPipeline(copy)) {
                 copies.remove(next);
+                statistics.setPipelineSize(copies.getSize());
             }
 
             flushBlocked |= shouldBlockFlushes(copy);

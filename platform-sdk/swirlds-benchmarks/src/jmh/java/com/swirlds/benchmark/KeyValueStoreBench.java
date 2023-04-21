@@ -16,8 +16,11 @@
 
 package com.swirlds.benchmark;
 
+import com.swirlds.merkledb.NanoClock;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -71,12 +74,17 @@ public class KeyValueStoreBench extends BaseBench {
         // Merge files
         start = System.currentTimeMillis();
         final AtomicLong count = new AtomicLong(0);
+        final Clock clock = new NanoClock();
         store.merge(
+                clock,
+                Instant.now(clock),
                 list -> {
                     count.set(list.size());
                     return list;
                 },
-                2);
+                2,
+                null,
+                null);
         System.out.println("Merged " + count.get() + " files in " + (System.currentTimeMillis() - start) + "ms");
 
         // Verify merged content

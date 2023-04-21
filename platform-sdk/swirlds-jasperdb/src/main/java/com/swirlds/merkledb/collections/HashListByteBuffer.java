@@ -314,6 +314,20 @@ public final class HashListByteBuffer implements HashList {
     }
 
     /**
+     * Get off-heap usage of this hash list, in bytes. It's calculated as the number of
+     * currently allocated buffers * number of hashes in each buffer * hash size. Even if
+     * some buffers are not fully utilized, they still consume memory, this is why the
+     * usage is based on the number of buffers rather than the number of stored hashes.
+     *
+     * <p>If this hash list is on-heap, this method returns zero.
+     *
+     * @return Off-heap usage in bytes, if this hash list is off-heap, or zero otherwise
+     */
+    public long getOffHeapConsumption() {
+        return offHeap ? (long) data.size() * numHashesPerBuffer * HASH_SIZE_BYTES : 0;
+    }
+
+    /**
      * Get the ByteBuffer for a given index. Assumes the buffer is already created.
      * For example, if the {@code index} is 13, and the {@link #numHashesPerBuffer} is 10,
      * then the 2nd buffer would be returned.

@@ -1144,10 +1144,10 @@ class VirtualMapTests extends VirtualTestBase {
         map1.release();
 
         // createMap() creates a map labelled "Test"
-        Metric metric = metrics.getMetric(VirtualMapStatistics.STAT_CATEGORY, "vMapFlushes_Test");
+        Metric metric = metrics.getMetric(VirtualMapStatistics.STAT_CATEGORY, "vmap_lifecycle_flushCount_Test");
         assertNotNull(metric);
         if (!(metric instanceof Counter counterMetric)) {
-            throw new AssertionError("vMapFlushes metric is not a counter");
+            throw new AssertionError("flushCount metric is not a counter");
         }
         assertEquals(flushCount, counterMetric.get());
     }

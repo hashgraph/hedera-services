@@ -22,6 +22,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.dataLocationToString;
 import static com.swirlds.merkledb.files.DataFileCommon.fileIndexFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
+import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 import static com.swirlds.merkledb.files.DataFileCommon.printDataLinkValidation;
 
@@ -32,14 +33,19 @@ import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -140,40 +146,48 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     }
 
     /**
-     * Merge all files that match the given filter
+     * Compact (merge) all files that match the given filter.
      *
+     * @param clock clock to use to get current time
+     * @param start the moment when compaction is started
      * @param filterForFilesToMerge filter to choose which subset of files to merge
-     * @param minNumberOfFilesToMerge The minimum number of files to consider for a merge
+     * @param minNumberOfFilesToMerge the minimum number of files to consider for a merge
+     * @param reportDurationMetricFunction function to report how long compaction took, in ms
+     * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
+     * @return the moment when compaction is finished
      * @throws IOException if there was a problem merging
      * @throws InterruptedException if the merge thread was interupted
      */
-    public void merge(
+    public Instant merge(
+            final Clock clock,
+            final Instant start,
             final Function<List<DataFileReader<D>>, List<DataFileReader<D>>> filterForFilesToMerge,
-            final int minNumberOfFilesToMerge)
+            final int minNumberOfFilesToMerge,
+            @Nullable final Consumer<Long> reportDurationMetricFunction,
+            @Nullable final Consumer<Double> reportSavedSpaceMetricFunction)
             throws IOException, InterruptedException {
-        final long START = System.currentTimeMillis();
         final List<DataFileReader<D>> allMergeableFiles = fileCollection.getAllCompletedFiles();
         final List<DataFileReader<D>> filesToMerge = filterForFilesToMerge.apply(allMergeableFiles);
         if (filesToMerge == null) {
             // nothing to do
-            return;
+            return start;
         }
-        final int size = filesToMerge.size();
-        if (size < minNumberOfFilesToMerge) {
+        final int filesCount = filesToMerge.size();
+        if (filesCount < minNumberOfFilesToMerge) {
             logger.debug(
                     MERKLE_DB.getMarker(),
                     "[{}] No need to merge as {} is less than the minimum {} files to merge.",
                     storeName,
-                    size,
+                    filesCount,
                     minNumberOfFilesToMerge);
-            return;
+            return start;
         }
         final long filesToMergeSize = getSizeOfFiles(filesToMerge);
         logger.debug(
                 MERKLE_DB.getMarker(),
                 "[{}] Starting merging {} files / {}",
                 storeName,
-                size,
+                filesCount,
                 formatSizeBytes(filesToMergeSize));
 
         CASableLongIndex indexUpdater = index;
@@ -204,16 +218,27 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             endChecking(filesToMerge);
         }
 
-        final long END = System.currentTimeMillis();
-        final double tookSeconds = (END - START) * Units.MILLISECONDS_TO_SECONDS;
-        logMergeStats(storeName, tookSeconds, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);
+        final Instant end = Instant.now(clock);
+        final long tookMillis = Duration.between(start, end).toMillis();
+        if (reportDurationMetricFunction != null) {
+            reportDurationMetricFunction.accept(tookMillis);
+        }
+
+        final long mergedFilesSize = getSizeOfFilesByPath(newFilesCreated);
+        if (reportSavedSpaceMetricFunction != null) {
+            reportSavedSpaceMetricFunction.accept((filesToMergeSize - mergedFilesSize) * Units.BYTES_TO_MEBIBYTES);
+        }
+
+        logMergeStats(storeName, tookMillis, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);
         logger.debug(
                 MERKLE_DB.getMarker(),
-                "[{}] Finished merging {} files / {} in {} seconds",
+                "[{}] Finished merging {} files / {} in {} ms",
                 storeName,
-                size,
+                filesCount,
                 formatSizeBytes(filesToMergeSize),
-                tookSeconds);
+                tookMillis);
+
+        return end;
     }
 
     /**
@@ -269,14 +294,14 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * End a session of writing
      *
+     * @return Data file reader for the file written
      * @throws IOException If there was a problem closing the writing session
      */
-    public void endWriting() throws IOException {
+    @Nullable
+    public DataFileReader<D> endWriting() throws IOException {
         final long currentMinValidKey = minValidKey.get();
         final long currentMaxValidKey = maxValidKey.get();
         final DataFileReader<D> dataFileReader = fileCollection.endWriting(currentMinValidKey, currentMaxValidKey);
-
-        // we have updated all indexes so the data file can now be included in merges
         dataFileReader.setFileCompleted();
         logger.info(
                 MERKLE_DB.getMarker(),
@@ -286,6 +311,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
                 fileCollection.getNumOfFiles(),
                 currentMinValidKey,
                 currentMaxValidKey);
+        return dataFileReader;
     }
 
     /**
