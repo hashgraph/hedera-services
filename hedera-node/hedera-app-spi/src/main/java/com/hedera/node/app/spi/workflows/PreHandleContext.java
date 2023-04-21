@@ -138,7 +138,9 @@ public final class PreHandleContext {
      * Gets the {@link AccountAccess}.
      *
      * @return the {@link AccountAccess}
+     * @deprecated Use {@link #createStore(Class)} instead.
      */
+    @Deprecated(forRemoval = true)
     @NonNull
     public AccountAccess accountAccess() {
         return accountAccess;

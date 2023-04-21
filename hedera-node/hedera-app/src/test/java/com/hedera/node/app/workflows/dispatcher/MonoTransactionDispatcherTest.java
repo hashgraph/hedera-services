@@ -426,13 +426,6 @@ class MonoTransactionDispatcherTest {
     @Test
     void testDispatchWithIllegalParameters() throws PreCheckException {
         // given
-        final var payer = AccountID.newBuilder().build();
-        final var tracker = new ReadableStoreFactory(state);
-        final var validContext = new PreHandleContext(
-                readableStoreFactory,
-                TransactionBody.newBuilder()
-                        .fileCreate(FileCreateTransactionBody.newBuilder().build())
-                        .build());
         final var invalidSystemDelete = new PreHandleContext(
                 readableStoreFactory,
                 TransactionBody.newBuilder()
@@ -458,7 +451,6 @@ class MonoTransactionDispatcherTest {
     void testDataNotSetFails() throws PreCheckException {
         // given
         final var txBody = TransactionBody.newBuilder().build();
-        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(readableStoreFactory, txBody);
 
         // then
@@ -472,7 +464,6 @@ class MonoTransactionDispatcherTest {
         final var txBody = TransactionBody.newBuilder()
                 .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder())
                 .build();
-        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(readableStoreFactory, txBody);
 
         // then
@@ -582,7 +573,6 @@ class MonoTransactionDispatcherTest {
     void testPreHandleWithPayer(final TransactionBody txBody, final DispatchToHandler verification)
             throws PreCheckException {
         // given
-        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(readableStoreFactory, txBody);
 
         // when
