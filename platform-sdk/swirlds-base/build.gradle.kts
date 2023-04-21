@@ -21,6 +21,8 @@ plugins {
 }
 
 dependencies {
+  compileOnly(libs.spotbugs.annotations)
+
   // Test Dependencies
   testImplementation(testLibs.bundles.junit)
 }
