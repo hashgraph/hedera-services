@@ -110,7 +110,7 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures,
         @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning,
         @ConfigProperty(defaultValue = "0") int roundsToKeepAfterSigning,
-        @ConfigProperty(defaultValue = "30s") Duration suspiciousSignedStateAge, // TODO set back to "5m" before merge
+        @ConfigProperty(defaultValue = "5m") Duration suspiciousSignedStateAge,
         @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled) {
 
     /**
