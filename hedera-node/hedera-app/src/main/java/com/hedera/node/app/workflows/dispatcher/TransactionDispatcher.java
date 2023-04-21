@@ -342,7 +342,7 @@ public class TransactionDispatcher {
      * is currently needed when running with facility implementations that are adapters
      * for either {@code mono-service} logic or integration tests.
      *
-     * @param topicStore the token rel store used for the message submission
+     * @param tokenRelStore the token rel store used for the message submission
      */
     protected void finishTokenGrantKycToAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
         // No-op by default
@@ -366,7 +366,7 @@ public class TransactionDispatcher {
      * is currently needed when running with facility implementations that are adapters
      * for either {@code mono-service} logic or integration tests.
      *
-     * @param topicStore the token rel store used for the message submission
+     * @param tokenRelStore the token rel store used for the message submission
      */
     protected void finishTokenRevokeKycFromAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
         // No-op by default
