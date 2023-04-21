@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -158,5 +159,6 @@ class ServicesAppTest {
         assertSame(SLEEPING_PAUSE, subject.pause());
         assertTrue(subject.consoleOut().isEmpty());
         assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));
+        assertThat(subject.mapWarmer(), instanceOf(EntityMapWarmer.class));
     }
 }

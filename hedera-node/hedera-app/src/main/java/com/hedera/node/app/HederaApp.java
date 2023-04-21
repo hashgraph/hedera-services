@@ -26,6 +26,7 @@ import com.hedera.node.app.fees.AdaptedFeeCalculatorModule;
 import com.hedera.node.app.info.InfoDaggerModule;
 import com.hedera.node.app.metrics.MetricsDaggerModule;
 import com.hedera.node.app.service.mono.ServicesApp;
+import com.hedera.node.app.service.mono.cache.CacheModule;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
 import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
@@ -109,7 +110,8 @@ import javax.inject.Singleton;
             AuthorizerDaggerModule.class,
             InfoDaggerModule.class,
             ThrottleModule.class,
-            SolvencyModule.class
+            SolvencyModule.class,
+            CacheModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */

@@ -246,6 +246,10 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.legacy.exception;
     exports com.hedera.node.app.service.mono.pbj;
     exports com.hedera.node.app.service.mono.sigs.sourcing;
+    exports com.hedera.node.app.service.mono.cache;
+
+    opens com.hedera.node.app.service.mono.cache to
+            com.swirlds.common;
 
     requires com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;

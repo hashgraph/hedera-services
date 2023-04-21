@@ -45,6 +45,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -361,10 +362,13 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setMetadata(metadata);
 
         given(metadata.app()).willReturn(app);
+        final var mapWarmer = mock(EntityMapWarmer.class);
+        given(app.mapWarmer()).willReturn(mapWarmer);
         given(app.logic()).willReturn(logic);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 
         subject.handleConsensusRound(round, dualState);
+        verify(mapWarmer).warmCache(round);
         verify(dualStateAccessor).setDualState(dualState);
         verify(logic).incorporateConsensus(round);
     }
