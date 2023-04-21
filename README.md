@@ -15,7 +15,7 @@ nodes in the [Hedera public network](https://hedera.com).
 * _hedera-node/_ - implementation of Hedera services on the Platform.
 
 ## JVM
-JDK 17 is required. The Temurin builds of [Eclipse Adoptium](https://adoptium.net/de/) are strongly recommended.
+JDK 17 is required. The Temurin builds of [Eclipse Adoptium](https://adoptium.net/) are strongly recommended.
 
 ## Solidity
 Hedera Contracts support `pragma solidity <=0.8.9`.
