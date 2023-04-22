@@ -27,7 +27,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public class MonoUpgradeFilesAdapterCodec implements Codec<MerkleSpecialFiles> {
+public class MonoSpecialFilesAdapterCodec implements Codec<MerkleSpecialFiles> {
     @NonNull
     @Override
     public MerkleSpecialFiles parse(final @NonNull ReadableSequentialData input) throws IOException {
