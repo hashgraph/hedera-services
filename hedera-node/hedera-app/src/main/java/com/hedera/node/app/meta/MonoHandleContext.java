@@ -26,10 +26,13 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.function.LongSupplier;
@@ -117,5 +120,17 @@ public class MonoHandleContext implements HandleContext {
                 throw new HandleException(PbjConverter.toPbj(validity));
             }
         }
+    }
+
+    @Nullable
+    @Override
+    public SignatureVerification verificationFor(@NonNull Key key) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Nullable
+    @Override
+    public SignatureVerification verificationFor(@NonNull Bytes alias) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -67,6 +68,13 @@ public final class PreHandleContext {
      * be updated to compare set contents rather than ordering.
      */
     private final Set<Key> requiredNonPayerKeys = new LinkedHashSet<>();
+    /**
+     * The set of all EVM addresses related to hollow accounts that need to be validated. Ideally we'd like to combine
+     * this and {@link #requiredNonPayerKeys} into a single set of
+     * {@link com.hedera.node.app.spi.signatures.SignatureVerification}s, but this is a much larger change and will
+     * need to be done in stages.
+     */
+    private final Set<Bytes> requiredHollowAccountAliases = new LinkedHashSet<>();
     /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
     private PreHandleContext innerContext;
 
@@ -144,6 +152,11 @@ public final class PreHandleContext {
         return Collections.unmodifiableSet(requiredNonPayerKeys);
     }
 
+    /** Gets an immutable copy of the list of required hollow account EVM address aliases. */
+    public Set<Bytes> requiredHollowAccountAliases() {
+        return Collections.unmodifiableSet(requiredHollowAccountAliases);
+    }
+
     /**
      * Getter for the payer key
      *
@@ -167,6 +180,20 @@ public final class PreHandleContext {
         if (!key.equals(payerKey) && isValid(key)) {
             requiredNonPayerKeys.add(key);
         }
+        return this;
+    }
+
+    /**
+     * Adds the given EVM address alias to required hollow account aliases. If the alias has already been added, then
+     * the call is a no-op. The alias must not be null. During signature verification, the app will verify that the
+     * transaction was signed by an ECDSA(secp256k1) key corresponding to the given alias.
+     *
+     * @param alias the EVM address alias
+     * @return {@code this} object
+     */
+    @NonNull
+    public PreHandleContext requireHollowAccountAliasSignature(@NonNull final Bytes alias) {
+        requiredHollowAccountAliases.add(alias);
         return this;
     }
 

@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.signature;
+package com.hedera.node.app.signature.hapi;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
@@ -29,8 +28,11 @@ import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.spi.fixtures.Scenarios;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.crypto.VerificationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.invocation.InvocationOnMock;
 
 final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenarios {
     /**
@@ -71,7 +74,7 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
     void failToVerifyIfSignaturesAreEmpty(@NonNull final Key key) {
         final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
         final var result = verifier.verify(signedBytes, List.of(), key);
-        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(false);
+        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(failVerify(key));
     }
 
     /**
@@ -82,11 +85,12 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
     @ParameterizedTest
     @MethodSource(value = "provideMixOfAllKindsOfKeys")
     void failIfCryptoEngineSaysTheSignatureWasBad(@NonNull final Key key) {
-        when(cryptoEngine.verifyAsync(any(), any(), any(), any())).thenReturn(completedFuture(false));
+        //noinspection unchecked
+        lenient().doAnswer(this::invalid).when(cryptoEngine).verifyAsync(any(List.class));
         final var sigPairs = sufficientSignatures(key);
         final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
         final var result = verifier.verify(signedBytes, sigPairs, key);
-        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(false);
+        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(failVerify(key));
     }
 
     /**
@@ -96,11 +100,12 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
     @ParameterizedTest
     @MethodSource(value = "provideMixOfAllKindsOfKeys")
     void failToVerifyIfSignaturesAreInsufficient(@NonNull final Key key) {
-        lenient().when(cryptoEngine.verifyAsync(any(), any(), any(), any())).thenReturn(completedFuture(true));
+        //noinspection unchecked
+        lenient().doAnswer(this::invalid).when(cryptoEngine).verifyAsync(any(List.class));
         final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
         final var sigPairs = insufficientSignatures(key);
         final var result = verifier.verify(signedBytes, sigPairs, key);
-        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(false);
+        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(failVerify(key));
     }
 
     /**
@@ -110,11 +115,12 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
     @ParameterizedTest
     @MethodSource(value = "provideMixOfAllKindsOfKeys")
     void verifyIfSufficientSignatures(@NonNull final Key key) {
-        lenient().when(cryptoEngine.verifyAsync(any(), any(), any(), any())).thenReturn(completedFuture(true));
+        //noinspection unchecked
+        lenient().doAnswer(this::valid).when(cryptoEngine).verifyAsync(any(List.class));
         final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
         final var sigPairs = sufficientSignatures(key);
         final var result = verifier.verify(signedBytes, sigPairs, key);
-        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(true);
+        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(succeedVerify(key));
     }
 
     /**
@@ -129,7 +135,7 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
                 .map(sigPair -> sigPair.copyBuilder().pubKeyPrefix(Bytes.EMPTY).build())
                 .collect(Collectors.toList());
         final var result = verifier.verify(signedBytes, sigPairs, key);
-        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(false);
+        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(failVerify(key));
     }
 
     private static Key keyList(Key... keys) {
@@ -237,5 +243,30 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
         final var sigPairs = new ArrayList<>(sufficientSignatures(key));
         sigPairs.remove(0);
         return sigPairs;
+    }
+
+    private static SignatureVerification failVerify(@NonNull final Key key) {
+        return new SignatureVerificationImpl(key, null, false);
+    }
+
+    private static SignatureVerification succeedVerify(@NonNull final Key key) {
+        return new SignatureVerificationImpl(key, null, true);
+    }
+
+    private Void valid(InvocationOnMock args) {
+        setVerificationStatus(true, args.getArgument(0));
+        return null;
+    }
+
+    private Void invalid(InvocationOnMock args) {
+        setVerificationStatus(false, args.getArgument(0));
+        return null;
+    }
+
+    private void setVerificationStatus(boolean result, List<TransactionSignature> list) {
+        for (final var sig : list) {
+            sig.setFuture(completedFuture(null));
+            sig.setSignatureStatus(result ? VerificationStatus.VALID : VerificationStatus.INVALID);
+        }
     }
 }

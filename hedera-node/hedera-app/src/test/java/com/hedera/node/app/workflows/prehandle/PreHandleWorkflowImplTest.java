@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.node.app.signature.hapi.SignatureVerificationResultTest.verificationFuture;
 import static com.hedera.node.app.workflows.TransactionScenarioBuilder.scenario;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -49,7 +51,6 @@ import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,16 +122,13 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @DisplayName("Null constructor args throw NPE")
     @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
     void nullConstructorArgsTest() {
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
-                        null, dispatcher, transactionChecker, signatureVerifier))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, dispatcher, transactionChecker, signatureVerifier))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new PreHandleWorkflowImpl(executor, null, transactionChecker, signatureVerifier))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executor, null, transactionChecker, signatureVerifier))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new PreHandleWorkflowImpl(executor, dispatcher, null, signatureVerifier))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new PreHandleWorkflowImpl(executor, dispatcher, transactionChecker, null))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executor, dispatcher, transactionChecker, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -253,7 +251,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
             final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(), any(), any())).thenReturn(CompletableFuture.completedFuture(false));
+            when(signatureVerifier.verify(any(), any(), any(Key.class))).thenReturn(verificationFuture(false));
 
             // When we pre-handle the transaction
             workflow.preHandle(
@@ -291,7 +289,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var txBytes = asByteArray(txInfo.transaction());
             final Transaction platformTx = new SwirldTransaction(txBytes);
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(), any(), any())).thenReturn(CompletableFuture.completedFuture(true));
+            when(signatureVerifier.verify(any(), any(), any(Key.class))).thenReturn(verificationFuture(true));
             doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))
                     .when(dispatcher)
                     .dispatchPreHandle(any(), any());
@@ -319,7 +317,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var txBytes = asByteArray(txInfo.transaction());
             final Transaction platformTx = new SwirldTransaction(txBytes);
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(), any(), any())).thenReturn(CompletableFuture.completedFuture(true));
+            when(signatureVerifier.verify(any(), any(), any(Key.class))).thenReturn(verificationFuture(true));
             doThrow(new RuntimeException()).when(dispatcher).dispatchPreHandle(any(), any());
 
             // When we pre-handle the transaction
@@ -345,9 +343,9 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var txBytes = asByteArray(txInfo.transaction());
             final Transaction platformTx = new SwirldTransaction(txBytes);
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(), any(), any()))
-                    .thenReturn(CompletableFuture.completedFuture(true)) // True for payer check
-                    .thenReturn(CompletableFuture.completedFuture(false)); // False for other sig checks
+            when(signatureVerifier.verify(any(), any(), any(Key.class)))
+                    .thenReturn(verificationFuture(true)) // True for payer check
+                    .thenReturn(verificationFuture(false)); // False for other sig checks
             doAnswer(invocation -> {
                         final var ctx = invocation.getArgument(1, PreHandleContext.class);
                         ctx.requireKey(BOB.account().keyOrThrow()); // we need a non-payer key
@@ -388,8 +386,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var txBytes = asByteArray(txInfo.transaction());
             final Transaction platformTx = new SwirldTransaction(txBytes);
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(), any(), any()))
-                    .thenReturn(CompletableFuture.completedFuture(true)); // False for other sig checks
+            when(signatureVerifier.verify(any(), any(), any(Key.class)))
+                    .thenReturn(verificationFuture(true)); // False for other sig checks
 
             // When we pre-handle the transaction
             workflow.preHandle(

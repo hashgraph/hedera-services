@@ -18,12 +18,17 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.preHandleFailure;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFailure;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.signature.SignatureVerificationResult;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.signature.hapi.VerificationResultFuture;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -37,6 +42,7 @@ import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -136,13 +142,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 // The thread should only ever be interrupted during shutdown, so we can just log the error.
                 logger.error("Interrupted while waiting for a transaction to be pre handled.");
                 Thread.currentThread().interrupt();
-                task.platformTx.setMetadata(PreHandleResult.unknownFailure());
+                task.platformTx.setMetadata(unknownFailure());
             } catch (ExecutionException e) {
                 logger.error("Unexpected error while pre handling a transaction!", e);
-                task.platformTx.setMetadata(PreHandleResult.unknownFailure());
+                task.platformTx.setMetadata(unknownFailure());
             } catch (TimeoutException e) {
                 logger.error("Timed out while waiting for a transaction to be pre handled!", e);
-                task.platformTx.setMetadata(PreHandleResult.unknownFailure());
+                task.platformTx.setMetadata(unknownFailure());
             }
         }
     }
@@ -164,12 +170,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         } catch (PreCheckException preCheck) {
             // The node SHOULD have verified the transaction before it was submitted to the network.
             // Since it didn't, it has failed in its due diligence and will be charged accordingly.
-            return PreHandleResult.nodeDueDiligenceFailure(creator, preCheck.responseCode(), null);
+            return nodeDueDiligenceFailure(creator, preCheck.responseCode(), null);
         } catch (Throwable th) {
             // If some random exception happened, then we should not charge the node for it. Instead,
             // we will just record the exception and try again during handle. Then if we fail again
             // at handle, then we will throw away the transaction (hopefully, deterministically!)
-            return PreHandleResult.unknownFailure();
+            return unknownFailure();
         }
 
         // 2. Get Payer Account
@@ -182,13 +188,16 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
             // so later during the handle phase. Technically, we could still try to gather and verify the other
             // signatures, but that might be tricky and complicated with little gain. So just throw.
-            return PreHandleResult.preHandleFailure(creator, PAYER_ACCOUNT_NOT_FOUND, txInfo, null);
+            return preHandleFailure(creator, PAYER_ACCOUNT_NOT_FOUND, txInfo, null);
         }
 
         // 3. Collect payer signature checks. Any PreHandleResult created from this point on MUST include
         //    the payerVerificationFuture.
-        final var payerVerificationFuture = signatureVerifier.verify(
-                txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow(), payerAccount.keyOrThrow());
+        final var sigPairs = txInfo.signatureMap().sigPairOrThrow();
+        final var payerVerificationFuture = isHollow(payerAccount)
+                ? signatureVerifier.verify(txInfo.signedBytes(), sigPairs, payerAccount.alias())
+                : signatureVerifier.verify(txInfo.signedBytes(), sigPairs, payerAccount.keyOrThrow());
+        final var payerVerificationResult = new VerificationResultFuture(List.of(payerVerificationFuture));
 
         // 4. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
@@ -215,23 +224,34 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         } catch (PreCheckException preCheck) {
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
             // In that case, the payer will end up paying for the transaction.
-            return PreHandleResult.preHandleFailure(payer, preCheck.responseCode(), txInfo, payerVerificationFuture);
+            return preHandleFailure(payer, preCheck.responseCode(), txInfo, payerVerificationResult);
         }
 
         // 6. Collect additional TransactionSignatures
         final var nonPayerKeys = context.requiredNonPayerKeys();
-        final var nonPayerFutures = new ArrayList<Future<Boolean>>();
+        final var nonPayerFutures = new ArrayList<Future<SignatureVerification>>();
         for (final var key : nonPayerKeys) {
             final var future = signatureVerifier.verify(
                     txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow(), key);
             nonPayerFutures.add(future);
         }
 
+        final var nonPayerHollowAliases = context.requiredHollowAccountAliases();
+        for (final var alias : nonPayerHollowAliases) {
+            final var future = signatureVerifier.verify(
+                    txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow(), alias);
+            nonPayerFutures.add(future);
+        }
+
         // 7. Create and return TransactionMetadata
-        final var signatureVerificationResult = new SignatureVerificationResult(nonPayerFutures);
-        return new PreHandleResult(payer, OK, txInfo, payerVerificationFuture, signatureVerificationResult, null);
+        final var signatureVerificationResult = new VerificationResultFuture(nonPayerFutures);
+        return new PreHandleResult(payer, OK, txInfo, payerVerificationResult, signatureVerificationResult, null);
     }
 
     /** A platform transaction and the future that produces its {@link PreHandleResult} */
     private record WorkItem(@NonNull Transaction platformTx, @NonNull Future<PreHandleResult> future) {}
+
+    private boolean isHollow(@NonNull final Account account) {
+        return account.accountNumber() > 1000 && account.key() == null && account.alias() != null;
+    }
 }

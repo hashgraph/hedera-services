@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.signature;
+package com.hedera.node.app.signature.hapi;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -29,14 +30,14 @@ import java.util.concurrent.TimeoutException;
  * Contains the result of a List of signature verifications. This class aggregates each of those individual
  * verification tasks and returns a single boolean indicating whether the verifications succeeded, or failed.
  */
-public class SignatureVerificationResult implements Future<Boolean> {
+public class VerificationResultFuture implements Future<Boolean> {
     /** The list of {@link Future}s for each individual verification */
-    private final List<? extends Future<Boolean>> futures;
+    private final List<? extends Future<SignatureVerification>> futures;
 
     private boolean canceled = false;
 
     /** Create a new instance */
-    public SignatureVerificationResult(@NonNull final List<? extends Future<Boolean>> futures) {
+    public VerificationResultFuture(@NonNull final List<? extends Future<SignatureVerification>> futures) {
         this.futures = requireNonNull(futures);
     }
 
@@ -88,7 +89,7 @@ public class SignatureVerificationResult implements Future<Boolean> {
         var passed = true;
         for (final var future : futures) {
             if (passed) {
-                passed = future.get();
+                passed = future.get().passed();
             } else {
                 future.cancel(true);
             }
@@ -106,7 +107,7 @@ public class SignatureVerificationResult implements Future<Boolean> {
         for (final var future : futures) {
             if (passed) {
                 final var now = System.currentTimeMillis();
-                passed = future.get(millisRemaining, TimeUnit.MILLISECONDS);
+                passed = future.get(millisRemaining, TimeUnit.MILLISECONDS).passed();
                 millisRemaining -= System.currentTimeMillis() - now;
             } else {
                 future.cancel(true);
