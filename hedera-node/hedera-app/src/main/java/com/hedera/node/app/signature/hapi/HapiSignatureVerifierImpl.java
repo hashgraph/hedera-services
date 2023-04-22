@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -110,7 +111,7 @@ public class HapiSignatureVerifierImpl implements SignatureVerifier {
     @NonNull
     @Override
     public Future<SignatureVerification> verify(
-            @NonNull Bytes signedBytes, @NonNull List<SignaturePair> sigPairs, @NonNull Bytes evmAddress) {
+            @NonNull Bytes signedBytes, @NonNull List<SignaturePair> sigPairs, @NonNull Account hollowAccount) {
         return null;
     }
 

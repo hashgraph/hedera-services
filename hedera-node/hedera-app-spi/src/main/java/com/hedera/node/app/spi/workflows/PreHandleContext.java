@@ -27,9 +27,9 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -69,12 +69,9 @@ public final class PreHandleContext {
      */
     private final Set<Key> requiredNonPayerKeys = new LinkedHashSet<>();
     /**
-     * The set of all EVM addresses related to hollow accounts that need to be validated. Ideally we'd like to combine
-     * this and {@link #requiredNonPayerKeys} into a single set of
-     * {@link com.hedera.node.app.spi.signatures.SignatureVerification}s, but this is a much larger change and will
-     * need to be done in stages.
+     * The set of all hollow accounts that need to be validated.
      */
-    private final Set<Bytes> requiredHollowAccountAliases = new LinkedHashSet<>();
+    private final Set<Account> requiredHollowAccounts = new LinkedHashSet<>();
     /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
     private PreHandleContext innerContext;
 
@@ -153,8 +150,8 @@ public final class PreHandleContext {
     }
 
     /** Gets an immutable copy of the list of required hollow account EVM address aliases. */
-    public Set<Bytes> requiredHollowAccountAliases() {
-        return Collections.unmodifiableSet(requiredHollowAccountAliases);
+    public Set<Account> requiredHollowAccounts() {
+        return Collections.unmodifiableSet(requiredHollowAccounts);
     }
 
     /**
@@ -184,16 +181,27 @@ public final class PreHandleContext {
     }
 
     /**
-     * Adds the given EVM address alias to required hollow account aliases. If the alias has already been added, then
-     * the call is a no-op. The alias must not be null. During signature verification, the app will verify that the
-     * transaction was signed by an ECDSA(secp256k1) key corresponding to the given alias.
+     * Adds the given hollow account to the required signing set. If the account has already been added, then
+     * the call is a no-op. The account must not be null. During signature verification, the app will verify that the
+     * transaction was signed by an ECDSA(secp256k1) key corresponding to the given account's alias. If the account
+     * is not a hollow account, an exception will be thrown,
      *
-     * @param alias the EVM address alias
+     * @param hollowAccount the EVM address alias
      * @return {@code this} object
+     * @throws IllegalArgumentException if the account is not a hollow account
      */
     @NonNull
-    public PreHandleContext requireHollowAccountAliasSignature(@NonNull final Bytes alias) {
-        requiredHollowAccountAliases.add(alias);
+    public PreHandleContext requireSignatureForHollowAccount(@NonNull final Account hollowAccount) {
+        requireNonNull(hollowAccount);
+        // FUTURE: Really, the length should exactly match 20 bytes. It would be good to move this check into
+        // a common validator, so we don't have to do it all over the place.
+        if (hollowAccount.key() != null
+                || hollowAccount.alias() == null
+                || hollowAccount.alias().length() != 20) {
+            throw new IllegalArgumentException("Account " + hollowAccount.accountNumber() + " is not a hollow account");
+        }
+
+        requiredHollowAccounts.add(hollowAccount);
         return this;
     }
 

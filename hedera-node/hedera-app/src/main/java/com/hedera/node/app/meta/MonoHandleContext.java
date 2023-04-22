@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -130,7 +129,7 @@ public class MonoHandleContext implements HandleContext {
 
     @Nullable
     @Override
-    public SignatureVerification verificationFor(@NonNull Bytes alias) {
+    public SignatureVerification verificationFor(@NonNull AccountID hollowAccountID) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

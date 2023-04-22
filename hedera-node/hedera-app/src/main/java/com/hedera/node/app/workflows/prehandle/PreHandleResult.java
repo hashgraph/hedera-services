@@ -20,10 +20,14 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.signature.hapi.SignatureVerificationResults;
+import com.hedera.node.app.signature.hapi.TransactionSignaturesVerified;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Collections;
 import java.util.concurrent.Future;
 
 /**
@@ -35,21 +39,13 @@ import java.util.concurrent.Future;
  * @param status {@link ResponseCodeEnum} status of the pre-handle result. The status will always be set.
  * @param txInfo Information about the transaction that is being handled. If the transaction was not parseable, then
  *               this will be null, and an appropriate error status will be set.
- * @param payerSignatureVerification Result of the payer signature verification. If the payer refers to a node account,
- *                                   then this field will be null. Signature verification is performed asynchronously,
- *                                   so you may have to block on this field while getting the result.
- * @param nonPayerSignatureVerification Result of the non-payer signature verification. It may be that there were no
- *                                      non-payer signatures, in which case this field may or may not be null. If there
- *                                      were any signatures to verify, then this field will give a final result
- *                                      to whether all signatures were valid.
  * @param innerResult                   {@link PreHandleResult} of the inner transaction (where appropriate)
  */
 public record PreHandleResult(
         @Nullable AccountID payer,
         @NonNull ResponseCodeEnum status,
         @Nullable TransactionInfo txInfo,
-        @Nullable Future<Boolean> payerSignatureVerification,
-        @Nullable Future<Boolean> nonPayerSignatureVerification,
+        @Nullable Future<SignatureVerificationResults> signatureResults,
         @Nullable PreHandleResult innerResult) {
 
     public PreHandleResult {
@@ -64,7 +60,7 @@ public record PreHandleResult(
      * @return A new {@link PreHandleResult} with the given parameters.
      */
     public static PreHandleResult unknownFailure() {
-        return new PreHandleResult(null, ResponseCodeEnum.UNKNOWN, null, null, null, null);
+        return new PreHandleResult(null, ResponseCodeEnum.UNKNOWN, null, null, null);
     }
 
     /**
@@ -81,7 +77,7 @@ public record PreHandleResult(
             @NonNull final AccountID node,
             @NonNull final ResponseCodeEnum status,
             @Nullable final TransactionInfo txInfo) {
-        return new PreHandleResult(node, status, txInfo, null, null, null);
+        return new PreHandleResult(node, status, txInfo, null, null);
     }
 
     /**
@@ -97,8 +93,12 @@ public record PreHandleResult(
             @NonNull final AccountID payer,
             @NonNull final ResponseCodeEnum status,
             @NonNull final TransactionInfo txInfo,
-            @Nullable final Future<Boolean> payerVerificationResult) {
-        return new PreHandleResult(payer, status, txInfo, payerVerificationResult, null, null);
+            @Nullable final Future<SignatureVerification> payerVerificationResult) {
+        final var sigResults = (payerVerificationResult == null)
+                ? null
+                : new TransactionSignaturesVerified(
+                        payerVerificationResult, Collections.emptyList(), Collections.emptyList());
+        return new PreHandleResult(payer, status, txInfo, sigResults, null);
     }
 
     /**

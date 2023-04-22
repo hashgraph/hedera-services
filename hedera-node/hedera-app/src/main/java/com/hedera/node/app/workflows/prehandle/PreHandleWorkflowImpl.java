@@ -27,7 +27,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.signature.hapi.VerificationResultFuture;
+import com.hedera.node.app.signature.hapi.TransactionSignaturesVerified;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -42,7 +42,6 @@ import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -195,9 +194,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         //    the payerVerificationFuture.
         final var sigPairs = txInfo.signatureMap().sigPairOrThrow();
         final var payerVerificationFuture = isHollow(payerAccount)
-                ? signatureVerifier.verify(txInfo.signedBytes(), sigPairs, payerAccount.alias())
+                ? signatureVerifier.verify(txInfo.signedBytes(), sigPairs, payerAccount)
                 : signatureVerifier.verify(txInfo.signedBytes(), sigPairs, payerAccount.keyOrThrow());
-        final var payerVerificationResult = new VerificationResultFuture(List.of(payerVerificationFuture));
 
         // 4. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
@@ -224,7 +222,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         } catch (PreCheckException preCheck) {
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
             // In that case, the payer will end up paying for the transaction.
-            return preHandleFailure(payer, preCheck.responseCode(), txInfo, payerVerificationResult);
+            return preHandleFailure(payer, preCheck.responseCode(), txInfo, payerVerificationFuture);
         }
 
         // 6. Collect additional TransactionSignatures
@@ -236,16 +234,18 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             nonPayerFutures.add(future);
         }
 
-        final var nonPayerHollowAliases = context.requiredHollowAccountAliases();
-        for (final var alias : nonPayerHollowAliases) {
+        final var nonPayerHollowFutures = new ArrayList<Future<SignatureVerification>>();
+        final var nonPayerHollowAccounts = context.requiredHollowAccounts();
+        for (final var hollowAccount : nonPayerHollowAccounts) {
             final var future = signatureVerifier.verify(
-                    txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow(), alias);
-            nonPayerFutures.add(future);
+                    txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow(), hollowAccount);
+            nonPayerHollowFutures.add(future);
         }
 
         // 7. Create and return TransactionMetadata
-        final var signatureVerificationResult = new VerificationResultFuture(nonPayerFutures);
-        return new PreHandleResult(payer, OK, txInfo, payerVerificationResult, signatureVerificationResult, null);
+        final var resultsFuture =
+                new TransactionSignaturesVerified(payerVerificationFuture, nonPayerFutures, nonPayerHollowFutures);
+        return new PreHandleResult(payer, OK, txInfo, resultsFuture, null);
     }
 
     /** A platform transaction and the future that produces its {@link PreHandleResult} */

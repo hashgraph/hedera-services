@@ -22,9 +22,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.signature.hapi.SignatureVerificationResults;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.workflows.TransactionInfo;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,9 +40,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PreHandleResultTest {
     @SuppressWarnings("ConstantConditions")
     @Test
-    void statusMustNotBeNull(@Mock AccountID payer, @Mock TransactionInfo txInfo, @Mock PreHandleResult innerResult) {
-        final var future = completedFuture(true);
-        assertThatThrownBy(() -> new PreHandleResult(payer, null, txInfo, future, future, innerResult))
+    void statusMustNotBeNull(
+            @Mock AccountID payer,
+            @Mock TransactionInfo txInfo,
+            @Mock Future<SignatureVerificationResults> sigResults,
+            @Mock PreHandleResult innerResult) {
+        assertThatThrownBy(() -> new PreHandleResult(payer, null, txInfo, sigResults, innerResult))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -51,8 +59,7 @@ class PreHandleResultTest {
         assertThat(result.innerResult()).isNull();
         assertThat(result.payer()).isNull();
         assertThat(result.txInfo()).isNull();
-        assertThat(result.payerSignatureVerification()).isNull();
-        assertThat(result.nonPayerSignatureVerification()).isNull();
+        assertThat(result.signatureResults()).isNull();
     }
 
     @Test
@@ -67,16 +74,16 @@ class PreHandleResultTest {
         assertThat(result.innerResult()).isNull();
         assertThat(result.payer()).isEqualTo(nodeAccountId);
         assertThat(result.txInfo()).isSameAs(txInfo);
-        assertThat(result.payerSignatureVerification()).isNull();
-        assertThat(result.nonPayerSignatureVerification()).isNull();
+        assertThat(result.signatureResults()).isNull();
     }
 
     @Test
     @DisplayName("Pre-Handle Failures set the payer, status, txInfo, and payer verification future")
-    void preHandleFailure(@Mock TransactionInfo txInfo) {
+    void preHandleFailure(@Mock TransactionInfo txInfo, @Mock SignatureVerification payerVerification) {
         final var payer = AccountID.newBuilder().accountNum(1001).build();
         final var status = INVALID_PAYER_ACCOUNT_ID;
-        final var payerFuture = completedFuture(true);
+        when(payerVerification.passed()).thenReturn(true);
+        final var payerFuture = completedFuture(payerVerification);
         final var result = PreHandleResult.preHandleFailure(payer, status, txInfo, payerFuture);
 
         assertThat(result.status()).isEqualTo(status);
@@ -84,16 +91,21 @@ class PreHandleResultTest {
         assertThat(result.innerResult()).isNull();
         assertThat(result.payer()).isEqualTo(payer);
         assertThat(result.txInfo()).isSameAs(txInfo);
-        assertThat(result.payerSignatureVerification()).isSameAs(payerFuture);
-        assertThat(result.nonPayerSignatureVerification()).isNull();
+        assertThat(result.signatureResults()).isNotNull();
+        assertThat(result.signatureResults())
+                .succeedsWithin(1, TimeUnit.MILLISECONDS)
+                .extracting(SignatureVerificationResults::getPayerSignatureVerification)
+                .isSameAs(payerVerification);
     }
 
     @Test
     @DisplayName("Not Failed if OK")
-    void notFailedIfOk(@Mock AccountID payer, @Mock TransactionInfo txInfo, @Mock PreHandleResult innerResult) {
-        final var future = completedFuture(true);
-        final var result = new PreHandleResult(payer, OK, txInfo, future, future, innerResult);
-
+    void notFailedIfOk(
+            @Mock AccountID payer,
+            @Mock TransactionInfo txInfo,
+            @Mock PreHandleResult innerResult,
+            @Mock Future<SignatureVerificationResults> sigResults) {
+        final var result = new PreHandleResult(payer, OK, txInfo, sigResults, innerResult);
         assertThat(result.failed()).isFalse();
     }
 }

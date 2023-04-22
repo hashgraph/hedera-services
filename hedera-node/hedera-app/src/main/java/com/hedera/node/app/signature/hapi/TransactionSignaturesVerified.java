@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -30,15 +31,28 @@ import java.util.concurrent.TimeoutException;
  * Contains the result of a List of signature verifications. This class aggregates each of those individual
  * verification tasks and returns a single boolean indicating whether the verifications succeeded, or failed.
  */
-public class VerificationResultFuture implements Future<Boolean> {
+public class TransactionSignaturesVerified implements Future<SignatureVerificationResults> {
     /** The list of {@link Future}s for each individual verification */
-    private final List<? extends Future<SignatureVerification>> futures;
+    private final Future<SignatureVerification> payerFuture;
+
+    private final List<Future<SignatureVerification>> nonPayerFutures;
+    private final List<Future<SignatureVerification>> hollowFutures;
+    private final List<Future<SignatureVerification>> allFutures;
 
     private boolean canceled = false;
 
     /** Create a new instance */
-    public VerificationResultFuture(@NonNull final List<? extends Future<SignatureVerification>> futures) {
-        this.futures = requireNonNull(futures);
+    public TransactionSignaturesVerified(
+            @NonNull final Future<SignatureVerification> payerFuture,
+            @NonNull final List<Future<SignatureVerification>> nonPayerFutures,
+            @NonNull final List<Future<SignatureVerification>> hollowFutures) {
+        this.payerFuture = requireNonNull(payerFuture);
+        this.nonPayerFutures = requireNonNull(nonPayerFutures);
+        this.hollowFutures = requireNonNull(hollowFutures);
+        this.allFutures = new ArrayList<>();
+        allFutures.add(payerFuture);
+        allFutures.addAll(nonPayerFutures);
+        allFutures.addAll(hollowFutures);
     }
 
     @Override
@@ -50,7 +64,7 @@ public class VerificationResultFuture implements Future<Boolean> {
 
         // Try to cancel each underlying future (I go ahead and try canceling all of them, even if one fails)
         boolean result = true;
-        for (final var future : futures) {
+        for (final var future : allFutures) {
             final var couldBeCanceled = future.cancel(mayInterruptIfRunning);
             if (!couldBeCanceled) {
                 result = false;
@@ -71,11 +85,11 @@ public class VerificationResultFuture implements Future<Boolean> {
 
     @Override
     public boolean isDone() {
-        if (canceled || futures.isEmpty()) {
+        if (canceled || allFutures.isEmpty()) {
             return true;
         }
 
-        for (final var future : futures) {
+        for (final var future : allFutures) {
             if (future.isDone()) {
                 return true;
             }
@@ -85,26 +99,37 @@ public class VerificationResultFuture implements Future<Boolean> {
     }
 
     @Override
-    public Boolean get() throws InterruptedException, ExecutionException {
+    public SignatureVerificationResults get() throws InterruptedException, ExecutionException {
         var passed = true;
-        for (final var future : futures) {
+        for (final var future : allFutures) {
             if (passed) {
                 passed = future.get().passed();
             } else {
                 future.cancel(true);
             }
         }
-        return passed;
+
+        final var listNonPayerFutures = new ArrayList<SignatureVerification>();
+        for (final var future : nonPayerFutures) {
+            listNonPayerFutures.add(future.get());
+        }
+
+        final var listHollowFutures = new ArrayList<SignatureVerification>();
+        for (final var future : hollowFutures) {
+            listHollowFutures.add(future.get());
+        }
+
+        return new SignatureVerificationResults(payerFuture.get(), listNonPayerFutures, listHollowFutures, passed);
     }
 
     // Should to millisRemaining or nanos remaining like completable future?
     // Should we rely on the underlying futures to throw the timeout if "millisRemaining" is negative?
     @Override
-    public Boolean get(final long timeout, @NonNull final TimeUnit unit)
+    public SignatureVerificationResults get(final long timeout, @NonNull final TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
         var millisRemaining = unit.toMillis(timeout);
         var passed = true;
-        for (final var future : futures) {
+        for (final var future : allFutures) {
             if (passed) {
                 final var now = System.currentTimeMillis();
                 passed = future.get(millisRemaining, TimeUnit.MILLISECONDS).passed();
@@ -113,6 +138,17 @@ public class VerificationResultFuture implements Future<Boolean> {
                 future.cancel(true);
             }
         }
-        return passed;
+
+        final var listNonPayerFutures = new ArrayList<SignatureVerification>();
+        for (final var future : nonPayerFutures) {
+            listNonPayerFutures.add(future.get());
+        }
+
+        final var listHollowFutures = new ArrayList<SignatureVerification>();
+        for (final var future : hollowFutures) {
+            listHollowFutures.add(future.get());
+        }
+
+        return new SignatureVerificationResults(payerFuture.get(), listNonPayerFutures, listHollowFutures, passed);
     }
 }

@@ -17,7 +17,7 @@
 package com.hedera.node.app.spi.signatures;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -52,7 +52,7 @@ public interface SignatureVerification {
      * provided.
      */
     @Nullable
-    default Bytes alias() {
+    default Account hollowAccount() {
         return null;
     }
 

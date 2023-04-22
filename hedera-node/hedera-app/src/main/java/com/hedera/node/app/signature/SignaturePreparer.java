@@ -30,6 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * @deprecated Replace with {@link SignatureVerifier}.
+ */
+@Deprecated(forRemoval = true)
 public interface SignaturePreparer {
 
     /**

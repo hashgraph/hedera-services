@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.spi.meta;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -77,15 +77,15 @@ public interface HandleContext {
     SignatureVerification verificationFor(@NonNull final Key key);
 
     /**
-     * Gets the {@link SignatureVerification} for the given EVM address alias. If this alias was not provided during
-     * pre-handle, then there will be no corresponding {@link SignatureVerification}. If the alias was provided during
-     * pre-handle, then the corresponding {@link SignatureVerification} will be returned with the result of that
-     * verification operation. If during signature verification a key was extracted then it will be made available in
-     * the {@link SignatureVerification}.
+     * Gets the {@link SignatureVerification} for the given hollow account ID. If the alias for the hollow account was
+     * not provided during pre-handle, then there will be no corresponding {@link SignatureVerification}. If the alias
+     * was provided during pre-handle, then the corresponding {@link SignatureVerification} will be returned with the
+     * result of that verification operation. If during signature verification a key was extracted then it will be made
+     * available in the {@link SignatureVerification}.
      *
-     * @param alias the alias to get the verification for
-     * @return the verification for the given alias, or {@code null} if no such alias was provided during pre-handle
+     * @param hollowAccountID the hollow account ID to get the verification for
+     * @return the verification for the given account, or {@code null} if no such account was provided during pre-handle
      */
     @Nullable
-    SignatureVerification verificationFor(@NonNull final Bytes alias);
+    SignatureVerification verificationFor(@NonNull final AccountID hollowAccountID);
 }

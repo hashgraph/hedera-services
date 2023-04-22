@@ -51,8 +51,12 @@ import javax.inject.Singleton;
 
 /**
  * Implementation of {@link SignaturePreparer} that delegates to the respective mono-service's functionality
+ *
+ * @deprecated Replace with {@link com.hedera.node.app.signature.hapi.HapiSignatureVerifierImpl} after we no longer
+ * need to support the mono service.
  */
 @Singleton
+@Deprecated(forRemoval = true)
 public class MonoSignaturePreparer implements SignaturePreparer {
     private final PrecheckVerifier precheckVerifier;
 
