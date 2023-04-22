@@ -27,7 +27,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.impl.ReadableUpgradeFileStore;
+import com.hedera.node.app.service.admin.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -62,7 +63,7 @@ public class FreezeHandler implements TransactionHandler {
     // it is necessary to check getStartHour, getStartMin, getEndHour, getEndMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore)
+            @NonNull final PreHandleContext context, @NonNull final ReadableUpgradeFileStore upgradeFileStore)
             throws PreCheckException {
         requireNonNull(context);
 
@@ -79,29 +80,28 @@ public class FreezeHandler implements TransactionHandler {
         }
 
         final FreezeType freezeType = freezeTxn.freezeType();
+        final var txValidStart = context.body().transactionID().transactionValidStart();
         switch (freezeType) {
                 // default value for freezeType is UNKNOWN_FREEZE_TYPE
                 // reject any freeze transactions that do not set freezeType or set it to UNKNOWN_FREEZE_TYPE
             case UNKNOWN_FREEZE_TYPE -> throw new PreCheckException(INVALID_FREEZE_TRANSACTION_BODY);
 
                 // FREEZE_ONLY requires a valid start_time
-            case FREEZE_ONLY -> verifyFreezeStartTimeIsInFuture(
-                    freezeTxn, context.body().transactionID().transactionValidStart());
+            case FREEZE_ONLY -> verifyFreezeStartTimeIsInFuture(freezeTxn, txValidStart);
 
                 // PREPARE_UPGRADE requires valid update_file and file_hash values
-            case PREPARE_UPGRADE -> verifyUpdateFileAndHash(freezeTxn, specialFileStore);
+            case PREPARE_UPGRADE -> verifyUpdateFileAndHash(freezeTxn, upgradeFileStore);
 
                 // FREEZE_UPGRADE and TELEMETRY_UPGRADE require a valid start_time and valid update_file and
                 // file_hash values
             case FREEZE_UPGRADE, TELEMETRY_UPGRADE -> {
-                verifyFreezeStartTimeIsInFuture(
-                        freezeTxn, context.body().transactionID().transactionValidStart());
+                verifyFreezeStartTimeIsInFuture(freezeTxn, txValidStart);
 
                 // from proto specs, it looks like update file not required for FREEZE_UPGRADE and TELEMETRY_UPGRADE
                 // but specs aren't very clear
                 // current code in FreezeTransitionLogic checks for the file in specialFiles
                 // so we will do the same
-                verifyUpdateFileAndHash(freezeTxn, specialFileStore);
+                verifyUpdateFileAndHash(freezeTxn, upgradeFileStore);
             }
 
                 // FREEZE_ABORT does not require any additional checks
@@ -141,7 +141,7 @@ public class FreezeHandler implements TransactionHandler {
      * For freeze types PREPARE_UPGRADE, FREEZE_UPGRADE, and TELEMETRY_UPGRADE, the updateFile and fileHash fields must be set.
      * @throws PreCheckException if updateFile or fileHash are not set or don't pass sanity checks
      */
-    private void verifyUpdateFileAndHash(FreezeTransactionBody freezeTxn, ReadableSpecialFileStore specialFileStore)
+    private void verifyUpdateFileAndHash(FreezeTransactionBody freezeTxn, ReadableUpgradeFileStore specialFileStore)
             throws PreCheckException {
         final FileID updateFile = freezeTxn.updateFile();
 
@@ -154,5 +154,9 @@ public class FreezeHandler implements TransactionHandler {
         if (fileHash == null || Bytes.EMPTY.equals(fileHash) || fileHash.length() != UPDATE_FILE_HASH_LEN) {
             throw new PreCheckException(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
+    }
+
+    public void handle(FreezeTransactionBody freezeTxn, WritableUpgradeFileStore upgradeFileStore) {
+        // TODO: implement this
     }
 }

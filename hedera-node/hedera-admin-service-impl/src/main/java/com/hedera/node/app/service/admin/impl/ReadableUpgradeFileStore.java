@@ -24,22 +24,23 @@ import java.util.Optional;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with special files used in freeze transactions.
+ * working with upgrade files used in freeze transactions.
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ReadableSpecialFileStore {
-    /** The underlying data storage class that holds the file data. */
-    private final ReadableKVState<Long, byte[]> freezeFilesById;
+public class ReadableUpgradeFileStore {
+    /** The underlying data storage class that holds the file data.
+     * Can contain files 0.0.150 to 159 */
+    private final ReadableKVState<Long, byte[]> upgradeFilesById;
 
     /**
-     * Create a new {@link ReadableSpecialFileStore} instance.
+     * Create a new {@link ReadableUpgradeFileStore} instance.
      *
      * @param states The state to use.
      */
-    public ReadableSpecialFileStore(@NonNull final ReadableStates states) {
+    public ReadableUpgradeFileStore(@NonNull final ReadableStates states) {
         Objects.requireNonNull(states);
-        this.freezeFilesById = states.get(FreezeServiceImpl.UPGRADE_FILES_KEY);
+        this.upgradeFilesById = states.get(FreezeServiceImpl.UPGRADE_FILES_KEY);
     }
 
     /**
@@ -50,7 +51,7 @@ public class ReadableSpecialFileStore {
      * @return the file with the given id
      */
     public Optional<byte[]> get(final Long fileId) {
-        final var file = freezeFilesById.get(fileId);
+        final var file = upgradeFilesById.get(fileId);
         return Optional.ofNullable(file);
     }
 }

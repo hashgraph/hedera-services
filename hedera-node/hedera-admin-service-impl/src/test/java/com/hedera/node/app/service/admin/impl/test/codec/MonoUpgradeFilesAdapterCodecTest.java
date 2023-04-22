@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.node.app.service.admin.impl.codec.MonoSpecialFilesAdapterCodec;
+import com.hedera.node.app.service.admin.impl.codec.MonoUpgradeFilesAdapterCodec;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
@@ -39,7 +39,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-class MonoSpecialFilesAdapterCodecTest {
+class MonoUpgradeFilesAdapterCodecTest {
     private static final FileID SOME_FILE_ID = FileID.newBuilder().fileNum(666).build();
     private static final MerkleSpecialFiles SOME_SPECIAL_FILES = new MerkleSpecialFiles();
 
@@ -50,7 +50,7 @@ class MonoSpecialFilesAdapterCodecTest {
     @Mock
     private ReadableSequentialData input;
 
-    final MonoSpecialFilesAdapterCodec subject = new MonoSpecialFilesAdapterCodec();
+    final MonoUpgradeFilesAdapterCodec subject = new MonoUpgradeFilesAdapterCodec();
 
     @Test
     void doesntSupportUnnecessary() {
