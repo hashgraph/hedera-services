@@ -23,6 +23,8 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
@@ -64,10 +66,13 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      */
     private volatile boolean releaseInIsDetached;
 
+    private VirtualMapStatistics statistics;
+
     public DummyVirtualRoot(final String label) {
         this.pipeline = new VirtualPipeline(label);
         flushLatch = new CountDownLatch(1);
         mergeLatch = new CountDownLatch(1);
+        statistics = new VirtualMapStatistics(label);
 
         releaseInIsDetached = false;
 
@@ -95,6 +100,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         that.next = this;
         copyIndex = that.copyIndex + 1;
         shouldFlushPredicate = that.shouldFlushPredicate;
+        statistics = that.statistics;
 
         if (shouldFlushPredicate != null) {
             shouldBeFlushed = shouldFlushPredicate.test(copyIndex);
@@ -106,6 +112,17 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      */
     public VirtualPipeline getPipeline() {
         return pipeline;
+    }
+
+    /**
+     * Pass all statistics to the registry.
+     *
+     * @param metrics
+     * 		reference to the metrics system
+     */
+    public void registerMetrics(final Metrics metrics) {
+        statistics.registerMetrics(metrics);
+        pipeline.registerMetrics(metrics);
     }
 
     /**
@@ -228,6 +245,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         blocked = false;
         flushed = true;
         flushLatch.countDown();
+
+        statistics.recordFlush(copyIndex); // Use copyIndex as flush duration
     }
 
     /**
@@ -285,6 +304,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         blocked = false;
         merged = true;
         mergeLatch.countDown();
+
+        statistics.recordMerge(copyIndex * 2); // Use copyIndex*2 as merge duration
     }
 
     /**
@@ -348,6 +369,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
             throw new IllegalStateException("previous should already be hashed");
         }
         hashed = true;
+        statistics.recordHash(copyIndex + 1); // Use copyIndex+1 as hash duration
     }
 
     /**

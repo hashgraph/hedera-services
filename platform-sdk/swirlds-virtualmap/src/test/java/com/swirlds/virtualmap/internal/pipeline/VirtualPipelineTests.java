@@ -26,13 +26,23 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Metric.ValueType;
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.platform.DefaultMetrics;
+import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.TestVirtualMapSettings;
 import com.swirlds.virtualmap.VirtualMapSettings;
 import com.swirlds.virtualmap.VirtualMapSettingsFactory;
@@ -45,11 +55,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -58,6 +70,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 @DisplayName("VirtualPipeline Tests")
 class VirtualPipelineTests {
+
+    private Metrics metrics;
 
     /**
      * Run an operation on a thread, interrupt and throw an exception if the thread does not complete before timeout.
@@ -196,6 +210,8 @@ class VirtualPipelineTests {
         for (int index = 0; index < copyCount; index++) {
             if (mutableCopy == null) {
                 mutableCopy = new DummyVirtualRoot("VirtualPipelineTests");
+                mutableCopy.setShouldFlushPredicate(shouldBeFlushed);
+                mutableCopy.registerMetrics(metrics);
             } else {
                 mutableCopy = mutableCopy.copy();
             }
@@ -210,6 +226,36 @@ class VirtualPipelineTests {
         assertValidity(copies);
 
         return copies;
+    }
+
+    private static Metrics createMetrics() {
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final MetricKeyRegistry registry = new MetricKeyRegistry();
+        return new DefaultMetrics(
+                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+    }
+
+    private Metric getMetric(final String name) {
+        return metrics.getAll().stream()
+                .filter(it -> it.getName().contains(name))
+                .findAny()
+                .orElse(null);
+    }
+
+    private int getIntMetricValue(final String name) {
+        final Metric metric = getMetric(name);
+        return Integer.parseInt(metric.get(ValueType.VALUE).toString());
+    }
+
+    private void assertIntMetricValue(final String name, final int value) {
+        final int metricValue = getIntMetricValue(name);
+        assertEquals(value, metricValue);
+    }
+
+    @BeforeEach
+    void setupEach() {
+        metrics = createMetrics();
     }
 
     @Test
@@ -833,5 +879,86 @@ class VirtualPipelineTests {
         }
         copies.stream().filter(copy -> copy != last).forEach(copy -> assertTrue(copy.isHashed(), "Copy not hashed"));
         assertFalse(last.isHashed(), "Copy hashed");
+    }
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.VMAP)
+    void pipelineSizeStatTest() throws Exception {
+        final int copiesCount = 100;
+        final List<DummyVirtualRoot> copies = setupCopies(copiesCount, i -> false);
+        assertIntMetricValue("vmap_lifecycle_pipelineSize_VirtualPipelineTests", copiesCount);
+        final DummyVirtualRoot newCopy = copies.get(copiesCount - 1).copy();
+        assertIntMetricValue("vmap_lifecycle_pipelineSize_VirtualPipelineTests", copiesCount + 1);
+        for (int i = 0; i < copiesCount / 2; i++) {
+            copies.get(i).release();
+        }
+        assertEventuallyTrue(
+                () -> getIntMetricValue("vmap_lifecycle_pipelineSize_VirtualPipelineTests") == copiesCount / 2 + 1,
+                Duration.ofSeconds(10),
+                "Copy is not merged or flushed");
+        for (int i = copiesCount / 2; i < copiesCount; i++) {
+            copies.get(i).release();
+        }
+        // Create one more copy, so lastCopy can be merged into newCopy, which must be immutable
+        final DummyVirtualRoot newNewCopy = newCopy.copy();
+        assertEventuallyTrue(
+                () -> getIntMetricValue("vmap_lifecycle_pipelineSize_VirtualPipelineTests") == 2,
+                Duration.ofSeconds(10),
+                "Copy is not merged or flushed");
+        newCopy.release();
+        newNewCopy.release();
+    }
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.VMAP)
+    void flushBacklogStatTest() throws Exception {
+        final List<DummyVirtualRoot> copies = setupCopies(100, i -> (i > 0) && (i % 30 == 0));
+        assertIntMetricValue("vmap_lifecycle_flushBacklogSize_VirtualPipelineTests", 3);
+        for (int i = 0; i <= 30; i++) {
+            copies.get(i).release();
+        }
+        assertEventuallyTrue(
+                () -> getIntMetricValue("vmap_lifecycle_flushBacklogSize_VirtualPipelineTests") == 2,
+                Duration.ofSeconds(10),
+                "Copy is not flushed");
+        for (int i = 31; i < 100; i++) {
+            copies.get(i).release();
+        }
+        assertEventuallyTrue(
+                () -> getIntMetricValue("vmap_lifecycle_flushBacklogSize_VirtualPipelineTests") == 0,
+                Duration.ofSeconds(10),
+                "Copy is not flushed");
+    }
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.VMAP)
+    void flushCountStatTest() throws Exception {
+        final List<DummyVirtualRoot> copies = setupCopies(81, i -> (i > 0) && (i % 20 == 0));
+        assertIntMetricValue("vmap_lifecycle_flushCount_VirtualPipelineTests", 0);
+        for (int i = 0; i < 39; i++) {
+            copies.get(i).release();
+        }
+        assertEventuallyTrue(
+                () -> getIntMetricValue("vmap_lifecycle_flushCount_VirtualPipelineTests") == 1,
+                Duration.ofSeconds(10),
+                "Copy is not flushed");
+        copies.get(39).release(); // unreleased 39 prevents 40 from flushing; just unreleased 40 does not
+        copies.get(40).release();
+        assertEventuallyTrue(
+                () -> getIntMetricValue("vmap_lifecycle_flushCount_VirtualPipelineTests") == 2,
+                Duration.ofSeconds(10),
+                "Copy is not flushed");
+        final DummyVirtualRoot newCopy = copies.get(80).copy();
+        for (int i = 41; i < 81; i++) {
+            copies.get(i).release();
+        }
+        assertEventuallyTrue(
+                () -> getIntMetricValue("vmap_lifecycle_flushCount_VirtualPipelineTests") == 4,
+                Duration.ofSeconds(10),
+                "Copy is not flushed");
+        newCopy.release();
     }
 }

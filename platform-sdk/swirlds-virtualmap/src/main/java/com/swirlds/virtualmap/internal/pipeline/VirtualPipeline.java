@@ -209,10 +209,11 @@ public class VirtualPipeline {
      */
     private void applyFlushBackpressure() {
         final int backlogSize = flushBacklog.get();
-        final int backlogExcess = backlogSize - VirtualMapSettingsFactory.get().getPreferredFlushQueueSize();
+        statistics.recordFlushBacklogSize(backlogSize);
 
+        final int backlogExcess = backlogSize - VirtualMapSettingsFactory.get().getPreferredFlushQueueSize();
         if (backlogExcess <= 0) {
-            statistics.recordFlushBacklog(backlogSize, 0);
+            statistics.recordFlushBackpressureMs(0);
             return;
         }
 
@@ -224,7 +225,9 @@ public class VirtualPipeline {
         final Duration maxSleepTime = VirtualMapSettingsFactory.get().getMaximumFlushThrottlePeriod();
         final Duration sleepTime = CompareTo.min(computedSleepTime, maxSleepTime);
         final int sleepTimeMillis = (int) sleepTime.toMillis();
-        statistics.recordFlushBacklog(backlogSize, sleepTimeMillis);
+        statistics.recordFlushBacklogSize(backlogSize);
+        statistics.recordFlushBackpressureMs(sleepTimeMillis);
+
         try {
             MILLISECONDS.sleep(sleepTimeMillis);
         } catch (final InterruptedException ex) {
@@ -428,7 +431,8 @@ public class VirtualPipeline {
             hashCopy(copy);
         }
         copy.flush();
-        flushBacklog.getAndDecrement();
+        final int flushBacklogSize = flushBacklog.decrementAndGet();
+        statistics.recordFlushBacklogSize(flushBacklogSize);
     }
 
     /**

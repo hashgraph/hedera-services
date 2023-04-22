@@ -226,15 +226,22 @@ public class VirtualMapStatistics {
     }
 
     /**
-     * Updates {@link #flushBacklogSize} and {@link #flushBackpressureMs} stats.
+     * Updates {@link #flushBacklogSize} stat.
      *
      * @param size flush backlog size
-     * @param backpressureMs flush backpressure, ms
      */
-    public void recordFlushBacklog(final int size, final int backpressureMs) {
+    public void recordFlushBacklogSize(final int size) {
         if (flushBacklogSize != null) {
             flushBacklogSize.set(size);
         }
+    }
+
+    /**
+     * Updates {@link #flushBackpressureMs} stat.
+     *
+     * @param backpressureMs flush backpressure, ms
+     */
+    public void recordFlushBackpressureMs(final int backpressureMs) {
         if (flushBackpressureMs != null) {
             flushBackpressureMs.set(backpressureMs);
         }
