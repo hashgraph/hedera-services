@@ -28,9 +28,9 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Utility class to unzip a zip file.
+ * <p>
  * This class was copied from hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/utils/UnzipUtility.java
- * Once we are wholly migrated to the admin service module, we can remove the other location.
- *
+ * Once we are wholly migrated to the modularized services, we can remove the other location.
  * */
 public final class UnzipUtility {
     private static final Logger log = LogManager.getLogger(UnzipUtility.class);

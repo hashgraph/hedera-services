@@ -30,6 +30,9 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 /**
  * Helper class to register a started appender on a given {@code Logger}, and parse the events at
  * each log level as a {@code List<String>}.
+ * <p></p>
+ * This class was ported over from mono-service. When mono-service module goes away, it will be deleted from there and this
+ * will be the only copy.
  */
 public class LogCaptor {
     private static final Pattern EVENT_PATTERN = Pattern.compile("(DEBUG|INFO|WARN|ERROR|$)");
@@ -81,11 +84,10 @@ public class LogCaptor {
 
     /**
      * Parse a log capture and return a list of events at the given log level.
-     *  log text looks like this:
+     *  For example, suppose that your log text looks like this:
      *  DEBUG a log message here
      *  INFO another log message
-     *  etc.
-     *  This method returns an array of Strings containing just the log messages after the given level
+     *  Then this method returns an array of Strings containing just the log messages after the given level
      *  e.g. for level = "INFO" and the example input above, it will return an array of a single String "another log message"
      *
      * @param level Usually one of [DEBUG|INFO|WARN|ERROR]
@@ -107,7 +109,7 @@ public class LogCaptor {
             }
             // now check if the current match is the level we're looking for
             String matchLevel = m.group(0);
-            if (matchLevel != null && level.equals(matchLevel)) {
+            if (level.equals(matchLevel)) {
                 prevLevelMatch = true;
             }
             // move the start index for the next search to the end of the current match

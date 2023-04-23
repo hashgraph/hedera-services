@@ -25,6 +25,12 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
+/**
+ * Utility class for file operations in tests.
+ * <p></p>
+ * This was copied over from mono-service. When mono-service module goes away, it will be deleted from there and this
+ * will be the only copy.
+ */
 public class TestFileUtils {
     private TestFileUtils() {
         throw new IllegalStateException("Utility class");

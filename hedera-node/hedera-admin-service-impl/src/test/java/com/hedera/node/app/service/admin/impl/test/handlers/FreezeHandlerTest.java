@@ -295,6 +295,4 @@ class FreezeHandlerTest {
         final var context = new PreHandleContext(keyLookup, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
     }
-
-    // TODO: add tests for handler
 }

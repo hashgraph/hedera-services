@@ -54,6 +54,9 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
  *     }
  *  }
  * }</pre>
+ *
+ * This class was copied over from mono-service. When mono-service module goes away, it will be deleted from there and this
+ * will be the only copy.
  */
 public class LogCaptureExtension implements TestInstancePostProcessor, AfterEachCallback {
     private LogCaptor injectedCaptor = null;
