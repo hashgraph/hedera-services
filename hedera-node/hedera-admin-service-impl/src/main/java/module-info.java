@@ -8,6 +8,10 @@ module com.hedera.node.app.service.admin.impl {
     requires com.hedera.pbj.runtime;
     requires com.hedera.node.app.service.mono;
     requires com.swirlds.common;
+    requires org.apache.logging.log4j;
+    requires org.apache.commons.io;
+    requires com.swirlds.config;
+    requires com.google.common;
 
     provides com.hedera.node.app.service.admin.FreezeService with
             FreezeServiceImpl;
@@ -18,4 +22,5 @@ module com.hedera.node.app.service.admin.impl {
     exports com.hedera.node.app.service.admin.impl.handlers;
     exports com.hedera.node.app.service.admin.impl.components;
     exports com.hedera.node.app.service.admin.impl.codec;
+    exports com.hedera.node.app.service.admin.impl.config;
 }

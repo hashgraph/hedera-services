@@ -25,6 +25,8 @@ import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.impl.WritableSpecialFileStore;
+import com.hedera.node.app.service.admin.impl.config.AdminServiceConfig;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
@@ -43,6 +45,7 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.swirlds.common.system.SwirldDualState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -62,6 +65,7 @@ public class TransactionDispatcher {
     private final TransactionHandlers handlers;
     private final CryptoSignatureWaivers cryptoSignatureWaivers;
     private final GlobalDynamicProperties dynamicProperties;
+    private final SwirldDualState dualState;
 
     /**
      * Creates a {@code TransactionDispatcher}.
@@ -77,10 +81,11 @@ public class TransactionDispatcher {
             @NonNull final TransactionHandlers handlers,
             @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final GlobalDynamicProperties dynamicProperties) {
-        this.handlers = requireNonNull(handlers);
         this.handleContext = requireNonNull(handleContext);
-        this.dynamicProperties = requireNonNull(dynamicProperties);
+        this.handlers = requireNonNull(handlers);
         this.cryptoSignatureWaivers = new CryptoSignatureWaiversImpl(requireNonNull(accountNumbers));
+        this.dynamicProperties = requireNonNull(dynamicProperties);
+        this.dualState = null; // TODO: need to initialize this somehow, probably through Dagger injection
     }
 
     /**
@@ -113,7 +118,8 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
-            case FREEZE -> dispatchFreeze(txn.freezeOrThrow(), writableStoreFactory.createUpgradeFileStore());
+            case FREEZE -> dispatchFreeze(
+                    txn.freezeOrThrow(), writableStoreFactory.createSpecialFileStore(), dualState);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -362,9 +368,14 @@ public class TransactionDispatcher {
     }
 
     private void dispatchFreeze(
-            @NonNull final FreezeTransactionBody freezeTxn, @NonNull final WritableUpgradeFileStore upgradeFileStore) {
+            @NonNull final FreezeTransactionBody freezeTxn,
+            @NonNull final WritableSpecialFileStore specialFileStore,
+            @NonNull final SwirldDualState dualState) {
         final var handler = handlers.freezeHandler();
-        handler.handle(freezeTxn, upgradeFileStore);
-        upgradeFileStore.commit();
+        handler.handle(
+                freezeTxn,
+                new AdminServiceConfig(dynamicProperties.upgradeArtifactsLoc()),
+                specialFileStore,
+                dualState);
     }
 }

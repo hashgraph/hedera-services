@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.admin.impl.WritableSpecialFileStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -73,5 +75,11 @@ public class WorkingStateWritableStoreFactory implements WritableStoreFactory {
     public WritableTokenRelationStore createTokenRelStore() {
         final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
         return new WritableTokenRelationStore(tokenStates);
+    }
+
+    @Override
+    public WritableSpecialFileStore createSpecialFileStore() {
+        final var freezeStates = stateAccessor.getHederaState().createWritableStates(FreezeService.NAME);
+        return new WritableSpecialFileStore(freezeStates);
     }
 }

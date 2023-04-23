@@ -28,11 +28,13 @@ configurations.all {
 }
 
 dependencies {
+  testImplementation(project(mapOf("path" to ":hedera-node:hedera-app")))
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-admin-service"))
   implementation(libs.bundles.di)
   implementation(project(":hedera-node:hedera-mono-service"))
   implementation(libs.swirlds.common)
+  implementation(libs.commons.io)
 
   testImplementation(testLibs.bundles.testing)
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))

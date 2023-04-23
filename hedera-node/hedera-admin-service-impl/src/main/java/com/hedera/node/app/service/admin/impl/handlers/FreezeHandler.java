@@ -27,14 +27,17 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
-import com.hedera.node.app.service.admin.impl.ReadableUpgradeFileStore;
-import com.hedera.node.app.service.admin.impl.WritableUpgradeFileStore;
+import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.impl.WritableSpecialFileStore;
+import com.hedera.node.app.service.admin.impl.config.AdminServiceConfig;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.system.SwirldDualState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -63,7 +66,7 @@ public class FreezeHandler implements TransactionHandler {
     // it is necessary to check getStartHour, getStartMin, getEndHour, getEndMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final ReadableUpgradeFileStore upgradeFileStore)
+            @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore)
             throws PreCheckException {
         requireNonNull(context);
 
@@ -90,7 +93,7 @@ public class FreezeHandler implements TransactionHandler {
             case FREEZE_ONLY -> verifyFreezeStartTimeIsInFuture(freezeTxn, txValidStart);
 
                 // PREPARE_UPGRADE requires valid update_file and file_hash values
-            case PREPARE_UPGRADE -> verifyUpdateFileAndHash(freezeTxn, upgradeFileStore);
+            case PREPARE_UPGRADE -> verifyUpdateFileAndHash(freezeTxn, specialFileStore);
 
                 // FREEZE_UPGRADE and TELEMETRY_UPGRADE require a valid start_time and valid update_file and
                 // file_hash values
@@ -101,7 +104,7 @@ public class FreezeHandler implements TransactionHandler {
                 // but specs aren't very clear
                 // current code in FreezeTransitionLogic checks for the file in specialFiles
                 // so we will do the same
-                verifyUpdateFileAndHash(freezeTxn, upgradeFileStore);
+                verifyUpdateFileAndHash(freezeTxn, specialFileStore);
             }
 
                 // FREEZE_ABORT does not require any additional checks
@@ -112,6 +115,46 @@ public class FreezeHandler implements TransactionHandler {
 
         // no need to add any keys to the context because this transaction does not require any signatures
         // it must be submitted by an account with superuser privileges, that is checked during ingest
+    }
+
+    public void handle(
+            FreezeTransactionBody freezeTxn,
+            @NonNull final AdminServiceConfig adminServiceConfig,
+            WritableSpecialFileStore specialFileStore,
+            SwirldDualState dualState) {
+        final FreezeUpgradeActions upgradeActions =
+                new FreezeUpgradeActions(adminServiceConfig, dualState, specialFileStore);
+
+        //        assertValidityAtCons(op);
+        final Timestamp freezeStartTime = freezeTxn.startTime();
+        final Instant freezeStartTimeInstant =
+                Instant.ofEpochSecond(freezeStartTime.seconds(), freezeStartTime.nanos());
+        final FileID updateFileNum = freezeTxn.updateFile();
+
+        switch (freezeTxn.freezeType()) {
+            case PREPARE_UPGRADE:
+                final Optional<byte[]> updateFileZip = specialFileStore.get(updateFileNum.fileNum());
+                if (updateFileZip.isEmpty()) throw new IllegalStateException("Update file not found");
+                upgradeActions.extractSoftwareUpgrade(updateFileZip.get());
+                // TODO:      networkCtx.recordPreparedUpgrade(freezeTxn);
+                break;
+            case FREEZE_UPGRADE:
+                upgradeActions.scheduleFreezeUpgradeAt(freezeStartTimeInstant);
+                break;
+            case FREEZE_ABORT:
+                upgradeActions.abortScheduledFreeze();
+                // TODO:       networkCtx.discardPreparedUpgradeMeta();
+                break;
+            case TELEMETRY_UPGRADE:
+                final Optional<byte[]> telemetryUpdateZip = specialFileStore.get(updateFileNum.fileNum());
+                if (telemetryUpdateZip.isEmpty()) throw new IllegalStateException("Telemetry update file not found");
+                upgradeActions.extractTelemetryUpgrade(telemetryUpdateZip.get(), freezeStartTimeInstant);
+                break;
+            default:
+            case FREEZE_ONLY:
+                upgradeActions.scheduleFreezeOnlyAt(freezeStartTimeInstant);
+                break;
+        }
     }
 
     /**
@@ -141,7 +184,7 @@ public class FreezeHandler implements TransactionHandler {
      * For freeze types PREPARE_UPGRADE, FREEZE_UPGRADE, and TELEMETRY_UPGRADE, the updateFile and fileHash fields must be set.
      * @throws PreCheckException if updateFile or fileHash are not set or don't pass sanity checks
      */
-    private void verifyUpdateFileAndHash(FreezeTransactionBody freezeTxn, ReadableUpgradeFileStore specialFileStore)
+    private void verifyUpdateFileAndHash(FreezeTransactionBody freezeTxn, ReadableSpecialFileStore specialFileStore)
             throws PreCheckException {
         final FileID updateFile = freezeTxn.updateFile();
 
@@ -154,9 +197,5 @@ public class FreezeHandler implements TransactionHandler {
         if (fileHash == null || Bytes.EMPTY.equals(fileHash) || fileHash.length() != UPDATE_FILE_HASH_LEN) {
             throw new PreCheckException(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
-    }
-
-    public void handle(FreezeTransactionBody freezeTxn, WritableUpgradeFileStore upgradeFileStore) {
-        // TODO: implement this
     }
 }
