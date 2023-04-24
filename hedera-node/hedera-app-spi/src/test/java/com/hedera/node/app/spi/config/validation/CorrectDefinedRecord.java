@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.utility;
+package com.hedera.node.app.spi.config.validation;
 
-/**
- * An exception type thrown when something is in the wrong {@link LifecyclePhase}.
- */
-public class LifecycleException extends IllegalStateException {
+import com.hedera.node.app.spi.config.types.KeyValuePair;
+import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
+import java.util.List;
 
-    public LifecycleException() {}
-
-    public LifecycleException(final String s) {
-        super(s);
-    }
-
-    public LifecycleException(final String message, final Throwable cause) {
-        super(message, cause);
-    }
-
-    public LifecycleException(final Throwable cause) {
-        super(cause);
-    }
-}
+@ConfigData
+public record CorrectDefinedRecord(@EmulatesMap @ConfigProperty List<KeyValuePair> dataMap) {}
