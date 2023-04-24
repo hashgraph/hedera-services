@@ -1460,7 +1460,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         intakeCycle.waitForCurrentSequenceEnd();
                     });
 
-            final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+            final ChatterConfig chatterConfig =
+                    platformContext.getConfiguration().getConfigData(ChatterConfig.class);
 
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
