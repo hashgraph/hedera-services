@@ -40,22 +40,11 @@ public class TokenMintHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * Pre-handles a {@link HederaFunctionality#TOKEN_MINT} transaction, returning the metadata
-     * required to, at minimum, validate the signatures of all required signing keys.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
-            throws PreCheckException {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenMintOrThrow();
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
         if (tokenMeta.hasSupplyKey()) {

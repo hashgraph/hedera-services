@@ -22,9 +22,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,8 +42,9 @@ class TokenUnpauseHandlerParityTest extends ParityTestBase {
     void tokenUnpauseWithValidExtantTokenScenario() throws PreCheckException {
         final var theTxn = txnFrom(VALID_UNPAUSE_WITH_EXTANT_TOKEN);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
         assertEquals(1, context.requiredNonPayerKeys().size());
         assertThat(context.requiredNonPayerKeys(), containsInAnyOrder(TOKEN_PAUSE_KT.asPbjKey()));

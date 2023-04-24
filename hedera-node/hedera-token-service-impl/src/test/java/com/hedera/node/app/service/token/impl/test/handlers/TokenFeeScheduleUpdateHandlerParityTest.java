@@ -36,9 +36,10 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -50,15 +51,17 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateNonExistingToken() throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST);
-        final var context = new PreHandleContext(readableAccountStore, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
     }
 
     @Test
     void tokenFeeScheduleUpdateTokenWithoutFeeScheduleKey() throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY);
-        final var context = new PreHandleContext(readableAccountStore, txn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
         // may look odd, but is intentional --- we fail in the handle(), not in preHandle()
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -68,8 +71,9 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeySigReqFeeCollector() throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
-        final var context = new PreHandleContext(readableAccountStore, txn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(2, context.requiredNonPayerKeys().size());
@@ -81,8 +85,9 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeySigNotReqFeeCollector() throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
-        final var context = new PreHandleContext(readableAccountStore, txn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(1, context.requiredNonPayerKeys().size());
@@ -93,8 +98,9 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndOneSigReqFeeCollectorAndAnotherSigNonReqFeeCollector()
             throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
-        final var context = new PreHandleContext(readableAccountStore, txn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(2, context.requiredNonPayerKeys().size());
@@ -106,8 +112,9 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerAndSigReq() throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
-        final var context = new PreHandleContext(readableAccountStore, txn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
         assertEquals(context.payerKey(), RECEIVER_SIG_KT.asPbjKey());
         assertEquals(1, context.requiredNonPayerKeys().size());
@@ -117,8 +124,9 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayer() throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
-        final var context = new PreHandleContext(readableAccountStore, txn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
         assertEquals(List.of(NO_RECEIVER_SIG_KT.asPbjKey()), List.of(context.payerKey()));
         assertEquals(1, context.requiredNonPayerKeys().size());
@@ -128,7 +136,8 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndInvalidFeeCollector() throws PreCheckException {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR);
-        final var context = new PreHandleContext(readableAccountStore, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_CUSTOM_FEE_COLLECTOR);
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_CUSTOM_FEE_COLLECTOR);
     }
 }

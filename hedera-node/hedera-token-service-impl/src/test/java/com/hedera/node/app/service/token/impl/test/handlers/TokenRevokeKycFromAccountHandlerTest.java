@@ -32,18 +32,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TokenRevokeKycFromAccountHandlerTest {
 
-    private AccountAccess accountStore;
+    private ReadableAccountStore accountStore;
     private ReadableTokenStore tokenStore;
     private TokenRevokeKycFromAccountHandler subject;
 
@@ -58,8 +58,9 @@ class TokenRevokeKycFromAccountHandlerTest {
     void tokenRevokeKycWithExtant() throws PreCheckException {
         final var txn = txnFrom(VALID_REVOKE_WITH_EXTANT_TOKEN);
 
-        final var context = new PreHandleContext(accountStore, txn);
-        subject.preHandle(context, tokenStore);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableTokenStore.class, tokenStore);
+        subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(context.requiredNonPayerKeys(), contains(TOKEN_KYC_KT.asPbjKey()));
@@ -70,24 +71,27 @@ class TokenRevokeKycFromAccountHandlerTest {
     void tokenRevokeMissingTxnBody() throws PreCheckException {
         final var txn = txnFrom(REVOKE_WITH_MISSING_TXN_BODY);
 
-        final var context = new PreHandleContext(accountStore, txn);
-        assertThrows(NullPointerException.class, () -> subject.preHandle(context, tokenStore));
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableTokenStore.class, tokenStore);
+        assertThrows(NullPointerException.class, () -> subject.preHandle(context));
     }
 
     @Test
     void tokenRevokeKycWithInvalidToken() throws PreCheckException {
         final var txn = txnFrom(REVOKE_WITH_INVALID_TOKEN);
 
-        final var context = new PreHandleContext(accountStore, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, tokenStore), INVALID_TOKEN_ID);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableTokenStore.class, tokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
     }
 
     @Test
     void tokenRevokeKycWithoutKyc() throws PreCheckException {
         final var txn = txnFrom(REVOKE_FOR_TOKEN_WITHOUT_KYC);
 
-        final var context = new PreHandleContext(accountStore, txn);
-        subject.preHandle(context, tokenStore);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableTokenStore.class, tokenStore);
+        subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertTrue(context.requiredNonPayerKeys().isEmpty());

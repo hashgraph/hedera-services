@@ -83,7 +83,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -143,7 +143,7 @@ public class SigReqAdapterUtils {
         return new ReadableTokenStore(mockStates(Map.of(TOKENS_KEY, state)));
     }
 
-    public static ReadableAccountStore wellKnownAccountStoreAt() {
+    public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {
         final var destination = new HashMap<EntityNumVirtualKey, Account>();
         destination.put(
                 EntityNumVirtualKey.fromLong(FIRST_TOKEN_SENDER.getAccountNum()),
@@ -219,7 +219,7 @@ public class SigReqAdapterUtils {
                 EntityNumVirtualKey.fromLong(FROM_OVERLAP_PAYER.getAccountNum()),
                 toPbjAccount(FROM_OVERLAP_PAYER.getAccountNum(), FROM_OVERLAP_PAYER_KT.asPbjKey(), DEFAULT_BALANCE));
         final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, destination);
-        return new ReadableAccountStore(
+        return new ReadableAccountStoreImpl(
                 mockStates(Map.of(ACCOUNTS_KEY, wrappedState, ALIASES_KEY, wellKnownAliasState())));
     }
 

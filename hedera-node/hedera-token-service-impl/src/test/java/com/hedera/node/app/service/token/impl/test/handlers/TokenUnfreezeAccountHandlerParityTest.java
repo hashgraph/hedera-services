@@ -29,17 +29,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TokenUnfreezeAccountHandlerParityTest {
-    private AccountAccess accountStore;
+    private ReadableAccountStore accountStore;
     private ReadableTokenStore tokenStore;
     private TokenUnfreezeAccountHandler subject;
 
@@ -54,8 +54,9 @@ class TokenUnfreezeAccountHandlerParityTest {
     void tokenUnfreezeWithExtantFreezable() throws PreCheckException {
         final var txn = txnFrom(VALID_UNFREEZE_WITH_EXTANT_TOKEN);
 
-        final var context = new PreHandleContext(accountStore, txn);
-        subject.preHandle(context, tokenStore);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableTokenStore.class, tokenStore);
+        subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(context.requiredNonPayerKeys(), contains(TOKEN_FREEZE_KT.asPbjKey()));
@@ -66,15 +67,17 @@ class TokenUnfreezeAccountHandlerParityTest {
     void tokenUnfreezeMissingToken() throws PreCheckException {
         final var txn = txnFrom(UNFREEZE_WITH_MISSING_FREEZE_TOKEN);
 
-        final var context = new PreHandleContext(accountStore, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, tokenStore), INVALID_TOKEN_ID);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableTokenStore.class, tokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
     }
 
     @Test
     void tokenUnfreezeWithInvalidToken() throws PreCheckException {
         final var txn = txnFrom(UNFREEZE_WITH_INVALID_TOKEN);
 
-        final var context = new PreHandleContext(accountStore, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, tokenStore), INVALID_TOKEN_ID);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableTokenStore.class, tokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
     }
 }

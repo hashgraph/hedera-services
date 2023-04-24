@@ -38,13 +38,13 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
-import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -60,17 +60,18 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
     private final TokenGrantKycToAccountHandler subject = new TokenGrantKycToAccountHandler();
 
     @Mock
-    private AccountAccess accountAccess;
+    private ReadableAccountStore accountStore;
 
     @Test
     void tokenValidGrantWithExtantTokenScenario() throws PreCheckException {
         final var payerAcct = newPayerAccount();
-        given(accountAccess.getAccountById(TEST_DEFAULT_PAYER)).willReturn(payerAcct);
+        given(accountStore.getAccountById(TEST_DEFAULT_PAYER)).willReturn(payerAcct);
         final var theTxn = txnFrom(VALID_GRANT_WITH_EXTANT_TOKEN);
         final var readableStore = mockKnownKycTokenStore();
 
-        final var context = new PreHandleContext(accountAccess, theTxn);
-        subject.preHandle(context, readableStore);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableStore);
+        subject.preHandle(context);
 
         assertEquals(1, context.requiredNonPayerKeys().size());
         assertThat(context.requiredNonPayerKeys(), contains(TOKEN_KYC_KT.asPbjKey()));

@@ -49,4 +49,7 @@ dependencies {
   testFixturesCompileOnly(libs.spotbugs.annotations)
   testFixturesCompileOnly(testLibs.assertj.core)
   testFixturesApi(libs.swirlds.common)
+
+  // Temporarily needed until FakePreHandleContext can be removed
+  testFixturesCompileOnly(project(":hedera-node:hedera-token-service"))
 }

@@ -34,14 +34,14 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenPauseTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
-import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.records.BaseRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,24 +52,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenPauseHandlerTest extends TokenHandlerTestBase {
     private TokenPauseHandler subject;
     private TransactionBody tokenPauseTxn;
-    private PreHandleContext preHandleContext;
+    private FakePreHandleContext preHandleContext;
 
     @Mock
     private Account account;
 
     @Mock
-    private AccountAccess accountAccess;
+    private ReadableAccountStore accountStore;
 
     @BeforeEach
     void setUp() throws PreCheckException {
-        given(accountAccess.getAccountById(AccountID.newBuilder().accountNum(3L).build()))
+        given(accountStore.getAccountById(AccountID.newBuilder().accountNum(3L).build()))
                 .willReturn(account);
         given(account.key()).willReturn(payerKey);
 
         subject = new TokenPauseHandler();
         givenValidTxn();
         refreshStoresWithCurrentTokenInWritable();
-        preHandleContext = new PreHandleContext(accountAccess, tokenPauseTxn);
+        preHandleContext = new FakePreHandleContext(accountStore, tokenPauseTxn);
     }
 
     @Test
@@ -103,28 +103,32 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
                 .transactionID(TransactionID.newBuilder().accountID(payerId).build())
                 .tokenPause(TokenPauseTransactionBody.newBuilder())
                 .build();
-        preHandleContext = new PreHandleContext(accountAccess, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        preHandleContext = new FakePreHandleContext(accountStore, txn);
+        preHandleContext.registerStore(ReadableTokenStore.class, readableStore);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_TOKEN_ID);
     }
 
     @Test
     void validatesTokenExistsInPreHandle() throws PreCheckException {
         givenInvalidTokenInTxn();
-        preHandleContext = new PreHandleContext(accountAccess, tokenPauseTxn);
-        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        preHandleContext = new FakePreHandleContext(accountStore, tokenPauseTxn);
+        preHandleContext.registerStore(ReadableTokenStore.class, readableStore);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_TOKEN_ID);
     }
 
     @Test
     void preHandleAddsPauseKeyToContext() throws PreCheckException {
-        subject.preHandle(preHandleContext, readableStore);
+        preHandleContext.registerStore(ReadableTokenStore.class, readableStore);
+        subject.preHandle(preHandleContext);
         assertEquals(1, preHandleContext.requiredNonPayerKeys().size());
     }
 
     @Test
     void preHandleSetsStatusWhenTokenMissing() throws PreCheckException {
         givenInvalidTokenInTxn();
-        preHandleContext = new PreHandleContext(accountAccess, tokenPauseTxn);
-        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext, readableStore), INVALID_TOKEN_ID);
+        preHandleContext = new FakePreHandleContext(accountStore, tokenPauseTxn);
+        preHandleContext.registerStore(ReadableTokenStore.class, readableStore);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -135,8 +139,9 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
                 .build();
         given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
         readableStore = new ReadableTokenStore(readableStates);
+        preHandleContext.registerStore(ReadableTokenStore.class, readableStore);
 
-        subject.preHandle(preHandleContext, readableStore);
+        subject.preHandle(preHandleContext);
 
         assertEquals(0, preHandleContext.requiredNonPayerKeys().size());
     }
