@@ -1297,7 +1297,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         // TODO this number was chosen to exactly match how many syncs could be performed with the old sync strategy.
         //  it should be reevaluated before merging
-        syncPermitProvider = new SyncPermitProvider(settings.getMaxOutgoingSyncs() * 2 + settings.getMaxIncomingSyncsInc());
+        syncPermitProvider =
+                new SyncPermitProvider(settings.getMaxOutgoingSyncs() * 2 + settings.getMaxIncomingSyncsInc());
 
         final Runnable stopGossip;
         if (settings.getChatter().isChatterUsed()) {
@@ -1467,6 +1468,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .setHangingThreadPeriod(basicConfig.hangingThreadDuration())
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
+                            100, // TODO make configurable
                             List.of(
                                     new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
                                     new VersionCompareHandshake(
@@ -1687,6 +1689,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
+                            25, // TODO make configurable
                             List.of(
                                     new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
                                     new VersionCompareHandshake(

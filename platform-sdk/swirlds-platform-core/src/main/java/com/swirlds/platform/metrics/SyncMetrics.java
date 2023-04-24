@@ -44,7 +44,7 @@ import java.time.temporal.ChronoUnit;
  */
 public class SyncMetrics {
     private static final RunningAverageMetric.Config PERMITS_AVAILABLE_CONFIG = new RunningAverageMetric.Config(
-            PLATFORM_CATEGORY, "syncPermitsAvailable")
+                    PLATFORM_CATEGORY, "syncPermitsAvailable")
             .withDescription("number of sync permits available")
             .withFormat(FORMAT_16_2);
     private final RunningAverageMetric permitsAvailable;
@@ -73,31 +73,31 @@ public class SyncMetrics {
             .withFormat(FORMAT_15_3);
 
     private static final SpeedometerMetric.Config INCOMING_SYNC_REQUESTS_CONFIG = new SpeedometerMetric.Config(
-            PLATFORM_CATEGORY, "incomingSyncRequests/sec")
+                    PLATFORM_CATEGORY, "incomingSyncRequests/sec")
             .withDescription("Incoming sync requests received per second")
             .withFormat(FORMAT_14_7);
     private final SpeedometerMetric incomingSyncRequestsPerSec;
 
     private static final SpeedometerMetric.Config ACCEPTED_SYNC_REQUESTS_CONFIG = new SpeedometerMetric.Config(
-            PLATFORM_CATEGORY, "acceptedSyncRequests/sec")
+                    PLATFORM_CATEGORY, "acceptedSyncRequests/sec")
             .withDescription("Incoming sync requests accepted per second")
             .withFormat(FORMAT_14_7);
     private final SpeedometerMetric acceptedSyncRequestsPerSec;
 
     private static final SpeedometerMetric.Config OPPORTUNITIES_TO_INITIATE_SYNC_CONFIG = new SpeedometerMetric.Config(
-            PLATFORM_CATEGORY, "opportunitiesToInitiateSync/sec")
+                    PLATFORM_CATEGORY, "opportunitiesToInitiateSync/sec")
             .withDescription("Opportunities to initiate an outgoing sync per second")
             .withFormat(FORMAT_14_7);
     private final SpeedometerMetric opportunitiesToInitiateSyncPerSec;
 
     private static final SpeedometerMetric.Config OUTGOING_SYNC_REQUESTS_CONFIG = new SpeedometerMetric.Config(
-            PLATFORM_CATEGORY, "outgoingSyncRequests/sec")
+                    PLATFORM_CATEGORY, "outgoingSyncRequests/sec")
             .withDescription("Outgoing sync requests sent per second")
             .withFormat(FORMAT_14_7);
     private final SpeedometerMetric outgoingSyncRequestsPerSec;
 
     private static final SpeedometerMetric.Config SYNCS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-            PLATFORM_CATEGORY, "syncs/sec")
+                    PLATFORM_CATEGORY, "syncs/sec")
             .withDescription("Total number of syncs completed per second")
             .withFormat(FORMAT_14_7);
     private final SpeedometerMetric syncsPerSec;
