@@ -209,7 +209,7 @@ public class EntityMapWarmer {
     }
 
     private void removeAllTasks() {
-        threadpool.getQueue().removeIf(ignored -> true);
+        threadpool.getQueue().clear();
     }
 
     private void doWarmups(Round round) {
