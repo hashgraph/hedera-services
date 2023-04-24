@@ -23,7 +23,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
@@ -180,20 +179,6 @@ class AccountStorageAdapterTest {
         withInMemorySubject();
         given(inMemoryAccounts.keySet()).willReturn(SOME_KEY_SET);
         assertSame(SOME_KEY_SET, subject.keySet());
-    }
-
-    @Test
-    void onDiskArchivalIsNoop() {
-        withOnDiskSubject();
-        subject.archive();
-        verifyNoInteractions(onDiskAccounts);
-    }
-
-    @Test
-    void inMemArchivalPropagates() {
-        withInMemorySubject();
-        subject.archive();
-        verify(inMemoryAccounts).archive();
     }
 
     @Test

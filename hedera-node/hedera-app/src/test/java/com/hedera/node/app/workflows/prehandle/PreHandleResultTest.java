@@ -18,18 +18,26 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -37,11 +45,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleResultTest {
-    @Mock
-    private HederaKey payerKey;
+    private Key payerKey = A_COMPLEX_KEY;
+    private Key otherKey = A_COMPLEX_KEY;
 
-    @Mock
-    private HederaKey otherKey;
+    private HederaKey validHederaKey = asHederaKey(payerKey).get();
 
     private final TransactionBody txBody = TransactionBody.newBuilder().build();
     private final AccountID payer = AccountID.newBuilder().accountNum(42L).build();
@@ -52,24 +59,24 @@ class PreHandleResultTest {
             @Mock TransactionSignature payerSignature,
             @Mock TransactionSignature otherSignature) {
         // given
-        when(context.getTxn()).thenReturn(txBody);
-        when(context.getPayer()).thenReturn(payer);
-        when(context.getStatus()).thenReturn(OK);
-        when(context.getPayerKey()).thenReturn(payerKey);
-        when(context.getRequiredNonPayerKeys()).thenReturn(List.of(otherKey));
+        when(context.body()).thenReturn(txBody);
+        when(context.payer()).thenReturn(payer);
+        when(context.payerKey()).thenReturn(payerKey);
+        when(context.requiredNonPayerKeys()).thenReturn(Set.of(otherKey));
         final var signatureMap = SignatureMap.newBuilder().build();
         final var innerResult = new PreHandleResult(null, null, null, OK, null, null, List.of(), null);
         final var expectedSigs = List.of(payerSignature, otherSignature);
 
         // when
-        final var metadata = new PreHandleResult(context, signatureMap, expectedSigs, innerResult);
+        final var metadata = new PreHandleResult(context, OK, signatureMap, expectedSigs, innerResult);
 
         // then
         assertThat(metadata.txnBody()).isEqualTo(txBody);
         assertThat(metadata.payer()).isEqualTo(payer);
         assertThat(metadata.signatureMap()).isEqualTo(signatureMap);
-        assertThat(metadata.status()).isEqualTo(OK);
-        assertThat(metadata.payerKey()).isEqualTo(payerKey);
+        // Since equals method is not implemented for JKey, converting to PBJ key and comparing
+        // JKey and HederaKey will be removed in future.
+        assertEquals(payerKey, toPbj(asKeyUnchecked((JKey) metadata.payerKey())));
         assertThat(metadata.cryptoSignatures()).isEqualTo(expectedSigs);
     }
 
@@ -77,20 +84,21 @@ class PreHandleResultTest {
     @Test
     void testPreHandleContextConstructorWithIllegalArguments(@Mock PreHandleContext context) {
         // given
-        when(context.getTxn()).thenReturn(txBody);
-        when(context.getPayer()).thenReturn(payer);
-        when(context.getStatus()).thenReturn(OK);
+        when(context.body()).thenReturn(txBody);
+        when(context.payer()).thenReturn(payer);
         final var signatureMap = SignatureMap.newBuilder().build();
         final List<TransactionSignature> signatures = List.of();
 
         // then
-        assertThatCode(() -> new PreHandleResult(context, signatureMap, signatures, null))
+        assertThatCode(() -> new PreHandleResult(context, OK, signatureMap, signatures, null))
                 .doesNotThrowAnyException();
-        assertThatThrownBy(() -> new PreHandleResult(null, signatureMap, signatures, null))
+        assertThatThrownBy(() -> new PreHandleResult(null, OK, signatureMap, signatures, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleResult(context, null, signatures, null))
+        assertThatThrownBy(() -> new PreHandleResult(context, null, signatureMap, signatures, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleResult(context, signatureMap, null, null))
+        assertThatThrownBy(() -> new PreHandleResult(context, OK, null, signatures, null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleResult(context, OK, signatureMap, null, null))
                 .isInstanceOf(NullPointerException.class);
     }
 

@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 
@@ -38,25 +39,25 @@ abstract class AbstractScheduleHandler {
             final PreHandleContext context,
             final TransactionBody scheduledTxn,
             final AccountID payerForNested,
-            final PreHandleDispatcher dispatcher) {
-        final var innerContext = context.createNestedContext(scheduledTxn, payerForNested);
-        context.setInnerContext(innerContext);
+            final PreHandleDispatcher dispatcher)
+            throws PreCheckException {
+        final var innerContext =
+                context.createNestedContext(scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
         final HederaFunctionality scheduledFunction;
         try {
             scheduledFunction = functionOf(scheduledTxn);
         } catch (UnknownHederaFunctionality ex) {
-            innerContext.status(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-            return;
+            throw new PreCheckException(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         }
 
         if (!isSchedulable(scheduledFunction)) {
-            innerContext.status(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-            return;
+            throw new PreCheckException(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         }
 
-        dispatcher.dispatch(innerContext);
-        if (innerContext.failed()) {
-            innerContext.status(UNRESOLVABLE_REQUIRED_SIGNERS);
+        try {
+            dispatcher.dispatch(innerContext);
+        } catch (PreCheckException ignored) {
+            throw new PreCheckException(UNRESOLVABLE_REQUIRED_SIGNERS);
         }
     }
 

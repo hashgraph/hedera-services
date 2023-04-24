@@ -31,7 +31,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * @param <K> type of key -- must extend {@link VirtualKey}
  * @param <V> tyoe of value -- must extend {@link VirtualValue}
  */
-public class VirtualMapValidator<K extends VirtualKey<? super K>, V extends VirtualValue> {
+public class VirtualMapValidator<K extends VirtualKey, V extends VirtualValue> {
 
     // VirtualMap instance to validate.
     private VirtualMap<K, V> subject;

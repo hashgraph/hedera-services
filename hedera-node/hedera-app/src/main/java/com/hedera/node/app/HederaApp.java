@@ -50,9 +50,12 @@ import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
+import com.hedera.node.app.solvency.SolvencyModule;
 import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.throttle.ThrottleModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
+import com.hedera.node.app.workflows.ingest.IngestModule;
 import com.hedera.node.app.workflows.prehandle.AdaptedMonoEventExpansion;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowModule;
@@ -95,6 +98,7 @@ import javax.inject.Singleton;
             TransactionsModule.class,
             ExpiryModule.class,
             ServiceModule.class,
+            IngestModule.class,
             QueryWorkflowModule.class,
             HandleWorkflowModule.class,
             PreHandleWorkflowModule.class,
@@ -103,7 +107,9 @@ import javax.inject.Singleton;
             HederaStateModule.class,
             MetricsDaggerModule.class,
             AuthorizerDaggerModule.class,
-            InfoDaggerModule.class
+            InfoDaggerModule.class,
+            ThrottleModule.class,
+            SolvencyModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */

@@ -19,23 +19,25 @@ package com.hedera.node.app.service.contract.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.test.factories.scenarios.ContractCreateScenarios.DILIGENT_SIGNING_PAYER_KT;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.MISC_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.RECEIVER_SIG_KT;
-import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.*;
+import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_IMMUTABLE_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_XFER_CONTRACT_SCENARIO;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,61 +51,45 @@ class ContractDeleteHandlerParityTest {
     }
 
     @Test
-    void getsContractDeleteImmutable() {
+    void getsContractDeleteImmutable() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_IMMUTABLE_SCENARIO);
         final var context = new PreHandleContext(keyLookup, theTxn);
-        subject.preHandle(context);
-
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
-        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, context.getStatus());
+        assertThrowsPreCheck(() -> subject.preHandle(context), MODIFYING_IMMUTABLE_CONTRACT);
     }
 
     @Test
-    void getsContractDelete() {
+    void getsContractDelete() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                List.of(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys())
+                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey());
     }
 
     @Test
-    void getsContractDeleteMissingAccountBeneficiary() {
+    void getsContractDeleteMissingAccountBeneficiary() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO);
         final var context = new PreHandleContext(keyLookup, theTxn);
-        subject.preHandle(context);
-
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
-        assertEquals(INVALID_TRANSFER_ACCOUNT_ID, context.getStatus());
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TRANSFER_ACCOUNT_ID);
     }
 
     @Test
-    void getsContractDeleteMissingContractBeneficiary() {
+    void getsContractDeleteMissingContractBeneficiary() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO);
         final var context = new PreHandleContext(keyLookup, theTxn);
-        subject.preHandle(context);
-
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
-        assertEquals(INVALID_CONTRACT_ID, context.getStatus());
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_CONTRACT_ID);
     }
 
     @Test
-    void getsContractDeleteContractXfer() {
+    void getsContractDeleteContractXfer() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_XFER_CONTRACT_SCENARIO);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                List.of(MISC_ADMIN_KT.asKey(), DILIGENT_SIGNING_PAYER_KT.asKey()));
-        assertEquals(OK, context.getStatus());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(MISC_ADMIN_KT.asPbjKey());
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

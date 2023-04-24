@@ -17,6 +17,7 @@
 package com.swirlds.config.api.validation;
 
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.stream.Stream;
 
 /**
@@ -29,9 +30,9 @@ public interface ConfigValidator {
      * Returns a {@link Stream} of possible violations as a result of the validation. If no violation happens the stream
      * will be empty
      *
-     * @param configuration
-     * 		the configuration
+     * @param configuration the configuration
      * @return the violations
      */
-    Stream<ConfigViolation> validate(final Configuration configuration);
+    @NonNull
+    Stream<ConfigViolation> validate(@NonNull final Configuration configuration);
 }

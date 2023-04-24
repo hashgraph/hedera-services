@@ -129,8 +129,7 @@ class HederaSStoreOperationTest {
         givenStackItemsAndMutableRecipientAccount();
         givenColdSlot();
         givenRemainingGas(sufficientRemainingGas);
-        given(gasCalculator.calculateStorageRefundAmount(mutableAccount, key, value))
-                .willReturn(storageRefundAmount);
+        given(gasCalculator.calculateStorageRefundAmount(any(), any(), any())).willReturn(storageRefundAmount);
         final var expected = new Operation.OperationResult(storageCost + coldSloadCost, null);
 
         final var actual = subject.execute(frame, evm);
@@ -147,8 +146,7 @@ class HederaSStoreOperationTest {
         givenStackItemsAndMutableRecipientAccount();
         givenColdSlot();
         givenRemainingGas(sufficientRemainingGas);
-        given(gasCalculator.calculateStorageRefundAmount(mutableAccount, key, value))
-                .willReturn(storageRefundAmount);
+        given(gasCalculator.calculateStorageRefundAmount(any(), any(), any())).willReturn(storageRefundAmount);
         final var expected = new Operation.OperationResult(storageCost + coldSloadCost, null);
         final var messageStack = new ArrayDeque<MessageFrame>();
         messageStack.add(frame);

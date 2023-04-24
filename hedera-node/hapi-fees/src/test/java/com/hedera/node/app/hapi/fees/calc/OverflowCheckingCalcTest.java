@@ -64,9 +64,9 @@ class OverflowCheckingCalcTest {
 
         final var refactoredFees = subject.fees(usage, mockPrices, mockRate, multiplier);
 
-        assertEquals(legacyFees.getNodeFee(), refactoredFees.getNodeFee());
-        assertEquals(legacyFees.getNetworkFee(), refactoredFees.getNetworkFee());
-        assertEquals(legacyFees.getServiceFee(), refactoredFees.getServiceFee());
+        assertEquals(legacyFees.nodeFee(), refactoredFees.nodeFee());
+        assertEquals(legacyFees.networkFee(), refactoredFees.networkFee());
+        assertEquals(legacyFees.serviceFee(), refactoredFees.serviceFee());
     }
 
     @Test
@@ -77,9 +77,9 @@ class OverflowCheckingCalcTest {
 
         final var refactoredFees = subject.fees(usage, mockLowCeilPrices, mockRate, multiplier);
 
-        assertEquals(cappedFees.getNodeFee(), refactoredFees.getNodeFee());
-        assertEquals(cappedFees.getNetworkFee(), refactoredFees.getNetworkFee());
-        assertEquals(cappedFees.getServiceFee(), refactoredFees.getServiceFee());
+        assertEquals(cappedFees.nodeFee(), refactoredFees.nodeFee());
+        assertEquals(cappedFees.networkFee(), refactoredFees.networkFee());
+        assertEquals(cappedFees.serviceFee(), refactoredFees.serviceFee());
     }
 
     @Test
@@ -90,9 +90,9 @@ class OverflowCheckingCalcTest {
 
         final var refactoredFees = subject.fees(usage, mockHighFloorPrices, mockRate, multiplier);
 
-        assertEquals(cappedFees.getNodeFee(), refactoredFees.getNodeFee());
-        assertEquals(cappedFees.getNetworkFee(), refactoredFees.getNetworkFee());
-        assertEquals(cappedFees.getServiceFee(), refactoredFees.getServiceFee());
+        assertEquals(cappedFees.nodeFee(), refactoredFees.nodeFee());
+        assertEquals(cappedFees.networkFee(), refactoredFees.networkFee());
+        assertEquals(cappedFees.serviceFee(), refactoredFees.serviceFee());
     }
 
     @Test

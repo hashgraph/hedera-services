@@ -19,190 +19,166 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 
 class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
-    private final AccountID deleteAccountId =
-            AccountID.newBuilder().accountNum(3213).build();
-    private final AccountID transferAccountId =
-            AccountID.newBuilder().accountNum(32134).build();
-    private final Long deleteAccountNum = deleteAccountId.accountNum();
-    private final Long transferAccountNum = transferAccountId.accountNum();
-
-    @Mock
-    private MerkleAccount deleteAccount;
-
-    @Mock
-    private MerkleAccount transferAccount;
-
     private CryptoDeleteHandler subject = new CryptoDeleteHandler();
 
-    @Test
-    void preHandlesCryptoDeleteIfNoReceiverSigRequired() {
-        final var keyUsed = (JKey) payerKey;
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
+                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
+    }
 
-        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
-        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
-        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
-        given(transferAccount.getAccountKey()).willReturn(keyUsed);
-        given(transferAccount.isReceiverSigRequired()).willReturn(false);
+    @Test
+    void preHandlesCryptoDeleteIfNoReceiverSigRequired() throws PreCheckException {
+        given(transferAccount.receiverSigRequired()).willReturn(false);
+        given(deleteAccount.key()).willReturn(accountKey);
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
-        assertEquals(txn, context.getTxn());
-        assertEquals(payerKey, context.getPayerKey());
-        basicMetaAssertions(context, 1, false, OK);
-        assertIterableEquals(List.of(keyUsed), context.getRequiredNonPayerKeys());
+        assertEquals(txn, context.body());
+        assertEquals(key, context.payerKey());
+        basicMetaAssertions(context, 0);
     }
 
     @Test
-    void preHandlesCryptoDeleteIfReceiverSigRequiredVanilla() {
-        final var keyUsed = (JKey) payerKey;
-
-        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
-        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
-        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
-        given(transferAccount.getAccountKey()).willReturn(keyUsed);
-        given(transferAccount.isReceiverSigRequired()).willReturn(true);
+    void preHandlesCryptoDeleteIfReceiverSigRequiredVanilla() throws PreCheckException {
+        given(transferAccount.key()).willReturn(key);
+        given(transferAccount.receiverSigRequired()).willReturn(true);
+        given(deleteAccount.key()).willReturn(accountKey);
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
-        assertEquals(txn, context.getTxn());
-        basicMetaAssertions(context, 2, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
-        assertIterableEquals(List.of(keyUsed, keyUsed), context.getRequiredNonPayerKeys());
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 0);
+        assertEquals(key, context.payerKey());
     }
 
     @Test
-    void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() {
-        final var txn = deleteAccountTransaction(payer, payer);
+    void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() throws PreCheckException {
+        final var txn = deleteAccountTransaction(id, id);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
-        assertEquals(txn, context.getTxn());
-        basicMetaAssertions(context, 0, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
-        assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 0);
+        assertEquals(key, context.payerKey());
+        assertIterableEquals(List.of(), context.requiredNonPayerKeys());
     }
 
     @Test
-    void doesntAddTransferKeyIfAccountSameAsPayerForCryptoDelete() {
-        final var keyUsed = (JKey) payerKey;
+    void doesntAddTransferKeyIfAccountSameAsPayerForCryptoDelete() throws PreCheckException {
+        final var txn = deleteAccountTransaction(deleteAccountId, id);
 
-        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
-        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
+                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
+        given(deleteAccount.key()).willReturn(accountKey);
 
-        final var txn = deleteAccountTransaction(deleteAccountId, payer);
-
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
-        assertEquals(txn, context.getTxn());
-        assertEquals(payerKey, context.getPayerKey());
-        basicMetaAssertions(context, 1, false, OK);
-        assertIterableEquals(List.of(keyUsed), context.getRequiredNonPayerKeys());
+        assertEquals(txn, context.body());
+        assertEquals(key, context.payerKey());
+        basicMetaAssertions(context, 0);
+        assertEquals(0, context.requiredNonPayerKeys().size());
     }
 
     @Test
-    void doesntAddDeleteKeyIfAccountSameAsPayerForCryptoDelete() {
-        final var keyUsed = (JKey) payerKey;
+    void doesntAddDeleteKeyIfAccountSameAsPayerForCryptoDelete() throws PreCheckException {
+        final var txn = deleteAccountTransaction(id, transferAccountId);
 
-        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
-        given(transferAccount.getAccountKey()).willReturn(keyUsed);
-        given(transferAccount.isReceiverSigRequired()).willReturn(true);
-
-        final var txn = deleteAccountTransaction(payer, transferAccountId);
-
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
-        assertEquals(txn, context.getTxn());
-        basicMetaAssertions(context, 1, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
-        assertIterableEquals(List.of(keyUsed), context.getRequiredNonPayerKeys());
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 0);
+        assertEquals(key, context.payerKey());
     }
 
     @Test
-    void failsWithResponseCodeIfAnyAccountMissingForCryptoDelete() {
-        final var keyUsed = (JKey) payerKey;
-
+    void failsWithResponseCodeIfAnyAccountMissingForCryptoDelete() throws PreCheckException {
         /* ------ payerAccount missing, so deleteAccount and transferAccount will not be added  ------ */
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(null);
-        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
-        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
-        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+        readableAccounts = emptyReadableAccountStateBuilder().build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
+        given(deleteAccount.key()).willReturn(accountKey);
 
-        final var context1 = new PreHandleContext(store, txn, payer);
-        subject.preHandle(context1);
-        basicMetaAssertions(context1, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertNull(context1.getPayerKey());
-        assertIterableEquals(List.of(), context1.getRequiredNonPayerKeys());
+        assertThrowsPreCheck(() -> new PreHandleContext(readableStore, txn), INVALID_PAYER_ACCOUNT_ID);
 
         /* ------ deleteAccount missing, so transferAccount will not be added ------ */
-        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(payerAccount);
-        given(payerAccount.getAccountKey()).willReturn(keyUsed);
-        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(null);
-        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
 
-        final var context2 = new PreHandleContext(store, txn, payer);
-        subject.preHandle(context2);
-
-        basicMetaAssertions(context2, 0, true, INVALID_ACCOUNT_ID);
-        assertEquals(payerKey, context2.getPayerKey());
-        assertIterableEquals(List.of(), context2.getRequiredNonPayerKeys());
+        final var context2 = new PreHandleContext(readableStore, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context2), INVALID_ACCOUNT_ID);
 
         /* ------ transferAccount missing ------ */
-        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
-        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
-        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(null);
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
 
-        final var context3 = new PreHandleContext(store, txn, payer);
-        subject.preHandle(context3);
-
-        basicMetaAssertions(context3, 1, true, INVALID_TRANSFER_ACCOUNT_ID);
-        assertEquals(payerKey, context3.getPayerKey());
-        assertIterableEquals(List.of(keyUsed), context3.getRequiredNonPayerKeys());
+        final var context3 = new PreHandleContext(readableStore, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context3), INVALID_TRANSFER_ACCOUNT_ID);
     }
 
     @Test
-    void doesntExecuteIfAccountIdIsDefaultInstance() {
-        final var keyUsed = (JKey) payerKey;
-
-        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
-        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+    void doesntExecuteIfAccountIdIsDefaultInstance() throws PreCheckException {
+        given(deleteAccount.key()).willReturn(key);
 
         final var txn = deleteAccountTransaction(deleteAccountId, AccountID.DEFAULT);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
-        assertEquals(txn, context.getTxn());
-        basicMetaAssertions(context, 1, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
-        assertIterableEquals(List.of(keyUsed), context.getRequiredNonPayerKeys());
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 0);
+        assertEquals(key, context.payerKey());
+        assertIterableEquals(List.of(), context.requiredNonPayerKeys());
     }
 
     @Test
@@ -212,7 +188,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     private TransactionBody deleteAccountTransaction(
             final AccountID deleteAccountId, final AccountID transferAccountId) {
-        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
         final var deleteTxBody = CryptoDeleteTransactionBody.newBuilder()
                 .deleteAccountID(deleteAccountId)
                 .transferAccountID(transferAccountId);

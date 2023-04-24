@@ -92,8 +92,8 @@ public class MigrationTestingToolMain implements SwirldMain {
                     maximumTransactionsPerNode,
                     seed);
 
-            final boolean isZeroStake = platform.getSelfAddress().isZeroStake();
-            if (!isZeroStake) {
+            final boolean isZeroWeight = platform.getSelfAddress().isZeroWeight();
+            if (!isZeroWeight) {
                 while (transactionsCreated < maximumTransactionsPerNode) {
                     try {
                         generateEvents();

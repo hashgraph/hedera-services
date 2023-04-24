@@ -35,17 +35,19 @@ public class SignedStateMetrics {
     private static final String CATEGORY = "platform";
     private static final String MILLISECONDS = TimeUnit.UNIT_MILLISECONDS.getAbbreviation();
 
-    private static final RunningAverageMetric.Config FRESH_STATES_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "freshUnsignedStates")
-            .withDescription("Average Number Of Fresh States Awaiting Signatures")
+    private static final RunningAverageMetric.Config UNSIGNED_STATES_CONFIG = new RunningAverageMetric.Config(
+                    CATEGORY, "unsignedStates")
+            .withDescription("Average Number Of Unsigned States Awaiting Signatures")
+            .withUnit("count")
             .withFormat(FORMAT_10_2);
-    private final RunningAverageMetric freshStates;
+    private final RunningAverageMetric unsignedStates;
 
-    private static final RunningAverageMetric.Config STALE_STATES_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "staleUnsignedStates")
-            .withDescription("Average Number Of Stale States Awaiting Signatures")
+    private static final RunningAverageMetric.Config SIGNED_STATES_CONFIG = new RunningAverageMetric.Config(
+                    CATEGORY, "signedStates")
+            .withDescription("Average Number Of Signed States In the Signed State Manager")
+            .withUnit("count")
             .withFormat(FORMAT_10_2);
-    private final RunningAverageMetric staleStates;
+    private final RunningAverageMetric signedStates;
 
     private static final RunningAverageMetric.Config AVERAGE_TIME_TO_FULLY_SIGN_STATE = new RunningAverageMetric.Config(
                     CATEGORY, "averageTimeToFullySignState")
@@ -56,25 +58,29 @@ public class SignedStateMetrics {
 
     private static final Counter.Config TOTAL_NEVER_SIGNED_STATES_CONFIG = new Counter.Config(
                     CATEGORY, "totalNeverSignedStates")
-            .withDescription("total number of states that did not receive enough signatures in the " + "allowed time");
+            .withDescription("total number of states that did not receive enough signatures in the allowed time")
+            .withUnit("count");
     private final Counter totalNeverSignedStates;
 
     private static final Counter.Config TOTAL_NEVER_SIGNED_DISK_STATES_CONFIG = new Counter.Config(
                     CATEGORY, "totalNeverSignedDiskStates")
-            .withDescription("total number of disk-bound states that did not receive enough signatures "
-                    + "in the allowed time");
+            .withDescription(
+                    "total number of disk-bound states that did not receive enough signatures in the allowed time")
+            .withUnit("count");
     private final Counter totalNeverSignedDiskStates;
 
     private static final SpeedometerMetric.Config STATES_SIGNED_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
                     CATEGORY, "statesSigned/sec")
             .withDescription("the number of states completely signed per second")
-            .withFormat(FORMAT_16_2);
+            .withFormat(FORMAT_16_2)
+            .withUnit("hz");
     private final SpeedometerMetric statesSignedPerSecond;
 
     private static final SpeedometerMetric.Config STATE_SIGNATURES_GATHERED_PER_SECOND_CONFIG =
             new SpeedometerMetric.Config(CATEGORY, "stateSignaturesGathered/sec")
                     .withDescription("the number of state signatures gathered from other nodes per second")
-                    .withFormat(FORMAT_16_2);
+                    .withFormat(FORMAT_16_2)
+                    .withUnit("hz");
     private final SpeedometerMetric stateSignaturesGatheredPerSecond;
 
     private static final RunningAverageMetric.Config STATE_SIGNATURE_AGE_CONFIG = new RunningAverageMetric.Config(
@@ -83,7 +89,8 @@ public class SignedStateMetrics {
                     + "signatures and the most recent immutable state. Negative numbers mean"
                     + "the are being received early, large positive numbers mean "
                     + "signatures are being received late.")
-            .withFormat(FORMAT_10_3);
+            .withFormat(FORMAT_10_3)
+            .withUnit("rounds");
     private final RunningAverageMetric stateSignatureAge;
 
     private static final RunningAverageMetric.Config STATE_ARCHIVAL_TIME_AVG_CONFIG = new RunningAverageMetric.Config(
@@ -96,7 +103,8 @@ public class SignedStateMetrics {
     private static final RunningAverageMetric.Config STATE_DELETION_QUEUE_AVG_CONFIG = new RunningAverageMetric.Config(
                     CATEGORY, "stateDeletionQueueAvg")
             .withDescription("avg length of the state deletion queue")
-            .withFormat(FORMAT_15_3);
+            .withFormat(FORMAT_15_3)
+            .withUnit("count");
     private final RunningAverageMetric stateDeletionQueueAvg;
 
     private static final RunningAverageMetric.Config STATE_DELETION_TIME_AVG_CONFIG = new RunningAverageMetric.Config(
@@ -130,17 +138,17 @@ public class SignedStateMetrics {
     private final RunningAverageMetric stateToDiskTime;
 
     /**
-     * Get a metric tracking fresh unsigned states.
+     * Get a metric tracking unsigned states.
      */
-    public RunningAverageMetric getFreshStatesMetric() {
-        return freshStates;
+    public RunningAverageMetric getUnsignedStatesMetric() {
+        return unsignedStates;
     }
 
     /**
-     * Get a metric tracking stale unsigned states.
+     * Get a metric tracking signed states.
      */
-    public RunningAverageMetric getStaleStatesMetric() {
-        return staleStates;
+    public RunningAverageMetric geSignedStatesMetric() {
+        return signedStates;
     }
 
     /**
@@ -236,8 +244,7 @@ public class SignedStateMetrics {
      * 		a reference to the metrics-system
      */
     public SignedStateMetrics(final Metrics metrics) {
-        freshStates = metrics.getOrCreate(FRESH_STATES_CONFIG);
-        staleStates = metrics.getOrCreate(STALE_STATES_CONFIG);
+        unsignedStates = metrics.getOrCreate(UNSIGNED_STATES_CONFIG);
         averageTimeToFullySignState = metrics.getOrCreate(AVERAGE_TIME_TO_FULLY_SIGN_STATE);
         totalNeverSignedStates = metrics.getOrCreate(TOTAL_NEVER_SIGNED_STATES_CONFIG);
         totalNeverSignedDiskStates = metrics.getOrCreate(TOTAL_NEVER_SIGNED_DISK_STATES_CONFIG);
@@ -250,5 +257,6 @@ public class SignedStateMetrics {
         stateToDiskTime = metrics.getOrCreate(STATE_TO_DISK_TIME_CONFIG);
         writeStateToDiskTime = metrics.getOrCreate(WRITE_STATE_TO_DISK_TIME_CONFIG);
         stateSignatureAge = metrics.getOrCreate(STATE_SIGNATURE_AGE_CONFIG);
+        signedStates = metrics.getOrCreate(SIGNED_STATES_CONFIG);
     }
 }

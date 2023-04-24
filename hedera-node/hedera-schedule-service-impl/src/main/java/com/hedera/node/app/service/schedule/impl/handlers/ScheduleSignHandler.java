@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -55,18 +56,18 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
     public void preHandle(
             @NonNull final PreHandleContext context,
             @NonNull final ReadableScheduleStore scheduleStore,
-            @NonNull final PreHandleDispatcher dispatcher) {
+            @NonNull final PreHandleDispatcher dispatcher)
+            throws PreCheckException {
         requireNonNull(context);
         requireNonNull(scheduleStore);
         requireNonNull(dispatcher);
-        final var txn = context.getTxn();
+        final var txn = context.body();
         final var op = txn.scheduleSignOrThrow();
         final var id = op.scheduleIDOrElse(ScheduleID.DEFAULT);
 
         final var scheduleLookupResult = scheduleStore.get(id);
         if (scheduleLookupResult.isEmpty()) {
-            context.status(INVALID_SCHEDULE_ID);
-            return;
+            throw new PreCheckException(INVALID_SCHEDULE_ID);
         }
 
         final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();

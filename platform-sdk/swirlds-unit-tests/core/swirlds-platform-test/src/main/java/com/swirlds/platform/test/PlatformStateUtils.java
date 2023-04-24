@@ -22,6 +22,7 @@ import static com.swirlds.platform.test.event.RandomEventUtils.randomEvent;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
@@ -51,7 +52,7 @@ public final class PlatformStateUtils {
 
         final AddressBook addressBook = new RandomAddressBookGenerator()
                 .setSize(4)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         platformState.setAddressBook(addressBook);

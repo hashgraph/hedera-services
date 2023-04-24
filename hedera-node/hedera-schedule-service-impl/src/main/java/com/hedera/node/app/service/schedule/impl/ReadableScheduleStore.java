@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.asPbjKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,10 +60,19 @@ public class ReadableScheduleStore {
      */
     public Optional<ScheduleMetadata> get(final ScheduleID id) {
         final var schedule = schedulesById.get(id.scheduleNum());
+        if (schedule == null) {
+            return Optional.empty();
+        }
+        final Key adminKey;
+        if (schedule.hasAdminKey()) {
+            adminKey = asPbjKey(schedule.adminKey().get());
+        } else {
+            adminKey = null;
+        }
         return Optional.ofNullable(schedule)
                 .map(s -> new ScheduleMetadata(
-                        schedule.adminKey(),
-                        PbjConverter.toPbj(schedule.ordinaryViewOfScheduledTxn()),
+                        adminKey,
+                        toPbj(schedule.ordinaryViewOfScheduledTxn()),
                         schedule.hasExplicitPayer()
                                 ? Optional.of(schedule.payer().toPbjAccountId())
                                 : Optional.empty()));
@@ -75,8 +86,5 @@ public class ReadableScheduleStore {
      * @param designatedPayer payer for the schedule execution.If there is no explicit payer,
      *     returns {@link Optional#empty()}.
      */
-    public record ScheduleMetadata(
-            Optional<? extends HederaKey> adminKey,
-            TransactionBody scheduledTxn,
-            Optional<AccountID> designatedPayer) {}
+    public record ScheduleMetadata(Key adminKey, TransactionBody scheduledTxn, Optional<AccountID> designatedPayer) {}
 }

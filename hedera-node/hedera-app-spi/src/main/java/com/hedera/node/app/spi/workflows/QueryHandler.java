@@ -64,4 +64,25 @@ public interface QueryHandler {
      * @throws NullPointerException if {@code responseType} is {@code null}
      */
     boolean needsAnswerOnlyCost(@NonNull final ResponseType responseType);
+
+    /**
+     * This method is called during the query workflow. It validates the query, but does not determine the response
+     * yet.
+     *
+     * @param context the {@link QueryContext} that contains all information about the query
+     * @throws NullPointerException if {@code context} is {@code null}
+     * @throws PreCheckException if validation fails
+     */
+    void validate(@NonNull QueryContext context) throws PreCheckException;
+
+    /**
+     * This method is called during the query workflow. It determines the requested value(s) and returns the appropriate
+     * response.
+     *
+     * @param context the {@link QueryContext} that contains all information about the query
+     * @param header the {@link ResponseHeader} that should be used, if the request was successful
+     * @return a {@link Response} with the requested values
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
+    Response findResponse(@NonNull QueryContext context, @NonNull ResponseHeader header);
 }

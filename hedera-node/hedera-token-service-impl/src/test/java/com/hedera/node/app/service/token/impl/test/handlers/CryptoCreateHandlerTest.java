@@ -16,56 +16,67 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private CryptoCreateHandler subject = new CryptoCreateHandler();
 
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStore(readableStates);
+    }
+
     @Test
-    void preHandleCryptoCreateVanilla() {
+    void preHandleCryptoCreateVanilla() throws PreCheckException {
         final var txn = createAccountTransaction(true);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
-        assertEquals(txn, context.getTxn());
-        basicMetaAssertions(context, 1, false, OK);
-        assertEquals(payerKey, context.getPayerKey());
+        assertEquals(txn, context.body());
+        basicMetaAssertions(context, 1);
+        assertEquals(key, context.payerKey());
     }
 
     @Test
-    void noReceiverSigRequiredPreHandleCryptoCreate() {
+    void noReceiverSigRequiredPreHandleCryptoCreate() throws PreCheckException {
         final var txn = createAccountTransaction(false);
-        final var expected = new PreHandleContext(store, txn, payer);
+        final var expected = new PreHandleContext(readableStore, txn);
 
-        final var context = new PreHandleContext(store, txn, payer);
+        final var context = new PreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
-        assertEquals(expected.getTxn(), context.getTxn());
-        assertFalse(context.getRequiredNonPayerKeys().contains(payerKey));
-        basicMetaAssertions(context, 0, expected.failed(), OK);
-        assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
-        assertEquals(payerKey, context.getPayerKey());
-    }
-
-    @Test
-    void handleNotImplemented() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle());
+        assertEquals(expected.body(), context.body());
+        assertFalse(context.requiredNonPayerKeys().contains(key));
+        basicMetaAssertions(context, 0);
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
+        assertEquals(key, context.payerKey());
     }
 
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
-        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
         final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
-                .key(key)
+                .key(otherKey)
                 .receiverSigRequired(receiverSigReq)
                 .memo("Create Account")
                 .build();

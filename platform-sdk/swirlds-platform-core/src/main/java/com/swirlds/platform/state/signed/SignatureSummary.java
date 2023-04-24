@@ -23,7 +23,7 @@ package com.swirlds.platform.state.signed;
  * 		the total number of signatures
  * @param numValidSigs
  * 		the number of valid signatures
- * @param validStake
- * 		the total amount of stake from the valid signatures
+ * @param validWeight
+ * 		the total amount of weight from the valid signatures
  */
-public record SignatureSummary(int numTotalSigs, int numValidSigs, long validStake) {}
+public record SignatureSummary(int numTotalSigs, int numValidSigs, long validWeight) {}

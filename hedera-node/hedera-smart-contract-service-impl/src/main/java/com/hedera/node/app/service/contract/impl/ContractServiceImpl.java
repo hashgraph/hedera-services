@@ -38,7 +38,7 @@ public final class ContractServiceImpl implements ContractService {
     public static final String STORAGE_KEY = "STORAGE";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
         registry.register(contractSchema());
     }
 

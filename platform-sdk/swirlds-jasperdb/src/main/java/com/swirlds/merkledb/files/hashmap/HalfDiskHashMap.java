@@ -16,13 +16,15 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
-import static com.swirlds.merkledb.files.DataFileCommon.NON_EXISTENT_DATA_LOCATION;
+import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 
+import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.Units;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
@@ -42,9 +44,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.LongSummaryStatistics;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
@@ -60,7 +67,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
-public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoCloseable, Snapshotable {
+public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Snapshotable {
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
     /** The version number for format of current data files */
@@ -121,6 +128,19 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
      */
     private Thread writingThread;
 
+    /** MerkleDb settings */
+    private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
+
+    /** Executor for parallel bucket reads/updates in {@link #endWriting()} */
+    private static final ExecutorService flushExecutor = Executors.newFixedThreadPool(
+            settings.getNumHalfDiskHashMapFlushThreads(),
+            new ThreadConfiguration(getStaticThreadManager())
+                    .setComponent(MERKLEDB_COMPONENT)
+                    .setThreadName("HalfDiskHashMap Flushing")
+                    .setExceptionHandler((t, ex) ->
+                            logger.error(EXCEPTION.getMarker(), "Uncaught exception during HDHM flushing", ex))
+                    .buildFactory());
+
     /**
      * Construct a new HalfDiskHashMap
      *
@@ -147,8 +167,6 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
             final String legacyStoreName,
             final boolean preferDiskBasedIndexes)
             throws IOException {
-        final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
-
         this.mapSize = mapSize;
         this.storeName = storeName;
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
@@ -411,45 +429,40 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
                 oneTransactionsData.stream().mapToLong(BucketMutation::size).sum());
         // iterate over transaction cache and save it all to file
         if (!oneTransactionsData.isEmpty()) {
+            // for each changed bucket, write the new buckets to file but do not update index yet
+            final MutableList<IntObjectPair<BucketMutation<K>>> bucketUpdates =
+                    oneTransactionsData.keyValuesView().toList();
+            final int size = bucketUpdates.size();
+            final Queue<ReadBucketResult<K>> queue = new ConcurrentLinkedQueue<>();
+            for (final IntObjectPair<BucketMutation<K>> keyValue : bucketUpdates) {
+                final int bucketIndex = keyValue.getOne();
+                final BucketMutation<K> bucketMap = keyValue.getTwo();
+                flushExecutor.execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
+            }
             //  write to files
             fileCollection.startWriting();
-            // for each changed bucket, write the new buckets to file but do not update index yet
-            int oldBucketIndex = -1;
-            for (IntObjectPair<BucketMutation<K>> keyValue :
-                    oneTransactionsData.keyValuesView().toList().sortThis()) {
-                final int bucketIndex = keyValue.getOne();
-                if (bucketIndex < oldBucketIndex) {
-                    throw new IllegalStateException("Somehow we got our bucket indexes out of order: old="
-                            + oldBucketIndex
-                            + ", new ="
-                            + bucketIndex);
+            int processed = 0;
+            while (processed < size) {
+                final ReadBucketResult<K> res = queue.poll();
+                if (res == null) {
+                    continue;
                 }
-                oldBucketIndex = bucketIndex;
-                final BucketMutation<K> bucketMap = keyValue.getTwo();
-                try {
-                    Bucket<K> bucket = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
-                    if (bucket == null) {
-                        // create a new bucket
-                        bucket = bucketSerializer.getReusableEmptyBucket();
-                        bucket.setBucketIndex(bucketIndex);
-                    }
-                    final Bucket<K> finalBucket = bucket;
-                    // for each changed key in bucket, update bucket
-                    bucketMap.forEachKeyValue(finalBucket::putValue);
-                    if (finalBucket.getSize() == 0) {
+                if (res.error != null) {
+                    throw new RuntimeException(res.error);
+                }
+                try (final Bucket<K> bucket = res.bucket) {
+                    final int bucketIndex = bucket.getBucketIndex();
+                    if (bucket.getBucketEntryCount() == 0) {
                         // bucket is missing or empty, remove it from the index
-                        bucketIndexToBucketLocation.put(bucketIndex, NON_EXISTENT_DATA_LOCATION);
+                        bucketIndexToBucketLocation.remove(bucketIndex);
                     } else {
                         // save bucket
                         final long bucketLocation = fileCollection.storeDataItem(bucket);
                         // update bucketIndexToBucketLocation
                         bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
                     }
-                } catch (IllegalStateException e) {
-                    printStats();
-                    debugDumpTransactionCacheCondensed();
-                    debugDumpTransactionCache();
-                    throw e;
+                } finally {
+                    processed++;
                 }
             }
             // close files session
@@ -459,6 +472,34 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
         }
         // clear put cache
         oneTransactionsData = null;
+    }
+
+    /**
+     * Reads a bucket with a given index from disk, updates given keys in it, and puts the bucket to
+     * a queue. If an exception is thrown, it's put to the queue instead, so the number of {@code
+     * ReadBucketResult} objects in the queue is consistent.
+     *
+     * @param bucketIndex The bucket index
+     * @param keyUpdates Key/value updates to apply to the bucket
+     * @param queue The queue to put the bucket or exception to
+     */
+    private void readUpdateQueueBucket(
+            final int bucketIndex, final BucketMutation<K> keyUpdates, final Queue<ReadBucketResult<K>> queue) {
+        try {
+            // The bucket will be closed on the lifecycle thread
+            Bucket<K> bucket = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
+            if (bucket == null) {
+                // create a new bucket
+                bucket = bucketSerializer.getBucketPool().getBucket();
+                bucket.setBucketIndex(bucketIndex);
+            }
+            // for each changed key in bucket, update bucket
+            keyUpdates.forEachKeyValue(bucket::putValue);
+            queue.add(new ReadBucketResult<>(bucket, null));
+        } catch (final Exception e) {
+            logger.error(MERKLE_DB.getMarker(), "Failed to read / update bucket", e);
+            queue.add(new ReadBucketResult<>(null, e));
+        }
     }
 
     // =================================================================================================================
@@ -479,9 +520,10 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
         }
         final int keyHash = key.hashCode();
         final int bucketIndex = computeBucketIndex(keyHash);
-        final Bucket<K> bucket = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
-        if (bucket != null) {
-            return bucket.findValue(keyHash, key, notFoundValue);
+        try (final Bucket<K> bucket = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex)) {
+            if (bucket != null) {
+                return bucket.findValue(keyHash, key, notFoundValue);
+            }
         }
         return notFoundValue;
     }
@@ -559,5 +601,11 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
      */
     private int computeBucketIndex(final int keyHash) {
         return (numOfBuckets - 1) & keyHash;
+    }
+
+    private record ReadBucketResult<K extends VirtualKey>(Bucket<K> bucket, Throwable error) {
+        public ReadBucketResult {
+            assert (bucket != null) ^ (error != null);
+        }
     }
 }

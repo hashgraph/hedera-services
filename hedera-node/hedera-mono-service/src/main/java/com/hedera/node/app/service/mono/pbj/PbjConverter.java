@@ -37,9 +37,11 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
+import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -55,6 +57,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.commons.codec.DecoderException;
 
 public final class PbjConverter {
     public static @NonNull AccountID toPbj(@NonNull com.hederahashgraph.api.proto.java.AccountID accountID) {
@@ -1274,6 +1277,27 @@ public final class PbjConverter {
             throw new IllegalStateException("Invalid conversion from PBJ for Key", e);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static com.hedera.hapi.node.base.Key asPbjKey(@NonNull final JKey jKey) {
+        requireNonNull(jKey);
+        try {
+            return toPbj(JKey.mapJKey(jKey));
+        } catch (DecoderException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NonNull CustomFee fromFcCustomFee(@Nullable final FcCustomFee fcFee) {
+        try (final var bais =
+                new ByteArrayInputStream(Objects.requireNonNull(fcFee).asGrpc().toByteArray())) {
+            final var stream = new ReadableStreamingData(bais);
+            stream.limit(bais.available());
+            return CustomFee.PROTOBUF.parse(stream);
+        } catch (final IOException e) {
+            // Should be impossible, so just propagate an exception
+            throw new IllegalStateException("Invalid conversion to PBJ for CustomFee", e);
         }
     }
 

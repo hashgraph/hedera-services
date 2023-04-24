@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FREEZE_START_TIME_MUST_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -63,64 +62,56 @@ public class FreezeHandler implements TransactionHandler {
     // it is necessary to check getStartHour, getStartMin, getEndHour, getEndMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore) {
+            @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore)
+            throws PreCheckException {
         requireNonNull(context);
 
-        FreezeTransactionBody freezeTxn = context.getTxn().freeze();
+        FreezeTransactionBody freezeTxn = context.body().freeze();
 
-        try {
-            // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the protobuf
-            // reject any freeze transactions that set these properties
-            if (freezeTxn == null
-                    || freezeTxn.startHour() != 0
-                    || freezeTxn.startMin() != 0
-                    || freezeTxn.endHour() != 0
-                    || freezeTxn.endMin() != 0) {
-                throw new PreCheckException(INVALID_FREEZE_TRANSACTION_BODY);
-            }
-
-            final FreezeType freezeType = freezeTxn.freezeType();
-            switch (freezeType) {
-                    // default value for freezeType is UNKNOWN_FREEZE_TYPE
-                    // reject any freeze transactions that do not set freezeType or set it to UNKNOWN_FREEZE_TYPE
-                case UNKNOWN_FREEZE_TYPE -> throw new PreCheckException(INVALID_FREEZE_TRANSACTION_BODY);
-
-                    // FREEZE_ONLY requires a valid start_time
-                case FREEZE_ONLY -> verifyFreezeStartTimeIsInFuture(
-                        freezeTxn, context.getTxn().transactionID().transactionValidStart());
-
-                    // PREPARE_UPGRADE requires valid update_file and file_hash values
-                case PREPARE_UPGRADE -> verifyUpdateFileAndHash(freezeTxn, specialFileStore);
-
-                    // FREEZE_UPGRADE and TELEMETRY_UPGRADE require a valid start_time and valid update_file and
-                    // file_hash values
-                case FREEZE_UPGRADE, TELEMETRY_UPGRADE -> {
-                    verifyFreezeStartTimeIsInFuture(
-                            freezeTxn, context.getTxn().transactionID().transactionValidStart());
-
-                    // from proto specs, it looks like update file not required for FREEZE_UPGRADE and TELEMETRY_UPGRADE
-                    // but specs aren't very clear
-                    // current code in FreezeTransitionLogic checks for the file in specialFiles
-                    // so we will do the same
-                    verifyUpdateFileAndHash(freezeTxn, specialFileStore);
-                }
-
-                    // FREEZE_ABORT does not require any additional checks
-                case FREEZE_ABORT -> {
-                    // do nothing
-                }
-            }
-
-            // no need to add any keys to the context because this transaction does not require any signatures
-            // it must be submitted by an account with superuser privileges, that is checked during ingest
-
-            // all checks have passed
-            context.status(OK);
-        } catch (PreCheckException e) {
-            // instead of catching this exception, would like to allow it to propagate up
-            // this will be implemented in issue #5880
-            context.status(e.responseCode());
+        // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the protobuf
+        // reject any freeze transactions that set these properties
+        if (freezeTxn == null
+                || freezeTxn.startHour() != 0
+                || freezeTxn.startMin() != 0
+                || freezeTxn.endHour() != 0
+                || freezeTxn.endMin() != 0) {
+            throw new PreCheckException(INVALID_FREEZE_TRANSACTION_BODY);
         }
+
+        final FreezeType freezeType = freezeTxn.freezeType();
+        switch (freezeType) {
+                // default value for freezeType is UNKNOWN_FREEZE_TYPE
+                // reject any freeze transactions that do not set freezeType or set it to UNKNOWN_FREEZE_TYPE
+            case UNKNOWN_FREEZE_TYPE -> throw new PreCheckException(INVALID_FREEZE_TRANSACTION_BODY);
+
+                // FREEZE_ONLY requires a valid start_time
+            case FREEZE_ONLY -> verifyFreezeStartTimeIsInFuture(
+                    freezeTxn, context.body().transactionID().transactionValidStart());
+
+                // PREPARE_UPGRADE requires valid update_file and file_hash values
+            case PREPARE_UPGRADE -> verifyUpdateFileAndHash(freezeTxn, specialFileStore);
+
+                // FREEZE_UPGRADE and TELEMETRY_UPGRADE require a valid start_time and valid update_file and
+                // file_hash values
+            case FREEZE_UPGRADE, TELEMETRY_UPGRADE -> {
+                verifyFreezeStartTimeIsInFuture(
+                        freezeTxn, context.body().transactionID().transactionValidStart());
+
+                // from proto specs, it looks like update file not required for FREEZE_UPGRADE and TELEMETRY_UPGRADE
+                // but specs aren't very clear
+                // current code in FreezeTransitionLogic checks for the file in specialFiles
+                // so we will do the same
+                verifyUpdateFileAndHash(freezeTxn, specialFileStore);
+            }
+
+                // FREEZE_ABORT does not require any additional checks
+            case FREEZE_ABORT -> {
+                // do nothing
+            }
+        }
+
+        // no need to add any keys to the context because this transaction does not require any signatures
+        // it must be submitted by an account with superuser privileges, that is checked during ingest
     }
 
     /**
