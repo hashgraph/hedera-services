@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.config;
+package com.hedera.node.app.spi.config.legacy;
 
+/**
+ * This class contains the properties that are part of the {@code PropertyNames} class in the mono-service module. Will
+ * be removed once we have migrated to the new configuration framework.
+ */
+@Deprecated(forRemoval = true)
 public class PropertyNames {
 
     private PropertyNames() {

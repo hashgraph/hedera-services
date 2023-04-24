@@ -21,10 +21,10 @@ import static com.hedera.node.app.service.mono.context.properties.ScreenedSysFil
 import static com.hedera.node.app.service.mono.context.properties.ScreenedSysFileProps.UNPARSEABLE_PROP_TPL;
 import static com.hedera.node.app.service.mono.context.properties.ScreenedSysFileProps.UNTRANSFORMABLE_PROP_TPL;
 import static com.hedera.node.app.service.mono.context.properties.ScreenedSysFileProps.UNUSABLE_PROP_TPL;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;

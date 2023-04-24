@@ -23,7 +23,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.profile.Profile;
 import java.io.FileNotFoundException;
 import javax.net.ssl.SSLException;
 import org.junit.jupiter.api.BeforeEach;

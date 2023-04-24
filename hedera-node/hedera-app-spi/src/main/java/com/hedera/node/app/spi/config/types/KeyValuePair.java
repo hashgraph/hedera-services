@@ -35,5 +35,8 @@ public record KeyValuePair(@NonNull String key, @NonNull String value) {
     public KeyValuePair {
         Objects.requireNonNull(key, "key cannot be null");
         Objects.requireNonNull(value, "value cannot be null");
+        if (key.isBlank()) {
+            throw new IllegalArgumentException("key cannot be blank");
+        }
     }
 }

@@ -16,16 +16,16 @@
 
 package com.hedera.node.app.config.internal;
 
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.LEDGER_FUNDING_ACCOUNT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.spi.config.GlobalConfig;
-import com.hedera.node.app.spi.config.GlobalDynamicConfig;
-import com.hedera.node.app.spi.config.NodeConfig;
-import com.hedera.node.app.spi.config.Profile;
-import com.hedera.node.app.spi.config.PropertyNames;
+import com.hedera.node.app.spi.config.data.GlobalConfig;
+import com.hedera.node.app.spi.config.data.GlobalDynamicConfig;
+import com.hedera.node.app.spi.config.data.NodeConfig;
+import com.hedera.node.app.spi.config.legacy.PropertyNames;
+import com.hedera.node.app.spi.profile.Profile;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.config;
+package com.hedera.node.app.spi.config.data;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.services.stream.proto.SidecarType;
+import com.hedera.hapi.streams.SidecarType;
 import com.swirlds.common.system.address.Address;
 import java.util.Set;
 

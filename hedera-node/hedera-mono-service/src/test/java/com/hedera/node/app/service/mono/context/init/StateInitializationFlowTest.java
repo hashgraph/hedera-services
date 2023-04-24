@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.context.init;
 
-import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.records;
 
-import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.CACHE_RECORDS_TTL;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;

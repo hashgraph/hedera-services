@@ -25,9 +25,9 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.config.internal.ConfigurationAdaptor;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.spi.config.GlobalConfig;
-import com.hedera.node.app.spi.config.NodeConfig;
-import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.config.data.GlobalConfig;
+import com.hedera.node.app.spi.config.data.NodeConfig;
+import com.hedera.node.app.spi.profile.Profile;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;

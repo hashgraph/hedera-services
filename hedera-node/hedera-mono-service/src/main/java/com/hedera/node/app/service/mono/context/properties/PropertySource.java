@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelp
 import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.profile.Profile;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

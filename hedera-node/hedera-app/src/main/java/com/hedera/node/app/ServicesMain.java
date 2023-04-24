@@ -16,7 +16,7 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.WORKFLOWS_ENABLED;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.swirlds.common.constructable.ConstructableRegistry;

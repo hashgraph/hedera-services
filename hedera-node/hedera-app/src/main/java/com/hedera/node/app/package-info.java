@@ -15,7 +15,7 @@
  *
  * <p>In addition, the Hedera Consensus Node application has two possible code paths: one that leads through
  * the mono-service (this is the current production code path), and one that leads through the "workflows"
- * of the modular application. The {@link com.hedera.node.app.spi.config.PropertyNames#WORKFLOWS_ENABLED}
+ * of the modular application. The {@link com.hedera.node.app.spi.config.legacy.PropertyNames#WORKFLOWS_ENABLED}
  * flag indicates whether to use the modular workflows or to use the mono-service.
  *
  * <p>The main entry point for the application today is {@link com.swirlds.platform.Browser}, which is

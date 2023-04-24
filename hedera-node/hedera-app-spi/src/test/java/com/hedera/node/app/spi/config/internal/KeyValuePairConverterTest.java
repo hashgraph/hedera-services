@@ -53,6 +53,16 @@ class KeyValuePairConverterTest {
     }
 
     @Test
+    void testNoBlankKey() {
+        // given
+        final KeyValuePairConverter converter = new KeyValuePairConverter();
+        final String value = "=value";
+
+        // when
+        assertThatThrownBy(() -> converter.convert(value)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void testValidValueMultipleSemicolon() {
         // given
         final KeyValuePairConverter converter = new KeyValuePairConverter();

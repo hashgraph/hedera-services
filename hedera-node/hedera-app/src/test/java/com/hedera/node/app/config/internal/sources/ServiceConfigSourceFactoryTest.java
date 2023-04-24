@@ -14,11 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl.config;
+package com.hedera.node.app.config.internal.sources;
 
-import com.hedera.node.app.spi.config.legacy.PropertyNames;
-import com.swirlds.config.api.ConfigProperty;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public record ConsensusServiceConfig(
-        @ConfigProperty(PropertyNames.TOPICS_MAX_NUM) long maxTopics,
-        @ConfigProperty(PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED) int maxMessageSize) {}
+import com.swirlds.config.api.source.ConfigSource;
+import org.junit.jupiter.api.Test;
+
+class ServiceConfigSourceFactoryTest {
+
+    @Test
+    void testGetBootstrapConfigSource() {
+        // given
+        final ConfigSource source = ServiceConfigSourceFactory.createForDefaultBootstrapProperties();
+
+        // then
+        assertThat(source).isNotNull();
+        assertThat(source.getPropertyNames()).isNotEmpty();
+    }
+}

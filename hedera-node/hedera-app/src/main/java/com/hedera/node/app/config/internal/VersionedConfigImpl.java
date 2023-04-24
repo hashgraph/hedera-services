@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 /**
  * Implementation of {@link VersionedConfiguration} that wraps a {@link Configuration} and a version.
  */
-public class VersionedConfigImpl implements VersionedConfiguration {
+public final class VersionedConfigImpl implements VersionedConfiguration {
 
     private final Configuration wrappedConfig;
 

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.state;
 
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;

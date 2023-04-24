@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator.MAX_NESTED_KEY_LEVELS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;

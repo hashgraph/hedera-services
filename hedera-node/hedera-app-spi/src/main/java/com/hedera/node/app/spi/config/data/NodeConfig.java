@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.config;
+package com.hedera.node.app.spi.config.data;
 
+import com.hedera.node.app.spi.profile.Profile;
 import java.util.List;
 
 /**
