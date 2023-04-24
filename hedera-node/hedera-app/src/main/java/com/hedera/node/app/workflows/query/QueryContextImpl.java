@@ -16,50 +16,31 @@
 
 package com.hedera.node.app.workflows.query;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.transaction.Query;
-import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
-import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
 
 /**
  * Simple implementation of {@link QueryContext}.
  */
 public class QueryContextImpl implements QueryContext {
 
-    // TODO: Replace this once the lookup of stores is implemented
-    private static final Map<Class<?>, Function<HederaState, ?>> STORE_FACTORY = Map.of(
-            ReadableAccountStore.class, s -> new ReadableAccountStore(s.createReadableStates(TokenService.NAME)),
-            ReadableTokenStore.class, s -> new ReadableTokenStore(s.createReadableStates(TokenService.NAME)),
-            ReadableTopicStore.class, s -> new ReadableTopicStore(s.createReadableStates(ConsensusService.NAME)),
-            ReadableScheduleStore.class, s -> new ReadableScheduleStore(s.createReadableStates(ScheduleService.NAME)),
-            ReadableSpecialFileStore.class,
-                    s -> new ReadableSpecialFileStore(s.createReadableStates(FreezeService.NAME)));
-
-    private final HederaState state;
+    private final ReadableStoreFactory storeFactory;
     private final Query query;
 
     /**
      * Constructor of {@code QueryContextImpl}.
      *
-     * @param state the state that is valid for the query
+     * @param storeFactory the {@link ReadableStoreFactory} used to create the stores
      * @param query the query that is currently being processed
      * @throws NullPointerException if {@code query} is {@code null}
      */
-    public QueryContextImpl(@NonNull final HederaState state, @NonNull final Query query) {
-        this.state = Objects.requireNonNull(state);
-        this.query = Objects.requireNonNull(query);
+    public QueryContextImpl(@NonNull final ReadableStoreFactory storeFactory, @NonNull final Query query) {
+        this.storeFactory = requireNonNull(storeFactory, "The supplied argument 'storeFactory' cannot be null!");
+        this.query = requireNonNull(query, "The supplied argument 'query' cannot be null!");
     }
 
     @Override
@@ -70,11 +51,7 @@ public class QueryContextImpl implements QueryContext {
 
     @Override
     @NonNull
-    public <T> T createStore(@NonNull Class<T> storeInterface) {
-        final var result = STORE_FACTORY.get(storeInterface);
-        if (result != null) {
-            return storeInterface.cast(result.apply(state));
-        }
-        throw new IllegalArgumentException("No store of the given class is available");
+    public <C> C createStore(@NonNull Class<C> storeInterface) {
+        return storeFactory.createStore(storeInterface);
     }
 }

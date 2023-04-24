@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.node.app.service.mono.Utils.asHederaKeys;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -160,9 +161,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
             final var storeFactory = new ReadableStoreFactory(state);
-            final var accountStore = storeFactory.createAccountStore();
-            final var context = new PreHandleContext(accountStore, txBody);
-            dispatcher.dispatchPreHandle(storeFactory, context);
+            final var context = new PreHandleContext(storeFactory, txBody);
+            dispatcher.dispatchPreHandle(context);
 
             // 3. Prepare and verify signature-data
             final var signatureMap = transactionInfo.signatureMap();
@@ -217,7 +217,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final Bytes txBodyBytes,
             @NonNull final SignatureMap signatureMap) {
         final var otherSignatures = signaturePreparer.prepareSignatures(
-                state, PbjConverter.asBytes(txBodyBytes), signatureMap, context.requiredNonPayerKeys());
+                state, PbjConverter.asBytes(txBodyBytes), signatureMap, asHederaKeys(context.requiredNonPayerKeys()));
         cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
         return otherSignatures;
     }

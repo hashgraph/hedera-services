@@ -36,10 +36,10 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -388,7 +388,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     void noneOfFieldsSetHaveNoRequiredKeys() throws PreCheckException {
         given(accountAccess.getAccountById(payerId)).willReturn(account);
-        given(account.getKey()).willReturn(adminKey);
+        given(account.key()).willReturn(adminKey);
 
         final var op = OP_BUILDER
                 .expirationTime(Timestamp.newBuilder().build())
@@ -407,7 +407,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     void missingTopicFails() throws PreCheckException {
         given(accountAccess.getAccountById(payerId)).willReturn(account);
-        given(account.getKey()).willReturn(adminKey);
+        given(account.key()).willReturn(adminKey);
 
         final var op =
                 OP_BUILDER.topicID(TopicID.newBuilder().topicNum(123L).build()).build();
@@ -419,10 +419,10 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     void adminKeyAndOpAdminKeyAdded() throws PreCheckException {
         given(accountAccess.getAccountById(payerId)).willReturn(account);
-        given(account.getKey()).willReturn(adminKey);
+        given(account.key()).willReturn(adminKey);
 
         final var op = OP_BUILDER
-                .adminKey(key)
+                .adminKey(anotherKey)
                 .topicID(TopicID.newBuilder().topicNum(1L).build())
                 .build();
         final var context = new PreHandleContext(accountAccess, txnWith(op));
@@ -430,17 +430,18 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         subject.preHandle(context, readableStore);
 
         assertThat(context.payerKey()).isEqualTo(adminKey);
-        // adminKey and op admin key
-        assertEquals(2, context.requiredNonPayerKeys().size());
-        //        assertSame(context.requiredNonPayerKeys().get(0), asHederaKey(key).get());
+        // adminKey is same as payer key. So will not be added to required keys.
+        // and op admin key is different, so will be added.
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertTrue(context.requiredNonPayerKeys().contains(anotherKey));
     }
 
     @Test
     void autoRenewAccountKeyAdded() throws PreCheckException {
         given(accountAccess.getAccountById(autoRenewId)).willReturn(autoRenewAccount);
-        given(autoRenewAccount.getKey()).willReturn(adminKey);
+        given(autoRenewAccount.key()).willReturn(autoRenewKey);
         given(accountAccess.getAccountById(payerId)).willReturn(account);
-        given(account.getKey()).willReturn(adminKey);
+        given(account.key()).willReturn(adminKey);
 
         final var op = OP_BUILDER
                 .autoRenewAccount(autoRenewId)
@@ -459,7 +460,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     void missingAutoRenewAccountFails() throws PreCheckException {
         given(accountAccess.getAccountById(autoRenewId)).willReturn(null);
         given(accountAccess.getAccountById(payerId)).willReturn(account);
-        given(account.getKey()).willReturn(adminKey);
+        given(account.key()).willReturn(adminKey);
 
         final var op = OP_BUILDER
                 .autoRenewAccount(autoRenewId)

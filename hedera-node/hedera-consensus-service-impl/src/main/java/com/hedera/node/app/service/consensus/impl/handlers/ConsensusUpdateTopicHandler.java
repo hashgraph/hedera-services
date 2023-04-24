@@ -19,7 +19,6 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -66,7 +65,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *                passed to {@code #handle()}
+     *     passed to {@code #handle()}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
@@ -89,7 +88,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
         // If the transaction is setting a new admin key, then the transaction must also be signed by that new key
         if (op.hasAdminKey()) {
-            asHederaKey(op.adminKeyOrThrow()).ifPresent(context::requireKey);
+            context.requireKey(op.adminKeyOrThrow());
         }
 
         // If the transaction is setting a new account for auto-renewals, then that account must also

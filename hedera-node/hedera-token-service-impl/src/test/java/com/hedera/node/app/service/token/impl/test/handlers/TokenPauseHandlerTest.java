@@ -29,13 +29,13 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenPauseTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.records.BaseRecordBuilder;
@@ -64,7 +64,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     void setUp() throws PreCheckException {
         given(accountAccess.getAccountById(AccountID.newBuilder().accountNum(3L).build()))
                 .willReturn(account);
-        given(account.getKey()).willReturn(payerHederaKey);
+        given(account.key()).willReturn(payerKey);
 
         subject = new TokenPauseHandler();
         givenValidTxn();

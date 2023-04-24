@@ -41,8 +41,8 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.StakeGenerator;
-import com.swirlds.common.test.StakeGenerators;
+import com.swirlds.common.test.WeightGenerator;
+import com.swirlds.common.test.WeightGenerators;
 import com.swirlds.common.threading.utility.AtomicDouble;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Utilities;
@@ -83,14 +83,14 @@ public final class ConsensusTestDefinitions {
      * Send an ancient event to consensus and check if it is marked stale.
      */
     public static void ancientEventTest(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long[] seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long[] seeds) {
 
         final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Ancient Event Tests", numberOfNodes, stakeGenerator, 10_000);
+                new ConsensusTestDefinition("Ancient Event Tests", numberOfNodes, weightGenerator, 10_000);
 
         final int ancientEventIndex = 100;
         testDefinition.setGraphGeneratorProvider(
-                nodeStakes -> createAncientEventGenerator(numberOfNodes, nodeStakes, ancientEventIndex));
+                nodeWeights -> createAncientEventGenerator(numberOfNodes, nodeWeights, ancientEventIndex));
 
         final List<Integer> nodePriorities =
                 IntStream.range(0, numberOfNodes).boxed().toList();
@@ -105,9 +105,9 @@ public final class ConsensusTestDefinitions {
     }
 
     private static StandardGraphGenerator createAncientEventGenerator(
-            final int numberOfNodes, final List<Long> nodeStakes, final int ancientEventIndex) {
+            final int numberOfNodes, final List<Long> nodeWeights, final int ancientEventIndex) {
 
-        final List<EventSource<?>> eventSources = EventSourceFactory.newStandardEventSources(nodeStakes);
+        final List<EventSource<?>> eventSources = EventSourceFactory.newStandardEventSources(nodeWeights);
         final StandardGraphGenerator standardGenerator = new StandardGraphGenerator(0L, eventSources);
 
         // All nodes are awake, connected, and created events with each other as parents
@@ -161,10 +161,10 @@ public final class ConsensusTestDefinitions {
      * Changing the order of events (without breaking topological order) should result in the same consensus events.
      */
     public static void orderInvarianceTests(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
 
         final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Order Invariance Tests", numberOfNodes, stakeGenerator, 10_000);
+                new ConsensusTestDefinition("Order Invariance Tests", numberOfNodes, weightGenerator, 10_000);
 
         testDefinition.setTestSequenceGenerator(
                 td -> List.of(new TestSequence(10_000).setMinimumConsensusRatio(0.9 - 0.05 * numberOfNodes)));
@@ -176,35 +176,35 @@ public final class ConsensusTestDefinitions {
      * Test consensus in the presence of forks.
      */
     public static void forkingTests(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
         final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Order Invariance Tests", numberOfNodes, stakeGenerator, 10_000);
+                new ConsensusTestDefinition("Order Invariance Tests", numberOfNodes, weightGenerator, 10_000);
 
         // Set a custom event source generator that creates forking event sources
-        testDefinition.setGraphGeneratorProvider(nodeStakes -> {
+        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
             final double forkProbability = 0.1;
             final int numberOfForkedBranches = 10;
-            final long totalStake = nodeStakes.stream().reduce(0L, Long::sum);
+            final long totalWeight = nodeWeights.stream().reduce(0L, Long::sum);
 
-            // Determine a single forking event source that has less than a strong minority of stake
+            // Determine a single forking event source that has less than a strong minority of weight
             int forkingNodeId = -1;
-            for (int i = 0; i < nodeStakes.size(); i++) {
-                final long stake = nodeStakes.get(i);
-                if (!Utilities.isStrongMinority(stake, totalStake)) {
+            for (int i = 0; i < nodeWeights.size(); i++) {
+                final long weight = nodeWeights.get(i);
+                if (!Utilities.isStrongMinority(weight, totalWeight)) {
                     forkingNodeId = i;
                     break;
                 }
             }
 
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
-            for (int i = 0; i < nodeStakes.size(); i++) {
-                final long stake = nodeStakes.get(i);
+            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
+            for (int i = 0; i < nodeWeights.size(); i++) {
+                final long weight = nodeWeights.get(i);
                 if (i == forkingNodeId) {
-                    eventSources.add(new ForkingEventSource(stake)
+                    eventSources.add(new ForkingEventSource(weight)
                             .setForkProbability(forkProbability)
                             .setMaximumBranchCount(numberOfForkedBranches));
                 } else {
-                    eventSources.add(new StandardEventSource(stake));
+                    eventSources.add(new StandardEventSource(weight));
                 }
             }
             return new StandardGraphGenerator(0, eventSources);
@@ -222,11 +222,11 @@ public final class ConsensusTestDefinitions {
         final ConsensusTestDefinition testDefinition = new ConsensusTestDefinition(
                 "Order Invariance Tests",
                 numberOfNodes,
-                (l, i) -> StakeGenerators.balancedNodeStakes(numberOfNodes),
+                (l, i) -> WeightGenerators.balancedNodeWeights(numberOfNodes),
                 10_000);
 
         // Set a custom event source generator that creates forking event sources
-        testDefinition.setGraphGeneratorProvider(nodeStakes -> {
+        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
             final double forkProbability = 0.1;
             final int numberOfForkedBranches = 10;
             final int numForkingNodes = 1;
@@ -253,10 +253,10 @@ public final class ConsensusTestDefinitions {
      * Consensus should handle a partition gracefully.
      */
     public static void partitionTests(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
 
         final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Partition Tests", numberOfNodes, stakeGenerator, 3_000);
+                new ConsensusTestDefinition("Partition Tests", numberOfNodes, weightGenerator, 3_000);
 
         testDefinition.setTestSequenceGenerator(td -> {
             // Return a simple test sequence for debugging when seeds are provided
@@ -282,12 +282,12 @@ public final class ConsensusTestDefinitions {
     public static List<TestSequence> strongMinorityPartitionTestSequences(
             final ConsensusTestDefinition testDefinition) {
         final int eventsPerPhase = testDefinition.getEventsPerPhase();
-        final List<Long> nodeStakes = testDefinition.getNodeStakes();
+        final List<Long> nodeWeights = testDefinition.getNodeWeights();
         final int numberOfNodes = testDefinition.getNumberOfNodes();
 
-        final Set<Integer> partitionedNodes = getStrongMinorityNodes(nodeStakes);
+        final Set<Integer> partitionedNodes = getStrongMinorityNodes(nodeWeights);
 
-        final List<EventSource<?>> eventSources = EventSourceFactory.newStandardEventSources(nodeStakes);
+        final List<EventSource<?>> eventSources = EventSourceFactory.newStandardEventSources(nodeWeights);
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
 
@@ -332,28 +332,28 @@ public final class ConsensusTestDefinitions {
      * Simulates a partition where one partition has a quorum.
      */
     public static void subQuorumPartitionTests(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
 
         final int eventsPerPhase = 3_000;
         final AtomicInteger numPartitionedNodes = new AtomicInteger();
 
         final ConsensusTestDefinition testDefinition = new ConsensusTestDefinition(
-                "Sub Quorum Partition Tests", numberOfNodes, stakeGenerator, eventsPerPhase);
+                "Sub Quorum Partition Tests", numberOfNodes, weightGenerator, eventsPerPhase);
 
-        testDefinition.setGraphGeneratorProvider(nodeStakes -> {
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
-            for (final long stake : nodeStakes) {
-                eventSources.add(new StandardEventSource(stake));
+        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
+            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
+            for (final long weight : nodeWeights) {
+                eventSources.add(new StandardEventSource(weight));
             }
             final StandardGraphGenerator graphGenerator = new StandardGraphGenerator(0, eventSources);
 
-            final Set<Integer> partitionedNodes = getSubStrongMinorityNodes(nodeStakes);
+            final Set<Integer> partitionedNodes = getSubStrongMinorityNodes(nodeWeights);
             numPartitionedNodes.set(partitionedNodes.size());
 
             // All nodes talk to each other with equal probability
             final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(numberOfNodes);
 
-            // Less than a strong minority of nodes' stake are partitioned from the network
+            // Less than a strong minority of nodes' weight are partitioned from the network
             final List<List<Double>> partitioned =
                     createPartitionedOtherParentAffinityMatrix(numberOfNodes, partitionedNodes);
 
@@ -417,12 +417,12 @@ public final class ConsensusTestDefinitions {
         final int eventsPerPhase = testDefinition.getEventsPerPhase();
         final int numberOfNodes = testDefinition.getNumberOfNodes();
 
-        final Set<Integer> partitionedNodes = getSubStrongMinorityNodes(testDefinition.getNodeStakes());
+        final Set<Integer> partitionedNodes = getSubStrongMinorityNodes(testDefinition.getNodeWeights());
 
         // All nodes talk to each other with equal probability
         final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(numberOfNodes);
 
-        // Less than a strong minority of nodes' stake are partitioned from the network
+        // Less than a strong minority of nodes' weight are partitioned from the network
         final List<List<Double>> partitioned =
                 createPartitionedOtherParentAffinityMatrix(numberOfNodes, partitionedNodes);
 
@@ -469,79 +469,79 @@ public final class ConsensusTestDefinitions {
     }
 
     /**
-     * Get a set of node ids such that their stake is at least a strong minority but not a super majority. Each group of
+     * Get a set of node ids such that their weight is at least a strong minority but not a super majority. Each group of
      * nodes (the partitioned node and non-partitions nodes) has a strong minority.
      *
-     * @param nodeStakes
-     * 		the stakes of each node in the network
+     * @param nodeWeights
+     * 		the weights of each node in the network
      * @return the list of node ids
      */
-    private static Set<Integer> getStrongMinorityNodes(final List<Long> nodeStakes) {
+    private static Set<Integer> getStrongMinorityNodes(final List<Long> nodeWeights) {
         final Set<Integer> partitionedNodes = new HashSet<>();
-        final long totalStake = nodeStakes.stream().reduce(0L, Long::sum);
-        long partitionedStake = 0L;
-        for (int i = 0; i < nodeStakes.size(); i++) {
+        final long totalWeight = nodeWeights.stream().reduce(0L, Long::sum);
+        long partitionedWeight = 0L;
+        for (int i = 0; i < nodeWeights.size(); i++) {
             // If we have enough partitioned nodes to make a strong minority, stop and return
-            if (Utilities.isStrongMinority(partitionedStake, totalStake)) {
+            if (Utilities.isStrongMinority(partitionedWeight, totalWeight)) {
                 break;
             }
             // If adding this node to the partition would give the partition a super majority, skip this node because
             // the remaining group of nodes would not have a strong minority
-            if (Utilities.isSuperMajority(partitionedStake + nodeStakes.get(i), totalStake)) {
+            if (Utilities.isSuperMajority(partitionedWeight + nodeWeights.get(i), totalWeight)) {
                 continue;
             }
             partitionedNodes.add(i);
-            partitionedStake += nodeStakes.get(i);
+            partitionedWeight += nodeWeights.get(i);
         }
         System.out.println("Partitioned nodes: " + partitionedNodes);
         System.out.printf(
-                "\nPartition has %s (%s%%) of %s total stake.%n",
-                partitionedStake, (((double) partitionedStake) / totalStake) * 100, totalStake);
+                "\nPartition has %s (%s%%) of %s total weight.%n",
+                partitionedWeight, (((double) partitionedWeight) / totalWeight) * 100, totalWeight);
         return partitionedNodes;
     }
 
     /**
-     * Get a set of node ids such that their stake is less than a strong minority. Nodes not in the returned set will
+     * Get a set of node ids such that their weight is less than a strong minority. Nodes not in the returned set will
      * have a super majority and can continue to reach consensus.
      *
-     * @param nodeStakes
-     * 		the stakes of each node in the network
+     * @param nodeWeights
+     * 		the weights of each node in the network
      * @return the list of node ids
      */
-    private static Set<Integer> getSubStrongMinorityNodes(final List<Long> nodeStakes) {
+    private static Set<Integer> getSubStrongMinorityNodes(final List<Long> nodeWeights) {
         final Set<Integer> partitionedNodes = new HashSet<>();
-        final long totalStake = nodeStakes.stream().reduce(0L, Long::sum);
-        long partitionedStake = 0L;
-        for (int i = 0; i < nodeStakes.size(); i++) {
+        final long totalWeight = nodeWeights.stream().reduce(0L, Long::sum);
+        long partitionedWeight = 0L;
+        for (int i = 0; i < nodeWeights.size(); i++) {
             // Leave at least two nodes not in the partition set so that gossip can continue in both
             // the partitioned nodes and non-partitioned nodes
-            if (partitionedNodes.size() + 2 == nodeStakes.size()) {
+            if (partitionedNodes.size() + 2 == nodeWeights.size()) {
                 break;
             }
             // If adding this node to the partition would give the partition a strong minority, skip this node because
             // the remaining group of nodes would not have a super majority
-            if (Utilities.isStrongMinority(partitionedStake + nodeStakes.get(i), totalStake)) {
+            if (Utilities.isStrongMinority(partitionedWeight + nodeWeights.get(i), totalWeight)) {
                 continue;
             }
             partitionedNodes.add(i);
-            partitionedStake += nodeStakes.get(i);
+            partitionedWeight += nodeWeights.get(i);
         }
         System.out.println("Partitioned nodes: " + partitionedNodes);
         System.out.printf(
-                "\nPartition has %s (%s%%) of %s total stake.%n",
-                partitionedStake, (((double) partitionedStake) / totalStake) * 100, totalStake);
+                "\nPartition has %s (%s%%) of %s total weight.%n",
+                partitionedWeight, (((double) partitionedWeight) / totalWeight) * 100, totalWeight);
         return partitionedNodes;
     }
 
     public static void cliqueTests(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
         final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Clique Tests", numberOfNodes, stakeGenerator, 10_000);
+                new ConsensusTestDefinition("Clique Tests", numberOfNodes, weightGenerator, 10_000);
 
-        testDefinition.setGraphGeneratorProvider(nodeStakes -> {
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
-            for (final Long nodeStake : nodeStakes) {
-                eventSources.add(new StandardEventSource(nodeStake));
+        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
+            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
+            for (final Long nodeWeight : nodeWeights) {
+                eventSources.add(new StandardEventSource(nodeWeight));
             }
             final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
 
@@ -580,13 +580,13 @@ public final class ConsensusTestDefinitions {
     }
 
     public static void variableRateTests(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
 
         final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Variable Rate Tests", numberOfNodes, stakeGenerator, 10_000);
+                new ConsensusTestDefinition("Variable Rate Tests", numberOfNodes, weightGenerator, 10_000);
 
         // Set the event source generator to create variable rate event sources
-        testDefinition.setGraphGeneratorProvider(nodeStakes -> {
+        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
             final DynamicValue<Double> variableEventWeight = (Random r, long eventIndex, Double previousValue) -> {
                 if (previousValue == null) {
                     return 1.0;
@@ -603,9 +603,9 @@ public final class ConsensusTestDefinitions {
                 }
             };
 
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
-            for (final long stake : nodeStakes) {
-                eventSources.add(new StandardEventSource(stake).setNewEventWeight(variableEventWeight));
+            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
+            for (final long weight : nodeWeights) {
+                eventSources.add(new StandardEventSource(weight).setNewEventWeight(variableEventWeight));
             }
 
             return new StandardGraphGenerator(0, eventSources);
@@ -618,18 +618,18 @@ public final class ConsensusTestDefinitions {
      * One node has a tendency to use stale other parents.
      */
     public static void nodeUsesStaleOtherParents(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
 
         final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Node Uses Stale Other Parents", numberOfNodes, stakeGenerator, 10_000);
+                new ConsensusTestDefinition("Node Uses Stale Other Parents", numberOfNodes, weightGenerator, 10_000);
 
         final int staleNodeProvider = numberOfNodes - 1;
         final AtomicDouble minConsensusRatio = new AtomicDouble();
 
-        testDefinition.setGraphGeneratorProvider(nodeStakes -> {
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
-            for (final Long nodeStake : nodeStakes) {
-                eventSources.add(new StandardEventSource(nodeStake));
+        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
+            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
+            for (final Long nodeWeight : nodeWeights) {
+                eventSources.add(new StandardEventSource(nodeWeight));
             }
             final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
 
@@ -655,19 +655,19 @@ public final class ConsensusTestDefinitions {
      * One node has a tendency to provide stale other parents (when they are requested).
      */
     public static void nodeProvidesStaleOtherParents(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
 
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Node Provides Stale Other Parents", numberOfNodes, stakeGenerator, 10_000);
+        final ConsensusTestDefinition testDefinition = new ConsensusTestDefinition(
+                "Node Provides Stale Other Parents", numberOfNodes, weightGenerator, 10_000);
 
         final int staleNodeProvider = numberOfNodes - 1;
         final AtomicDouble minConsensusRatio = new AtomicDouble();
         final AtomicDouble minStaleRatio = new AtomicDouble();
 
-        testDefinition.setGraphGeneratorProvider(nodeStakes -> {
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
-            for (final Long nodeStake : nodeStakes) {
-                eventSources.add(new StandardEventSource(nodeStake));
+        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
+            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
+            for (final Long nodeWeight : nodeWeights) {
+                eventSources.add(new StandardEventSource(nodeWeight));
             }
             final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
 
@@ -677,7 +677,7 @@ public final class ConsensusTestDefinitions {
                     .setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300));
 
             /*
-            If the node providing old events as other parents has a strong minority of stake, rounds become very
+            If the node providing old events as other parents has a strong minority of weight, rounds become very
             large because many more events are required to strongly see witnesses. Larger rounds means fewer stale
             events. Possibly no stale events at all if there are not enough events to create enough rounds so that
             generations are considered ancient.
@@ -700,11 +700,11 @@ public final class ConsensusTestDefinitions {
     /**
      * This test simulates a large number of nodes.
      */
-    public static void manyNodeTests(final StakeGenerator stakeGenerator, final int iterations) {
+    public static void manyNodeTests(final WeightGenerator weightGenerator, final int iterations) {
         final int numberOfNodes = 50;
 
         final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Many Node Tests", numberOfNodes, stakeGenerator, 10_000);
+                new ConsensusTestDefinition("Many Node Tests", numberOfNodes, weightGenerator, 10_000);
 
         // It takes a lot longer for 50 nodes to reach consensus, so don't expect the usual high ratio
         // If the number of events is significantly increased then this ratio is expected to approach 1.0.
@@ -717,11 +717,11 @@ public final class ConsensusTestDefinitions {
     /**
      * This test simulates a small number of nodes.
      */
-    public static void fewNodesTests(final StakeGenerator stakeGenerator, final int iterations) {
+    public static void fewNodesTests(final WeightGenerator weightGenerator, final int iterations) {
         final int numberOfNodes = 2;
 
         final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Few Nodes Tests", numberOfNodes, stakeGenerator, 10_000);
+                new ConsensusTestDefinition("Few Nodes Tests", numberOfNodes, weightGenerator, 10_000);
 
         testConsensus(testDefinition, iterations);
     }
@@ -730,14 +730,14 @@ public final class ConsensusTestDefinitions {
      * A quorum of nodes stop producing events, thus preventing consensus and round created advancement
      */
     public static void quorumOfNodesGoDownTests(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
 
         final int eventsPerPhase = 3_000;
 
         final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Quorum Goes Down Tests", numberOfNodes, stakeGenerator, eventsPerPhase);
+                new ConsensusTestDefinition("Quorum Goes Down Tests", numberOfNodes, weightGenerator, eventsPerPhase);
 
-        testDefinition.setGraphGeneratorProvider(nodeStakes -> {
+        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
             final DynamicValue<Double> disconnectingNodeWeight =
                     (Random random, long eventIndex, Double previousValue) -> {
                         if (eventIndex < eventsPerPhase) {
@@ -749,11 +749,11 @@ public final class ConsensusTestDefinitions {
                         }
                     };
 
-            final Set<Integer> quorumNodeIds = getStrongMinorityNodes(nodeStakes);
+            final Set<Integer> quorumNodeIds = getStrongMinorityNodes(nodeWeights);
 
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
-            for (int i = 0; i < nodeStakes.size(); i++) {
-                final StandardEventSource source = new StandardEventSource(nodeStakes.get(i));
+            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
+            for (int i = 0; i < nodeWeights.size(); i++) {
+                final StandardEventSource source = new StandardEventSource(nodeWeights.get(i));
                 if (quorumNodeIds.contains(i)) {
                     source.setNewEventWeight(disconnectingNodeWeight);
                 }
@@ -835,14 +835,14 @@ public final class ConsensusTestDefinitions {
      * less than a quorum stop producing events, consensus proceeds as normal
      */
     public static void subQuorumOfNodesGoDownTests(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
 
         final int eventsPerPhase = 3_000;
 
         final ConsensusTestDefinition testDefinition = new ConsensusTestDefinition(
-                "Sub Quorum of Nodes Go Down Tests", numberOfNodes, stakeGenerator, eventsPerPhase);
+                "Sub Quorum of Nodes Go Down Tests", numberOfNodes, weightGenerator, eventsPerPhase);
 
-        testDefinition.setGraphGeneratorProvider(nodeStakes -> {
+        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
             final DynamicValue<Double> disconnectingNodeWeight =
                     (Random random, long eventIndex, Double previousValue) -> {
                         if (eventIndex < eventsPerPhase) {
@@ -854,11 +854,11 @@ public final class ConsensusTestDefinitions {
                         }
                     };
 
-            final Set<Integer> subQuorumNodesIds = getSubStrongMinorityNodes(nodeStakes);
+            final Set<Integer> subQuorumNodesIds = getSubStrongMinorityNodes(nodeWeights);
 
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
-            for (int i = 0; i < nodeStakes.size(); i++) {
-                final StandardEventSource source = new StandardEventSource(nodeStakes.get(i));
+            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
+            for (int i = 0; i < nodeWeights.size(); i++) {
+                final StandardEventSource source = new StandardEventSource(nodeWeights.get(i));
                 if (subQuorumNodesIds.contains(i)) {
                     source.setNewEventWeight(disconnectingNodeWeight);
                 }
@@ -888,17 +888,17 @@ public final class ConsensusTestDefinitions {
      * There should be no problems when the probability of events landing on the same timestamp is higher than usual.
      */
     public static void repeatedTimestampTest(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
         final int eventsPerPhase = 10_000;
 
         final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Repeated Timestamp Test", numberOfNodes, stakeGenerator, eventsPerPhase);
+                new ConsensusTestDefinition("Repeated Timestamp Test", numberOfNodes, weightGenerator, eventsPerPhase);
 
         testDefinition.setTestSequenceGenerator(
                 td -> List.of(new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.3)));
 
-        testDefinition.setGraphGeneratorProvider(stakes -> {
-            final List<EventSource<?>> eventSources = newStandardEventSources(stakes);
+        testDefinition.setGraphGeneratorProvider(weights -> {
+            final List<EventSource<?>> eventSources = newStandardEventSources(weights);
             final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
             generator.setSimultaneousEventFraction(0.5);
             return generator;
@@ -927,7 +927,7 @@ public final class ConsensusTestDefinitions {
     public static void restart(
             final Long seed,
             final Path stateDir,
-            final StakeGenerator stakeGenerator,
+            final WeightGenerator weightGenerator,
             final int minNodes,
             final int maxNodes,
             final int minPerSeq,
@@ -945,8 +945,8 @@ public final class ConsensusTestDefinitions {
 
         System.out.printf("Nodes:%d events:%d\n", numberOfNodes, eventsPerSequence);
 
-        final List<Long> nodeStakes = stakeGenerator.getStakes(seed, numberOfNodes);
-        final List<EventSource<?>> eventSources = newStandardEventSources(nodeStakes);
+        final List<Long> nodeWeights = weightGenerator.getWeights(seed, numberOfNodes);
+        final List<EventSource<?>> eventSources = newStandardEventSources(nodeWeights);
         final StandardGraphGenerator generator = new StandardGraphGenerator(generatorSeed, eventSources);
 
         final TestSequence sequence = new TestSequence(eventsPerSequence);
@@ -959,13 +959,13 @@ public final class ConsensusTestDefinitions {
         context.runSequence(sequence);
     }
 
-    public static void areAllEventsReturned(final int numberOfNodes, final StakeGenerator stakeGenerator) {
-        areAllEventsReturned(numberOfNodes, stakeGenerator, new Random().nextLong());
+    public static void areAllEventsReturned(final int numberOfNodes, final WeightGenerator weightGenerator) {
+        areAllEventsReturned(numberOfNodes, weightGenerator, new Random().nextLong());
     }
 
     // TODO convert to new framework
     public static void areAllEventsReturned(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final long seed) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final long seed) {
         final int numEventsBeforeExclude = 50000;
         final int numEventsAfterExclude = 50000;
         final int totalEvents = numEventsAfterExclude + numEventsBeforeExclude;
@@ -977,12 +977,12 @@ public final class ConsensusTestDefinitions {
         System.out.println("areAllEventsReturned seed: " + seed);
         final Random random = new Random(seed);
 
-        final List<Long> nodeStakes = stakeGenerator.getStakes(seed, numberOfNodes);
+        final List<Long> nodeWeights = weightGenerator.getWeights(seed, numberOfNodes);
 
         final AddressBook ab = new RandomAddressBookGenerator(random)
                 .setSequentialIds(true)
                 .setSize(numberOfNodes)
-                .setCustomStakeGenerator(id -> nodeStakes.get((int) id))
+                .setCustomWeightGenerator(id -> nodeWeights.get((int) id))
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .build();
 
@@ -1063,21 +1063,21 @@ public final class ConsensusTestDefinitions {
 
     // TODO Finish and convert to new framework. As it is, this does not verify anything.
     public static void staleEvent(
-            final int numberOfNodes, final StakeGenerator stakeGenerator, final int iterations, final long... seeds) {
+            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
         if (seeds != null) {
             for (final long seed : seeds) {
                 System.out.println("Stale Event Tests, " + numberOfNodes + " nodes" + ": seed = " + seed + "L");
-                doStaleEvent(numberOfNodes, stakeGenerator, seed);
+                doStaleEvent(numberOfNodes, weightGenerator, seed);
             }
         }
 
         for (int j = 0; j < iterations; ++j) {
             System.out.println("Stale Event Tests");
-            doStaleEvent(numberOfNodes, stakeGenerator, 0);
+            doStaleEvent(numberOfNodes, weightGenerator, 0);
         }
     }
 
-    private static void doStaleEvent(final int numberOfNodes, final StakeGenerator stakeGenerator, final long seed) {
+    private static void doStaleEvent(final int numberOfNodes, final WeightGenerator weightGenerator, final long seed) {
         final int numEventsBeforeExclude = 1000;
         final int numEventsAfterExclude = 10000;
         final int numEventsAfterInclude = 1000;
@@ -1085,11 +1085,11 @@ public final class ConsensusTestDefinitions {
         final long seedToUse = seed == 0 ? new Random().nextLong() : seed;
         final Random random = initRandom(seedToUse);
 
-        final List<Long> nodeStakes = stakeGenerator.getStakes(seedToUse, numberOfNodes);
+        final List<Long> nodeWeights = weightGenerator.getWeights(seedToUse, numberOfNodes);
         final AddressBook ab = new RandomAddressBookGenerator(random)
                 .setSequentialIds(true)
                 .setSize(numberOfNodes)
-                .setCustomStakeGenerator(id -> nodeStakes.get((int) id))
+                .setCustomWeightGenerator(id -> nodeWeights.get((int) id))
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .build();
 
@@ -1119,7 +1119,7 @@ public final class ConsensusTestDefinitions {
     public static void reconnectSimulation(
             final Path stateDir,
             final int numberOfNodes,
-            final StakeGenerator stakeGenerator,
+            final WeightGenerator weightGenerator,
             final int iterations,
             final long... seeds) {
 
@@ -1127,7 +1127,7 @@ public final class ConsensusTestDefinitions {
             for (final long seed : seeds) {
                 System.out.println("Reconnect Tests, " + numberOfNodes + " nodes" + ": seed = " + seed + "L");
                 try {
-                    doReconnectSimulation(numberOfNodes, stateDir, stakeGenerator, seed);
+                    doReconnectSimulation(numberOfNodes, stateDir, weightGenerator, seed);
                 } catch (final IOException | ConstructableRegistryException | SignedStateLoadingException e) {
                     e.printStackTrace();
                     throw new RuntimeException(e);
@@ -1138,7 +1138,7 @@ public final class ConsensusTestDefinitions {
         for (int i = 0; i < iterations; ++i) {
             System.out.println("Reconnect Tests");
             try {
-                doReconnectSimulation(numberOfNodes, stateDir, stakeGenerator, 0);
+                doReconnectSimulation(numberOfNodes, stateDir, weightGenerator, 0);
             } catch (final IOException | ConstructableRegistryException | SignedStateLoadingException e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
@@ -1147,7 +1147,7 @@ public final class ConsensusTestDefinitions {
     }
 
     private static void doReconnectSimulation(
-            final int numberOfNodes, final Path stateDir, final StakeGenerator stakeGenerator, final long seed)
+            final int numberOfNodes, final Path stateDir, final WeightGenerator weightGenerator, final long seed)
             throws IOException, ConstructableRegistryException, SignedStateLoadingException {
         final int numEventsBeforeRestart = 10000;
         final int numEventsAfterRestart = 10000;
@@ -1155,8 +1155,8 @@ public final class ConsensusTestDefinitions {
         final long seedToUse = seed == 0 ? new Random().nextLong() : seed;
         final Random random = initRandom(seedToUse);
 
-        final List<Long> nodeStakes = stakeGenerator.getStakes(seedToUse, numberOfNodes);
-        final List<EventSource<?>> eventSources = EventSourceFactory.newStandardEventSources(nodeStakes);
+        final List<Long> nodeWeights = weightGenerator.getWeights(seedToUse, numberOfNodes);
+        final List<EventSource<?>> eventSources = EventSourceFactory.newStandardEventSources(nodeWeights);
         final StandardGraphGenerator generator = new StandardGraphGenerator(random.nextInt(), eventSources);
         final StandardEventEmitter emitter = new StandardEventEmitter(generator);
 

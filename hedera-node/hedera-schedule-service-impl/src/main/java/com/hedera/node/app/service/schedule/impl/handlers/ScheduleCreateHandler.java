@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.schedule.impl.Utils.asOrdinary;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -62,7 +62,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
 
         // If there is an admin key, then it must have signed the transaction
         if (op.hasAdminKey()) {
-            asHederaKey(op.adminKeyOrThrow()).ifPresent(context::requireKey);
+            context.requireKeyOrThrow(op.adminKeyOrThrow(), ResponseCodeEnum.INVALID_ADMIN_KEY);
         }
 
         final var scheduledTxn = asOrdinary(

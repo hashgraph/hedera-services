@@ -199,5 +199,5 @@ public class DummyExpectedFCMFamily implements ExpectedFCMFamily {
     public void setFcmConfig(final FCMConfig fcmConfig) {}
 
     @Override
-    public void setStakedNodeNum(final int stakedNodeNum) {}
+    public void setWeightedNodeNum(final int weightedNodeNum) {}
 }

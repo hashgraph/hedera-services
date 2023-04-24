@@ -24,7 +24,6 @@ import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN
 import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -46,7 +45,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         subject.preHandle(context);
 
         assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), Matchers.contains(MISC_ACCOUNT_KT.asPbjKey()));
+        assertThat(context.requiredNonPayerKeys(), Matchers.contains(MISC_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test
@@ -67,9 +66,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         subject.preHandle(context);
 
         assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(
-                sanityRestoredToPbj(context.requiredNonPayerKeys()),
-                Matchers.contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
+        assertThat(context.requiredNonPayerKeys(), Matchers.contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test
