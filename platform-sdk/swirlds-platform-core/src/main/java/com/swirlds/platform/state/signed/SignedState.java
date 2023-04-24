@@ -609,6 +609,8 @@ public class SignedState implements SignedStateInfo {
      *                           signed state. Useful if validating signed states from untrusted sources.
      */
     public void pruneInvalidSignatures(@NonNull final AddressBook trustedAddressBook) {
+        Objects.requireNonNull(trustedAddressBook);
+
         final List<Long> signaturesToRemove = new ArrayList<>();
         for (final long nodeId : sigSet) {
             final Address address = trustedAddressBook.getAddress(nodeId);

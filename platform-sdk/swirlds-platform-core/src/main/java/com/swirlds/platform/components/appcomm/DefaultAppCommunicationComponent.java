@@ -61,10 +61,10 @@ public class DefaultAppCommunicationComponent implements AppCommunicationCompone
                 signedState.reserve("DefaultAppCommunicationComponent.newLatestCompleteStateEvent()");
 
         final NewSignedStateNotification notification = new NewSignedStateNotification(
-                reservedSignedState.get().getSwirldState(),
-                reservedSignedState.get().getState().getSwirldDualState(),
-                reservedSignedState.get().getRound(),
-                reservedSignedState.get().getConsensusTimestamp());
+                signedState.getSwirldState(),
+                signedState.getState().getSwirldDualState(),
+                signedState.getRound(),
+                signedState.getConsensusTimestamp());
 
         notificationEngine.dispatch(NewSignedStateListener.class, notification, r -> reservedSignedState.close());
     }

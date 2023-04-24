@@ -43,6 +43,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -207,6 +208,9 @@ public class SignedStateFileManager implements Startable {
             @NonNull final Path directory,
             @NonNull final String taskDescription,
             @Nullable final Consumer<Boolean> finishedCallback) {
+
+        Objects.requireNonNull(directory);
+        Objects.requireNonNull(taskDescription);
 
         final ReservedSignedState reservedSignedState =
                 signedState.reserve("SignedStateFileManager.saveSignedStateToDisk()");

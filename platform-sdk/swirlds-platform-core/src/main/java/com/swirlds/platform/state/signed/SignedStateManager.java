@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -283,6 +284,9 @@ public class SignedStateManager implements SignedStateFinder {
     @Override
     public synchronized @NonNull ReservedSignedState find(
             @NonNull final Predicate<SignedState> criteria, @NonNull final String reason) {
+
+        Objects.requireNonNull(criteria);
+        Objects.requireNonNull(reason);
 
         final List<SignedState> allStates = new ArrayList<>();
 

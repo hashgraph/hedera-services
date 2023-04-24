@@ -30,8 +30,10 @@ import com.swirlds.platform.Connection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -72,24 +74,24 @@ public class ReconnectTeacher {
      * @param statistics             reconnect metrics
      */
     public ReconnectTeacher(
-            final ThreadManager threadManager,
-            final Connection connection,
-            final ReservedSignedState signedState,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final Connection connection,
+            @NonNull final ReservedSignedState signedState,
             final int reconnectSocketTimeout,
             final long selfId,
             final long otherId,
             final long lastRoundReceived,
-            final ReconnectMetrics statistics) {
+            @NonNull final ReconnectMetrics statistics) {
 
-        this.threadManager = threadManager;
-        this.connection = connection;
-        this.signedState = signedState;
+        this.threadManager = Objects.requireNonNull(threadManager);
+        this.connection = Objects.requireNonNull(connection);
+        this.signedState = Objects.requireNonNull(signedState);
         this.reconnectSocketTimeout = reconnectSocketTimeout;
 
         this.selfId = selfId;
         this.otherId = otherId;
         this.lastRoundReceived = lastRoundReceived;
-        this.statistics = statistics;
+        this.statistics = Objects.requireNonNull(statistics);
     }
 
     /**

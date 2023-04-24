@@ -17,6 +17,7 @@
 package com.swirlds.platform.components.common.output;
 
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Invoked when a new signed state has been created as a result of transaction processing.
@@ -30,5 +31,5 @@ public interface NewSignedStateFromTransactionsConsumer {
      *
      * @param signedState the newly created signed state
      */
-    void newSignedStateFromTransactions(final ReservedSignedState signedState);
+    void newSignedStateFromTransactions(@NonNull final ReservedSignedState signedState);
 }

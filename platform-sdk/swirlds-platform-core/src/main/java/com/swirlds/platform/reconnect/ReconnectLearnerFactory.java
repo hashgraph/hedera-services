@@ -45,15 +45,15 @@ public class ReconnectLearnerFactory {
      */
     public ReconnectLearnerFactory(
             @NonNull final PlatformContext platformContext,
-            final ThreadManager threadManager,
-            final AddressBook addressBook,
-            final ReconnectSettings settings,
-            final ReconnectMetrics statistics) {
+            @NonNull final ThreadManager threadManager,
+            @NonNull final AddressBook addressBook,
+            @NonNull final ReconnectSettings settings,
+            @NonNull final ReconnectMetrics statistics) {
         this.platformContext = Objects.requireNonNull(platformContext);
-        this.threadManager = threadManager;
-        this.addressBook = addressBook;
-        this.settings = settings;
-        this.statistics = statistics;
+        this.threadManager = Objects.requireNonNull(threadManager);
+        this.addressBook = Objects.requireNonNull(addressBook);
+        this.settings = Objects.requireNonNull(settings);
+        this.statistics = Objects.requireNonNull(statistics);
     }
 
     /**

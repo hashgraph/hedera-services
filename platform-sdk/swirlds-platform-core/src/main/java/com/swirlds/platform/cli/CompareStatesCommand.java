@@ -29,9 +29,11 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateComparison;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.util.BootstrapUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -121,13 +123,12 @@ public final class CompareStatesCommand extends AbstractCommand {
      * @param statePath the location of the state to load
      * @return the loaded state
      */
-    private static ReservedSignedState loadAndHashState(final Path statePath) throws IOException {
-        System.out.println("Loading state from " + statePath);
+    private static ReservedSignedState loadAndHashState(
+            @NonNull final PlatformContext platformContext, @NonNull final Path statePath) throws IOException {
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(statePath);
 
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                ConfigurationHolder.getInstance().get(),
-                NoOpMetricsBuilder.buildNoOpMetrics(),
-                CryptographyHolder.get());
+        System.out.println("Loading state from " + statePath);
 
         final ReservedSignedState signedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath).reservedSignedState();
@@ -153,8 +154,13 @@ public final class CompareStatesCommand extends AbstractCommand {
         BootstrapUtils.loadConfiguration(configurationPaths);
         BootstrapUtils.setupConstructableRegistry();
 
-        try (final ReservedSignedState stateA = loadAndHashState(stateAPath)) {
-            try (final ReservedSignedState stateB = loadAndHashState(stateBPath)) {
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                ConfigurationHolder.getInstance().get(),
+                NoOpMetricsBuilder.buildNoOpMetrics(),
+                CryptographyHolder.get());
+
+        try (final ReservedSignedState stateA = loadAndHashState(platformContext, stateAPath)) {
+            try (final ReservedSignedState stateB = loadAndHashState(platformContext, stateBPath)) {
                 SignedStateComparison.printMismatchedNodes(
                         SignedStateComparison.mismatchedNodeIterator(
                                 stateA.get().getState(), stateB.get().getState(), deepComparison),

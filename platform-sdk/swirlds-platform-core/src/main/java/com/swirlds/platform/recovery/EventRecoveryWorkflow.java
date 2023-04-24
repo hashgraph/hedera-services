@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.recovery;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
@@ -64,6 +63,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -227,9 +227,11 @@ public final class EventRecoveryWorkflow {
             final long selfId)
             throws IOException {
 
-        throwArgNull(configuration, "configuration");
-        throwArgNull(initialState, "initialState");
-        throwArgNull(roundIterator, "roundIterator");
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(configuration);
+        Objects.requireNonNull(initialState);
+        Objects.requireNonNull(appMain);
+        Objects.requireNonNull(roundIterator);
 
         final long roundsNonAncient =
                 configuration.getConfigData(ConsensusConfig.class).roundsNonAncient();

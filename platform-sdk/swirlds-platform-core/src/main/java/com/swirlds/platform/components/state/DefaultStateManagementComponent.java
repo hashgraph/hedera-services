@@ -335,7 +335,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     }
 
     @Override
-    public void newSignedStateFromTransactions(final ReservedSignedState signedState) {
+    public void newSignedStateFromTransactions(@NonNull final ReservedSignedState signedState) {
         try (signedState) {
             signedState.get().setGarbageCollector(signedStateGarbageCollector);
 

@@ -861,8 +861,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
             swirldStateManager.loadFromSignedState(signedState);
 
-            // Intentionally reserve & release state. If the signed state manager rejects this signed state, we
-            // want the release of an explicit reference to cause the state to be cleaned up.
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
             loadIntoConsensusAndEventMapper(signedState);

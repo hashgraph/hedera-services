@@ -38,6 +38,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
@@ -117,6 +118,9 @@ public final class SignedStateFileReader {
      */
     public static DeserializedSignedState readStateFile(
             @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(stateFile);
 
         if (!exists(stateFile)) {
             throw new IOException("File " + stateFile.toAbsolutePath() + " does not exist!");

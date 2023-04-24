@@ -1,7 +1,14 @@
 # Signed State Use
 
 When using a `SignedState`, it is critically important to do so in a way that is thread safe and that does not cause
-improper use of the state's reference count. Failure to use a state object correctly is almost always fatal to a node.
+improper use of the state's reference count.
+
+FAILURE TO USE STATE RESERVATIONS CORRECTLY IS ALMOST ALWAYS FATAL TO A NODE!
+
+While a state copy has a positive reference count, the state will not be deleted. Once all references on a state
+have been released, the state becomes eligible for asynchronous deletion, and will eventually be destroyed.
+Once all reservations on a state copy have been released, it is no longer thread safe to read, write, or otherwise
+do anything at all with that state copy.
 
 ## Rules
 
@@ -35,4 +42,4 @@ improper use of the state's reference count. Failure to use a state object corre
    find the code that is responsible for the reservation by searching for the reason string.
 6. Setting configuration `state.debugStackTracesEnabled = true` provides extra information in the logs when a
    reference count exception occurs. This can be useful for debugging reference count issues, but it is critical
-   that this setting is NEVER enabled in a production environment.
+   that this setting is NEVER enabled in a production environment (this feature has non-trivial impacts on performance).
