@@ -83,6 +83,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_D
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
@@ -471,6 +472,7 @@ public final class BootstrapProperties implements PropertySource {
             CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE,
             CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS,
             CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED,
+            CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED,
             CONTRACTS_EVM_VERSION,
             CONTRACTS_DYNAMIC_EVM_VERSION,
             EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
@@ -771,6 +773,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, AS_BOOLEAN),
             entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, AS_BOOLEAN),
             entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, AS_BOOLEAN),
+            entry(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED, AS_BOOLEAN),
             entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, AS_BOOLEAN),
             entry(CONTRACTS_EVM_VERSION, AS_STRING),
             entry(CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.utility;
+package com.swirlds.base.function;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Similar to {@link java.util.function.Function} but throws an exception.
+ * A function that accepts and object and returns a primitive boolean. Side effects are allowed.
  *
- * @param <T>
- * 		the type accepted by the function
- * @param <R>
- * 		the return type of the function
- * @param <E>
- * 		the type thrown by the function
+ * @param <T> the type accepted by the function
  */
 @FunctionalInterface
-public interface ThrowingFunction<T, R, E extends Exception> {
+public interface BooleanFunction<T> {
 
     /**
-     * Apply the function.
+     * A function that accepts and object and returns a primitive boolean. Side effects are allowed.
      *
-     * @param t
-     * 		the input to the function
-     * @return the value returned by the function
-     * @throws E
-     * 		the exception type thrown by the function
+     * @param object the object to apply
+     * @return true if success, false otherwise
      */
-    R apply(T t) throws E;
+    boolean apply(@Nullable final T object);
 }

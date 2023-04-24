@@ -63,8 +63,8 @@ class NodeInfoTest {
     }
 
     @Test
-    void understandsStaked() {
-        givenEntryWithStake(nodeId, 1L);
+    void understandsNonZeroStake() {
+        givenEntryWithWeight(nodeId, 1L);
 
         // expect:
         assertFalse(subject.isZeroStake(nodeId));
@@ -72,8 +72,8 @@ class NodeInfoTest {
     }
 
     @Test
-    void understandsZeroStaked() {
-        givenEntryWithStake(nodeId, 0L);
+    void understandsZeroStake() {
+        givenEntryWithWeight(nodeId, 0L);
 
         // expect:
         assertTrue(subject.isZeroStake(nodeId));
@@ -94,7 +94,7 @@ class NodeInfoTest {
         final var expectedAccount = IdUtils.asAccount(memo);
         final var expectedAccountKey = new MerkleEntityId(0, 0, 3);
 
-        givenEntryWithMemoAndStake(nodeId, memo, 1L);
+        givenEntryWithMemoAndWeight(nodeId, memo, 1L);
 
         // expect:
         assertEquals(expectedAccount, subject.accountOf(nodeId));
@@ -106,7 +106,7 @@ class NodeInfoTest {
 
     @Test
     void logsErrorOnMissingAccountForNonZeroStake() {
-        givenEntryWithMemoAndStake(nodeId, "Oops!", 1L);
+        givenEntryWithMemoAndWeight(nodeId, "Oops!", 1L);
 
         // when:
         subject.readBook();
@@ -120,7 +120,7 @@ class NodeInfoTest {
 
     @Test
     void doesNotLogErrorOnMissingAccountForZeroStake() {
-        givenEntryWithMemoAndStake(nodeId, "Oops!", 0L);
+        givenEntryWithMemoAndWeight(nodeId, "Oops!", 0L);
 
         // when:
         subject.readBook();
@@ -131,31 +131,31 @@ class NodeInfoTest {
 
     @Test
     void throwsIseOnStakedNodeNoAccount() {
-        givenEntryWithMemoAndStake(nodeId, "LULZ", 1L);
+        givenEntryWithMemoAndWeight(nodeId, "LULZ", 1L);
 
         // expect:
-        assertThrows(IllegalStateException.class, subject::validateSelfAccountIfStaked);
+        assertThrows(IllegalStateException.class, subject::validateSelfAccountIfNonZeroStake);
     }
 
     @Test
     void doesntThrowIseOnZeroStakeNodeNoAccount() {
-        givenEntryWithMemoAndStake(nodeId, "LULZ", 0L);
+        givenEntryWithMemoAndWeight(nodeId, "LULZ", 0L);
 
         // expect:
-        assertDoesNotThrow(subject::validateSelfAccountIfStaked);
+        assertDoesNotThrow(subject::validateSelfAccountIfNonZeroStake);
     }
 
     @Test
     void doesntThrowIseOnStakedNodeWithAccount() {
-        givenEntryWithMemoAndStake(nodeId, "0.0.3", 1L);
+        givenEntryWithMemoAndWeight(nodeId, "0.0.3", 1L);
 
         // expect:
-        assertDoesNotThrow(subject::validateSelfAccountIfStaked);
+        assertDoesNotThrow(subject::validateSelfAccountIfNonZeroStake);
     }
 
     @Test
     void throwsIaeOnMissingNode() {
-        givenEntryWithMemoAndStake(nodeId, "0.0.3", 1L);
+        givenEntryWithMemoAndWeight(nodeId, "0.0.3", 1L);
 
         // expect:
         assertThrows(IllegalArgumentException.class, () -> subject.accountOf(-1L));
@@ -164,7 +164,7 @@ class NodeInfoTest {
 
     @Test
     void throwsIaeOnMissingAccount() {
-        givenEntryWithMemoAndStake(nodeId, "ZERO-STAKE", 0L);
+        givenEntryWithMemoAndWeight(nodeId, "ZERO-STAKE", 0L);
 
         // expect:
         assertThrows(IllegalArgumentException.class, () -> subject.accountOf(nodeId));
@@ -172,20 +172,20 @@ class NodeInfoTest {
 
     @Test
     void validatesTheId() {
-        givenEntryWithStake(nodeId, 10L);
+        givenEntryWithWeight(nodeId, 10L);
         assertEquals(true, subject.isValidId(nodeId));
         assertEquals(false, subject.isValidId(10L));
     }
 
-    private void givenEntryWithStake(long id, long stake) {
-        given(address.getStake()).willReturn(stake);
+    private void givenEntryWithWeight(long id, long weight) {
+        given(address.getWeight()).willReturn(weight);
         given(address.getMemo()).willReturn("0.0." + (3 + id));
         given(book.getAddress(id)).willReturn(address);
         given(book.getSize()).willReturn(1);
     }
 
-    private void givenEntryWithMemoAndStake(long id, String memo, long stake) {
-        given(address.getStake()).willReturn(stake);
+    private void givenEntryWithMemoAndWeight(long id, String memo, long weight) {
+        given(address.getWeight()).willReturn(weight);
         given(address.getMemo()).willReturn(memo);
         given(book.getAddress(id)).willReturn(address);
         given(book.getSize()).willReturn(1);

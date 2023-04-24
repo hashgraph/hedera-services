@@ -18,8 +18,8 @@ package com.swirlds.platform.util;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
-import com.swirlds.common.Mutable;
-import com.swirlds.common.utility.Startable;
+import com.swirlds.base.state.Mutable;
+import com.swirlds.base.state.Startable;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import java.util.LinkedList;
 import java.util.List;

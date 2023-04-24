@@ -46,18 +46,6 @@ class EntityNumVirtualKeyTest {
     }
 
     @Test
-    void ordersSameAsExpected() {
-        final var sameButDifferent = subject;
-        assertEquals(0, subject.compareTo(sameButDifferent));
-    }
-
-    @Test
-    void orderPrioritizesEntityNum() {
-        final var smallerEntityNum = new EntityNumVirtualKey(longKey - 1);
-        assertEquals(+1, subject.compareTo(smallerEntityNum));
-    }
-
-    @Test
     void objectContractMet() {
         final var one = new EntityNumVirtualKey(longKey);
         final var two = new EntityNumVirtualKey(longKey);

@@ -20,7 +20,7 @@ import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.swirlds.base.functions.ThrowingConsumer;
+import com.swirlds.base.function.CheckedConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -52,9 +52,9 @@ public final class Uninterruptable {
      * </p>
      *
      * <p>
-     * This method is useful when operating in a context where it is inconvenient to throw an
-     * {@link InterruptedException}, or when performing an action using an interruptable interface but where the
-     * required operation is needed to always succeed regardless of interrupts.
+     * This method is useful when operating in a context where it is inconvenient to throw an {@link
+     * InterruptedException}, or when performing an action using an interruptable interface but where the required
+     * operation is needed to always succeed regardless of interrupts.
      * </p>
      *
      * @param action the action to perform, may be called multiple times if interrupted
@@ -85,9 +85,9 @@ public final class Uninterruptable {
      * </p>
      *
      * <p>
-     * This method is useful when operating in a context where it is inconvenient to throw an
-     * {@link InterruptedException}, or when performing an action using an interruptable interface but where the
-     * required operation is needed to always succeed regardless of interrupts.
+     * This method is useful when operating in a context where it is inconvenient to throw an {@link
+     * InterruptedException}, or when performing an action using an interruptable interface but where the required
+     * operation is needed to always succeed regardless of interrupts.
      * </p>
      *
      * @param action the action to perform, may be called multiple times if interrupted
@@ -119,7 +119,7 @@ public final class Uninterruptable {
      *
      * @param action the action to perform
      */
-    public static void abortIfInterrupted(@NonNull InterruptableRunnable action) {
+    public static void abortIfInterrupted(@NonNull final InterruptableRunnable action) {
         throwArgNull(action, "action");
         try {
             action.run();
@@ -167,7 +167,7 @@ public final class Uninterruptable {
      * @param errorMessage the error message to write to the log if this thread is inerrupted
      */
     public static <T> void abortAndLogIfInterrupted(
-            @NonNull final ThrowingConsumer<T, InterruptedException> consumer,
+            @NonNull final CheckedConsumer<T, InterruptedException> consumer,
             @Nullable final T object,
             @NonNull final String errorMessage) {
 
@@ -198,7 +198,7 @@ public final class Uninterruptable {
      * @throws IllegalStateException if interrupted
      */
     public static void abortAndThrowIfInterrupted(
-            @NonNull InterruptableRunnable action, @NonNull final String errorMessage) {
+            @NonNull final InterruptableRunnable action, @NonNull final String errorMessage) {
         throwArgNull(action, "action");
         try {
             action.run();
@@ -214,7 +214,7 @@ public final class Uninterruptable {
      *
      * @param duration the amount of time to sleep
      */
-    public static void tryToSleep(@NonNull Duration duration) {
+    public static void tryToSleep(@NonNull final Duration duration) {
         abortIfInterrupted(() -> MILLISECONDS.sleep(duration.toMillis()));
     }
 }

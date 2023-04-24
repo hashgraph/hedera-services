@@ -53,11 +53,11 @@ public class NodeInfo {
     }
 
     /**
-     * For a staked node, validates presence of a self-account in the address book.
+     * For a non-zero stake node, validates presence of a self-account in the address book.
      *
-     * @throws IllegalStateException if the node is staked but has no account
+     * @throws IllegalStateException if the node has a non-zero stake but has no account
      */
-    public void validateSelfAccountIfStaked() {
+    public void validateSelfAccountIfNonZeroStake() {
         if (!isSelfZeroStake() && !hasSelfAccount()) {
             throw new IllegalStateException("Node is not zero-stake, but has no known account");
         }
@@ -174,7 +174,7 @@ public class NodeInfo {
 
         for (int i = 0; i < numberOfNodes; i++) {
             final var address = staticBook.getAddress(i);
-            isZeroStake[i] = address.getStake() <= 0;
+            isZeroStake[i] = address.getWeight() <= 0;
             try {
                 accounts[i] = parseAccount(address.getMemo());
                 accountKeys[i] = EntityNum.fromAccountId(accounts[i]);

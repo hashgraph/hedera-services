@@ -151,7 +151,7 @@ module com.swirlds.common {
 
     exports com.swirlds.common.metrics.extensions;
 
-    requires com.swirlds.base;
+    requires transitive com.swirlds.base;
     requires com.swirlds.config;
     requires com.swirlds.logging;
     requires java.desktop;

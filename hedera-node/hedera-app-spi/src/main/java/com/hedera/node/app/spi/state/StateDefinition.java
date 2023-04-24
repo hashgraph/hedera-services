@@ -34,7 +34,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param <K> The type of key
  * @param <V> The type of value
  */
-public record StateDefinition<K extends Comparable<? super K>, V>(
+public record StateDefinition<K, V>(
         @NonNull String stateKey,
         @Nullable Codec<K> keyCodec,
         @NonNull Codec<V> valueCodec,
@@ -68,7 +68,7 @@ public record StateDefinition<K extends Comparable<? super K>, V>(
      * @param <K> The key type
      * @param <V> The value type
      */
-    public static <K extends Comparable<? super K>, V> StateDefinition<K, V> inMemory(
+    public static <K, V> StateDefinition<K, V> inMemory(
             @NonNull final String stateKey, @NonNull final Codec<K> keyCodec, @NonNull final Codec<V> valueCodec) {
         return new StateDefinition<>(stateKey, keyCodec, valueCodec, NO_MAX, false, false);
     }
@@ -86,7 +86,7 @@ public record StateDefinition<K extends Comparable<? super K>, V>(
      * @param <K> The key type
      * @param <V> The value type
      */
-    public static <K extends Comparable<? super K>, V> StateDefinition<K, V> onDisk(
+    public static <K, V> StateDefinition<K, V> onDisk(
             @NonNull final String stateKey,
             @NonNull final Codec<K> keyCodec,
             @NonNull final Codec<V> valueCodec,
@@ -103,7 +103,7 @@ public record StateDefinition<K extends Comparable<? super K>, V>(
      * @param <K> The key type
      * @param <V> The value type
      */
-    public static <K extends Comparable<K>, V> StateDefinition<K, V> singleton(
+    public static <K, V> StateDefinition<K, V> singleton(
             @NonNull final String stateKey, @NonNull final Codec<V> valueCodec) {
         return new StateDefinition<>(stateKey, null, valueCodec, NO_MAX, false, true);
     }

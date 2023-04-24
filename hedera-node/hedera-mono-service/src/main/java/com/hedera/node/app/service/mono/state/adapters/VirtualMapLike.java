@@ -27,7 +27,7 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import org.apache.commons.lang3.tuple.Pair;
 
-public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends VirtualValue> {
+public interface VirtualMapLike<K extends VirtualKey, V extends VirtualValue> {
     void registerMetrics(Metrics metrics);
 
     long size();
@@ -54,8 +54,7 @@ public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends Virtu
     void extractVirtualMapData(ThreadManager threadManager, InterruptableConsumer<Pair<K, V>> handler, int threadCount)
             throws InterruptedException;
 
-    static <K extends VirtualKey<? super K>, V extends VirtualValue> VirtualMapLike<K, V> from(
-            final VirtualMap<K, V> real) {
+    static <K extends VirtualKey, V extends VirtualValue> VirtualMapLike<K, V> from(final VirtualMap<K, V> real) {
         return new VirtualMapLike<>() {
             @Override
             public VirtualDataSource<K, V> getDataSource() {
