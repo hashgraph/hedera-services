@@ -40,7 +40,7 @@ class FileServiceImplTest {
     void registersExpectedSchema() {
         final var captor = ArgumentCaptor.forClass(Schema.class);
 
-        new FileServiceImpl().registerSchemas(registry);
+        new FileServiceImpl().registerMonoAdapterSchemas(registry);
 
         Mockito.verify(registry).register(captor.capture());
         final var schema = captor.getValue();

@@ -18,7 +18,9 @@ package com.hedera.node.app.service.network.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
@@ -35,12 +37,21 @@ class NetworkServiceImplTest {
     private SchemaRegistry registry;
 
     @Test
-    void registersExpectedSchema() {
+    void doesNotYetHaveModularizedSchema() {
+        final NetworkService subject = new NetworkServiceImpl();
+
+        subject.registerSchemas(registry);
+
+        verifyNoInteractions(registry);
+    }
+
+    @Test
+    void registersExpectedSchemaForMonoAdapter() {
         final ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
         final var subject = new NetworkServiceImpl();
 
-        subject.registerSchemas(registry);
+        subject.registerMonoAdapterSchemas(registry);
         verify(registry).register(schemaCaptor.capture());
 
         final var schema = schemaCaptor.getValue();

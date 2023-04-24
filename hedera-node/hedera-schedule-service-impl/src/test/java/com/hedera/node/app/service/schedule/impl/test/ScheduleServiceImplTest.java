@@ -41,7 +41,7 @@ class ScheduleServiceImplTest {
 
         final var subject = new ScheduleServiceImpl();
 
-        subject.registerSchemas(registry);
+        subject.registerMonoAdapterSchemas(registry);
         verify(registry).register(schemaCaptor.capture());
 
         final var schema = schemaCaptor.getValue();

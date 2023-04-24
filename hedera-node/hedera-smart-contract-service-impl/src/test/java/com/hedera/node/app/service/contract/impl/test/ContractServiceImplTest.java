@@ -41,7 +41,7 @@ class ContractServiceImplTest {
 
         final var subject = new ContractServiceImpl();
 
-        subject.registerSchemas(registry);
+        subject.registerMonoAdapterSchemas(registry);
         verify(registry).register(schemaCaptor.capture());
 
         final var schema = schemaCaptor.getValue();

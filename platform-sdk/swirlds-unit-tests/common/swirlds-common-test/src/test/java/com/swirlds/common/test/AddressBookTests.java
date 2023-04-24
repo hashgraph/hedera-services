@@ -26,11 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.address.Address;
@@ -457,7 +457,7 @@ class AddressBookTests {
         final String addressBookText = addressBook.toConfigText();
         final Map<Long, Long> posToId = new HashMap<>();
         long pos = 0;
-        for (Address address : addressBook) {
+        for (final Address address : addressBook) {
             posToId.put(pos, address.getId());
             pos++;
         }
@@ -489,12 +489,12 @@ class AddressBookTests {
         validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, not a port", 7);
     }
 
-    private void validateParseException(String addressBook, int part) {
+    private void validateParseException(final String addressBook, final int part) {
         assertThrows(
                 ParseException.class, () -> parseAddressBookConfigText(addressBook, pos -> pos, ip -> false, id -> ""));
         try {
             parseAddressBookConfigText(addressBook, pos -> pos, ip -> false, id -> "");
-        } catch (ParseException e) {
+        } catch (final ParseException e) {
             assertEquals(part, e.getErrorOffset(), "The part number is wrong in the exception: " + e.getMessage());
         }
     }

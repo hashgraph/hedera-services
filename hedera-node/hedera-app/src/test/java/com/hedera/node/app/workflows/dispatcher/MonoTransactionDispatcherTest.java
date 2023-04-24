@@ -137,6 +137,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -154,13 +155,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TransactionDispatcherTest {
+class MonoTransactionDispatcherTest {
 
     @Mock(strictness = LENIENT)
     private HederaState state;
 
     @Mock(strictness = LENIENT)
     private ReadableAccountStore accountStore;
+
+    @Mock(strictness = LENIENT)
+    private ReadableStoreFactory readableStoreFactory;
 
     @Mock
     private ConsensusCreateTopicHandler consensusCreateTopicHandler;
@@ -341,6 +345,7 @@ class TransactionDispatcherTest {
         when(state.createReadableStates(any())).thenReturn(readableStates);
         when(accountStore.getAccountById(any(AccountID.class))).thenReturn(account);
         lenient().when(account.key()).thenReturn(payerKey);
+        when(readableStoreFactory.createStore(AccountAccess.class)).thenReturn(accountStore);
 
         handlers = new TransactionHandlers(
                 consensusCreateTopicHandler,
@@ -390,29 +395,29 @@ class TransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new TransactionDispatcher(
+        dispatcher = new MonoTransactionDispatcher(
                 handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new TransactionDispatcher(
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
                         null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
                         handleContext, null, handlers, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
                         handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
                         handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                        handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
                         handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -421,33 +426,24 @@ class TransactionDispatcherTest {
     @Test
     void testDispatchWithIllegalParameters() throws PreCheckException {
         // given
-        final var payer = AccountID.newBuilder().build();
-        final var tracker = new ReadableStoreFactory(state);
-        final var validContext = new PreHandleContext(
-                accountStore,
-                TransactionBody.newBuilder()
-                        .fileCreate(FileCreateTransactionBody.newBuilder().build())
-                        .build());
         final var invalidSystemDelete = new PreHandleContext(
-                accountStore,
+                readableStoreFactory,
                 TransactionBody.newBuilder()
                         .systemDelete(SystemDeleteTransactionBody.newBuilder().build())
                         .build());
         final var invalidSystemUndelete = new PreHandleContext(
-                accountStore,
+                readableStoreFactory,
                 TransactionBody.newBuilder()
                         .systemUndelete(
                                 SystemUndeleteTransactionBody.newBuilder().build())
                         .build());
 
         // then
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null, validContext))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null)).isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, invalidSystemDelete))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(invalidSystemDelete))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, invalidSystemUndelete))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(invalidSystemUndelete))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -455,11 +451,10 @@ class TransactionDispatcherTest {
     void testDataNotSetFails() throws PreCheckException {
         // given
         final var txBody = TransactionBody.newBuilder().build();
-        final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody);
+        final var context = new PreHandleContext(readableStoreFactory, txBody);
 
         // then
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(context))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -469,11 +464,10 @@ class TransactionDispatcherTest {
         final var txBody = TransactionBody.newBuilder()
                 .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder())
                 .build();
-        final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody);
+        final var context = new PreHandleContext(readableStoreFactory, txBody);
 
         // then
-        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(context))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -579,11 +573,10 @@ class TransactionDispatcherTest {
     void testPreHandleWithPayer(final TransactionBody txBody, final DispatchToHandler verification)
             throws PreCheckException {
         // given
-        final var tracker = new ReadableStoreFactory(state);
-        final var context = new PreHandleContext(accountStore, txBody);
+        final var context = new PreHandleContext(readableStoreFactory, txBody);
 
         // when
-        dispatcher.dispatchPreHandle(tracker, context);
+        dispatcher.dispatchPreHandle(context);
 
         // then
         verification.dispatchTo(this.handlers, context);

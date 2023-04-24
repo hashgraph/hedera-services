@@ -35,7 +35,7 @@ class UtilServiceImplTest {
     void registersExpectedSchema() {
         final var subject = new UtilServiceImpl();
 
-        subject.registerSchemas(registry);
+        subject.registerMonoAdapterSchemas(registry);
         verifyNoInteractions(registry);
     }
 }

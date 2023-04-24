@@ -130,7 +130,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
         final Map<Long, Long> stakes = new HashMap<>();
         for (int i = 0, n = book.getSize(); i < n; i++) {
             final var address = book.getAddress(i);
-            stakes.put(address.getId(), address.getStake());
+            stakes.put(address.getId(), address.getWeight());
         }
 
         final var detailsFid = fileNumbers.toFid(fileNumbers.nodeDetails());
@@ -412,7 +412,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
                 .setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
                 .setRSAPubKey(CommonUtils.hex(address.getSigPublicKey().getEncoded()))
                 .setNodeId(address.getId())
-                .setStake(address.getStake())
+                .setStake(address.getWeight())
                 .setMemo(ByteString.copyFromUtf8(address.getMemo()));
         final var serviceEndpoint = ServiceEndpoint.newBuilder()
                 .setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))
