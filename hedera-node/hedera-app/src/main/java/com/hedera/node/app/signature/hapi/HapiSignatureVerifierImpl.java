@@ -36,6 +36,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -49,32 +50,6 @@ import javax.inject.Inject;
  */
 public class HapiSignatureVerifierImpl implements SignatureVerifier {
     private final Cryptography cryptoEngine;
-
-    private static final class HapiTransactionSignature extends TransactionSignature {
-        private final Key key;
-
-        public HapiTransactionSignature(
-                @NonNull Key key,
-                @NonNull byte[] contents,
-                int signatureOffset,
-                int signatureLength,
-                int publicKeyOffset,
-                int publicKeyLength,
-                int messageOffset,
-                int messageLength,
-                @NonNull SignatureType signatureType) {
-            super(
-                    requireNonNull(contents),
-                    signatureOffset,
-                    signatureLength,
-                    publicKeyOffset,
-                    publicKeyLength,
-                    messageOffset,
-                    messageLength,
-                    requireNonNull(signatureType));
-            this.key = requireNonNull(key);
-        }
-    }
 
     @Inject
     public HapiSignatureVerifierImpl(@NonNull final Cryptography cryptoEngine) {
@@ -344,5 +319,47 @@ public class HapiSignatureVerifierImpl implements SignatureVerifier {
             }
         }
         return null;
+    }
+
+    /**
+     * Extends {@link TransactionSignature} to include the {@link Key} that we're checking the signature for.
+     */
+    private static final class HapiTransactionSignature extends TransactionSignature {
+        private final Key key;
+
+        public HapiTransactionSignature(
+                @NonNull Key key,
+                @NonNull byte[] contents,
+                int signatureOffset,
+                int signatureLength,
+                int publicKeyOffset,
+                int publicKeyLength,
+                int messageOffset,
+                int messageLength,
+                @NonNull SignatureType signatureType) {
+            super(
+                    requireNonNull(contents),
+                    signatureOffset,
+                    signatureLength,
+                    publicKeyOffset,
+                    publicKeyLength,
+                    messageOffset,
+                    messageLength,
+                    requireNonNull(signatureType));
+            this.key = requireNonNull(key);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof HapiTransactionSignature that)) return false;
+            if (!super.equals(o)) return false;
+            return Objects.equals(key, that.key);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), key);
+        }
     }
 }

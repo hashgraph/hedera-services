@@ -44,7 +44,6 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerAndOthers;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerOnly;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.noneAvailable;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @Singleton
 public class AdaptedMonoProcessLogic implements ProcessLogic {
