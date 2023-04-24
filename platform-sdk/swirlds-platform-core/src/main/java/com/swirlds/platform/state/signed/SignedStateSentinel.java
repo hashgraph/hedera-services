@@ -18,6 +18,8 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.base.state.Startable;
+import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -26,8 +28,6 @@ import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
-import com.swirlds.common.utility.Startable;
-import com.swirlds.common.utility.Stoppable;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.Settings;
 import java.time.Duration;

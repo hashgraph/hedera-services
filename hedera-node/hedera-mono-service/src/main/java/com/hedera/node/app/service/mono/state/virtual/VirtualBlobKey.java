@@ -24,11 +24,10 @@ import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
+public class VirtualBlobKey implements VirtualKey {
     public static final int CURRENT_VERSION = 1;
 
     static final int BYTES_IN_SERIALIZED_FORM = 5;
@@ -131,18 +130,6 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
 
     public int getEntityNumCode() {
         return entityNumCode;
-    }
-
-    @Override
-    public int compareTo(@NonNull final VirtualBlobKey that) {
-        if (this == that) {
-            return 0;
-        }
-        final int order = Integer.compare(this.entityNumCode, that.entityNumCode);
-        if (order != 0) {
-            return order;
-        }
-        return this.type.compareTo(that.type);
     }
 
     @Override

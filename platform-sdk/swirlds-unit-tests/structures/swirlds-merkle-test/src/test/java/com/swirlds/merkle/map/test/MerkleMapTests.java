@@ -26,11 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -306,7 +306,7 @@ class MerkleMapTests {
     @Tag(TestComponentTags.MMAP)
     @DisplayName("Puts and Deletes One Element Multiple Times")
     <V extends MerkleNode & Keyed<Key>> void putsAndDeletesOneElementMultipleTimes(
-            int size, final KeyValueProvider provider) {
+            final int size, final KeyValueProvider provider) {
         final MerkleMap<Key, V> mm = new MerkleMap<>();
 
         for (int index = 0; index < size; index++) {
@@ -824,7 +824,7 @@ class MerkleMapTests {
             io.getOutput().writeMerkleTree(testDirectory, map);
             io.startReading();
 
-            MerkleMap<?, ?> deserializedMap = io.getInput().readMerkleTree(testDirectory, Integer.MAX_VALUE);
+            final MerkleMap<?, ?> deserializedMap = io.getInput().readMerkleTree(testDirectory, Integer.MAX_VALUE);
 
             cryptography.digestTreeSync(deserializedMap);
 

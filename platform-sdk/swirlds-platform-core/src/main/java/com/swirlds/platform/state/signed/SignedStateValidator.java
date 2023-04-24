@@ -25,7 +25,7 @@ public interface SignedStateValidator {
 
     /**
      * Determines if a signed state is valid with the address book. Validation usually includes
-     * verifying that the signed state is signed with a sufficient number of valid signatures to meet a certain staking
+     * verifying that the signed state is signed with a sufficient number of valid signatures to meet a certain weighting
      * threshold, but other requirements could be included as well.
      *
      * @param signedState       the signed state to validate

@@ -57,6 +57,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_D
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
@@ -249,6 +250,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enableHTSPrecompileCreate;
     private Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits;
     private boolean atomicCryptoTransferEnabled;
+    private boolean enableHRCAssociate;
     private KnownBlockValues knownBlockValues;
     private long exchangeRateGasReq;
     private long stakingRewardRate;
@@ -394,6 +396,7 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getCustomFeesProperty(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS);
         atomicCryptoTransferEnabled =
                 properties.getBooleanProperty(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED);
+        enableHRCAssociate = properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
         exchangeRateGasReq = properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
         stakingRewardRate = properties.getLongProperty(STAKING_REWARD_RATE);
@@ -761,6 +764,10 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isAtomicCryptoTransferEnabled() {
         return atomicCryptoTransferEnabled;
+    }
+
+    public boolean isHRCAssociateEnabled() {
+        return enableHRCAssociate;
     }
 
     public KnownBlockValues knownBlockValues() {

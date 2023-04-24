@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common;
+package com.swirlds.base.state;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Describes an object that may be mutable or immutable.
@@ -48,12 +48,10 @@ public interface Mutable {
     }
 
     /**
-     * @param errorMessage
-     * 		an error message for the exception
-     * @throws MutabilityException
-     * 		if {@link #isImmutable()}} returns {@code true}
+     * @param errorMessage an error message for the exception
+     * @throws MutabilityException if {@link #isImmutable()}} returns {@code true}
      */
-    default void throwIfImmutable(final String errorMessage) {
+    default void throwIfImmutable(@NonNull final String errorMessage) {
         if (isImmutable()) {
             throw new MutabilityException(errorMessage);
         }
@@ -68,12 +66,10 @@ public interface Mutable {
     }
 
     /**
-     * @param errorMessage
-     * 		an error message for the exception
-     * @throws MutabilityException
-     * 		if {@link #isMutable()}} returns {@code true}
+     * @param errorMessage an error message for the exception
+     * @throws MutabilityException if {@link #isMutable()}} returns {@code true}
      */
-    default void throwIfMutable(final String errorMessage) {
+    default void throwIfMutable(@NonNull final String errorMessage) {
         if (isMutable()) {
             throw new MutabilityException(errorMessage);
         }

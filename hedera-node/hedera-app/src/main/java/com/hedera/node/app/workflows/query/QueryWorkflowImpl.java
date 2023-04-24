@@ -182,7 +182,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 5. Check validity of query
-            final var context = new QueryContextImpl(state, query);
+            final var context = new QueryContextImpl(storeFactory, query);
             handler.validate(context);
 
             // 6. Submit payment to platform

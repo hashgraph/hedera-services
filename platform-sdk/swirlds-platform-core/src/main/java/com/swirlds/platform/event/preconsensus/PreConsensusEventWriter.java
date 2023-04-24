@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.common.utility.Startable;
-import com.swirlds.common.utility.Stoppable;
+import com.swirlds.base.state.Startable;
+import com.swirlds.base.state.Stoppable;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Duration;
 

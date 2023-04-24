@@ -45,18 +45,6 @@ class ScheduleEqualityVirtualKeyTest {
     }
 
     @Test
-    void ordersSameAsExpected() {
-        final var sameButDifferent = subject;
-        assertEquals(0, subject.compareTo(sameButDifferent));
-    }
-
-    @Test
-    void orderPrioritizesEntityNum() {
-        final var smallerEntityNum = new ScheduleEqualityVirtualKey(longKey - 1);
-        assertEquals(+1, subject.compareTo(smallerEntityNum));
-    }
-
-    @Test
     void objectContractMet() {
         final var one = new ScheduleEqualityVirtualKey(longKey);
         final var two = new ScheduleEqualityVirtualKey(longKey);

@@ -33,7 +33,7 @@ public abstract class ResponsibleVMapUser {
     private final List<MerkleHederaState> statesToRelease = new ArrayList<>();
     private final List<VirtualMap<?, ?>> mapsToRelease = new ArrayList<>();
 
-    protected <K extends VirtualKey<? super K>, V extends VirtualValue> VirtualMap<K, V> trackedMap(
+    protected <K extends VirtualKey, V extends VirtualValue> VirtualMap<K, V> trackedMap(
             @Nullable final VirtualMap<K, V> map) {
         if (map != null) {
             mapsToRelease.add(map);

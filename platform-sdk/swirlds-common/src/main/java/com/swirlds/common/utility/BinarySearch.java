@@ -18,6 +18,7 @@ package com.swirlds.common.utility;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.base.function.CheckedFunction;
 import java.util.NoSuchElementException;
 import java.util.function.LongToIntFunction;
 
@@ -73,7 +74,7 @@ public final class BinarySearch {
      * 		if compareToDesired throws E
      */
     public static <E extends Exception> long throwingSearch(
-            final long minimumIndex, final long maximumIndex, final ThrowingFunction<Long, Integer, E> compareToDesired)
+            final long minimumIndex, final long maximumIndex, final CheckedFunction<Long, Integer, E> compareToDesired)
             throws E {
 
         if (minimumIndex >= maximumIndex) {

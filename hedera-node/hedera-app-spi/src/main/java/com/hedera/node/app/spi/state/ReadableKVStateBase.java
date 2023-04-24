@@ -26,7 +26,7 @@ import java.util.*;
  * @param <K> The key type
  * @param <V> The value type
  */
-public abstract class ReadableKVStateBase<K extends Comparable<? super K>, V> implements ReadableKVState<K, V> {
+public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V> {
     /** The state key, which cannot be null */
     private final String stateKey;
 
@@ -115,7 +115,7 @@ public abstract class ReadableKVStateBase<K extends Comparable<? super K>, V> im
     /**
      * Records the given key and associated value were read. {@link WritableKVStateBase} will call
      * this method in some cases when a key is read as part of a modification (for example, with
-     * {@link WritableKVStateBase#getForModify(Comparable)}).
+     * {@link WritableKVStateBase#getForModify}).
      *
      * @param key The key
      * @param value The value
