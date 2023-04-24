@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.event;
 
+import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.utility.BooleanFunction;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.ThreadConfig;

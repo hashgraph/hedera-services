@@ -52,8 +52,8 @@ class IngestComponentTest {
 
     @BeforeEach
     void setUp() {
-        Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        PlatformContext platformContext = mock(PlatformContext.class);
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final PlatformContext platformContext = mock(PlatformContext.class);
         when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
 

@@ -25,6 +25,7 @@ extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 
 dependencies {
   // Individual Dependencies
+  implementation(project(":swirlds-base"))
   api(project(":swirlds-fchashmap"))
   api(project(":swirlds-fcqueue"))
   api(project(":swirlds-jasperdb"))

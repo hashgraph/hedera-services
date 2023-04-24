@@ -20,7 +20,8 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
-import com.swirlds.base.functions.ThrowingConsumer;
+import com.swirlds.base.function.CheckedConsumer;
+import com.swirlds.base.state.Startable;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
@@ -34,7 +35,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.common.utility.Startable;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.config.ThreadConfig;
@@ -117,7 +117,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     /**
      * A method that blocks until an event becomes durable.
      */
-    final ThrowingConsumer<EventImpl, InterruptedException> waitForEventDurability;
+    final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability;
 
     /**
      * The number of non-ancient rounds.
@@ -150,7 +150,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final BlockingQueue<SignedState> stateHashSignQueue,
-            @NonNull final ThrowingConsumer<EventImpl, InterruptedException> waitForEventDurability,
+            @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final Runnable enterFreezePeriod,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
