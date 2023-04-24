@@ -279,7 +279,6 @@ public class ServicesState extends PartialNaryMerkleInternal
 
         app.dualStateAccessor().setDualState(dualState);
         app.logic().incorporateConsensus(round);
-        app.mapWarmer().cancelPendingWarmups(round.getRoundNum());
     }
 
     @Override

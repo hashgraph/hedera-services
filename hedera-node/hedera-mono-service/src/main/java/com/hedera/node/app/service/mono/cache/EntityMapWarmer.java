@@ -114,7 +114,8 @@ public class EntityMapWarmer {
      * @param round the round to warm the cache for
      */
     public void warmCache(Round round) {
-        threadpool.execute(new RoundLabeledRunnable(round, this));
+        removeAllTasks();
+        threadpool.execute(() -> doWarmups(round));
     }
 
     // "warmTokenObjs" as in "warm the token and its associated token relation objects"
@@ -207,11 +208,8 @@ public class EntityMapWarmer {
         }
     }
 
-    public void cancelPendingWarmups(long roundNum) {
-        threadpool
-                .getQueue()
-                .removeIf(runnable -> runnable instanceof RoundLabeledRunnable roundLabeledRunnable
-                        && roundLabeledRunnable.getRound() == roundNum);
+    private void removeAllTasks() {
+        threadpool.getQueue().removeIf(ignored -> true);
     }
 
     private void doWarmups(Round round) {
@@ -255,28 +253,6 @@ public class EntityMapWarmer {
                     }
                 }
             });
-        }
-    }
-
-    /**
-     * This class represents a runnable associated with a specific Round, indicated by the round
-     * number. This is done so that we can cancel pending warmups for a specific round instead of
-     * purging the queue entirely.
-     *
-     * <p>It's worth noting that purging rounds based on their round number does not necessarily
-     * help performance! It was easy to add, so we added it, but it may not actually be needed, i.e.
-     * we may be able to purge all jobs from the queue with minimal consequence instead of only the
-     * job for a given Round
-     **/
-    @VisibleForTesting
-    record RoundLabeledRunnable(Round round, EntityMapWarmer mapWarmer) implements Runnable {
-        long getRound() {
-            return round.getRoundNum();
-        }
-
-        @Override
-        public void run() {
-            mapWarmer.doWarmups(round);
         }
     }
 }

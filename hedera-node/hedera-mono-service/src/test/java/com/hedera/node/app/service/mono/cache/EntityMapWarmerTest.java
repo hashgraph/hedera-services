@@ -58,7 +58,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -129,65 +128,6 @@ class EntityMapWarmerTest {
 
         // then:
         verifyNoCacheWarming();
-    }
-
-    @Test
-    void cancelOnRoundNotPresentDoesNoWarming() {
-        // given:
-        final var pastRoundNum = 5;
-
-        // when:
-        final var subject = new EntityMapWarmer(
-                accountAdptSupplier, nftAdptSupplier, tokenRelAdptSupplier, new RecursiveSynchronousThreadpoolDouble());
-        subject.cancelPendingWarmups(pastRoundNum);
-
-        // then:
-        verifyNoCacheWarming();
-    }
-
-    @Test
-    void cancelOnBogusRoundNumDoesNoWarming() {
-        // when:
-        final var subject = new EntityMapWarmer(
-                accountAdptSupplier, nftAdptSupplier, tokenRelAdptSupplier, new RecursiveSynchronousThreadpoolDouble());
-        subject.cancelPendingWarmups(-1);
-
-        // then:
-        verifyNoCacheWarming();
-    }
-
-    @Test
-    void cancelOnlyPurgesGivenRoundNumber() throws InterruptedException {
-        // This test enqueues three mock rounds, each with its own round number, cancels any
-        // pending warmups for a given round number, and then verifies that only the round
-        // runnable with the given round number was purged
-
-        // given:
-        final var workQueue = new LinkedBlockingQueue<Runnable>();
-        final var threadpool = new RecursiveSynchronousThreadpoolDouble(workQueue);
-        final var subject = new EntityMapWarmer(accountAdptSupplier, nftAdptSupplier, tokenRelAdptSupplier, threadpool);
-        final var mockRound1 = mock(Round.class);
-        given(mockRound1.getRoundNum()).willReturn(1L);
-        workQueue.put(new EntityMapWarmer.RoundLabeledRunnable(mockRound1, subject));
-        final var mockRound2 = mock(Round.class);
-        given(mockRound2.getRoundNum()).willReturn(2L);
-        workQueue.put(new EntityMapWarmer.RoundLabeledRunnable(mockRound2, subject));
-        final var mockRound3 = mock(Round.class);
-        given(mockRound3.getRoundNum()).willReturn(3L);
-        workQueue.put(new EntityMapWarmer.RoundLabeledRunnable(mockRound3, subject));
-
-        // when:
-        subject.cancelPendingWarmups(1);
-
-        // then:
-        final var first = (EntityMapWarmer.RoundLabeledRunnable) workQueue.poll();
-        Assertions.assertThat(first).isNotNull();
-        Assertions.assertThat(first.getRound()).isEqualTo(2);
-        final var second = (EntityMapWarmer.RoundLabeledRunnable) workQueue.poll();
-        Assertions.assertThat(second).isNotNull();
-        Assertions.assertThat(second.getRound()).isEqualTo(3);
-        final var last = workQueue.poll();
-        Assertions.assertThat(last).isNull();
     }
 
     @Test
