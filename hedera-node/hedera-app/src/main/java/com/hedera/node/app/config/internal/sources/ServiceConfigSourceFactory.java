@@ -21,6 +21,7 @@ import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -72,6 +73,8 @@ public class ServiceConfigSourceFactory {
 
     private static final ConfigSource EMPTY_SOURCE = new SimpleConfigSource();
 
+    private ServiceConfigSourceFactory() {}
+
     /**
      * Creates all the config sources that are used by the service.
      *
@@ -113,12 +116,12 @@ public class ServiceConfigSourceFactory {
      * @return the Optional that contains the created config source or null.
      */
     @NonNull
-    private static Optional<ConfigSource> createForRessource(@NonNull final String resourceName, final int ordinal) {
+    private static Optional<ConfigSource> createForResource(@NonNull final String resourceName, final int ordinal) {
         return getInternalResource(resourceName).map(url -> {
             try {
                 return new PropertyFileConfigSource(Path.of(url.toURI()), ordinal);
-            } catch (final Exception e) {
-                throw new RuntimeException("Can not read property source from " + url, e);
+            } catch (final IOException | URISyntaxException e) {
+                throw new IllegalStateException("Can not read property source from " + url, e);
             }
         });
     }
@@ -137,7 +140,7 @@ public class ServiceConfigSourceFactory {
             try {
                 return Optional.of(new PropertyFileConfigSource(propertyFilePath, ordinal));
             } catch (final IOException e) {
-                throw new RuntimeException("Can not read property source from " + propertyFilePath, e);
+                throw new IllegalStateException("Can not read property source from " + propertyFilePath, e);
             }
         } else {
             return Optional.empty();
@@ -146,25 +149,25 @@ public class ServiceConfigSourceFactory {
 
     @NonNull
     public static ConfigSource createForDefaultBootstrapProperties() {
-        return createForRessource(BOOTSTRAP_PROPERTIES_FILENAME, DEFAULT_BOOTSTRAP_PROPERTIES_ORDINAL)
+        return createForResource(BOOTSTRAP_PROPERTIES_FILENAME, DEFAULT_BOOTSTRAP_PROPERTIES_ORDINAL)
                 .orElse(EMPTY_SOURCE);
     }
 
     @NonNull
     public static ConfigSource createForDefaultApplicationProperties() {
-        return createForRessource(APPLICATION_PROPERTIES_FILENAME, DEFAULT_APPLICATION_PROPERTIES_ORDINAL)
+        return createForResource(APPLICATION_PROPERTIES_FILENAME, DEFAULT_APPLICATION_PROPERTIES_ORDINAL)
                 .orElse(EMPTY_SOURCE);
     }
 
     @NonNull
     public static ConfigSource createForDefaultNodeProperties() {
-        return createForRessource(NODE_PROPERTIES_FILENAME, DEFAULT_NODE_PROPERTIES_ORDINAL)
+        return createForResource(NODE_PROPERTIES_FILENAME, DEFAULT_NODE_PROPERTIES_ORDINAL)
                 .orElse(EMPTY_SOURCE);
     }
 
     @NonNull
     public static ConfigSource createForDefaultApiPermissionProperties() {
-        return createForRessource(APPLICATION_PROPERTIES_FILENAME, DEFAULT_API_PERMISSION_PROPERTIES_ORDINAL)
+        return createForResource(APPLICATION_PROPERTIES_FILENAME, DEFAULT_API_PERMISSION_PROPERTIES_ORDINAL)
                 .orElse(EMPTY_SOURCE);
     }
 

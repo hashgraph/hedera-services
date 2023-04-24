@@ -17,8 +17,9 @@
 package com.hedera.node.app.spi.config.legacy;
 
 /**
- * This class contains the properties that are part of the {@code PropertyNames} class in the mono-service module. Will
- * be removed once we have migrated to the new configuration framework.
+ * This class contains the properties that are part of the {@code PropertyNames} class in the mono-service module.
+ *
+ * @deprecated Class will be removed once we have migrated to the new configuration framework.
  */
 @Deprecated(forRemoval = true)
 public class PropertyNames {
