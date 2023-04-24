@@ -181,6 +181,7 @@ public class EndOfStakingPeriodCalculator {
         final var syntheticNodeStakeUpdateTxn = syntheticTxnFactory.nodeStakeUpdate(
                 lastInstantOfPreviousPeriodFor(consensusTime), nodeStakingInfos, properties);
         log.info("Exporting:\n{}", nodeStakingInfos);
+        log.info("Exporting NodeStateUpdate transaction:\n{}", syntheticNodeStakeUpdateTxn);
         recordsHistorian.trackPrecedingChildRecord(
                 DEFAULT_SOURCE_ID,
                 syntheticNodeStakeUpdateTxn,
@@ -203,7 +204,7 @@ public class EndOfStakingPeriodCalculator {
         if (stake < minStake || totalStakeOfAllNodes == 0L) {
             return 0;
         } else {
-            return (int) Math.max(Math.floor((stake * 500) / totalStakeOfAllNodes), 1);
+            return (int) Math.max(Math.floor((stake / totalStakeOfAllNodes) * 500), 1);
         }
     }
 
