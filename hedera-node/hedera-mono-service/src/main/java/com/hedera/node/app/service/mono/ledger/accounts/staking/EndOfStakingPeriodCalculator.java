@@ -182,7 +182,6 @@ public class EndOfStakingPeriodCalculator {
         final var syntheticNodeStakeUpdateTxn = syntheticTxnFactory.nodeStakeUpdate(
                 lastInstantOfPreviousPeriodFor(consensusTime), nodeStakingInfos, properties);
         log.info("Exporting:\n{}", nodeStakingInfos);
-        log.info("Exporting NodeStateUpdate transaction:\n{}", syntheticNodeStakeUpdateTxn);
         recordsHistorian.trackPrecedingChildRecord(
                 DEFAULT_SOURCE_ID,
                 syntheticNodeStakeUpdateTxn,

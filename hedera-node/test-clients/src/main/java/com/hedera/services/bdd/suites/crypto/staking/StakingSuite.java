@@ -662,8 +662,8 @@ public class StakingSuite extends HapiSuite {
     private HapiSpec endOfStakingPeriodRecTest() {
         return defaultHapiSpec("EndOfStakingPeriodRecTest")
                 .given(
-                        cryptoCreate("a1").balance(ONE_HUNDRED_HBARS).stakedNodeId(0),
-                        cryptoCreate("a2").balance(ONE_HUNDRED_HBARS).stakedNodeId(0),
+                        cryptoCreate("a1").balance(24000 * ONE_MILLION_HBARS).stakedNodeId(0),
+                        cryptoCreate("a2").balance(2000 * ONE_MILLION_HBARS).stakedNodeId(0),
                         cryptoTransfer(
                                 tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)) // will trigger staking
                         )
@@ -673,12 +673,14 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord("trigger")
                                 .logged()
                                 .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO)),
+                                .hasChildRecords(recordWith()
+                                        .memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO)),
                         sleepFor(INTER_PERIOD_SLEEP_MS),
                         cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR)).via("transfer"),
                         getTxnRecord("transfer")
                                 .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
+                                .hasChildRecords(recordWith()
+                                        .memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
                                 .logged(),
                         cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR)).via("noEndOfStakingPeriodRecord"),
                         getTxnRecord("noEndOfStakingPeriodRecord")
