@@ -48,6 +48,7 @@ import java.time.Duration;
  * 		the interval at which to send each peer heartbeats
  * @param futureGenerationLimit
  * 		the number of non-ancient generations we are willing to accept from a peer
+ * @param sleepAfterFailedNegotiation the number of milliseconds to sleep after a failed negotiation
  */
 @ConfigData("chatter")
 public record ChatterConfig(
@@ -62,4 +63,5 @@ public record ChatterConfig(
         @ConfigProperty(defaultValue = "100ms") Duration processingTimeInterval,
         @ConfigProperty(defaultValue = "1s") Duration heartbeatInterval,
         @ConfigProperty(defaultValue = "100000") int futureGenerationLimit,
-        @ConfigProperty(defaultValue = "50") int criticalQuorumSoftening) {}
+        @ConfigProperty(defaultValue = "50") int criticalQuorumSoftening,
+        @ConfigProperty(value = "sleepAfterFailedNegotiation", defaultValue = "100") int sleepAfterFailedNegotiation) {}

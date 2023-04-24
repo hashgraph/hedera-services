@@ -86,6 +86,7 @@ import com.swirlds.platform.chatter.ChatterNotifier;
 import com.swirlds.platform.chatter.ChatterSyncProtocol;
 import com.swirlds.platform.chatter.PrepareChatterEvent;
 import com.swirlds.platform.chatter.communication.ChatterProtocol;
+import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.chatter.protocol.ChatterCore;
 import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
 import com.swirlds.platform.chatter.protocol.peer.PeerInstance;
@@ -1459,6 +1460,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         intakeCycle.waitForCurrentSequenceEnd();
                     });
 
+            final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId.getId())
@@ -1468,7 +1471,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .setHangingThreadPeriod(basicConfig.hangingThreadDuration())
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
-                            100, // TODO make configurable
+                            chatterConfig.sleepAfterFailedNegotiation(),
                             List.of(
                                     new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
                                     new VersionCompareHandshake(
@@ -1679,6 +1682,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
                 () -> !gossipHalted.get(), () -> intakeQueue.size() < settings.getEventIntakeQueueThrottleSize()));
 
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
@@ -1689,7 +1694,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
-                            25, // TODO make configurable
+                            basicConfig.syncSleepAfterFailedNegotiation(),
                             List.of(
                                     new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
                                     new VersionCompareHandshake(

@@ -84,8 +84,14 @@ public class SyncProtocol implements Protocol {
      */
     private MaybeLocked permit = MaybeLocked.NOT_ACQUIRED;
 
+    /**
+     * The last time this protocol executed
+     */
     private Instant lastSyncTime = Instant.MIN;
 
+    /**
+     * The amount of time to sleep after a sync
+     */
     private final Duration sleepAfterSync;
 
     /**
@@ -97,6 +103,7 @@ public class SyncProtocol implements Protocol {
      * @param permitProvider         provides permits to sync
      * @param criticalQuorum         determines whether a peer is a good candidate to sync with
      * @param peerAgnosticSyncChecks peer agnostic checks to determine whether this node should sync
+     * @param sleepAfterSync         the amount of time to sleep after a sync
      * @param syncMetrics            metrics tracking syncing
      */
     public SyncProtocol(
@@ -130,6 +137,9 @@ public class SyncProtocol implements Protocol {
         return neededForFallenBehind != null && neededForFallenBehind.contains(peerId.getId());
     }
 
+    /**
+     * @return true if the cooldown period after a sync has elapsed, else false
+     */
     private boolean syncCooldownComplete() {
         return Duration.between(lastSyncTime, Instant.now()).compareTo(sleepAfterSync) > 0;
     }
