@@ -20,10 +20,10 @@ import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.ByteUtils.longToByteArray;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
-import com.swirlds.common.utility.Startable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Random;
 

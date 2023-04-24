@@ -1,4 +1,4 @@
-module com.swirlds.demo.preconsensuseventstream {
+module com.swirlds.demo.consistency {
     requires com.swirlds.base;
     requires com.swirlds.platform;
     requires com.swirlds.common;
