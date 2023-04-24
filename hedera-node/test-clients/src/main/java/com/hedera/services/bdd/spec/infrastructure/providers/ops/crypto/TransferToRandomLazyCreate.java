@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.suites.HapiSuite.*;
+import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.PAY_TXN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.google.protobuf.ByteString;
@@ -31,7 +32,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
 public class TransferToRandomLazyCreate implements OpProvider {
-    public static final String PAY_TXN = "payTxn";
     private final EntityNameProvider<Key> keys;
     private final HapiSpecRegistry registry;
     private static int nonce = 0;
@@ -43,14 +43,16 @@ public class TransferToRandomLazyCreate implements OpProvider {
 
     @Override
     public Optional<HapiSpecOperation> get() {
-        final var involvedKey = keys.getQualifying();
-        if (involvedKey.isEmpty()) {
-            return Optional.empty();
-        }
+        return randomKey().map(this::generateLazyCreateEthereumTransaction);
+    }
 
-        var to = involvedKey.get();
+    private Optional<String> randomKey() {
+        return keys.getQualifying().filter(k -> !k.isEmpty());
+    }
 
-        HapiEthereumCall op = TxnVerbs.ethereumCryptoTransferToAlias(getEvmAddress(to), FIVE_HBARS)
+    private HapiEthereumCall generateLazyCreateEthereumTransaction(String addressRecipient) {
+        HapiEthereumCall ethereumCall = TxnVerbs.ethereumCryptoTransferToAlias(
+                        getEvmAddress(addressRecipient), FIVE_HBARS)
                 .type(EthTxData.EthTransactionType.EIP1559)
                 .signingWith(SECP_256K1_SOURCE_KEY)
                 .payingWith(RELAYER)
@@ -63,7 +65,7 @@ public class TransferToRandomLazyCreate implements OpProvider {
 
         incrementNonce();
 
-        return Optional.of(op);
+        return ethereumCall;
     }
 
     private static void incrementNonce() {
