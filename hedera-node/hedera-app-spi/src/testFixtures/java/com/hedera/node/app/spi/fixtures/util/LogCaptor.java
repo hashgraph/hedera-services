@@ -101,7 +101,7 @@ public class LogCaptor {
         int startIndex = 0;
         boolean prevLevelMatch = false;
 
-        while (startIndex < logText.length() && m.find(startIndex)) {
+        while (m.find()) {
             if (prevLevelMatch) {
                 // add from end of previous match to start of current match
                 logEvents.add(logText.substring(startIndex, m.start()).trim());
