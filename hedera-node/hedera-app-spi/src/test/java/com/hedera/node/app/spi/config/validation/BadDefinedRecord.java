@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.config;
+package com.hedera.node.app.spi.config.validation;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
-import java.util.Set;
+import com.hedera.node.app.spi.config.types.KeyValuePair;
+import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
+import java.util.List;
 
-/**
- * This class contains the properties that are part of the {@code GlobalStaticProperties} class in the mono-service
- * module.
- */
-public record GlobalConfig(Set<HederaFunctionality> workflowsEnabled) {}
+@ConfigData
+public record BadDefinedRecord(
+        @EmulatesMap @ConfigProperty KeyValuePair pair, @EmulatesMap @ConfigProperty List<String> data) {}
