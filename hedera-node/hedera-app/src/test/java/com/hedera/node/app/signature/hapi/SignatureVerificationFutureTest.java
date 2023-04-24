@@ -19,6 +19,7 @@ package com.hedera.node.app.signature.hapi;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -35,11 +36,11 @@ public final class SignatureVerificationFutureTest {
     void nullArgsThrows() {
         // Given a null key, when we pass that null list to the constructor, then it throws an NPE
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> new SignatureVerificationFuture(null, Bytes.EMPTY, Map.of()))
+        assertThatThrownBy(() -> new SignatureVerificationFuture(null, Account.DEFAULT, Map.of()))
                 .isInstanceOf(NullPointerException.class);
         // Given a null map, when we pass that null list to the constructor, then it throws an NPE
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> new SignatureVerificationFuture(Key.DEFAULT, Bytes.EMPTY, null))
+        assertThatThrownBy(() -> new SignatureVerificationFuture(Key.DEFAULT, Account.DEFAULT, null))
                 .isInstanceOf(NullPointerException.class);
     }
 

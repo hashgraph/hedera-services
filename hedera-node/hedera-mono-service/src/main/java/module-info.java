@@ -75,7 +75,8 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.sigs.metadata to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.sigs.utils to
-            com.hedera.node.app.service.mono.testFixtures;
+            com.hedera.node.app.service.mono.testFixtures,
+            com.hedera.node.app;
     exports com.hedera.node.app.service.mono.sigs.verification to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app;

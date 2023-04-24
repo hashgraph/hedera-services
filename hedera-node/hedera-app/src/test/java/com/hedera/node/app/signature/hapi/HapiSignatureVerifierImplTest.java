@@ -35,6 +35,7 @@ import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -246,11 +247,11 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
     }
 
     private static SignatureVerification failVerify(@NonNull final Key key) {
-        return new SignatureVerificationImpl(key, null, false);
+        return new SignatureVerificationImpl(key, null, Collections.emptyList(), false);
     }
 
     private static SignatureVerification succeedVerify(@NonNull final Key key) {
-        return new SignatureVerificationImpl(key, null, true);
+        return new SignatureVerificationImpl(key, null, Collections.emptyList(), true);
     }
 
     private Void valid(InvocationOnMock args) {

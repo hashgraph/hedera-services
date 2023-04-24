@@ -35,6 +35,7 @@ module com.hedera.node.app {
     requires javax.inject;
     requires org.apache.logging.log4j;
     requires org.apache.commons.lang3;
+    requires org.apache.commons.codec; // Temporary until AdaptedMonoProcessLogic is removed
     requires com.google.common;
     requires com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;

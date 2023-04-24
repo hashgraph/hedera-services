@@ -21,12 +21,13 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -50,7 +51,7 @@ public class SignatureVerificationFuture implements Future<SignatureVerification
      * {@link #key} was extracted from the transaction (either because it was a "full" prefix on the signature map,
      * or because we used an "ecrecover" like process to extract the key from the signature and signed bytes).
      */
-    private final Bytes evmAddress;
+    private final Account hollowAccount;
     /**
      * The map of {@link TransactionSignature}s. This map cannot be empty. Each {@link TransactionSignature} contains
      * a {@link Future} indicating when then status code (verified, or not) is available on the transaction signature.
@@ -65,14 +66,14 @@ public class SignatureVerificationFuture implements Future<SignatureVerification
      * Create a new instance.
      *
      * @param key The key associated with this sig check. Cannot be null.
-     * @param evmAddress When used with hollow accounts ONLY, the EVM address associated with that hollow account.
+     * @param hollowAccount The hollow account, if any
      * @param sigs The {@link TransactionSignature}s, from which the pass/fail status of the
      * {@link SignatureVerification} is derived. This list must contain at least one element.
      */
     public SignatureVerificationFuture(
-            @NonNull Key key, @Nullable Bytes evmAddress, @NonNull Map<Key, TransactionSignature> sigs) {
+            @NonNull Key key, @Nullable Account hollowAccount, @NonNull Map<Key, TransactionSignature> sigs) {
         this.key = requireNonNull(key);
-        this.evmAddress = evmAddress;
+        this.hollowAccount = hollowAccount;
         this.sigs = requireNonNull(sigs);
 
         if (sigs.isEmpty()) {
@@ -166,7 +167,7 @@ public class SignatureVerificationFuture implements Future<SignatureVerification
             txSig.getFuture().get();
         }
 
-        return new SignatureVerificationImpl(key, evmAddress, checkIfPassed(key, sigs));
+        return new SignatureVerificationImpl(key, hollowAccount, new ArrayList<>(sigs.values()), checkIfPassed(key, sigs));
     }
 
     /**
@@ -200,7 +201,7 @@ public class SignatureVerificationFuture implements Future<SignatureVerification
             }
         }
 
-        return new SignatureVerificationImpl(key, evmAddress, checkIfPassed(key, sigs));
+        return new SignatureVerificationImpl(key, hollowAccount, new ArrayList<>(sigs.values()), checkIfPassed(key, sigs));
     }
 
     /**

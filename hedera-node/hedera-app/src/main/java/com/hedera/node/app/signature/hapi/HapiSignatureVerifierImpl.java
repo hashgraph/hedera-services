@@ -22,8 +22,10 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignaturePair;
+import com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -33,6 +35,7 @@ import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -112,7 +115,58 @@ public class HapiSignatureVerifierImpl implements SignatureVerifier {
     @Override
     public Future<SignatureVerification> verify(
             @NonNull Bytes signedBytes, @NonNull List<SignaturePair> sigPairs, @NonNull Account hollowAccount) {
-        return null;
+        final var alias = hollowAccount.alias();
+        if (hollowAccount.key() != null || alias == null || alias.length() != 20) {
+            return CompletableFuture.completedFuture(invalid(hollowAccount));
+        }
+
+        for (final var sigPair : sigPairs) {
+            // Only ECDSA(secp256k1) keys can be used for hollow accounts
+            if (sigPair.signature().kind() == SignatureOneOfType.ECDSA_SECP256K1) {
+                final var prefix = sigPair.pubKeyPrefix();
+                // Keccak hash the prefix and compare to the alias. Note that this prefix WILL BE COMPRESSED. We need
+                // to uncompress it first.
+                final var compressedPrefixByteArray = new byte[(int) prefix.length()];
+                prefix.getBytes(0, compressedPrefixByteArray);
+                final var prefixByteArray = MiscCryptoUtils.decompressSecp256k1(compressedPrefixByteArray);
+                final var hashedPrefixByteArray = MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(prefixByteArray);
+                final var hashedPrefix = Bytes.wrap(hashedPrefixByteArray);
+                if (hashedPrefix.equals(alias)) {
+                    // We have found it!
+                    final Bytes sigBytes = sigPair.signature().as();
+                    final var sigBytesLength = (int) sigBytes.length();
+                    final var keyBytesLength = prefixByteArray.length;
+                    final var signedBytesLength = (int) signedBytes.length();
+                    final var contents = new byte[sigBytesLength + keyBytesLength + signedBytesLength];
+                    final var sigOffset = 0;
+                    final var keyOffset = sigOffset + sigBytesLength;
+                    final var dataOffset = keyOffset + keyBytesLength;
+                    sigBytes.getBytes(0, contents, sigOffset, sigBytesLength);
+                    signedBytes.getBytes(0, contents, dataOffset, signedBytesLength);
+
+                    // Gather this signature to verify
+                    final var key = Key.newBuilder().ecdsaSecp256k1(Bytes.wrap(prefixByteArray)).build();
+                    final var sigTx = new HapiTransactionSignature(
+                            key,
+                            contents,
+                            sigOffset,
+                            sigBytesLength,
+                            keyOffset,
+                            keyBytesLength,
+                            dataOffset,
+                            sigBytesLength,
+                            SignatureType.ECDSA_SECP256K1);
+
+                    cryptoEngine.verifyAsync(sigTx);
+                    return new SignatureVerificationFuture(key, hollowAccount, Map.of(key, sigTx));
+                }
+            }
+        }
+
+        // FUTURE: Add to this method an "ecrecover" like method for getting the key
+
+        // If we were unable to find a matching signature, then the hollow account key did not sign
+        return CompletableFuture.completedFuture(invalid(hollowAccount));
     }
 
     /**
@@ -258,7 +312,7 @@ public class HapiSignatureVerifierImpl implements SignatureVerifier {
                 final var type =
                         switch (sigPair.signature().kind()) {
                             case ED25519 -> SignatureType.ED25519;
-                            case ECDSA_SECP256K1 -> SignatureType.ECDSA_SECP256K1;
+                            case ECDSA_SECP256K1 -> SignatureType.ECDSA_SECP256K1; // TODO MUST EXPAND SIGNATURE
                             default -> throw new IllegalArgumentException("Unsupported signature type");
                         };
 

@@ -54,6 +54,7 @@ dependencies {
   implementation(libs.bundles.helidon)
   implementation(libs.helidon.grpc.server)
   implementation(libs.pbj.runtime)
+  implementation(libs.commons.codec) // Temporarily needed for AdaptedMonoProcessLogic
 
   itestImplementation(project(":hedera-node:hapi"))
   itestImplementation(testFixtures(project(":hedera-node:hapi")))
