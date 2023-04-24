@@ -76,6 +76,7 @@ dependencies {
 
   testFixturesApi(project(":hedera-node:hedera-app-spi"))
   testFixturesApi(project(":hedera-node:hapi-utils"))
+  testFixturesApi(project(":hedera-node:hedera-token-service"))
   testFixturesApi(libs.swirlds.merkle)
   testFixturesApi(libs.swirlds.virtualmap)
   testFixturesApi(libs.hapi)
