@@ -680,7 +680,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         return virtualRootNode.getDataSource() instanceof VirtualDataSourceJasperDB;
     }
 
-    private static <K extends VirtualKey<? super K>, V extends VirtualValue> VirtualMap<K, V> migrateVirtualMap(
+    private static <K extends VirtualKey, V extends VirtualValue> VirtualMap<K, V> migrateVirtualMap(
             final VirtualMap<K, V> source, final VirtualMap<K, V> target) {
         final int copyTargetMapEveryPuts = 10_000;
         final AtomicInteger count = new AtomicInteger(copyTargetMapEveryPuts);

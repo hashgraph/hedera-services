@@ -19,7 +19,7 @@ package com.swirlds.common.system.address;
 import static com.swirlds.common.system.address.Address.ipString;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
