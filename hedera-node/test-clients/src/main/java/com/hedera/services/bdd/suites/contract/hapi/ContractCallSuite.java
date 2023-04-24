@@ -129,6 +129,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 
 public class ContractCallSuite extends HapiSuite {
+
     private static final Logger LOG = LogManager.getLogger(ContractCallSuite.class);
 
     private static final String ALICE = "Alice";
@@ -194,6 +195,7 @@ public class ContractCallSuite extends HapiSuite {
     private static final String RECEIVER_3_INFO = "receiver3Info";
     public static final String STATE_MUTABILITY_NONPAYABLE_TYPE_FUNCTION =
             " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+    public static final String DELEGATE_CALL_SPECIFIC = "delegateCallSpecific";
 
     public static void main(String... args) {
         new ContractCallSuite().runSuiteAsync();
@@ -404,7 +406,7 @@ public class ContractCallSuite extends HapiSuite {
                         // delegate call to collision address (0.0.1)
                         contractCall(
                                         TEST_CONTRACT,
-                                        "delegateCallSpecific",
+                                        DELEGATE_CALL_SPECIFIC,
                                         idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(ECREC_NUM)
                                                 .build()))
@@ -413,7 +415,7 @@ public class ContractCallSuite extends HapiSuite {
                         // delegate call existing account in the 0-750, but no corresponding precompile at that address
                         contractCall(
                                         TEST_CONTRACT,
-                                        "delegateCallSpecific",
+                                        DELEGATE_CALL_SPECIFIC,
                                         idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(98)
                                                 .build()))
@@ -422,7 +424,7 @@ public class ContractCallSuite extends HapiSuite {
                         // delegate call non-existing address in the 0-750 range
                         contractCall(
                                         TEST_CONTRACT,
-                                        "delegateCallSpecific",
+                                        DELEGATE_CALL_SPECIFIC,
                                         idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(125)
                                                 .build()))
@@ -1932,8 +1934,10 @@ public class ContractCallSuite extends HapiSuite {
                                     asHeadlongAddress(receiverAddr),
                                     BigInteger.valueOf(64))
                             .payingWith(ACCOUNT)
+                            .via("lalala")
                             .logged();
-                    allRunFor(spec, transferCall);
+                    var getRec = getTxnRecord("lalala").andAllChildRecords().logged();
+                    allRunFor(spec, transferCall, getRec);
                 }))
                 .then(getAccountBalance(RECEIVER).hasTinyBars(10_000L + 127L), sourcing(() -> getContractInfo(
                                 TRANSFERRING_CONTRACT)
