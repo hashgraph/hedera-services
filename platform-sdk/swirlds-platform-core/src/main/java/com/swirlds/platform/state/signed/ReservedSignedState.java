@@ -50,9 +50,16 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
     private static final AtomicLong nextReservationId = new AtomicLong(0);
 
     /**
+     * Create a wrapper around null.
+     */
+    public static @NonNull ReservedSignedState createNullReservation() {
+        return new ReservedSignedState();
+    }
+
+    /**
      * Create a wrapper around null (for scenarios where we are storing a null signed state).
      */
-    public ReservedSignedState() {
+    private ReservedSignedState() {
         this.signedState = null;
         this.reason = "";
     }
@@ -116,10 +123,14 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
      * reserving it.
      *
      * @return the signed state
-     * @throws NullPointerException if the signed state is null
+     * @throws IllegalStateException if the signed state is null
      */
     public @NonNull SignedState get() {
         throwIfClosed();
+        if (signedState == null) {
+            throw new IllegalStateException("This object wraps null, and this method is only permitted to be called "
+                    + "if the signed state is not null.");
+        }
         return Objects.requireNonNull(signedState);
     }
 

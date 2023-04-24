@@ -17,6 +17,7 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -165,7 +166,7 @@ public class ReconnectProtocolTests {
         }
 
         final ReservedSignedState reservedSignedState =
-                signedState == null ? new ReservedSignedState() : signedState.reserve("test");
+                signedState == null ? createNullReservation() : signedState.reserve("test");
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
@@ -368,7 +369,7 @@ public class ReconnectProtocolTests {
                 getStaticThreadManager(),
                 new NodeId(false, 0),
                 reconnectThrottle,
-                ReservedSignedState::new,
+                ReservedSignedState::createNullReservation,
                 100,
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),

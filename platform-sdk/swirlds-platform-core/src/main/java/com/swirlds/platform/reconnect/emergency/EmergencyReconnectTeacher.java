@@ -91,7 +91,6 @@ public class EmergencyReconnectTeacher {
             try (final ReservedSignedState stateWrapper =
                     stateFinder.find(emergencyStateCriteria(round, hash), "EmergencyReconnectTeacher.execute() find")) {
                 if (stateWrapper.isNotNull()) {
-                    final SignedState state = stateWrapper.get();
                     writeHasState(connection, true);
                     logger.info(
                             RECONNECT.getMarker(),
@@ -101,13 +100,12 @@ public class EmergencyReconnectTeacher {
                     new ReconnectTeacher(
                                     threadManager,
                                     connection,
-                                    state.reserve("EmergencyReconnectTeacher.execute() reconnect"),
                                     reconnectSocketTimeout,
                                     connection.getSelfId().getId(),
                                     connection.getOtherId().getId(),
-                                    state.getRound(),
+                                    stateWrapper.get().getRound(),
                                     reconnectMetrics)
-                            .execute();
+                            .execute(stateWrapper.get());
                 } else {
                     writeHasState(connection, false);
                     logger.info(

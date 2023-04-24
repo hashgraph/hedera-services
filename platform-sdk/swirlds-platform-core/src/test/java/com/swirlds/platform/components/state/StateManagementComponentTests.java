@@ -540,7 +540,7 @@ class StateManagementComponentTests {
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withMetrics(new NoOpMetrics())
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)

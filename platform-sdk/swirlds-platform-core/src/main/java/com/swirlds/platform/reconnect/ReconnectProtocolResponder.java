@@ -118,13 +118,12 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                 new ReconnectTeacher(
                                 threadManager,
                                 connection,
-                                state.getAndReserve("ReconnectProtocolResponder.protocolInitiated() reconnect"),
                                 settings.getAsyncStreamTimeoutMilliseconds(),
                                 connection.getSelfId().getId(),
                                 connection.getOtherId().getId(),
                                 state.get().getRound(),
                                 stats)
-                        .execute();
+                        .execute(state.get());
             } finally {
                 reconnectThrottle.reconnectAttemptFinished();
             }

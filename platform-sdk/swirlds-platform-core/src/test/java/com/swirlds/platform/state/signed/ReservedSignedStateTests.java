@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -35,15 +36,15 @@ class ReservedSignedStateTests {
     @Test
     @DisplayName("Null State Test")
     void nullStateTest() {
-        try (final ReservedSignedState reservedSignedState = new ReservedSignedState()) {
-            assertThrows(NullPointerException.class, reservedSignedState::get);
+        try (final ReservedSignedState reservedSignedState = createNullReservation()) {
+            assertThrows(IllegalStateException.class, reservedSignedState::get);
             assertNull(reservedSignedState.getNullable());
             assertEquals("", reservedSignedState.getReason());
             assertTrue(reservedSignedState.isNull());
             assertFalse(reservedSignedState.isNotNull());
 
             try (final ReservedSignedState reservedSignedState2 = reservedSignedState.getAndReserve("reason")) {
-                assertThrows(NullPointerException.class, reservedSignedState2::get);
+                assertThrows(IllegalStateException.class, reservedSignedState2::get);
                 assertNull(reservedSignedState2.getNullable());
 
                 // reason is ignored for null state
@@ -89,7 +90,7 @@ class ReservedSignedStateTests {
     @Test
     @DisplayName("Null Bad Lifecycle Test")
     void nullBadLifecycleTest() {
-        final ReservedSignedState reservedSignedState = new ReservedSignedState();
+        final ReservedSignedState reservedSignedState = createNullReservation();
         reservedSignedState.close();
 
         assertThrows(ReferenceCountException.class, reservedSignedState::get);

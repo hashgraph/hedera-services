@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
+
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
@@ -59,7 +61,7 @@ public class SignedStateMap {
         try (final Locked l = lock.lock()) {
             final ReservedSignedState reservedSignedState = map.get(round);
             if (reservedSignedState == null) {
-                return new ReservedSignedState();
+                return createNullReservation();
             }
             return reservedSignedState.getAndReserve(reason);
         }
@@ -76,12 +78,12 @@ public class SignedStateMap {
     public @NonNull ReservedSignedState getLatestAndReserve(@NonNull final String reason) {
         try (final Locked l = lock.lock()) {
             if (map.isEmpty()) {
-                return new ReservedSignedState();
+                return createNullReservation();
             }
 
             final ReservedSignedState reservedSignedState = map.get(map.lastKey());
             if (reservedSignedState == null) {
-                return new ReservedSignedState();
+                return createNullReservation();
             }
             return reservedSignedState.getAndReserve(reason);
         }

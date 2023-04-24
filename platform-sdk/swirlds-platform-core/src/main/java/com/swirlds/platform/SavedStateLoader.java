@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 
 import com.swirlds.common.context.PlatformContext;
@@ -167,7 +168,7 @@ public class SavedStateLoader {
     @NonNull
     private ReservedSignedState getEmergencySavedStateToLoad() throws IOException {
         if (savedStateFiles == null) {
-            return new ReservedSignedState();
+            return createNullReservation();
         }
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
@@ -179,7 +180,7 @@ public class SavedStateLoader {
                 logger.error(EXCEPTION.getMarker(), "Emergency recovery must not be performed during migration.");
                 shutdownRequestedTrigger.dispatch(
                         "Migration During Emergency Recovery", SystemExitReason.EMERGENCY_RECOVERY_ERROR.getExitCode());
-                return new ReservedSignedState();
+                return createNullReservation();
             }
 
             final ReservedSignedState signedState = stateWithHashes.signedState;
@@ -235,7 +236,7 @@ public class SavedStateLoader {
                         "No states on disk could be loaded as a starting point. Starting from a genesis state.");
             }
         }
-        return latest == null ? new ReservedSignedState() : latest;
+        return latest == null ? createNullReservation() : latest;
     }
 
     /**
@@ -271,7 +272,7 @@ public class SavedStateLoader {
             if (settings.isRequireStateLoad()) {
                 throw new SignedStateLoadingException("No saved states found on disk!");
             } else {
-                return new ReservedSignedState();
+                return createNullReservation();
             }
         }
 
@@ -286,7 +287,7 @@ public class SavedStateLoader {
                 return stateWithHashes.signedState;
             }
         }
-        return new ReservedSignedState();
+        return createNullReservation();
     }
 
     private static SignedStateWithHashes readAndRehashState(

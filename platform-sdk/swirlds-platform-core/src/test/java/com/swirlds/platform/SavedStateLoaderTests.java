@@ -39,6 +39,7 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileWriter;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -112,7 +113,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
-                        TestPlatformContextFactory.build(),
+                        TestPlatformContextBuilder.create().build(),
                         null,
                         addressBook,
                         new SavedStateInfo[0],
@@ -126,7 +127,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
-                        TestPlatformContextFactory.build(),
+                        TestPlatformContextBuilder.create().build(),
                         null,
                         addressBook,
                         new SavedStateInfo[0],
@@ -139,7 +140,7 @@ public class SavedStateLoaderTests {
     private void testNullSavedStateInfos() {
         assertDoesNotThrow(
                 () -> new SavedStateLoader(
-                        TestPlatformContextFactory.build(),
+                        TestPlatformContextBuilder.create().build(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -153,7 +154,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
-                        TestPlatformContextFactory.build(),
+                        TestPlatformContextBuilder.create().build(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -167,7 +168,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
-                        TestPlatformContextFactory.build(),
+                        TestPlatformContextBuilder.create().build(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -181,7 +182,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
-                        TestPlatformContextFactory.build(),
+                        TestPlatformContextBuilder.create().build(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -195,7 +196,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
-                        TestPlatformContextFactory.build(),
+                        TestPlatformContextBuilder.create().build(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -291,7 +292,7 @@ public class SavedStateLoaderTests {
 
     private void initSavedStateLoader(final SavedStateInfo[] stateInfos) {
         savedStateLoader = new SavedStateLoader(
-                TestPlatformContextFactory.build(),
+                TestPlatformContextBuilder.create().build(),
                 shutdownTrigger,
                 addressBook,
                 stateInfos,

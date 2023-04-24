@@ -17,6 +17,7 @@
 package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -42,7 +43,6 @@ import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.Connection;
-import com.swirlds.platform.TestPlatformContextFactory;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.reconnect.DummyConnection;
@@ -55,9 +55,9 @@ import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -227,7 +227,7 @@ public class EmergencyReconnectTests {
                 mock(ReconnectLearnerThrottle.class),
                 receivedStateConsumer,
                 new ReconnectLearnerFactory(
-                        TestPlatformContextFactory.build(),
+                        TestPlatformContextBuilder.create().build(),
                         getStaticThreadManager(),
                         addressBook,
                         mock(ReconnectSettings.class),
@@ -308,7 +308,7 @@ public class EmergencyReconnectTests {
     }
 
     private void mockTeacherDoesNotHaveCompatibleState() {
-        when(signedStateManager.find(any(), any())).thenReturn(new ReservedSignedState());
+        when(signedStateManager.find(any(), any())).thenReturn(createNullReservation());
     }
 
     private Callable<Void> doLearner(final EmergencyReconnectProtocol learnerProtocol, final Connection connection) {

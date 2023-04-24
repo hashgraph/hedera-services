@@ -24,6 +24,7 @@ import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
@@ -728,7 +729,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
             }
         }
-        return new LoadedState(new ReservedSignedState(), null);
+        return new LoadedState(createNullReservation(), null);
     }
 
     private State loadSavedState(final SignedState signedStateFromDisk) {

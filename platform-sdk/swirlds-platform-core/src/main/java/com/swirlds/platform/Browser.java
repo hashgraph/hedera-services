@@ -31,6 +31,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.SystemExitReason.NODE_ADDRESS_MISMATCH;
 
@@ -747,7 +748,7 @@ public class Browser {
                 SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
             }
         }
-        return new ReservedSignedState();
+        return createNullReservation();
     }
 
     /**

@@ -146,7 +146,7 @@ class SignedStateFileManagerTests {
         assertEquals(-1, originalState.getReservationCount(), "invalid reservation count");
 
         final DeserializedSignedState deserializedSignedState =
-                readStateFile(TestPlatformContextFactory.build(), stateFile);
+                readStateFile(TestPlatformContextBuilder.create().build(), stateFile);
         MerkleCryptoFactory.getInstance()
                 .digestTreeSync(
                         deserializedSignedState.reservedSignedState().get().getState());
@@ -174,7 +174,7 @@ class SignedStateFileManagerTests {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator().build();
@@ -227,7 +227,7 @@ class SignedStateFileManagerTests {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator().build();
@@ -278,7 +278,7 @@ class SignedStateFileManagerTests {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator().build();
@@ -384,7 +384,7 @@ class SignedStateFileManagerTests {
                 .withValue("state.stateSavingQueueSize", queueSize)
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final SignedStateFileManager manager = new SignedStateFileManager(
@@ -450,7 +450,7 @@ class SignedStateFileManagerTests {
                 .withValue("state.signedStateDisk", statesOnDisk)
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final int totalStates = 1000;
@@ -548,7 +548,9 @@ class SignedStateFileManagerTests {
 
                                 final SignedState stateFromDisk = assertDoesNotThrow(
                                         () -> SignedStateFileReader.readStateFile(
-                                                        TestPlatformContextFactory.build(), savedStateInfo.stateFile())
+                                                        TestPlatformContextBuilder.create()
+                                                                .build(),
+                                                        savedStateInfo.stateFile())
                                                 .reservedSignedState()
                                                 .get(),
                                         "should be able to read state on disk");
@@ -587,7 +589,7 @@ class SignedStateFileManagerTests {
                 .withValue("state.signedStateDisk", statesOnDisk)
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final int count = 10;

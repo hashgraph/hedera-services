@@ -29,7 +29,7 @@ import com.swirlds.logging.payloads.ReconnectStartPayload;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.StateSettings;
-import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
@@ -47,7 +47,6 @@ public class ReconnectTeacher {
     private static final Logger logger = LogManager.getLogger(ReconnectTeacher.class);
 
     private final Connection connection;
-    private final ReservedSignedState signedState;
     private final int reconnectSocketTimeout;
 
     private final long selfId;
@@ -66,7 +65,6 @@ public class ReconnectTeacher {
     /**
      * @param threadManager          responsible for managing thread lifecycles
      * @param connection             the connection to be used for the reconnect
-     * @param signedState            the signed state to send to the learner
      * @param reconnectSocketTimeout the socket timeout to use during the reconnect
      * @param selfId                 this node's ID
      * @param otherId                the learner's ID
@@ -76,7 +74,6 @@ public class ReconnectTeacher {
     public ReconnectTeacher(
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
-            @NonNull final ReservedSignedState signedState,
             final int reconnectSocketTimeout,
             final long selfId,
             final long otherId,
@@ -85,7 +82,6 @@ public class ReconnectTeacher {
 
         this.threadManager = Objects.requireNonNull(threadManager);
         this.connection = Objects.requireNonNull(connection);
-        this.signedState = Objects.requireNonNull(signedState);
         this.reconnectSocketTimeout = reconnectSocketTimeout;
 
         this.selfId = selfId;
@@ -136,13 +132,8 @@ public class ReconnectTeacher {
      * @throws ReconnectException thrown when current thread is interrupted, or when any I/O related errors occur, or
      *                            when there is an error in the underlying protocol
      */
-    public void execute() throws ReconnectException {
-        try (signedState) {
-            executeInternal();
-        }
-    }
+    public void execute(final SignedState signedState) throws ReconnectException {
 
-    private void executeInternal() {
         // If the connection object to be used here has been disconnected on another thread, we can
         // not reconnect with this connection.
         if (!connection.connected()) {
@@ -153,12 +144,12 @@ public class ReconnectTeacher {
                     connection.getOtherId());
             return;
         }
-        logReconnectStart();
+        logReconnectStart(signedState);
         increaseSocketTimeout();
 
         try {
-            sendSignatures();
-            reconnect();
+            sendSignatures(signedState);
+            reconnect(signedState);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ReconnectException(e);
@@ -170,7 +161,7 @@ public class ReconnectTeacher {
         logReconnectFinish();
     }
 
-    private void logReconnectStart() {
+    private void logReconnectStart(final SignedState signedState) {
         logger.info(
                 RECONNECT.getMarker(),
                 () -> new ReconnectStartPayload(
@@ -178,8 +169,8 @@ public class ReconnectTeacher {
         logger.info(
                 RECONNECT.getMarker(),
                 "The following state will be sent to the learner:\n{}\n{}",
-                () -> signedState.get().getState().getPlatformState().getInfoString(),
-                () -> new MerkleTreeVisualizer(signedState.get().getState())
+                () -> signedState.getState().getPlatformState().getInfoString(),
+                () -> new MerkleTreeVisualizer(signedState.getState())
                         .setDepth(StateSettings.getDebugHashDepth())
                         .render());
     }
@@ -196,7 +187,7 @@ public class ReconnectTeacher {
      *
      * @throws InterruptedException thrown if the current thread is interrupted
      */
-    private void reconnect() throws InterruptedException, IOException {
+    private void reconnect(final SignedState signedState) throws InterruptedException, IOException {
         logger.info(RECONNECT.getMarker(), "Starting synchronization in the role of the sender.");
         statistics.incrementSenderStartTimes();
 
@@ -207,7 +198,7 @@ public class ReconnectTeacher {
                 threadManager,
                 new MerkleDataInputStream(connection.getDis()),
                 new MerkleDataOutputStream(connection.getDos()),
-                signedState.get().getState(),
+                signedState.getState(),
                 connection::disconnect);
 
         synchronizer.synchronize();
@@ -222,19 +213,19 @@ public class ReconnectTeacher {
      *
      * @throws IOException thrown when any I/O related errors occur
      */
-    private void sendSignatures() throws IOException {
+    private void sendSignatures(final SignedState signedState) throws IOException {
         final StringBuilder sb = new StringBuilder();
         sb.append("Sending signatures from nodes ");
-        formattedList(sb, signedState.get().getSigSet().iterator());
+        formattedList(sb, signedState.getSigSet().iterator());
         sb.append(" (signing weight = ")
-                .append(signedState.get().getSigningWeight())
+                .append(signedState.getSigningWeight())
                 .append("/")
-                .append(signedState.get().getAddressBook().getTotalWeight())
+                .append(signedState.getAddressBook().getTotalWeight())
                 .append(") for state hash ")
-                .append(signedState.get().getState().getHash());
+                .append(signedState.getState().getHash());
 
         logger.info(RECONNECT.getMarker(), sb);
-        connection.getDos().writeSerializable(signedState.get().getSigSet(), true);
+        connection.getDos().writeSerializable(signedState.getSigSet(), true);
         connection.getDos().flush();
     }
 }

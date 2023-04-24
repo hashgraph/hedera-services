@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
+
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
@@ -28,7 +30,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public class SignedStateReference {
 
-    private ReservedSignedState reservedSignedState = new ReservedSignedState();
+    private ReservedSignedState reservedSignedState = createNullReservation();
     private final AutoClosableLock lock = Locks.createAutoLock();
 
     /**
@@ -65,7 +67,7 @@ public class SignedStateReference {
 
             reservedSignedState.close();
             reservedSignedState =
-                    signedState == null ? new ReservedSignedState() : new ReservedSignedState(signedState, reason);
+                    signedState == null ? createNullReservation() : new ReservedSignedState(signedState, reason);
         }
     }
 

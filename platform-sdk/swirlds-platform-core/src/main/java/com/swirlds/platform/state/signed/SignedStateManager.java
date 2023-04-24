@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Signature;
@@ -302,7 +303,7 @@ public class SignedStateManager implements SignedStateFinder {
             }
         }
 
-        return new ReservedSignedState();
+        return createNullReservation();
     }
 
     /**

@@ -30,7 +30,7 @@ import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.test.TestPlatformContextFactory;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -85,7 +85,7 @@ public abstract class EventUtils {
         originalState.setPlatformState(platformState);
         platformState.setPlatformData(platformData);
 
-        return new SignedState(TestPlatformContextFactory.build(), originalState, "test", false);
+        return new SignedState(TestPlatformContextBuilder.create().build(), originalState, "test", false);
     }
 
     /**
@@ -101,7 +101,8 @@ public abstract class EventUtils {
         registry.registerConstructables("com.swirlds.platform.state");
         registry.registerConstructables("com.swirlds.common.*");
         final State stateCopy = MerkleSerializeUtils.serializeDeserialize(dir, signedState.getState());
-        final SignedState signedStateCopy = new SignedState(TestPlatformContextFactory.build(), stateCopy, "test");
+        final SignedState signedStateCopy =
+                new SignedState(TestPlatformContextBuilder.create().build(), stateCopy, "test");
         signedStateCopy.setSigSet(signedState.getSigSet());
         return signedStateCopy;
     }

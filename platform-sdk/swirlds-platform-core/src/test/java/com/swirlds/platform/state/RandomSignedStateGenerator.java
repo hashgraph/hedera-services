@@ -32,9 +32,9 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.state.DummySwirldState;
-import com.swirlds.platform.TestPlatformContextFactory;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -199,7 +199,7 @@ public class RandomSignedStateGenerator {
                 .setRoundsNonAncient(roundsNonAncientInstance);
 
         final SignedState signedState = new SignedState(
-                TestPlatformContextFactory.build(),
+                TestPlatformContextBuilder.create().build(),
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
                 freezeStateInstance);

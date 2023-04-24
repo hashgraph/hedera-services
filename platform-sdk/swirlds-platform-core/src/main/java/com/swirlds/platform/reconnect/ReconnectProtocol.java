@@ -50,13 +50,13 @@ public class ReconnectProtocol implements Protocol {
     private ReservedSignedState teacherState;
 
     /**
-     * @param threadManager responsible for creating and managing threads
-     * @param peerId the ID of the peer we are communicating with
-     * @param teacherThrottle restricts reconnects as a teacher
+     * @param threadManager           responsible for creating and managing threads
+     * @param peerId                  the ID of the peer we are communicating with
+     * @param teacherThrottle         restricts reconnects as a teacher
      * @param lastCompleteSignedState provides the latest completely signed state
-     * @param reconnectSocketTimeout the socket timeout to use when executing a reconnect
-     * @param reconnectMetrics tracks reconnect metrics
-     * @param reconnectController controls reconnecting as a learner
+     * @param reconnectSocketTimeout  the socket timeout to use when executing a reconnect
+     * @param reconnectMetrics        tracks reconnect metrics
+     * @param reconnectController     controls reconnecting as a learner
      */
     public ReconnectProtocol(
             final ThreadManager threadManager,
@@ -209,13 +209,12 @@ public class ReconnectProtocol implements Protocol {
             new ReconnectTeacher(
                             threadManager,
                             connection,
-                            teacherState.getAndReserve("ReconnectProtocol.teacher()"),
                             reconnectSocketTimeout,
                             connection.getSelfId().getId(),
                             connection.getOtherId().getId(),
-                            teacherState.get().getRound(),
+                            state.get().getRound(),
                             reconnectMetrics)
-                    .execute();
+                    .execute(state.get());
         } finally {
             teacherThrottle.reconnectAttemptFinished();
         }

@@ -34,7 +34,6 @@ import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.merkle.util.PairedStreams;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.SocketConnection;
-import com.swirlds.platform.TestPlatformContextFactory;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
@@ -43,6 +42,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -129,7 +129,7 @@ final class ReconnectTest {
                             signedState.reserve("test"),
                             new DummyConnection(pairedStreams.getTeacherInput(), pairedStreams.getTeacherOutput()),
                             reconnectMetrics);
-                    sender.execute();
+                    sender.execute(signedState);
                 } catch (final IOException ex) {
                     ex.printStackTrace();
                 }
@@ -165,7 +165,6 @@ final class ReconnectTest {
         return new ReconnectTeacher(
                 getStaticThreadManager(),
                 connection,
-                signedState,
                 RECONNECT_SOCKET_TIMEOUT,
                 selfId,
                 otherId,
@@ -178,7 +177,7 @@ final class ReconnectTest {
         final AddressBook addressBook = buildAddressBook(5);
 
         return new ReconnectLearner(
-                TestPlatformContextFactory.build(),
+                TestPlatformContextBuilder.create().build(),
                 getStaticThreadManager(),
                 connection,
                 addressBook,
