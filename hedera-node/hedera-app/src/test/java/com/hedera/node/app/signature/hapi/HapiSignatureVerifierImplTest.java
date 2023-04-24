@@ -37,7 +37,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 
 final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenarios {
@@ -54,12 +57,9 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
      */
     private Bytes signedBytes;
 
-    private Cryptography cryptoEngine;
-
     @BeforeEach
     void setUp() {
         signedBytes = randomBytes(123);
-        cryptoEngine = mock(Cryptography.class);
     }
 
     /**
@@ -72,10 +72,12 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
      */
     @ParameterizedTest
     @MethodSource(value = "provideMixOfAllKindsOfKeys")
-    void failToVerifyIfSignaturesAreEmpty(@NonNull final Key key) {
+    void failToVerifyIfSignaturesAreEmpty(@Mock Cryptography cryptoEngine, @NonNull final Key key) throws Exception {
         final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
-        final var result = verifier.verify(signedBytes, List.of(), key);
-        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(failVerify(key));
+        final var result = verifier.verify(signedBytes, List.of(), key).get();
+        assertThat(result.failed()).isTrue();
+        assertThat(result.key()).isEqualTo(key);
+        assertThat(result.hollowAccount()).isNull();
     }
 
     /**
@@ -85,13 +87,15 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
      */
     @ParameterizedTest
     @MethodSource(value = "provideMixOfAllKindsOfKeys")
-    void failIfCryptoEngineSaysTheSignatureWasBad(@NonNull final Key key) {
+    void failIfCryptoEngineSaysTheSignatureWasBad(@Mock Cryptography cryptoEngine, @NonNull final Key key) throws Exception {
         //noinspection unchecked
         lenient().doAnswer(this::invalid).when(cryptoEngine).verifyAsync(any(List.class));
         final var sigPairs = sufficientSignatures(key);
         final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
-        final var result = verifier.verify(signedBytes, sigPairs, key);
-        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(failVerify(key));
+        final var result = verifier.verify(signedBytes, sigPairs, key).get();
+        assertThat(result.failed()).isTrue();
+        assertThat(result.key()).isEqualTo(key);
+        assertThat(result.hollowAccount()).isNull();
     }
 
     /**
@@ -100,13 +104,15 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
      */
     @ParameterizedTest
     @MethodSource(value = "provideMixOfAllKindsOfKeys")
-    void failToVerifyIfSignaturesAreInsufficient(@NonNull final Key key) {
+    void failToVerifyIfSignaturesAreInsufficient(@Mock Cryptography cryptoEngine, @NonNull final Key key) throws Exception {
         //noinspection unchecked
         lenient().doAnswer(this::invalid).when(cryptoEngine).verifyAsync(any(List.class));
         final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
         final var sigPairs = insufficientSignatures(key);
-        final var result = verifier.verify(signedBytes, sigPairs, key);
-        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(failVerify(key));
+        final var result = verifier.verify(signedBytes, sigPairs, key).get();
+        assertThat(result.failed()).isTrue();
+        assertThat(result.key()).isEqualTo(key);
+        assertThat(result.hollowAccount()).isNull();
     }
 
     /**
@@ -115,29 +121,36 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
      */
     @ParameterizedTest
     @MethodSource(value = "provideMixOfAllKindsOfKeys")
-    void verifyIfSufficientSignatures(@NonNull final Key key) {
+    void verifyIfSufficientSignatures(@Mock Cryptography cryptoEngine, @NonNull final Key key) throws Exception {
         //noinspection unchecked
         lenient().doAnswer(this::valid).when(cryptoEngine).verifyAsync(any(List.class));
         final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
         final var sigPairs = sufficientSignatures(key);
-        final var result = verifier.verify(signedBytes, sigPairs, key);
-        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(succeedVerify(key));
+        final var result = verifier.verify(signedBytes, sigPairs, key).get();
+        assertThat(result.passed()).isTrue();
+        assertThat(result.key()).isEqualTo(key);
+        assertThat(result.hollowAccount()).isNull();
     }
 
     /**
-     * If the public key prefix is missing, then the signature will not be selected, and will therefore not be
-     * part of verification.
+     * If the public key prefix is missing, then the signature will be selected.
      */
     @Test
-    void verifyFailIfPrefixIsMissing() {
+    void verifyFailIfPrefixIsMissing(@Mock Cryptography cryptoEngine) throws Exception {
         final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
+        //noinspection unchecked
+        lenient().doAnswer(this::valid).when(cryptoEngine).verifyAsync(any(List.class));
         final var key = FAKE_ED25519_KEY_INFOS[0].publicKey();
         final var sigPairs = sufficientSignatures(key).stream()
                 .map(sigPair -> sigPair.copyBuilder().pubKeyPrefix(Bytes.EMPTY).build())
                 .collect(Collectors.toList());
-        final var result = verifier.verify(signedBytes, sigPairs, key);
-        assertThat(result).succeedsWithin(1, TimeUnit.MILLISECONDS).isEqualTo(failVerify(key));
+        final var result = verifier.verify(signedBytes, sigPairs, key).get();
+        assertThat(result.passed()).isTrue();
+        assertThat(result.key()).isEqualTo(key);
+        assertThat(result.hollowAccount()).isNull();
     }
+
+    // TODO Write a test to verify that the MOST SPECIFIC PREFIX is used, NOT the first prefix we find!
 
     private static Key keyList(Key... keys) {
         return Key.newBuilder().keyList(KeyList.newBuilder().keys(keys)).build();

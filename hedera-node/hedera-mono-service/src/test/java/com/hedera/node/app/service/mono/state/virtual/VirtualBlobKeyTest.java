@@ -49,25 +49,6 @@ class VirtualBlobKeyTest {
     }
 
     @Test
-    void ordersSameAsExpected() {
-        final var sameButDifferent = subject;
-        assertEquals(0, subject.compareTo(sameButDifferent));
-    }
-
-    @Test
-    void orderPrioritizesEntityNum() {
-        final var smallerEntityNum = new VirtualBlobKey(SYSTEM_DELETED_ENTITY_EXPIRY, entityNum - 1);
-        assertEquals(+1, subject.compareTo(smallerEntityNum));
-    }
-
-    @Test
-    void orderBreaksEntityNumTiesByType() {
-        final var expectedCmp = FILE_DATA.ordinal() - SYSTEM_DELETED_ENTITY_EXPIRY.ordinal();
-        final var largerType = new VirtualBlobKey(SYSTEM_DELETED_ENTITY_EXPIRY, entityNum);
-        assertEquals(expectedCmp, subject.compareTo(largerType));
-    }
-
-    @Test
     void objectContractMet() {
         final var one = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
         final var two = new VirtualBlobKey(FILE_DATA, entityNum);

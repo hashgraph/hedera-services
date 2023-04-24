@@ -116,7 +116,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         requireNonNull(transactions);
 
         // Used for looking up payer account information.
-        final var accountStore = readableStoreFactory.createAccountStore();
+        final var accountStore = readableStoreFactory.createStore(ReadableAccountStore.class);
 
         // Using the executor service, submit a task for each transaction in the event.
         final var tasks = new ArrayList<WorkItem>(1000); // Some arbitrary number
@@ -204,7 +204,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // implementation pair, with the implementation in `hedera-app`, then we will change the constructor,
             // so I can pass the payer account in directly, since I've already looked it up. But I don't really want
             // that as a public API in the SPI, so for now, we do a double lookup. Boo.
-            context = new PreHandleContext(accountStore, txInfo.txBody());
+            context = new PreHandleContext(storeFactory, txInfo.txBody());
         } catch (PreCheckException preCheck) {
             // This should NEVER happen. The only way an exception is thrown from the PreHandleContext constructor
             // is if the payer account doesn't exist, but by the time we reach this line of code, we already know
@@ -217,7 +217,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         try {
             // FUTURE: First, perform semantic checks on the transaction (TBD)
             // Then gather the signatures from the transaction handler
-            dispatcher.dispatchPreHandle(storeFactory, context);
+            dispatcher.dispatchPreHandle(context);
             // FUTURE: Finally, let the transaction handler do warm up of other state it may want to use later (TBD)
         } catch (PreCheckException preCheck) {
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.

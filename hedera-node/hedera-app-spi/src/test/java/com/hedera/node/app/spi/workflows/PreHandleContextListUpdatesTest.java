@@ -37,6 +37,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.workflows.PreHandleContext.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@SuppressWarnings("removal")
 @ExtendWith(MockitoExtension.class)
 class PreHandleContextListUpdatesTest {
     public static final Key A_COMPLEX_KEY = Key.newBuilder()
@@ -127,7 +129,12 @@ class PreHandleContextListUpdatesTest {
 
         // When we create a PreHandleContext by passing null as either argument
         // Then we get a null pointer exception
-        assertThrows(NullPointerException.class, () -> new PreHandleContext(null, createAccountTransaction()));
+        assertThrows(
+                NullPointerException.class,
+                () -> new PreHandleContext((AccountAccess) null, createAccountTransaction()));
+        assertThrows(
+                NullPointerException.class,
+                () -> new PreHandleContext((ReadableStoreFactory) null, createAccountTransaction()));
         assertThrows(NullPointerException.class, () -> new PreHandleContext(accountAccess, null));
 
         // When we pass null to requireKeyOrThrow for the account ID then we get a PreCheckException
