@@ -28,13 +28,11 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 
 /**
- * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with Tokens.
- *
- * <p>This class is not exported from the module. It is an internal implementation detail.
+ * Default implementation of {@link ReadableTokenStore}.
  */
 public class ReadableTokenStoreImpl implements ReadableTokenStore {
     /** The underlying data storage class that holds the token data. */
@@ -50,6 +48,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
     }
 
     @Override
+    @Nullable
     public TokenMetadata getTokenMeta(@NonNull final TokenID id) throws PreCheckException {
         requireNonNull(id);
         final var token = getTokenLeaf(id.tokenNum());

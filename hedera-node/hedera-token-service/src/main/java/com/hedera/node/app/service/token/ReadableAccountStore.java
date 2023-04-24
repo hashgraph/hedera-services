@@ -18,4 +18,8 @@ package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.accounts.AccountAccess;
 
+/**
+ * Provides read-only methods for interacting with the underlying data storage mechanisms for
+ * working with Accounts.
+ */
 public interface ReadableAccountStore extends AccountAccess {}

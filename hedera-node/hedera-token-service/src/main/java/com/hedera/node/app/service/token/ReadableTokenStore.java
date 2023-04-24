@@ -20,7 +20,13 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Provides read-only methods for interacting with the underlying data storage mechanisms for
+ * working with Tokens.
+ */
 public interface ReadableTokenStore {
 
     /**
@@ -29,16 +35,17 @@ public interface ReadableTokenStore {
      * @param id token id being looked up
      * @return token's metadata
      */
-    TokenMetadata getTokenMeta(TokenID id) throws PreCheckException;
+    @Nullable
+    TokenMetadata getTokenMeta(@NonNull TokenID id) throws PreCheckException;
 
     record TokenMetadata(
-            Key adminKey,
-            Key kycKey,
-            Key wipeKey,
-            Key freezeKey,
-            Key supplyKey,
-            Key feeScheduleKey,
-            Key pauseKey,
+            @Nullable Key adminKey,
+            @Nullable Key kycKey,
+            @Nullable Key wipeKey,
+            @Nullable Key freezeKey,
+            @Nullable Key supplyKey,
+            @Nullable Key feeScheduleKey,
+            @Nullable Key pauseKey,
             boolean hasRoyaltyWithFallback,
             long treasuryNum) {
         public boolean hasAdminKey() {
