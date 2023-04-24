@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.components;
 
-import com.swirlds.common.utility.Startable;
-import com.swirlds.common.utility.Stoppable;
+import com.swirlds.base.state.Startable;
+import com.swirlds.base.state.Stoppable;
 
 /**
- * A component that represents a core responsibility of the platform. Platform components interact with each
- * other via these formal interfaces.
+ * A component that represents a core responsibility of the platform. Platform components interact with each other via
+ * these formal interfaces.
  */
 public interface PlatformComponent extends Startable, Stoppable {
 
@@ -37,6 +37,7 @@ public interface PlatformComponent extends Startable, Stoppable {
      * Starts the platform component. This method must be called after the component construction. The component may not
      * be functional until {@link #start()} has completed. Components should not start threads outside of this method.
      */
+    @Override
     default void start() {}
 
     /**
@@ -46,5 +47,6 @@ public interface PlatformComponent extends Startable, Stoppable {
      * started again. This method is intended for use in unit testing where threads should not live beyond the scope of
      * the test.
      */
+    @Override
     default void stop() {}
 }

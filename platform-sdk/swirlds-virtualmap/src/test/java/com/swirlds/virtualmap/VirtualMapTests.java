@@ -34,8 +34,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
