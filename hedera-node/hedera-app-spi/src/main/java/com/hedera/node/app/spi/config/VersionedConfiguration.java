@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,17 @@
 
 package com.hedera.node.app.spi.config;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
-import java.util.Set;
+import com.swirlds.config.api.Configuration;
 
 /**
- * This class contains the properties that are part of the {@code GlobalStaticProperties} class in the mono-service
- * module.
+ * An interface that extends the {@link Configuration} interface with a version.
  */
-public record GlobalConfig(Set<HederaFunctionality> workflowsEnabled) {}
+public interface VersionedConfiguration extends Configuration {
+
+    /**
+     * Returns the version of the configuration.
+     *
+     * @return the version of the configuration
+     */
+    long getVersion();
+}
