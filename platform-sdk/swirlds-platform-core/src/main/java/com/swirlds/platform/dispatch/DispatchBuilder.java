@@ -18,9 +18,9 @@ package com.swirlds.platform.dispatch;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
-import com.swirlds.common.Mutable;
-import com.swirlds.common.exceptions.MutabilityException;
-import com.swirlds.common.utility.Startable;
+import com.swirlds.base.state.MutabilityException;
+import com.swirlds.base.state.Mutable;
+import com.swirlds.base.state.Startable;
 import com.swirlds.platform.dispatch.flowchart.DispatchFlowchart;
 import com.swirlds.platform.dispatch.types.TriggerEight;
 import com.swirlds.platform.dispatch.types.TriggerFive;
@@ -109,7 +109,7 @@ public class DispatchBuilder implements Mutable, Startable {
      * @param <TRIGGER_CLASS>
      * 		a specific trigger type, should inherit from the BASE_INTERFACE
      * @return this object
-     * @throws com.swirlds.common.exceptions.MutabilityException
+     * @throws MutabilityException
      * 		if called after {@link #start()}
      */
     public <BASE_INTERFACE extends Trigger<BASE_INTERFACE>, TRIGGER_CLASS extends BASE_INTERFACE>
@@ -150,7 +150,7 @@ public class DispatchBuilder implements Mutable, Startable {
      * @param <TRIGGER_CLASS>
      * 		a specific trigger type, should inherit from the BASE_INTERFACE
      * @return this object
-     * @throws com.swirlds.common.exceptions.MutabilityException
+     * @throws MutabilityException
      * 		if called after {@link #start()}
      */
     public <BASE_INTERFACE extends Trigger<BASE_INTERFACE>, TRIGGER_CLASS extends BASE_INTERFACE>

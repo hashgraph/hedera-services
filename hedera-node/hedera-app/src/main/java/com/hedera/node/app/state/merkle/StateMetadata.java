@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param <K> The type of the state key
  * @param <V> The type of the state value
  */
-public final class StateMetadata<K extends Comparable<? super K>, V> {
+public final class StateMetadata<K, V> {
     // The application framework reuses the same merkle nodes for different types of encoded data.
     // When written to saved state, the type of data is determined with a "class ID", which is just
     // a long. When a saved state is deserialized, the platform will read the "class ID" and then

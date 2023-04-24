@@ -24,13 +24,14 @@ import com.swirlds.config.api.ConfigProperty;
  *
  * @param softwareVersion
  * 		The integer value of the software version of the AddressBookTestingToolMain SwirldMain application.
- * @param stakingBehavior
- *      The integer value of the staking behavior of the AddressBookTestingToolState SwirldState.
+ * @param weightingBehavior
+ *      The integer value of the weighting behavior of the AddressBookTestingToolState SwirldState.
  * @param testScenario
- *     The integer value of the test scenario being run for validation.
+ *     The string value of the test scenario being run for validation. This must match an enumerated value in {@link AddressBookTestScenario}.
  */
 @ConfigData("addressBookTestingTool")
 public record AddressBookTestingToolConfig(
         @ConfigProperty(defaultValue = "1") int softwareVersion,
-        @ConfigProperty(defaultValue = "0") int stakingBehavior,
-        @ConfigProperty(defaultValue = "0") int testScenario) {}
+        @ConfigProperty(defaultValue = "0") int weightingBehavior,
+        // The testScenario should be updated to be an enumerated type in the future instead of a string.
+        @ConfigProperty(defaultValue = "SKIP_VALIDATION") String testScenario) {}
