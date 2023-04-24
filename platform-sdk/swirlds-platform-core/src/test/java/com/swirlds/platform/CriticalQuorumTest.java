@@ -20,6 +20,7 @@ import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -72,7 +73,7 @@ class CriticalQuorumTest {
      */
     private static EventImpl buildSimpleEvent(final long creatorId, final long roundCreated) {
         final BaseEventHashedData baseEventHashedData =
-                new BaseEventHashedData(creatorId, 0, 0, (byte[]) null, null, null, null);
+                new BaseEventHashedData(new BasicSoftwareVersion(1), creatorId, 0, 0, (byte[]) null, null, null, null);
 
         final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData();
 
