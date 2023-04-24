@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,17 @@ class RecordStreamingUtilsTest {
 
         assertEquals(6, recordFilePair.getLeft());
         assertTrue(recordFilePair.getRight().isPresent());
+    }
+
+    @Test
+    void filteringWorksForOrderedRecordFiles() throws IOException {
+        final var filteredFiles =
+                RecordStreamingUtils.orderedRecordFilesFrom(
+                                "src/test/resources/multipleRecords/", file -> file.contains("3Z"))
+                        .stream()
+                        .map(f -> Paths.get(f).getFileName().toString())
+                        .toList();
+        assertEquals(List.of("2023-04-18T14_08_20.465612003Z.rcd.gz"), filteredFiles);
     }
 
     @Test
