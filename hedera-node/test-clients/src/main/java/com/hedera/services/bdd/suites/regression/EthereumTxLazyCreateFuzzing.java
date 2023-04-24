@@ -50,7 +50,7 @@ public class EthereumTxLazyCreateFuzzing extends HapiSuite {
 
     private HapiSpec ethereumTransactionLazyCreateFuzzing() {
 
-        return propertyPreservingHapiSpec("EthereumTransactionLazyCreate")
+        return propertyPreservingHapiSpec("EthereumTransactionLazyCreateFuzzing")
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(initOperations())
                 .when()

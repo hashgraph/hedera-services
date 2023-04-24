@@ -43,10 +43,24 @@ public class EvmAddressFuzzingFactory {
 
     private EvmAddressFuzzingFactory() {}
 
+    /**
+     * Initialization operations:
+     * override Ethereum network config (CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP, V_0_34)
+     * initiate key name for signing the Ethereum Transaction (SECP_256K1_SOURCE_KEY)
+     * create account for paying the Ethereum Transaction (RELAYER).
+     * transfer ONE_HUNDRED_HBARS to SECP_256K1_SOURCE_KEY for signing the transaction
+     *
+     * @return array of the initialization operations
+     */
     public static HapiSpecOperation[] initOperations() {
         return new HapiSpecOperation[] {
             overridingThree(
-                    CHAIN_ID_PROP, "298", LAZY_CREATE_PROPERTY_NAME, "true", CONTRACTS_EVM_VERSION_PROP, V_0_34),
+                    CHAIN_ID_PROP,
+                    "298",
+                    LAZY_CREATE_PROPERTY_NAME,
+                    "true",
+                    CONTRACTS_EVM_VERSION_PROP,
+                    V_0_34),
             newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
             cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS).withRecharging(),
             cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
@@ -54,6 +68,12 @@ public class EvmAddressFuzzingFactory {
         };
     }
 
+    /**
+     * Testing Lazy Create with random EVM addresses.
+     * Operation: creation of random evm addresses and sending hbars through Ethereum Transaction (Lazy Create)
+     *
+     * @param resource config
+     */
     public static Function<HapiSpec, OpProvider> evmAddressFuzzing(final String resource) {
         return spec -> {
             final var props = RegressionProviderFactory.propsFrom(resource);
