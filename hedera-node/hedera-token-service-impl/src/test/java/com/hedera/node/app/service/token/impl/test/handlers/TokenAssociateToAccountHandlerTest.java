@@ -29,8 +29,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +42,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithKnownTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(1, context.requiredNonPayerKeys().size());
@@ -53,7 +53,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithSelfPaidKnownTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(0, context.requiredNonPayerKeys().size());
@@ -63,7 +63,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithCustomPaidKnownTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(1, context.requiredNonPayerKeys().size());
@@ -74,7 +74,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithImmutableTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
@@ -82,7 +82,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithMissingTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_MISSING_TARGET);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 }
