@@ -44,8 +44,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context)
-            throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenGrantKycOrThrow();
         final var tokenStore = context.createStore(ReadableTokenStore.class);

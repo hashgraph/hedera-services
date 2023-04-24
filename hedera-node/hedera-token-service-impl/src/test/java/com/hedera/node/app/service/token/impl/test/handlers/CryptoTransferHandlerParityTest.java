@@ -112,8 +112,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -141,8 +140,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
@@ -150,8 +148,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -169,8 +166,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
@@ -178,8 +174,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
@@ -187,8 +182,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
@@ -225,8 +219,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -281,8 +274,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -381,8 +373,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), INVALID_TOKEN_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
     }
 
     @Test
@@ -390,8 +381,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -399,8 +389,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test

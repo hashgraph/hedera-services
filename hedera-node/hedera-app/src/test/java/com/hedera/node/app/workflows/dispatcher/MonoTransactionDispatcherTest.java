@@ -396,27 +396,24 @@ class MonoTransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new MonoTransactionDispatcher(
-                handleContext, txnCtx, handlers, dynamicProperties, usageLimits);
+        dispatcher = new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, usageLimits);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(
-                null, txnCtx, handlers, dynamicProperties, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(null, txnCtx, handlers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(
-                handleContext, null, handlers, dynamicProperties, usageLimits))
+        assertThatThrownBy(() ->
+                        new MonoTransactionDispatcher(handleContext, null, handlers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(
-                handleContext, txnCtx, null, dynamicProperties, usageLimits))
+        assertThatThrownBy(() ->
+                        new MonoTransactionDispatcher(handleContext, txnCtx, null, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(
-                handleContext, txnCtx, handlers, null, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, null, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(
-                handleContext, txnCtx, handlers, dynamicProperties, null))
+        assertThatThrownBy(
+                        () -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -507,7 +504,7 @@ class MonoTransactionDispatcherTest {
 
     @Test
     void dispatchesSubmitMessageAsExpected() {
-        final var newRunningHash = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        final var newRunningHash = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         final var submitBuilder = mock(SubmitMessageRecordBuilder.class);
 
         given(consensusSubmitMessageHandler.newRecordBuilder()).willReturn(submitBuilder);
@@ -519,10 +516,10 @@ class MonoTransactionDispatcherTest {
         given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
 
         doAnswer(invocation -> {
-            final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
-            builder.setNewTopicMetadata(newRunningHash, 2, 3L);
-            return null;
-        })
+                    final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
+                    builder.setNewTopicMetadata(newRunningHash, 2, 3L);
+                    return null;
+                })
                 .when(consensusSubmitMessageHandler)
                 .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any(), any());
 
@@ -562,14 +559,14 @@ class MonoTransactionDispatcherTest {
     @Test
     void cannotDispatchUnsupportedOperations() {
         assertThatThrownBy(() -> dispatcher.dispatchHandle(
-                HederaFunctionality.CRYPTO_TRANSFER, transactionBody, writableStoreFactory))
+                        HederaFunctionality.CRYPTO_TRANSFER, transactionBody, writableStoreFactory))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @ParameterizedTest
     @MethodSource("getDispatchParameters")
-    void testPreHandleDispatch(final TransactionBody txBody,
-            final Function<TransactionHandlers, TransactionHandler> handlerProvider)
+    void testPreHandleDispatch(
+            final TransactionBody txBody, final Function<TransactionHandlers, TransactionHandler> handlerProvider)
             throws PreCheckException {
         // given
         final var context = new PreHandleContextImpl(readableStoreFactory, txBody);
@@ -581,7 +578,6 @@ class MonoTransactionDispatcherTest {
         // then
         verify(handler).preHandle(context);
     }
-
 
     private static Stream<Arguments> getDispatchParameters() {
         return Stream.of(
@@ -610,22 +606,26 @@ class MonoTransactionDispatcherTest {
                         TransactionBody.newBuilder()
                                 .cryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::cryptoApproveAllowanceHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::cryptoApproveAllowanceHandler),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .cryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::cryptoDeleteAllowanceHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::cryptoDeleteAllowanceHandler),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .cryptoAddLiveHash(CryptoAddLiveHashTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::cryptoAddLiveHashHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::cryptoAddLiveHashHandler),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .cryptoDeleteLiveHash(CryptoDeleteLiveHashTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::cryptoDeleteLiveHashHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::cryptoDeleteLiveHashHandler),
 
                 // token
                 Arguments.of(
@@ -657,42 +657,50 @@ class MonoTransactionDispatcherTest {
                         TransactionBody.newBuilder()
                                 .tokenWipe(TokenWipeAccountTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::tokenAccountWipeHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::tokenAccountWipeHandler),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .tokenFreeze(TokenFreezeAccountTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::tokenFreezeAccountHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::tokenFreezeAccountHandler),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .tokenUnfreeze(TokenUnfreezeAccountTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::tokenUnfreezeAccountHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::tokenUnfreezeAccountHandler),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .tokenGrantKyc(TokenGrantKycTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::tokenGrantKycToAccountHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::tokenGrantKycToAccountHandler),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .tokenRevokeKyc(TokenRevokeKycTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::tokenRevokeKycFromAccountHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::tokenRevokeKycFromAccountHandler),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .tokenAssociate(TokenAssociateTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::tokenAssociateToAccountHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::tokenAssociateToAccountHandler),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .tokenDissociate(TokenDissociateTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::tokenDissociateFromAccountHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::tokenDissociateFromAccountHandler),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .tokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::tokenFeeScheduleUpdateHandler),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::tokenFeeScheduleUpdateHandler),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .tokenPause(TokenPauseTransactionBody.DEFAULT)
@@ -704,7 +712,6 @@ class MonoTransactionDispatcherTest {
                                 .build(),
                         (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::tokenUnpauseHandler));
     }
-
 
     @ParameterizedTest
     @MethodSource("getDispatchParametersOld")
@@ -739,14 +746,14 @@ class MonoTransactionDispatcherTest {
                         TransactionBody.newBuilder()
                                 .consensusDeleteTopic(ConsensusDeleteTopicTransactionBody.DEFAULT)
                                 .build(),
-                        (DispatchToHandler) (handlers, meta) -> verify(handlers.consensusDeleteTopicHandler())
-                                .preHandle(eq(meta), any())),
+                        (DispatchToHandler) (handlers, meta) ->
+                                verify(handlers.consensusDeleteTopicHandler()).preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
                                 .build(),
-                        (DispatchToHandler) (handlers, meta) -> verify(handlers.consensusSubmitMessageHandler())
-                                .preHandle(eq(meta), any())),
+                        (DispatchToHandler) (handlers, meta) ->
+                                verify(handlers.consensusSubmitMessageHandler()).preHandle(eq(meta), any())),
 
                 // contract
                 Arguments.of(
@@ -777,8 +784,8 @@ class MonoTransactionDispatcherTest {
                         TransactionBody.newBuilder()
                                 .ethereumTransaction(EthereumTransactionBody.DEFAULT)
                                 .build(),
-                        (DispatchToHandler) (handlers, meta) -> verify(handlers.etherumTransactionHandler())
-                                .preHandle(meta)),
+                        (DispatchToHandler) (handlers, meta) ->
+                                verify(handlers.etherumTransactionHandler()).preHandle(meta)),
 
                 // file
                 Arguments.of(
@@ -819,8 +826,8 @@ class MonoTransactionDispatcherTest {
                         TransactionBody.newBuilder()
                                 .uncheckedSubmit(UncheckedSubmitBody.DEFAULT)
                                 .build(),
-                        (DispatchToHandler) (handlers, meta) -> verify(handlers.networkUncheckedSubmitHandler())
-                                .preHandle(meta)),
+                        (DispatchToHandler) (handlers, meta) ->
+                                verify(handlers.networkUncheckedSubmitHandler()).preHandle(meta)),
 
                 // schedule
                 Arguments.of(
@@ -863,32 +870,32 @@ class MonoTransactionDispatcherTest {
                                         .contractID(ContractID.DEFAULT)
                                         .build())
                                 .build(),
-                        (DispatchToHandler) (handlers, meta) -> verify(handlers.contractSystemDeleteHandler())
-                                .preHandle(meta)),
+                        (DispatchToHandler) (handlers, meta) ->
+                                verify(handlers.contractSystemDeleteHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .systemDelete(SystemDeleteTransactionBody.newBuilder()
                                         .fileID(FileID.DEFAULT)
                                         .build())
                                 .build(),
-                        (DispatchToHandler) (handlers, meta) -> verify(handlers.fileSystemDeleteHandler())
-                                .preHandle(meta)),
+                        (DispatchToHandler) (handlers, meta) ->
+                                verify(handlers.fileSystemDeleteHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .systemUndelete(SystemUndeleteTransactionBody.newBuilder()
                                         .contractID(ContractID.DEFAULT)
                                         .build())
                                 .build(),
-                        (DispatchToHandler) (handlers, meta) -> verify(handlers.contractSystemUndeleteHandler())
-                                .preHandle(meta)),
+                        (DispatchToHandler) (handlers, meta) ->
+                                verify(handlers.contractSystemUndeleteHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .systemUndelete(SystemUndeleteTransactionBody.newBuilder()
                                         .fileID(FileID.DEFAULT)
                                         .build())
                                 .build(),
-                        (DispatchToHandler) (handlers, meta) -> verify(handlers.fileSystemUndeleteHandler())
-                                .preHandle(meta)));
+                        (DispatchToHandler) (handlers, meta) ->
+                                verify(handlers.fileSystemUndeleteHandler()).preHandle(meta)));
     }
 
     private interface DispatchToHandler {

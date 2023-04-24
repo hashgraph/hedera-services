@@ -41,8 +41,7 @@ public class TokenDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context)
-            throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenDeletionOrThrow();
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);

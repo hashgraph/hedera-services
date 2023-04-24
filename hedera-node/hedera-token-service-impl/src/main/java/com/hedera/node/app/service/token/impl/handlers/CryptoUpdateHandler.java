@@ -51,8 +51,7 @@ public class CryptoUpdateHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context)
-            throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         requireNonNull(waivers);
         final var txn = context.body();

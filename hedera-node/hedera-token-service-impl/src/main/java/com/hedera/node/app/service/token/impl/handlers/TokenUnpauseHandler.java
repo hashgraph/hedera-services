@@ -45,8 +45,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    public void preHandle(@NonNull final PreHandleContext context)
-            throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
 
         preCheck(context);

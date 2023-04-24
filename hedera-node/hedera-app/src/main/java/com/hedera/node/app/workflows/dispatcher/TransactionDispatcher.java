@@ -173,8 +173,10 @@ public class TransactionDispatcher {
             case TOKEN_GRANT_KYC -> handlers.tokenGrantKycToAccountHandler().preHandle(context);
             case TOKEN_REVOKE_KYC -> handlers.tokenRevokeKycFromAccountHandler().preHandle(context);
             case TOKEN_ASSOCIATE -> handlers.tokenAssociateToAccountHandler().preHandle(context);
-            case TOKEN_DISSOCIATE -> handlers.tokenDissociateFromAccountHandler().preHandle(context);
-            case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler().preHandle(context);
+            case TOKEN_DISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
+                    .preHandle(context);
+            case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
+                    .preHandle(context);
             case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(context);
             case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(context);
 
