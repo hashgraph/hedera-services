@@ -594,7 +594,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     public synchronized void setPayloadConfig(final FCMConfig fcmConfig) {
         expectedFCMFamily.setNodeId(platform.getSelfId().getId());
         expectedFCMFamily.setFcmConfig(fcmConfig);
-        expectedFCMFamily.setStakedNodeNum(platform.getAddressBook().getNumberWithStake());
+        expectedFCMFamily.setWeightedNodeNum(platform.getAddressBook().getNumberWithWeight());
 
         referenceNftLedger.setFractionToTrack(this.getNftLedger(), fcmConfig.getNftTrackingFraction());
     }
@@ -617,7 +617,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.controlQuorum = new QuorumTriggeredAction<>(
                 () -> platform.getSelfId().getId(),
                 platform.getAddressBook()::getSize,
-                platform.getAddressBook()::getNumberWithStake,
+                platform.getAddressBook()::getNumberWithWeight,
                 action);
 
         this.exceptionRateLimiter = new ThresholdLimitingHandler<>(EXCEPTION_RATE_THRESHOLD);
@@ -1235,7 +1235,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         }
 
         expectedFCMFamily.setNodeId(platform.getSelfId().getId());
-        expectedFCMFamily.setStakedNodeNum(platform.getAddressBook().getNumberWithStake());
+        expectedFCMFamily.setWeightedNodeNum(platform.getAddressBook().getNumberWithWeight());
 
         // initialize data structures used for FCQueue transaction records expiration
         initializeExpirationQueueAndAccountsSet();

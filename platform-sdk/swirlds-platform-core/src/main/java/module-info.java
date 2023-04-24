@@ -122,8 +122,8 @@ module com.swirlds.platform {
     exports com.swirlds.platform.sync.protocol;
 
     /* Swirlds Libraries */
-    requires transitive com.swirlds.common;
     requires com.swirlds.base;
+    requires transitive com.swirlds.common;
     requires com.swirlds.common.test;
     requires com.swirlds.test.framework;
     requires com.swirlds.logging;

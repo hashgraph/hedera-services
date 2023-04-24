@@ -78,7 +78,6 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
-import com.swirlds.common.utility.Startable;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
@@ -463,7 +462,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
 
-        DispatchBuilder dispatchBuilder =
+        final DispatchBuilder dispatchBuilder =
                 new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
         components = new PlatformComponents(dispatchBuilder);
@@ -618,6 +617,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @return this platform's instance number
      */
+    @Override
     public int getInstanceNumber() {
         return instanceNumber;
     }
@@ -763,7 +763,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
          * The previous version of the software that was run. Null if this is the first time running, or if the previous
          * version ran before the concept of application software versioning was introduced.
          */
-        SoftwareVersion previousSoftwareVersion = signedStateFromDisk
+        final SoftwareVersion previousSoftwareVersion = signedStateFromDisk
                 .getState()
                 .getPlatformState()
                 .getPlatformData()
@@ -928,9 +928,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * First part of initialization. This was split up so that appMain.init() could be called before
-     * {@link StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete
-     * parts.
+     * First part of initialization. This was split up so that appMain.init() could be called before {@link
+     * StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete parts.
      */
     private void init(final LoadedState loadedState, final Supplier<SwirldState> genesisStateBuilder) {
 
@@ -2025,6 +2024,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @return AddressBook
      */
+    @Override
     public AddressBook getAddressBook() {
         return initialAddressBook;
     }

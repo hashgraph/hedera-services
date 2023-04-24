@@ -56,7 +56,9 @@ public class TokenAccountWipeHandler implements TransactionHandler {
         final var op = context.body().tokenWipeOrThrow();
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        tokenMeta.wipeKey().ifPresent(context::requireKey);
+        if (tokenMeta.hasWipeKey()) {
+            context.requireKey(tokenMeta.wipeKey());
+        }
     }
 
     /**

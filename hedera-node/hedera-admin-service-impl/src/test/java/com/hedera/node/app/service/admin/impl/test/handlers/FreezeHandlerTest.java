@@ -26,7 +26,6 @@ import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
@@ -38,12 +37,11 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -68,17 +66,14 @@ class FreezeHandlerTest {
     private final Key key = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
-    private final HederaKey nonAdminKey = asHederaKey(key).get();
-
     private final AccountID nonAdminAccount =
             AccountID.newBuilder().accountNum(9999L).build();
-
     private final FreezeHandler subject = new FreezeHandler();
 
     @BeforeEach
     void setUp() {
         given(keyLookup.getAccountById(nonAdminAccount)).willReturn(account);
-        given(account.getKey()).willReturn(nonAdminKey);
+        given(account.key()).willReturn(key);
     }
 
     @Test

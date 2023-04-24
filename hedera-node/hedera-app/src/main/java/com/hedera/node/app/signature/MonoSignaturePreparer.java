@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -36,6 +35,7 @@ import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -99,16 +99,18 @@ public class MonoSignaturePreparer implements SignaturePreparer {
     }
 
     @Override
-    public ResponseCodeEnum syncGetPayerSigStatus(final @NonNull Transaction transaction) {
+    public void syncGetPayerSigStatus(final @NonNull Transaction transaction) throws PreCheckException {
         try {
             final var accessor = SignedTxnAccessor.uncheckedFrom(transaction);
-            return precheckVerifier.hasNecessarySignatures(accessor) ? OK : INVALID_SIGNATURE;
+            if (!precheckVerifier.hasNecessarySignatures(accessor)) {
+                throw new PreCheckException(INVALID_SIGNATURE);
+            }
         } catch (final KeyPrefixMismatchException ignore) {
-            return KEY_PREFIX_MISMATCH;
+            throw new PreCheckException(KEY_PREFIX_MISMATCH);
         } catch (final InvalidAccountIDException ignore) {
-            return INVALID_ACCOUNT_ID;
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
         } catch (final Exception ignore) {
-            return INVALID_SIGNATURE;
+            throw new PreCheckException(INVALID_SIGNATURE);
         }
     }
 

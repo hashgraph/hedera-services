@@ -48,7 +48,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
 
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
-            .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+            .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
             .setSequentialIds(true)
             .build();
 

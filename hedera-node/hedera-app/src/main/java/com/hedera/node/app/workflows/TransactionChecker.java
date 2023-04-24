@@ -134,25 +134,23 @@ public class TransactionChecker {
     }
 
     /**
-     * Parse the given {@link Bytes} into a transaction, and check its validity.
+     * Parse the given {@link Bytes} into a transaction.
      *
      * <p>After verifying that the number of bytes comprising the transaction does not exceed the maximum allowed, the
-     * transaction is parsed and checked. See {@link #check(Transaction)} for details on the checks
-     * performed.
+     * transaction is parsed. A transaction can be checked with {@link #check(Transaction)}.
      *
      * @param buffer the {@code ByteBuffer} with the serialized transaction
      * @return an {@link TransactionInfo} with the parsed and checked entities
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionInfo parseAndCheck(@NonNull final Bytes buffer) throws PreCheckException {
+    public Transaction parse(@NonNull final Bytes buffer) throws PreCheckException {
         // Fail fast if there are too many transaction bytes
         if (buffer.length() > maxSignedTxnSize) {
             throw new PreCheckException(TRANSACTION_OVERSIZE);
         }
 
-        final var tx = parseStrict(buffer.toReadableSequentialData(), Transaction.PROTOBUF, INVALID_TRANSACTION);
-        return check(tx);
+        return parseStrict(buffer.toReadableSequentialData(), Transaction.PROTOBUF, INVALID_TRANSACTION);
     }
 
     /**

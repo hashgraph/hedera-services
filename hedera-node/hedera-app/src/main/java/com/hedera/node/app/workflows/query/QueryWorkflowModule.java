@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.query;
 
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.MonoFeeAccumulator;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
@@ -27,8 +28,6 @@ import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
 import com.hedera.node.app.service.token.impl.components.TokenComponent;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.MonoThrottleAccumulator;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -42,15 +41,11 @@ import javax.inject.Singleton;
 /**
  * Module for Query processing.
  */
-@Module
+@Module(subcomponents = {QueryComponent.class})
 public interface QueryWorkflowModule {
     @Binds
     @Singleton
     QueryWorkflow bindQueryWorkflow(QueryWorkflowImpl queryWorkflow);
-
-    @Binds
-    @Singleton
-    ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
 
     @Binds
     @Singleton

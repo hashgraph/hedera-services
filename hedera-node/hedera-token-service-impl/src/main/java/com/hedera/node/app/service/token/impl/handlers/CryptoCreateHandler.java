@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -49,10 +48,9 @@ public class CryptoCreateHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.body().cryptoCreateAccountOrThrow();
         if (op.hasKey()) {
-            final var key = asHederaKey(op.keyOrThrow());
             final var receiverSigReq = op.receiverSigRequired();
-            if (receiverSigReq && key.isPresent()) {
-                context.requireKey(key.get());
+            if (receiverSigReq && op.hasKey()) {
+                context.requireKey(op.keyOrThrow());
             }
         }
     }

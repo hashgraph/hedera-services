@@ -20,9 +20,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler.noThrowSha384HashOf;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.AdapterUtils.PARITY_DEFAULT_PAYER;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusCreateTopicHandlerTest.ACCOUNT_ID_3;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.newTopicMeta;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
@@ -55,10 +55,8 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
-import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -115,7 +113,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        final var expectedHederaAdminKey = Utils.asHederaKey(SIMPLE_KEY_A).orElseThrow();
+        final var expectedHederaAdminKey = SIMPLE_KEY_A;
         assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(expectedHederaAdminKey);
     }
 
@@ -170,8 +168,9 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         @Test
         void getsConsensusSubmitMessageWithSubmitKey() throws PreCheckException {
             final var txn = CONSENSUS_SUBMIT_MESSAGE_SCENARIO.pbjTxnBody();
+            final var key = A_COMPLEX_KEY;
 
-            var topicMeta = newTopicMeta(A_NONNULL_KEY);
+            var topicMeta = newTopicMeta(key);
             given(readableStore.getTopicMetadata(notNull())).willReturn(topicMeta);
             final var context = new PreHandleContext(keyLookup, txn);
 
@@ -180,7 +179,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
             // then:
             ConsensusTestUtils.assertDefaultPayer(context);
-            Assertions.assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(A_NONNULL_KEY));
+            Assertions.assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(key));
         }
 
         @Test
@@ -350,7 +349,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
     /* ----------------- Helper Methods ------------------- */
 
-    private HederaKey mockPayerLookup() throws PreCheckException {
+    private Key mockPayerLookup() throws PreCheckException {
         return ConsensusTestUtils.mockPayerLookup(A_COMPLEX_KEY, PARITY_DEFAULT_PAYER, keyLookup);
     }
 
@@ -358,7 +357,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         ConsensusTestUtils.mockTopicLookup(null, submitKey, readableStore);
     }
 
-    private static ReadableTopicStore.TopicMetadata newTopicMeta(HederaKey submit) {
+    private static ReadableTopicStore.TopicMetadata newTopicMeta(Key submit) {
         return ConsensusTestUtils.newTopicMeta(null, submit);
     }
 

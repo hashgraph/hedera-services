@@ -24,9 +24,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.DisplayName;
@@ -68,7 +68,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
         basicMetaAssertions(context, 1);
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(autoRenewHederaKey);
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(autoRenewKey);
     }
 
     @Test
@@ -109,7 +109,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
             if (!autoRenewId.equals(asAccount("0.0.0"))) {
                 final var autoRenewAccount = mock(Account.class);
                 given(keyLookup.getAccountById(autoRenewId)).willReturn(autoRenewAccount);
-                given(autoRenewAccount.getKey()).willReturn(autoRenewHederaKey);
+                given(autoRenewAccount.key()).willReturn(autoRenewKey);
             }
             createTxnBody.autoRenewAccountId(autoRenewId);
         }

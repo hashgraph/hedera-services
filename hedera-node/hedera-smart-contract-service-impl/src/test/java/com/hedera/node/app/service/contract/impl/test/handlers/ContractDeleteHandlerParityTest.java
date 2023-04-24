@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static com.hedera.test.factories.scenarios.ContractCreateScenarios.DILIGENT_SIGNING_PAYER_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.MISC_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.RECEIVER_SIG_KT;
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_IMMUTABLE_SCENARIO;
@@ -30,7 +29,6 @@ import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRA
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_XFER_CONTRACT_SCENARIO;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -65,9 +63,9 @@ class ContractDeleteHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.requiredNonPayerKeys()))
-                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys())
+                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey());
     }
 
     @Test
@@ -90,9 +88,8 @@ class ContractDeleteHandlerParityTest {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.requiredNonPayerKeys()))
-                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asKey(), DILIGENT_SIGNING_PAYER_KT.asKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(MISC_ADMIN_KT.asPbjKey());
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

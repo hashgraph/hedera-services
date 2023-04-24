@@ -22,10 +22,10 @@ import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -35,7 +35,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransferList;
@@ -44,17 +43,12 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.spi.info.CurrentPlatformStatus;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.system.PlatformStatus;
 import java.util.List;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,15 +57,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class QueryCheckerTest {
-
-    @Mock
-    private NodeInfo nodeInfo;
-
-    @Mock(strictness = LENIENT)
-    private CurrentPlatformStatus currentPlatformStatus;
-
-    @Mock
-    private TransactionChecker transactionChecker;
 
     @Mock
     private HederaAccountNumbers accountNumbers;
@@ -89,123 +74,20 @@ class QueryCheckerTest {
 
     @BeforeEach
     void setup() {
-        when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
-
-        checker = new QueryChecker(
-                nodeInfo,
-                currentPlatformStatus,
-                transactionChecker,
-                accountNumbers,
-                queryFeeCheck,
-                authorizer,
-                cryptoTransferHandler);
+        checker = new QueryChecker(accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
-        assertThatThrownBy(() -> new QueryChecker(
-                        null,
-                        currentPlatformStatus,
-                        transactionChecker,
-                        accountNumbers,
-                        queryFeeCheck,
-                        authorizer,
-                        cryptoTransferHandler))
+        assertThatThrownBy(() -> new QueryChecker(null, queryFeeCheck, authorizer, cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        nodeInfo,
-                        null,
-                        transactionChecker,
-                        accountNumbers,
-                        queryFeeCheck,
-                        authorizer,
-                        cryptoTransferHandler))
+        assertThatThrownBy(() -> new QueryChecker(accountNumbers, null, authorizer, cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        null,
-                        accountNumbers,
-                        queryFeeCheck,
-                        authorizer,
-                        cryptoTransferHandler))
+        assertThatThrownBy(() -> new QueryChecker(accountNumbers, queryFeeCheck, null, cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        transactionChecker,
-                        null,
-                        queryFeeCheck,
-                        authorizer,
-                        cryptoTransferHandler))
+        assertThatThrownBy(() -> new QueryChecker(accountNumbers, queryFeeCheck, authorizer, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        transactionChecker,
-                        accountNumbers,
-                        null,
-                        authorizer,
-                        cryptoTransferHandler))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        transactionChecker,
-                        accountNumbers,
-                        queryFeeCheck,
-                        null,
-                        cryptoTransferHandler))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        transactionChecker,
-                        accountNumbers,
-                        queryFeeCheck,
-                        authorizer,
-                        null))
-                .isInstanceOf(NullPointerException.class);
-    }
-
-    @Test
-    void testNodeStateSucceeds() {
-        assertThatCode(() -> checker.checkNodeState()).doesNotThrowAnyException();
-    }
-
-    @Test
-    void testZeroStakeNodeFails(@Mock NodeInfo localNodeInfo) {
-        // given
-        when(localNodeInfo.isSelfZeroStake()).thenReturn(true);
-        checker = new QueryChecker(
-                localNodeInfo,
-                currentPlatformStatus,
-                transactionChecker,
-                accountNumbers,
-                queryFeeCheck,
-                authorizer,
-                cryptoTransferHandler);
-
-        // then
-        assertThrowsPreCheck(() -> checker.checkNodeState(), ResponseCodeEnum.INVALID_NODE_ACCOUNT);
-    }
-
-    @Test
-    void testInactivePlatformFails(@Mock CurrentPlatformStatus localCurrentPlatformStatus) {
-        // given
-        when(localCurrentPlatformStatus.get()).thenReturn(PlatformStatus.MAINTENANCE);
-        checker = new QueryChecker(
-                nodeInfo,
-                localCurrentPlatformStatus,
-                transactionChecker,
-                accountNumbers,
-                queryFeeCheck,
-                authorizer,
-                cryptoTransferHandler);
-
-        // then
-        assertThrowsPreCheck(() -> checker.checkNodeState(), ResponseCodeEnum.PLATFORM_NOT_ACTIVE);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -215,60 +97,29 @@ class QueryCheckerTest {
     }
 
     @Test
-    void testValidateCryptoTransferSucceeds() throws PreCheckException {
+    void testValidateCryptoTransferSucceeds() {
         // given
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
-        final var onsetResult =
-                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, CRYPTO_TRANSFER);
         final var transaction = Transaction.newBuilder().build();
-        when(transactionChecker.check(transaction)).thenReturn(onsetResult);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CRYPTO_TRANSFER);
 
         // when
-        final var result = checker.validateCryptoTransfer(transaction);
-
-        // then
-        Assertions.assertThat(result).isEqualTo(txBody);
+        assertThatCode(() -> checker.validateCryptoTransfer(transactionInfo)).doesNotThrowAnyException();
     }
 
     @Test
-    void testValidateCryptoTransferWithFailingParser() throws PreCheckException {
-        // given
-        final var transaction = Transaction.newBuilder().build();
-        when(transactionChecker.check(transaction)).thenThrow(new PreCheckException(INVALID_TRANSACTION));
-        final var checker = new QueryChecker(
-                nodeInfo,
-                currentPlatformStatus,
-                transactionChecker,
-                accountNumbers,
-                queryFeeCheck,
-                authorizer,
-                cryptoTransferHandler);
-
-        // then
-        assertThrowsPreCheck(() -> checker.validateCryptoTransfer(transaction), INVALID_TRANSACTION);
-    }
-
-    @Test
-    void testValidateCryptoTransferWithWrongTransactionType() throws PreCheckException {
+    void testValidateCryptoTransferWithWrongTransactionType() {
         // given
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
-        final var onsetResult =
-                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
         final var transaction = Transaction.newBuilder().build();
-        when(transactionChecker.check(transaction)).thenReturn(onsetResult);
-        final var checker = new QueryChecker(
-                nodeInfo,
-                currentPlatformStatus,
-                transactionChecker,
-                accountNumbers,
-                queryFeeCheck,
-                authorizer,
-                cryptoTransferHandler);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
 
         // then
-        assertThrowsPreCheck(() -> checker.validateCryptoTransfer(transaction), INSUFFICIENT_TX_FEE);
+        assertThatThrownBy(() -> checker.validateCryptoTransfer(transactionInfo))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INSUFFICIENT_TX_FEE));
     }
 
     @Test
@@ -276,24 +127,16 @@ class QueryCheckerTest {
         // given
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
-        final var onsetResult =
-                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, CRYPTO_TRANSFER);
         final var transaction = Transaction.newBuilder().build();
-        when(transactionChecker.check(transaction)).thenReturn(onsetResult);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CRYPTO_TRANSFER);
         doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))
                 .when(cryptoTransferHandler)
                 .validate(txBody);
-        final var checker = new QueryChecker(
-                nodeInfo,
-                currentPlatformStatus,
-                transactionChecker,
-                accountNumbers,
-                queryFeeCheck,
-                authorizer,
-                cryptoTransferHandler);
 
         // then
-        assertThrowsPreCheck(() -> checker.validateCryptoTransfer(transaction), INVALID_ACCOUNT_AMOUNTS);
+        assertThatThrownBy(() -> checker.validateCryptoTransfer(transactionInfo))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_ACCOUNT_AMOUNTS));
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -355,8 +198,8 @@ class QueryCheckerTest {
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, txBody, fee))
                 .isInstanceOf(InsufficientBalanceException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_PAYER_BALANCE)
-                .hasFieldOrPropertyWithValue("estimatedFee", fee);
+                .has(responseCode(INSUFFICIENT_PAYER_BALANCE))
+                .has(estimatedFee(fee));
     }
 
     @Test
@@ -382,8 +225,8 @@ class QueryCheckerTest {
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, txBody, fee))
                 .isInstanceOf(InsufficientBalanceException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_TX_FEE)
-                .hasFieldOrPropertyWithValue("estimatedFee", fee);
+                .has(responseCode(INSUFFICIENT_TX_FEE))
+                .has(estimatedFee(fee));
     }
 
     @Test
@@ -436,7 +279,7 @@ class QueryCheckerTest {
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, txBody, fee))
                 .isInstanceOf(InsufficientBalanceException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_TX_FEE);
+                .has(responseCode(INSUFFICIENT_TX_FEE));
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -468,6 +311,8 @@ class QueryCheckerTest {
         when(authorizer.isAuthorized(payer, GET_ACCOUNT_DETAILS)).thenReturn(false);
 
         // then
-        assertThrowsPreCheck(() -> checker.checkPermissions(payer, GET_ACCOUNT_DETAILS), NOT_SUPPORTED);
+        assertThatThrownBy(() -> checker.checkPermissions(payer, GET_ACCOUNT_DETAILS))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(NOT_SUPPORTED));
     }
 }

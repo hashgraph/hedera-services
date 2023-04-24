@@ -26,7 +26,6 @@ import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.VALID_REVOKE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,7 +49,7 @@ class TokenRevokeKycFromAccountHandlerTest {
 
     @BeforeEach
     void setUp() {
-        accountStore = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         tokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
         subject = new TokenRevokeKycFromAccountHandler();
     }
@@ -62,8 +61,8 @@ class TokenRevokeKycFromAccountHandlerTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context, tokenStore);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_KYC_KT.asPbjKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_KYC_KT.asPbjKey()));
         basicContextAssertions(context, 1);
     }
 
@@ -90,7 +89,7 @@ class TokenRevokeKycFromAccountHandlerTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context, tokenStore);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertTrue(sanityRestoredToPbj(context.requiredNonPayerKeys()).isEmpty());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().isEmpty());
     }
 }

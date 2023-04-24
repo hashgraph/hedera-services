@@ -57,7 +57,7 @@ public interface SigsModule {
     @Provides
     @Singleton
     static SyncVerifier provideSyncVerifier(Platform platform) {
-        return platform.getCryptography()::verifySync;
+        return platform.getContext().getCryptography()::verifySync;
     }
 
     @Provides

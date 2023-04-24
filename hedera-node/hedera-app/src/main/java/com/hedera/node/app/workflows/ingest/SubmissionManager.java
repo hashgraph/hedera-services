@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.RecordCache;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
@@ -83,11 +84,11 @@ public class SubmissionManager {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if the transaction could not be submitted
      */
-    public void submit(@NonNull final TransactionBody txBody, @NonNull final byte[] txBytes) throws PreCheckException {
+    public void submit(@NonNull final TransactionBody txBody, @NonNull final Bytes txBytes) throws PreCheckException {
         requireNonNull(txBody);
         requireNonNull(txBytes);
 
-        byte[] payload = txBytes;
+        Bytes payload = txBytes;
 
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
         // pre-checks. This is used in tests to check the reaction to illegal input.
@@ -99,12 +100,10 @@ public class SubmissionManager {
             }
 
             // We allow it outside of prod, but it really shouldn't be used.
-            final var uncheckedSubmit = txBody.uncheckedSubmitOrThrow();
-            final var uncheckedTxBytes = uncheckedSubmit.transactionBytes();
-            payload = PbjConverter.asBytes(uncheckedTxBytes);
+            payload = txBody.uncheckedSubmitOrThrow().transactionBytes();
         }
 
-        final var success = platform.createTransaction(payload);
+        final var success = platform.createTransaction(PbjConverter.asBytes(payload));
         if (success) {
             // TODO This is bogus. We need to actually create the receipt, which is created by services.
             final var receipt = TransactionReceipt.newBuilder().build();

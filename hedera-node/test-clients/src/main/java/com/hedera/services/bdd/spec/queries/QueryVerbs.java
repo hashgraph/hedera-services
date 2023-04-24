@@ -113,6 +113,10 @@ public class QueryVerbs {
         return new HapiGetContractInfo(contract, idPredefined);
     }
 
+    public static HapiGetContractInfo getLiteralAliasContractInfo(final String evmAddress) {
+        return new HapiGetContractInfo(evmAddress);
+    }
+
     public static HapiGetContractBytecode getContractBytecode(final String contract) {
         return new HapiGetContractBytecode(contract);
     }

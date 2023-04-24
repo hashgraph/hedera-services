@@ -103,6 +103,7 @@ import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -636,12 +637,13 @@ public class Browser {
                 final SignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
                         mainClassName, swirldName, nodeId, appVersion, addressBook.copy(), emergencyRecoveryManager);
 
-                final AddressBookConfig addressBookConfig =
-                        platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
+                // check software version compatibility
+                final boolean softwareUpgrade = BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState);
 
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                        appVersion, loadedSignedState, addressBook.copy(), addressBookConfig);
+                        appVersion, softwareUpgrade, loadedSignedState, addressBook.copy(), platformContext);
+
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
 
@@ -708,7 +710,12 @@ public class Browser {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final AddressBook configAddressBook,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
-        final SavedStateInfo[] savedStateFiles = getSavedStateFiles(mainClassName, selfId, swirldName);
+
+        final String actualMainClassName =
+                configuration.getConfigData(StateConfig.class).getMainClassName(mainClassName);
+
+        final SavedStateInfo[] savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+
         // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
         // time this class is used.
         final SavedStateLoader savedStateLoader = new SavedStateLoader(

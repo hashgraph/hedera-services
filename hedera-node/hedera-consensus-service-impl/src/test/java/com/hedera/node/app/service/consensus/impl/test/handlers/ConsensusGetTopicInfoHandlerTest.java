@@ -16,14 +16,17 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.QueryHeader;
@@ -44,6 +47,8 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +61,9 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
 
     @Mock
     private NetworkInfo networkInfo;
+
+    @Mock
+    private QueryContext context;
 
     private ConsensusGetTopicInfoHandler subject;
 
@@ -106,8 +114,10 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         givenValidTopic();
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
-        final var response = subject.validate(query, readableStore);
-        assertEquals(ResponseCodeEnum.OK, response);
+        given(context.query()).willReturn(query);
+        given(context.createStore(ReadableTopicStore.class)).willReturn(readableStore);
+
+        assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();
     }
 
     @Test
@@ -119,7 +129,12 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         final var store = new ReadableTopicStore(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
-        assertThrowsPreCheck(() -> subject.validate(query, store), ResponseCodeEnum.INVALID_TOPIC_ID);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTopicStore.class)).thenReturn(store);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_TOPIC_ID));
     }
 
     @Test
@@ -130,8 +145,12 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         readableStore = new ReadableTopicStore(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
-        final var response = subject.validate(query, readableStore);
-        assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, response);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_TOPIC_ID));
     }
 
     @Test
@@ -141,7 +160,10 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 .build();
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
-        final var response = subject.findResponse(query, responseHeader, readableStore);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
+
+        final var response = subject.findResponse(context, responseHeader);
         final var op = response.consensusGetTopicInfoOrThrow();
         assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
         assertNull(op.topicInfo());
@@ -157,7 +179,10 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         final var expectedInfo = getExpectedInfo();
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
-        final var response = subject.findResponse(query, responseHeader, readableStore);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
+
+        final var response = subject.findResponse(context, responseHeader);
         final var topicInfoResponse = response.consensusGetTopicInfoOrThrow();
         assertEquals(ResponseCodeEnum.OK, topicInfoResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, topicInfoResponse.topicInfo());
