@@ -424,6 +424,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(appBuilder.initialHash(EMPTY_HASH)).willReturn(appBuilder);
         given(appBuilder.platform(platform)).willReturn(appBuilder);
         given(appBuilder.selfId(1L)).willReturn(appBuilder);
+        given(appBuilder.initTrigger(InitTrigger.GENESIS)).willReturn(appBuilder);
         given(appBuilder.build()).willReturn(app);
         // and:
         given(app.hashLogger()).willReturn(hashLogger);
@@ -491,6 +492,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(appBuilder.consoleCreator(any())).willReturn(appBuilder);
         given(appBuilder.initialHash(EMPTY_HASH)).willReturn(appBuilder);
         given(appBuilder.platform(platform)).willReturn(appBuilder);
+        given(appBuilder.initTrigger(InitTrigger.GENESIS)).willReturn(appBuilder);
         given(appBuilder.selfId(1L)).willReturn(appBuilder);
         given(appBuilder.build()).willReturn(app);
         // and:
@@ -872,6 +874,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     private static ServicesApp createApp(final Platform platform) {
         return DaggerServicesApp.builder()
+                .initTrigger(InitTrigger.GENESIS)
                 .initialHash(new Hash())
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
