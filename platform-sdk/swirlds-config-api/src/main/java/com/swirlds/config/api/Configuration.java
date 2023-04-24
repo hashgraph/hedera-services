@@ -120,7 +120,6 @@ public interface Configuration {
      * @param propertyName the name of the property
      * @param defaultValue the default {@link List}
      * @return a {@link List} of elements of the property with the given name
-     * @throws NoSuchElementException   if the property does not exist.
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
      *                                  or the given type
      */
@@ -175,7 +174,6 @@ public interface Configuration {
      * @param propertyName the name of the property
      * @param defaultValue the default {@link Set}
      * @return a {@link Set} of elements of the property with the given name
-     * @throws NoSuchElementException   if the property does not exist.
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
      *                                  the given type
      */
