@@ -51,6 +51,11 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     private long stateLong = 0;
 
     /**
+     * The history of transactions that have been handled by this app
+     */
+    private TransactionHandlingHistory transactionHandlingHistory = new TransactionHandlingHistory();
+
+    /**
      * Constructor
      */
     public ConsistencyTestingToolState() {
@@ -129,6 +134,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     @Override
     public void handleConsensusRound(final @NonNull Round round, final @NonNull SwirldDualState swirldDualState) {
         round.forEachTransaction(this::applyTransactionToState);
+        transactionHandlingHistory.addRound(ConsistencyTestingToolRound.fromRound(round));
         StateLogWriter.writeRoundStateToLog(round);
     }
 }

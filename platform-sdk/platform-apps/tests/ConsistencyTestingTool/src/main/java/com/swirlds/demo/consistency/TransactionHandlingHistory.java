@@ -16,15 +16,14 @@
 
 package com.swirlds.demo.consistency;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.Set;
 
 /**
  * Object representing the entire history of transaction handling for the testing app
@@ -33,32 +32,26 @@ import java.util.TreeMap;
  */
 public class TransactionHandlingHistory {
     /**
-     * A map of round number to a list of longs, representing the contents of the transactions which came to consensus
-     * in the round
+     * A list of rounds that have come to consensus
      */
-    private final SortedMap<Long, List<Long>> roundHistory;
+    private final List<ConsistencyTestingToolRound> roundHistory;
+
+    /**
+     * A set of all transactions which have been seen
+     */
+    private final Set<Long> seenTransactions = new HashSet<>();
 
     /**
      * Constructor
      */
     public TransactionHandlingHistory() {
-        roundHistory = new TreeMap<>();
+        roundHistory = new ArrayList<>();
     }
 
-    /**
-     * Adds a round to the {@link #roundHistory}
-     *
-     * @param roundString the string read from file representing the round to add
-     */
-    private void addRound(final @NonNull String roundString) {
-        final long roundNumber = Long.parseLong(roundString.substring(0, roundString.indexOf(':')));
-
-        final String transactionsString = roundString.substring(roundString.indexOf("[") + 1, roundString.indexOf("]"));
-        final List<Long> transactionsContents = Arrays.stream(transactionsString.split("\\s*,\\s*"))
-                .map(Long::parseLong)
-                .toList();
-
-        roundHistory.put(roundNumber, transactionsContents);
+    public void addRound(final ConsistencyTestingToolRound round) {
+        roundHistory.add(round);
+        // TODO add to seen transactions
+        // TODO check if this round has already been handled
     }
 
     /**
@@ -68,7 +61,7 @@ public class TransactionHandlingHistory {
         final Path filePath = Path.of(ConsistencyTestingToolUtils.getLogFileName());
 
         try (final BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()))) {
-            addRound(reader.readLine());
+            addRound(ConsistencyTestingToolRound.fromString(reader.readLine()));
         } catch (final IOException e) {
             e.printStackTrace();
         }
