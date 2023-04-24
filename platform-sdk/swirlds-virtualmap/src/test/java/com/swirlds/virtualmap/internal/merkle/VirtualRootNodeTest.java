@@ -419,5 +419,4 @@ class VirtualRootNodeTest extends VirtualTestBase {
         root.setupWithOriginalNode(anotherRoot);
         assertDoesNotThrow(() -> root.postInit(null));
     }
-
 }

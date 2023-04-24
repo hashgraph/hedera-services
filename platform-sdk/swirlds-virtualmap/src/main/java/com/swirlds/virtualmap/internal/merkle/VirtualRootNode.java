@@ -861,6 +861,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             final VirtualLeafRecord<K, V> sibling = records.findLeafRecord(lastLeafSibling, true);
             assert sibling != null;
             cache.clearLeafPath(lastLeafSibling);
+            cache.deleteHash(lastLeafParent);
             sibling.setPath(lastLeafParent);
             cache.putLeaf(sibling);
 

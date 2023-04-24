@@ -650,34 +650,16 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                                     pendingQueue
                                             .addHashJob(pendingQueueIndex)
                                             .dirtyInternal(parentPath, hashJob.getHash(), null);
-                                } else if (siblingPath >= firstLeafPath) {
-                                    // The sibling is *DEFINITELY* a leaf because its path is equal to
-                                    // or greater than the first leaf path. But, since the sibling wasn't
-                                    // part of the unit, I know it was clean. So we need to load the hash for it.
+                                } else {
                                     // I know the hash MUST exist, because either it was dirty in a previous
                                     // round and is stored in the cache, or it was written to disk. Otherwise, if
                                     // it were dirty this round, it would have been in the work queue and part
                                     // of this unit.
-
                                     final Hash siblingHash = hashReader.apply(siblingPath);
                                     if (siblingHash == null) {
-                                        throw new IllegalStateException("Failed to find leaf hash for " + siblingPath
+                                        throw new IllegalStateException("Failed to find a hash for " + siblingPath
                                                 + ", which is a sibling of " + nodePath);
                                     }
-                                    final Hash leftHash = nodePath < siblingPath ? hashJob.getHash() : siblingHash;
-                                    final Hash rightHash = nodePath < siblingPath ? siblingHash : hashJob.getHash();
-                                    pendingQueue
-                                            .addHashJob(pendingQueueIndex)
-                                            .dirtyInternal(parentPath, leftHash, rightHash);
-                                } else {
-                                    // The sibling *MUST* be a clean internal node. It isn't a clean leaf, or
-                                    // a dirty sibling, so it must be a clean internal.
-                                    final Hash siblingHash = hashReader.apply(siblingPath);
-                                    if (siblingHash == null) {
-                                        throw new IllegalStateException("Failed to find internal hash for "
-                                                + siblingPath + ", which is a sibling of " + nodePath);
-                                    }
-
                                     final Hash leftHash = nodePath < siblingPath ? hashJob.getHash() : siblingHash;
                                     final Hash rightHash = nodePath < siblingPath ? siblingHash : hashJob.getHash();
                                     pendingQueue

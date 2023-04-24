@@ -612,7 +612,6 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         throwIfLeafImmutable();
         // Note: this marks the mutations as deleted, in addition to clearing the value of the mutation
         updatePaths(null, path, pathToDirtyLeafIndex, dirtyLeafPaths);
-        updatePaths(null, path, pathToDirtyHashIndex, dirtyHashes);
     }
 
     /**
