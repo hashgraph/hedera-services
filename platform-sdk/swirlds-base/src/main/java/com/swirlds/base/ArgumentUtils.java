@@ -17,6 +17,8 @@
 package com.swirlds.base;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * Class that contains common checks like null checks as static methods.
@@ -40,7 +42,7 @@ public final class ArgumentUtils {
      * @param argumentName the name of the argument
      */
     @NonNull
-    public static <T> T throwArgNull(@NonNull final T argument, @NonNull final String argumentName)
+    public static <T> T throwArgNull(@Nullable final T argument, @NonNull final String argumentName)
             throws NullPointerException {
         if (argument == null) {
             throw new NullPointerException(ERROR_ARGUMENT_NULL.formatted(argumentName));
@@ -49,34 +51,20 @@ public final class ArgumentUtils {
     }
 
     /**
-     * Throw an {@link IllegalArgumentException} if the supplied {@code String} is blank.
+     * Throw an {@link IllegalArgumentException} if the supplied {@code String} is blank. Throw an
+     * {@link NullPointerException} if the supplied {@code String} is null (see {@link #throwArgNull(Object, String)}).
      *
      * @param argument     the argument checked
      * @param argumentName the name of the argument
+     * @see String#isBlank()
      */
-    public static String throwArgBlank(final String argument, final String argumentName) {
-        throwArgNull(argument, argumentName);
+    @NonNull
+    public static String throwArgBlank(@NonNull final String argument, @NonNull final String argumentName)
+            throws NullPointerException, IllegalArgumentException {
+        Objects.requireNonNull(argument, ERROR_ARGUMENT_NULL.formatted(argumentName));
         if (argument.isBlank()) {
             throw new IllegalArgumentException(ERROR_ARGUMENT_BLANK.formatted(argumentName));
         }
         return argument;
-    }
-
-    /**
-     * Throw an {@link IllegalArgumentException} if the supplied {@code String} is blank. Throw an {@link
-     * NullPointerException} if the supplied {@code String} is null (see {@link #throwArgNull(Object, String)}).
-     *
-     * @param arg     the argument checked
-     * @param argName the name of the argument
-     * @see String#isBlank()
-     */
-    @NonNull
-    public static String throwArgBlank(@NonNull final String arg, @NonNull final String argName)
-            throws NullPointerException, IllegalArgumentException {
-        throwArgNull(arg, argName);
-        if (arg.isBlank()) {
-            throw new IllegalArgumentException("The supplied argument '%s' cannot be blank!".formatted(argName));
-        }
-        return arg;
     }
 }
