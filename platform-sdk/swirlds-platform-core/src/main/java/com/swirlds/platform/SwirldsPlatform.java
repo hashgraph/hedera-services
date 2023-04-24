@@ -25,6 +25,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
 import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.config.ConsensusConfig;
@@ -76,7 +77,6 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
-import com.swirlds.common.utility.Startable;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
@@ -197,7 +197,6 @@ import com.swirlds.platform.sync.ShadowGraphEventObserver;
 import com.swirlds.platform.sync.ShadowGraphSynchronizer;
 import com.swirlds.platform.sync.SimultaneousSyncThrottle;
 import com.swirlds.platform.sync.SyncProtocolResponder;
-import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
 import com.swirlds.platform.threading.PauseAndClear;
@@ -442,7 +441,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
 
-        DispatchBuilder dispatchBuilder =
+        final DispatchBuilder dispatchBuilder =
                 new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
         components = new PlatformComponents(dispatchBuilder);
@@ -573,7 +572,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 settings.getReconnect());
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
-        components.add(new Shutdown());
+        components.add(new com.swirlds.platform.system.Shutdown());
 
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
         init(loadedState, genesisStateBuilder);
@@ -593,7 +592,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @return this platform's instance number
      */
-    @Override
     public int getInstanceNumber() {
         return instanceNumber;
     }
@@ -739,7 +737,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
          * The previous version of the software that was run. Null if this is the first time running, or if the previous
          * version ran before the concept of application software versioning was introduced.
          */
-        SoftwareVersion previousSoftwareVersion = signedStateFromDisk
+        final SoftwareVersion previousSoftwareVersion = signedStateFromDisk
                 .getState()
                 .getPlatformState()
                 .getPlatformData()
@@ -1866,7 +1864,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @return AddressBook
      */
-    @Override
     public AddressBook getAddressBook() {
         return initialAddressBook;
     }

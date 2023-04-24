@@ -19,11 +19,11 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
 import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.utility.Startable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
