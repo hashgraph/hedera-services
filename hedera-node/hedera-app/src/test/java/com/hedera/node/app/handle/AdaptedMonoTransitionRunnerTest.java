@@ -36,7 +36,7 @@ import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.WorkingStateWritableStoreFactory;
 import com.hedera.node.app.workflows.handle.AdaptedMonoTransitionRunner;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -71,7 +71,7 @@ class AdaptedMonoTransitionRunnerTest {
     private TxnAccessor accessor;
 
     @Mock
-    private WritableStoreFactory storeFactory;
+    private WorkingStateWritableStoreFactory storeFactory;
 
     private AdaptedMonoTransitionRunner subject;
 

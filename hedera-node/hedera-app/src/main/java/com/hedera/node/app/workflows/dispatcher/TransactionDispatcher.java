@@ -19,19 +19,22 @@ package com.hedera.node.app.workflows.dispatcher;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
-import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.validation.UsageLimits;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.meta.HandleContext;
@@ -39,7 +42,6 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -56,17 +58,14 @@ import javax.inject.Singleton;
 public class TransactionDispatcher {
     public static final String TYPE_NOT_SUPPORTED = "This transaction type is not supported";
     private final HandleContext handleContext;
-    private final TransactionContext txnCtx;
     private final TransactionHandlers handlers;
     private final CryptoSignatureWaivers cryptoSignatureWaivers;
     private final GlobalDynamicProperties dynamicProperties;
-    private final UsageLimits usageLimits;
 
     /**
      * Creates a {@code TransactionDispatcher}.
      *
      * @param handleContext     the context of the handle workflow
-     * @param txnCtx            the mono context of the transaction
      * @param handlers          the handlers for all transaction types
      * @param accountNumbers    the account numbers of the system
      * @param dynamicProperties the dynamic properties of the system
@@ -74,17 +73,13 @@ public class TransactionDispatcher {
     @Inject
     public TransactionDispatcher(
             @NonNull final HandleContext handleContext,
-            @NonNull final TransactionContext txnCtx,
             @NonNull final TransactionHandlers handlers,
             @NonNull final HederaAccountNumbers accountNumbers,
-            @NonNull final GlobalDynamicProperties dynamicProperties,
-            @NonNull final UsageLimits usageLimits) {
-        this.txnCtx = requireNonNull(txnCtx);
+            @NonNull final GlobalDynamicProperties dynamicProperties) {
         this.handlers = requireNonNull(handlers);
         this.handleContext = requireNonNull(handleContext);
         this.dynamicProperties = requireNonNull(dynamicProperties);
         this.cryptoSignatureWaivers = new CryptoSignatureWaiversImpl(requireNonNull(accountNumbers));
-        this.usageLimits = requireNonNull(usageLimits);
     }
 
     /**
@@ -106,7 +101,7 @@ public class TransactionDispatcher {
             @NonNull final WritableStoreFactory writableStoreFactory) {
         switch (function) {
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(
-                    txn.consensusCreateTopicOrThrow(), writableStoreFactory.createTopicStore(), usageLimits);
+                    txn.consensusCreateTopicOrThrow(), writableStoreFactory.createTopicStore());
             case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(
                     txn.consensusUpdateTopicOrThrow(), writableStoreFactory.createTopicStore());
             case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(
@@ -125,27 +120,23 @@ public class TransactionDispatcher {
      * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of
      * the specific functionality
      *
-     * @param storeFactory the {@link ReadableStoreFactory} to get required stores
      * @param context the context of the pre-handle workflow
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     //    @SuppressWarnings("java:S1479") // ignore too many branches warning
-    public void dispatchPreHandle(
-            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context)
-            throws PreCheckException {
-        requireNonNull(storeFactory);
-        requireNonNull(context);
+    public void dispatchPreHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context, "The supplied argument 'context' cannot be null!");
 
         final var txBody = context.body();
         switch (txBody.data().kind()) {
             case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler()
                     .preHandle(context);
             case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler()
-                    .preHandle(context, storeFactory.createTopicStore());
+                    .preHandle(context, context.createStore(ReadableTopicStore.class));
             case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler()
-                    .preHandle(context, storeFactory.createTopicStore());
+                    .preHandle(context, context.createStore(ReadableTopicStore.class));
             case CONSENSUS_SUBMIT_MESSAGE -> handlers.consensusSubmitMessageHandler()
-                    .preHandle(context, storeFactory.createTopicStore());
+                    .preHandle(context, context.createStore(ReadableTopicStore.class));
 
             case CONTRACT_CREATE_INSTANCE -> handlers.contractCreateHandler().preHandle(context);
             case CONTRACT_UPDATE_INSTANCE -> handlers.contractUpdateHandler().preHandle(context);
@@ -156,7 +147,10 @@ public class TransactionDispatcher {
             case CRYPTO_CREATE_ACCOUNT -> handlers.cryptoCreateHandler().preHandle(context);
             case CRYPTO_UPDATE_ACCOUNT -> handlers.cryptoUpdateHandler().preHandle(context, cryptoSignatureWaivers);
             case CRYPTO_TRANSFER -> handlers.cryptoTransferHandler()
-                    .preHandle(context, storeFactory.createAccountStore(), storeFactory.createTokenStore());
+                    .preHandle(
+                            context,
+                            context.createStore(ReadableAccountStore.class),
+                            context.createStore(ReadableTokenStore.class));
             case CRYPTO_DELETE -> handlers.cryptoDeleteHandler().preHandle(context);
             case CRYPTO_APPROVE_ALLOWANCE -> handlers.cryptoApproveAllowanceHandler()
                     .preHandle(context);
@@ -171,37 +165,44 @@ public class TransactionDispatcher {
             case FILE_DELETE -> handlers.fileDeleteHandler().preHandle(context);
             case FILE_APPEND -> handlers.fileAppendHandler().preHandle(context);
 
-            case FREEZE -> handlers.freezeHandler().preHandle(context, storeFactory.createSpecialFileStore());
+            case FREEZE -> handlers.freezeHandler()
+                    .preHandle(context, context.createStore(ReadableSpecialFileStore.class));
 
             case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler().preHandle(context);
 
-            case SCHEDULE_CREATE -> handlers.scheduleCreateHandler()
-                    .preHandle(context, setupPreHandleDispatcher(storeFactory));
+            case SCHEDULE_CREATE -> handlers.scheduleCreateHandler().preHandle(context, this::dispatchPreHandle);
             case SCHEDULE_SIGN -> handlers.scheduleSignHandler()
-                    .preHandle(context, storeFactory.createScheduleStore(), setupPreHandleDispatcher(storeFactory));
+                    .preHandle(context, context.createStore(ReadableScheduleStore.class), this::dispatchPreHandle);
             case SCHEDULE_DELETE -> handlers.scheduleDeleteHandler()
-                    .preHandle(context, storeFactory.createScheduleStore());
+                    .preHandle(context, context.createStore(ReadableScheduleStore.class));
             case TOKEN_CREATION -> handlers.tokenCreateHandler().preHandle(context);
-            case TOKEN_UPDATE -> handlers.tokenUpdateHandler().preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_MINT -> handlers.tokenMintHandler().preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_BURN -> handlers.tokenBurnHandler().preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_DELETION -> handlers.tokenDeleteHandler().preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_WIPE -> handlers.tokenAccountWipeHandler().preHandle(context, storeFactory.createTokenStore());
+            case TOKEN_UPDATE -> handlers.tokenUpdateHandler()
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
+            case TOKEN_MINT -> handlers.tokenMintHandler()
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
+            case TOKEN_BURN -> handlers.tokenBurnHandler()
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
+            case TOKEN_DELETION -> handlers.tokenDeleteHandler()
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
+            case TOKEN_WIPE -> handlers.tokenAccountWipeHandler()
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
             case TOKEN_FREEZE -> handlers.tokenFreezeAccountHandler()
-                    .preHandle(context, storeFactory.createTokenStore());
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
             case TOKEN_UNFREEZE -> handlers.tokenUnfreezeAccountHandler()
-                    .preHandle(context, storeFactory.createTokenStore());
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
             case TOKEN_GRANT_KYC -> handlers.tokenGrantKycToAccountHandler()
-                    .preHandle(context, storeFactory.createTokenStore());
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
             case TOKEN_REVOKE_KYC -> handlers.tokenRevokeKycFromAccountHandler()
-                    .preHandle(context, storeFactory.createTokenStore());
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
             case TOKEN_ASSOCIATE -> handlers.tokenAssociateToAccountHandler().preHandle(context);
             case TOKEN_DISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
                     .preHandle(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
-                    .preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(context, storeFactory.createTokenStore());
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
+            case TOKEN_PAUSE -> handlers.tokenPauseHandler()
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
+            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler()
+                    .preHandle(context, context.createStore(ReadableTokenStore.class));
 
             case UTIL_PRNG -> handlers.utilPrngHandler().preHandle(context);
 
@@ -224,10 +225,6 @@ public class TransactionDispatcher {
         }
     }
 
-    private PreHandleDispatcher setupPreHandleDispatcher(@NonNull final ReadableStoreFactory storeFactory) {
-        return context -> dispatchPreHandle(storeFactory, context);
-    }
-
     // TODO: In all the below methods, commit will be called in workflow or some other place
     //  when handle workflow is implemented
     private void dispatchConsensusDeleteTopic(
@@ -235,7 +232,18 @@ public class TransactionDispatcher {
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusDeleteTopicHandler();
         handler.handle(topicDeletion, topicStore);
-        topicStore.commit();
+        finishConsensusDeleteTopic(topicStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param topicStore the topic store used for the update
+     */
+    protected void finishConsensusDeleteTopic(@NonNull final WritableTopicStore topicStore) {
+        // No-op by default
     }
 
     private void dispatchConsensusUpdateTopic(
@@ -243,13 +251,23 @@ public class TransactionDispatcher {
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusUpdateTopicHandler();
         handler.handle(handleContext, topicUpdate, topicStore);
-        topicStore.commit();
+        finishConsensusUpdateTopic(topicStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param topicStore the topic store used for the update
+     */
+    protected void finishConsensusUpdateTopic(@NonNull final WritableTopicStore topicStore) {
+        // No-op by default
     }
 
     private void dispatchConsensusCreateTopic(
             @NonNull final ConsensusCreateTopicTransactionBody topicCreation,
-            @NonNull final WritableTopicStore topicStore,
-            @NonNull final UsageLimits usageLimits) {
+            @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusCreateTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
@@ -259,10 +277,21 @@ public class TransactionDispatcher {
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
                 recordBuilder,
                 topicStore);
-        txnCtx.setCreated(PbjConverter.fromPbj(
-                TopicID.newBuilder().topicNum(recordBuilder.getCreatedTopic()).build()));
-        usageLimits.refreshTopics();
-        topicStore.commit();
+        finishConsensusCreateTopic(recordBuilder, topicStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param recordBuilder the completed record builder for the creation
+     * @param topicStore the topic store used for the creation
+     */
+    protected void finishConsensusCreateTopic(
+            @NonNull final ConsensusCreateTopicRecordBuilder recordBuilder,
+            @NonNull final WritableTopicStore topicStore) {
+        // No-op by default
     }
 
     private void dispatchConsensusSubmitMessage(
@@ -276,8 +305,21 @@ public class TransactionDispatcher {
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
                 recordBuilder,
                 topicStore);
-        txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
-        topicStore.commit();
+        finishConsensusSubmitMessage(recordBuilder, topicStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param recordBuilder the completed record builder for the message submission
+     * @param topicStore the topic store used for the message submission
+     */
+    protected void finishConsensusSubmitMessage(
+            @NonNull final ConsensusSubmitMessageRecordBuilder recordBuilder,
+            @NonNull final WritableTopicStore topicStore) {
+        // No-op by default
     }
 
     /**

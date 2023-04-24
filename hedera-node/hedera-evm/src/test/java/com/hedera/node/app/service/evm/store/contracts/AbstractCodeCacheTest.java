@@ -68,7 +68,7 @@ class AbstractCodeCacheTest {
         given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
         Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
 
-        assertTrue(code.getContainerBytes().isEmpty());
+        assertTrue(code.getBytes().isEmpty());
     }
 
     @Test
@@ -100,7 +100,7 @@ class AbstractCodeCacheTest {
 
         assertEquals(
                 HederaEvmWorldStateTokenAccount.proxyBytecodeFor(Address.fromHexString("0xabc")),
-                codeCache.getIfPresent(Address.fromHexString("0xabc")).getContainerBytes());
+                codeCache.getIfPresent(Address.fromHexString("0xabc")).getBytes());
     }
 
     @Test

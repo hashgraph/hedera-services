@@ -41,7 +41,7 @@ public class FilteredWritableStates extends FilteredReadableStates implements Wr
 
     @NonNull
     @Override
-    public <K extends Comparable<? super K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+    public <K, V> WritableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
         if (!contains(stateKey)) {
             throw new IllegalArgumentException("Could not find k/v state " + stateKey);
