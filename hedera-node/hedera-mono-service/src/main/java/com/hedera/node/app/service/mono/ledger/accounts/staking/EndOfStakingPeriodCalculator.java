@@ -111,8 +111,10 @@ public class EndOfStakingPeriodCalculator {
 
         long newTotalStakedStart = 0L;
         long newTotalStakedRewardStart = 0L;
+
         final List<NodeStake> nodeStakingInfos = new ArrayList<>();
         final List<NodeStake.Builder> nodeStakingInfosBuilder = new ArrayList<>();
+
         for (final var nodeNum : curStakingInfos.keySet().stream().sorted().toList()) {
             final var stakingInfo = curStakingInfos.getForModify(nodeNum);
 
@@ -141,6 +143,7 @@ public class EndOfStakingPeriodCalculator {
 
             newTotalStakedRewardStart += newStakeRewardStart;
             newTotalStakedStart += stakingInfo.getStake();
+            // Build the node stake infos for the record
             nodeStakingInfosBuilder.add(NodeStake.newBuilder()
                     .setNodeId(nodeNum.longValue())
                     .setRewardRate(nodeRewardRate)
@@ -150,12 +153,12 @@ public class EndOfStakingPeriodCalculator {
                     .setStakeNotRewarded(stakingInfo.getStakeToNotReward()));
         }
 
-        // Calculate the new totalStakedStart based on node's stake at the end of the period
+        // Update node stake infos for the record with the updated consensus weights.
+        // The weights are updated based on the updated stake of the node.
         for (int i = 0; i < nodeStakingInfosBuilder.size(); i++) {
             final var builder = nodeStakingInfosBuilder.get(i);
             final var nodeNum = builder.getNodeId();
             final var stakingInfo = curStakingInfos.getForModify(EntityNum.fromLong(nodeNum));
-            // Update consensus weights of the nodes based on the total stake of the node
             final var updatedWeight =
                     calculateWeightFromStake(stakingInfo.getStake(), stakingInfo.getMinStake(), newTotalStakedStart);
             final var oldWeight = stakingInfo.getWeight();
