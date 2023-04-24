@@ -60,7 +60,7 @@ public class FakePreHandleContext extends PreHandleContext {
         throw new IllegalArgumentException("No store for " + storeInterface);
     }
 
-    public void registerStore(@NonNull final Class<?> storeInterface, @NonNull final Object store) {
+    public <T> void registerStore(@NonNull final Class<T> storeInterface, @NonNull final T store) {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null.");
         requireNonNull(store, "The supplied argument 'store' cannot be null.");
         stores.put(storeInterface, store);

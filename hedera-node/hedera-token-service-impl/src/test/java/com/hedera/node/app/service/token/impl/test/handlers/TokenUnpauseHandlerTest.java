@@ -34,7 +34,8 @@ import com.hedera.hapi.node.token.TokenUnpauseTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -144,7 +145,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
                 .value(tokenEntityNum, copy)
                 .build();
         given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
-        readableStore = new ReadableTokenStore(readableStates);
+        readableStore = new ReadableTokenStoreImpl(readableStates);
         preHandleContext.registerStore(ReadableTokenStore.class, readableStore);
 
         subject.preHandle(preHandleContext);

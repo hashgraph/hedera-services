@@ -19,12 +19,11 @@ package com.hedera.node.app.service.token.impl;
 import static com.hedera.hapi.node.transaction.CustomFee.FeeOneOfType.ROYALTY_FEE;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -37,64 +36,20 @@ import java.util.Optional;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ReadableTokenStore {
+public class ReadableTokenStoreImpl implements ReadableTokenStore {
     /** The underlying data storage class that holds the token data. */
     private final ReadableKVState<EntityNum, Token> tokenState;
 
     /**
-     * Create a new {@link ReadableTokenStore} instance.
+     * Create a new {@link ReadableTokenStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableTokenStore(@NonNull final ReadableStates states) {
+    public ReadableTokenStoreImpl(@NonNull final ReadableStates states) {
         this.tokenState = states.get("TOKENS");
     }
 
-    public record TokenMetadata(
-            Key adminKey,
-            Key kycKey,
-            Key wipeKey,
-            Key freezeKey,
-            Key supplyKey,
-            Key feeScheduleKey,
-            Key pauseKey,
-            boolean hasRoyaltyWithFallback,
-            long treasuryNum) {
-        public boolean hasAdminKey() {
-            return adminKey != null && !adminKey.key().kind().equals(KeyOneOfType.UNSET);
-        }
-
-        public boolean hasKycKey() {
-            return kycKey != null && !kycKey.key().kind().equals(KeyOneOfType.UNSET);
-        }
-
-        public boolean hasWipeKey() {
-            return wipeKey != null && !wipeKey.key().kind().equals(KeyOneOfType.UNSET);
-        }
-
-        public boolean hasFreezeKey() {
-            return freezeKey != null && !freezeKey.key().kind().equals(KeyOneOfType.UNSET);
-        }
-
-        public boolean hasSupplyKey() {
-            return supplyKey != null && !supplyKey.key().kind().equals(KeyOneOfType.UNSET);
-        }
-
-        public boolean hasFeeScheduleKey() {
-            return feeScheduleKey != null && !feeScheduleKey.key().kind().equals(KeyOneOfType.UNSET);
-        }
-
-        public boolean hasPauseKey() {
-            return pauseKey != null && !pauseKey.key().kind().equals(KeyOneOfType.UNSET);
-        }
-    }
-
-    /**
-     * Returns the token metadata needed for signing requirements.
-     *
-     * @param id token id being looked up
-     * @return token's metadata
-     */
+    @Override
     public TokenMetadata getTokenMeta(@NonNull final TokenID id) throws PreCheckException {
         requireNonNull(id);
         final var token = getTokenLeaf(id.tokenNum());

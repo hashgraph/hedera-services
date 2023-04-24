@@ -25,9 +25,10 @@ import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
@@ -48,7 +49,7 @@ public class ReadableStoreFactory {
     private static final Map<Class<?>, StoreEntry> STORE_FACTORY = Map.of(
             AccountAccess.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
             ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
-            ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStore::new),
+            ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new),
             ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStore::new),
             ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStore::new),
             ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStore::new));

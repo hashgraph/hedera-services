@@ -39,7 +39,8 @@ import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -110,7 +111,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
                 .value(EntityNum.fromLong(tokenNum), storedToken)
                 .build();
         given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableState);
-        return new ReadableTokenStore(readableStates);
+        return new ReadableTokenStoreImpl(readableStates);
     }
 
     @Nested

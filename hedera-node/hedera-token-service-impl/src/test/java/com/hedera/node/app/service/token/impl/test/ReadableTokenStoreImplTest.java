@@ -31,7 +31,7 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.TokenHandlerTestBase;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -43,7 +43,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ReadableTokenStoreTest extends TokenHandlerTestBase {
+class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
     private final EntityNum tokenEntityNum = EntityNum.fromLong(2000);
 
     @Mock
@@ -57,12 +57,12 @@ class ReadableTokenStoreTest extends TokenHandlerTestBase {
 
     private Token token;
 
-    private ReadableTokenStore subject;
+    private ReadableTokenStoreImpl subject;
 
     @BeforeEach
     public void setUp() {
         initializeToken();
-        subject = new ReadableTokenStore(states);
+        subject = new ReadableTokenStoreImpl(states);
     }
 
     private void initializeToken() {

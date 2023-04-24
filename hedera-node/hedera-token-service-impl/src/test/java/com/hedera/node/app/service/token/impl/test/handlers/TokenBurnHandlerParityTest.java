@@ -27,13 +27,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.junit.jupiter.api.Test;
 
-public class TokenBurnHandlerParityTest extends ParityTestBase {
+class TokenBurnHandlerParityTest extends ParityTestBase {
     private final TokenBurnHandler subject = new TokenBurnHandler();
 
     @Test

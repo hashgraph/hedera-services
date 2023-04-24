@@ -1,0 +1,72 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.token;
+
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.KeyOneOfType;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+
+public interface ReadableTokenStore {
+
+    /**
+     * Returns the token metadata needed for signing requirements.
+     *
+     * @param id token id being looked up
+     * @return token's metadata
+     */
+    TokenMetadata getTokenMeta(TokenID id) throws PreCheckException;
+
+    record TokenMetadata(
+            Key adminKey,
+            Key kycKey,
+            Key wipeKey,
+            Key freezeKey,
+            Key supplyKey,
+            Key feeScheduleKey,
+            Key pauseKey,
+            boolean hasRoyaltyWithFallback,
+            long treasuryNum) {
+        public boolean hasAdminKey() {
+            return adminKey != null && !adminKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasKycKey() {
+            return kycKey != null && !kycKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasWipeKey() {
+            return wipeKey != null && !wipeKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasFreezeKey() {
+            return freezeKey != null && !freezeKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasSupplyKey() {
+            return supplyKey != null && !supplyKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasFeeScheduleKey() {
+            return feeScheduleKey != null && !feeScheduleKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+
+        public boolean hasPauseKey() {
+            return pauseKey != null && !pauseKey.key().kind().equals(KeyOneOfType.UNSET);
+        }
+    }
+}

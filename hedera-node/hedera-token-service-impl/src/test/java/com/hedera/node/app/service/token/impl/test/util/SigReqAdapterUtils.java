@@ -83,8 +83,9 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -140,7 +141,7 @@ public class SigReqAdapterUtils {
                 .forEach(id -> destination.put(EntityNum.fromLong(id.tokenNum()), asToken(source.get(fromPbj(id)))));
         final var wrappedState = new MapReadableKVState<>("TOKENS", destination);
         final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
-        return new ReadableTokenStore(mockStates(Map.of(TOKENS_KEY, state)));
+        return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)));
     }
 
     public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {
