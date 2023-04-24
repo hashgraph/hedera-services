@@ -16,7 +16,13 @@
 
 package com.hedera.services.bdd.suites.regression.factories;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
+import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.intPropOrElse;
 
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -36,6 +42,17 @@ public class EvmAddressFuzzingFactory {
     private static final String RANDOM_TRANSFER_BIAS = "randomTransfer.bias";
 
     private EvmAddressFuzzingFactory() {}
+
+    public static HapiSpecOperation[] initOperations() {
+        return new HapiSpecOperation[] {
+            overridingThree(
+                    CHAIN_ID_PROP, "298", LAZY_CREATE_PROPERTY_NAME, "true", CONTRACTS_EVM_VERSION_PROP, V_0_34),
+            newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+            cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS).withRecharging(),
+            cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                    .via(AUTO_ACCOUNT)
+        };
+    }
 
     public static Function<HapiSpec, OpProvider> evmAddressFuzzing(final String resource) {
         return spec -> {

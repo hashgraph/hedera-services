@@ -17,11 +17,11 @@
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.CONTRACTS_EVM_VERSION_PROP;
+import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.LAZY_CREATE_PROPERTY_NAME;
 import static com.hedera.services.bdd.suites.regression.factories.EvmAddressFuzzingFactory.evmAddressFuzzing;
+import static com.hedera.services.bdd.suites.regression.factories.EvmAddressFuzzingFactory.initOperations;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -35,10 +35,6 @@ public class EthereumTxLazyCreateFuzzing extends HapiSuite {
     private static final Logger log = LogManager.getLogger(EthereumTxLazyCreateFuzzing.class);
 
     private static final String PROPERTIES = "ethereum-tx-lazy-create-fuzzing.properties";
-    private static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
-    public static final String CONTRACTS_EVM_VERSION_PROP = "contracts.evm.version";
-    public static final String V_0_34 = "v0.34";
-    public static final String AUTO_ACCOUNT = "autoAccount";
     private final AtomicInteger maxOpsPerSec = new AtomicInteger(1);
     private final AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
     private final AtomicInteger backoffSleepSecs = new AtomicInteger(Integer.MAX_VALUE);
@@ -56,18 +52,7 @@ public class EthereumTxLazyCreateFuzzing extends HapiSuite {
 
         return propertyPreservingHapiSpec("EthereumTransactionLazyCreate")
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
-                .given(
-                        overridingThree(
-                                CHAIN_ID_PROP,
-                                "298",
-                                LAZY_CREATE_PROPERTY_NAME,
-                                "true",
-                                CONTRACTS_EVM_VERSION_PROP,
-                                V_0_34),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS).withRecharging(),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT))
+                .given(initOperations())
                 .when()
                 .then(runWithProvider(evmAddressFuzzing(PROPERTIES))
                         .lasting(10L, TimeUnit.SECONDS)
