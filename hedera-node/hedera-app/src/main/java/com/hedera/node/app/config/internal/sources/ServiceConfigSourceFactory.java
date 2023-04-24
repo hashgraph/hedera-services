@@ -76,7 +76,6 @@ public class ServiceConfigSourceFactory {
      * Creates all the config sources that are used by the service.
      *
      * @return a collection of all the config sources that are used by the service.
-     * @throws IOException if a property file can not be found.
      */
     @NonNull
     public static Collection<ConfigSource> createAll() {
