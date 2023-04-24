@@ -107,7 +107,9 @@ public class RecordStreamManagerTest {
                 recordMemo,
                 INITIAL_RANDOM_HASH,
                 streamType,
-                globalDynamicProperties);
+                globalDynamicProperties,
+                null,
+                File::delete);
 
         given(globalDynamicProperties.recordFileVersion()).willReturn(5);
 
@@ -120,7 +122,9 @@ public class RecordStreamManagerTest {
                 recordMemo,
                 INITIAL_RANDOM_HASH,
                 streamType,
-                globalDynamicProperties);
+                globalDynamicProperties,
+                null,
+                File::delete);
     }
 
     private static void configProps(NodeLocalProperties props) {
