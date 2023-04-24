@@ -25,7 +25,7 @@ import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -34,12 +34,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 
 /**
- * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with Accounts.
- *
- * <p>This class is not exported from the module. It is an internal implementation detail.
+ * Default implementation of {@link ReadableAccountStore}
  */
-public class ReadableAccountStore implements AccountAccess {
+public class ReadableAccountStoreImpl implements ReadableAccountStore {
     public static final int EVM_ADDRESS_LEN = 20;
     private static final byte[] MIRROR_PREFIX = new byte[12];
 
@@ -56,11 +53,11 @@ public class ReadableAccountStore implements AccountAccess {
     private final ReadableKVState<String, EntityNumValue> aliases;
 
     /**
-     * Create a new {@link ReadableAccountStore} instance.
+     * Create a new {@link ReadableAccountStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableAccountStore(@NonNull final ReadableStates states) {
+    public ReadableAccountStoreImpl(@NonNull final ReadableStates states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
     }
