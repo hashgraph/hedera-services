@@ -37,6 +37,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -204,7 +205,11 @@ public class EndOfStakingPeriodCalculator {
         if (stake < minStake || totalStakeOfAllNodes == 0L) {
             return 0;
         } else {
-            return (int) Math.max(Math.floor((stake / totalStakeOfAllNodes) * 500), 1);
+            final var weight = BigInteger.valueOf(stake)
+                    .multiply(BigInteger.valueOf(500))
+                    .divide(BigInteger.valueOf(totalStakeOfAllNodes))
+                    .doubleValue();
+            return (int) Math.max(Math.floor(weight), 1);
         }
     }
 
