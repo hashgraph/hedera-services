@@ -125,7 +125,6 @@ public class FreezeHandler implements TransactionHandler {
         final FreezeUpgradeActions upgradeActions =
                 new FreezeUpgradeActions(adminServiceConfig, dualState, specialFileStore);
 
-        //        assertValidityAtCons(op);
         final Timestamp freezeStartTime = freezeTxn.startTime();
         final Instant freezeStartTimeInstant =
                 Instant.ofEpochSecond(freezeStartTime.seconds(), freezeStartTime.nanos());
