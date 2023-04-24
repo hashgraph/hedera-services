@@ -18,7 +18,7 @@ package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -37,11 +37,11 @@ public class ReconnectThrottle {
     /**
      * Reconnect settings for this node.
      */
-    private final ReconnectSettings settings;
+    private final ReconnectConfig config;
 
     /**
-     * A map from node IDs to reconnect times. Nodes not in this map have either never reconnected or
-     * have reconnected only in the distant past.
+     * A map from node IDs to reconnect times. Nodes not in this map have either never reconnected or have reconnected
+     * only in the distant past.
      */
     private final HashMap<Long, Instant> lastReconnectTime;
 
@@ -55,8 +55,8 @@ public class ReconnectThrottle {
      */
     private Supplier<Instant> currentTime;
 
-    public ReconnectThrottle(final ReconnectSettings settings) {
-        this.settings = settings;
+    public ReconnectThrottle(final ReconnectConfig config) {
+        this.config = config;
         lastReconnectTime = new HashMap<>();
         reconnectingNode = null;
         currentTime = Instant::now;
@@ -70,18 +70,17 @@ public class ReconnectThrottle {
 
         while (iterator.hasNext()) {
             final Duration elapsed = Duration.between(iterator.next(), now);
-            if (settings.getMinimumTimeBetweenReconnects().minus(elapsed).isNegative()) {
+            if (config.minimumTimeBetweenReconnects().minus(elapsed).isNegative()) {
                 iterator.remove();
             }
         }
     }
 
     /**
-     * Check if it is ok to reconnect (in the role of the sender) with a given node,
-     * and if so begin tracking that reconnect.
+     * Check if it is ok to reconnect (in the role of the sender) with a given node, and if so begin tracking that
+     * reconnect.
      *
-     * @param nodeId
-     * 		the ID of the node that is behind and needs to reconnect
+     * @param nodeId the ID of the node that is behind and needs to reconnect
      * @return true if the reconnect can proceed, false if reconnect is disallowed by policy
      */
     public synchronized boolean initiateReconnect(final long nodeId) {

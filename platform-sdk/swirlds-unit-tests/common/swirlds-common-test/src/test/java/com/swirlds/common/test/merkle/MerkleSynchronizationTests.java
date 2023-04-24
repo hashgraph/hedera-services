@@ -30,8 +30,6 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettingsFactory;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.utility.MerkleUtils;
 import com.swirlds.common.test.merkle.dummy.DummyCustomReconnectRoot;
@@ -42,8 +40,8 @@ import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.FileNotFoundException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -63,53 +61,11 @@ public class MerkleSynchronizationTests {
         loadLog4jContext();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
 
-        ReconnectSettingsFactory.configure(new ReconnectSettings() {
-            @Override
-            public boolean isActive() {
-                return true;
-            }
-
-            @Override
-            public int getReconnectWindowSeconds() {
-                return -1;
-            }
-
-            @Override
-            public double getFallenBehindThreshold() {
-                return 0.5;
-            }
-
-            @Override
-            public int getAsyncStreamTimeoutMilliseconds() {
+        new TestConfigBuilder()
+                .withValue("reconnect.active", "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.
-                return 500;
-            }
-
-            @Override
-            public int getAsyncOutputStreamFlushMilliseconds() {
-                return 100;
-            }
-
-            @Override
-            public int getAsyncStreamBufferSize() {
-                return 10_000;
-            }
-
-            @Override
-            public int getMaxAckDelayMilliseconds() {
-                return 10;
-            }
-
-            @Override
-            public int getMaximumReconnectFailuresBeforeShutdown() {
-                return 10;
-            }
-
-            @Override
-            public Duration getMinimumTimeBetweenReconnects() {
-                return Duration.ofMinutes(10);
-            }
-        });
+                .withValue("reconnect.asyncStreamTimeoutMilliseconds", "500")
+                .getOrCreateConfig();
     }
 
     /**
@@ -237,11 +193,7 @@ public class MerkleSynchronizationTests {
     }
 
     /**
-     * *              root
-     * *            / |  \ \
-     * *           A  I0 B I1
-     * *                  / \
-     * *                 C  I2
+     * *              root *            / |  \ \ *           A  I0 B I1 *                  / \ *                 C  I2
      */
     protected DummyMerkleInternal buildTreeForVerifyResultIsATree() {
         final DummyMerkleLeaf A = new DummyMerkleLeaf("A");
@@ -263,24 +215,16 @@ public class MerkleSynchronizationTests {
     }
 
     /**
-     * There was once a bug where the resulting merkle tree returned was not a DAG and not a tree.
-     * This test verifies that the observed bug is no longer present.
-     *
+     * There was once a bug where the resulting merkle tree returned was not a DAG and not a tree. This test verifies
+     * that the observed bug is no longer present.
+     * <p>
      * Starting tree
-     *
-     * *                root
-     * *              / |  \ \
-     * *             A  I0 B I1
-     * *                    / \
-     * *                   C  I2
-     *
+     * <p>
+     * *                root *              / |  \ \ *             A  I0 B I1 *                    / \ * C  I2
+     * <p>
      * Desired tree
-     *
-     * *                root
-     * *              / |  \ \
-     * *             A  I0 B I1
-     * *                    / \
-     * *                   D  I2
+     * <p>
+     * *                root *              / |  \ \ *             A  I0 B I1 *                    / \ * D  I2
      */
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)

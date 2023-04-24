@@ -18,7 +18,7 @@ package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
@@ -36,10 +36,9 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
     private static final Logger logger = LogManager.getLogger(ReconnectProtocolResponder.class);
 
     private final LatestSignedStateProvider latestSignedStateProvider;
-    private final ReconnectSettings settings;
+    private final ReconnectConfig config;
     /**
-     * This object is responsible for limiting the frequency of reconnect attempts (in the role of
-     * the sender)
+     * This object is responsible for limiting the frequency of reconnect attempts (in the role of the sender)
      */
     private final ReconnectThrottle reconnectThrottle;
 
@@ -47,23 +46,23 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
     private final ThreadManager threadManager;
 
     /**
-     * @param threadManager responsible for managing thread lifecycles
-     * @param latestSignedStateProvider a function that provides the latest signed state, either
-     *     strongly or weakly reserved. The caller is responsible for releasing the reservation when
-     *     finished.
-     * @param settings reconnect settings
-     * @param reconnectThrottle limits when reconnect may start
-     * @param stats reconnect metrics
+     * @param threadManager             responsible for managing thread lifecycles
+     * @param latestSignedStateProvider a function that provides the latest signed state, either strongly or weakly
+     *                                  reserved. The caller is responsible for releasing the reservation when
+     *                                  finished.
+     * @param config                    reconnect config
+     * @param reconnectThrottle         limits when reconnect may start
+     * @param stats                     reconnect metrics
      */
     public ReconnectProtocolResponder(
             final ThreadManager threadManager,
             final LatestSignedStateProvider latestSignedStateProvider,
-            final ReconnectSettings settings,
+            final ReconnectConfig config,
             final ReconnectThrottle reconnectThrottle,
             final ReconnectMetrics stats) {
         this.threadManager = threadManager;
         this.latestSignedStateProvider = latestSignedStateProvider;
-        this.settings = settings;
+        this.config = config;
         this.reconnectThrottle = reconnectThrottle;
         this.stats = stats;
     }
@@ -123,7 +122,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                             threadManager,
                             connection,
                             state,
-                            settings.getAsyncStreamTimeoutMilliseconds(),
+                            config.asyncStreamTimeoutMilliseconds(),
                             connection.getSelfId().getId(),
                             connection.getOtherId().getId(),
                             state.getRound(),

@@ -26,14 +26,16 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.ValueReference;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.sync.FallenBehindManager;
-import java.time.Duration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.LongStream;
@@ -220,10 +222,11 @@ public class ReconnectProtocolTests {
     @Test
     void testTeacherThrottleReleased() {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
-        final ReconnectSettingsImpl reconnectSettings = new ReconnectSettingsImpl();
-        // we don't want the time based throttle to interfere
-        reconnectSettings.minimumTimeBetweenReconnects = Duration.ZERO;
-        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(reconnectSettings);
+        final Configuration config = new TestConfigBuilder()
+                // we don't want the time based throttle to interfere
+                .withValue("reconnect.minimumTimeBetweenReconnects", "0s")
+                .getOrCreateConfig();
+        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(config.getConfigData(ReconnectConfig.class));
 
         final NodeId node0 = new NodeId(false, 0L);
         final NodeId node1 = new NodeId(false, 1L);

@@ -21,7 +21,7 @@ import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.StartupTime;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.logging.payloads.ReconnectFailurePayload;
 import com.swirlds.logging.payloads.UnableToReconnectPayload;
@@ -41,13 +41,13 @@ import org.apache.logging.log4j.Logger;
 public class ReconnectLearnerThrottle {
     private static final Logger logger = LogManager.getLogger(ReconnectLearnerThrottle.class);
     private final NodeId selfId;
-    private final ReconnectSettings settings;
+    private final ReconnectConfig config;
     /** The number of times reconnect has failed since the last succesfull reconnect. */
     private int failedReconnectsInARow;
 
-    public ReconnectLearnerThrottle(final NodeId selfId, final ReconnectSettings settings) {
+    public ReconnectLearnerThrottle(final NodeId selfId, final ReconnectConfig config) {
         this.selfId = selfId;
-        this.settings = settings;
+        this.config = config;
         this.failedReconnectsInARow = 0;
     }
 
@@ -85,7 +85,7 @@ public class ReconnectLearnerThrottle {
     }
 
     private void killNodeIfThresholdMet() {
-        if (failedReconnectsInARow >= settings.getMaximumReconnectFailuresBeforeShutdown()) {
+        if (failedReconnectsInARow >= config.maximumReconnectFailuresBeforeShutdown()) {
             logger.error(EXCEPTION.getMarker(), "Too many reconnect failures in a row, killing node");
             SystemUtils.exitSystem(SystemExitReason.RECONNECT_FAILURE);
         }
@@ -95,15 +95,15 @@ public class ReconnectLearnerThrottle {
      * Check if a reconnect is currently allowed. If not then kill the node.
      */
     public void exitIfReconnectIsDisabled() {
-        if (!settings.isActive()) {
+        if (!config.active()) {
             logger.warn(STARTUP.getMarker(), () -> new UnableToReconnectPayload(
                             "Node has fallen behind, reconnect is disabled, will die", selfId.getIdAsInt())
                     .toString());
             SystemUtils.exitSystem(SystemExitReason.BEHIND_RECONNECT_DISABLED);
         }
 
-        if (settings.getReconnectWindowSeconds() >= 0
-                && settings.getReconnectWindowSeconds()
+        if (config.reconnectWindowSeconds() >= 0
+                && config.reconnectWindowSeconds()
                         < StartupTime.getTimeSinceStartup().toSeconds()) {
             logger.warn(STARTUP.getMarker(), () -> new UnableToReconnectPayload(
                             "Node has fallen behind, reconnect is disabled outside of time window, will die",

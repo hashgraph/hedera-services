@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.reconnect;
 
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Connection;
@@ -28,47 +28,36 @@ import com.swirlds.platform.state.State;
  */
 public class ReconnectLearnerFactory {
     private final AddressBook addressBook;
-    private final ReconnectSettings settings;
+    private final ReconnectConfig config;
     private final ReconnectMetrics statistics;
     private final ThreadManager threadManager;
 
     /**
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param addressBook
-     * 		the current address book
-     * @param settings
-     * 		reconnect settings
-     * @param statistics
-     * 		reconnect metrics
+     * @param threadManager responsible for managing thread lifecycles
+     * @param addressBook   the current address book
+     * @param config        reconnect config
+     * @param statistics    reconnect metrics
      */
     public ReconnectLearnerFactory(
             final ThreadManager threadManager,
             final AddressBook addressBook,
-            final ReconnectSettings settings,
+            final ReconnectConfig config,
             final ReconnectMetrics statistics) {
         this.threadManager = threadManager;
         this.addressBook = addressBook;
-        this.settings = settings;
+        this.config = config;
         this.statistics = statistics;
     }
 
     /**
      * Create an instance of {@link ReconnectLearner}
      *
-     * @param conn
-     * 		the connection to use
-     * @param workingState
-     * 		the state to use to perform a delta based reconnect
+     * @param conn         the connection to use
+     * @param workingState the state to use to perform a delta based reconnect
      * @return a new instance
      */
     public ReconnectLearner create(final Connection conn, final State workingState) {
         return new ReconnectLearner(
-                threadManager,
-                conn,
-                addressBook,
-                workingState,
-                settings.getAsyncStreamTimeoutMilliseconds(),
-                statistics);
+                threadManager, conn, addressBook, workingState, config.asyncStreamTimeoutMilliseconds(), statistics);
     }
 }

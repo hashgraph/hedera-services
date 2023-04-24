@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.reconnect;
 
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
@@ -49,7 +49,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     /** Called when the status becomes fallen behind */
     private final Runnable fallenBehindCallback;
 
-    private final ReconnectSettings settings;
+    private final ReconnectConfig config;
     /** number of neighbors who think this node has fallen behind */
     volatile int numReportFallenBehind;
 
@@ -58,7 +58,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
             final RandomGraph connectionGraph,
             final Runnable notifyPlatform,
             final Runnable fallenBehindCallback,
-            final ReconnectSettings settings) {
+            final ReconnectConfig config) {
         notYetReportFallenBehind = ConcurrentHashMap.newKeySet();
         reportFallenBehind = new HashSet<>();
         allNeighbors = new HashSet<>();
@@ -70,7 +70,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
         }
         this.notifyPlatform = notifyPlatform;
         this.fallenBehindCallback = fallenBehindCallback;
-        this.settings = settings;
+        this.config = config;
     }
 
     @Override
@@ -104,7 +104,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
 
     @Override
     public boolean hasFallenBehind() {
-        return numNeighbors * settings.getFallenBehindThreshold() < numReportFallenBehind;
+        return numNeighbors * config.fallenBehindThreshold() < numReportFallenBehind;
     }
 
     @Override
