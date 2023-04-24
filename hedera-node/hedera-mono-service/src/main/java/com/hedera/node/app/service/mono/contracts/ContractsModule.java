@@ -224,8 +224,10 @@ public interface ContractsModule {
             final @V_0_38 EVM evm,
             final @V_0_38 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
-            final InfrastructureFactory infrastructureFactory) {
-        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList, infrastructureFactory);
+            final InfrastructureFactory infrastructureFactory,
+            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
+        return new HederaMessageCallProcessor(
+                evm, precompiles, hederaPrecompileList, infrastructureFactory, precompileDetector);
     }
 
     @Provides
