@@ -200,7 +200,7 @@ public class EndOfStakingPeriodCalculator {
      * @return calculated consensus weight of the node
      */
     private int calculateWeightFromStake(long stake, long minStake, long totalStakeOfAllNodes) {
-        if (stake < minStake) {
+        if (stake < minStake || totalStakeOfAllNodes == 0L) {
             return 0;
         } else {
             return (int) Math.max(Math.floor((stake * 500) / totalStakeOfAllNodes), 1);
