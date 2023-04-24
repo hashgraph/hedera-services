@@ -22,7 +22,7 @@ Add the following lines to the settings.txt file
 
 ```
 addressBookTestingTool.softwareVersion, 1
-addressBookTestingTool.stakingBehavior, 1
+addressBookTestingTool.weightingBehavior, 1
 ```
 ## Testing Genesis Behavior
 
@@ -33,9 +33,9 @@ addressBookTestingTool.stakingBehavior, 1
 ```
 state.saveStatePeriod,                    0
 addressBook.forceUseOfConfigAddressBook,  true
-addressBookTestingTool.testScenario,      1
+addressBookTestingTool.testScenario,      GENESIS_FORCE_CONFIG_AB
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 
@@ -70,9 +70,9 @@ Errors are logged if any of the following conditions are violated.
 ```
 state.saveStatePeriod,                    0
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      2
+addressBookTestingTool.testScenario,      GENESIS_NORMAL
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 
@@ -109,9 +109,9 @@ Errors are logged if any of the following conditions are violated.
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      0
+addressBookTestingTool.testScenario,      SKIP_VALIDATION
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 4. Stop the app
@@ -119,9 +119,9 @@ addressBookTestingTool.stakingBehavior,   1
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      3
+addressBookTestingTool.testScenario,      NO_UPGRADE_USE_SAVED_STATE
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   2
+addressBookTestingTool.weightingBehavior, 1
 ```
 6. Run the app for 60 seconds.
 
@@ -143,11 +143,11 @@ Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * contains the addresses in the config.txt, all with weight 10.
+    * matches the addresses in the config.txt, including weight value.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
-    * **the state saved address book matches the content of the non-debug .txt file. (differs from previous section)**
-    * **the used address book has the text `The State Saved Address Book Was Used.` (differs from previous section)**
+    * the state saved address book matches the content of the non-debug .txt file.
+    * the used address book has the text `The State Saved Address Book Was Used.`
 
 ### Test Scenario 4: No Software Upgrade, Force Use of Config Address Book
 #### Instructions
@@ -157,9 +157,9 @@ Errors are logged if any of the following conditions are violated.
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      0
+addressBookTestingTool.testScenario,      SKIP_VALIDATION
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 4. Stop the app
@@ -167,9 +167,9 @@ addressBookTestingTool.stakingBehavior,   1
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  true
-addressBookTestingTool.testScenario,      4
+addressBookTestingTool.testScenario,      NO_UPGRADE_FORCE_CONFIG_AB
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   2
+addressBookTestingTool.weightingBehavior, 1
 ```
 6. Run the app for 60 seconds.
 
@@ -191,13 +191,13 @@ Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * **matches the addresses in the config.txt, including weight value. (differs from previous section)**
+    * matches the addresses in the config.txt, including weight value.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
-    * **the state saved address book contains the addresses in the config.txt, all with weight 10. (differs from previous section)**
-    * **the used address book has the text `The Configuration Address Book Was Used.` (differs from previous section)**
+    * the state saved address book is the same as what is in config.txt
+    * the used address book has the text `The Configuration Address Book Was Used.`
 
-### Test Scenario 5: Software Upgrade, Staking Behavior 2
+### Test Scenario 5: Software Upgrade, Weighting Behavior 2
 #### Instructions
 
 1. Delete `sdk/data/saved` directory if it exists
@@ -205,9 +205,9 @@ Errors are logged if any of the following conditions are violated.
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      0
+addressBookTestingTool.testScenario,      SKIP_VALIDATION
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 4. Stop the app
@@ -215,9 +215,9 @@ addressBookTestingTool.stakingBehavior,   1
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      5
+addressBookTestingTool.testScenario,      UPGRADE_WEIGHT_BEHAVIOR_2
 addressBookTestingTool.softwareVersion,   2
-addressBookTestingTool.stakingBehavior,   2
+addressBookTestingTool.weightingBehavior, 2
 ```
 6. Run the app for 60 seconds.
 
@@ -239,11 +239,11 @@ Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * **matches the addresses in the config.txt, but the weight values incrementally increase starting from 0. (differs from previous section)**
+    * matches the addresses in the config.txt, but the weight values incrementally increase starting from 0.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * The state saved address book is the same as what is in config.txt
-    * **the used address book matches the content of the non-debug .txt file. (differs from previous section)**
+    * the used address book matches the content of the non-debug .txt file.
 
 ### Test Scenario 6: Software Upgrade, Force Use Of Config Address Book
 #### Instructions
@@ -253,9 +253,9 @@ Errors are logged if any of the following conditions are violated.
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      0
+addressBookTestingTool.testScenario,      SKIP_VALIDATION
 addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.stakingBehavior,   1
+addressBookTestingTool.weightingBehavior, 1
 ```
 3. Run the app for 60 seconds
 4. Stop the app
@@ -263,9 +263,9 @@ addressBookTestingTool.stakingBehavior,   1
 ```
 state.saveStatePeriod,                    10
 addressBook.forceUseOfConfigAddressBook,  true
-addressBookTestingTool.testScenario,      6
+addressBookTestingTool.testScenario,      UPGRADE_FORCE_CONFIG_AB
 addressBookTestingTool.softwareVersion,   2
-addressBookTestingTool.stakingBehavior,   2
+addressBookTestingTool.weightingBehavior, 2
 ```
 6. Run the app for 60 seconds.
 
@@ -287,8 +287,8 @@ Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
-    * **matches the addresses in the config.txt, including weight value. (differs from previous section)**
+    * matches the addresses in the config.txt, including weight value.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
-    * **The state saved address book is the config.txt addresses with weight values incrementally increasing starting from 0 (differs from previous section)**
-    * **the used address book matches the content of the non-debug .txt file. (differs from previous section)**
+    * The state saved address book is the same as what is in config.txt
+    * the used address book matches the content of the non-debug .txt file.

@@ -44,7 +44,7 @@ public class HederaEvmCreate2Operation extends AbstractEvmRecordingCreateOperati
             final GasCalculator gasCalculator,
             final EvmProperties evmProperties,
             final CreateOperationExternalizer createOperationExternalizer) {
-        super(0xF5, "ħCREATE2", 4, 1, 1, gasCalculator, createOperationExternalizer);
+        super(0xF5, "ħCREATE2", 4, 1, gasCalculator, createOperationExternalizer);
         this.evmProperties = evmProperties;
     }
 

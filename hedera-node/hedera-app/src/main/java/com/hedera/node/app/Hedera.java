@@ -208,7 +208,7 @@ public final class Hedera implements SwirldMain {
             final var serviceName = entry.getKey();
             final var service = entry.getValue();
             final var registry = new MerkleSchemaRegistry(constructableRegistry, storageDir, serviceName);
-            service.registerSchemas(registry);
+            service.registerMonoAdapterSchemas(registry);
             map.put(serviceName, new ServiceRegistration(serviceName, service, registry));
         }
 
@@ -406,7 +406,7 @@ public final class Hedera implements SwirldMain {
 
     private void validateLedgerState() {
         daggerApp.ledgerValidator().validate(daggerApp.workingState().accounts());
-        daggerApp.nodeInfo().validateSelfAccountIfStaked();
+        daggerApp.nodeInfo().validateSelfAccountIfNonZeroStake();
         final var notifications = daggerApp.notificationEngine().get();
         notifications.register(PlatformStatusChangeListener.class, daggerApp.statusChangeListener());
         notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());

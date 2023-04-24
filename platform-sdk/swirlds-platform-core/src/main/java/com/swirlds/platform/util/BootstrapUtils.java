@@ -148,12 +148,15 @@ public final class BootstrapUtils {
         } else if (versionComparison > 0) {
             softwareUpgrade = true;
             logger.info(
-                    STARTUP.getMarker(), "Software upgrade from version {} to {}. ", loadedSoftwareVersion, appVersion);
+                    STARTUP.getMarker(),
+                    "Software upgrade in progress. Previous software version was {}, current version is {}.",
+                    loadedSoftwareVersion,
+                    appVersion);
         } else {
             softwareUpgrade = false;
             logger.info(
                     STARTUP.getMarker(),
-                    "No Software Upgrade, continuing with software version {}.",
+                    "Not upgrading software, current software is version {}.",
                     loadedSoftwareVersion);
         }
         return softwareUpgrade;
