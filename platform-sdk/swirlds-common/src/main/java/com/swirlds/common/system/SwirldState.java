@@ -16,6 +16,7 @@
 
 package com.swirlds.common.system;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.system.address.AddressBook;
@@ -113,11 +114,14 @@ public interface SwirldState extends MerkleNode {
      *
      * @param configAddressBook the address book as loaded from config.txt. This address book may contain new nodes not
      *                          present in the stateAddressBook. Must not be null.
+     * @param context           the platform context. Must not be null.
      * @return a copy of the configuration address book with updated weight.
      */
     @NonNull
-    default AddressBook updateWeight(@NonNull final AddressBook configAddressBook) {
+    default AddressBook updateWeight(
+            @NonNull final AddressBook configAddressBook, @NonNull final PlatformContext context) {
         Objects.requireNonNull(configAddressBook, "configAddressBook must not be null");
+        Objects.requireNonNull(context, "context must not be null");
         return configAddressBook;
     }
 
