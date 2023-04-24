@@ -20,6 +20,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STAKING_REWA
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -121,10 +122,15 @@ class EndOfStakingPeriodCalculatorTest {
         given(stakingInfos.getForModify(nodeNum3)).willReturn(stakingInfo3);
         given(merkleNetworkContext.getTotalStakedRewardStart()).willReturn(1_000_000_000L);
 
+        assertEquals(0, stakingInfo1.getWeight());
+        assertEquals(0, stakingInfo1.getWeight());
+        assertEquals(0, stakingInfo1.getWeight());
+
         subject.updateNodes(consensusTime);
 
-        verify(merkleNetworkContext).setTotalStakedRewardStart(stakeToReward1 + stakeToReward2 + stakeToReward3);
         verify(merkleNetworkContext).setTotalStakedStart(1300L);
+        verify(merkleNetworkContext).setTotalStakedRewardStart(stakeToReward1 + stakeToReward2 + stakeToReward3);
+
         assertEquals(800L, stakingInfo1.getStake());
         assertEquals(500L, stakingInfo2.getStake());
         assertEquals(0L, stakingInfo3.getStake());
@@ -134,6 +140,10 @@ class EndOfStakingPeriodCalculatorTest {
         assertArrayEquals(new long[] {14, 6, 5}, stakingInfo1.getRewardSumHistory());
         assertArrayEquals(new long[] {11, 1, 1}, stakingInfo2.getRewardSumHistory());
         assertArrayEquals(new long[] {3, 3, 1}, stakingInfo3.getRewardSumHistory());
+        assertEquals(307, stakingInfo1.getWeight());
+        assertEquals(192, stakingInfo2.getWeight());
+        assertEquals(0, stakingInfo3.getWeight());
+        assertTrue(stakingInfo1.getWeight() + stakingInfo2.getWeight() + stakingInfo3.getWeight() <= 500);
     }
 
     @Test
@@ -182,7 +192,8 @@ class EndOfStakingPeriodCalculatorTest {
             stakedRewardStart1,
             unclaimedStakedRewardStart1,
             stake1,
-            rewardSumHistory1);
+            rewardSumHistory1,
+            0);
     final MerkleStakingInfo stakingInfo2 = new MerkleStakingInfo(
             minStake,
             maxStake,
@@ -191,7 +202,8 @@ class EndOfStakingPeriodCalculatorTest {
             stakedRewardStart2,
             unclaimedStakedRewardStart2,
             stake2,
-            rewardSumHistory2);
+            rewardSumHistory2,
+            0);
     final MerkleStakingInfo stakingInfo3 = new MerkleStakingInfo(
             minStake,
             maxStake,
@@ -200,5 +212,6 @@ class EndOfStakingPeriodCalculatorTest {
             stakedRewardStart3,
             unclaimedStakedRewardStart3,
             stake3,
-            rewardSumHistory3);
+            rewardSumHistory3,
+            0);
 }

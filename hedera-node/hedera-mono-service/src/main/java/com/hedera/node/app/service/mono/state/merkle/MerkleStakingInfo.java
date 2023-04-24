@@ -346,10 +346,10 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         stakeRewardStart = in.readLong();
         unclaimedStakeRewardStart = in.readLong();
         stake = in.readLong();
-        rewardSumHistory = in.readLongArray(Integer.MAX_VALUE);
         if (version >= RELEASE_0380_VERSION) {
             weight = in.readInt();
         }
+        rewardSumHistory = in.readLongArray(Integer.MAX_VALUE);
     }
 
     @Override

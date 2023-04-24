@@ -112,13 +112,7 @@ public class EndOfStakingPeriodCalculator {
         long newTotalStakedStart = 0L;
         long newTotalStakedRewardStart = 0L;
         final List<NodeStake> nodeStakingInfos = new ArrayList<>();
-
-        // Calculate the new totalStakedStart based on node's stake at the end of the period
-        for (final var nodeNum : curStakingInfos.keySet().stream().sorted().toList()) {
-            final var stakingInfo = curStakingInfos.get(nodeNum);
-            newTotalStakedStart += stakingInfo.getStake();
-        }
-
+        final List<NodeStake.Builder> nodeStakingInfosBuilder = new ArrayList<>();
         for (final var nodeNum : curStakingInfos.keySet().stream().sorted().toList()) {
             final var stakingInfo = curStakingInfos.getForModify(nodeNum);
 
@@ -146,22 +140,32 @@ public class EndOfStakingPeriodCalculator {
             stakingInfo.resetUnclaimedStakeRewardStart();
 
             newTotalStakedRewardStart += newStakeRewardStart;
-
-            // Update consensus weights of the nodes based on the total stake of the node
-            final var updatedWeight = getWeight(stakingInfo.getStake(), stakingInfo.getMinStake(), newTotalStakedStart);
-            stakingInfo.setWeight(updatedWeight);
-            log.info("Node {} has weight updated to {}", nodeNum, updatedWeight);
-
-            nodeStakingInfos.add(NodeStake.newBuilder()
+            newTotalStakedStart += stakingInfo.getStake();
+            nodeStakingInfosBuilder.add(NodeStake.newBuilder()
                     .setNodeId(nodeNum.longValue())
                     .setRewardRate(nodeRewardRate)
-                    .setStake(updatedWeight)
                     .setMinStake(stakingInfo.getMinStake())
                     .setMaxStake(stakingInfo.getMaxStake())
                     .setStakeRewarded(stakingInfo.getStakeToReward())
-                    .setStakeNotRewarded(stakingInfo.getStakeToNotReward())
-                    .build());
+                    .setStakeNotRewarded(stakingInfo.getStakeToNotReward()));
         }
+
+        // Calculate the new totalStakedStart based on node's stake at the end of the period
+        for (int i = 0; i < nodeStakingInfosBuilder.size(); i++) {
+            final var builder = nodeStakingInfosBuilder.get(i);
+            final var nodeNum = builder.getNodeId();
+            final var stakingInfo = curStakingInfos.getForModify(EntityNum.fromLong(nodeNum));
+            // Update consensus weights of the nodes based on the total stake of the node
+            final var updatedWeight =
+                    calculateWeightFromStake(stakingInfo.getStake(), stakingInfo.getMinStake(), newTotalStakedStart);
+            final var oldWeight = stakingInfo.getWeight();
+            stakingInfo.setWeight(updatedWeight);
+            log.info("Node {} weight is updated. Old weight {}, updated weight {}", nodeNum, oldWeight, updatedWeight);
+
+            builder.setWeight(updatedWeight);
+            nodeStakingInfos.add(builder.build());
+        }
+
         curNetworkCtx.setTotalStakedRewardStart(newTotalStakedRewardStart);
         curNetworkCtx.setTotalStakedStart(newTotalStakedStart);
         log.info(
@@ -187,9 +191,12 @@ public class EndOfStakingPeriodCalculator {
      * the weight of a node A  will be 0. If stake is greater than minStake, the weight of a node A
      * will be computed so that every node above minStake has weight at least 1; but any node
      * that has staked at least 1 out of every 250 whole hbars staked will have weight >= 2.
+     * @param stake the stake of current node, includes stake rewarded and non-rewarded
+     * @param minStake the minimum stake of current node
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
+     * @return calculated consensus weight of the node
      */
-    private int getWeight(long stake, long minStake, long totalStakeOfAllNodes) {
+    private int calculateWeightFromStake(long stake, long minStake, long totalStakeOfAllNodes) {
         if (stake < minStake) {
             return 0;
         } else {

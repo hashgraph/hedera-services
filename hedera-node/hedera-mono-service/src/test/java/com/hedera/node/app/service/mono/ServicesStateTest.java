@@ -58,6 +58,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
@@ -867,14 +868,30 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    void updatesAddressBookWithNewWeight() {
-        final var servicesState = tracked(new ServicesState());
-        final var platform = createMockPlatformWithCrypto();
-        final var addressBook = createPretendBookFrom(platform, true);
-        final var stakingMap = stakingInfoBuilder.buildStakingInfoMap(addressBook, bootstrapProperties);
+    void updatesAddressBookWithZeroWeightOnGenesisStart() {
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
+        assertEquals(1, stakingMap.size());
+        assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
 
+        subject.updateStake(addressBook);
+        verify(addressBook).updateStake(0, 0);
+    }
+
+    @Test
+    void updatesAddressBookWithNonZeroWeightsOnGenesisStart() {
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
+        assertEquals(1, stakingMap.size());
+        assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
+
+        stakingMap.forEach((k, v) -> {
+            v.setStake(1000L);
+            v.setWeight(500);
+        });
+        assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
         subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
-        assertTrue(stakingMap.size() > 0);
+
+        subject.updateStake(addressBook);
+        verify(addressBook).updateStake(0, 500);
     }
 
     private static ServicesApp createApp(final Platform platform) {
