@@ -19,11 +19,11 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.time.Time;
-import com.swirlds.common.utility.Startable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -223,7 +223,7 @@ public class SnapshotService implements Startable {
         // schedule next execution
         try {
             executor.schedule(this::mainLoop, Math.max(0L, delayNanos - delta), TimeUnit.NANOSECONDS);
-        } catch (RejectedExecutionException ex) {
+        } catch (final RejectedExecutionException ex) {
             // executor was shutdown
         }
     }

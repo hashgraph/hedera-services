@@ -36,6 +36,8 @@ import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -392,7 +394,17 @@ public class SizeLimitedStorage {
         });
     }
 
-    static Function<Long, TreeSet<ContractKey>> treeSetFactory = ignore -> new TreeSet<>();
+    static Function<Long, TreeSet<ContractKey>> treeSetFactory =
+            ignore -> new TreeSet<>((Comparator<ContractKey>) (contractKeyA, contractKeyB) -> {
+                if (contractKeyA == contractKeyB) {
+                    return 0;
+                }
+                final var order = Long.compare(contractKeyA.getContractId(), contractKeyB.getContractId());
+                if (order != 0) {
+                    return order;
+                }
+                return Arrays.compare(contractKeyA.getKey(), contractKeyB.getKey());
+            });
 
     private static IterableContractValue virtualValueFrom(final UInt256 evmWord) {
         return evmWord.isZero() ? ZERO_VALUE : IterableContractValue.from(evmWord);

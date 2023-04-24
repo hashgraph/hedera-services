@@ -30,10 +30,10 @@ import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftRemoveAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,7 +56,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum()), account)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
     }
 
     @Test
@@ -64,7 +64,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.key()).willReturn(ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(id);
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
@@ -76,7 +76,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.key()).willReturn(ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(owner);
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 0);
         assertEquals(ownerKey, context.payerKey());
