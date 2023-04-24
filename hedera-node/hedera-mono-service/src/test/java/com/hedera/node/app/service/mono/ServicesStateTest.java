@@ -875,8 +875,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertEquals(1, stakingMap.size());
         assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
 
-        subject.updateStake(addressBook);
-        verify(addressBook).updateStake(0, 0);
+        subject.updateWeight(addressBook);
+        verify(addressBook).updateWeight(0, 0);
     }
 
     @Test
@@ -892,8 +892,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
         subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
 
-        subject.updateStake(addressBook);
-        verify(addressBook).updateStake(0, 500);
+        subject.updateWeight(addressBook);
+        verify(addressBook).updateWeight(0, 500);
     }
 
     private static ServicesApp createApp(final Platform platform) {
