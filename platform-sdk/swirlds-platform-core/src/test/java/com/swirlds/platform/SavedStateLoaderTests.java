@@ -110,7 +110,7 @@ public class SavedStateLoaderTests {
 
     private void testNullShutdownTrigger() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         null,
                         addressBook,
@@ -123,7 +123,7 @@ public class SavedStateLoaderTests {
 
     private void testNullAddressBook() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         null,
                         addressBook,
@@ -148,7 +148,7 @@ public class SavedStateLoaderTests {
 
     private void testNullVersion() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         shutdownTrigger,
                         addressBook,
@@ -161,7 +161,7 @@ public class SavedStateLoaderTests {
 
     private void testNullEmergencyValidatorSupplier() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         shutdownTrigger, addressBook, new SavedStateInfo[0], version, null, emergencyRecoveryManager),
                 "exception should be thrown for null emergency state validator supplier");
@@ -169,7 +169,7 @@ public class SavedStateLoaderTests {
 
     private void testNullEmergencyValidatorValue() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         shutdownTrigger,
                         addressBook,
@@ -182,7 +182,7 @@ public class SavedStateLoaderTests {
 
     private void testNullEmergencyRecoveryManager() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         shutdownTrigger, addressBook, new SavedStateInfo[0], version, () -> emergencyValidator, null),
                 "exception should be thrown for null emergency recovery manager");

@@ -29,7 +29,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.Browser;
@@ -73,7 +73,7 @@ public class MonoServicesMain implements SwirldMain {
     }
 
     @Override
-    public SwirldState2 newState() {
+    public SwirldState newState() {
         return new ServicesState();
     }
 
@@ -126,7 +126,7 @@ public class MonoServicesMain implements SwirldMain {
 
     private void validateLedgerState() {
         app.ledgerValidator().validate(app.workingState().accounts());
-        app.nodeInfo().validateSelfAccountIfStaked();
+        app.nodeInfo().validateSelfAccountIfNonZeroStake();
         final var notifications = app.notificationEngine().get();
         notifications.register(PlatformStatusChangeListener.class, app.statusChangeListener());
         notifications.register(ReconnectCompleteListener.class, app.reconnectListener());

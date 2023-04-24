@@ -32,7 +32,7 @@ import java.io.UncheckedIOException;
  * @param <V>
  *     The value
  */
-public interface RecordAccessor<K extends VirtualKey<? super K>, V extends VirtualValue> {
+public interface RecordAccessor<K extends VirtualKey, V extends VirtualValue> {
 
     /**
      * Gets the {@link VirtualRecord} at a given path. If there is no record at tht path, null is returned.

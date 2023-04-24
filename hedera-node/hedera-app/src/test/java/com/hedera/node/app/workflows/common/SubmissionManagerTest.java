@@ -29,6 +29,7 @@ import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.RecordCache;
@@ -83,7 +84,7 @@ class SubmissionManagerTest extends AppTestBase {
         /** The submission manager instance */
         private SubmissionManager submissionManager;
         /** Representative of the raw transaction bytes */
-        private byte[] bytes;
+        private Bytes bytes;
         /** The TransactionBody of the transaction we are submitting */
         private TransactionBody txBody;
 
@@ -115,7 +116,7 @@ class SubmissionManagerTest extends AppTestBase {
             submissionManager.submit(txBody, bytes);
 
             // Then the platform actually receives the bytes
-            verify(platform).createTransaction(bytes);
+            verify(platform).createTransaction(PbjConverter.asBytes(bytes));
             // And the record cache is updated with this transaction
             verify(recordCache).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
             // And the metrics keeping track of errors submitting are NOT touched
@@ -151,7 +152,7 @@ class SubmissionManagerTest extends AppTestBase {
         /** The submission manager instance */
         private SubmissionManager submissionManager;
         /** Representative of the raw transaction bytes */
-        private byte[] bytes;
+        private Bytes bytes;
         /** The TransactionBody of the transaction we are submitting */
         private TransactionBody txBody;
         /** Representative of the unchecked transaction bytes */
@@ -224,7 +225,7 @@ class SubmissionManagerTest extends AppTestBase {
             txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().build())
                     .uncheckedSubmit(UncheckedSubmitBody.newBuilder()
-                            .transactionBytes(Bytes.wrap(randomBytes(25)))
+                            .transactionBytes(randomBytes(25))
                             .build())
                     .build();
 

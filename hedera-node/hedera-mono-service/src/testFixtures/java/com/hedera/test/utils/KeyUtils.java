@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 public class KeyUtils {
@@ -96,6 +97,18 @@ public class KeyUtils {
                 .toList();
     }
 
+    public static List<com.hederahashgraph.api.proto.java.Key> sanityRestored(Set<? extends HederaKey> jKeys) {
+        return jKeys.stream()
+                .map(jKey -> {
+                    try {
+                        return JKey.mapJKey((JKey) jKey);
+                    } catch (Exception ignore) {
+                        throw new AssertionError("All keys should be mappable!");
+                    }
+                })
+                .toList();
+    }
+
     public static com.hederahashgraph.api.proto.java.Key sanityRestored(HederaKey jKey) {
         try {
             return JKey.mapJKey((JKey) jKey);
@@ -114,6 +127,19 @@ public class KeyUtils {
     }
 
     public static List<com.hedera.hapi.node.base.Key> sanityRestoredToPbj(@NonNull List<? extends HederaKey> jKeys) {
+        requireNonNull(jKeys);
+        return jKeys.stream()
+                .map(jKey -> {
+                    try {
+                        return toPbj(JKey.mapJKey((JKey) jKey));
+                    } catch (Exception ignore) {
+                        throw new AssertionError("All keys should be mappable! But failed for " + jKey);
+                    }
+                })
+                .toList();
+    }
+
+    public static List<com.hedera.hapi.node.base.Key> sanityRestoredToPbj(@NonNull Set<? extends HederaKey> jKeys) {
         requireNonNull(jKeys);
         return jKeys.stream()
                 .map(jKey -> {

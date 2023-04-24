@@ -107,7 +107,7 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
     /** {@inheritDoc} */
     @Override
-    protected void put(AtomicLongArray chunk, int subIndex, long value) {
+    protected void putToChunk(AtomicLongArray chunk, int subIndex, long value) {
         chunk.set(subIndex, value);
     }
 

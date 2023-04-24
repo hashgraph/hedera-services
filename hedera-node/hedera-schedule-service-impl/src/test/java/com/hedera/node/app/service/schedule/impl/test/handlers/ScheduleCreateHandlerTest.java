@@ -16,13 +16,10 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.node.app.service.schedule.impl.test.ScheduledTxnFactory.scheduleCreateTxnWith;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -30,148 +27,123 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
-    void preHandleScheduleCreateVanilla() {
+    void preHandleScheduleCreateVanilla() throws PreCheckException {
         final var subject = new ScheduleCreateHandler();
         final var txn = scheduleCreateTransaction(payer);
 
-        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
+        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
+        given(keyLookup.getAccountById(payer)).willReturn(payerAccount);
+        given(payerAccount.key()).willReturn(payerKey);
 
-        final var context = new PreHandleContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 1, false, OK);
-        assertEquals(schedulerKey, context.getPayerKey());
-        assertEquals(List.of(adminKey), context.getRequiredNonPayerKeys());
+        basicContextAssertions(context, 1);
+        assertEquals(schedulerKey, context.payerKey());
+        assertEquals(Set.of(adminKey), context.requiredNonPayerKeys());
 
-        final var innerContext = context.getInnerContext();
-        basicContextAssertions(innerContext, 0, false, OK);
-        assertEquals(payer, innerContext.getPayer());
-        assertEquals(payerKey, innerContext.getPayerKey());
+        final var innerContext = context.innerContext();
+        basicContextAssertions(innerContext, 0);
+        assertEquals(payer, innerContext.payer());
+        assertEquals(payerKey, innerContext.payerKey());
 
         verify(dispatcher).dispatch(innerContext);
     }
 
     @Test
-    void preHandleScheduleCreateVanillaNoAdmin() {
+    void preHandleScheduleCreateVanillaNoAdmin() throws PreCheckException {
         final var subject = new ScheduleCreateHandler();
         final var txn = scheduleCreateTxnWith(
                 null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
 
-        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
+        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
+        given(keyLookup.getAccountById(payer)).willReturn(payerAccount);
+        given(payerAccount.key()).willReturn(payerKey);
 
-        final var context = new PreHandleContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 0, false, OK);
-        assertEquals(schedulerKey, context.getPayerKey());
-        assertEquals(List.of(), context.getRequiredNonPayerKeys());
+        basicContextAssertions(context, 0);
+        assertEquals(schedulerKey, context.payerKey());
+        assertEquals(Set.of(), context.requiredNonPayerKeys());
 
-        final var innerContext = context.getInnerContext();
-        basicContextAssertions(innerContext, 0, false, OK);
-        assertEquals(payer, innerContext.getPayer());
-        assertEquals(payerKey, innerContext.getPayerKey());
+        final var innerContext = context.innerContext();
+        basicContextAssertions(innerContext, 0);
+        assertEquals(payer, innerContext.payer());
+        assertEquals(payerKey, innerContext.payerKey());
 
         verify(dispatcher).dispatch(innerContext);
     }
 
     @Test
-    void preHandleScheduleCreateFailsOnMissingPayer() {
-        final var subject = new ScheduleCreateHandler();
-        final var txn = scheduleCreateTransaction(payer);
-
-        given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_PAYER_ACCOUNT_ID));
-        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
-
-        final var context = new PreHandleContext(keyLookup, txn, scheduler);
-        subject.preHandle(context, dispatcher);
-
-        basicContextAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
-
-        final var innerContext = context.getInnerContext();
-        basicContextAssertions(innerContext, 0, false, OK);
-        assertEquals(payer, innerContext.getPayer());
-        assertEquals(payerKey, innerContext.getPayerKey());
-
-        verify(dispatcher).dispatch(innerContext);
-    }
-
-    @Test
-    void preHandleScheduleCreateUsesSamePayerIfScheduledPayerNotSet() {
+    void preHandleScheduleCreateUsesSamePayerIfScheduledPayerNotSet() throws PreCheckException {
         final var subject = new ScheduleCreateHandler();
         final var txn = scheduleCreateTransaction(null);
-        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
 
-        final var context = new PreHandleContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 1, false, OK);
-        assertEquals(schedulerKey, context.getPayerKey());
-        assertEquals(List.of(adminKey), context.getRequiredNonPayerKeys());
+        basicContextAssertions(context, 1);
+        assertEquals(schedulerKey, context.payerKey());
+        assertEquals(Set.of(adminKey), context.requiredNonPayerKeys());
 
-        final var innerContext = context.getInnerContext();
-        basicContextAssertions(innerContext, 0, false, OK);
-        assertEquals(scheduler, innerContext.getPayer());
-        assertEquals(schedulerKey, innerContext.getPayerKey());
+        final var innerContext = context.innerContext();
+        basicContextAssertions(innerContext, 0);
+        assertEquals(scheduler, innerContext.payer());
+        assertEquals(schedulerKey, innerContext.payerKey());
 
         verify(dispatcher).dispatch(innerContext);
     }
 
     @Test
-    void failsWithScheduleTransactionNotInWhitelist() {
+    void failsWithScheduleTransactionNotInWhitelist() throws PreCheckException {
         final var subject = new ScheduleCreateHandler();
         final var txn = scheduleTxnNotRecognized();
-        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
 
-        final var context = new PreHandleContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 0, false, OK);
-        assertEquals(schedulerKey, context.getPayerKey());
-        assertEquals(Collections.EMPTY_LIST, context.getRequiredNonPayerKeys());
+        basicContextAssertions(context, 0);
+        assertEquals(schedulerKey, context.payerKey());
+        assertEquals(Collections.EMPTY_SET, context.requiredNonPayerKeys());
 
         // @todo whitelist tests don't work; it appears they never actually tested a
         //       non-whitelist situation so much as a missing key.  This requires careful
         //       thought and rework.
-        //        final var innerContext = context.getInnerContext();
-        //        basicContextAssertions(innerContext, 0, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-        //        assertEquals(scheduler, innerContext.getPayer());
-        //        assertEquals(schedulerKey, innerContext.getPayerKey());
+        //        final var innerContext = context.innerContext();
+        //        basicContextAssertions(innerContext, 0, true,
+        // SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        //        assertEquals(scheduler, innerContext.payer());
+        //        assertEquals(schedulerKey, innerContext.payerKey());
         //        verify(dispatcher, never()).dispatch(any());
     }
 
     @Test
-    void innerTxnFailsSetsStatus() {
+    void innerTxnFailsSetsStatus() throws PreCheckException {
         final var subject = new ScheduleCreateHandler();
         final var txn = scheduleCreateTransaction(payer);
 
-        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
+        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
+        given(keyLookup.getAccountById(payer)).willReturn(null);
 
-        final var context = new PreHandleContext(keyLookup, txn, scheduler);
-        subject.preHandle(context, dispatcher);
-
-        basicContextAssertions(context, 1, false, OK);
-        assertEquals(schedulerKey, context.getPayerKey());
-        assertEquals(List.of(adminKey), context.getRequiredNonPayerKeys());
-
-        final var innerContext = context.getInnerContext();
-        basicContextAssertions(innerContext, 0, true, UNRESOLVABLE_REQUIRED_SIGNERS);
-        assertEquals(payer, innerContext.getPayer());
-        assertNull(innerContext.getPayerKey());
-
-        verify(dispatcher).dispatch(innerContext);
+        final var context = new PreHandleContext(keyLookup, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context, dispatcher), UNRESOLVABLE_REQUIRED_SIGNERS);
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {

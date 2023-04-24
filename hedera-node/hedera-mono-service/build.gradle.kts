@@ -101,6 +101,10 @@ val jmhDaggerSources = file("build/generated/sources/annotationProcessor/java/jm
 
 java.sourceSets["jmh"].java.srcDir(jmhDaggerSources)
 
+val generatedSources = file("build/generated/sources/annotationProcessor/java/main")
+
+java.sourceSets["main"].java.srcDir(generatedSources)
+
 // Replace variables in semantic-version.properties with build variables
 tasks.processResources {
   filesMatching("semantic-version.properties") {

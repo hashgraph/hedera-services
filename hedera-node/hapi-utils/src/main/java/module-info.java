@@ -29,4 +29,5 @@ module com.hedera.node.app.hapi.utils {
     requires org.apache.commons.lang3;
     requires net.i2p.crypto.eddsa;
     requires javax.inject;
+    requires com.hedera.hashgraph.protobuf.java.api;
 }

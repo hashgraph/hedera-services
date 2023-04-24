@@ -57,8 +57,7 @@ import java.util.stream.Stream;
  * @param <V>
  * 		The value
  */
-public class ReconnectHashListener<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements VirtualHashListener<K, V> {
+public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue> implements VirtualHashListener<K, V> {
     private static final int INITIAL_BATCH_ARRAY_SIZE = 10_000;
     // Maybe it would be better to have the whole state instead of just first/last leaf path so we can use stats
     // while flushing and reconnecting...

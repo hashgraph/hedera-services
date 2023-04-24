@@ -32,7 +32,7 @@ import java.util.stream.Stream;
  * @param <V>
  *     The value.
  */
-final class ArrayHashingQueue<K extends VirtualKey<? super K>, V extends VirtualValue> implements HashingQueue<K, V> {
+final class ArrayHashingQueue<K extends VirtualKey, V extends VirtualValue> implements HashingQueue<K, V> {
     private final AtomicInteger size = new AtomicInteger();
 
     @SuppressWarnings("unchecked")

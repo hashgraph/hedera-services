@@ -292,7 +292,7 @@ class HandleWorkflowModuleTest {
         given(tokenComponent.tokenUnpauseHandler()).willReturn(tokenUnpauseHandler);
         given(utilComponent.prngHandler()).willReturn(utilPrngHandler);
 
-        final var handlers = HandleWorkflowModule.provideTransactionHandlers(
+        final var handlers = HandlersModule.provideTransactionHandlers(
                 adminComponent,
                 consensusComponent,
                 fileComponent,

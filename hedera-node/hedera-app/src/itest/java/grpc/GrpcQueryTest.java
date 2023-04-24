@@ -48,8 +48,8 @@ class GrpcQueryTest extends GrpcTestBase {
     private static final String GOOD_RESPONSE = "All Good";
     private static final byte[] GOOD_RESPONSE_BYTES = GOOD_RESPONSE.getBytes(StandardCharsets.UTF_8);
 
-    private static final QueryWorkflow GOOD_QUERY = (session, req, res) -> res.writeBytes(GOOD_RESPONSE_BYTES);
-    private static final IngestWorkflow UNIMPLEMENTED_INGEST = (s, r, r2) -> fail("The Ingest should not be called");
+    private static final QueryWorkflow GOOD_QUERY = (req, res) -> res.writeBytes(GOOD_RESPONSE_BYTES);
+    private static final IngestWorkflow UNIMPLEMENTED_INGEST = (r, r2) -> fail("The Ingest should not be called");
 
     private void setUp(@NonNull final QueryWorkflow query) {
         registerService(new GrpcServiceBuilder(SERVICE, UNIMPLEMENTED_INGEST, query).query(METHOD));
@@ -73,7 +73,7 @@ class GrpcQueryTest extends GrpcTestBase {
     @DisplayName("A query throwing a RuntimeException returns the UNKNOWN status code")
     void queryThrowingRuntimeExceptionReturnsUNKNOWNError() {
         // Given a server where the service will throw a RuntimeException
-        setUp((session, req, res) -> {
+        setUp((req, res) -> {
             throw new RuntimeException("Failing with RuntimeException");
         });
 
@@ -88,7 +88,7 @@ class GrpcQueryTest extends GrpcTestBase {
     @DisplayName("A query throwing an Error returns the UNKNOWN status code")
     void queryThrowingErrorReturnsUNKNOWNError() {
         // Given a server where the service will throw an Error
-        setUp((session, req, res) -> {
+        setUp((req, res) -> {
             throw new Error("Whoops!");
         });
 
@@ -108,7 +108,7 @@ class GrpcQueryTest extends GrpcTestBase {
     @DisplayName("Explicitly thrown StatusRuntimeException passes the code through to the response")
     void explicitlyThrowStatusRuntimeException(@NonNull final Status.Code code) {
         // Given a server where the service will throw a specific StatusRuntimeException
-        setUp((session, req, res) -> {
+        setUp((req, res) -> {
             throw new StatusRuntimeException(code.toStatus());
         });
 

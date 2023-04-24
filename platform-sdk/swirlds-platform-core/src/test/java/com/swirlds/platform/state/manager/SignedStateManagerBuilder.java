@@ -16,14 +16,8 @@
 
 package com.swirlds.platform.state.manager;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
@@ -38,30 +32,14 @@ public class SignedStateManagerBuilder {
 
     private final StateConfig stateConfig;
     private final SignedStateMetrics metrics;
-    private NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = SignedStateWrapper::release;
+    private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = SignedStateWrapper::release;
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer = SignedStateWrapper::release;
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer = SignedStateWrapper::release;
 
-    public SignedStateManagerBuilder(final AddressBook addressBook, final StateConfig stateConfig, final long selfId) {
+    public SignedStateManagerBuilder(final StateConfig stateConfig) {
         this.stateConfig = stateConfig;
 
-        this.metrics = mock(SignedStateMetrics.class);
-        when(metrics.getFreshStatesMetric()).thenReturn(mock(RunningAverageMetric.class));
-        when(metrics.getStaleStatesMetric()).thenReturn(mock(RunningAverageMetric.class));
-        when(metrics.getTotalUnsignedStatesMetric()).thenReturn(mock(Counter.class));
-        when(metrics.getStateSignaturesGatheredPerSecondMetric()).thenReturn(mock(SpeedometerMetric.class));
-        when(metrics.getStatesSignedPerSecondMetric()).thenReturn(mock(SpeedometerMetric.class));
-        when(metrics.getAverageTimeToFullySignStateMetric()).thenReturn(mock(RunningAverageMetric.class));
-        when(metrics.getSignedStateHashingTimeMetric()).thenReturn(mock(RunningAverageMetric.class));
-        when(metrics.getStateDeletionQueueAvgMetric()).thenReturn(mock(RunningAverageMetric.class));
-        when(metrics.getStateDeletionTimeAvgMetric()).thenReturn(mock(RunningAverageMetric.class));
-        when(metrics.getStateArchivalTimeAvgMetric()).thenReturn(mock(RunningAverageMetric.class));
-        when(metrics.getStateSignatureAge()).thenReturn(mock(RunningAverageMetric.class));
-    }
-
-    public SignedStateManagerBuilder newLatestCompleteStateConsumer(final NewLatestCompleteStateConsumer consumer) {
-        this.newLatestCompleteStateConsumer = consumer;
-        return this;
+        this.metrics = new SignedStateMetrics(new NoOpMetrics());
     }
 
     public SignedStateManagerBuilder stateHasEnoughSignaturesConsumer(final StateHasEnoughSignaturesConsumer consumer) {

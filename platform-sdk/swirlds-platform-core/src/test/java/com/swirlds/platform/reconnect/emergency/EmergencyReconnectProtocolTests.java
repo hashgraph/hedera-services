@@ -36,6 +36,7 @@ import com.swirlds.platform.reconnect.ReconnectSettingsImpl;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.time.Duration;
 import java.time.Instant;
@@ -146,7 +147,7 @@ public class EmergencyReconnectProtocolTests {
                 PEER_ID,
                 emergencyRecoveryManager,
                 teacherThrottle,
-                mock(EmergencyStateFinder.class),
+                mock(SignedStateFinder.class),
                 100,
                 mock(ReconnectMetrics.class),
                 reconnectController);
@@ -192,7 +193,7 @@ public class EmergencyReconnectProtocolTests {
                 PEER_ID,
                 mock(EmergencyRecoveryManager.class),
                 teacherThrottle,
-                mock(EmergencyStateFinder.class),
+                mock(SignedStateFinder.class),
                 100,
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class));

@@ -24,7 +24,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -70,8 +70,8 @@ public class ServicesMain implements SwirldMain {
 
     /** {@inheritDoc} */
     @Override
-    public SwirldState2 newState() {
-        return (SwirldState2) delegate.newState();
+    public SwirldState newState() {
+        return delegate.newState();
     }
 
     /** {@inheritDoc} */

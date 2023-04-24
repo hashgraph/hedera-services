@@ -148,7 +148,7 @@ public class PrecompilePricingUtils {
         final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
         precompile.addImplicitCostsIn(accessor);
         final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
-        return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
@@ -158,7 +158,7 @@ public class PrecompilePricingUtils {
                 calculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, currentView, now, ANSWER_ONLY);
 
         final long gasPriceInTinybars = calculator.estimatedGasPriceInTinybars(ContractCall, now);
-        final long calculatedFeeInTinybars = fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
+        final long calculatedFeeInTinybars = fees.networkFee() + fees.nodeFee() + fees.serviceFee();
         final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
 
         // convert to gas cost

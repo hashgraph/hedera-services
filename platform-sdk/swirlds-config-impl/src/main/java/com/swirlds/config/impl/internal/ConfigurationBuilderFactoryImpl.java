@@ -18,6 +18,7 @@ package com.swirlds.config.impl.internal;
 
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Implentation of the {@link ConfigurationBuilderFactory} interface that will automatically be loaded by Java SPI (see
@@ -25,6 +26,7 @@ import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
  */
 public final class ConfigurationBuilderFactoryImpl implements ConfigurationBuilderFactory {
 
+    @NonNull
     @Override
     public ConfigurationBuilder create() {
         return new ConfigurationBuilderImpl();

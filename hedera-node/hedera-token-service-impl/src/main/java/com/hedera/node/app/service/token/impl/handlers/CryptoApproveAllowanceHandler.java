@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,16 +49,16 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().cryptoApproveAllowanceOrThrow();
+        final var op = context.body().cryptoApproveAllowanceOrThrow();
         var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
 
         for (final var allowance : op.cryptoAllowancesOrElse(emptyList())) {
-            context.addNonPayerKey(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
+            context.requireKeyOrThrow(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
         }
         for (final var allowance : op.tokenAllowancesOrElse(emptyList())) {
-            context.addNonPayerKey(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
+            context.requireKeyOrThrow(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
         }
         for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
             final var ownerId = allowance.ownerOrElse(AccountID.DEFAULT);
@@ -73,7 +74,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             if (operatorId != ownerId) {
                 failureStatus = INVALID_DELEGATING_SPENDER;
             }
-            context.addNonPayerKey(operatorId, failureStatus);
+            context.requireKeyOrThrow(operatorId, failureStatus);
         }
     }
 

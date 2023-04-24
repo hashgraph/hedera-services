@@ -32,11 +32,9 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Old Complete State Eventually Released Test")
@@ -51,8 +49,6 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
             .setSize(4)
             .setSequentialIds(false)
             .build();
-
-    final long selfId = addressBook.getId(0);
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.
@@ -71,11 +67,10 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
      * Keep adding new states to the manager but never sign any of them (other than self signatures).
      */
     @Test
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Old Complete State Eventually Released")
     void oldCompleteStateEventuallyReleased() throws InterruptedException {
 
-        final SignedStateManager manager = new SignedStateManagerBuilder(addressBook, stateConfig, selfId)
+        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .build();
 
@@ -95,7 +90,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
 
         signedStates.put(0L, stateFromDisk);
         highestRound.set(0);
-        manager.addCompleteSignedState(stateFromDisk);
+        manager.addState(stateFromDisk);
 
         // Create a series of signed states. Don't add any signatures. Self signatures will be automatically added.
         final int count = roundsToKeepForSigning * 100;
@@ -109,7 +104,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addUnsignedState(signedState);
+            manager.addState(signedState);
 
             try (final AutoCloseableWrapper<SignedState> lastState = manager.getLatestImmutableState()) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");

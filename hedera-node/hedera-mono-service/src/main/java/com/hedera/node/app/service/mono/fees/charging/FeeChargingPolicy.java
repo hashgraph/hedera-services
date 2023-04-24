@@ -65,7 +65,7 @@ public class FeeChargingPolicy {
      * @return the outcome of applying the policy
      */
     public ResponseCodeEnum applyForDuplicate(FeeObject fees) {
-        final var feesForDuplicate = new FeeObject(fees.getNodeFee(), fees.getNetworkFee(), 0L);
+        final var feesForDuplicate = new FeeObject(fees.nodeFee(), fees.networkFee(), 0L);
 
         return chargePendingSolvency(feesForDuplicate);
     }
