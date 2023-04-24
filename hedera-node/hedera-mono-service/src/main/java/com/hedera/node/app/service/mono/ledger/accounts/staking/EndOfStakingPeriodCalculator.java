@@ -165,7 +165,7 @@ public class EndOfStakingPeriodCalculator {
             stakingInfo.setWeight(updatedWeight);
             log.info("Node {} weight is updated. Old weight {}, updated weight {}", nodeNum, oldWeight, updatedWeight);
 
-            builder.setWeight(updatedWeight);
+            builder.setStake(updatedWeight);
             nodeStakingInfos.add(builder.build());
         }
 

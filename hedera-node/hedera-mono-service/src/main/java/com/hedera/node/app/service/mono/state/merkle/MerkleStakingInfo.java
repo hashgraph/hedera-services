@@ -88,7 +88,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     // at midnight UTC of the current day. If the stake of this node is less than minStake, then the
     // weight is 0. Sum of all weights of nodes in the network should be less than 500.
     // If the stake of this node A is greater than minStake,
-    // then A's weight is computed as (node A stake/ total stake of all nodes)/500.
+    // then A's weight is computed as (node A stake * 500/ total stake of all nodes).
     private int weight;
 
     @Nullable

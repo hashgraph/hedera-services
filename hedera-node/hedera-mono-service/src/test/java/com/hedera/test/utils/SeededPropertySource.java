@@ -491,7 +491,7 @@ public class SeededPropertySource {
         return seeded;
     }
 
-    public MerkleStakingInfo nextStakingInfo() {
+    public MerkleStakingInfo next038StakingInfo() {
         final var MAX_REWARD_HISTORY = 366;
         final var ans = new MerkleStakingInfo(
                 nextLong(),
@@ -502,7 +502,23 @@ public class SeededPropertySource {
                 nextLong(),
                 nextLong(),
                 nextLongs(MAX_REWARD_HISTORY),
+                // added in 0.38
                 nextInt());
+        return ans;
+    }
+
+    public MerkleStakingInfo next0370StakingInfo() {
+        final var MAX_REWARD_HISTORY = 366;
+        final var ans = new MerkleStakingInfo(
+                nextLong(),
+                nextLong(),
+                nextLong(),
+                nextLong(),
+                nextLong(),
+                nextLong(),
+                nextLong(),
+                nextLongs(MAX_REWARD_HISTORY),
+                0);
         return ans;
     }
 
