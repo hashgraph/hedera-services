@@ -653,6 +653,13 @@ class MonoTransactionDispatcherTest {
                         (Function<TransactionHandlers, TransactionHandler>)
                                 TransactionHandlers::cryptoDeleteLiveHashHandler),
 
+                // freeze
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .freeze(FreezeTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::freezeHandler),
+
                 // token
                 Arguments.of(
                         TransactionBody.newBuilder()
@@ -812,14 +819,6 @@ class MonoTransactionDispatcherTest {
                                 .build(),
                         (DispatchToHandler) (handlers, meta) ->
                                 verify(handlers.fileAppendHandler()).preHandle(meta)),
-
-                // freeze
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .freeze(FreezeTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.freezeHandler()).preHandle(eq(meta), any())),
 
                 // network
                 Arguments.of(
