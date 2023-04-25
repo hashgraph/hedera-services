@@ -218,7 +218,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         if (version >= ClassVersion.SOFTWARE_VERSION) {
             softwareVersion = in.readSerializable();
         } else {
-            softwareVersion = null;
+            softwareVersion = SoftwareVersion.NO_VERSION;
         }
         creatorId = in.readLong();
         selfParentGen = in.readLong();
