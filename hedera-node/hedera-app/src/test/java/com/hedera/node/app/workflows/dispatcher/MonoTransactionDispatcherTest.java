@@ -627,6 +627,23 @@ class MonoTransactionDispatcherTest {
                         (Function<TransactionHandlers, TransactionHandler>)
                                 TransactionHandlers::cryptoDeleteLiveHashHandler),
 
+                // schedule
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .scheduleCreate(ScheduleCreateTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::scheduleCreateHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .scheduleDelete(ScheduleDeleteTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::scheduleDeleteHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .scheduleSign(ScheduleSignTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::scheduleSignHandler),
+
                 // token
                 Arguments.of(
                         TransactionBody.newBuilder()
@@ -828,32 +845,6 @@ class MonoTransactionDispatcherTest {
                                 .build(),
                         (DispatchToHandler) (handlers, meta) ->
                                 verify(handlers.networkUncheckedSubmitHandler()).preHandle(meta)),
-
-                // schedule
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .scheduleCreate(ScheduleCreateTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.scheduleCreateHandler()).preHandle(eq(meta), any())),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .scheduleSign(ScheduleSignTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.scheduleSignHandler()).preHandle(eq(meta), any(), any())),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .scheduleCreate(ScheduleCreateTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.scheduleCreateHandler()).preHandle(eq(meta), any())),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .scheduleDelete(ScheduleDeleteTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.scheduleDeleteHandler()).preHandle(eq(meta), any())),
 
                 // util
                 Arguments.of(

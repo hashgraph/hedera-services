@@ -30,7 +30,6 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.meta.HandleContext;
@@ -157,11 +156,10 @@ public class TransactionDispatcher {
 
             case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler().preHandle(context);
 
-            case SCHEDULE_CREATE -> handlers.scheduleCreateHandler().preHandle(context, this::dispatchPreHandle);
-            case SCHEDULE_SIGN -> handlers.scheduleSignHandler()
-                    .preHandle(context, context.createStore(ReadableScheduleStore.class), this::dispatchPreHandle);
-            case SCHEDULE_DELETE -> handlers.scheduleDeleteHandler()
-                    .preHandle(context, context.createStore(ReadableScheduleStore.class));
+            case SCHEDULE_CREATE -> handlers.scheduleCreateHandler().preHandle(context);
+            case SCHEDULE_SIGN -> handlers.scheduleSignHandler().preHandle(context);
+            case SCHEDULE_DELETE -> handlers.scheduleDeleteHandler().preHandle(context);
+
             case TOKEN_CREATION -> handlers.tokenCreateHandler().preHandle(context);
             case TOKEN_UPDATE -> handlers.tokenUpdateHandler().preHandle(context);
             case TOKEN_MINT -> handlers.tokenMintHandler().preHandle(context);
