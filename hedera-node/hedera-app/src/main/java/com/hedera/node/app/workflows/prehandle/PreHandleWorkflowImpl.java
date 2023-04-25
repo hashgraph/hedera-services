@@ -161,7 +161,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
             final var storeFactory = new ReadableStoreFactory(state);
-            final var context = new PreHandleContext(storeFactory, txBody);
+            final var context = new PreHandleContextImpl(storeFactory, txBody);
             dispatcher.dispatchPreHandle(context);
 
             // 3. Prepare and verify signature-data
