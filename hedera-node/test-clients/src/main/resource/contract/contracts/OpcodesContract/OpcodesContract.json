@@ -1,0 +1,106 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_addr",
+        "type": "address"
+      }
+    ],
+    "name": "opExtCodeHash",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_resp",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "opPush0",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_resp",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_one",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_two",
+        "type": "uint256"
+      }
+    ],
+    "name": "opSar",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_resp",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_one",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_two",
+        "type": "uint256"
+      }
+    ],
+    "name": "opShl",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_resp",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_one",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_two",
+        "type": "uint256"
+      }
+    ],
+    "name": "opShr",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_resp",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  }
+]

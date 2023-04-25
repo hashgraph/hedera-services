@@ -44,6 +44,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@SuppressWarnings("removal")
 @ExtendWith(MockitoExtension.class)
 class PreHandleContextListUpdatesTest {
     public static final Key A_COMPLEX_KEY = Key.newBuilder()
@@ -127,7 +128,9 @@ class PreHandleContextListUpdatesTest {
 
         // When we create a PreHandleContext by passing null as either argument
         // Then we get a null pointer exception
-        assertThrows(NullPointerException.class, () -> new PreHandleContext(null, createAccountTransaction()));
+        assertThrows(
+                NullPointerException.class,
+                () -> new PreHandleContext((AccountAccess) null, createAccountTransaction()));
         assertThrows(NullPointerException.class, () -> new PreHandleContext(accountAccess, null));
 
         // When we pass null to requireKeyOrThrow for the account ID then we get a PreCheckException
