@@ -185,8 +185,10 @@ import java.time.Duration;
  * 		path to log4j2.xml (which might not exist)
  * @param syncAsProtocolEnabled
  *      if true, perform the sync gossip algorithm as a negotiated protocol using bidirectional connections.
- * @param syncSleepAfterFailedNegotiation the number of milliseconds to sleep after a failed negotiation when running
- *                                        the sync-as-a-protocol algorithm
+ * @param syncSleepAfterFailedNegotiation
+ *      the number of milliseconds to sleep after a failed negotiation when running the sync-as-a-protocol algorithm
+ * @param syncProtocolPermitCount
+ *      the number of permits to use when running the sync-as-a-protocol algorithm
  * @param hangingThreadDuration
  *      the length of time a gossip thread is allowed to wait when it is asked to shutdown.
  *      If a gossip thread takes longer than this period to shut down, then an error message is written to the log.
@@ -263,4 +265,5 @@ public record BasicConfig(
         @ConfigProperty(value = "syncAsProtocolEnabled", defaultValue = "true") boolean syncAsProtocolEnabled,
         @ConfigProperty(value = "syncSleepAfterFailedNegotiation", defaultValue = "25")
                 int syncSleepAfterFailedNegotiation,
+        @ConfigProperty(value = "syncProtocolPermitCount", defaultValue = "5") int syncProtocolPermitCount,
         @ConfigProperty(value = "hangingThreadDuration", defaultValue = "60s") Duration hangingThreadDuration) {}

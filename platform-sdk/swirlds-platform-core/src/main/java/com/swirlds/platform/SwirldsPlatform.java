@@ -1296,10 +1296,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 !basicConfig.syncAsProtocolEnabled(),
                 () -> {});
 
-        // TODO this number was chosen to exactly match how many syncs could be performed with the old sync strategy.
-        //  it should be reevaluated before merging
-        syncPermitProvider =
-                new SyncPermitProvider(settings.getMaxOutgoingSyncs() * 2 + settings.getMaxIncomingSyncsInc());
+        syncPermitProvider = new SyncPermitProvider(basicConfig.syncProtocolPermitCount());
 
         final Runnable stopGossip;
         if (settings.getChatter().isChatterUsed()) {
