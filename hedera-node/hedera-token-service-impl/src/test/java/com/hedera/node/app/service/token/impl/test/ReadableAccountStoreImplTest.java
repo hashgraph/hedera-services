@@ -22,7 +22,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.CryptoHandlerTestBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,8 +33,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 // FUTURE: Once we have protobuf generated object need to replace all JKeys.
 @ExtendWith(MockitoExtension.class)
-class ReadableAccountStoreTest extends CryptoHandlerTestBase {
-    private ReadableAccountStore subject;
+class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
+    private ReadableAccountStoreImpl subject;
 
     @Mock
     private Account account;
@@ -46,7 +46,7 @@ class ReadableAccountStoreTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(accountNum), account)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        subject = new ReadableAccountStore(readableStates);
+        subject = new ReadableAccountStoreImpl(readableStates);
     }
 
     @SuppressWarnings("unchecked")
@@ -149,8 +149,8 @@ class ReadableAccountStoreTest extends CryptoHandlerTestBase {
     void getsNullIfMissingAccount() {
         readableAccounts = emptyReadableAccountStateBuilder().build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
-        subject = readableStore;
+        subject = new ReadableAccountStoreImpl(readableStates);
+        readableStore = subject;
 
         final var result = subject.getAccountById(id);
         assertThat(result).isNull();
