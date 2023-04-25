@@ -364,7 +364,6 @@ class AccessorBasedUsagesTest {
 
     @Test
     void worksAsExpectedForCryptoUpdateWithAutoRenewEnabled() {
-        given(dynamicProperties.shouldAutoRenewAccounts()).willReturn(true);
         final var baseMeta = new BaseTransactionMeta(100, 0);
         final var opMeta = new CryptoUpdateMeta.Builder()
                 .keyBytesUsed(123)
@@ -403,6 +402,7 @@ class AccessorBasedUsagesTest {
     @Test
     void worksAsExpectedForCryptoUpdateWithAutoRenewDisabled() {
         final var defaultPeriod = 7776000L;
+        given(dynamicProperties.explicitAutoAssocSlotLifetime()).willReturn(defaultPeriod);
         final var baseMeta = new BaseTransactionMeta(100, 0);
         final var opMeta = new CryptoUpdateMeta.Builder()
                 .keyBytesUsed(123)

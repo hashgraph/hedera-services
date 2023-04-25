@@ -337,7 +337,7 @@ class CryptoUpdateTransitionLogicTest {
         given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(CUR_MAX_AUTOMATIC_ASSOCIATIONS);
         given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
         given(dynamicProperties.maxTokensPerAccount()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS + 1);
-        given(dynamicProperties.maxAutoAssociations()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS + 1);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS + 1);
 
         subject.doStateTransition();
 
@@ -406,7 +406,7 @@ class CryptoUpdateTransitionLogicTest {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
         given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(CUR_MAX_AUTOMATIC_ASSOCIATIONS);
-        given(dynamicProperties.maxAutoAssociations()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS - 1);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS - 1);
 
         subject.doStateTransition();
 

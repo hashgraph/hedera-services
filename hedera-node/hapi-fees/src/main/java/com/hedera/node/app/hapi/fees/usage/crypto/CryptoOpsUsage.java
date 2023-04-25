@@ -130,7 +130,7 @@ public class CryptoOpsUsage {
      * @param cryptoUpdateMeta metadata summarizing the update transaction
      * @param ctx the current state of the crypto account
      * @param accumulator the resource usage accumulator
-     * @param explicitAutoAssocSlotLifetime if non-zero, the lifetime to use for resource usage of new auto-renew slots
+     * @param explicitAutoAssocSlotLifetime a minimum lifetime to use for resource usage of new auto-renew slots
      */
     public void cryptoUpdateUsage(
             final SigUsage sigUsage,

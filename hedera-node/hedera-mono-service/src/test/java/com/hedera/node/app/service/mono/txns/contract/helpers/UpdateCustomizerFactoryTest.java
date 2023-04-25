@@ -78,7 +78,7 @@ class UpdateCustomizerFactoryTest {
     void makesExpectedChanges() {
         // setup:
         final var newExpiryTime = Timestamp.newBuilder().setSeconds(newExpiry).build();
-        given(dynamicProperties.maxAutoAssociations()).willReturn(5000);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
 
         // given:
         var mutableContract = MerkleAccountFactory.newContract()
@@ -142,7 +142,7 @@ class UpdateCustomizerFactoryTest {
 
     @Test
     void rejectsExcessAutoAssociations() {
-        given(dynamicProperties.maxAutoAssociations()).willReturn(5000);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
         // given:
         var mutableContract = MerkleAccountFactory.newContract()
                 .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())

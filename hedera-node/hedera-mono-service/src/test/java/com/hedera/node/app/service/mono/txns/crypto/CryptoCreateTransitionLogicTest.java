@@ -666,7 +666,7 @@ class CryptoCreateTransitionLogicTest {
     void acceptsValidTxn() {
         givenValidTxnCtx();
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
-        given(dynamicProperties.maxAutoAssociations()).willReturn(5000);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
         given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
         given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
@@ -970,7 +970,7 @@ class CryptoCreateTransitionLogicTest {
     void validatesStakedId() {
         givenValidTxnCtx();
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
-        given(dynamicProperties.maxAutoAssociations()).willReturn(5000);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
 
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 
@@ -979,7 +979,7 @@ class CryptoCreateTransitionLogicTest {
 
     @Test
     void rejectsStakedIdIfStakingDisabled() {
-        given(dynamicProperties.maxAutoAssociations()).willReturn(5000);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
         givenValidTxnCtx();
 
         assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoCreateTxn));
@@ -987,7 +987,7 @@ class CryptoCreateTransitionLogicTest {
 
     @Test
     void rejectsDeclineRewardIfStakingDisabled() {
-        given(dynamicProperties.maxAutoAssociations()).willReturn(5000);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
         givenValidTxnCtx(KEY, false, true);
 
         assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoCreateTxn));
@@ -995,7 +995,7 @@ class CryptoCreateTransitionLogicTest {
 
     @Test
     void usingProxyAccountFails() {
-        given(dynamicProperties.maxAutoAssociations()).willReturn(5000);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
         cryptoCreateTxn = TransactionBody.newBuilder()
                 .setTransactionID(ourTxnId())
                 .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()

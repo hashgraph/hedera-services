@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_MAX_NUM;
 import static com.hedera.node.app.spi.config.PropertyNames.AUTO_CREATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRACE_PERIOD;
@@ -934,7 +935,12 @@ public class GlobalDynamicProperties implements EvmProperties {
         return contractsWithSpecialHapiSigsAccess;
     }
 
-    public int maxAutoAssociations() {
+    public int maxAllowedAutoAssociations() {
         return maxAutoAssociations;
+    }
+
+    public long explicitAutoAssocSlotLifetime() {
+        // If account auto-renew is disabled, we use the SDK default auto-renew period for slot lifetime
+        return expireAccounts ? 0 : THREE_MONTHS_IN_SECONDS;
     }
 }

@@ -105,7 +105,7 @@ public class UpdateCustomizerFactory {
             customizer.autoRenewAccount(fromGrpcAccountId(op.getAutoRenewAccountId()));
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
-            if (op.getMaxAutomaticTokenAssociations().getValue() > dynamicProperties.maxAutoAssociations()) {
+            if (op.getMaxAutomaticTokenAssociations().getValue() > dynamicProperties.maxAllowedAutoAssociations()) {
                 return Pair.of(Optional.empty(), REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
             }
             customizer.maxAutomaticAssociations(

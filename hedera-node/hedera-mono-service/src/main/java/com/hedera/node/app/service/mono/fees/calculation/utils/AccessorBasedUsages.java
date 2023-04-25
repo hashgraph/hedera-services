@@ -182,11 +182,13 @@ public class AccessorBasedUsages {
             SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
         final var cryptoUpdateMeta = accessor.getSpanMapAccessor().getCryptoUpdateMeta(accessor);
         final var cryptoContext = opUsageCtxHelper.ctxForCryptoUpdate(accessor.getTxn());
-        // We use the SDK default auto-renew period for auto-association slot lifetime if account auto-renew is disabled
-        final var explicitAutoRenewSlotLifetime =
-                !dynamicProperties.shouldAutoRenewAccounts() ? THREE_MONTHS_IN_SECONDS : 0;
         cryptoOpsUsage.cryptoUpdateUsage(
-                sigUsage, baseMeta, cryptoUpdateMeta, cryptoContext, into, explicitAutoRenewSlotLifetime);
+                sigUsage,
+                baseMeta,
+                cryptoUpdateMeta,
+                cryptoContext,
+                into,
+                dynamicProperties.explicitAutoAssocSlotLifetime());
     }
 
     private void estimateCryptoApproveAllowance(

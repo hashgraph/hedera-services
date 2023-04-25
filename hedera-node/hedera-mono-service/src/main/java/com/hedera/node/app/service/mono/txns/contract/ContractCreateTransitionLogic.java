@@ -316,7 +316,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         if (usesAutoAssociations && !properties.areContractAutoAssociationsEnabled()) {
             return NOT_SUPPORTED;
         }
-        if (op.getMaxAutomaticTokenAssociations() > properties.maxAutoAssociations()) {
+        if (op.getMaxAutomaticTokenAssociations() > properties.maxAllowedAutoAssociations()) {
             return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
         }
         if (properties.areTokenAssociationsLimited()

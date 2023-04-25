@@ -352,7 +352,7 @@ class ContractCreateTransitionLogicTest {
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(validator.memoCheck(any())).willReturn(OK);
         given(properties.areContractAutoAssociationsEnabled()).willReturn(true);
-        given(properties.maxAutoAssociations()).willReturn(maxAutoAssociations + 1);
+        given(properties.maxAllowedAutoAssociations()).willReturn(maxAutoAssociations + 1);
 
         assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
     }
@@ -372,7 +372,7 @@ class ContractCreateTransitionLogicTest {
     void rejectsTooManyMaxAutomaticAssociations() {
         givenInvalidMaxAutoAssociations();
         given(properties.areContractAutoAssociationsEnabled()).willReturn(true);
-        given(properties.maxAutoAssociations()).willReturn(maxAutoAssociations);
+        given(properties.maxAllowedAutoAssociations()).willReturn(maxAutoAssociations);
         given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 
         assertEquals(

@@ -65,7 +65,7 @@ class CryptoCreateChecksTest {
 
     @Test
     void rejectsTooManyAutoAssociations() {
-        given(dynamicProperties.maxAutoAssociations()).willReturn(5000);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
         given(validator.memoCheck(anyString())).willReturn(OK);
         given(validator.hasGoodEncoding(any())).willReturn(true);
         given(validator.isValidAutoRenewPeriod(any())).willReturn(true);

@@ -306,7 +306,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(55, subject.maxNumQueryableRecords());
         assertEquals(86, subject.maxNumTokenRels());
         assertEquals(89, subject.getSidecarMaxSizeMb());
-        assertEquals(97, subject.maxAutoAssociations());
+        assertEquals(97, subject.maxAllowedAutoAssociations());
     }
 
     @Test
@@ -484,6 +484,28 @@ class GlobalDynamicPropertiesTest {
         assertEquals(84L, subject.maxNumTokens());
         assertEquals(85L, subject.maxNumTopics());
         assertEquals(86L, subject.maxNumSchedules());
+    }
+
+    @Test
+    void usesThreeMonthsForAutoAssocSlotLifetimeIfNotAutoRenewingAccounts() {
+        givenPropsWithSeed(3);
+
+        // when:
+        subject = new GlobalDynamicProperties(numbers, properties);
+
+        // then:
+        assertEquals(7776000L, subject.explicitAutoAssocSlotLifetime());
+    }
+
+    @Test
+    void usesZeroForAutoAssocSlotLifetimeIfAutoRenewingAccounts() {
+        givenPropsWithSeed(2);
+
+        // when:
+        subject = new GlobalDynamicProperties(numbers, properties);
+
+        // then:
+        assertEquals(0L, subject.explicitAutoAssocSlotLifetime());
     }
 
     @Test
