@@ -93,6 +93,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
@@ -287,6 +288,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private Set<Address> permittedDelegateCallers;
     private EntityScaleFactors entityScaleFactors;
     private long maxNumWithHapiSigsAccess;
+    private int maxAutoAssociations;
     private Set<Address> contractsWithSpecialHapiSigsAccess;
     private LegacyContractIdActivations legacyContractIdActivations;
 
@@ -437,6 +439,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         legacyContractIdActivations = properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
         contractsWithSpecialHapiSigsAccess = properties.getEvmAddresses(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS);
         maxNumWithHapiSigsAccess = properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS);
+        maxAutoAssociations = properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS);
     }
 
     public int maxTokensPerAccount() {
@@ -929,5 +932,9 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public Set<Address> contractsWithSpecialHapiSigsAccess() {
         return contractsWithSpecialHapiSigsAccess;
+    }
+
+    public int maxAutoAssociations() {
+        return maxAutoAssociations;
     }
 }

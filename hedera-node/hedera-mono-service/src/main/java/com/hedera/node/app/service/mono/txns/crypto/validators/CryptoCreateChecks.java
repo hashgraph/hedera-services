@@ -132,7 +132,7 @@ public class CryptoCreateChecks {
     }
 
     private boolean tooManyAutoAssociations(final int n) {
-        return n > MAX_CHARGEABLE_AUTO_ASSOCIATIONS
+        return n > dynamicProperties.maxAutoAssociations()
                 || (dynamicProperties.areTokenAssociationsLimited() && n > dynamicProperties.maxTokensPerAccount());
     }
 

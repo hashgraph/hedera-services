@@ -28,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -39,6 +40,8 @@ import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class UpdateCustomizerFactory {
@@ -50,7 +53,10 @@ public class UpdateCustomizerFactory {
 
     @SuppressWarnings("java:S3776")
     public Pair<Optional<HederaAccountCustomizer>, ResponseCodeEnum> customizerFor(
-            HederaAccount contract, OptionValidator validator, ContractUpdateTransactionBody op) {
+            @NonNull final HederaAccount contract,
+            @NonNull final OptionValidator validator,
+            @NonNull final ContractUpdateTransactionBody op,
+            @NonNull final GlobalDynamicProperties dynamicProperties) {
         final var customizer = new HederaAccountCustomizer();
 
         var expiryExtension = ExtensionType.NO_EXTENSION;
@@ -101,7 +107,7 @@ public class UpdateCustomizerFactory {
             customizer.autoRenewAccount(fromGrpcAccountId(op.getAutoRenewAccountId()));
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
-            if (op.getMaxAutomaticTokenAssociations().getValue() > MAX_CHARGEABLE_AUTO_ASSOCIATIONS) {
+            if (op.getMaxAutomaticTokenAssociations().getValue() > dynamicProperties.maxAutoAssociations()) {
                 return Pair.of(Optional.empty(), REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
             }
             customizer.maxAutomaticAssociations(
