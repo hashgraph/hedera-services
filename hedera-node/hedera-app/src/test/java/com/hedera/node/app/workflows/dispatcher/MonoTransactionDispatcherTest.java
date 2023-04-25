@@ -627,6 +627,34 @@ class MonoTransactionDispatcherTest {
                         (Function<TransactionHandlers, TransactionHandler>)
                                 TransactionHandlers::cryptoDeleteLiveHashHandler),
 
+                // smart-contract
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .contractCreateInstance(ContractCreateTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::contractCreateHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .contractUpdateInstance(ContractUpdateTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::contractUpdateHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .contractCall(ContractCallTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::contractCallHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .contractDeleteInstance(ContractDeleteTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::contractDeleteHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .ethereumTransaction(EthereumTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::etherumTransactionHandler),
+
                 // token
                 Arguments.of(
                         TransactionBody.newBuilder()
@@ -754,38 +782,6 @@ class MonoTransactionDispatcherTest {
                                 .build(),
                         (DispatchToHandler) (handlers, meta) ->
                                 verify(handlers.consensusSubmitMessageHandler()).preHandle(eq(meta), any())),
-
-                // contract
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .contractCreateInstance(ContractCreateTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.contractCreateHandler()).preHandle(meta)),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .contractUpdateInstance(ContractUpdateTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.contractUpdateHandler()).preHandle(meta)),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .contractCall(ContractCallTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.contractCallHandler()).preHandle(meta)),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .contractDeleteInstance(ContractDeleteTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.contractDeleteHandler()).preHandle(meta)),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .ethereumTransaction(EthereumTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.etherumTransactionHandler()).preHandle(meta)),
 
                 // file
                 Arguments.of(
