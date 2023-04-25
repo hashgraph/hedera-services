@@ -627,6 +627,28 @@ class MonoTransactionDispatcherTest {
                         (Function<TransactionHandlers, TransactionHandler>)
                                 TransactionHandlers::cryptoDeleteLiveHashHandler),
 
+                // file
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .fileCreate(FileCreateTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::fileCreateHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .fileUpdate(FileUpdateTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::fileUpdateHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .fileDelete(FileDeleteTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::fileDeleteHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .fileAppend(FileAppendTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::fileAppendHandler),
+
                 // token
                 Arguments.of(
                         TransactionBody.newBuilder()
@@ -786,32 +808,6 @@ class MonoTransactionDispatcherTest {
                                 .build(),
                         (DispatchToHandler) (handlers, meta) ->
                                 verify(handlers.etherumTransactionHandler()).preHandle(meta)),
-
-                // file
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .fileCreate(FileCreateTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.fileCreateHandler()).preHandle(meta)),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .fileUpdate(FileUpdateTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.fileUpdateHandler()).preHandle(meta)),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .fileDelete(FileDeleteTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.fileDeleteHandler()).preHandle(meta)),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .fileAppend(FileAppendTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.fileAppendHandler()).preHandle(meta)),
 
                 // freeze
                 Arguments.of(
