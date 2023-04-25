@@ -43,10 +43,10 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -86,7 +86,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("preHandle works when there is a receiverSigRequired")
     void preHandleCryptoCreateVanilla() throws PreCheckException {
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
         assertEquals(txn, context.body());
@@ -98,7 +98,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @DisplayName("preHandle fails when initial balance is not greater than zero")
     void preHandleFailsWhenInitialBalanceIsNegative() throws PreCheckException {
         txn = new CryptoCreateBuilder().withInitialBalance(-1L).build();
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(context));
 
         assertEquals(txn, context.body());
@@ -111,7 +111,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @DisplayName("preHandle fails without auto-renew period specified")
     void preHandleFailsWhenNoAutoRenewPeriodSpecified() throws PreCheckException {
         txn = new CryptoCreateBuilder().withNoAutoRenewPeriod().build();
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(context));
 
         assertEquals(txn, context.body());
@@ -124,7 +124,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @DisplayName("preHandle fails when negative send record threshold is specified")
     void preHandleFailsWhenSendRecordThresholdIsNegative() throws PreCheckException {
         txn = new CryptoCreateBuilder().withSendRecordThreshold(-1).build();
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(context));
 
         assertEquals(txn, context.body());
@@ -137,7 +137,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @DisplayName("preHandle fails when negative receive record threshold is specified")
     void preHandleFailsWhenReceiveRecordThresholdIsNegative() throws PreCheckException {
         txn = new CryptoCreateBuilder().withReceiveRecordThreshold(-1).build();
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(context));
 
         assertEquals(txn, context.body());
@@ -150,7 +150,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @DisplayName("preHandle fails when proxy accounts id is specified")
     void preHandleFailsWhenProxyAccountIdIsSpecified() throws PreCheckException {
         txn = new CryptoCreateBuilder().withProxyAccountNum(1).build();
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(context));
 
         assertEquals(txn, context.body());
@@ -163,7 +163,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @DisplayName("preHandle succeeds when initial balance is zero")
     void preHandleWorksWhenInitialBalanceIsZero() throws PreCheckException {
         txn = new CryptoCreateBuilder().withInitialBalance(0L).build();
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
         assertEquals(txn, context.body());
@@ -176,9 +176,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void noReceiverSigRequiredPreHandleCryptoCreate() throws PreCheckException {
         final var noReceiverSigTxn =
                 new CryptoCreateBuilder().withReceiverSigReq(false).build();
-        final var expected = new PreHandleContext(readableStore, noReceiverSigTxn);
+        final var expected = new FakePreHandleContext(readableStore, noReceiverSigTxn);
 
-        final var context = new PreHandleContext(readableStore, noReceiverSigTxn);
+        final var context = new FakePreHandleContext(readableStore, noReceiverSigTxn);
         subject.preHandle(context);
 
         assertEquals(expected.body(), context.body());

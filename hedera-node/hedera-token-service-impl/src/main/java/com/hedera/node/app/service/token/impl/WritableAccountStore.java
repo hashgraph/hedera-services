@@ -38,7 +38,7 @@ import java.util.Set;
  * <p>This class is not exported from the module. It is an internal implementation detail. This
  * class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableAccountStore extends ReadableAccountStore {
+public class WritableAccountStore extends ReadableAccountStoreImpl {
     /** The underlying data storage class that holds the account data. */
     private final WritableKVState<EntityNumVirtualKey, Account> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
