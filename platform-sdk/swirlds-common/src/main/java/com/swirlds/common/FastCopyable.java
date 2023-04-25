@@ -16,11 +16,13 @@
 
 package com.swirlds.common;
 
+import com.swirlds.base.state.Mutable;
+
 /**
- * An interface for classes that can be copied and serialized in a way specific to the Swirlds platform. If
- * a class implements the FastCopyable interface, then it should use a copy-on-write strategy so that calls
- * to {@link #copy} make virtual copies almost instantaneously. See the documentation for these methods for
- * the details on what they should do, and how they differ from the usual Java <code>copy</code> and
+ * An interface for classes that can be copied and serialized in a way specific to the Swirlds platform. If a class
+ * implements the FastCopyable interface, then it should use a copy-on-write strategy so that calls to {@link #copy}
+ * make virtual copies almost instantaneously. See the documentation for these methods for the details on what they
+ * should do, and how they differ from the usual Java <code>copy</code> and
  * <code>serialize</code> methods.
  */
 public interface FastCopyable extends Copyable, Mutable, Releasable {

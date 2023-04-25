@@ -63,6 +63,11 @@ repositories {
     }
     maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven")
+        content { includeGroupByRegex("org\\.hyperledger\\..*") }
+    }
+    maven {
+        url = uri("https://artifacts.consensys.net/public/maven/maven/")
+        content { includeGroupByRegex("tech\\.pegasys(\\..*)?") }
     }
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1502")
@@ -161,7 +166,7 @@ testing {
 
 // Increase the heap size for the unit tests
 tasks.test {
-    maxHeapSize = "2048m"
+    maxHeapSize = "4096m"
     // Can be useful to set in some cases
     // testLogging.showStandardStreams = true
 }

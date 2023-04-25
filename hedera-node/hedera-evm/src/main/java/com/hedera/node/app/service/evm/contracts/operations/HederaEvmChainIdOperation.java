@@ -40,7 +40,7 @@ public class HederaEvmChainIdOperation extends AbstractOperation {
 
     @Inject
     public HederaEvmChainIdOperation(final GasCalculator gasCalculator, final EvmProperties evmProperties) {
-        super(0x46, "CHAINID", 0, 1, 1, gasCalculator);
+        super(0x46, "CHAINID", 0, 1, gasCalculator);
         this.evmProperties = evmProperties;
         this.gasCost = gasCalculator.getBaseTierGasCost();
         this.successResponse = new OperationResult(gasCost, null);

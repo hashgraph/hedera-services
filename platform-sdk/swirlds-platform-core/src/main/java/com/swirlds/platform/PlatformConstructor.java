@@ -18,7 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
-import com.swirlds.base.functions.ThrowingConsumer;
+import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -219,7 +219,7 @@ final class PlatformConstructor {
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final BlockingQueue<SignedState> stateHashSignQueue,
-            @NonNull final ThrowingConsumer<EventImpl, InterruptedException> waitForEventDurability,
+            @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final Runnable enterFreezePeriod,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {

@@ -121,7 +121,7 @@ dependencyResolutionManagement {
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.5.1")
-      version("besu-version", "22.10.1")
+      version("besu-version", "23.1.2")
       version("besu-native-version", "0.6.1")
       version("bouncycastle-version", "1.70")
       version("caffeine-version", "3.0.6")
@@ -144,7 +144,7 @@ dependencyResolutionManagement {
       version("netty-version", "4.1.66.Final")
       version("protobuf-java-version", "3.19.4")
       version("slf4j-version", "2.0.3")
-      version("swirlds-version", "0.37.0-adhoc.xc76224af")
+      version("swirlds-version", "0.38.0-adhoc.xcca9daa7")
       version("tuweni-version", "2.2.0")
       version("jna-version", "5.12.1")
       version("jsr305-version", "3.0.2")
@@ -239,6 +239,9 @@ dependencyResolutionManagement {
       library("protobuf-java", "com.google.protobuf", "protobuf-java")
           .versionRef("protobuf-java-version")
       library("swirlds-common", "com.swirlds", "swirlds-common").versionRef("swirlds-version")
+      library("swirlds-config", "com.swirlds", "swirlds-config").versionRef("swirlds-version")
+      library("swirlds-config-impl", "com.swirlds", "swirlds-config-impl")
+          .versionRef("swirlds-version")
       library("slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
       library("slf4j-simple", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
       library("swirlds-platform-core", "com.swirlds", "swirlds-platform-core")
