@@ -16,23 +16,14 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hedera.node.app.spi.key.KeyUtils.isValid;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.accounts.AccountAccess;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -52,61 +43,7 @@ import java.util.Set;
  * <p>{@link #requireKey(Key)} is used to add a required non-payer signing key (remember, the payer signing
  * key was added when the context was created). Some basic validation is performed (the key cannot be null or empty).
  */
-public class PreHandleContext {
-    /** Used to get keys for accounts and contracts. */
-    private final AccountAccess accountAccess;
-    /** The transaction body. */
-    private final TransactionBody txn;
-    /** The payer account ID. Specified in the transaction body, extracted and stored separately for convenience. */
-    private final AccountID payer;
-    /** The payer's key, as found in state */
-    private final Key payerKey;
-    /**
-     * The set of all required non-payer keys. A {@link LinkedHashSet} is used to maintain a consistent ordering.
-     * While not strictly necessary, it is useful at the moment to ensure tests are deterministic. The tests should
-     * be updated to compare set contents rather than ordering.
-     */
-    private final Set<Key> requiredNonPayerKeys = new LinkedHashSet<>();
-    /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
-    private PreHandleContext innerContext;
-
-    /**
-     * Create a new PreHandleContext instance. The payer and key will be extracted from the transaction body.
-     *
-     * @param accountAccess used to get keys for accounts and contracts
-     * @param txn the transaction body
-     * @throws PreCheckException if the payer account ID is invalid or the key is null
-     * @deprecated This class will become an interface. If an instance is required for testing, use a mock instead.
-     */
-    @Deprecated(forRemoval = true)
-    public PreHandleContext(@NonNull final AccountAccess accountAccess, @NonNull final TransactionBody txn)
-            throws PreCheckException {
-        this(
-                accountAccess,
-                txn,
-                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
-                INVALID_PAYER_ACCOUNT_ID);
-    }
-
-    /** Create a new instance */
-    private PreHandleContext(
-            @NonNull final AccountAccess accountAccess,
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
-        this.accountAccess = requireNonNull(accountAccess, "The supplied argument 'accountAccess' cannot be null!");
-        this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
-        this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
-
-        // Find the account, which must exist or throw a PreCheckException with the given response code.
-        final var account = accountAccess.getAccountById(payer);
-        mustExist(account, responseCode);
-        // NOTE: While it is true that the key can be null on some special accounts like
-        // account 800, those accounts cannot be the payer.
-        this.payerKey = account.key();
-        mustExist(this.payerKey, responseCode);
-    }
+public interface PreHandleContext {
 
     /**
      * Create a new store given the store's interface. This gives read-only access to the store.
@@ -117,26 +54,8 @@ public class PreHandleContext {
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
-    @SuppressWarnings("unchecked")
     @NonNull
-    public <C> C createStore(@NonNull final Class<C> storeInterface) {
-        if (storeInterface == AccountAccess.class) {
-            return (C) accountAccess;
-        }
-        throw new IllegalArgumentException("Unknown store interface: " + storeInterface.getName());
-    }
-
-    /**
-     * Gets the {@link AccountAccess}.
-     *
-     * @return the {@link AccountAccess}
-     * @deprecated Use {@link #createStore(Class)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    public AccountAccess accountAccess() {
-        return accountAccess;
-    }
+    <C> C createStore(@NonNull final Class<C> storeInterface);
 
     /**
      * Gets the {@link TransactionBody}
@@ -144,9 +63,7 @@ public class PreHandleContext {
      * @return the {@link TransactionBody} in this context
      */
     @NonNull
-    public TransactionBody body() {
-        return txn;
-    }
+    TransactionBody body();
 
     /**
      * Gets the payer {@link AccountID}.
@@ -154,18 +71,15 @@ public class PreHandleContext {
      * @return the {@link AccountID} of the payer in this context
      */
     @NonNull
-    public AccountID payer() {
-        return payer;
-    }
+    AccountID payer();
 
     /**
      * Returns an immutable copy of the list of required non-payer keys.
      *
      * @return the {@link Set} with the required non-payer keys
      */
-    public Set<Key> requiredNonPayerKeys() {
-        return Collections.unmodifiableSet(requiredNonPayerKeys);
-    }
+    @NonNull
+    Set<Key> requiredNonPayerKeys();
 
     /**
      * Getter for the payer key
@@ -173,9 +87,7 @@ public class PreHandleContext {
      * @return the payer key
      */
     @Nullable
-    public Key payerKey() {
-        return payerKey;
-    }
+    Key payerKey();
 
     /**
      * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if the key has
@@ -186,12 +98,7 @@ public class PreHandleContext {
      * @throws NullPointerException if the key is null
      */
     @NonNull
-    public PreHandleContext requireKey(@NonNull final Key key) {
-        if (!key.equals(payerKey) && isValid(key)) {
-            requiredNonPayerKeys.add(key);
-        }
-        return this;
-    }
+    PreHandleContext requireKey(@NonNull final Key key);
 
     /**
      * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if the key has
@@ -204,14 +111,7 @@ public class PreHandleContext {
      * @throws PreCheckException if the key is null or empty
      */
     @NonNull
-    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
-        requireNonNull(responseCode);
-        if (!isValid(key)) {
-            throw new PreCheckException(responseCode);
-        }
-        return requireKey(key);
-    }
+    PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
 
     /**
      * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys. If
@@ -227,29 +127,7 @@ public class PreHandleContext {
      * account does not exist.
      */
     @NonNull
-    public PreHandleContext requireKeyOrThrow(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
-        requireNonNull(responseCode);
-
-        if (accountID == null) {
-            throw new PreCheckException(responseCode);
-        }
-
-        final var account = accountAccess.getAccountById(accountID);
-        if (account == null) {
-            throw new PreCheckException(responseCode);
-        }
-
-        final var key = account.key();
-        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
-            // Or a KeyList with no
-            // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
-        }
-
-        return requireKey(key);
-    }
+    PreHandleContext requireKeyOrThrow(@Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
 
     /**
      * The same as {@link #requireKeyOrThrow(AccountID, ResponseCodeEnum)} but for a {@link ContractID}.
@@ -261,28 +139,7 @@ public class PreHandleContext {
      * contract account does not exist or the account is not a contract account.
      */
     @NonNull
-    public PreHandleContext requireKeyOrThrow(
-            @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
-        requireNonNull(responseCode);
-        if (accountID == null) {
-            throw new PreCheckException(responseCode);
-        }
-
-        final var account = accountAccess.getContractById(accountID);
-        if (account == null) {
-            throw new PreCheckException(responseCode);
-        }
-
-        final var key = account.key();
-        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
-            // Or a KeyList with no
-            // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
-        }
-
-        return requireKey(key);
-    }
+    PreHandleContext requireKeyOrThrow(@Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
 
     /**
      * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys if
@@ -296,37 +153,7 @@ public class PreHandleContext {
      * empty key.
      */
     @NonNull
-    public PreHandleContext requireKeyIfReceiverSigRequired(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
-        requireNonNull(responseCode);
-        // If no accountID is specified, then there is no key to require.
-        if (accountID == null || accountID.equals(AccountID.DEFAULT)) {
-            return this;
-        }
-
-        // If an accountID is specified, then the account MUST exist
-        final var account = accountAccess.getAccountById(accountID);
-        if (account == null) {
-            throw new PreCheckException(responseCode);
-        }
-
-        // If the account exists but does not require a signature, then there is no key to require.
-        if (!account.receiverSigRequired()) {
-            return this;
-        }
-
-        // We will require the key. If the key isn't present, then we will throw the given response code.
-        final var key = account.key();
-        if (key == null
-                || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
-            // Or a KeyList with no
-            // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
-        }
-
-        return requireKey(key);
-    }
+    PreHandleContext requireKeyIfReceiverSigRequired(@Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
 
     /**
      * The same as {@link #requireKeyIfReceiverSigRequired(AccountID, ResponseCodeEnum)} but for a {@link ContractID}.
@@ -337,36 +164,7 @@ public class PreHandleContext {
      * empty key, or the account exists but is not a contract account.
      */
     @NonNull
-    public PreHandleContext requireKeyIfReceiverSigRequired(
-            @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
-        requireNonNull(responseCode);
-        // If no accountID is specified, then there is no key to require.
-        if (contractID == null) {
-            return this;
-        }
-
-        // If an accountID is specified, then the account MUST exist
-        final var account = accountAccess.getContractById(contractID);
-        if (account == null) {
-            throw new PreCheckException(responseCode);
-        }
-
-        // If the account exists but does not require a signature, then there is no key to require.
-        if (!account.receiverSigRequired()) {
-            return this;
-        }
-
-        // We will require the key. If the key isn't present, then we will throw the given response code.
-        final var key = account.key();
-        if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
-            // Or a KeyList with no
-            // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
-        }
-
-        return requireKey(key);
-    }
+    PreHandleContext requireKeyIfReceiverSigRequired(@Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
 
     /**
      * Creates a new {@link PreHandleContext} for a nested transaction. The nested transaction will be set on
@@ -380,32 +178,13 @@ public class PreHandleContext {
      * @throws PreCheckException If the payer is not valid
      */
     @NonNull
-    public PreHandleContext createNestedContext(
-            @NonNull final TransactionBody nestedTxn,
-            @NonNull final AccountID payerForNested,
-            @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
-        this.innerContext = new PreHandleContext(accountAccess, nestedTxn, payerForNested, responseCode);
-        return this.innerContext;
-    }
+    PreHandleContext createNestedContext(@NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
 
     /**
      * Gets the inner context, if any.
      *
      * @return The inner context.
      */
-    public PreHandleContext innerContext() {
-        return innerContext;
-    }
-
-    @Override
-    public String toString() {
-        return "PreHandleContext{" + "accountAccess="
-                + accountAccess + ", txn="
-                + txn + ", payer="
-                + payer + ", requiredNonPayerKeys="
-                + requiredNonPayerKeys + ", status="
-                + payerKey + ", innerContext="
-                + innerContext + '}';
-    }
+    @Nullable
+    PreHandleContext innerContext();
 }
