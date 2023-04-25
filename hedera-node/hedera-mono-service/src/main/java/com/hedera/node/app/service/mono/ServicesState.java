@@ -286,7 +286,9 @@ public class ServicesState extends PartialNaryMerkleInternal
     @Override
     public AddressBook updateWeight(@NonNull AddressBook configAddressBook) {
         throwIfImmutable();
-        stakingInfo().forEach((k, v) -> configAddressBook.updateWeight(k.longValue(), v.getWeight()));
+        stakingInfo()
+                .forEach((nodeNum, stakingInfo) ->
+                        configAddressBook.updateWeight(nodeNum.longValue(), stakingInfo.getWeight()));
         return configAddressBook;
     }
 
