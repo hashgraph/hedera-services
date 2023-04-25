@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.intPropOrElse;
+import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.onlyEcdsaKeys;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -32,13 +33,11 @@ import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourc
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomLazyCreateFungibleTransfer;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
-import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 
 public class LazyCreatePrecompileFuzzingFactory {
     public static final String FUNGIBLE_TOKEN = "fungibleToken";
@@ -84,16 +83,10 @@ public class LazyCreatePrecompileFuzzingFactory {
 
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
-                    .withInitialization(onlyEcdsaKeys())
+                    .withInitialization(onlyEcdsaKeys(NUM_DISTINCT_ECDSA_KEYS))
                     .withOp(
                             new RandomLazyCreateFungibleTransfer(spec.registry(), keys),
                             intPropOrElse("randomTransfer.bias", 0, props));
         };
-    }
-
-    private static HapiSpecOperation[] onlyEcdsaKeys() {
-        return IntStream.range(0, NUM_DISTINCT_ECDSA_KEYS)
-                .mapToObj(i -> newKeyNamed("Fuzz#" + i).shape(SigControl.SECP256K1_ON))
-                .toArray(HapiSpecOperation[]::new);
     }
 }

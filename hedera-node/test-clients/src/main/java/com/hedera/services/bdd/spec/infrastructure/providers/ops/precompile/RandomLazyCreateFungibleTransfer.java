@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.regression.factories.LazyCreatePrecompileFuzzingFactory.*;
+import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.getEvmAddressFromString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -52,7 +53,7 @@ public class RandomLazyCreateFungibleTransfer implements OpProvider {
     }
 
     private HapiContractCall generateLazyCreateTransferOfFungibleToken(String evmAddressRecipient) {
-        final var addressBytes = recoverAddressFromPubKey(getEvmAddress(evmAddressRecipient));
+        final var addressBytes = recoverAddressFromPubKey(getEvmAddressFromString(registry, evmAddressRecipient));
         return contractCall(
                         TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
                         "transferTokenCallNestedThenAgain",
@@ -65,9 +66,5 @@ public class RandomLazyCreateFungibleTransfer implements OpProvider {
                 .alsoSigningWithFullPrefix(OWNER)
                 .gas(GAS_TO_OFFER)
                 .hasKnownStatus(SUCCESS);
-    }
-
-    private byte[] getEvmAddress(String keyName) {
-        return this.registry.getKey(keyName).getECDSASecp256K1().toByteArray();
     }
 }
