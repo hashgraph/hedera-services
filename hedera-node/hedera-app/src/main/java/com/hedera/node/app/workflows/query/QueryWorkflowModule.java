@@ -75,11 +75,11 @@ public interface QueryWorkflowModule {
                 contractComponent.contractGetInfoHandler(),
                 contractComponent.contractGetBytecodeHandler(),
                 contractComponent.contractGetRecordsHandler(),
-                tokenComponent.getCryptoGetAccountBalanceHandler(),
-                tokenComponent.getCryptoGetAccountInfoHandler(),
-                tokenComponent.getCryptoGetAccountRecordsHandler(),
-                tokenComponent.getCryptoGetLiveHashHandler(),
-                tokenComponent.getCryptoGetStakersHandler(),
+                tokenComponent.cryptoGetAccountBalanceHandler(),
+                tokenComponent.cryptoGetAccountInfoHandler(),
+                tokenComponent.cryptoGetAccountRecordsHandler(),
+                tokenComponent.cryptoGetLiveHashHandler(),
+                tokenComponent.cryptoGetStakersHandler(),
                 fileComponent.fileGetContentsHandler(),
                 fileComponent.fileGetInfoHandler(),
                 networkComponent.networkGetAccountDetailsHandler(),
@@ -89,10 +89,10 @@ public interface QueryWorkflowModule {
                 networkComponent.networkTransactionGetReceiptHandler(),
                 networkComponent.networkTransactionGetRecordHandler(),
                 scheduleComponent.scheduleGetInfoHandler(),
-                tokenComponent.getTokenGetInfoHandler(),
-                tokenComponent.getTokenGetAccountNftInfosHandler(),
-                tokenComponent.getTokenGetNftInfoHandler(),
-                tokenComponent.getTokenGetNftInfosHandler());
+                tokenComponent.tokenGetInfoHandler(),
+                tokenComponent.tokenGetAccountNftInfosHandler(),
+                tokenComponent.tokenGetNftInfoHandler(),
+                tokenComponent.tokenGetNftInfosHandler());
     }
 
     @Provides

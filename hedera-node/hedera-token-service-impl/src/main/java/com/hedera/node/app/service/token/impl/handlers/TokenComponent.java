@@ -21,7 +21,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Wrapper class for all handlers of the token service
+ * Wrapper class for all handlers of the token service. This should be a {@code record} but it looks like Dagger does
+ * not support Java records
  */
 @Singleton
 public class TokenComponent {
@@ -166,7 +167,7 @@ public class TokenComponent {
      *
      * @return the cryptoCreateHandler
      */
-    public CryptoCreateHandler getCryptoCreateHandler() {
+    public CryptoCreateHandler cryptoCreateHandler() {
         return cryptoCreateHandler;
     }
 
@@ -175,7 +176,7 @@ public class TokenComponent {
      *
      * @return the cryptoUpdateHandler
      */
-    public CryptoUpdateHandler getCryptoUpdateHandler() {
+    public CryptoUpdateHandler cryptoUpdateHandler() {
         return cryptoUpdateHandler;
     }
 
@@ -184,7 +185,7 @@ public class TokenComponent {
      *
      * @return the cryptoTransferHandler
      */
-    public CryptoTransferHandler getCryptoTransferHandler() {
+    public CryptoTransferHandler cryptoTransferHandler() {
         return cryptoTransferHandler;
     }
 
@@ -193,7 +194,7 @@ public class TokenComponent {
      *
      * @return the cryptoDeleteHandler
      */
-    public CryptoDeleteHandler getCryptoDeleteHandler() {
+    public CryptoDeleteHandler cryptoDeleteHandler() {
         return cryptoDeleteHandler;
     }
 
@@ -202,7 +203,7 @@ public class TokenComponent {
      *
      * @return the cryptoApproveAllowanceHandler
      */
-    public CryptoApproveAllowanceHandler getCryptoApproveAllowanceHandler() {
+    public CryptoApproveAllowanceHandler cryptoApproveAllowanceHandler() {
         return cryptoApproveAllowanceHandler;
     }
 
@@ -211,7 +212,7 @@ public class TokenComponent {
      *
      * @return the cryptoDeleteAllowanceHandler
      */
-    public CryptoDeleteAllowanceHandler getCryptoDeleteAllowanceHandler() {
+    public CryptoDeleteAllowanceHandler cryptoDeleteAllowanceHandler() {
         return cryptoDeleteAllowanceHandler;
     }
 
@@ -220,7 +221,7 @@ public class TokenComponent {
      *
      * @return the cryptoAddLiveHashHandler
      */
-    public CryptoAddLiveHashHandler getCryptoAddLiveHashHandler() {
+    public CryptoAddLiveHashHandler cryptoAddLiveHashHandler() {
         return cryptoAddLiveHashHandler;
     }
 
@@ -229,7 +230,7 @@ public class TokenComponent {
      *
      * @return the cryptoDeleteLiveHashHandler
      */
-    public CryptoDeleteLiveHashHandler getCryptoDeleteLiveHashHandler() {
+    public CryptoDeleteLiveHashHandler cryptoDeleteLiveHashHandler() {
         return cryptoDeleteLiveHashHandler;
     }
 
@@ -238,7 +239,7 @@ public class TokenComponent {
      *
      * @return the tokenCreateHandler
      */
-    public TokenCreateHandler getTokenCreateHandler() {
+    public TokenCreateHandler tokenCreateHandler() {
         return tokenCreateHandler;
     }
 
@@ -247,7 +248,7 @@ public class TokenComponent {
      *
      * @return the tokenUpdateHandler
      */
-    public TokenUpdateHandler getTokenUpdateHandler() {
+    public TokenUpdateHandler tokenUpdateHandler() {
         return tokenUpdateHandler;
     }
 
@@ -256,7 +257,7 @@ public class TokenComponent {
      *
      * @return the tokenMintHandler
      */
-    public TokenMintHandler getTokenMintHandler() {
+    public TokenMintHandler tokenMintHandler() {
         return tokenMintHandler;
     }
 
@@ -265,7 +266,7 @@ public class TokenComponent {
      *
      * @return the tokenBurnHandler
      */
-    public TokenBurnHandler getTokenBurnHandler() {
+    public TokenBurnHandler tokenBurnHandler() {
         return tokenBurnHandler;
     }
 
@@ -274,7 +275,7 @@ public class TokenComponent {
      *
      * @return the tokenDeleteHandler
      */
-    public TokenDeleteHandler getTokenDeleteHandler() {
+    public TokenDeleteHandler tokenDeleteHandler() {
         return tokenDeleteHandler;
     }
 
@@ -283,7 +284,7 @@ public class TokenComponent {
      *
      * @return the tokenAccountWipeHandler
      */
-    public TokenAccountWipeHandler getTokenAccountWipeHandler() {
+    public TokenAccountWipeHandler tokenAccountWipeHandler() {
         return tokenAccountWipeHandler;
     }
 
@@ -292,7 +293,7 @@ public class TokenComponent {
      *
      * @return the tokenFreezeAccountHandler
      */
-    public TokenFreezeAccountHandler getTokenFreezeAccountHandler() {
+    public TokenFreezeAccountHandler tokenFreezeAccountHandler() {
         return tokenFreezeAccountHandler;
     }
 
@@ -301,7 +302,7 @@ public class TokenComponent {
      *
      * @return the tokenUnfreezeAccountHandler
      */
-    public TokenUnfreezeAccountHandler getTokenUnfreezeAccountHandler() {
+    public TokenUnfreezeAccountHandler tokenUnfreezeAccountHandler() {
         return tokenUnfreezeAccountHandler;
     }
 
@@ -310,7 +311,7 @@ public class TokenComponent {
      *
      * @return the tokenGrantKycToAccountHandler
      */
-    public TokenGrantKycToAccountHandler getTokenGrantKycToAccountHandler() {
+    public TokenGrantKycToAccountHandler tokenGrantKycToAccountHandler() {
         return tokenGrantKycToAccountHandler;
     }
 
@@ -319,7 +320,7 @@ public class TokenComponent {
      *
      * @return the tokenRevokeKycFromAccountHandler
      */
-    public TokenRevokeKycFromAccountHandler getTokenRevokeKycFromAccountHandler() {
+    public TokenRevokeKycFromAccountHandler tokenRevokeKycFromAccountHandler() {
         return tokenRevokeKycFromAccountHandler;
     }
 
@@ -328,7 +329,7 @@ public class TokenComponent {
      *
      * @return the tokenAssociateToAccountHandler
      */
-    public TokenAssociateToAccountHandler getTokenAssociateToAccountHandler() {
+    public TokenAssociateToAccountHandler tokenAssociateToAccountHandler() {
         return tokenAssociateToAccountHandler;
     }
 
@@ -337,7 +338,7 @@ public class TokenComponent {
      *
      * @return the tokenDissociateFromAccountHandler
      */
-    public TokenDissociateFromAccountHandler getTokenDissociateFromAccountHandler() {
+    public TokenDissociateFromAccountHandler tokenDissociateFromAccountHandler() {
         return tokenDissociateFromAccountHandler;
     }
 
@@ -346,7 +347,7 @@ public class TokenComponent {
      *
      * @return the tokenFeeScheduleUpdateHandler
      */
-    public TokenFeeScheduleUpdateHandler getTokenFeeScheduleUpdateHandler() {
+    public TokenFeeScheduleUpdateHandler tokenFeeScheduleUpdateHandler() {
         return tokenFeeScheduleUpdateHandler;
     }
 
@@ -355,7 +356,7 @@ public class TokenComponent {
      *
      * @return the tokenFeeScheduleUpdateHandler
      */
-    public TokenPauseHandler getTokenPauseHandler() {
+    public TokenPauseHandler tokenPauseHandler() {
         return tokenPauseHandler;
     }
 
@@ -364,7 +365,7 @@ public class TokenComponent {
      *
      * @return the tokenFeeScheduleUpdateHandler
      */
-    public TokenUnpauseHandler getTokenUnpauseHandler() {
+    public TokenUnpauseHandler tokenUnpauseHandler() {
         return tokenUnpauseHandler;
     }
 
@@ -373,7 +374,7 @@ public class TokenComponent {
      *
      * @return the tokenFeeScheduleUpdateHandler
      */
-    public CryptoGetAccountBalanceHandler getCryptoGetAccountBalanceHandler() {
+    public CryptoGetAccountBalanceHandler cryptoGetAccountBalanceHandler() {
         return cryptoGetAccountBalanceHandler;
     }
 
@@ -382,7 +383,7 @@ public class TokenComponent {
      *
      * @return the cryptoGetAccountRecordsHandler
      */
-    public CryptoGetAccountInfoHandler getCryptoGetAccountInfoHandler() {
+    public CryptoGetAccountInfoHandler cryptoGetAccountInfoHandler() {
         return cryptoGetAccountInfoHandler;
     }
 
@@ -391,7 +392,7 @@ public class TokenComponent {
      *
      * @return the cryptoGetAccountRecordsHandler
      */
-    public CryptoGetAccountRecordsHandler getCryptoGetAccountRecordsHandler() {
+    public CryptoGetAccountRecordsHandler cryptoGetAccountRecordsHandler() {
         return cryptoGetAccountRecordsHandler;
     }
 
@@ -400,7 +401,7 @@ public class TokenComponent {
      *
      * @return the cryptoGetAccountRecordsHandler
      */
-    public CryptoGetLiveHashHandler getCryptoGetLiveHashHandler() {
+    public CryptoGetLiveHashHandler cryptoGetLiveHashHandler() {
         return cryptoGetLiveHashHandler;
     }
 
@@ -409,7 +410,7 @@ public class TokenComponent {
      *
      * @return the cryptoGetAccountRecordsHandler
      */
-    public CryptoGetStakersHandler getCryptoGetStakersHandler() {
+    public CryptoGetStakersHandler cryptoGetStakersHandler() {
         return cryptoGetStakersHandler;
     }
 
@@ -418,7 +419,7 @@ public class TokenComponent {
      *
      * @return the cryptoGetAccountRecordsHandler
      */
-    public TokenGetInfoHandler getTokenGetInfoHandler() {
+    public TokenGetInfoHandler tokenGetInfoHandler() {
         return tokenGetInfoHandler;
     }
 
@@ -427,7 +428,7 @@ public class TokenComponent {
      *
      * @return the cryptoGetAccountRecordsHandler
      */
-    public TokenGetAccountNftInfosHandler getTokenGetAccountNftInfosHandler() {
+    public TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler() {
         return tokenGetAccountNftInfosHandler;
     }
 
@@ -436,7 +437,7 @@ public class TokenComponent {
      *
      * @return the cryptoGetAccountRecordsHandler
      */
-    public TokenGetNftInfoHandler getTokenGetNftInfoHandler() {
+    public TokenGetNftInfoHandler tokenGetNftInfoHandler() {
         return tokenGetNftInfoHandler;
     }
 
@@ -445,7 +446,7 @@ public class TokenComponent {
      *
      * @return the cryptoGetAccountRecordsHandler
      */
-    public TokenGetNftInfosHandler getTokenGetNftInfosHandler() {
+    public TokenGetNftInfosHandler tokenGetNftInfosHandler() {
         return tokenGetNftInfosHandler;
     }
 }
