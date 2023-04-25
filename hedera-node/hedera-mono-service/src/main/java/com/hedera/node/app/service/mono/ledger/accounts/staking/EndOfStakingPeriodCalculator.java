@@ -160,11 +160,11 @@ public class EndOfStakingPeriodCalculator {
             final var nodeNum = builder.getNodeId();
             final var stakingInfo = curStakingInfos.getForModify(EntityNum.fromLong(nodeNum));
             // If the total stake(rewarded + non-rewarded) of a node is less than minStake, stakingInfo's stake field
-            // represents 0. If the total stake(rewarded + non-rewarded) of the node is greater than maxStake,
+            // represents 0, as per calculation done in reviewElectionsAndRecomputeStakes.
+            // Similarly, the total stake(rewarded + non-rewarded) of the node is greater than maxStake,
             // stakingInfo's stake field is set to maxStake.So, there is no need to clamp the stake value here. Sum of
             // all stakes can be used to calculate the weight.
-            final var updatedWeight =
-                    calculateWeightFromStake(stakingInfo.getStake(), stakingInfo.getMinStake(), newTotalStakedStart);
+            final var updatedWeight = calculateWeightFromStake(stakingInfo.getStake(), newTotalStakedStart);
             final var oldWeight = stakingInfo.getWeight();
             stakingInfo.setWeight(updatedWeight);
             log.info("Node {} weight is updated. Old weight {}, updated weight {}", nodeNum, oldWeight, updatedWeight);
@@ -200,21 +200,24 @@ public class EndOfStakingPeriodCalculator {
      * will be computed so that every node above minStake has weight at least 1; but any node that has staked at least 1
      * out of every 250 whole hbars staked will have weight >= 2.
      * @param stake the stake of current node, includes stake rewarded and non-rewarded
-     * @param minStake the minimum stake of current node
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
      * @return calculated consensus weight of the node
      */
-    private int calculateWeightFromStake(long stake, long minStake, long totalStakeOfAllNodes) {
-        if (stake < minStake) {
+    private int calculateWeightFromStake(long stake, long totalStakeOfAllNodes) {
+        // if node's total stake is less than minStake, MerkleStakingInfo stake will be zero as per calculation
+        // in reviewElectionsAndRecomputeStakes and weight will be zero.
+        if (stake == 0) {
             return 0;
         } else {
+            // If a node's stake is not zero then totalStakeOfAllNodes can't be zero.
+            // This error should never happen. It is added to avoid divide by zero exception, in case of any bug.
             if (totalStakeOfAllNodes <= 0L) {
                 throw new IllegalStateException("Total stake of all nodes should be greater than 0");
             }
             final var weight = BigInteger.valueOf(stake)
                     .multiply(BigInteger.valueOf(500))
                     .divide(BigInteger.valueOf(totalStakeOfAllNodes))
-                    .doubleValue();
+                    .longValue();
             return (int) Math.max(Math.floor(weight), 1);
         }
     }
