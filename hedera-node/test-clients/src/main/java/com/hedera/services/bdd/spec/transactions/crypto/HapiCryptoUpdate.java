@@ -268,7 +268,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
                         _txn.getTransactionID().getTransactionValidStart().getSeconds());
                 var accumulator = new UsageAccumulator();
                 // Once account auto-renew is enabled, we could instead leave the explicit auto-assoc lifetime at 0
-                cryptoOpsUsage.cryptoUpdateUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator, 8000001L);
+                cryptoOpsUsage.cryptoUpdateUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator, 7776000L);
                 return AdapterUtils.feeDataFrom(accumulator);
             };
             return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoUpdate, metricsCalc, txn, numPayerKeys);
