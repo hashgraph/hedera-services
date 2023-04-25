@@ -122,7 +122,7 @@ public record PreConsensusEventFile(
      * @param maximumGenerationInFile the maximum generation that is actually in the file
      * @return a description of the new file
      */
-    public  PreConsensusEventFile buildFileWithCompressedSpan(final long maximumGenerationInFile) {
+    public PreConsensusEventFile buildFileWithCompressedSpan(final long maximumGenerationInFile) {
 
         if (maximumGenerationInFile < minimumGeneration) {
             throw new IllegalArgumentException("maximumGenerationInFile < originalFile.minimumGeneration");
@@ -133,16 +133,11 @@ public record PreConsensusEventFile(
         }
 
         final Path parentDirectory = path.getParent();
-        final String fileName = buildFileName(sequenceNumber(), minimumGeneration,
-                maximumGenerationInFile, timestamp);
+        final String fileName = buildFileName(sequenceNumber(), minimumGeneration, maximumGenerationInFile, timestamp);
         final Path newPath = parentDirectory.resolve(fileName);
 
         return new PreConsensusEventFile(
-                sequenceNumber(),
-                minimumGeneration,
-                maximumGenerationInFile,
-                timestamp,
-                newPath);
+                sequenceNumber(), minimumGeneration, maximumGenerationInFile, timestamp, newPath);
     }
 
     /**

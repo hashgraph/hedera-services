@@ -93,7 +93,7 @@ import java.time.Duration;
 public record PreConsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "1000") int writeQueueCapacity,
         @ConfigProperty(defaultValue = "1h") Duration minimumRetentionPeriod,
-        @ConfigProperty(defaultValue = "10") int preferredFileSizeMegabytes,
+        @ConfigProperty(defaultValue = "1024") int preferredFileSizeMegabytes,
         @ConfigProperty(defaultValue = "50") int bootstrapGenerationalSpan,
         @ConfigProperty(defaultValue = "5") int generationalUtilizationSpanRunningAverageLength,
         @Min(1) @ConfigProperty(defaultValue = "10") double bootstrapGenerationalSpanOverlapFactor,
@@ -104,5 +104,4 @@ public record PreConsensusEventStreamConfig(
         // FUTURE WORK: once tested make this default true
         @ConfigProperty(defaultValue = "false") boolean enableStorage,
         // FUTURE WORK: once tested make this default true
-        @ConfigProperty(defaultValue = "false") boolean enableReplay) {
-}
+        @ConfigProperty(defaultValue = "false") boolean enableReplay) {}

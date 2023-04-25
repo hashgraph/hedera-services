@@ -452,7 +452,8 @@ class PreConsensusEventReadWriteTests {
         assertEquals(file.sequenceNumber(), compressedFile.sequenceNumber());
         assertEquals(file.minimumGeneration(), compressedFile.minimumGeneration());
         assertTrue(maximumGeneration > compressedFile.maximumGeneration());
-        assertEquals(mutableFile.getUtilizedGenerationalSpan(),
+        assertEquals(
+                mutableFile.getUtilizedGenerationalSpan(),
                 compressedFile.maximumGeneration() - compressedFile.minimumGeneration());
         assertNotEquals(file.path(), compressedFile.path());
         assertNotEquals(file.maximumGeneration(), compressedFile.maximumGeneration());

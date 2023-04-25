@@ -347,11 +347,12 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      */
     private long computeNewFileSpan(final long minimumFileGeneration, final long nextGenerationToWrite) {
 
-        final long basisSpan = (bootstrapMode || averageGenerationalSpanUtilization.isEmpty()) ?
-                previousGenerationalSpan : averageGenerationalSpanUtilization.getAverage();
+        final long basisSpan = (bootstrapMode || averageGenerationalSpanUtilization.isEmpty())
+                ? previousGenerationalSpan
+                : averageGenerationalSpanUtilization.getAverage();
 
-        final double overlapFactor = bootstrapMode ?
-                bootstrapGenerationalSpanOverlapFactor : generationalSpanOverlapFactor;
+        final double overlapFactor =
+                bootstrapMode ? bootstrapGenerationalSpanOverlapFactor : generationalSpanOverlapFactor;
 
         final long desiredSpan = (long) (basisSpan * overlapFactor);
 
@@ -368,8 +369,8 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     private void prepareOutputStream(@NonNull final EventImpl eventToWrite) throws IOException {
         if (currentMutableFile != null) {
             final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite);
-            final boolean fileIsFull = UNIT_BYTES.convertTo(currentMutableFile.fileSize(), UNIT_MEGABYTES)
-                    >= preferredFileSizeMegabytes;
+            final boolean fileIsFull =
+                    UNIT_BYTES.convertTo(currentMutableFile.fileSize(), UNIT_MEGABYTES) >= preferredFileSizeMegabytes;
 
             if (!fileCanContainEvent || fileIsFull) {
                 closeFile();
