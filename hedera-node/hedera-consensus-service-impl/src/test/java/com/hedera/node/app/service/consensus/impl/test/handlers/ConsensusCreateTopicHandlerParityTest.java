@@ -28,20 +28,20 @@ import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ConsensusCreateTopicHandlerParityTest {
     private final ConsensusCreateTopicHandler subject = new ConsensusCreateTopicHandler();
-    private AccountAccess keyLookup;
+    private ReadableAccountStore accountStore;
 
     @BeforeEach
     void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 
     @Test
@@ -50,7 +50,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         // then:
@@ -64,7 +64,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         // then:
@@ -79,7 +79,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         // then:
@@ -94,7 +94,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         // then:
@@ -112,7 +112,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 
@@ -122,7 +122,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 }
