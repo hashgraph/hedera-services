@@ -28,7 +28,8 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -100,7 +101,7 @@ public class ConsensusHandlerTestBase {
         writableTopicState = emptyWritableTopicState();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
-        readableStore = new ReadableTopicStore(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates);
         writableStore = new WritableTopicStore(writableStates);
     }
 
@@ -109,7 +110,7 @@ public class ConsensusHandlerTestBase {
         writableTopicState = writableTopicStateWithOneKey();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
-        readableStore = new ReadableTopicStore(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates);
         writableStore = new WritableTopicStore(writableStates);
     }
 
