@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.admin.impl.handlers;
 
+import static java.util.Objects.requireNonNull;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -41,7 +44,15 @@ public final class UnzipUtility {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static boolean unzip(final byte[] bytes, final String dstDir) throws IOException {
+    /**
+     * Extracts (unzips) a zipped file from a byte array
+     * @param bytes the byte array containing the zipped file
+     * @param dstDir the destination directory to extract the unzipped file to
+     * @throws IOException if the destination does not exist and can't be created, or if the file can't be written
+     */
+    public static boolean unzip(@NonNull final byte[] bytes, @NonNull final String dstDir) throws IOException {
+        requireNonNull(bytes);
+        requireNonNull(dstDir);
         final File destDir = new File(dstDir);
         if (!destDir.exists()) {
             if (!destDir.mkdirs()) {
@@ -85,20 +96,23 @@ public final class UnzipUtility {
      *
      * @param inputStream Input stream of zip file content
      * @param filePath Output file name
+     * @throws IOException if the file can't be written
      */
-    public static void extractSingleFile(ZipInputStream inputStream, String filePath) {
+    public static void extractSingleFile(@NonNull ZipInputStream inputStream, @NonNull String filePath)
+            throws IOException {
+        requireNonNull(inputStream);
+        requireNonNull(filePath);
         try (var bos = new BufferedOutputStream(new FileOutputStream(filePath))) {
             final var bytesIn = new byte[BUFFER_SIZE];
             int read;
             while ((read = inputStream.read(bytesIn)) != -1) {
                 bos.write(bytesIn, 0, read);
             }
-        } catch (IOException e) {
-            log.error("Unable to write to file {}", filePath, e);
         }
     }
 
-    static void ensureDirectoriesExist(final File file) {
+    static void ensureDirectoriesExist(@NonNull final File file) {
+        requireNonNull(file);
         final File directory = file.getParentFile();
 
         if (!directory.exists() && !directory.mkdirs()) {

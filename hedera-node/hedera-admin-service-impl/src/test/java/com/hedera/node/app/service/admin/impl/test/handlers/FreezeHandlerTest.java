@@ -79,7 +79,10 @@ class FreezeHandlerTest {
     @Test
     void rejectIfUnknownFreezeType() throws PreCheckException {
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder()
                         .freezeType(UNKNOWN_FREEZE_TYPE)
                         .build())
@@ -94,7 +97,10 @@ class FreezeHandlerTest {
         FreezeType[] freezeTypes = {FREEZE_ONLY, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
         for (FreezeType freezeType : freezeTypes) {
             TransactionBody txn = TransactionBody.newBuilder()
-                    .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                    .transactionID(TransactionID.newBuilder()
+                            .accountID(nonAdminAccount)
+                            .transactionValidStart(
+                                    Timestamp.newBuilder().seconds(1000).build()))
                     .freeze(FreezeTransactionBody.newBuilder()
                             .freezeType(freezeType)
                             .build())
@@ -176,7 +182,10 @@ class FreezeHandlerTest {
     void happyPathFreezeAbort() throws PreCheckException {
         // freeze_abort always returns OK, to allow the node to send multiple commands to abort
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder()
                         .freezeType(FREEZE_ABORT)
                         .build())
@@ -219,8 +228,10 @@ class FreezeHandlerTest {
 
         FileID fileId = FileID.newBuilder().fileNum(1234L).build();
         given(specialFileStore.get(1234L)).willReturn(Optional.of(new byte[0]));
-        TransactionID txnId =
-                TransactionID.newBuilder().accountID(nonAdminAccount).build();
+        TransactionID txnId = TransactionID.newBuilder()
+                .accountID(nonAdminAccount)
+                .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                .build();
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .freeze(FreezeTransactionBody.newBuilder()

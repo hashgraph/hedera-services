@@ -78,12 +78,11 @@ class UnzipUtilityTest {
     }
 
     @Test
-    void logsAtErrorWhenUnableToExtractFile() throws IOException {
+    void throwsWhenUnableToExtractFile() throws IOException {
         final var tmpFile = "shortLived.txt";
         given(zipIn.read(any())).willThrow(IOException.class);
 
-        assertDoesNotThrow(() -> UnzipUtility.extractSingleFile(zipIn, tmpFile));
-        assert (logCaptor.errorLogs().contains("Unable to write to file shortLived.txt java.io.IOException: null"));
+        assertThrows(IOException.class, () -> UnzipUtility.extractSingleFile(zipIn, tmpFile));
 
         new File(tmpFile).delete();
     }

@@ -84,6 +84,7 @@ public class FreezeHandler implements TransactionHandler {
 
         final FreezeType freezeType = freezeTxn.freezeType();
         final var txValidStart = context.body().transactionID().transactionValidStart();
+        requireNonNull(txValidStart);
         switch (freezeType) {
                 // default value for freezeType is UNKNOWN_FREEZE_TYPE
                 // reject any freeze transactions that do not set freezeType or set it to UNKNOWN_FREEZE_TYPE
@@ -118,20 +119,28 @@ public class FreezeHandler implements TransactionHandler {
     }
 
     public void handle(
-            FreezeTransactionBody freezeTxn,
+            @NonNull FreezeTransactionBody freezeTxn,
             @NonNull final AdminServiceConfig adminServiceConfig,
-            WritableSpecialFileStore specialFileStore,
-            SwirldDualState dualState) {
+            @NonNull WritableSpecialFileStore specialFileStore,
+            @NonNull SwirldDualState dualState) {
         final FreezeUpgradeActions upgradeActions =
                 new FreezeUpgradeActions(adminServiceConfig, dualState, specialFileStore);
 
-        final Timestamp freezeStartTime = freezeTxn.startTime();
+        requireNonNull(freezeTxn);
+        requireNonNull(adminServiceConfig);
+        requireNonNull(specialFileStore);
+        // TODO: requireNonNull(dualState);
+        // for the time being, this will always be null because we are not using SwirldDualState
+
+        final Timestamp freezeStartTime = freezeTxn.startTimeOrThrow();
         final Instant freezeStartTimeInstant =
                 Instant.ofEpochSecond(freezeStartTime.seconds(), freezeStartTime.nanos());
-        final FileID updateFileNum = freezeTxn.updateFile();
+        final FileID updateFileNum =
+                freezeTxn.updateFile(); // only some freeze types require this, it may be null for others
 
         switch (freezeTxn.freezeType()) {
             case PREPARE_UPGRADE:
+                requireNonNull(updateFileNum);
                 final Optional<byte[]> updateFileZip = specialFileStore.get(updateFileNum.fileNum());
                 if (updateFileZip.isEmpty()) throw new IllegalStateException("Update file not found");
                 upgradeActions.extractSoftwareUpgrade(updateFileZip.get());
@@ -145,6 +154,7 @@ public class FreezeHandler implements TransactionHandler {
                 // TODO:       networkCtx.discardPreparedUpgradeMeta();
                 break;
             case TELEMETRY_UPGRADE:
+                requireNonNull(updateFileNum);
                 final Optional<byte[]> telemetryUpdateZip = specialFileStore.get(updateFileNum.fileNum());
                 if (telemetryUpdateZip.isEmpty()) throw new IllegalStateException("Telemetry update file not found");
                 upgradeActions.extractTelemetryUpgrade(telemetryUpdateZip.get(), freezeStartTimeInstant);
@@ -161,20 +171,21 @@ public class FreezeHandler implements TransactionHandler {
      * a time in the future, where future is defined as a time after the current consensus time.
      * @throws PreCheckException if startTime is not in the future
      */
-    private void verifyFreezeStartTimeIsInFuture(FreezeTransactionBody freezeTxn, Timestamp curConsensusTime)
-            throws PreCheckException {
+    private void verifyFreezeStartTimeIsInFuture(
+            @NonNull FreezeTransactionBody freezeTxn, @NonNull Timestamp curConsensusTime) throws PreCheckException {
+        requireNonNull(freezeTxn);
+        requireNonNull(curConsensusTime);
+
         final Timestamp freezeStartTime = freezeTxn.startTime();
-        if (freezeStartTime == null || freezeStartTime.seconds() == 0 && freezeStartTime.nanos() == 0) {
+        if (freezeStartTime == null || (freezeStartTime.seconds() == 0 && freezeStartTime.nanos() == 0)) {
             throw new PreCheckException(INVALID_FREEZE_TRANSACTION_BODY);
         }
         final Instant freezeStartTimeInstant =
                 Instant.ofEpochSecond(freezeStartTime.seconds(), freezeStartTime.nanos());
-
         final Instant effectiveNowInstant = Instant.ofEpochSecond(curConsensusTime.seconds(), curConsensusTime.nanos());
 
         // make sure freezeStartTime is after current consensus time
-        final boolean freezeStartTimeIsInFuture = freezeStartTimeInstant.isAfter(effectiveNowInstant);
-        if (!freezeStartTimeIsInFuture) {
+        if (!freezeStartTimeInstant.isAfter(effectiveNowInstant)) {
             throw new PreCheckException(FREEZE_START_TIME_MUST_BE_FUTURE);
         }
     }
@@ -183,8 +194,12 @@ public class FreezeHandler implements TransactionHandler {
      * For freeze types PREPARE_UPGRADE, FREEZE_UPGRADE, and TELEMETRY_UPGRADE, the updateFile and fileHash fields must be set.
      * @throws PreCheckException if updateFile or fileHash are not set or don't pass sanity checks
      */
-    private void verifyUpdateFileAndHash(FreezeTransactionBody freezeTxn, ReadableSpecialFileStore specialFileStore)
+    private void verifyUpdateFileAndHash(
+            @NonNull FreezeTransactionBody freezeTxn, @NonNull ReadableSpecialFileStore specialFileStore)
             throws PreCheckException {
+        requireNonNull(freezeTxn);
+        requireNonNull(specialFileStore);
+
         final FileID updateFile = freezeTxn.updateFile();
 
         if (updateFile == null || specialFileStore.get(updateFile.fileNum()).isEmpty()) {

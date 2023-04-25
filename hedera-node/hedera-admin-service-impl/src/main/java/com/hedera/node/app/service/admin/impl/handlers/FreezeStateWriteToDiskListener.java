@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.service.admin.impl.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteNotification;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -36,12 +39,14 @@ public class FreezeStateWriteToDiskListener implements StateWriteToDiskCompleteL
     private final UpgradeActions upgradeActions;
 
     @Inject
-    public FreezeStateWriteToDiskListener(final UpgradeActions upgradeActions) {
+    public FreezeStateWriteToDiskListener(@NonNull final UpgradeActions upgradeActions) {
+        requireNonNull(upgradeActions);
         this.upgradeActions = upgradeActions;
     }
 
     @Override
-    public void notify(final StateWriteToDiskCompleteNotification notification) {
+    public void notify(@NonNull final StateWriteToDiskCompleteNotification notification) {
+        requireNonNull(notification);
         if (notification.isFreezeState()) {
             log.info(
                     "Notification Received: Freeze State Finished. "

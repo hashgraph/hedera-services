@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.service.admin.impl.handlers;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.admin.impl.WritableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.config.AdminServiceConfig;
 import com.swirlds.common.system.SwirldDualState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +32,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -64,13 +65,18 @@ public class FreezeUpgradeActions {
 
     @Inject
     public FreezeUpgradeActions(
-            final AdminServiceConfig adminServiceConfig,
+            @NonNull final AdminServiceConfig adminServiceConfig,
             final SwirldDualState dualState,
-            final WritableSpecialFileStore specialFiles) {
+            @NonNull final WritableSpecialFileStore specialFiles) {
+        requireNonNull(adminServiceConfig);
+        requireNonNull(specialFiles);
+
         this.adminServiceConfig = adminServiceConfig;
         this.dualState = dualState;
         this.specialFiles = specialFiles;
         // TODO: need to also pass in network context
+        // TODO: requireNonNull(dualState);
+        //  for the time being, dualState will always be null because we are not using it
     }
 
     public void externalizeFreezeIfUpgradePending() {
@@ -82,19 +88,22 @@ public class FreezeUpgradeActions {
         }
     }
 
-    public CompletableFuture<Void> extractTelemetryUpgrade(final byte[] archiveData, final Instant now) {
+    public CompletableFuture<Void> extractTelemetryUpgrade(
+            @NonNull final byte[] archiveData, @NonNull final Instant now) {
         return extractNow(archiveData, TELEMETRY_UPGRADE_DESC, EXEC_TELEMETRY_MARKER, now);
     }
 
-    public CompletableFuture<Void> extractSoftwareUpgrade(final byte[] archiveData) {
+    public CompletableFuture<Void> extractSoftwareUpgrade(@NonNull final byte[] archiveData) {
         return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
     }
 
-    public void scheduleFreezeOnlyAt(final Instant freezeTime) {
+    public void scheduleFreezeOnlyAt(@NonNull final Instant freezeTime) {
+        requireNonNull(freezeTime);
         withNonNullDualState("schedule freeze", ds -> ds.setFreezeTime(freezeTime));
     }
 
-    public void scheduleFreezeUpgradeAt(final Instant freezeTime) {
+    public void scheduleFreezeUpgradeAt(@NonNull final Instant freezeTime) {
+        requireNonNull(freezeTime);
         withNonNullDualState("schedule freeze", ds -> {
             ds.setFreezeTime(freezeTime);
             writeSecondMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
@@ -126,9 +135,17 @@ public class FreezeUpgradeActions {
     /* --- Internal methods --- */
 
     private CompletableFuture<Void> extractNow(
-            final byte[] archiveData, final String desc, final String marker, @Nullable final Instant now) {
+            @NonNull final byte[] archiveData,
+            @NonNull final String desc,
+            @NonNull final String marker,
+            @Nullable final Instant now) {
+        requireNonNull(archiveData);
+        requireNonNull(desc);
+        requireNonNull(marker);
+
         final var size = archiveData.length;
         final var artifactsLoc = adminServiceConfig.upgradeArtifactsPath();
+        requireNonNull(artifactsLoc);
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         return runAsync(() -> {
             try {
@@ -157,20 +174,22 @@ public class FreezeUpgradeActions {
         imminent PREPARE_UPGRADE. */
     }
 
-    private void withNonNullDualState(final String actionDesc, final Consumer<SwirldDualState> action) {
-        Objects.requireNonNull(dualState, "Cannot " + actionDesc + " without access to the dual state");
+    private void withNonNullDualState(
+            @NonNull final String actionDesc, @NonNull final Consumer<SwirldDualState> action) {
+        requireNonNull(dualState, "Cannot " + actionDesc + " without access to the dual state");
         action.accept(dualState);
     }
 
-    private void writeCheckMarker(final String file) {
+    private void writeCheckMarker(@NonNull final String file) {
         writeMarker(file, null);
     }
 
-    private void writeSecondMarker(final String file, final Instant now) {
+    private void writeSecondMarker(@NonNull final String file, @NonNull final Instant now) {
         writeMarker(file, now);
     }
 
     private void writeMarker(final String file, @Nullable final Instant now) {
+        requireNonNull(file);
         final var path = Paths.get(adminServiceConfig.upgradeArtifactsPath(), file);
         try {
             final var artifactsDirPath = Paths.get(adminServiceConfig.upgradeArtifactsPath());

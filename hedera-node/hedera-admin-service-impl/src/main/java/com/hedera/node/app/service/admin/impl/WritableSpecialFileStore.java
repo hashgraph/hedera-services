@@ -50,6 +50,7 @@ public class WritableSpecialFileStore {
      * @param upgradeFile - the file to be persisted.
      */
     public void put(@NonNull final Long fileId, @NonNull final byte[] upgradeFile) {
+        requireNonNull(fileId);
         if (fileId < 150 || fileId > 159) {
             throw new IllegalArgumentException("File ID must be in the range 150 to 159");
         }
@@ -61,7 +62,8 @@ public class WritableSpecialFileStore {
      * returns {@code Optional.empty()}
      * @param fileId - the ID of the file to be persisted
      */
-    public Optional<byte[]> get(final Long fileId) {
+    public Optional<byte[]> get(@NonNull final Long fileId) {
+        requireNonNull(fileId);
         final byte[] upgradeFile = upgradeFilesById.get(fileId);
         return Optional.ofNullable(upgradeFile);
     }
