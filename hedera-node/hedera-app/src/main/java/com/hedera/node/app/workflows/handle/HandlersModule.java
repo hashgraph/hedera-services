@@ -22,7 +22,7 @@ import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
-import com.hedera.node.app.service.token.impl.components.TokenComponent;
+import com.hedera.node.app.service.token.impl.handlers.TokenComponent;
 import com.hedera.node.app.service.util.impl.components.UtilComponent;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import dagger.Module;
@@ -35,14 +35,14 @@ public interface HandlersModule {
     @Provides
     @Singleton
     static TransactionHandlers provideTransactionHandlers(
-            @NonNull AdminComponent adminComponent,
-            @NonNull ConsensusComponent consensusComponent,
-            @NonNull FileComponent fileComponent,
-            @NonNull NetworkComponent networkComponent,
-            @NonNull ContractComponent contractComponent,
-            @NonNull ScheduleComponent scheduleComponent,
-            @NonNull TokenComponent tokenComponent,
-            @NonNull UtilComponent utilComponent) {
+            @NonNull final AdminComponent adminComponent,
+            @NonNull final ConsensusComponent consensusComponent,
+            @NonNull final FileComponent fileComponent,
+            @NonNull final NetworkComponent networkComponent,
+            @NonNull final ContractComponent contractComponent,
+            @NonNull final ScheduleComponent scheduleComponent,
+            @NonNull final TokenComponent tokenComponent,
+            @NonNull final UtilComponent utilComponent) {
         return new TransactionHandlers(
                 consensusComponent.consensusCreateTopicHandler(),
                 consensusComponent.consensusUpdateTopicHandler(),
@@ -55,14 +55,14 @@ public interface HandlersModule {
                 contractComponent.contractSystemDeleteHandler(),
                 contractComponent.contractSystemUndeleteHandler(),
                 contractComponent.etherumTransactionHandler(),
-                tokenComponent.cryptoCreateHandler(),
-                tokenComponent.cryptoUpdateHandler(),
-                tokenComponent.cryptoTransferHandler(),
-                tokenComponent.cryptoDeleteHandler(),
-                tokenComponent.cryptoApproveAllowanceHandler(),
-                tokenComponent.cryptoDeleteAllowanceHandler(),
-                tokenComponent.cryptoAddLiveHashHandler(),
-                tokenComponent.cryptoDeleteLiveHashHandler(),
+                tokenComponent.getCryptoCreateHandler(),
+                tokenComponent.getCryptoUpdateHandler(),
+                tokenComponent.getCryptoTransferHandler(),
+                tokenComponent.getCryptoDeleteHandler(),
+                tokenComponent.getCryptoApproveAllowanceHandler(),
+                tokenComponent.getCryptoDeleteAllowanceHandler(),
+                tokenComponent.getCryptoAddLiveHashHandler(),
+                tokenComponent.getCryptoDeleteLiveHashHandler(),
                 fileComponent.fileCreateHandler(),
                 fileComponent.fileUpdateHandler(),
                 fileComponent.fileDeleteHandler(),
@@ -74,21 +74,21 @@ public interface HandlersModule {
                 scheduleComponent.scheduleCreateHandler(),
                 scheduleComponent.scheduleSignHandler(),
                 scheduleComponent.scheduleDeleteHandler(),
-                tokenComponent.tokenCreateHandler(),
-                tokenComponent.tokenUpdateHandler(),
-                tokenComponent.tokenMintHandler(),
-                tokenComponent.tokenBurnHandler(),
-                tokenComponent.tokenDeleteHandler(),
-                tokenComponent.tokenAccountWipeHandler(),
-                tokenComponent.tokenFreezeAccountHandler(),
-                tokenComponent.tokenUnfreezeAccountHandler(),
-                tokenComponent.tokenGrantKycToAccountHandler(),
-                tokenComponent.tokenRevokeKycFromAccountHandler(),
-                tokenComponent.tokenAssociateToAccountHandler(),
-                tokenComponent.tokenDissociateFromAccountHandler(),
-                tokenComponent.tokenFeeScheduleUpdateHandler(),
-                tokenComponent.tokenPauseHandler(),
-                tokenComponent.tokenUnpauseHandler(),
+                tokenComponent.getTokenCreateHandler(),
+                tokenComponent.getTokenUpdateHandler(),
+                tokenComponent.getTokenMintHandler(),
+                tokenComponent.getTokenBurnHandler(),
+                tokenComponent.getTokenDeleteHandler(),
+                tokenComponent.getTokenAccountWipeHandler(),
+                tokenComponent.getTokenFreezeAccountHandler(),
+                tokenComponent.getTokenUnfreezeAccountHandler(),
+                tokenComponent.getTokenGrantKycToAccountHandler(),
+                tokenComponent.getTokenRevokeKycFromAccountHandler(),
+                tokenComponent.getTokenAssociateToAccountHandler(),
+                tokenComponent.getTokenDissociateFromAccountHandler(),
+                tokenComponent.getTokenFeeScheduleUpdateHandler(),
+                tokenComponent.getTokenPauseHandler(),
+                tokenComponent.getTokenUnpauseHandler(),
                 utilComponent.prngHandler());
     }
 }

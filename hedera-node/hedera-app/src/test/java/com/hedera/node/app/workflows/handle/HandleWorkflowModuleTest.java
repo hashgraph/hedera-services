@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.admin.impl.components.AdminComponent;
@@ -47,7 +47,6 @@ import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
-import com.hedera.node.app.service.token.impl.components.TokenComponent;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
@@ -59,6 +58,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenComponent;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
@@ -256,14 +256,14 @@ class HandleWorkflowModuleTest {
         given(contractComponent.contractSystemDeleteHandler()).willReturn(contractSystemDeleteHandler);
         given(contractComponent.contractSystemUndeleteHandler()).willReturn(contractSystemUndeleteHandler);
         given(contractComponent.etherumTransactionHandler()).willReturn(etherumTransactionHandler);
-        given(tokenComponent.cryptoCreateHandler()).willReturn(cryptoCreateHandler);
-        given(tokenComponent.cryptoUpdateHandler()).willReturn(cryptoUpdateHandler);
-        given(tokenComponent.cryptoTransferHandler()).willReturn(cryptoTransferHandler);
-        given(tokenComponent.cryptoDeleteHandler()).willReturn(cryptoDeleteHandler);
-        given(tokenComponent.cryptoApproveAllowanceHandler()).willReturn(cryptoApproveAllowanceHandler);
-        given(tokenComponent.cryptoDeleteAllowanceHandler()).willReturn(cryptoDeleteAllowanceHandler);
-        given(tokenComponent.cryptoAddLiveHashHandler()).willReturn(cryptoAddLiveHashHandler);
-        given(tokenComponent.cryptoDeleteLiveHashHandler()).willReturn(cryptoDeleteLiveHashHandler);
+        given(tokenComponent.getCryptoCreateHandler()).willReturn(cryptoCreateHandler);
+        given(tokenComponent.getCryptoUpdateHandler()).willReturn(cryptoUpdateHandler);
+        given(tokenComponent.getCryptoTransferHandler()).willReturn(cryptoTransferHandler);
+        given(tokenComponent.getCryptoDeleteHandler()).willReturn(cryptoDeleteHandler);
+        given(tokenComponent.getCryptoApproveAllowanceHandler()).willReturn(cryptoApproveAllowanceHandler);
+        given(tokenComponent.getCryptoDeleteAllowanceHandler()).willReturn(cryptoDeleteAllowanceHandler);
+        given(tokenComponent.getCryptoAddLiveHashHandler()).willReturn(cryptoAddLiveHashHandler);
+        given(tokenComponent.getCryptoDeleteLiveHashHandler()).willReturn(cryptoDeleteLiveHashHandler);
         given(fileComponent.fileCreateHandler()).willReturn(fileCreateHandler);
         given(fileComponent.fileUpdateHandler()).willReturn(fileUpdateHandler);
         given(fileComponent.fileDeleteHandler()).willReturn(fileDeleteHandler);
@@ -275,21 +275,21 @@ class HandleWorkflowModuleTest {
         given(scheduleComponent.scheduleCreateHandler()).willReturn(scheduleCreateHandler);
         given(scheduleComponent.scheduleSignHandler()).willReturn(scheduleSignHandler);
         given(scheduleComponent.scheduleDeleteHandler()).willReturn(scheduleDeleteHandler);
-        given(tokenComponent.tokenCreateHandler()).willReturn(tokenCreateHandler);
-        given(tokenComponent.tokenUpdateHandler()).willReturn(tokenUpdateHandler);
-        given(tokenComponent.tokenMintHandler()).willReturn(tokenMintHandler);
-        given(tokenComponent.tokenBurnHandler()).willReturn(tokenBurnHandler);
-        given(tokenComponent.tokenDeleteHandler()).willReturn(tokenDeleteHandler);
-        given(tokenComponent.tokenAccountWipeHandler()).willReturn(tokenAccountWipeHandler);
-        given(tokenComponent.tokenFreezeAccountHandler()).willReturn(tokenFreezeAccountHandler);
-        given(tokenComponent.tokenUnfreezeAccountHandler()).willReturn(tokenUnfreezeAccountHandler);
-        given(tokenComponent.tokenGrantKycToAccountHandler()).willReturn(tokenGrantKycToAccountHandler);
-        given(tokenComponent.tokenRevokeKycFromAccountHandler()).willReturn(tokenRevokeKycFromAccountHandler);
-        given(tokenComponent.tokenAssociateToAccountHandler()).willReturn(tokenAssociateToAccountHandler);
-        given(tokenComponent.tokenDissociateFromAccountHandler()).willReturn(tokenDissociateFromAccountHandler);
-        given(tokenComponent.tokenFeeScheduleUpdateHandler()).willReturn(tokenFeeScheduleUpdateHandler);
-        given(tokenComponent.tokenPauseHandler()).willReturn(tokenPauseHandler);
-        given(tokenComponent.tokenUnpauseHandler()).willReturn(tokenUnpauseHandler);
+        given(tokenComponent.getTokenCreateHandler()).willReturn(tokenCreateHandler);
+        given(tokenComponent.getTokenUpdateHandler()).willReturn(tokenUpdateHandler);
+        given(tokenComponent.getTokenMintHandler()).willReturn(tokenMintHandler);
+        given(tokenComponent.getTokenBurnHandler()).willReturn(tokenBurnHandler);
+        given(tokenComponent.getTokenDeleteHandler()).willReturn(tokenDeleteHandler);
+        given(tokenComponent.getTokenAccountWipeHandler()).willReturn(tokenAccountWipeHandler);
+        given(tokenComponent.getTokenFreezeAccountHandler()).willReturn(tokenFreezeAccountHandler);
+        given(tokenComponent.getTokenUnfreezeAccountHandler()).willReturn(tokenUnfreezeAccountHandler);
+        given(tokenComponent.getTokenGrantKycToAccountHandler()).willReturn(tokenGrantKycToAccountHandler);
+        given(tokenComponent.getTokenRevokeKycFromAccountHandler()).willReturn(tokenRevokeKycFromAccountHandler);
+        given(tokenComponent.getTokenAssociateToAccountHandler()).willReturn(tokenAssociateToAccountHandler);
+        given(tokenComponent.getTokenDissociateFromAccountHandler()).willReturn(tokenDissociateFromAccountHandler);
+        given(tokenComponent.getTokenFeeScheduleUpdateHandler()).willReturn(tokenFeeScheduleUpdateHandler);
+        given(tokenComponent.getTokenPauseHandler()).willReturn(tokenPauseHandler);
+        given(tokenComponent.getTokenUnpauseHandler()).willReturn(tokenUnpauseHandler);
         given(utilComponent.prngHandler()).willReturn(utilPrngHandler);
 
         final var handlers = HandlersModule.provideTransactionHandlers(

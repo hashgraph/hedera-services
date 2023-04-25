@@ -26,7 +26,7 @@ import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
-import com.hedera.node.app.service.token.impl.components.TokenComponent;
+import com.hedera.node.app.service.token.impl.handlers.TokenComponent;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.system.Platform;
@@ -62,12 +62,12 @@ public interface QueryWorkflowModule {
 
     @Provides
     static QueryHandlers provideQueryHandlers(
-            @NonNull ConsensusComponent consensusComponent,
-            @NonNull FileComponent fileComponent,
-            @NonNull NetworkComponent networkComponent,
-            @NonNull ContractComponent contractComponent,
-            @NonNull ScheduleComponent scheduleComponent,
-            @NonNull TokenComponent tokenComponent) {
+            @NonNull final ConsensusComponent consensusComponent,
+            @NonNull final FileComponent fileComponent,
+            @NonNull final NetworkComponent networkComponent,
+            @NonNull final ContractComponent contractComponent,
+            @NonNull final ScheduleComponent scheduleComponent,
+            @NonNull final TokenComponent tokenComponent) {
         return new QueryHandlers(
                 consensusComponent.consensusGetTopicInfoHandler(),
                 contractComponent.contractGetBySolidityIDHandler(),
@@ -75,11 +75,11 @@ public interface QueryWorkflowModule {
                 contractComponent.contractGetInfoHandler(),
                 contractComponent.contractGetBytecodeHandler(),
                 contractComponent.contractGetRecordsHandler(),
-                tokenComponent.cryptoGetAccountBalanceHandler(),
-                tokenComponent.cryptoGetAccountInfoHandler(),
-                tokenComponent.cryptoGetAccountRecordsHandler(),
-                tokenComponent.cryptoGetLiveHashHandler(),
-                tokenComponent.cryptoGetStakersHandler(),
+                tokenComponent.getCryptoGetAccountBalanceHandler(),
+                tokenComponent.getCryptoGetAccountInfoHandler(),
+                tokenComponent.getCryptoGetAccountRecordsHandler(),
+                tokenComponent.getCryptoGetLiveHashHandler(),
+                tokenComponent.getCryptoGetStakersHandler(),
                 fileComponent.fileGetContentsHandler(),
                 fileComponent.fileGetInfoHandler(),
                 networkComponent.networkGetAccountDetailsHandler(),
@@ -89,10 +89,10 @@ public interface QueryWorkflowModule {
                 networkComponent.networkTransactionGetReceiptHandler(),
                 networkComponent.networkTransactionGetRecordHandler(),
                 scheduleComponent.scheduleGetInfoHandler(),
-                tokenComponent.tokenGetInfoHandler(),
-                tokenComponent.tokenGetAccountNftInfosHandler(),
-                tokenComponent.tokenGetNftInfoHandler(),
-                tokenComponent.tokenGetNftInfosHandler());
+                tokenComponent.getTokenGetInfoHandler(),
+                tokenComponent.getTokenGetAccountNftInfosHandler(),
+                tokenComponent.getTokenGetNftInfoHandler(),
+                tokenComponent.getTokenGetNftInfosHandler());
     }
 
     @Provides
