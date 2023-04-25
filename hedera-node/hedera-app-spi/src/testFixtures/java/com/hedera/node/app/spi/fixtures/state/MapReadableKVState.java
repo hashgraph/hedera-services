@@ -37,7 +37,7 @@ import java.util.Objects;
  * @param <K> The key type
  * @param <V> The value type
  */
-public class MapReadableKVState<K extends Comparable<? super K>, V> extends ReadableKVStateBase<K, V> {
+public class MapReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
     /** Represents the backing storage for this state */
     private final Map<K, V> backingStore;
 
@@ -82,7 +82,7 @@ public class MapReadableKVState<K extends Comparable<? super K>, V> extends Read
      * @param <V> The value type
      */
     @NonNull
-    public static <K extends Comparable<? super K>, V> Builder<K, V> builder(@NonNull final String stateKey) {
+    public static <K, V> Builder<K, V> builder(@NonNull final String stateKey) {
         return new Builder<>(stateKey);
     }
 
@@ -90,7 +90,7 @@ public class MapReadableKVState<K extends Comparable<? super K>, V> extends Read
      * A convenient builder for creating instances of {@link
      * com.hedera.node.app.spi.fixtures.state.MapReadableKVState}.
      */
-    public static final class Builder<K extends Comparable<? super K>, V> {
+    public static final class Builder<K, V> {
         private final Map<K, V> backingStore = new HashMap<>();
         private final String stateKey;
 

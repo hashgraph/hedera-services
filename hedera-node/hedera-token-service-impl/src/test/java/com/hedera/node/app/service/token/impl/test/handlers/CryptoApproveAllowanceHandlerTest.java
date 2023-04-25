@@ -31,10 +31,10 @@ import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,7 +71,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum()), account)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
     }
 
     @Test
@@ -79,7 +79,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.key()).willReturn(ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(id, false);
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
@@ -92,10 +92,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(accountNum), account)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
 
         final var txn = cryptoApproveAllowanceTransaction(id, false);
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ALLOWANCE_OWNER_ID);
     }
 
@@ -104,7 +104,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.key()).willReturn(ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 0);
         assertEquals(ownerKey, context.payerKey());
@@ -116,7 +116,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.key()).willReturn(ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(id, true);
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
@@ -130,11 +130,11 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(owner.accountNum()), ownerAccount)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
         given(ownerAccount.key()).willReturn(ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(id, true);
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_DELEGATING_SPENDER);
     }
 

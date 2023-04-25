@@ -34,21 +34,24 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoUpdateHandler implements TransactionHandler {
-    @Inject
-    public CryptoUpdateHandler() {
-        // Exists for injection
-    }
+
+    private final CryptoSignatureWaivers waivers;
 
     /**
-     * Pre-handles a {@link HederaFunctionality#CRYPTO_UPDATE} transaction, returning the metadata
-     * required to, at minimum, validate the signatures of all required signing keys.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * @deprecated Exists until I figured out how to configure Dagger to inject the waivers
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final CryptoSignatureWaivers waivers)
-            throws PreCheckException {
+    @Inject
+    @Deprecated(forRemoval = true)
+    public CryptoUpdateHandler() {
+        this.waivers = null;
+    }
+
+    public CryptoUpdateHandler(@NonNull final CryptoSignatureWaivers waivers) {
+        this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
+    }
+
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         requireNonNull(waivers);
         final var txn = context.body();

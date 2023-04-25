@@ -8,6 +8,7 @@ module com.hedera.node.app.service.mono.testFixtures {
     requires org.junit.jupiter.api;
     requires com.google.protobuf;
     requires com.hedera.node.app.hapi.utils;
+    requires com.hedera.node.app.service.token;
     requires com.swirlds.common;
     requires com.hedera.node.app.service.mono;
     requires com.swirlds.virtualmap;
