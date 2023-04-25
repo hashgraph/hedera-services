@@ -61,6 +61,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowModule;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
 import dagger.BindsInstance;
 import dagger.Component;
@@ -123,6 +124,9 @@ public interface HederaApp extends ServicesApp {
 
     @Component.Builder
     interface Builder {
+        @BindsInstance
+        Builder initTrigger(InitTrigger initTrigger);
+
         @BindsInstance
         Builder crypto(Cryptography engine);
 

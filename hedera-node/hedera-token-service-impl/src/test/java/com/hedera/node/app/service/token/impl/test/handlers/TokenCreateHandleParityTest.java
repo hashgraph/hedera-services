@@ -62,16 +62,16 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TokenCreateHandleParityTest {
-    private AccountAccess accountStore;
+    private ReadableAccountStore accountStore;
     private TokenCreateHandler subject;
 
     @BeforeEach
@@ -84,7 +84,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateWithAdminKey() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ADMIN_ONLY);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -98,7 +98,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateWithAdminKeyAndFreeze() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ADMIN_AND_FREEZE);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -112,7 +112,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateMissingAdminKey() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_MISSING_ADMIN);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -124,7 +124,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateMissingTreasuryKey() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_TREASURY);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
     }
 
@@ -132,7 +132,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateTreasuryAsPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_TREASURY_AS_PAYER);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -143,7 +143,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateMissingAutoRenew() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_AUTORENEW_ACCOUNT);
     }
 
@@ -151,7 +151,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateWithAutoRenew() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -165,7 +165,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateWithAutoRenewAsPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW_AS_PAYER);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -177,7 +177,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateWithAutoRenewAsCustomPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW_AS_CUSTOM_PAYER);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -191,7 +191,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomFeeAndCollectorMissing() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_COLLECTOR);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_CUSTOM_FEE_COLLECTOR);
     }
 
@@ -199,7 +199,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomFixedFeeNoCollectorSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -211,7 +211,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomFixedFeeInvalidCollector() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_INVALID_COLLECTOR);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_CUSTOM_FEE_COLLECTOR);
     }
 
@@ -219,7 +219,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomFixedFeeAndCollectorSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -233,7 +233,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomFixedFeeNoCollectorSigReqButDenomWildcard() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -247,7 +247,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomFixedFeeCollectorSigReqAndDenomWildcard() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_USING_WILDCARD_DENOM);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -261,7 +261,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomFractionalFeeNoCollectorSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -275,7 +275,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomRoyaltyFeeFallbackNoWildcardButSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -289,7 +289,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomRoyaltyFeeFallbackWildcardNoSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -303,7 +303,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomRoyaltyFeeFallbackWildcardAndSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_SIG_REQ);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -317,7 +317,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomRoyaltyFeeNoFallbackAndNoCollectorSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -329,7 +329,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomRoyaltyFeeNoFallbackButSigReq() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -343,7 +343,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateTreasuryAsCustomPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -355,7 +355,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomFixedFeeAndCollectorSigReqAndAsPayer() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -367,7 +367,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomFixedFeeNoSigRequiredWithPositiveDenom() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_DENOMINATION_AND_NO_SIG_REQ);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -379,7 +379,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomFixedNoDenomWithSigRequired() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_SIG_REQ);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -393,7 +393,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomFixedNoDenomNoSigRequired() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_NO_SIG_REQ);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -405,7 +405,7 @@ class TokenCreateHandleParityTest {
     void tokenCreateCustomRoyaltyFeeNoSigRequiredWithPositiveDenom() throws PreCheckException {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_NO_FALLBACK_AND_NO_SIG_REQ);
 
-        final var context = new PreHandleContext(accountStore, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
