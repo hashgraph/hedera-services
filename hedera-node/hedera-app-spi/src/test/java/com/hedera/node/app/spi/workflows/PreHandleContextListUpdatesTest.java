@@ -37,7 +37,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.workflows.PreHandleContext.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -132,9 +131,6 @@ class PreHandleContextListUpdatesTest {
         assertThrows(
                 NullPointerException.class,
                 () -> new PreHandleContext((AccountAccess) null, createAccountTransaction()));
-        assertThrows(
-                NullPointerException.class,
-                () -> new PreHandleContext((ReadableStoreFactory) null, createAccountTransaction()));
         assertThrows(NullPointerException.class, () -> new PreHandleContext(accountAccess, null));
 
         // When we pass null to requireKeyOrThrow for the account ID then we get a PreCheckException
