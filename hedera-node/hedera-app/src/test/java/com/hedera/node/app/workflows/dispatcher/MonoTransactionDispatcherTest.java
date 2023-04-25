@@ -710,7 +710,14 @@ class MonoTransactionDispatcherTest {
                         TransactionBody.newBuilder()
                                 .tokenUnpause(TokenUnpauseTransactionBody.DEFAULT)
                                 .build(),
-                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::tokenUnpauseHandler));
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::tokenUnpauseHandler),
+
+                // util
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .utilPrng(UtilPrngTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::utilPrngHandler));
     }
 
     @ParameterizedTest
@@ -854,14 +861,6 @@ class MonoTransactionDispatcherTest {
                                 .build(),
                         (DispatchToHandler) (handlers, meta) ->
                                 verify(handlers.scheduleDeleteHandler()).preHandle(eq(meta), any())),
-
-                // util
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .utilPrng(UtilPrngTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.utilPrngHandler()).preHandle(meta)),
 
                 // mixed
                 Arguments.of(
