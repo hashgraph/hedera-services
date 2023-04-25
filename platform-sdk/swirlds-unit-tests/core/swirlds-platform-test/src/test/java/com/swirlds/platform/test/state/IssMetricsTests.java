@@ -22,10 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.platform.metrics.IssMetrics;
 import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
