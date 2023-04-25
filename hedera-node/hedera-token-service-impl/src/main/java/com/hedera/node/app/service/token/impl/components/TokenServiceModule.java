@@ -54,9 +54,11 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import dagger.Binds;
 import dagger.Module;
 
-
+/**
+ * Dagger module of the token service
+ */
 @Module
-public interface TokenModule {
+public interface TokenServiceModule {
 
     @Binds
     CryptoSignatureWaivers cryptoSignatureWaivers(CryptoSignatureWaiversImpl impl);

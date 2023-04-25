@@ -49,7 +49,7 @@ import com.hedera.node.app.service.mono.store.StoresModule;
 import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
-import com.hedera.node.app.service.token.impl.components.TokenModule;
+import com.hedera.node.app.service.token.impl.components.TokenServiceModule;
 import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.solvency.SolvencyModule;
 import com.hedera.node.app.state.HederaStateModule;
@@ -111,7 +111,7 @@ import javax.inject.Singleton;
                 InfoDaggerModule.class,
                 ThrottleModule.class,
                 SolvencyModule.class,
-                TokenModule.class
+                TokenServiceModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
