@@ -205,12 +205,12 @@ public class EndOfStakingPeriodCalculator {
      * @return calculated consensus weight of the node
      */
     private int calculateWeightFromStake(long stake, long minStake, long totalStakeOfAllNodes) {
-        if (totalStakeOfAllNodes <= 0L) {
-            throw new IllegalStateException("Total stake of all nodes should be greater than 0");
-        }
         if (stake < minStake) {
             return 0;
         } else {
+            if (totalStakeOfAllNodes <= 0L) {
+                throw new IllegalStateException("Total stake of all nodes should be greater than 0");
+            }
             final var weight = BigInteger.valueOf(stake)
                     .multiply(BigInteger.valueOf(500))
                     .divide(BigInteger.valueOf(totalStakeOfAllNodes))
