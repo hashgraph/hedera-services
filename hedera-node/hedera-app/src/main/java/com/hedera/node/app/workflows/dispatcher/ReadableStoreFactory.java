@@ -19,7 +19,8 @@ package com.hedera.node.app.workflows.dispatcher;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStoreImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
@@ -54,7 +55,7 @@ public class ReadableStoreFactory {
             ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new),
             ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new),
             ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new),
-            ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStore::new));
+            ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStoreImpl::new));
 
     private final HederaState state;
 
