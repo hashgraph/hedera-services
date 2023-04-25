@@ -163,13 +163,13 @@ public class Browser {
 
     private final Configuration configuration;
 
-    //@formatter:off
+    // @formatter:off
     private static final String STARTUP_MESSAGE =
-    """
+            """
               //////////////////////
              // Node is Starting //
             //////////////////////""";
-    //@formatter:on
+    // @formatter:on
 
     /**
      * Prevent this class from being instantiated.
@@ -329,7 +329,7 @@ public class Browser {
                                     address.getPortInternalIpv4(),
                                     address.getPortExternalIpv4(), // internal port
                                     PortForwarder.Protocol.TCP // transport protocol
-                            );
+                                    );
                             portsToBeMapped.add(pm);
                         }
                     }
