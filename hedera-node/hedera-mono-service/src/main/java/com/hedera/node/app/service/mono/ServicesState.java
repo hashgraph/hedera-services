@@ -329,6 +329,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final var initialHash = runningHashLeaf().getRunningHash().getHash();
             app = appBuilder
                     .get()
+                    .initTrigger(trigger)
                     .staticAccountMemo(nodeAddress.getMemo())
                     .bootstrapProps(bootstrapProps)
                     .initialHash(initialHash)
