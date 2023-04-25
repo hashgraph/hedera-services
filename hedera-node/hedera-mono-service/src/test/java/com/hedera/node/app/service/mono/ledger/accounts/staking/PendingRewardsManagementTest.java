@@ -97,6 +97,7 @@ class PendingRewardsManagementTest {
         given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(rewardRate);
         given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
         given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
+        given(info.getStake()).willReturn(125_000L * HBARS_TO_TINYBARS);
         given(info.stakeRewardStartMinusUnclaimed()).willReturn(stakeRewardStart - unclaimedStakeRewardStart);
         given(dynamicProperties.requireMinStakeToReward()).willReturn(true);
         given(info.updateRewardSumHistory(
