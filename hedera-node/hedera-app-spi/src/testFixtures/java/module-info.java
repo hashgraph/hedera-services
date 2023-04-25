@@ -8,4 +8,7 @@ module com.hedera.node.app.spi.fixtures {
     requires com.hedera.pbj.runtime;
     requires org.assertj.core;
     requires static com.github.spotbugs.annotations;
+    
+    // Temporarily needed until FakePreHandleContext can be removed
+    requires com.hedera.node.app.service.token;
 }

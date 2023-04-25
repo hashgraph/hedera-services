@@ -28,8 +28,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +41,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
     void tokenDissociateWithKnownTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_DISSOCIATE_WITH_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(1, context.requiredNonPayerKeys().size());
@@ -52,7 +52,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
     void tokenDissociateWithSelfPaidKnownTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(0, context.requiredNonPayerKeys().size());
@@ -62,7 +62,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
     void tokenDissociateWithCustomPaidKnownTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(1, context.requiredNonPayerKeys().size());
@@ -73,7 +73,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
     void tokenDissociateWithMissingTargetScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_DISSOCIATE_WITH_MISSING_TARGET);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 }
