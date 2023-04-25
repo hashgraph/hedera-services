@@ -29,6 +29,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.config.api.Configuration;
@@ -62,6 +63,7 @@ class IngestComponentTest {
         final var selfNodeId = new NodeId(false, 666L);
 
         app = DaggerHederaApp.builder()
+                .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .consoleCreator(SwirldsGui::createConsole)
