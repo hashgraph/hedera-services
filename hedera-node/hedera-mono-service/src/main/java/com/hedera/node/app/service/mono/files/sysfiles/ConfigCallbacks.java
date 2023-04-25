@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
 public class ConfigCallbacks {
 
     private static final Logger log = LogManager.getLogger(ConfigCallbacks.class);
-    private static final long DEFAULT_MAX_TO_MIN_STAKE_RATIO = 150L;
+    private static final long DEFAULT_MAX_TO_MIN_STAKE_RATIO = 10000L;
     private final PropertySource properties;
     private final PropertySources propertySources;
     private final HapiOpPermissions hapiOpPermissions;
