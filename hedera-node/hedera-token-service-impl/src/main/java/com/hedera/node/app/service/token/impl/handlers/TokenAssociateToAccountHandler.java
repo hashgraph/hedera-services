@@ -39,15 +39,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * Pre-handles a {@link HederaFunctionality#TOKEN_ASSOCIATE_TO_ACCOUNT} transaction,
-     * returning the metadata required to, at minimum, validate the signatures of all required
-     * signing keys.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
 

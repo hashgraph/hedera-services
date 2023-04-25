@@ -22,6 +22,7 @@ import com.hedera.node.app.hapi.utils.exports.FileCompressionUtils;
 import com.hedera.services.stream.proto.RecordStreamFile;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.SignatureFile;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -129,10 +130,20 @@ public class RecordStreamingUtils {
                 .toList();
     }
 
-    public static List<String> orderedRecordFilesFrom(final String streamDir) throws IOException {
+    /**
+     * Given a directory that may contain record stream files, and a predicate to filter any found record
+     * files, return the list of filtered record files in order of consensus time.
+     *
+     * @param streamDir the directory to search for record files
+     * @param inclusionTest a predicate to filter the record files
+     * @return the list of filtered record files in order of consensus time
+     * @throws IOException if there is an error reading the directory
+     */
+    public static List<String> orderedRecordFilesFrom(
+            final String streamDir, final @NonNull Predicate<String> inclusionTest) throws IOException {
         return filteredFilesFrom(
                 streamDir,
-                RecordStreamingUtils::isRecordFile,
+                f -> RecordStreamingUtils.isRecordFile(f) && inclusionTest.test(f),
                 comparing(RecordStreamingUtils::parseRecordFileConsensusTime));
     }
 
