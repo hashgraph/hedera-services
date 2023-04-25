@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl;
-
-import static java.util.Objects.requireNonNull;
+package com.hedera.node.app.service.consensus;
 
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -34,20 +28,7 @@ import java.util.Optional;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ReadableTopicStore extends TopicStore {
-    /** The underlying data storage class that holds the topic data. */
-    private final ReadableKVState<EntityNum, Topic> topicState;
-
-    /**
-     * Create a new {@link ReadableTopicStore} instance.
-     *
-     * @param states The state to use.
-     */
-    public ReadableTopicStore(@NonNull final ReadableStates states) {
-        requireNonNull(states);
-
-        this.topicState = states.get("TOPICS");
-    }
+public interface ReadableTopicStore {
 
     /**
      * Returns the topic metadata needed. If the topic doesn't exist returns failureReason. If the
@@ -57,12 +38,9 @@ public class ReadableTopicStore extends TopicStore {
      * @return topic's metadata
      */
     // TODO : Change to return Topic instead of TopicMetadata
-    public TopicMetadata getTopicMetadata(@Nullable final TopicID id) {
-        final var topic = getTopicLeaf(id);
-        return topic.map(TopicStore::topicMetaFrom).orElse(null);
-    }
+    @Nullable
+    TopicMetadata getTopicMetadata(@Nullable TopicID id);
 
-    public Optional<Topic> getTopicLeaf(TopicID id) {
-        return Optional.ofNullable(Objects.requireNonNull(topicState).get(EntityNum.fromTopicId(id)));
-    }
+    @NonNull
+    Optional<Topic> getTopicLeaf(@NonNull TopicID id);
 }

@@ -22,7 +22,8 @@ import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.ReadableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStoreImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -51,7 +52,7 @@ public class ReadableStoreFactory {
             AccountAccess.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
             ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
             ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new),
-            ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStore::new),
+            ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new),
             ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStore::new),
             ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStoreImpl::new));
 
