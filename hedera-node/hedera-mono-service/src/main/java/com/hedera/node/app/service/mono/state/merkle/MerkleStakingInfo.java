@@ -167,6 +167,12 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         }
     }
 
+    /**
+     * Clamps the stake value. If the stake is less than minStake, then it is set to 0. If the stake
+     * is greater than maxStake, then it is set to maxStake. Otherwise, it is set to the given
+     * value.
+     * @return the clamped stake value
+     */
     public long reviewElectionsAndRecomputeStakes() {
         final var totalStake = stakeToReward + stakeToNotReward;
         if (totalStake > maxStake) {

@@ -120,9 +120,8 @@ public class EndOfStakingPeriodCalculator {
             final var stakingInfo = curStakingInfos.getForModify(nodeNum);
 
             // The return value is the reward rate (tinybars-per-hbar-staked-to-reward) that will be
-            // paid to all
-            // accounts who had staked-to-reward for this node long enough to be eligible in the
-            // just-finished period
+            // paid to all accounts who had staked-to-reward for this node long enough to be eligible
+            // in the just-finished period
             final var nodeRewardRate = stakingInfo.updateRewardSumHistory(
                     perHbarRate,
                     dynamicProperties.maxDailyStakeRewardThPerH(),
@@ -160,6 +159,10 @@ public class EndOfStakingPeriodCalculator {
             final var builder = nodeStakingInfosBuilder.get(i);
             final var nodeNum = builder.getNodeId();
             final var stakingInfo = curStakingInfos.getForModify(EntityNum.fromLong(nodeNum));
+            // If the total stake(rewarded + non-rewarded) of a node is less than minStake, stakingInfo's stake field
+            // represents 0. If the total stake(rewarded + non-rewarded) of the node is greater than maxStake,
+            // stakingInfo's stake field is set to maxStake.So, there is no need to clamp the stake value here. Sum of
+            // all stakes can be used to calculate the weight.
             final var updatedWeight =
                     calculateWeightFromStake(stakingInfo.getStake(), stakingInfo.getMinStake(), newTotalStakedStart);
             final var oldWeight = stakingInfo.getWeight();
@@ -190,18 +193,22 @@ public class EndOfStakingPeriodCalculator {
     }
 
     /**
-     * Calculates consensus weight of the node. The network normalizes the weights of nodes
-     * above minStake so that the total sum of weight is approximately 500. If stake is less than minStake
-     * the weight of a node A  will be 0. If stake is greater than minStake, the weight of a node A
-     * will be computed so that every node above minStake has weight at least 1; but any node
-     * that has staked at least 1 out of every 250 whole hbars staked will have weight >= 2.
+     * Calculates consensus weight of the node. The network normalizes the weights of nodes above minStake so that the
+     * total sum of weight is approximately 500. The stake field in {@code MerkleStakingInfo} is already clamped to
+     * [minStake, maxStake].
+     * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake, the weight of a node A
+     * will be computed so that every node above minStake has weight at least 1; but any node that has staked at least 1
+     * out of every 250 whole hbars staked will have weight >= 2.
      * @param stake the stake of current node, includes stake rewarded and non-rewarded
      * @param minStake the minimum stake of current node
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
      * @return calculated consensus weight of the node
      */
     private int calculateWeightFromStake(long stake, long minStake, long totalStakeOfAllNodes) {
-        if (stake < minStake || totalStakeOfAllNodes == 0L) {
+        if (totalStakeOfAllNodes <= 0L) {
+            throw new IllegalStateException("Total stake of all nodes should be greater than 0");
+        }
+        if (stake < minStake) {
             return 0;
         } else {
             final var weight = BigInteger.valueOf(stake)
