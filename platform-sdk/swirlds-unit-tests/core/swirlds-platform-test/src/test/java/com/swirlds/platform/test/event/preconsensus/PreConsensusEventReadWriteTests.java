@@ -21,6 +21,7 @@ import static com.swirlds.common.test.io.FileManipulation.truncateFile;
 import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEventWriterTests.assertEventsAreEqual;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -401,5 +402,69 @@ class PreConsensusEventReadWriteTests {
             assertEventsAreEqual(event, iterator.next());
         }
         assertFalse(iterator.hasNext());
+    }
+
+    @Test
+    @DisplayName("Span Compression Test")
+    void spanCompressionTest() throws IOException {
+        final Random random = RandomUtils.getRandomPrintSeed(0);
+
+        final int numEvents = 100;
+
+        final StandardGraphGenerator generator = new StandardGraphGenerator(
+                random.nextLong(),
+                new StandardEventSource(),
+                new StandardEventSource(),
+                new StandardEventSource(),
+                new StandardEventSource());
+
+        final List<EventImpl> events = new ArrayList<>();
+        for (int i = 0; i < numEvents; i++) {
+            events.add(generator.generateEvent());
+        }
+
+        long minimumGeneration = Long.MAX_VALUE;
+        long maximumGeneration = Long.MIN_VALUE;
+        for (final EventImpl event : events) {
+            minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
+            maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
+        }
+
+        minimumGeneration -= random.nextInt(0, 10);
+        maximumGeneration += random.nextInt(1, 10);
+
+        final PreConsensusEventFile file = PreConsensusEventFile.of(
+                random.nextInt(0, 100),
+                minimumGeneration,
+                maximumGeneration,
+                RandomUtils.randomInstant(random),
+                testDirectory);
+
+        final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
+        for (final EventImpl event : events) {
+            mutableFile.writeEvent(event);
+        }
+
+        mutableFile.close();
+        final PreConsensusEventFile compressedFile = mutableFile.compressGenerationalSpan();
+
+        assertEquals(file.path().getParent(), compressedFile.path().getParent());
+        assertEquals(file.sequenceNumber(), compressedFile.sequenceNumber());
+        assertEquals(file.minimumGeneration(), compressedFile.minimumGeneration());
+        assertTrue(maximumGeneration > compressedFile.maximumGeneration());
+        assertEquals(mutableFile.getUtilizedGenerationalSpan(),
+                compressedFile.maximumGeneration() - compressedFile.minimumGeneration());
+        assertNotEquals(file.path(), compressedFile.path());
+        assertNotEquals(file.maximumGeneration(), compressedFile.maximumGeneration());
+        assertTrue(Files.exists(compressedFile.path()));
+        assertFalse(Files.exists(file.path()));
+
+        final IOIterator<EventImpl> iterator = compressedFile.iterator(Long.MIN_VALUE);
+        final List<EventImpl> deserializedEvents = new ArrayList<>();
+        iterator.forEachRemaining(deserializedEvents::add);
+        assertEquals(events.size(), deserializedEvents.size());
+        for (int i = 0; i < events.size(); i++) {
+            assertEventsAreEqual(events.get(i), deserializedEvents.get(i));
+        }
     }
 }

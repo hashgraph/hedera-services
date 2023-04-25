@@ -96,11 +96,11 @@ public class PreConsensusEventMutableFile {
     }
 
     /**
-     * Atomically rename this file so that its un-utilized span is 0. TODO unit test for gaps between files
+     * Atomically rename this file so that its un-utilized span is 0.
      *
      * @return the new span compressed file
      */
-    public PreConsensusEventFile compressGenerationalSpan() { // TODO unit test
+    public PreConsensusEventFile compressGenerationalSpan() {
         if (highestGenerationInFile == descriptor.maximumGeneration()) {
             // No need to compress, we used the entire span.
             return descriptor;
