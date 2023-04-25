@@ -627,6 +627,14 @@ class MonoTransactionDispatcherTest {
                         (Function<TransactionHandlers, TransactionHandler>)
                                 TransactionHandlers::cryptoDeleteLiveHashHandler),
 
+                // network
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .uncheckedSubmit(UncheckedSubmitBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::networkUncheckedSubmitHandler),
+
                 // token
                 Arguments.of(
                         TransactionBody.newBuilder()
@@ -820,14 +828,6 @@ class MonoTransactionDispatcherTest {
                                 .build(),
                         (DispatchToHandler) (handlers, meta) ->
                                 verify(handlers.freezeHandler()).preHandle(eq(meta), any())),
-
-                // network
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .uncheckedSubmit(UncheckedSubmitBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.networkUncheckedSubmitHandler()).preHandle(meta)),
 
                 // schedule
                 Arguments.of(
