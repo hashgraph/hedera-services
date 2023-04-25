@@ -10,6 +10,7 @@ module com.hedera.node.app.service.admin.impl {
     requires com.swirlds.common;
     requires org.apache.logging.log4j;
     requires com.swirlds.config;
+    requires com.google.common;
 
     provides com.hedera.node.app.service.admin.FreezeService with
             FreezeServiceImpl;

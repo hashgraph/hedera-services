@@ -19,4 +19,9 @@ package com.hedera.node.app.service.admin.impl.config;
 import com.hedera.node.app.spi.config.PropertyNames;
 import com.swirlds.config.api.ConfigProperty;
 
+/**
+ * Configuration for the admin service. Contains only the path to the upgrade artifacts directory.
+ *
+ * @param upgradeArtifactsPath path to the location where upgrade zip files are stored
+ */
 public record AdminServiceConfig(@ConfigProperty(PropertyNames.UPGRADE_ARTIFACTS_PATH) String upgradeArtifactsPath) {}

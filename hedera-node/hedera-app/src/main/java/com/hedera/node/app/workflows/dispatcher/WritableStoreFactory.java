@@ -44,12 +44,12 @@ public interface WritableStoreFactory {
      *
      * @return a new {@link WritableTokenRelationStore}
      */
-    public WritableTokenRelationStore createTokenRelStore();
+    WritableTokenRelationStore createTokenRelStore();
 
     /**
      * Get a {@link WritableSpecialFileStore}.
      *
      * @return a new {@link WritableSpecialFileStore}
      */
-    public WritableSpecialFileStore createSpecialFileStore();
+    WritableSpecialFileStore createSpecialFileStore();
 }
