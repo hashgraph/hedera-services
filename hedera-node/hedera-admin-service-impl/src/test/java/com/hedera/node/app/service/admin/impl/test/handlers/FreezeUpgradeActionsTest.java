@@ -22,15 +22,10 @@ import static com.hedera.node.app.service.admin.impl.handlers.FreezeUpgradeActio
 import static com.hedera.node.app.service.admin.impl.handlers.FreezeUpgradeActions.FREEZE_SCHEDULED_MARKER;
 import static com.hedera.node.app.service.admin.impl.handlers.FreezeUpgradeActions.MARK;
 import static com.hedera.node.app.service.admin.impl.handlers.FreezeUpgradeActions.NOW_FROZEN_MARKER;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.admin.impl.WritableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.config.AdminServiceConfig;
@@ -48,9 +43,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -112,12 +105,8 @@ class FreezeUpgradeActionsTest {
 
         subject.catchUpOnMissedSideEffects();
 
-        assertFalse(
-                Paths.get(markerFilesLoc, EXEC_IMMEDIATE_MARKER).toFile().exists(),
-                "Should not create " + EXEC_IMMEDIATE_MARKER + " if no prepared upgrade in state");
-        assertFalse(
-                Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
-                "Should not create " + FREEZE_SCHEDULED_MARKER + " if dual freeze time is null");
+        assertThat(Paths.get(markerFilesLoc, EXEC_IMMEDIATE_MARKER).toFile()).doesNotExist();
+        assertThat(Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile()).doesNotExist();
     }
 
     @Test
@@ -128,9 +117,7 @@ class FreezeUpgradeActionsTest {
 
         subject.catchUpOnMissedSideEffects();
 
-        assertFalse(
-                Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
-                "Should not create " + FREEZE_SCHEDULED_MARKER + " if no upgrade is prepared");
+        assertThat(Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile()).doesNotExist();
     }
 
     @Test
@@ -143,12 +130,8 @@ class FreezeUpgradeActionsTest {
 
         subject.catchUpOnMissedSideEffects();
 
-        assertFalse(
-                Paths.get(markerFilesLoc, FREEZE_ABORTED_MARKER).toFile().exists(),
-                "Should not create " + FREEZE_ABORTED_MARKER + " if dual last frozen time is freeze time");
-        assertFalse(
-                Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
-                "Should not create " + FREEZE_SCHEDULED_MARKER + " if dual last frozen time is freeze time");
+        assertThat(Paths.get(markerFilesLoc, FREEZE_ABORTED_MARKER).toFile()).doesNotExist();
+        assertThat(Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile()).doesNotExist();
     }
 
     @Test
@@ -157,33 +140,29 @@ class FreezeUpgradeActionsTest {
 
         subject.catchUpOnMissedSideEffects();
 
-        assertFalse(
-                Paths.get(markerFilesLoc, FREEZE_ABORTED_MARKER).toFile().exists(),
-                "Should not create defensive " + FREEZE_ABORTED_MARKER + " if upgrade is prepared");
+        assertThat(Paths.get(markerFilesLoc, FREEZE_ABORTED_MARKER).toFile()).doesNotExist();
     }
 
     @Test
     void complainsLoudlyWhenUnableToUnzipArchive() throws IOException {
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
-        assertTrue(new File(markerFilesLoc).mkdirs());
+        assertThat(new File(markerFilesLoc).mkdirs()).isTrue();
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(markerFilesLoc);
 
         subject.extractSoftwareUpgrade(PRETEND_ARCHIVE).join();
 
-        assertThat(
-                logCaptor.errorLogs(),
-                contains(
-                        Matchers.startsWith("Failed to unzip archive for NMT consumption java.io.IOException:" + " "),
-                        Matchers.equalTo("Manual remediation may be necessary to avoid node ISS")));
-        assertFalse(
-                Paths.get(markerFilesLoc, EXEC_IMMEDIATE_MARKER).toFile().exists(),
-                "Should not create " + EXEC_IMMEDIATE_MARKER + " if unzip failed");
+        assertThat(logCaptor.errorLogs())
+                .anyMatch(l -> l.startsWith("Failed to unzip archive for NMT consumption java.io.IOException:" + " "));
+        assertThat(logCaptor.errorLogs())
+                .anyMatch(l -> l.equals("Manual remediation may be necessary to avoid node ISS"));
+
+        assertThat(Paths.get(markerFilesLoc, EXEC_IMMEDIATE_MARKER).toFile()).doesNotExist();
     }
 
     @Test
     void preparesForUpgrade() throws IOException {
-        assertTrue(new File(markerFilesLoc).mkdirs());
+        assertThat(new File(markerFilesLoc).mkdirs()).isTrue();
         setupNoiseFiles();
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
@@ -199,7 +178,7 @@ class FreezeUpgradeActionsTest {
     @Test
     void upgradesTelemetry() throws IOException {
         rmIfPresent(EXEC_TELEMETRY_MARKER);
-        assertTrue(new File(markerFilesLoc).mkdirs());
+        assertThat(new File(markerFilesLoc).mkdirs()).isTrue();
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(markerFilesLoc);
 
@@ -241,9 +220,7 @@ class FreezeUpgradeActionsTest {
 
         verify(dualState).setFreezeTime(then);
 
-        assertFalse(
-                Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
-                "Should not create " + FREEZE_SCHEDULED_MARKER + " for FREEZE_ONLY");
+        assertThat(Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile()).doesNotExist();
     }
 
     @Test
@@ -265,7 +242,7 @@ class FreezeUpgradeActionsTest {
         rmIfPresent(otherMarkerFilesLoc, FREEZE_ABORTED_MARKER);
         final var d = Paths.get(otherMarkerFilesLoc).toFile();
         if (d.exists()) {
-            assertTrue(d.delete());
+            assertThat(d.delete()).isTrue();
         }
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(otherMarkerFilesLoc);
@@ -278,7 +255,7 @@ class FreezeUpgradeActionsTest {
 
         rmIfPresent(otherMarkerFilesLoc, FREEZE_ABORTED_MARKER);
         if (d.exists()) {
-            assertTrue(d.delete());
+            assertThat(d.delete()).isTrue();
         }
     }
 
@@ -295,20 +272,18 @@ class FreezeUpgradeActionsTest {
 
         verify(dualState).setFreezeTime(null);
 
-        assertThat(
-                logCaptor.errorLogs(),
-                contains(
-                        Matchers.startsWith("Failed to write NMT marker " + p),
-                        Matchers.equalTo("Manual remediation may be necessary to avoid node ISS")));
+        assertThat(logCaptor.errorLogs()).anyMatch(l -> l.startsWith("Failed to write NMT marker " + p));
+        assertThat(logCaptor.errorLogs())
+                .anyMatch(l -> l.equals("Manual remediation may be necessary to avoid node ISS"));
     }
 
     @Test
     void determinesIfFreezeIsScheduled() {
-        assertFalse(subject.isFreezeScheduled());
+        assertThat(subject.isFreezeScheduled()).isFalse();
 
         given(dualState.getFreezeTime()).willReturn(then);
 
-        assertTrue(subject.isFreezeScheduled());
+        assertThat(subject.isFreezeScheduled()).isTrue();
     }
 
     private void rmIfPresent(final String file) {
@@ -319,7 +294,7 @@ class FreezeUpgradeActionsTest {
         final var p = Paths.get(baseDir, file);
         final var f = p.toFile();
         if (f.exists()) {
-            assertTrue(f.delete());
+            assertThat(f.delete()).isTrue();
         }
     }
 
@@ -331,35 +306,34 @@ class FreezeUpgradeActionsTest {
             throws IOException {
         final var p = Paths.get(baseDir, file);
         final var f = p.toFile();
-        assertTrue(f.exists(), file + " should have been created, but wasn't");
+        assertThat(f).exists();
         final var contents = Files.readString(p);
-        assertTrue(f.delete());
+        assertThat(f.delete()).isTrue();
+
         if (file.equals(EXEC_IMMEDIATE_MARKER)) {
-            assertThat(
-                    logCaptor.infoLogs(),
-                    contains(
-                            Matchers.stringContainsInOrder(
-                                    Arrays.asList("About to unzip ", " bytes for software update into " + baseDir)),
-                            Matchers.stringContainsInOrder(
-                                    Arrays.asList("Finished unzipping ", " bytes for software update into " + baseDir)),
-                            Matchers.equalTo("Wrote marker " + p)));
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("About to unzip ")
+                            && l.contains(" bytes for software update into " + baseDir)));
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("Finished unzipping ")
+                            && l.contains(" bytes for software update into " + baseDir)));
+            assertThat(logCaptor.infoLogs()).anyMatch(l -> (l.contains("Wrote marker " + p)));
         } else if (file.equals(EXEC_TELEMETRY_MARKER)) {
-            assertThat(
-                    logCaptor.infoLogs(),
-                    contains(
-                            Matchers.stringContainsInOrder(
-                                    "About to unzip ", " bytes for telemetry update into " + baseDir),
-                            Matchers.stringContainsInOrder(
-                                    "Finished unzipping ", " bytes for telemetry update into " + baseDir),
-                            Matchers.equalTo("Wrote marker " + p)));
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("About to unzip ")
+                            && l.contains(" bytes for telemetry update into " + baseDir)));
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l ->
+                            (l.startsWith("Finished unzipping ") && l.contains(" bytes for telemetry update into ")));
+            assertThat(logCaptor.infoLogs()).anyMatch(l -> (l.contains("Wrote marker " + p)));
         } else {
-            assertThat(logCaptor.infoLogs(), contains(Matchers.equalTo("Wrote marker " + p)));
+            assertThat(logCaptor.infoLogs()).anyMatch(l -> (l.contains("Wrote marker " + p)));
         }
         if (when != null) {
             final var writtenEpochSecond = Long.parseLong(contents);
-            assertEquals(when.getEpochSecond(), writtenEpochSecond);
+            assertThat(when.getEpochSecond()).isEqualTo(writtenEpochSecond);
         } else {
-            assertEquals(FreezeUpgradeActions.MARK, contents);
+            assertThat(contents).isEqualTo(FreezeUpgradeActions.MARK);
         }
     }
 
@@ -377,8 +351,8 @@ class FreezeUpgradeActionsTest {
     }
 
     private void assertNoiseFilesAreGone() {
-        assertFalse(new File(noiseDirLoc).exists());
-        assertFalse(new File(noiseFileLoc).exists());
-        assertFalse(new File(noiseSubFileLoc).exists());
+        assertThat(new File(noiseDirLoc)).doesNotExist();
+        assertThat(new File(noiseFileLoc)).doesNotExist();
+        assertThat(new File(noiseSubFileLoc)).doesNotExist();
     }
 }
