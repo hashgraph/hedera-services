@@ -77,5 +77,4 @@ public interface ServiceModule {
     static ScheduleComponent provideScheduleComponent() {
         return DaggerScheduleComponent.create();
     }
-
 }

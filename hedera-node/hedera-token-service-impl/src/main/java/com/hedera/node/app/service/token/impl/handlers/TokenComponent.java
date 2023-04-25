@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.service.token.impl.handlers;
@@ -95,7 +94,8 @@ public class TokenComponent {
      * @param tokenGetNftInfosHandler           the tokenGetNftInfosHandler
      */
     @Inject
-    public TokenComponent(@NonNull final CryptoCreateHandler cryptoCreateHandler,
+    public TokenComponent(
+            @NonNull final CryptoCreateHandler cryptoCreateHandler,
             @NonNull final CryptoUpdateHandler cryptoUpdateHandler,
             @NonNull final CryptoTransferHandler cryptoTransferHandler,
             @NonNull final CryptoDeleteHandler cryptoDeleteHandler,
@@ -103,8 +103,10 @@ public class TokenComponent {
             @NonNull final CryptoDeleteAllowanceHandler cryptoDeleteAllowanceHandler,
             @NonNull final CryptoAddLiveHashHandler cryptoAddLiveHashHandler,
             @NonNull final CryptoDeleteLiveHashHandler cryptoDeleteLiveHashHandler,
-            @NonNull final TokenCreateHandler tokenCreateHandler, @NonNull final TokenUpdateHandler tokenUpdateHandler,
-            @NonNull final TokenMintHandler tokenMintHandler, @NonNull final TokenBurnHandler tokenBurnHandler,
+            @NonNull final TokenCreateHandler tokenCreateHandler,
+            @NonNull final TokenUpdateHandler tokenUpdateHandler,
+            @NonNull final TokenMintHandler tokenMintHandler,
+            @NonNull final TokenBurnHandler tokenBurnHandler,
             @NonNull final TokenDeleteHandler tokenDeleteHandler,
             @NonNull final TokenAccountWipeHandler tokenAccountWipeHandler,
             @NonNull final TokenFreezeAccountHandler tokenFreezeAccountHandler,
@@ -114,7 +116,8 @@ public class TokenComponent {
             @NonNull final TokenAssociateToAccountHandler tokenAssociateToAccountHandler,
             @NonNull final TokenDissociateFromAccountHandler tokenDissociateFromAccountHandler,
             @NonNull final TokenFeeScheduleUpdateHandler tokenFeeScheduleUpdateHandler,
-            @NonNull final TokenPauseHandler tokenPauseHandler, @NonNull final TokenUnpauseHandler tokenUnpauseHandler,
+            @NonNull final TokenPauseHandler tokenPauseHandler,
+            @NonNull final TokenUnpauseHandler tokenUnpauseHandler,
             @NonNull final CryptoGetAccountBalanceHandler cryptoGetAccountBalanceHandler,
             @NonNull final CryptoGetAccountInfoHandler cryptoGetAccountInfoHandler,
             @NonNull final CryptoGetAccountRecordsHandler cryptoGetAccountRecordsHandler,
