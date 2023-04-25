@@ -57,6 +57,10 @@ dependencies {
   testCompileOnly(libs.spotbugs.annotations)
 }
 
+configurations.getByName("runtimeClasspath") {
+  exclude(group = "com.google.protobuf", module = "protobuf-javalite")
+}
+
 tasks.withType<Test> {
   testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 }
