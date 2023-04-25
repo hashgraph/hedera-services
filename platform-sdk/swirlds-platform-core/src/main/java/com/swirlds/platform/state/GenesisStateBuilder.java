@@ -23,7 +23,6 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.uptime.UptimeData;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
@@ -47,7 +46,6 @@ public final class GenesisStateBuilder {
         final PlatformData platformData = new PlatformData();
         platformState.setPlatformData(platformData);
         platformState.setAddressBook(addressBook.copy());
-        platformState.setUptimeData(new UptimeData());
 
         platformData.setCreationSoftwareVersion(appVersion);
         platformData.setRound(0);

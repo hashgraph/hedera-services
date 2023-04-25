@@ -33,7 +33,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.uptime.UptimeDetector;
+import com.swirlds.platform.uptime.UptimeTracker;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -72,7 +72,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     /**
      * Tracks and reports node uptime.
      */
-    private final UptimeDetector uptimeDetector;
+    private final UptimeTracker uptimeTracker;
 
     /**
      * Handles system transactions pre-consensus
@@ -113,7 +113,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         this.stats = swirldStateMetrics;
         this.transactionPool = new EventTransactionPool(settings, inFreeze);
         this.transactionHandler = new TransactionHandler(selfId, stats);
-        this.uptimeDetector = new UptimeDetector(platformContext, addressBook, selfId.getId(), OSTime.getInstance());
+        this.uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId.getId(), OSTime.getInstance());
         initialState(state);
     }
 
@@ -159,9 +159,14 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      */
     @Override
     public void handleConsensusRound(final ConsensusRound round) {
-        transactionHandler.handleRound(round, stateRef.get());
-        uptimeDetector.handleRound(round, stateRef.get().getPlatformState().getUptimeData());
-        postConsensusSystemTransactionManager.handleRound(stateRef.get(), round);
+        final State state = stateRef.get();
+
+        uptimeTracker.handleRound(
+                round,
+                state.getPlatformDualState().getMutableUptimeData(),
+                stateRef.get().getPlatformState().getAddressBook());
+        transactionHandler.handleRound(round, state);
+        postConsensusSystemTransactionManager.handleRound(state, round);
         updateEpoch();
     }
 

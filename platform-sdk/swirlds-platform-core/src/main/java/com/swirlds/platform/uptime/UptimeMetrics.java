@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 /**
  * Metrics that track node uptime.
  */
-public class UptimeMetrics {
+class UptimeMetrics {
 
     private static final String CATEGORY = "platform";
 

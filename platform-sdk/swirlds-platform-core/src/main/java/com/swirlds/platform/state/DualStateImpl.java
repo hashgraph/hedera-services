@@ -23,8 +23,12 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.UptimeData;
 import com.swirlds.logging.payloads.SetFreezeTimePayload;
 import com.swirlds.logging.payloads.SetLastFrozenTimePayload;
+import com.swirlds.platform.uptime.MutableUptimeData;
+import com.swirlds.platform.uptime.UptimeDataImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -44,20 +48,31 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
 
     private static final class ClassVersion {
         private static final int ORIGINAL = 1;
+        private static final int UPTIME_DATA = 2;
     }
 
-    /** the time when the freeze starts */
-    private volatile Instant freezeTime;
+    /**
+     * the time when the freeze starts
+     */
+    private Instant freezeTime;
 
-    /** the last freezeTime based on which the nodes were frozen */
-    private volatile Instant lastFrozenTime;
+    /**
+     * the last freezeTime based on which the nodes were frozen
+     */
+    private Instant lastFrozenTime;
+
+    /**
+     * Data on node uptime.
+     */
+    private UptimeDataImpl uptimeData;
 
     public DualStateImpl() {}
 
-    protected DualStateImpl(final DualStateImpl that) {
+    private DualStateImpl(@NonNull final DualStateImpl that) {
         super(that);
         this.freezeTime = that.freezeTime;
         this.lastFrozenTime = that.lastFrozenTime;
+        this.uptimeData = that.uptimeData.copy();
     }
 
     /**
@@ -67,6 +82,7 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
     public void serialize(SerializableDataOutputStream out) throws IOException {
         out.writeInstant(freezeTime);
         out.writeInstant(lastFrozenTime);
+        out.writeSerializable(uptimeData, false);
     }
 
     /**
@@ -76,6 +92,26 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
     public void deserialize(SerializableDataInputStream in, int version) throws IOException {
         freezeTime = in.readInstant();
         lastFrozenTime = in.readInstant();
+        if (version >= ClassVersion.UPTIME_DATA) {
+            uptimeData = in.readSerializable(false, UptimeDataImpl::new);
+        } else {
+            uptimeData = new UptimeDataImpl();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public UptimeData getUptimeData() {
+        return uptimeData;
+    }
+
+    @NonNull
+    @Override
+    public MutableUptimeData getMutableUptimeData() {
+        return uptimeData;
     }
 
     /**
@@ -131,7 +167,7 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.UPTIME_DATA;
     }
 
     /**

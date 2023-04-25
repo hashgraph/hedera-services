@@ -20,4 +20,10 @@ package com.swirlds.common.system;
  * Contains any data that is either read or written by the platform and the application,
  * and contains methods available to the application
  */
-public interface SwirldDualState extends DualState {}
+public interface SwirldDualState extends DualState {
+
+    /**
+     * Get the node uptime data.
+     */
+    UptimeData getUptimeData();
+}
