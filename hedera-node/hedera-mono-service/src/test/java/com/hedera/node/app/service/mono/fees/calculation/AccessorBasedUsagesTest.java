@@ -363,7 +363,8 @@ class AccessorBasedUsagesTest {
     }
 
     @Test
-    void worksAsExpectedForCryptoUpdate() {
+    void worksAsExpectedForCryptoUpdateWithAutoRenewEnabled() {
+        given(dynamicProperties.shouldAutoRenewAccounts()).willReturn(true);
         final var baseMeta = new BaseTransactionMeta(100, 0);
         final var opMeta = new CryptoUpdateMeta.Builder()
                 .keyBytesUsed(123)
@@ -396,7 +397,45 @@ class AccessorBasedUsagesTest {
 
         subject.assess(sigUsage, txnAccessor, accumulator);
 
-        verify(cryptoOpsUsage).cryptoUpdateUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator);
+        verify(cryptoOpsUsage).cryptoUpdateUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator, 0);
+    }
+
+    @Test
+    void worksAsExpectedForCryptoUpdateWithAutoRenewDisabled() {
+        final var defaultPeriod = 7776000L;
+        final var baseMeta = new BaseTransactionMeta(100, 0);
+        final var opMeta = new CryptoUpdateMeta.Builder()
+                .keyBytesUsed(123)
+                .msgBytesUsed(1_234)
+                .memoSize(100)
+                .effectiveNow(now)
+                .expiry(1_234_567L)
+                .hasProxy(false)
+                .maxAutomaticAssociations(3)
+                .hasMaxAutomaticAssociations(true)
+                .build();
+        final var cryptoContext = ExtantCryptoContext.newBuilder()
+                .setCurrentKey(Key.getDefaultInstance())
+                .setCurrentMemo(memo)
+                .setCurrentExpiry(now)
+                .setCurrentlyHasProxy(false)
+                .setCurrentNumTokenRels(0)
+                .setCurrentMaxAutomaticAssociations(0)
+                .setCurrentCryptoAllowances(Collections.emptyMap())
+                .setCurrentTokenAllowances(Collections.emptyMap())
+                .setCurrentApproveForAllNftAllowances(Collections.emptySet())
+                .build();
+        final var accumulator = new UsageAccumulator();
+
+        given(txnAccessor.getFunction()).willReturn(CryptoUpdate);
+        given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+        given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+        given(txnAccessor.getSpanMapAccessor().getCryptoUpdateMeta(any())).willReturn(opMeta);
+        given(opUsageCtxHelper.ctxForCryptoUpdate(any())).willReturn(cryptoContext);
+
+        subject.assess(sigUsage, txnAccessor, accumulator);
+
+        verify(cryptoOpsUsage).cryptoUpdateUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator, defaultPeriod);
     }
 
     @Test

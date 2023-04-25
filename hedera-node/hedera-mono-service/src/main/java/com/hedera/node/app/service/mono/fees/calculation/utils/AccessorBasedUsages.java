@@ -52,6 +52,8 @@ import javax.inject.Singleton;
 
 @Singleton
 public class AccessorBasedUsages {
+    // A default lifetime for auto-association slots
+    private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
             FileAppend,
             CryptoTransfer,
@@ -180,7 +182,11 @@ public class AccessorBasedUsages {
             SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
         final var cryptoUpdateMeta = accessor.getSpanMapAccessor().getCryptoUpdateMeta(accessor);
         final var cryptoContext = opUsageCtxHelper.ctxForCryptoUpdate(accessor.getTxn());
-        cryptoOpsUsage.cryptoUpdateUsage(sigUsage, baseMeta, cryptoUpdateMeta, cryptoContext, into);
+        // We use the SDK default auto-renew period for auto-association slot lifetime if account auto-renew is disabled
+        final var explicitAutoRenewSlotLifetime =
+                !dynamicProperties.shouldAutoRenewAccounts() ? THREE_MONTHS_IN_SECONDS : 0;
+        cryptoOpsUsage.cryptoUpdateUsage(
+                sigUsage, baseMeta, cryptoUpdateMeta, cryptoContext, into, explicitAutoRenewSlotLifetime);
     }
 
     private void estimateCryptoApproveAllowance(

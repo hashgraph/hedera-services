@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.txns.contract.helpers;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpcAccountId;
-import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.MAX_CHARGEABLE_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -39,9 +38,8 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.Optional;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class UpdateCustomizerFactory {

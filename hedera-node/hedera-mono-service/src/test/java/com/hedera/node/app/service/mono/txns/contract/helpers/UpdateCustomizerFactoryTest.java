@@ -36,7 +36,6 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -71,6 +70,7 @@ class UpdateCustomizerFactoryTest {
 
     @Mock
     private OptionValidator optionValidator;
+
     @Mock
     private GlobalDynamicProperties dynamicProperties;
 
@@ -149,8 +149,7 @@ class UpdateCustomizerFactoryTest {
                 .get();
         // and:
         var op = ContractUpdateTransactionBody.newBuilder()
-                .setMaxAutomaticTokenAssociations(
-                        Int32Value.newBuilder().setValue(5001))
+                .setMaxAutomaticTokenAssociations(Int32Value.newBuilder().setValue(5001))
                 .build();
 
         // when:

@@ -160,6 +160,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
             if (newMax < ledger.alreadyUsedAutomaticAssociations(target)) {
                 return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
             }
+            if (newMax > dynamicProperties.maxAutoAssociations()) {
+                return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+            }
             if (dynamicProperties.areTokenAssociationsLimited() && newMax > dynamicProperties.maxTokensPerAccount()) {
                 return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
             }

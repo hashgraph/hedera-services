@@ -143,7 +143,7 @@ class ContractUpdateTransitionLogicTest {
 
         givenValidTxnCtx();
         given(customizerFactory.customizerFor(
-                contract, validator, contractUpdateTxn.getContractUpdateInstance(), dynamicProperties))
+                        contract, validator, contractUpdateTxn.getContractUpdateInstance(), dynamicProperties))
                 .willReturn(Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT));
 
         // when:
@@ -160,7 +160,8 @@ class ContractUpdateTransitionLogicTest {
         customizer = mock(HederaAccountCustomizer.class);
 
         givenValidTxnCtx();
-        given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance(), dynamicProperties))
+        given(customizerFactory.customizerFor(
+                        contract, validator, contractUpdateTxn.getContractUpdateInstance(), dynamicProperties))
                 .willReturn(Pair.of(Optional.of(customizer), OK));
 
         // when:
@@ -179,7 +180,8 @@ class ContractUpdateTransitionLogicTest {
         customizer = mock(HederaAccountCustomizer.class);
 
         givenValidTxnCtx();
-        given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance(), dynamicProperties))
+        given(customizerFactory.customizerFor(
+                        contract, validator, contractUpdateTxn.getContractUpdateInstance(), dynamicProperties))
                 .willReturn(Pair.of(Optional.of(customizer), OK));
         contract.setAlias(pretendAlias);
 
@@ -398,7 +400,8 @@ class ContractUpdateTransitionLogicTest {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         givenValidTxnCtxWithMaxAssociations();
         customizer = mock(HederaAccountCustomizer.class);
-        given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance(), dynamicProperties))
+        given(customizerFactory.customizerFor(
+                        contract, validator, contractUpdateTxn.getContractUpdateInstance(), dynamicProperties))
                 .willReturn(Pair.of(Optional.of(customizer), OK));
         given(customizer.getChanges())
                 .willReturn(Map.of(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, NEW_MAX_AUTOMATIC_ASSOCIATIONS));
@@ -419,7 +422,8 @@ class ContractUpdateTransitionLogicTest {
         given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
         given(dynamicProperties.maxTokensPerAccount()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS - 1);
         customizer = mock(HederaAccountCustomizer.class);
-        given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance(), dynamicProperties))
+        given(customizerFactory.customizerFor(
+                        contract, validator, contractUpdateTxn.getContractUpdateInstance(), dynamicProperties))
                 .willReturn(Pair.of(Optional.of(customizer), OK));
         given(customizer.getChanges())
                 .willReturn(Map.of(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, NEW_MAX_AUTOMATIC_ASSOCIATIONS));

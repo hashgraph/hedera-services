@@ -40,6 +40,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.*;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -256,13 +257,18 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
                         .setCurrentKey(info.getKey())
                         .setCurrentlyHasProxy(info.hasProxyAccountID())
                         .setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
+                        // We can't get this information from the query, so leave it empty
+                        .setCurrentCryptoAllowances(Collections.emptyList())
+                        .setCurrentTokenAllowances(Collections.emptyMap())
+                        .setCurrentApproveForAllNftAllowances(Collections.emptySet())
                         .build();
                 var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
                 var opMeta = new CryptoUpdateMeta(
                         _txn.getCryptoUpdateAccount(),
                         _txn.getTransactionID().getTransactionValidStart().getSeconds());
                 var accumulator = new UsageAccumulator();
-                cryptoOpsUsage.cryptoUpdateUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);
+                // Once account auto-renew is enabled, we could instead leave the explicit auto-assoc lifetime at 0
+                cryptoOpsUsage.cryptoUpdateUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator, 8000001L);
                 return AdapterUtils.feeDataFrom(accumulator);
             };
             return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoUpdate, metricsCalc, txn, numPayerKeys);

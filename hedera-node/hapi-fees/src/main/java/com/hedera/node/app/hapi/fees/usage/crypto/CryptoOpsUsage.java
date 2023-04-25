@@ -122,12 +122,23 @@ public class CryptoOpsUsage {
                 + ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
     }
 
+    /**
+     * Returns the estimated resource usage for a crypto update transaction.
+     *
+     * @param sigUsage the already-computed resource usage for signature verification
+     * @param baseMeta the already-computed resource usage for the base transaction
+     * @param cryptoUpdateMeta metadata summarizing the update transaction
+     * @param ctx the current state of the crypto account
+     * @param accumulator the resource usage accumulator
+     * @param explicitAutoAssocSlotLifetime if non-zero, the lifetime to use for resource usage of new auto-renew slots
+     */
     public void cryptoUpdateUsage(
             final SigUsage sigUsage,
             final BaseTransactionMeta baseMeta,
             final CryptoUpdateMeta cryptoUpdateMeta,
             final ExtantCryptoContext ctx,
-            final UsageAccumulator accumulator) {
+            final UsageAccumulator accumulator,
+            final long explicitAutoAssocSlotLifetime) {
         accumulator.resetForTransaction(baseMeta, sigUsage);
 
         accumulator.addBpt(cryptoUpdateMeta.getMsgBytesUsed());
@@ -155,8 +166,12 @@ public class CryptoOpsUsage {
         final var newSlotsUsage = cryptoUpdateMeta.hasMaxAutomaticAssociations()
                 ? cryptoUpdateMeta.getMaxAutomaticAssociations() * UPDATE_SLOT_MULTIPLIER
                 : oldSlotsUsage;
-        final long slotRbsDelta =
-                ESTIMATOR_UTILS.changeInBsUsage(oldSlotsUsage, oldLifetime, newSlotsUsage, newLifetime);
+        // If given an explicit auto-assoc slot lifetime, we use it as a lower bound for both old and new lifetimes
+        final long slotRbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
+                oldSlotsUsage,
+                Math.max(explicitAutoAssocSlotLifetime, oldLifetime),
+                newSlotsUsage,
+                Math.max(explicitAutoAssocSlotLifetime, newLifetime));
         if (slotRbsDelta > 0) {
             accumulator.addRbs(slotRbsDelta);
         }
