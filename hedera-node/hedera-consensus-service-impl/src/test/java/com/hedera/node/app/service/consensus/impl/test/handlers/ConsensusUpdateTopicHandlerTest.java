@@ -38,16 +38,17 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -68,7 +69,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     private HandleContext handleContext;
 
     @Mock
-    private AccountAccess accountAccess;
+    private ReadableAccountStore accountStore;
 
     @Mock
     private Account account;
@@ -387,7 +388,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     void noneOfFieldsSetHaveNoRequiredKeys() throws PreCheckException {
-        given(accountAccess.getAccountById(payerId)).willReturn(account);
+        given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
         final var op = OP_BUILDER
@@ -396,9 +397,10 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                         .topicNum(topicEntityNum.longValue())
                         .build())
                 .build();
-        final var context = new PreHandleContext(accountAccess, txnWith(op));
+        final var context = new FakePreHandleContext(accountStore, txnWith(op));
+        context.registerStore(ReadableTopicStore.class, readableStore);
 
-        subject.preHandle(context, readableStore);
+        subject.preHandle(context);
 
         assertThat(context.payerKey()).isEqualTo(adminKey);
         assertThat(context.requiredNonPayerKeys()).isEmpty();
@@ -406,28 +408,30 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     void missingTopicFails() throws PreCheckException {
-        given(accountAccess.getAccountById(payerId)).willReturn(account);
+        given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
         final var op =
                 OP_BUILDER.topicID(TopicID.newBuilder().topicNum(123L).build()).build();
-        final var context = new PreHandleContext(accountAccess, txnWith(op));
+        final var context = new FakePreHandleContext(accountStore, txnWith(op));
+        context.registerStore(ReadableTopicStore.class, readableStore);
 
-        assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
     }
 
     @Test
     void adminKeyAndOpAdminKeyAdded() throws PreCheckException {
-        given(accountAccess.getAccountById(payerId)).willReturn(account);
+        given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
         final var op = OP_BUILDER
                 .adminKey(anotherKey)
                 .topicID(TopicID.newBuilder().topicNum(1L).build())
                 .build();
-        final var context = new PreHandleContext(accountAccess, txnWith(op));
+        final var context = new FakePreHandleContext(accountStore, txnWith(op));
+        context.registerStore(ReadableTopicStore.class, readableStore);
 
-        subject.preHandle(context, readableStore);
+        subject.preHandle(context);
 
         assertThat(context.payerKey()).isEqualTo(adminKey);
         // adminKey is same as payer key. So will not be added to required keys.
@@ -438,18 +442,19 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     void autoRenewAccountKeyAdded() throws PreCheckException {
-        given(accountAccess.getAccountById(autoRenewId)).willReturn(autoRenewAccount);
+        given(accountStore.getAccountById(autoRenewId)).willReturn(autoRenewAccount);
         given(autoRenewAccount.key()).willReturn(autoRenewKey);
-        given(accountAccess.getAccountById(payerId)).willReturn(account);
+        given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
         final var op = OP_BUILDER
                 .autoRenewAccount(autoRenewId)
                 .topicID(WELL_KNOWN_TOPIC_ID)
                 .build();
-        final var context = new PreHandleContext(accountAccess, txnWith(op));
+        final var context = new FakePreHandleContext(accountStore, txnWith(op));
+        context.registerStore(ReadableTopicStore.class, readableStore);
 
-        subject.preHandle(context, readableStore);
+        subject.preHandle(context);
 
         assertThat(context.payerKey()).isEqualTo(adminKey);
         // auto-renew key
@@ -458,8 +463,8 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     void missingAutoRenewAccountFails() throws PreCheckException {
-        given(accountAccess.getAccountById(autoRenewId)).willReturn(null);
-        given(accountAccess.getAccountById(payerId)).willReturn(account);
+        given(accountStore.getAccountById(autoRenewId)).willReturn(null);
+        given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
         final var op = OP_BUILDER
@@ -467,8 +472,10 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .topicID(TopicID.newBuilder().topicNum(1L).build())
                 .build();
 
-        final var context = new PreHandleContext(accountAccess, txnWith(op));
-        assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_AUTORENEW_ACCOUNT);
+        final var context = new FakePreHandleContext(accountStore, txnWith(op));
+        context.registerStore(ReadableTopicStore.class, readableStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_AUTORENEW_ACCOUNT);
     }
 
     private TransactionBody txnWith(final ConsensusUpdateTopicTransactionBody op) {
