@@ -17,6 +17,7 @@
 package com.hedera.node.app.signature.hapi;
 
 import static com.hedera.node.app.signature.hapi.SignatureVerificationImpl.invalid;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
@@ -42,44 +43,45 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 
+// A few problems:
+//  - A single signature MAY apply to more than one key. If a signature doesn't have a prefix at all, it might
+//    apply to any key! Or maybe the prefix isn't very long, and it matches multiple keys.
+//  - A single key MAY match multiple signature prefixes. Which one to use? (try to match both? or most specific?)
+//  - Maybe the same key shows up more than once. How does that happen? We have to deduplicate somehow...
+//  - We should only match prefixes on the key types that match the key we have on hand
+
 /**
- * A concrete implementation of {@link SignatureVerifier} used by HAPI calls. An alternative implementation
- * should be created for verifying synthetic calls between services. For example, the smart contract system
- * would allow signature checks based on {@link com.hedera.hapi.node.base.ContractID} but not other kinds of
- * keys.
+ * A concrete implementation of {@link SignatureVerifier} that uses the {@link Cryptography} engine to verify the
+ * signatures.
  */
-public class HapiSignatureVerifierImpl implements SignatureVerifier {
+public class SignatureVerifierImpl implements SignatureVerifier {
+    /** The {@link Cryptography} engine to use for signature verification. */
     private final Cryptography cryptoEngine;
 
+    /** Create a new instance with the given {@link Cryptography} engine. */
     @Inject
-    public HapiSignatureVerifierImpl(@NonNull final Cryptography cryptoEngine) {
+    public SignatureVerifierImpl(@NonNull final Cryptography cryptoEngine) {
         this.cryptoEngine = requireNonNull(cryptoEngine);
     }
 
+    /** {@inheritDoc} */
     @Override
     @NonNull
     public Future<SignatureVerification> verify(
-            @NonNull final Bytes signedBytes, @NonNull final List<SignaturePair> sigPairs, @NonNull final Key key) {
-        // Walk through the key in **depth first order** and collect a VerificationArgs for each signature that needs to
-        // be verified. If there are no signatures to verify, then the key is invalid.
-        final var txSigs = new ArrayList<HapiTransactionSignature>(100); // Should be bigger than we ever need
-        collectSignatures(signedBytes, sigPairs, key, txSigs);
-        if (txSigs.isEmpty()) {
+            @NonNull final Key key, @NonNull final Bytes signedBytes, @NonNull final List<SignaturePair> sigPairs) {
+        // Walk through the key and collect a HapiTransactionSignature for each signature that needs to be verified. If
+        // there are no signatures to verify, then we clearly cannot verify the key!
+        final var list = collectSignatures(signedBytes, sigPairs, key);
+        if (list.isEmpty()) {
             return CompletableFuture.completedFuture(invalid(key));
         }
 
-        // There may be duplicate keys in the above txSigs. We need to remove them.
-        for (int i = txSigs.size() - 1; i >= 1; i--) {
-            final var a = txSigs.get(i).key;
-            for (int j = i - 1; j >= 0; j--) {
-                final var b = txSigs.get(j).key;
-                if (a.equals(b)) {
-                    txSigs.remove(i);
-                }
-            }
-        }
+        // There may be duplicate keys in the above list. We need to remove them. (It would be a waste of resources
+        // to do duplicate signature verifications).
+        final var txSigs = list.stream().distinct().toList();
 
-        // Collect a Future<Boolean> for each key that we had to verify.
+        // Collect a Future<Boolean> for each key that we have to verify. These will all be passed into the
+        // SignatureVerificationFuture which will aggregate them.
         //noinspection unchecked
         cryptoEngine.verifyAsync((List<TransactionSignature>) (Object) txSigs);
         return new SignatureVerificationFuture(
@@ -89,7 +91,7 @@ public class HapiSignatureVerifierImpl implements SignatureVerifier {
     @NonNull
     @Override
     public Future<SignatureVerification> verify(
-            @NonNull Bytes signedBytes, @NonNull List<SignaturePair> sigPairs, @NonNull Account hollowAccount) {
+            @NonNull Account hollowAccount, @NonNull Bytes signedBytes, @NonNull List<SignaturePair> sigPairs) {
         final var alias = hollowAccount.alias();
         if (hollowAccount.key() != null || alias == null || alias.length() != 20) {
             return CompletableFuture.completedFuture(invalid(hollowAccount));
@@ -104,34 +106,17 @@ public class HapiSignatureVerifierImpl implements SignatureVerifier {
                 final var compressedPrefixByteArray = new byte[(int) prefix.length()];
                 prefix.getBytes(0, compressedPrefixByteArray);
                 final var prefixByteArray = MiscCryptoUtils.decompressSecp256k1(compressedPrefixByteArray);
-                final var hashedPrefixByteArray = MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(prefixByteArray);
+                final var hashedPrefixByteArray =
+                        MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(prefixByteArray);
                 final var hashedPrefix = Bytes.wrap(hashedPrefixByteArray);
                 if (hashedPrefix.equals(alias)) {
                     // We have found it!
-                    final Bytes sigBytes = sigPair.signature().as();
-                    final var sigBytesLength = (int) sigBytes.length();
-                    final var keyBytesLength = prefixByteArray.length;
-                    final var signedBytesLength = (int) signedBytes.length();
-                    final var contents = new byte[sigBytesLength + keyBytesLength + signedBytesLength];
-                    final var sigOffset = 0;
-                    final var keyOffset = sigOffset + sigBytesLength;
-                    final var dataOffset = keyOffset + keyBytesLength;
-                    sigBytes.getBytes(0, contents, sigOffset, sigBytesLength);
-                    signedBytes.getBytes(0, contents, dataOffset, signedBytesLength);
-
                     // Gather this signature to verify
-                    final var key = Key.newBuilder().ecdsaSecp256k1(Bytes.wrap(prefixByteArray)).build();
-                    final var sigTx = new HapiTransactionSignature(
-                            key,
-                            contents,
-                            sigOffset,
-                            sigBytesLength,
-                            keyOffset,
-                            keyBytesLength,
-                            dataOffset,
-                            sigBytesLength,
-                            SignatureType.ECDSA_SECP256K1);
-
+                    final var key = Key.newBuilder()
+                            .ecdsaSecp256k1(Bytes.wrap(prefixByteArray))
+                            .build();
+                    final var sigTx = createTransactionSignature(
+                            signedBytes, key, sigPair, SignatureType.ECDSA_SECP256K1, key.ecdsaSecp256k1OrThrow());
                     cryptoEngine.verifyAsync(sigTx);
                     return new SignatureVerificationFuture(key, hollowAccount, Map.of(key, sigTx));
                 }
@@ -156,37 +141,22 @@ public class HapiSignatureVerifierImpl implements SignatureVerifier {
      * Multiple elements in the {@link List} if the key resolved to a {@link KeyList} with multiple elements,
      * or a {@link ThresholdKey} with a threshold greater than 1, etc.
      */
-    private void collectSignatures(
-            @NonNull final Bytes signedBytes,
-            @NonNull final List<SignaturePair> sigPairs,
-            @NonNull final Key key,
-            @NonNull final List<HapiTransactionSignature> collectedSignatures) {
+    private List<HapiTransactionSignature> collectSignatures(
+            @NonNull final Bytes signedBytes, @NonNull final List<SignaturePair> sigPairs, @NonNull final Key key) {
 
-        // If this is a duplicate, then we can ... OH CRAP. I hate this!
-        if (collectedSignatures.contains(key)) {
-            return;
-        }
-
-        switch (key.key().kind()) {
+        return switch (key.key().kind()) {
             case ED25519 -> {
                 final var txSig = collectSignature(signedBytes, sigPairs, key, key.ed25519OrThrow());
-                if (txSig != null) {
-                    collectedSignatures.add(txSig);
-                }
+                yield txSig == null ? emptyList() : List.of(txSig);
             }
             case ECDSA_SECP256K1 -> {
                 final var txSig = collectSignature(signedBytes, sigPairs, key, key.ecdsaSecp256k1OrThrow());
-                if (txSig != null) {
-                    collectedSignatures.add(txSig);
-                }
+                yield txSig == null ? emptyList() : List.of(txSig);
             }
-            case KEY_LIST -> collectSignatures(signedBytes, sigPairs, key.keyListOrThrow(), collectedSignatures);
-            case THRESHOLD_KEY -> collectSignatures(
-                    signedBytes, sigPairs, key.thresholdKeyOrThrow(), collectedSignatures);
-            case ECDSA_384, RSA_3072, CONTRACT_ID, DELEGATABLE_CONTRACT_ID, UNSET -> {
-                /* Nothing to contribute */
-            }
-        }
+            case KEY_LIST -> collectSignatures(signedBytes, sigPairs, key.keyListOrThrow());
+            case THRESHOLD_KEY -> collectSignatures(signedBytes, sigPairs, key.thresholdKeyOrThrow());
+            case ECDSA_384, RSA_3072, CONTRACT_ID, DELEGATABLE_CONTRACT_ID, UNSET -> emptyList();
+        };
     }
 
     /**
@@ -195,33 +165,27 @@ public class HapiSignatureVerifierImpl implements SignatureVerifier {
      * @param sigPairs The signature pairs to match against
      * @param keyList The list of keys to find corresponding signatures for
      */
-    private void collectSignatures(
+    private List<HapiTransactionSignature> collectSignatures(
             @NonNull final Bytes signedBytes,
             @NonNull final List<SignaturePair> sigPairs,
-            @NonNull final KeyList keyList,
-            @NonNull final List<HapiTransactionSignature> collectedSignatures) {
+            @NonNull final KeyList keyList) {
         // Every single key in the key list must contribute at least one TransactionSignature, or
         // the key was invalid for some reason. A KeyList is basically a ThresholdKey with the threshold
         // set to the number of keys in the list. Every single key must be valid.
-        final var originalNumCollectedSignatures = collectedSignatures.size();
         if (keyList.hasKeys()) {
             final var list = keyList.keysOrThrow();
+            final var results = new ArrayList<HapiTransactionSignature>();
             for (final var subKey : list) {
-                final var startNumCollectedSignatures = collectedSignatures.size();
-                collectSignatures(signedBytes, sigPairs, subKey, collectedSignatures);
-                // If we did not collect AT LEAST one signature then we need to rollback the elements
-                // in `collectedSignatures` to what it was before we started iterating and then bail.
-                final var endNumCollectedSignatures = collectedSignatures.size();
-                if (startNumCollectedSignatures == endNumCollectedSignatures) {
-                    if (collectedSignatures.size() > originalNumCollectedSignatures) {
-                        collectedSignatures
-                                .subList(originalNumCollectedSignatures, collectedSignatures.size())
-                                .clear();
-                        break;
-                    }
+                final var sigs = collectSignatures(signedBytes, sigPairs, subKey);
+                if (sigs.isEmpty()) {
+                    return emptyList();
+                } else {
+                    results.addAll(sigs);
                 }
             }
+            return results;
         }
+        return emptyList();
     }
 
     /**
@@ -234,14 +198,12 @@ public class HapiSignatureVerifierImpl implements SignatureVerifier {
      * signatures and keys that would succeed, then a valid consensus node implementation will select those keys to
      * succeed.
      */
-    private void collectSignatures(
+    private List<HapiTransactionSignature> collectSignatures(
             @NonNull final Bytes signedBytes,
             @NonNull final List<SignaturePair> sigPairs,
-            @NonNull final ThresholdKey thresholdKey,
-            @NonNull final List<HapiTransactionSignature> collectedSignatures) {
+            @NonNull final ThresholdKey thresholdKey) {
         // The ThresholdKey is like a KeyList, but only `threshold` number of keys must contribute at least
         // one signature.
-        final var originalNumCollectedSignatures = collectedSignatures.size();
         if (thresholdKey.hasKeys()) {
             final var keys = thresholdKey.keysOrThrow();
             if (keys.hasKeys()) {
@@ -254,23 +216,19 @@ public class HapiSignatureVerifierImpl implements SignatureVerifier {
                 final var threshold = Math.max(Math.min(list.size(), thresholdKey.threshold()), 1);
 
                 var numCanFail = list.size() - threshold;
+                final var results = new ArrayList<HapiTransactionSignature>();
                 for (final var subKey : list) {
-                    final var startNumCollectedSignatures = collectedSignatures.size();
-                    collectSignatures(signedBytes, sigPairs, subKey, collectedSignatures);
-                    final var endNumCollectedSignatures = collectedSignatures.size();
-                    if (startNumCollectedSignatures == endNumCollectedSignatures) {
-                        if (collectedSignatures.size() > originalNumCollectedSignatures) {
-                            if (--numCanFail < 0) {
-                                collectedSignatures
-                                        .subList(originalNumCollectedSignatures, collectedSignatures.size())
-                                        .clear();
-                                break;
-                            }
-                        }
+                    final var sigs = collectSignatures(signedBytes, sigPairs, subKey);
+                    if (sigs.isEmpty() && --numCanFail < 0) {
+                        return emptyList();
+                    } else {
+                        results.addAll(sigs);
                     }
                 }
+                return results;
             }
         }
+        return emptyList();
     }
 
     /** Collects the first signature pair for a simple key where the sig pair has the matching prefix */
@@ -280,45 +238,76 @@ public class HapiSignatureVerifierImpl implements SignatureVerifier {
             @NonNull final Key key,
             @NonNull final Bytes keyBytes) {
 
+        final var sigType =
+                switch (key.key().kind()) {
+                    case ED25519 -> SignatureOneOfType.ED25519;
+                    case ECDSA_SECP256K1 -> SignatureOneOfType.ECDSA_SECP256K1;
+                    default -> throw new IllegalArgumentException("Unsupported signature type");
+                };
+
+        SignaturePair foundSigPair = null;
         for (final var sigPair : sigPairs) {
-            final var prefix = sigPair.pubKeyPrefix();
-            if (keyBytes.matchesPrefix(prefix)) {
-                // Figure out the SignatureType
-                final var type =
-                        switch (sigPair.signature().kind()) {
-                            case ED25519 -> SignatureType.ED25519;
-                            case ECDSA_SECP256K1 -> SignatureType.ECDSA_SECP256K1; // TODO MUST EXPAND SIGNATURE
-                            default -> throw new IllegalArgumentException("Unsupported signature type");
-                        };
-
-                // The platform API requires a single content array with all the data inside it.
-                // I need to do some array copies to make this work.
-                final Bytes sigBytes = sigPair.signature().as();
-                final var sigBytesLength = (int) sigBytes.length();
-                final var keyBytesLength = (int) keyBytes.length();
-                final var signedBytesLength = (int) signedBytes.length();
-                final var contents = new byte[sigBytesLength + keyBytesLength + signedBytesLength];
-                final var sigOffset = 0;
-                final var keyOffset = sigOffset + sigBytesLength;
-                final var dataOffset = keyOffset + keyBytesLength;
-                sigBytes.getBytes(0, contents, sigOffset, sigBytesLength);
-                keyBytes.getBytes(0, contents, keyOffset, keyBytesLength);
-                signedBytes.getBytes(0, contents, dataOffset, signedBytesLength);
-
-                // Gather this signature to verify
-                return new HapiTransactionSignature(
-                        key,
-                        contents,
-                        sigOffset,
-                        sigBytesLength,
-                        keyOffset,
-                        keyBytesLength,
-                        dataOffset,
-                        sigBytesLength,
-                        type);
+            if (sigPair.signature().kind() == sigType) {
+                final var prefix = sigPair.pubKeyPrefix();
+                final var foundSigPairPrefixLength =
+                        foundSigPair == null ? -1 : foundSigPair.pubKeyPrefix().length();
+                if (prefix.length() > foundSigPairPrefixLength && keyBytes.matchesPrefix(prefix)) {
+                    // Figure out the SignatureType
+                    foundSigPair = sigPair;
+                }
             }
         }
+
+        if (foundSigPair != null) {
+            return switch (foundSigPair.signature().kind()) {
+                case ED25519 -> createTransactionSignature(
+                        signedBytes, key, foundSigPair, SignatureType.ED25519, keyBytes);
+                case ECDSA_SECP256K1 -> {
+                    final var compressedByteArray = new byte[(int) keyBytes.length()];
+                    keyBytes.getBytes(0, compressedByteArray);
+                    final var uncompressedByteArray = MiscCryptoUtils.decompressSecp256k1(compressedByteArray);
+                    final var uncompressedBytes = Bytes.wrap(uncompressedByteArray);
+                    yield createTransactionSignature(
+                            signedBytes, key, foundSigPair, SignatureType.ECDSA_SECP256K1, uncompressedBytes);
+                }
+                default -> throw new IllegalArgumentException("Unsupported signature type");
+            };
+        }
+
         return null;
+    }
+
+    private HapiTransactionSignature createTransactionSignature(
+            @NonNull final Bytes signedBytes,
+            @NonNull final Key key,
+            @NonNull final SignaturePair sigPair,
+            @NonNull final SignatureType sigType,
+            @NonNull final Bytes keyBytes) {
+        // The platform API requires a single content array with all the data inside it.
+        // I need to do some array copies to make this work.
+        final Bytes sigBytes = sigPair.signature().as();
+        final var sigBytesLength = (int) sigBytes.length();
+        final var keyBytesLength = (int) keyBytes.length();
+        final var signedBytesLength = (int) signedBytes.length();
+        final var contents = new byte[sigBytesLength + keyBytesLength + signedBytesLength];
+        final var sigOffset = 0;
+        final var keyOffset = sigOffset + sigBytesLength;
+        final var dataOffset = keyOffset + keyBytesLength;
+        sigBytes.getBytes(0, contents, sigOffset, sigBytesLength);
+        keyBytes.getBytes(0, contents, keyOffset, keyBytesLength);
+        signedBytes.getBytes(0, contents, dataOffset, signedBytesLength);
+
+        // Gather this signature to verify
+        return new HapiTransactionSignature(
+                key,
+                contents,
+                sigOffset,
+                sigBytesLength,
+                keyOffset,
+                keyBytesLength,
+                dataOffset,
+                sigBytesLength,
+                sigType);
     }
 
     /**

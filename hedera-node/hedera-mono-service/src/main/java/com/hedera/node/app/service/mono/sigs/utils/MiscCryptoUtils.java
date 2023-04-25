@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.sigs.utils;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 
-import java.security.DigestException;
 import java.util.Arrays;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jce.ECNamedCurveTable;

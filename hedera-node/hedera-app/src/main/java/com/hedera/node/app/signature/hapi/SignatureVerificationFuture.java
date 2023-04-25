@@ -167,7 +167,8 @@ public class SignatureVerificationFuture implements Future<SignatureVerification
             txSig.getFuture().get();
         }
 
-        return new SignatureVerificationImpl(key, hollowAccount, new ArrayList<>(sigs.values()), checkIfPassed(key, sigs));
+        return new SignatureVerificationImpl(
+                key, hollowAccount, new ArrayList<>(sigs.values()), checkIfPassed(key, sigs));
     }
 
     /**
@@ -201,7 +202,8 @@ public class SignatureVerificationFuture implements Future<SignatureVerification
             }
         }
 
-        return new SignatureVerificationImpl(key, hollowAccount, new ArrayList<>(sigs.values()), checkIfPassed(key, sigs));
+        return new SignatureVerificationImpl(
+                key, hollowAccount, new ArrayList<>(sigs.values()), checkIfPassed(key, sigs));
     }
 
     /**

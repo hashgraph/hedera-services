@@ -62,7 +62,7 @@ public interface Scenarios extends TransactionFactory {
         final var bytes = new byte[hex.length() / 2];
         for (int i = 0; i < bytes.length; i++) {
             int index = i * 2;
-            byte hi = hexDecode(hex.charAt(index));
+            byte hi = (byte) (hexDecode(hex.charAt(index)) << 4);
             byte lo = hexDecode(hex.charAt(index + 1));
             bytes[i] = (byte) (hi | lo);
         }

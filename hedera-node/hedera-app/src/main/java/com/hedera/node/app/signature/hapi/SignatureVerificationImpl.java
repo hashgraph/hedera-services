@@ -27,7 +27,8 @@ import java.util.List;
 
 // Created by SignatureVerificationFuture when it has the final result.
 // txSigs is temporary. After mono-service is gone, it won't be needed anymore
-public record SignatureVerificationImpl(@Nullable Key key, @Nullable Account hollowAccount, @NonNull List<TransactionSignature> txSigs, boolean passed)
+public record SignatureVerificationImpl(
+        @Nullable Key key, @Nullable Account hollowAccount, @NonNull List<TransactionSignature> txSigs, boolean passed)
         implements SignatureVerification {
 
     public static SignatureVerification invalid(@NonNull Key key) {
@@ -42,7 +43,8 @@ public record SignatureVerificationImpl(@Nullable Key key, @Nullable Account hol
         return new SignatureVerificationImpl(key, null, txSigs, true);
     }
 
-    public static SignatureVerification valid(@NonNull Key key, @NonNull Account hollowAccount, @NonNull List<TransactionSignature> txSigs) {
+    public static SignatureVerification valid(
+            @NonNull Key key, @NonNull Account hollowAccount, @NonNull List<TransactionSignature> txSigs) {
         return new SignatureVerificationImpl(key, hollowAccount, txSigs, true);
     }
 }

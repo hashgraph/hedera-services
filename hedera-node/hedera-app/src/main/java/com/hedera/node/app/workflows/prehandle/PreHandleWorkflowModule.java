@@ -24,7 +24,7 @@ import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.signature.MonoSignaturePreparer;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.signature.hapi.HapiSignatureVerifierImpl;
+import com.hedera.node.app.signature.hapi.SignatureVerifierImpl;
 import com.hedera.node.app.workflows.handle.AdaptedMonoProcessLogic;
 import dagger.Binds;
 import dagger.Module;
@@ -47,7 +47,7 @@ public interface PreHandleWorkflowModule {
     SignaturePreparer bindSignaturePreparer(MonoSignaturePreparer signaturePreparer);
 
     @Binds
-    SignatureVerifier bindSignatureVerifier(HapiSignatureVerifierImpl signatureVerifier);
+    SignatureVerifier bindSignatureVerifier(SignatureVerifierImpl signatureVerifier);
 
     @Binds
     ProcessLogic bindProcessLogic(AdaptedMonoProcessLogic processLogic);

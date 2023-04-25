@@ -32,11 +32,10 @@ public interface SignatureVerification {
      * Gets the key that was used with this signature check.
      *
      * <p>In most cases, the service implementation's {@link com.hedera.node.app.spi.workflows.TransactionHandler}s
-     * will create {@link SignatureVerification} instances based on some concrete key. In those cases, they will be made
-     * available here. In the case of a "hollow" account, where the key is not known, the handler will provide the
-     * EVM compatible alias for the hollow account. The signature checking code will look for a corresponding signature.
-     * If it finds one, it will extract the key and make it available here. If it cannot find a corresponding signature,
-     * then this key will be null.
+     * will require signatures based on some concrete key. In those cases, they will be made available here. In the case
+     * of a "hollow" account, where the key is not known, the handler will provide the hollow {@link Account}. The
+     * signature checking code will look for a corresponding signature. If it finds one, it will extract the key and
+     * make it available here. If it cannot find a corresponding signature, then this key will be null.
      *
      * @return The key that was used with this signature check, or null if the key is not known.
      */
@@ -44,12 +43,10 @@ public interface SignatureVerification {
     Key key();
 
     /**
-     * Gets the EVM compatible alias for the key to be used during signature verification. This is only used by
-     * hollow accounts, where they do not have a key on the account, but one can be provided by the signed transaction
-     * itself.
+     * Gets the hollow {@link Account} used during signature verification. This is only used by hollow accounts, where
+     * they do not have a key on the account, but one can be provided by the signed transaction itself.
      *
-     * @return An EVM compatible alias for the key to be used during signature verification, or null if a key was
-     * provided.
+     * @return The hollow {@link Account} used during signature verification, or null if a key was provided instead.
      */
     @Nullable
     default Account hollowAccount() {

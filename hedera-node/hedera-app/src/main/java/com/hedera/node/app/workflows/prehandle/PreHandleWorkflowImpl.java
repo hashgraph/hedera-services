@@ -194,8 +194,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         //    the payerVerificationFuture.
         final var sigPairs = txInfo.signatureMap().sigPairOrThrow();
         final var payerVerificationFuture = isHollow(payerAccount)
-                ? signatureVerifier.verify(txInfo.signedBytes(), sigPairs, payerAccount)
-                : signatureVerifier.verify(txInfo.signedBytes(), sigPairs, payerAccount.keyOrThrow());
+                ? signatureVerifier.verify(payerAccount, txInfo.signedBytes(), sigPairs)
+                : signatureVerifier.verify(payerAccount.keyOrThrow(), txInfo.signedBytes(), sigPairs);
 
         // 4. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
@@ -230,7 +230,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final var nonPayerFutures = new ArrayList<Future<SignatureVerification>>();
         for (final var key : nonPayerKeys) {
             final var future = signatureVerifier.verify(
-                    txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow(), key);
+                    key, txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow());
             nonPayerFutures.add(future);
         }
 
@@ -238,7 +238,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final var nonPayerHollowAccounts = context.requiredHollowAccounts();
         for (final var hollowAccount : nonPayerHollowAccounts) {
             final var future = signatureVerifier.verify(
-                    txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow(), hollowAccount);
+                    hollowAccount, txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow());
             nonPayerHollowFutures.add(future);
         }
 

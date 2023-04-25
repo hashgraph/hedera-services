@@ -33,15 +33,15 @@ public interface SignatureVerifier {
      * Asynchronously verifies that there exists in {@code sigPairs} a {@link SignaturePair} such that it both matches
      * the given {@code key} AND matches the {@code signedBytes}.
      *
+     * @param key The key that must have signed the bytes
      * @param signedBytes The signed bytes to verify
      * @param sigPairs The list of {@link SignaturePair}s, at least one of which must have signed {@code signedBytes}
      *                 and have a prefix matching the given {@code key}
-     * @param key The key that must have signed the bytes
      * @return A {@link Future} indicating whether the {code signedBytes} were signed by the {@code key}.
      */
     @NonNull
     Future<SignatureVerification> verify(
-            @NonNull Bytes signedBytes, @NonNull List<SignaturePair> sigPairs, @NonNull Key key);
+            @NonNull Key key, @NonNull Bytes signedBytes, @NonNull List<SignaturePair> sigPairs);
 
     /**
      * Asynchronously verifies that there exists in {@code sigPairs} a {@link SignaturePair} such that it both matches
@@ -57,14 +57,14 @@ public interface SignatureVerifier {
      * extracted (similar to how the EVM has {@code `ecrecover`}). Taking that key, and hashing and trimming it, if it
      * matches the alias, then it will be used for signature verification.
      *
+     * @param hollowAccount The hollow account with an EVM address to use
      * @param signedBytes The signed bytes to verify
      * @param sigPairs The list of {@link SignaturePair}s, at least one of which must have signed {@code signedBytes}
      *                 and have a prefix matching the given {@code key}
-     * @param hollowAccount The hollow account with an EVM address to use
      * @return A {@link Future} indicating whether the {code signedBytes} were signed by a {@code key} corresponding to
-     *        the given {@code evmAddress}.
+     * the given {@code evmAddress}.
      */
     @NonNull
     Future<SignatureVerification> verify(
-            @NonNull Bytes signedBytes, @NonNull List<SignaturePair> sigPairs, @NonNull Account hollowAccount);
+            @NonNull Account hollowAccount, @NonNull Bytes signedBytes, @NonNull List<SignaturePair> sigPairs);
 }

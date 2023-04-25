@@ -20,7 +20,6 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
@@ -37,25 +36,28 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenarios {
     /**
      * The "signed" bytes to test with. This really doesn't matter because we mock out the crypto engine, so it will
      * always return true (or false) as needed regardless of the actual bytes.
      */
     private Bytes signedBytes;
+
+    @Mock
+    Cryptography cryptoEngine;
 
     @BeforeEach
     void setUp() {
@@ -72,9 +74,9 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
      */
     @ParameterizedTest
     @MethodSource(value = "provideMixOfAllKindsOfKeys")
-    void failToVerifyIfSignaturesAreEmpty(@Mock Cryptography cryptoEngine, @NonNull final Key key) throws Exception {
-        final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
-        final var result = verifier.verify(signedBytes, List.of(), key).get();
+    void failToVerifyIfSignaturesAreEmpty(@NonNull final Key key) throws Exception {
+        final var verifier = new SignatureVerifierImpl(cryptoEngine);
+        final var result = verifier.verify(key, signedBytes, List.of()).get();
         assertThat(result.failed()).isTrue();
         assertThat(result.key()).isEqualTo(key);
         assertThat(result.hollowAccount()).isNull();
@@ -87,12 +89,12 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
      */
     @ParameterizedTest
     @MethodSource(value = "provideMixOfAllKindsOfKeys")
-    void failIfCryptoEngineSaysTheSignatureWasBad(@Mock Cryptography cryptoEngine, @NonNull final Key key) throws Exception {
+    void failIfCryptoEngineSaysTheSignatureWasBad(@NonNull final Key key) throws Exception {
         //noinspection unchecked
         lenient().doAnswer(this::invalid).when(cryptoEngine).verifyAsync(any(List.class));
         final var sigPairs = sufficientSignatures(key);
-        final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
-        final var result = verifier.verify(signedBytes, sigPairs, key).get();
+        final var verifier = new SignatureVerifierImpl(cryptoEngine);
+        final var result = verifier.verify(key, signedBytes, sigPairs).get();
         assertThat(result.failed()).isTrue();
         assertThat(result.key()).isEqualTo(key);
         assertThat(result.hollowAccount()).isNull();
@@ -104,12 +106,12 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
      */
     @ParameterizedTest
     @MethodSource(value = "provideMixOfAllKindsOfKeys")
-    void failToVerifyIfSignaturesAreInsufficient(@Mock Cryptography cryptoEngine, @NonNull final Key key) throws Exception {
+    void failToVerifyIfSignaturesAreInsufficient(@NonNull final Key key) throws Exception {
         //noinspection unchecked
         lenient().doAnswer(this::invalid).when(cryptoEngine).verifyAsync(any(List.class));
-        final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
+        final var verifier = new SignatureVerifierImpl(cryptoEngine);
         final var sigPairs = insufficientSignatures(key);
-        final var result = verifier.verify(signedBytes, sigPairs, key).get();
+        final var result = verifier.verify(key, signedBytes, sigPairs).get();
         assertThat(result.failed()).isTrue();
         assertThat(result.key()).isEqualTo(key);
         assertThat(result.hollowAccount()).isNull();
@@ -121,12 +123,12 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
      */
     @ParameterizedTest
     @MethodSource(value = "provideMixOfAllKindsOfKeys")
-    void verifyIfSufficientSignatures(@Mock Cryptography cryptoEngine, @NonNull final Key key) throws Exception {
+    void verifyIfSufficientSignatures(@NonNull final Key key) throws Exception {
         //noinspection unchecked
         lenient().doAnswer(this::valid).when(cryptoEngine).verifyAsync(any(List.class));
-        final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
+        final var verifier = new SignatureVerifierImpl(cryptoEngine);
         final var sigPairs = sufficientSignatures(key);
-        final var result = verifier.verify(signedBytes, sigPairs, key).get();
+        final var result = verifier.verify(key, signedBytes, sigPairs).get();
         assertThat(result.passed()).isTrue();
         assertThat(result.key()).isEqualTo(key);
         assertThat(result.hollowAccount()).isNull();
@@ -136,15 +138,15 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
      * If the public key prefix is missing, then the signature will be selected.
      */
     @Test
-    void verifyFailIfPrefixIsMissing(@Mock Cryptography cryptoEngine) throws Exception {
-        final var verifier = new HapiSignatureVerifierImpl(cryptoEngine);
+    void verifyFailIfPrefixIsMissing() throws Exception {
+        final var verifier = new SignatureVerifierImpl(cryptoEngine);
         //noinspection unchecked
         lenient().doAnswer(this::valid).when(cryptoEngine).verifyAsync(any(List.class));
         final var key = FAKE_ED25519_KEY_INFOS[0].publicKey();
         final var sigPairs = sufficientSignatures(key).stream()
                 .map(sigPair -> sigPair.copyBuilder().pubKeyPrefix(Bytes.EMPTY).build())
                 .collect(Collectors.toList());
-        final var result = verifier.verify(signedBytes, sigPairs, key).get();
+        final var result = verifier.verify(key, signedBytes, sigPairs).get();
         assertThat(result.passed()).isTrue();
         assertThat(result.key()).isEqualTo(key);
         assertThat(result.hollowAccount()).isNull();
@@ -181,7 +183,10 @@ final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenari
                 // Nested key lists
                 Arguments.of(keyList(
                         FAKE_ED25519_KEY_INFOS[0].publicKey(),
-                        keyList(FAKE_ECDSA_KEY_INFOS[0].publicKey(), FAKE_ECDSA_KEY_INFOS[1].publicKey()),
+                        keyList(
+                                FAKE_ECDSA_KEY_INFOS[0].publicKey(),
+                                FAKE_ECDSA_KEY_INFOS[1]
+                                        .publicKey()), // important: same key being reused!!! Don't lose that fact.
                         FAKE_ECDSA_KEY_INFOS[0].publicKey())),
 
                 // Key lists with threshold keys
