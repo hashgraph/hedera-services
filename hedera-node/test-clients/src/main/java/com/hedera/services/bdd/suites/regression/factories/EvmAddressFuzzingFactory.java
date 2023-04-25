@@ -55,12 +55,7 @@ public class EvmAddressFuzzingFactory {
     public static HapiSpecOperation[] initOperations() {
         return new HapiSpecOperation[] {
             overridingThree(
-                    CHAIN_ID_PROP,
-                    "298",
-                    LAZY_CREATE_PROPERTY_NAME,
-                    "true",
-                    CONTRACTS_EVM_VERSION_PROP,
-                    V_0_34),
+                    CHAIN_ID_PROP, "298", LAZY_CREATE_PROPERTY_NAME, "true", CONTRACTS_EVM_VERSION_PROP, V_0_34),
             newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
             cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS).withRecharging(),
             cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
