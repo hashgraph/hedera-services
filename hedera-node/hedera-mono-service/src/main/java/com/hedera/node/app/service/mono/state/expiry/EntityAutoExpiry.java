@@ -137,7 +137,6 @@ public class EntityAutoExpiry {
 
     private boolean canDoWorkGiven(final long wrapNum, final Instant now) {
         return wrapNum != firstEntityToScan
-                && dynamicProps.shouldAutoRenewSomeEntityType()
                 && consensusTimeTracker.hasMoreStandaloneRecordTime()
                 && !recordsHistorian.nextSystemTransactionIdIsUnknown()
                 && !expiryThrottle.stillLacksMinFreeCapAfterLeakingUntil(now);
