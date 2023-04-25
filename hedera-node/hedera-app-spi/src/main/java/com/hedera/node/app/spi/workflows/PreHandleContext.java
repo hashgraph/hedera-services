@@ -52,7 +52,7 @@ import java.util.Set;
  * <p>{@link #requireKey(Key)} is used to add a required non-payer signing key (remember, the payer signing
  * key was added when the context was created). Some basic validation is performed (the key cannot be null or empty).
  */
-public final class PreHandleContext {
+public class PreHandleContext {
     /** Used to get keys for accounts and contracts. */
     private final AccountAccess accountAccess;
     /** The transaction body. */
@@ -76,7 +76,9 @@ public final class PreHandleContext {
      * @param accountAccess used to get keys for accounts and contracts
      * @param txn the transaction body
      * @throws PreCheckException if the payer account ID is invalid or the key is null
+     * @deprecated This class will become an interface. If an instance is required for testing, use a mock instead.
      */
+    @Deprecated(forRemoval = true)
     public PreHandleContext(@NonNull final AccountAccess accountAccess, @NonNull final TransactionBody txn)
             throws PreCheckException {
         this(
@@ -93,9 +95,10 @@ public final class PreHandleContext {
             @NonNull final AccountID payer,
             @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
-        this.accountAccess = requireNonNull(accountAccess);
-        this.txn = requireNonNull(txn);
-        this.payer = requireNonNull(payer);
+        this.accountAccess = requireNonNull(accountAccess, "The supplied argument 'accountAccess' cannot be null!");
+        this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
+        this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
+
         // Find the account, which must exist or throw a PreCheckException with the given response code.
         final var account = accountAccess.getAccountById(payer);
         mustExist(account, responseCode);
@@ -106,10 +109,30 @@ public final class PreHandleContext {
     }
 
     /**
+     * Create a new store given the store's interface. This gives read-only access to the store.
+     *
+     * @param storeInterface The store interface to find and create a store for
+     * @return An implementation of store interface provided, or null if the store
+     * @param <C> Interface class for a Store
+     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
+     * @throws NullPointerException if {@code storeInterface} is {@code null}
+     */
+    @SuppressWarnings("unchecked")
+    @NonNull
+    public <C> C createStore(@NonNull final Class<C> storeInterface) {
+        if (storeInterface == AccountAccess.class) {
+            return (C) accountAccess;
+        }
+        throw new IllegalArgumentException("Unknown store interface: " + storeInterface.getName());
+    }
+
+    /**
      * Gets the {@link AccountAccess}.
      *
      * @return the {@link AccountAccess}
+     * @deprecated Use {@link #createStore(Class)} instead.
      */
+    @Deprecated(forRemoval = true)
     @NonNull
     public AccountAccess accountAccess() {
         return accountAccess;

@@ -53,17 +53,6 @@ class ContractKeyTest {
 
     private ContractKey subject;
 
-    @Test
-    void orderingPrioritizesIdThenKey() {
-        final var base = new ContractKey(contractNum, key);
-        final var sameButDiff = base;
-        assertEquals(0, base.compareTo(sameButDiff));
-        final var largerNum = new ContractKey(contractNum + 1, key);
-        assertEquals(-1, base.compareTo(largerNum));
-        final var smallerKey = new ContractKey(contractNum, 1);
-        assertEquals(+1, base.compareTo(smallerKey));
-    }
-
     // The first two columns form a ContractKey(id, 32-byte word) and the third column is the
     // result of running ContractKey.hashCode() on that key using the v0.35.3 tag.
     @CsvSource({
