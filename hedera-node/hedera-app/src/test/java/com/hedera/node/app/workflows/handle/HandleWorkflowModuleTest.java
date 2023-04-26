@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.admin.impl.components.AdminComponent;
@@ -47,7 +47,6 @@ import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
-import com.hedera.node.app.service.token.impl.components.TokenComponent;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
@@ -59,6 +58,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenComponent;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;

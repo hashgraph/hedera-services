@@ -42,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  * <ol>
  * <li>
  * No arguments parsed at this time.  The software version must be updated through setting the static value in
- * this main class and recompiling. The behavior of staking is updated in the State class and recompiling.
+ * this main class and recompiling. The behavior of weighting is updated in the State class and recompiling.
  * </li>
  * </ol>
  */

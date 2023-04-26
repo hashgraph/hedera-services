@@ -23,7 +23,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenPauseTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.records.BaseRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -45,25 +45,12 @@ public class TokenPauseHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, and warms the cache.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
-            throws PreCheckException {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        requireNonNull(tokenStore);
         preCheck(context);
         final var op = context.body().tokenPause();
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) {
             throw new PreCheckException(INVALID_TOKEN_ID);

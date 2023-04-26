@@ -99,7 +99,7 @@ public class MonoMapCodecAdapter {
         };
     }
 
-    public static <T extends VirtualKey<?>> Codec<T> codecForVirtualKey(
+    public static <T extends VirtualKey> Codec<T> codecForVirtualKey(
             final int version, final Supplier<T> factory, final KeySerializer<T> keySerializer) {
         return new Codec<>() {
             @NonNull

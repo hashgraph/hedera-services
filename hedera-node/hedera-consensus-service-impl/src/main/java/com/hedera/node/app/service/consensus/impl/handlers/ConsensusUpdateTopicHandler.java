@@ -29,8 +29,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.UpdateTopicRecordBuilder;
@@ -55,23 +54,11 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, and warms the cache.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@code #handle()}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
-            throws PreCheckException {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().consensusUpdateTopicOrThrow();
+        final var topicStore = context.createStore(ReadableTopicStore.class);
 
         // The topic ID must be present on the transaction and the topic must exist.
         final var topic = topicStore.getTopicMetadata(op.topicID());

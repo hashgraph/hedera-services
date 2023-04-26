@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUS
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,6 +63,7 @@ import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
 import com.hedera.node.app.service.mono.utils.JvmSystemExits;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import org.junit.jupiter.api.BeforeEach;
@@ -110,6 +112,7 @@ class ServicesAppTest {
         }
 
         subject = DaggerServicesApp.builder()
+                .initTrigger(InitTrigger.EVENT_STREAM_RECOVERY)
                 .staticAccountMemo(ACCOUNT_MEMO)
                 .bootstrapProps(props)
                 .initialHash(EMPTY_HASH)
@@ -132,6 +135,9 @@ class ServicesAppTest {
         assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));
         assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
         assertThat(subject.recordStreamManager(), instanceOf(RecordStreamManager.class));
+        // Since we gave InitTrigger.EVENT_STREAM_RECOVERY, the record stream manager
+        // should be instantiated with a recovery writer
+        assertNotNull(subject.recordStreamManager().getRecoveryRecordsWriter());
         assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
         assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
         assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));
