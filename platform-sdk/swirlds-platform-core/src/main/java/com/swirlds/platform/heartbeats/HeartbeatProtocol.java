@@ -16,18 +16,20 @@
 
 package com.swirlds.platform.heartbeats;
 
-import com.swirlds.base.ArgumentUtils;
+import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
+
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.time.Time;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
-import com.swirlds.platform.network.unidirectional.UnidirectionalProtocols;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Sends a heartbeat to the other node and measures the time it takes to receive a response.
@@ -36,7 +38,7 @@ public class HeartbeatProtocol implements Protocol {
     /**
      * ID of the peer
      */
-    private final NodeId otherId;
+    private final NodeId peerId;
 
     /**
      * The last time a heartbeat protocol was executed
@@ -54,20 +56,28 @@ public class HeartbeatProtocol implements Protocol {
     private final NetworkMetrics networkMetrics;
 
     /**
+     * Source of time
+     */
+    private final Time time;
+
+    /**
      * Constructor
      *
-     * @param otherId         ID of the peer
+     * @param peerId          ID of the peer
      * @param heartbeatPeriod The period (milliseconds) at which this protocol should execute
      * @param networkMetrics  Network metrics, for recording roundtrip heartbeat time
+     * @param time            Source of time
      */
     public HeartbeatProtocol(
-            final @NonNull NodeId otherId,
+            final @NonNull NodeId peerId,
             final @NonNull Duration heartbeatPeriod,
-            final @NonNull NetworkMetrics networkMetrics) {
+            final @NonNull NetworkMetrics networkMetrics,
+            final @NonNull Time time) {
 
-        this.otherId = ArgumentUtils.throwArgNull(otherId, "otherId");
-        this.heartbeatPeriod = ArgumentUtils.throwArgNull(heartbeatPeriod, "heartbeatPeriod");
-        this.networkMetrics = ArgumentUtils.throwArgNull(networkMetrics, "networkMetrics");
+        this.peerId = Objects.requireNonNull(peerId);
+        this.heartbeatPeriod = Objects.requireNonNull(heartbeatPeriod);
+        this.networkMetrics = Objects.requireNonNull(networkMetrics);
+        this.time = Objects.requireNonNull(time);
     }
 
     /**
@@ -77,7 +87,9 @@ public class HeartbeatProtocol implements Protocol {
      */
     @Override
     public boolean shouldInitiate() {
-        return Duration.between(lastHeartbeatTime, Instant.now()).compareTo(heartbeatPeriod) >= 0;
+        final Duration elapsed = Duration.between(lastHeartbeatTime, time.now());
+
+        return isGreaterThanOrEqualTo(elapsed, heartbeatPeriod);
     }
 
     /**
@@ -97,30 +109,52 @@ public class HeartbeatProtocol implements Protocol {
     }
 
     /**
-     * Reads a byte from the socket
+     * Send a heartbeat to the peer, and wait to receive the peer's heartbeat
      *
-     * @param connection the connection to read from
-     * @param startTime  the start time measurement for determining roundtrip time
-     * @throws IOException              if there is an error reading from the socket
-     * @throws NetworkProtocolException if the byte read is not a heartbeat or heartbeat ack
+     * @param connection the connection to the peer
+     * @return the nanosecond time at which we sent our heartbeat. this is the beginning measurement of the roundtrip
+     * time
+     * @throws IOException              if there is an error sending or receiving the heartbeat
+     * @throws NetworkProtocolException if the peer sends an unexpected message
      */
-    private void readByte(final @NonNull Connection connection, final long startTime)
-            throws IOException, NetworkProtocolException {
+    private long initiateHeartbeat(final @NonNull Connection connection) throws IOException, NetworkProtocolException {
+        connection.getDos().write(ByteConstants.HEARTBEAT);
+        connection.getDos().flush();
+
+        // begin measurement after flushing the output stream, so that write time isn't included in the measurement
+        final long startTime = time.nanoTime();
 
         final byte readByte = connection.getDis().readByte();
-
-        if (readByte == ByteConstants.HEARTBEAT) {
-            // if we received their heartbeat, immediately send an ack
-            connection.getDos().write(ByteConstants.HEARTBEAT_ACK);
-            connection.getDos().flush();
-        } else if (readByte == ByteConstants.HEARTBEAT_ACK) {
-            // the time from the measurement start to now represents the total roundtrip
-            networkMetrics.recordPingTime(otherId, System.nanoTime() - startTime);
-        } else {
-            throw new NetworkProtocolException(String.format(
-                    "received %02x but expected %02x or %02x (HEARTBEAT or HEARTBEAT_ACK)",
-                    readByte, ByteConstants.HEARTBEAT, ByteConstants.HEARTBEAT_ACK));
+        if (readByte != ByteConstants.HEARTBEAT) {
+            throw new NetworkProtocolException(
+                    String.format("received %02x but expected %02x (HEARTBEAT)", readByte, ByteConstants.HEARTBEAT));
         }
+
+        return startTime;
+    }
+
+    /**
+     * Send a heartbeat acknowledgement, and wait to receive the peer's heartbeat acknowledgement
+     *
+     * @param connection the connection to the peer
+     * @return the nanosecond time at which we received the peer's heartbeat acknowledgement. this is the end of the
+     * roundtrip measurement
+     * @throws IOException              if there is an error sending or receiving the heartbeat acknowledgement
+     * @throws NetworkProtocolException if the peer sends an unexpected message
+     */
+    private long acknowledgeHeartbeat(final @NonNull Connection connection)
+            throws IOException, NetworkProtocolException {
+
+        connection.getDos().write(ByteConstants.HEARTBEAT_ACK);
+        connection.getDos().flush();
+
+        final byte readByte = connection.getDis().readByte();
+        if (readByte != ByteConstants.HEARTBEAT_ACK) {
+            throw new NetworkProtocolException(String.format(
+                    "received %02x but expected %02x (HEARTBEAT_ACK)", readByte, ByteConstants.HEARTBEAT_ACK));
+        }
+
+        return time.nanoTime();
     }
 
     /**
@@ -132,16 +166,11 @@ public class HeartbeatProtocol implements Protocol {
 
         // record the time prior to executing the protocol, so that heartbeatPeriod represents a true period, as
         // opposed to a sleep time
-        lastHeartbeatTime = Instant.now();
+        lastHeartbeatTime = time.now();
 
-        connection.getDos().write(UnidirectionalProtocols.HEARTBEAT.getInitialByte());
-        connection.getDos().flush();
+        final long startTime = initiateHeartbeat(connection);
+        final long endTime = acknowledgeHeartbeat(connection);
 
-        // start time measurement after flushing the output stream, so that write time isn't included in the measurement
-        final long startTime = System.nanoTime();
-
-        // 2 bytes must be read from the socket: their initiation, and their ack
-        readByte(connection, startTime);
-        readByte(connection, startTime);
+        networkMetrics.recordPingTime(peerId, endTime - startTime);
     }
 }

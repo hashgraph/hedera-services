@@ -1700,7 +1700,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                     new HeartbeatProtocol(
                                             otherId,
                                             Duration.ofMillis(basicConfig.syncProtocolHeartbeatPeriod()),
-                                            networkMetrics),
+                                            networkMetrics,
+                                            time),
                                     new EmergencyReconnectProtocol(
                                             threadManager,
                                             notificationEngine,
