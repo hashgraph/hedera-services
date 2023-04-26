@@ -54,7 +54,7 @@ class SyncProtocolTests {
     private PeerAgnosticSyncChecks peerAgnosticSyncChecks;
     private Duration sleepAfterSync;
     private SyncMetrics syncMetrics;
-    private Time time = new FakeTime(); // TODO use
+    private FakeTime time;
 
     @BeforeEach
     void setup() {
@@ -65,6 +65,7 @@ class SyncProtocolTests {
         criticalQuorum = mock(CriticalQuorum.class);
         sleepAfterSync = Duration.ofMillis(0);
         syncMetrics = mock(SyncMetrics.class);
+        time = new FakeTime();
 
         // Set reasonable defaults. Special cases to be configured in individual tests
 
@@ -93,6 +94,45 @@ class SyncProtocolTests {
                 time);
 
         assertEquals(2, permitProvider.getNumAvailable());
+        assertTrue(protocol.shouldInitiate());
+        assertEquals(1, permitProvider.getNumAvailable());
+    }
+
+    @Test
+    @DisplayName("Protocol won't initiate connection if cooldown isn't complete")
+    void initiateCooldown() {
+        assertEquals(2, permitProvider.getNumAvailable());
+
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                permitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                Duration.ofMillis(100),
+                syncMetrics,
+                time);
+
+        // do an initial sync, so we can verify that the resulting cooldown period is respected
+        assertTrue(protocol.shouldInitiate());
+        assertEquals(1, permitProvider.getNumAvailable());
+        assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
+        assertEquals(2, permitProvider.getNumAvailable());
+
+        // no time has passed since the previous protocol
+        assertFalse(protocol.shouldInitiate());
+        assertEquals(2, permitProvider.getNumAvailable());
+
+        // tick part of the way through the cooldown period
+        time.tick(Duration.ofMillis(55));
+
+        assertFalse(protocol.shouldInitiate());
+        assertEquals(2, permitProvider.getNumAvailable());
+
+        // tick past the end of the cooldown period
+        time.tick(Duration.ofMillis(55));
+
         assertTrue(protocol.shouldInitiate());
         assertEquals(1, permitProvider.getNumAvailable());
     }
@@ -253,6 +293,45 @@ class SyncProtocolTests {
 
         assertTrue(protocol.shouldAccept());
         assertEquals(0, permitProvider.getNumAvailable());
+    }
+
+    @Test
+    @DisplayName("Protocol won't accept connection if cooldown isn't complete")
+    void acceptCooldown() {
+        assertEquals(2, permitProvider.getNumAvailable());
+
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                permitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                Duration.ofMillis(100),
+                syncMetrics,
+                time);
+
+        // do an initial sync, so we can verify that the resulting cooldown period is respected
+        assertTrue(protocol.shouldAccept());
+        assertEquals(1, permitProvider.getNumAvailable());
+        assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
+        assertEquals(2, permitProvider.getNumAvailable());
+
+        // no time has passed since the previous protocol
+        assertFalse(protocol.shouldAccept());
+        assertEquals(2, permitProvider.getNumAvailable());
+
+        // tick part of the way through the cooldown period
+        time.tick(Duration.ofMillis(55));
+
+        assertFalse(protocol.shouldAccept());
+        assertEquals(2, permitProvider.getNumAvailable());
+
+        // tick past the end of the cooldown period
+        time.tick(Duration.ofMillis(55));
+
+        assertTrue(protocol.shouldAccept());
+        assertEquals(1, permitProvider.getNumAvailable());
     }
 
     @Test
