@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.service.consensus.impl.handlers;
@@ -46,16 +45,16 @@ public class ConsensusHandlers {
             @NonNull final ConsensusGetTopicInfoHandler consensusGetTopicInfoHandler,
             @NonNull final ConsensusSubmitMessageHandler consensusSubmitMessageHandler,
             @NonNull final ConsensusUpdateTopicHandler consensusUpdateTopicHandler) {
-        this.consensusCreateTopicHandler = Objects.requireNonNull(consensusCreateTopicHandler,
-                "consensusCreateTopicHandler must not be null");
-        this.consensusDeleteTopicHandler = Objects.requireNonNull(consensusDeleteTopicHandler,
-                "consensusDeleteTopicHandler must not be null");
-        this.consensusGetTopicInfoHandler = Objects.requireNonNull(consensusGetTopicInfoHandler,
-                "consensusGetTopicInfoHandler must not be null");
-        this.consensusSubmitMessageHandler = Objects.requireNonNull(consensusSubmitMessageHandler,
-                "consensusSubmitMessageHandler must not be null");
-        this.consensusUpdateTopicHandler = Objects.requireNonNull(consensusUpdateTopicHandler,
-                "consensusUpdateTopicHandler must not be null");
+        this.consensusCreateTopicHandler =
+                Objects.requireNonNull(consensusCreateTopicHandler, "consensusCreateTopicHandler must not be null");
+        this.consensusDeleteTopicHandler =
+                Objects.requireNonNull(consensusDeleteTopicHandler, "consensusDeleteTopicHandler must not be null");
+        this.consensusGetTopicInfoHandler =
+                Objects.requireNonNull(consensusGetTopicInfoHandler, "consensusGetTopicInfoHandler must not be null");
+        this.consensusSubmitMessageHandler =
+                Objects.requireNonNull(consensusSubmitMessageHandler, "consensusSubmitMessageHandler must not be null");
+        this.consensusUpdateTopicHandler =
+                Objects.requireNonNull(consensusUpdateTopicHandler, "consensusUpdateTopicHandler must not be null");
     }
 
     /**

@@ -37,7 +37,7 @@ public interface ServiceModule {
     static UtilComponent provideUtilComponent() {
         return DaggerUtilComponent.create();
     }
-    
+
     @Provides
     @Singleton
     static FileComponent provideFileComponent() {
