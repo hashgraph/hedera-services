@@ -59,7 +59,6 @@ module com.swirlds.platform {
     exports com.swirlds.platform.threading;
     exports com.swirlds.platform.util;
 
-
     /* Targeted Exports to External Libraries */
     exports com.swirlds.platform.event to
             com.swirlds.platform.test,
