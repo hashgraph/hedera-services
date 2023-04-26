@@ -42,6 +42,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -71,9 +72,11 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -273,6 +276,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 // one of the HAPI-style transfer precompiles
                 if (!senderHasSignedOrIsMsgSenderInFrame && !topLevelSigsAreEnabled && canFallbackToApprovals) {
                     change.switchToApproved();
+                    updateBodyForAutoApprovalOf(transactionBody.getCryptoTransferBuilder(), change);
                     continue;
                 } else {
                     validateTrue(
@@ -361,6 +365,77 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var hbarOnly = transferOp.transferWrapper().hbarTransfers().size();
         impliedTransfers = impliedTransfersMarshal.assessCustomFeesAndValidate(
                 hbarOnly, 0, numLazyCreates, explicitChanges, NO_ALIASES, impliedTransfersMarshal.currentProps());
+    }
+
+    @VisibleForTesting
+    static void updateBodyForAutoApprovalOf(
+            final CryptoTransferTransactionBody.Builder opBuilder, final BalanceChange switchedChange) {
+        if (switchedChange.isForHbar()) {
+            updateBodyForAutoApprovalOfHbar(opBuilder, switchedChange);
+        } else {
+            updateBodyForAutoApprovalOfToken(opBuilder, switchedChange);
+        }
+    }
+
+    private static void updateBodyForAutoApprovalOfHbar(
+            final CryptoTransferTransactionBody.Builder opBuilder, final BalanceChange switchedChange) {
+        final var transfersBuilder = opBuilder.getTransfersBuilder();
+        for (int i = 0, n = transfersBuilder.getAccountAmountsCount(); i < n; i++) {
+            final var hbarAdjust = transfersBuilder.getAccountAmountsBuilder(i);
+            if (hbarAdjust.getAccountID().equals(switchedChange.accountId())) {
+                hbarAdjust.setIsApproval(true);
+                return;
+            }
+        }
+    }
+
+    private static void updateBodyForAutoApprovalOfToken(
+            final CryptoTransferTransactionBody.Builder opBuilder, final BalanceChange switchedChange) {
+        for (int i = 0, n = opBuilder.getTokenTransfersCount(); i < n; i++) {
+            final var tokenTransfers = opBuilder.getTokenTransfers(i);
+            if (tokenTransfers.getToken().equals(switchedChange.tokenId())) {
+                if (switchedChange.isForNft()) {
+                    updateBodyForAutoApprovalOfNonFungible(opBuilder, tokenTransfers, switchedChange, i);
+                } else {
+                    updateBodyForAutoApprovalOfFungible(opBuilder, tokenTransfers, switchedChange, i);
+                }
+            }
+        }
+    }
+
+    private static void updateBodyForAutoApprovalOfFungible(
+            final CryptoTransferTransactionBody.Builder opBuilder,
+            final TokenTransferList tokenTransfers,
+            final BalanceChange switchedChange,
+            final int tokenTransfersIndex) {
+        for (int j = 0, m = tokenTransfers.getTransfersCount(); j < m; j++) {
+            final var adjust = tokenTransfers.getTransfers(j);
+            if (adjust.getAccountID().equals(switchedChange.accountId())) {
+                opBuilder
+                        .getTokenTransfersBuilder(tokenTransfersIndex)
+                        .getTransfersBuilder(j)
+                        .setIsApproval(true);
+                break;
+            }
+        }
+    }
+
+    private static void updateBodyForAutoApprovalOfNonFungible(
+            final CryptoTransferTransactionBody.Builder opBuilder,
+            final TokenTransferList tokenTransfers,
+            final BalanceChange switchedChange,
+            final int tokenTransfersIndex) {
+        for (int j = 0, m = tokenTransfers.getNftTransfersCount(); j < m; j++) {
+            final var change = tokenTransfers.getNftTransfers(j);
+            if (change.getSenderAccountID().equals(switchedChange.accountId())
+                    && change.getSerialNumber() == switchedChange.serialNo()) {
+                opBuilder
+                        .getTokenTransfersBuilder(tokenTransfersIndex)
+                        .getNftTransfersBuilder(j)
+                        .setIsApproval(true);
+                break;
+            }
+        }
     }
 
     @Override
