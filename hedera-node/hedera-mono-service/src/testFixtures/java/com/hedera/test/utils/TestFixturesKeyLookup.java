@@ -19,14 +19,14 @@ package com.hedera.test.utils;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class TestFixturesKeyLookup implements AccountAccess {
+public class TestFixturesKeyLookup implements ReadableAccountStore {
     private final ReadableKVState<String, Long> aliases;
     private final ReadableKVState<EntityNumVirtualKey, Account> accounts;
 

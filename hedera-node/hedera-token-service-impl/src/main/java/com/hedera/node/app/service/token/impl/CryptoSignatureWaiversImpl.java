@@ -24,13 +24,18 @@ import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
- * A Singleton implementation of signature waivers needed for transactions in {@link TokenService}.
- * NOTE: FUTURE - These will be implemented in the coming PR and this class should be a singleton.
+ * A Singleton implementation of signature waivers needed for transactions in {@link TokenService}. NOTE: FUTURE - These
+ * will be implemented in the coming PR and this class should be a singleton.
  */
+@Singleton
 public class CryptoSignatureWaiversImpl implements CryptoSignatureWaivers {
+
+    @Inject
     public CryptoSignatureWaiversImpl(@NonNull final HederaAccountNumbers accountNumbers) {
         requireNonNull(accountNumbers);
     }
