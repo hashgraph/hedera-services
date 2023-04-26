@@ -203,7 +203,7 @@ public class EndOfStakingPeriodCalculator {
     }
 
     /**
-     * Scales up the weight of the node to the range [minStake, maxStake] from the consensus weight range [0, 500].
+     * Scales up the weight of the node to the range [minStake, maxSTakeOfAllNodes] from the consensus weight range [0, 500].
      * @param weight weight of the node
      * @param minStake min stake of the node
      * @param maxStakeOfAllNodes real max stake of all nodes computed by taking max(stakeOfNode1, stakeOfNode2, ...)
