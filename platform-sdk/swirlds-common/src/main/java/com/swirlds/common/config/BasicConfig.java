@@ -267,6 +267,6 @@ public record BasicConfig(
         @ConfigProperty(value = "syncAsProtocolEnabled", defaultValue = "true") boolean syncAsProtocolEnabled,
         @ConfigProperty(value = "syncSleepAfterFailedNegotiation", defaultValue = "25")
                 int syncSleepAfterFailedNegotiation,
-        @ConfigProperty(value = "syncProtocolPermitCount", defaultValue = "5") int syncProtocolPermitCount,
+        @ConfigProperty(value = "syncProtocolPermitCount", defaultValue = "9") int syncProtocolPermitCount,
         @ConfigProperty(value = "syncProtocolHeartbeatPeriod", defaultValue = "1000") int syncProtocolHeartbeatPeriod,
         @ConfigProperty(value = "hangingThreadDuration", defaultValue = "60s") Duration hangingThreadDuration) {}
