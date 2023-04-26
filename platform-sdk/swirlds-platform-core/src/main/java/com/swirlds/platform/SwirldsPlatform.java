@@ -1647,10 +1647,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param connectionManagers the constructed connection managers
      */
     private void startSyncAsProtocolNetwork(@NonNull final StaticConnectionManagers connectionManagers) {
-        final Duration hangingThreadDuration = platformContext
-                .getConfiguration()
-                .getConfigData(BasicConfig.class)
-                .hangingThreadDuration();
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+
+        final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
         // if this is a single node network, start dedicated thread to "sync" and create events
         if (initialAddressBook.getSize() == 1) {
@@ -1680,8 +1679,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
                 () -> !gossipHalted.get(), () -> intakeQueue.size() < settings.getEventIntakeQueueThrottleSize()));
-
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
