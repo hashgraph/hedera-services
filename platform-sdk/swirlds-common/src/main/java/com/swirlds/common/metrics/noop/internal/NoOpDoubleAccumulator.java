@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.DoubleGauge;
+import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.MetricConfig;
 
 /**
- * A no-op implementation of a double gauge.
+ * A no-op double accumulator.
  */
-public class NoOpDoubleGauge extends AbstractNoOpMetric implements DoubleGauge {
+public class NoOpDoubleAccumulator extends AbstractNoOpMetric implements DoubleAccumulator {
 
-    public NoOpDoubleGauge(final MetricConfig<?, ?> config) {
+    public NoOpDoubleAccumulator(final MetricConfig<?, ?> config) {
         super(config);
     }
 
@@ -40,5 +40,13 @@ public class NoOpDoubleGauge extends AbstractNoOpMetric implements DoubleGauge {
      * {@inheritDoc}
      */
     @Override
-    public void set(final double newValue) {}
+    public double getInitialValue() {
+        return 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void update(final double other) {}
 }

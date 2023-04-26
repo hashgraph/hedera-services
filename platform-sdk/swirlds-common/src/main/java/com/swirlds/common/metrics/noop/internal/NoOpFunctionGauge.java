@@ -14,31 +14,39 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.LongGauge;
+import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.MetricConfig;
 
 /**
- * A no-op implementation of a long gauge.
+ * A no-op implementation of a function gauge.
+ *
+ * @param <T>
+ * 		the type of the function gauge
  */
-public class NoOpLongGauge extends AbstractNoOpMetric implements LongGauge {
+public class NoOpFunctionGauge<T> extends AbstractNoOpMetric implements FunctionGauge<T> {
 
-    public NoOpLongGauge(final MetricConfig<?, ?> config) {
+    private final T value;
+
+    public NoOpFunctionGauge(final MetricConfig<?, ?> config, final T value) {
         super(config);
+        this.value = value;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public long get() {
-        return 0;
+    public T get() {
+        return value;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void set(final long newValue) {}
+    public DataType getDataType() {
+        return DataType.INT;
+    }
 }

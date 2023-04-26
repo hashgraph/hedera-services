@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.LongAccumulator;
+import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.MetricConfig;
 
 /**
- * A no-op implementation of a long accumulator.
+ * A no-op implementation of an integer gauge.
  */
-public class NoOpLongAccumulator extends AbstractNoOpMetric implements LongAccumulator {
+public class NoOpIntegerGauge extends AbstractNoOpMetric implements IntegerGauge {
 
-    public NoOpLongAccumulator(final MetricConfig<?, ?> config) {
+    public NoOpIntegerGauge(final MetricConfig<?, ?> config) {
         super(config);
     }
 
@@ -32,7 +32,7 @@ public class NoOpLongAccumulator extends AbstractNoOpMetric implements LongAccum
      * {@inheritDoc}
      */
     @Override
-    public long get() {
+    public int get() {
         return 0;
     }
 
@@ -40,13 +40,5 @@ public class NoOpLongAccumulator extends AbstractNoOpMetric implements LongAccum
      * {@inheritDoc}
      */
     @Override
-    public long getInitialValue() {
-        return 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void update(final long other) {}
+    public void set(final int newValue) {}
 }

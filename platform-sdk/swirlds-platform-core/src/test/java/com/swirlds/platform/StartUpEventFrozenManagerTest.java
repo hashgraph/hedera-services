@@ -28,7 +28,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.test.metrics.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
