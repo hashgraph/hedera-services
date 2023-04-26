@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.crypto.staking;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -660,7 +661,7 @@ public class StakingSuite extends HapiSuite {
     }
 
     private HapiSpec endOfStakingPeriodRecTest() {
-        return defaultHapiSpec("EndOfStakingPeriodRecTest")
+        return onlyDefaultHapiSpec("EndOfStakingPeriodRecTest")
                 .given(
                         cryptoCreate("a1").balance(24000 * ONE_MILLION_HBARS).stakedNodeId(0),
                         cryptoCreate("a2").balance(2000 * ONE_MILLION_HBARS).stakedNodeId(0),
