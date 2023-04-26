@@ -1,4 +1,4 @@
-module com.hedera.node.app.spi.fixtures {
+open module com.hedera.node.app.spi.fixtures {
     exports com.hedera.node.app.spi.fixtures;
     exports com.hedera.node.app.spi.fixtures.state;
     exports com.hedera.node.app.spi.fixtures.workflows;
@@ -17,8 +17,4 @@ module com.hedera.node.app.spi.fixtures {
     requires com.hedera.node.app.service.token;
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
-
-    opens com.hedera.node.app.spi.fixtures.util to
-            org.junit.platform.commons,
-            org.mockito;
 }

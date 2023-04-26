@@ -147,6 +147,8 @@ public class FreezeUpgradeActions {
         final var artifactsLoc = adminServiceConfig.upgradeArtifactsPath();
         requireNonNull(artifactsLoc);
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
+        // we spin off a separate thread to avoid blocking handleTransaction
+        // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
         return runAsync(() -> {
             try {
                 FileUtils.cleanDirectory(new File(artifactsLoc));
@@ -155,6 +157,9 @@ public class FreezeUpgradeActions {
                 log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
                 writeSecondMarker(marker, now);
             } catch (final IOException e) {
+                // catch and log instead of throwing because upgrade process looks at the presence or absence
+                // of marker files to determine whether to proceed with the upgrade
+                // if second marker is present, that means the zip file was successfully extracted
                 log.error("Failed to unzip archive for NMT consumption", e);
                 log.error(MANUAL_REMEDIATION_ALERT);
             }
