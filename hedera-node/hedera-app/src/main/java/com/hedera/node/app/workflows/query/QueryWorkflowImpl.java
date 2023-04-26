@@ -175,6 +175,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
                 // 4.v Check account balances
                 queryChecker.validateAccountBalances(payer, transactionInfo, fee);
+
+                // 4.vi Submit payment to platform
+                final var txBytes = PbjConverter.asWrappedBytes(Transaction.PROTOBUF, allegedPayment);
+                submissionManager.submit(txBody, txBytes);
             } else {
                 if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
                     throw new PreCheckException(NOT_SUPPORTED);
@@ -185,14 +189,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             final var context = new QueryContextImpl(storeFactory, query);
             handler.validate(context);
 
-            // 6. Submit payment to platform
-            if (paymentRequired) {
-                final var txBytes = PbjConverter.asWrappedBytes(Transaction.PROTOBUF, allegedPayment);
-                submissionManager.submit(txBody, txBytes);
-            }
-
             if (handler.needsAnswerOnlyCost(responseType)) {
-                // 7.i Estimate costs
+                // 6.i Estimate costs
                 final var feeData =
                         feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
                 fee = feeData.totalFee();
@@ -200,7 +198,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 final var header = createResponseHeader(responseType, OK, fee);
                 response = handler.createEmptyResponse(header);
             } else {
-                // 7.ii Find response
+                // 6.ii Find response
                 final var header = createResponseHeader(responseType, OK, fee);
                 response = handler.findResponse(context, header);
             }
