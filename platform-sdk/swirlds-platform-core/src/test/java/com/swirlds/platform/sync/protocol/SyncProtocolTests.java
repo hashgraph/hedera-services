@@ -27,7 +27,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.metrics.SyncMetrics;
