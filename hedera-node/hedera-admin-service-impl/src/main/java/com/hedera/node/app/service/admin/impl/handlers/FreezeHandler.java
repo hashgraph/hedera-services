@@ -144,23 +144,21 @@ public class FreezeHandler implements TransactionHandler {
             case PREPARE_UPGRADE -> {
                 requireNonNull(updateFileNum);
                 final Optional<byte[]> updateFileZip = specialFileStore.get(updateFileNum.fileNum());
-                if (updateFileZip.isEmpty())
-                    throw new IllegalStateException("Update file not found");
+                if (updateFileZip.isEmpty()) throw new IllegalStateException("Update file not found");
                 upgradeActions.extractSoftwareUpgrade(updateFileZip.get());
             }
-            // TODO:      networkCtx.recordPreparedUpgrade(freezeTxn);
+                // TODO:      networkCtx.recordPreparedUpgrade(freezeTxn);
             case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(freezeStartTimeInstant);
             case FREEZE_ABORT -> upgradeActions.abortScheduledFreeze();
 
-            // TODO:       networkCtx.discardPreparedUpgradeMeta();
+                // TODO:       networkCtx.discardPreparedUpgradeMeta();
             case TELEMETRY_UPGRADE -> {
                 requireNonNull(updateFileNum);
                 final Optional<byte[]> telemetryUpdateZip = specialFileStore.get(updateFileNum.fileNum());
-                if (telemetryUpdateZip.isEmpty())
-                    throw new IllegalStateException("Telemetry update file not found");
+                if (telemetryUpdateZip.isEmpty()) throw new IllegalStateException("Telemetry update file not found");
                 upgradeActions.extractTelemetryUpgrade(telemetryUpdateZip.get(), freezeStartTimeInstant);
             }
-            // case FREEZE_ONLY is default
+                // case FREEZE_ONLY is default
             default -> upgradeActions.scheduleFreezeOnlyAt(freezeStartTimeInstant);
         }
     }
