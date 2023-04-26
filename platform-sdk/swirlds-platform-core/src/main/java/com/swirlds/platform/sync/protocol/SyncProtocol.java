@@ -17,11 +17,13 @@
 package com.swirlds.platform.sync.protocol;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
+import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
+import com.swirlds.common.time.Time;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.components.CriticalQuorum;
@@ -36,6 +38,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Executes the sync protocol where events are exchanged with a peer and all events are sent and received in topological
@@ -95,6 +98,11 @@ public class SyncProtocol implements Protocol {
     private final Duration sleepAfterSync;
 
     /**
+     * A source of time
+     */
+    private final Time time;
+
+    /**
      * Constructs a new sync protocol
      *
      * @param peerId                 the id of the peer being synced with in this protocol
@@ -105,6 +113,7 @@ public class SyncProtocol implements Protocol {
      * @param peerAgnosticSyncChecks peer agnostic checks to determine whether this node should sync
      * @param sleepAfterSync         the amount of time to sleep after a sync
      * @param syncMetrics            metrics tracking syncing
+     * @param time                   a source of time
      */
     public SyncProtocol(
             @NonNull final NodeId peerId,
@@ -114,16 +123,18 @@ public class SyncProtocol implements Protocol {
             @NonNull final CriticalQuorum criticalQuorum,
             @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
             @NonNull final Duration sleepAfterSync,
-            @NonNull final SyncMetrics syncMetrics) {
+            @NonNull final SyncMetrics syncMetrics,
+            @NonNull final Time time) {
 
-        this.peerId = throwArgNull(peerId, "peerId");
-        this.synchronizer = throwArgNull(synchronizer, "synchronizer");
-        this.fallenBehindManager = throwArgNull(fallenBehindManager, "fallenBehindManager");
-        this.permitProvider = throwArgNull(permitProvider, "permitProvider");
-        this.criticalQuorum = throwArgNull(criticalQuorum, "criticalQuorum");
-        this.peerAgnosticSyncChecks = throwArgNull(peerAgnosticSyncChecks, "peerAgnosticSyncCheck");
-        this.sleepAfterSync = throwArgNull(sleepAfterSync, "sleepAfterSync");
-        this.syncMetrics = throwArgNull(syncMetrics, "syncMetrics");
+        this.peerId = Objects.requireNonNull(peerId);
+        this.synchronizer = Objects.requireNonNull(synchronizer);
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
+        this.permitProvider = Objects.requireNonNull(permitProvider);
+        this.criticalQuorum = Objects.requireNonNull(criticalQuorum);
+        this.peerAgnosticSyncChecks = Objects.requireNonNull(peerAgnosticSyncChecks);
+        this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
+        this.syncMetrics = Objects.requireNonNull(syncMetrics);
+        this.time = Objects.requireNonNull(time);
     }
 
     /**
@@ -141,7 +152,9 @@ public class SyncProtocol implements Protocol {
      * @return true if the cooldown period after a sync has elapsed, else false
      */
     private boolean syncCooldownComplete() {
-        return Duration.between(lastSyncTime, Instant.now()).compareTo(sleepAfterSync) > 0;
+        final Duration elapsed = Duration.between(lastSyncTime, time.now());
+
+        return isGreaterThanOrEqualTo(elapsed, sleepAfterSync);
     }
 
     /**
@@ -266,7 +279,7 @@ public class SyncProtocol implements Protocol {
         } finally {
             closePermit();
 
-            lastSyncTime = Instant.now();
+            lastSyncTime = time.now();
         }
     }
 }

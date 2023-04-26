@@ -1732,7 +1732,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             criticalQuorum,
                                             peerAgnosticSyncChecks,
                                             Duration.ofMillis(getSleepAfterSync()),
-                                            syncMetrics)))))
+                                            syncMetrics,
+                                            time)))))
                     .build(true));
         }
     }
