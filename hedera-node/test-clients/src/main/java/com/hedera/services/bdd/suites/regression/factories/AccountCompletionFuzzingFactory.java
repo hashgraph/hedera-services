@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression.factories;
 
+import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -31,6 +32,7 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.TransferToRandomEVMAddress;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomContractCallSignedBy;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomContractCreateSignedBy;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount;
@@ -67,6 +69,9 @@ public class AccountCompletionFuzzingFactory {
             cryptoCreate(CRYPTO_TRANSFER_RECEIVER)
                     .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
                     .withRecharging(),
+            cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+                    .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
+                    .withRecharging(),
             uploadInitCode(CONTRACT),
             cryptoCreate(TOKEN_TREASURY).balance(0L),
             tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY),
@@ -99,11 +104,7 @@ public class AccountCompletionFuzzingFactory {
                                     .ceiling(intPropOrElse(
                                             "randomAccount.ceilingNum", RandomAccount.DEFAULT_CEILING_NUM, props)),
                             intPropOrElse("randomKey.bias", 0, props))
-                    .withOp(
-                            new RandomHollowAccount(spec.registry(), keys, accounts)
-                                    .ceiling(intPropOrElse(
-                                            "randomAccount.ceilingNum", RandomAccount.DEFAULT_CEILING_NUM, props)),
-                            intPropOrElse("randomAccount.bias", 0, props))
+                    .withOp(new TransferToRandomEVMAddress(keys), intPropOrElse("randomAccount.bias", 0, props))
                     .withOp(
                             new RandomTransferSignedBy(spec.registry(), accounts),
                             intPropOrElse("randomTransfer.bias", 0, props))
