@@ -31,6 +31,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.system.InitTrigger;
@@ -42,7 +43,6 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateNotification;
 import com.swirlds.common.utility.CompareTo;
-import com.swirlds.common.utility.NoOpMetricsBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.internal.EventImpl;
@@ -126,8 +126,8 @@ public final class EventRecoveryWorkflow {
 
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
 
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, NoOpMetricsBuilder.buildNoOpMetrics(), CryptographyHolder.get());
+        final PlatformContext platformContext =
+                new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 
         final ReservedSignedState initialState = SignedStateFileReader.readStateFile(platformContext, signedStateFile)
                 .reservedSignedState();

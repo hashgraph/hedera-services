@@ -25,13 +25,13 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.common.utility.NoOpMetricsBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -70,7 +70,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
 
         crypto = initNodeSecurity(addressBook, configuration)[(int) selfId];
 
-        final Metrics metrics = NoOpMetricsBuilder.buildNoOpMetrics();
+        final Metrics metrics = new NoOpMetrics();
 
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,62 +14,67 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
 
-import static com.swirlds.common.metrics.Metric.DataType.INT;
-
-import com.swirlds.common.metrics.MetricConfig;
-import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.statistics.StatsBuffered;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import com.swirlds.common.statistics.internal.StatsBuffer;
 
 /**
- * A no-op implementation of a stat entry.
+ * A no-op implementation of {@link StatsBuffered}.
  */
-public class NoOpStatEntry extends AbstractNoOpMetric implements StatEntry {
+public class NoOpStatsBuffered implements StatsBuffered {
 
-    public NoOpStatEntry(final MetricConfig<?, ?> config) {
-        super(config);
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public StatsBuffer getAllHistory() {
+        return new StatsBuffer(0, 0, 0);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public DataType getDataType() {
-        return INT;
+    public StatsBuffer getRecentHistory() {
+        return new StatsBuffer(0, 0, 0);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public StatsBuffered getBuffered() {
-        return new NoOpStatsBuffered();
+    public void reset(final double halflife) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public double getMean() {
+        return 0;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Consumer<Double> getReset() {
-        return x -> {};
+    public double getMax() {
+        return 0;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Supplier<Object> getStatsStringSupplier() {
-        return () -> "";
+    public double getMin() {
+        return 0;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Supplier<Object> getResetStatsStringSupplier() {
-        return () -> "";
+    public double getStdDev() {
+        return 0;
     }
 }

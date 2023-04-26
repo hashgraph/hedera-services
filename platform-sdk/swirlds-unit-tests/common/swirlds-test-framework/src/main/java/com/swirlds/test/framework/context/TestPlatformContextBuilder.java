@@ -22,7 +22,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.utility.NoOpMetricsBuilder;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -32,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public final class TestPlatformContextBuilder {
 
-    private static final Metrics defaultMetrics = NoOpMetricsBuilder.buildNoOpMetrics();
+    private static final Metrics defaultMetrics = new NoOpMetrics();
     private static final Configuration defaultConfig =
             scanAndRegisterAllConfigTypes(ConfigurationBuilder.create()).build();
     private static final Cryptography defaultCryptography = CryptographyHolder.get();
