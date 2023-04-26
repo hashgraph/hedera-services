@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerAndOthers;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerOnly;
@@ -23,7 +24,6 @@ import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.noneAva
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
@@ -37,13 +37,16 @@ import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.commons.codec.DecoderException;
 
 @Singleton
@@ -70,27 +73,31 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
             final var accessor = PlatformTxnAccessor.from(platformTxn.getContents());
 
             // To work with the mono-service, we have to turn all the sigs BACK into TransactionSignatures
-            final var results = metadata.signatureResults().get(3, TimeUnit.MINUTES);
             final var cryptoSignatures = new ArrayList<TransactionSignature>();
-            cryptoSignatures.addAll(((SignatureVerificationImpl) results.getPayerSignatureVerification()).txSigs());
-            cryptoSignatures.addAll(getTransactionSignatures(results.getNonPayerSignatureVerifications()));
-            cryptoSignatures.addAll(getTransactionSignatures(results.getHollowAccountSignatureVerifications()));
+            // Add the TransactionSignature for the payer
+            final var payerVerificationFuture = metadata.payerVerification();
+            final var payerVerification = payerVerificationFuture == null ? null : payerVerificationFuture.get(3, TimeUnit.MINUTES);
+            final var payerTxSigs = payerVerification == null ? null : ((SignatureVerificationImpl) payerVerification).txSigs();
+            cryptoSignatures.addAll(payerTxSigs);
+
+            // Add the TransactionSignatures for the non-payers
+            cryptoSignatures.addAll(extract(metadata.nonPayerVerifications()));
+            // Add the TransactionSignatures for the non-payer hollow accounts
+            cryptoSignatures.addAll(extract(metadata.nonPayerHollowVerifications()));
 
             accessor.addAllCryptoSigs(cryptoSignatures);
-            final var preHandleStatus = metadata.status();
-            final var payerKey =
-                    mapToJKey(results.getPayerSignatureVerification().key());
+            final var preHandleResponseCode = metadata.responseCode();
+            final var payerKey = payerVerification == null ? null : mapToJKey(payerVerification.key());
             if (payerKey != null) {
-                if (preHandleStatus != ResponseCodeEnum.OK) {
+                if (preHandleResponseCode != OK) {
                     accessor.setSigMeta(forPayerOnly(payerKey, cryptoSignatures, accessor));
                 } else {
+                    final List<JKey> otherPayerKeys = metadata.nonPayerVerifications() == null
+                            ? Collections.emptyList()
+                            : metadata.nonPayerVerifications().keySet().stream().map(this::mapToJKey).toList();
                     accessor.setSigMeta(forPayerAndOthers(
                             payerKey,
-                            results.getNonPayerSignatureVerifications().stream()
-                                    .map(SignatureVerification::key)
-                                    .filter(Objects::nonNull)
-                                    .map(this::mapToJKey)
-                                    .toList(),
+                            otherPayerKeys,
                             cryptoSignatures,
                             accessor));
                 }
@@ -98,7 +105,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
                 accessor.setSigMeta(noneAvailable());
             }
             // Prevent the mono-service workflow from rationalizing sigs
-            accessor.setExpandedSigStatus(fromPbj(preHandleStatus));
+            accessor.setExpandedSigStatus(fromPbj(preHandleResponseCode));
             accessor.setLinkedRefs(new LinkedRefs());
             return accessor;
         } catch (final InvalidProtocolBufferException e) {
@@ -112,9 +119,17 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
         }
     }
 
-    private List<TransactionSignature> getTransactionSignatures(List<SignatureVerification> verification) {
-        return verification.stream()
-                .map(v -> ((SignatureVerificationImpl) v).txSigs())
+    private List<TransactionSignature> extract(@Nullable final Map<?, Future<SignatureVerification>> map) {
+        if (map == null) return Collections.emptyList();
+        return map.values().stream()
+                .map(future -> {
+                    try {
+                        return future.get(3, TimeUnit.MINUTES);
+                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).map(SignatureVerificationImpl.class::cast)
+                .map(SignatureVerificationImpl::txSigs)
                 .flatMap(List::stream)
                 .toList();
     }

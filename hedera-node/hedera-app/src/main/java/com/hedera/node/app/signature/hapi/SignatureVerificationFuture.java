@@ -39,7 +39,7 @@ import java.util.concurrent.TimeoutException;
  * A {@link Future} that waits on a {@link List} of {@link TransactionSignature}s to complete signature checks, and
  * yields a {@link SignatureVerification}.
  */
-public class SignatureVerificationFuture implements Future<SignatureVerification> {
+class SignatureVerificationFuture implements Future<SignatureVerification> {
     /**
      * The Key we verified. This will *never* be null, because we would not have attempted signature verification
      * without having a key. If an EVM address was used, we would have already extracted the key, so it can be

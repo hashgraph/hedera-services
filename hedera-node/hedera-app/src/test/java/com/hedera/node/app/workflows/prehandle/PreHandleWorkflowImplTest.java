@@ -174,7 +174,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
             // Then we get a failure with INVALID_TRANSACTION
             final PreHandleResult result = platformTx.getMetadata();
-            assertThat(result.status()).isEqualTo(INVALID_TRANSACTION);
+            assertThat(result.responseCode()).isEqualTo(INVALID_TRANSACTION);
             assertThat(result.payer()).isEqualTo(NODE_1.nodeAccountID());
         }
 
@@ -196,7 +196,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
             // The throwable is caught, and we get an UNKNOWN status code
             final PreHandleResult result = platformTx.getMetadata();
-            assertThat(result.status()).isEqualTo(UNKNOWN);
+            assertThat(result.responseCode()).isEqualTo(UNKNOWN);
             assertThat(result.payer()).isNull();
         }
 
@@ -298,7 +298,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         //
         //            // Then the transaction failure is INVALID_ACCOUNT_AMOUNTS and the payer is the payer
         //            final PreHandleResult result = platformTx.getMetadata();
-        //            assertThat(result.status()).isEqualTo(INVALID_ACCOUNT_AMOUNTS);
+        //            assertThat(result.responseCode()).isEqualTo(INVALID_ACCOUNT_AMOUNTS);
         //            assertThat(result.payer()).isEqualTo(ALICE.accountID());
         //        }
 
@@ -327,7 +327,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         //            // Then the transaction failure is UNKNOWN and the payer is null. There can be no payer in this
         // case.
         //            final PreHandleResult result = platformTx.getMetadata();
-        //            assertThat(result.status()).isEqualTo(UNKNOWN);
+        //            assertThat(result.responseCode()).isEqualTo(UNKNOWN);
         //            assertThat(result.payer()).isNull();
         //        }
 
@@ -363,7 +363,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         //
         //            // Then the transaction succeeds, and the payer sig check succeeds, but the other checks fail
         //            final PreHandleResult result = platformTx.getMetadata();
-        //            assertThat(result.status()).isEqualTo(OK);
+        //            assertThat(result.responseCode()).isEqualTo(OK);
         //            assertThat(result.payer()).isEqualTo(ALICE.accountID());
         //            assertThat(result.payerSignatureVerification())
         //                    .succeedsWithin(1, TimeUnit.MILLISECONDS)
@@ -399,7 +399,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         //            // Then the transaction pre-handle succeeds!
         //            final PreHandleResult result = platformTx.getMetadata();
         //            assertThat(result.failed()).isFalse();
-        //            assertThat(result.status()).isEqualTo(OK);
+        //            assertThat(result.responseCode()).isEqualTo(OK);
         //            assertThat(result.payer()).isEqualTo(ALICE.accountID());
         //            assertThat(result.payerSignatureVerification())
         //                    .succeedsWithin(1, TimeUnit.MILLISECONDS)

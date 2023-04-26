@@ -18,16 +18,17 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.preHandleFailure;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFailure;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.signature.hapi.TransactionSignaturesVerified;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -41,6 +42,7 @@ import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -227,25 +229,23 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // 6. Collect additional TransactionSignatures
         final var nonPayerKeys = context.requiredNonPayerKeys();
-        final var nonPayerFutures = new ArrayList<Future<SignatureVerification>>();
+        final var nonPayerFutures = new HashMap<Key, Future<SignatureVerification>>();
         for (final var key : nonPayerKeys) {
             final var future = signatureVerifier.verify(
                     key, txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow());
-            nonPayerFutures.add(future);
+            nonPayerFutures.put(key, future);
         }
 
-        final var nonPayerHollowFutures = new ArrayList<Future<SignatureVerification>>();
+        final var nonPayerHollowFutures = new HashMap<Long, Future<SignatureVerification>>();
         final var nonPayerHollowAccounts = context.requiredHollowAccounts();
         for (final var hollowAccount : nonPayerHollowAccounts) {
             final var future = signatureVerifier.verify(
                     hollowAccount, txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow());
-            nonPayerHollowFutures.add(future);
+            nonPayerHollowFutures.put(hollowAccount.accountNumber(), future);
         }
 
         // 7. Create and return TransactionMetadata
-        final var resultsFuture =
-                new TransactionSignaturesVerified(payerVerificationFuture, nonPayerFutures, nonPayerHollowFutures);
-        return new PreHandleResult(payer, OK, txInfo, resultsFuture, null);
+        return new PreHandleResult(payer, SO_FAR_SO_GOOD, OK, txInfo, payerVerificationFuture, nonPayerFutures, nonPayerHollowFutures, null);
     }
 
     /** A platform transaction and the future that produces its {@link PreHandleResult} */
