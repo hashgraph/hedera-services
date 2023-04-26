@@ -27,7 +27,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.ReadableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.WritableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.config.AdminServiceConfig;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -62,12 +62,11 @@ public class FreezeHandler implements TransactionHandler {
      *     passed to {@code handle()}
      * @see <a href="https://hashgraph.github.io/hedera-protobufs/#freeze.proto">Protobuf freeze documentation</a>
      */
+    @Override
     @SuppressWarnings("java:S1874") // disable the warnings for use of deprecated code
     // it is necessary to check getStartHour, getStartMin, getEndHour, getEndMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
-    public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore)
-            throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
 
         FreezeTransactionBody freezeTxn = context.body().freeze();
@@ -85,6 +84,7 @@ public class FreezeHandler implements TransactionHandler {
         final FreezeType freezeType = freezeTxn.freezeType();
         final var txValidStart = context.body().transactionID().transactionValidStart();
         requireNonNull(txValidStart);
+        final ReadableSpecialFileStore specialFileStore = context.createStore(ReadableSpecialFileStore.class);
         switch (freezeType) {
                 // default value for freezeType is UNKNOWN_FREEZE_TYPE
                 // reject any freeze transactions that do not set freezeType or set it to UNKNOWN_FREEZE_TYPE

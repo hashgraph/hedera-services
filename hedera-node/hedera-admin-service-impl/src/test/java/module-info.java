@@ -10,6 +10,7 @@ module com.hedera.node.app.service.admin.impl.test {
     requires com.swirlds.fcqueue;
     requires com.google.protobuf;
     requires com.hedera.node.app.spi.fixtures;
+    requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.service.mono.testFixtures;
     requires com.swirlds.platform;
     requires static com.github.spotbugs.annotations;

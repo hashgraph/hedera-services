@@ -49,6 +49,7 @@ import com.hedera.node.app.service.mono.store.StoresModule;
 import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
+import com.hedera.node.app.service.token.impl.components.TokenServiceModule;
 import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.solvency.SolvencyModule;
 import com.hedera.node.app.state.HederaStateModule;
@@ -70,10 +71,9 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
- * The infrastructure used to implement the platform contract for a Hedera Services node.
- * This is needed for adding dagger subcomponents.
- * Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But,
- * in the future this class will be cleaned up to not have multiple module dependencies
+ * The infrastructure used to implement the platform contract for a Hedera Services node. This is needed for adding
+ * dagger subcomponents. Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But, in the future
+ * this class will be cleaned up to not have multiple module dependencies
  */
 @Singleton
 @Component(
@@ -110,7 +110,8 @@ import javax.inject.Singleton;
             AuthorizerDaggerModule.class,
             InfoDaggerModule.class,
             ThrottleModule.class,
-            SolvencyModule.class
+            SolvencyModule.class,
+            TokenServiceModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */

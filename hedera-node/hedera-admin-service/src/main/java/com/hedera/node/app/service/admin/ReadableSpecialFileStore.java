@@ -14,33 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.admin.impl;
+package com.hedera.node.app.service.admin;
 
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
  * working with special files used in freeze transactions.
- *
- * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ReadableSpecialFileStore {
-    /** The underlying data storage class that holds the file data. */
-    private final ReadableKVState<Long, byte[]> freezeFilesById;
-
-    /**
-     * Create a new {@link ReadableSpecialFileStore} instance.
-     *
-     * @param states The state to use.
-     */
-    public ReadableSpecialFileStore(@NonNull final ReadableStates states) {
-        Objects.requireNonNull(states);
-        this.freezeFilesById = states.get(FreezeServiceImpl.UPGRADE_FILES_KEY);
-    }
+public interface ReadableSpecialFileStore {
 
     /**
      * Gets the freeze file with the given ID. If there is no file with given ID
@@ -49,8 +32,6 @@ public class ReadableSpecialFileStore {
      * @param fileId given id for the file
      * @return the file with the given id
      */
-    public Optional<byte[]> get(final Long fileId) {
-        final var file = freezeFilesById.get(fileId);
-        return Optional.ofNullable(file);
-    }
+    @NonNull
+    Optional<byte[]> get(long fileId);
 }
