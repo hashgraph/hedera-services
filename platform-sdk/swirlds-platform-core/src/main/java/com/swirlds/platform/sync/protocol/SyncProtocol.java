@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.sync.protocol;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
 import com.swirlds.common.system.NodeId;
@@ -262,7 +261,7 @@ public class SyncProtocol implements Protocol {
     public void runProtocol(@NonNull final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
 
-        throwArgNull(connection, "connection");
+        Objects.requireNonNull(connection);
 
         if (!permit.isLockAcquired()) {
             throw new NetworkProtocolException("sync permit not acquired prior to executing sync protocol");

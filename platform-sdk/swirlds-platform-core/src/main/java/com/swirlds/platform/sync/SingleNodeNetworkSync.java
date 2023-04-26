@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.sync;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 
@@ -62,9 +62,9 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
             @NonNull final LongSupplier sleepTimeSupplier,
             final long selfId) {
 
-        this.statusChecker = throwArgNull(statusChecker, "statusChecker");
-        this.eventCreator = throwArgNull(eventCreator, "eventCreator");
-        this.sleepTimeSupplier = throwArgNull(sleepTimeSupplier, "sleepTimeSupplier");
+        this.statusChecker = Objects.requireNonNull(statusChecker);
+        this.eventCreator = Objects.requireNonNull(eventCreator);
+        this.sleepTimeSupplier = Objects.requireNonNull(sleepTimeSupplier);
         this.selfId = selfId;
     }
 
