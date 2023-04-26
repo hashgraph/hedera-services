@@ -25,12 +25,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -227,10 +225,7 @@ public class EmergencyReconnectTests {
                 mock(ReconnectLearnerThrottle.class),
                 receivedStateConsumer,
                 new ReconnectLearnerFactory(
-                        getStaticThreadManager(),
-                        addressBook,
-                        ConfigurationHolder.getConfigData(ReconnectConfig.class),
-                        mock(ReconnectMetrics.class)));
+                        getStaticThreadManager(), addressBook, 100_000, mock(ReconnectMetrics.class)));
 
         return new ReconnectController(getStaticThreadManager(), helper, () -> {});
     }

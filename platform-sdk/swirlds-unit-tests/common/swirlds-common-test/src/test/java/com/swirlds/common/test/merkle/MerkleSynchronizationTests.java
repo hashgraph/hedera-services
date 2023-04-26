@@ -193,7 +193,13 @@ public class MerkleSynchronizationTests {
     }
 
     /**
-     * *              root *            / |  \ \ *           A  I0 B I1 *                  / \ *                 C  I2
+     * <pre>
+     *        root
+     *      / |  \ \
+     *     A  I0 B I1
+     *            / \
+     *           C  I2
+     * </pre>
      */
     protected DummyMerkleInternal buildTreeForVerifyResultIsATree() {
         final DummyMerkleLeaf A = new DummyMerkleLeaf("A");
@@ -217,14 +223,25 @@ public class MerkleSynchronizationTests {
     /**
      * There was once a bug where the resulting merkle tree returned was not a DAG and not a tree. This test verifies
      * that the observed bug is no longer present.
-     * <p>
+     *
      * Starting tree
-     * <p>
-     * *                root *              / |  \ \ *             A  I0 B I1 *                    / \ * C  I2
-     * <p>
+     * <pre>
+     *                 root
+     *               / |  \ \
+     *              A  I0 B I1
+     *                     / \
+     *                    C  I2
+     * </pre>
+     *
      * Desired tree
-     * <p>
-     * *                root *              / |  \ \ *             A  I0 B I1 *                    / \ * D  I2
+     * <pre>
+     *                root
+     *              / |  \ \
+     *             A  I0 B I1
+     *                    / \
+     *                   D  I2
+     * </pre>
+     * </p>
      */
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
