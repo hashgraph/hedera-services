@@ -60,27 +60,27 @@ public class MerkleDbStatistics {
     private SpeedometerMetric leafByKeyReadsPerSecond;
     private SpeedometerMetric leafByPathReadsPerSecond;
 
-    private IntegerGauge hashesStoreFileCount;
-    private DoubleGauge hashesStoreTotalFileSizeInMB;
+    private IntegerGauge internalHashesStoreFileCount;
+    private DoubleGauge internalHashesStoreTotalFileSizeInMB;
 
     private IntegerGauge leafKeyToPathStoreFileCount;
 
     private DoubleGauge leafKeyToPathStoreTotalFileSizeInMB;
 
-    private IntegerGauge leafPathToKeyValueStoreFileCount;
+    private IntegerGauge leafPathToHashKeyValueStoreFileCount;
 
-    private DoubleGauge leafPathToKeyValueStoreTotalFileSizeInMB;
+    private DoubleGauge leafPathToHashKeyValueStoreTotalFileSizeInMB;
 
-    private DoubleGauge hashesStoreSmallMergeTime;
+    private DoubleGauge internalHashesStoreSmallMergeTime;
 
-    private DoubleGauge hashesStoreMediumMergeTime;
-    private DoubleGauge hashesStoreLargeMergeTime;
+    private DoubleGauge internalHashesStoreMediumMergeTime;
+    private DoubleGauge internalHashesStoreLargeMergeTime;
     private DoubleGauge leafKeyToPathStoreSmallMergeTime;
     private DoubleGauge leafKeyToPathStoreMediumMergeTime;
     private DoubleGauge leafKeyToPathStoreLargeMergeTime;
-    private DoubleGauge leafPathToKeyValueStoreSmallMergeTime;
-    private DoubleGauge leafPathToKeyValueStoreMediumMergeTime;
-    private DoubleGauge leafPathToKeyValueStoreLargeMergeTime;
+    private DoubleGauge leafPathToHashKeyValueStoreSmallMergeTime;
+    private DoubleGauge leafPathToHashKeyValueStoreMediumMergeTime;
+    private DoubleGauge leafPathToHashKeyValueStoreLargeMergeTime;
 
     private IntegerGauge offHeapMemoryLeafNodesListInMB;
     private IntegerGauge offHeapMemoryInternalNodesListInMB;
@@ -133,10 +133,10 @@ public class MerkleDbStatistics {
                 metrics, "leafByKeyReads/s_" + label, "number of leaf by key reads per second for " + label);
         leafByPathReadsPerSecond = buildSpeedometerMetric(
                 metrics, "leafByPathReads/s_" + label, "number of leaf by path reads per second for " + label);
-        hashesStoreFileCount =
+        internalHashesStoreFileCount =
                 metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "internalHashFileCount_" + label)
                         .withDescription(NUMBER_OF_FILES_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + SUFFIX));
-        hashesStoreTotalFileSizeInMB = buildDoubleGauge(
+        internalHashesStoreTotalFileSizeInMB = buildDoubleGauge(
                 metrics,
                 "internalHashFileSizeMb_" + label,
                 TOTAL_FILES_SIZE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + SUFFIX);
@@ -149,22 +149,22 @@ public class MerkleDbStatistics {
                     "leafKeyToPathFileSizeMb_" + label,
                     TOTAL_FILES_SIZE_PREFIX + LEAF_KEY_TO_PATH_STORE_MIDDLE + label + SUFFIX);
         }
-        leafPathToKeyValueStoreFileCount =
+        leafPathToHashKeyValueStoreFileCount =
                 metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "leafHKVFileCount_" + label)
                         .withDescription(NUMBER_OF_FILES_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + SUFFIX));
-        leafPathToKeyValueStoreTotalFileSizeInMB = buildDoubleGauge(
+        leafPathToHashKeyValueStoreTotalFileSizeInMB = buildDoubleGauge(
                 metrics,
                 "leafHKVFileSizeMb_" + label,
                 TOTAL_FILES_SIZE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + SUFFIX);
-        hashesStoreSmallMergeTime = buildDoubleGauge(
+        internalHashesStoreSmallMergeTime = buildDoubleGauge(
                 metrics,
                 "internalHashSmallMergeTime_" + label,
                 SMALL_MERGE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + MERGE_SUFFIX);
-        hashesStoreMediumMergeTime = buildDoubleGauge(
+        internalHashesStoreMediumMergeTime = buildDoubleGauge(
                 metrics,
                 "internalHashMediumMergeTime_" + label,
                 MEDIUM_MERGE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + MERGE_SUFFIX);
-        hashesStoreLargeMergeTime = buildDoubleGauge(
+        internalHashesStoreLargeMergeTime = buildDoubleGauge(
                 metrics,
                 "internalHashLargeMergeTime_" + label,
                 LARGE_MERGE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + MERGE_SUFFIX);
@@ -182,15 +182,15 @@ public class MerkleDbStatistics {
                     "leafKeyToPathLargeMergeTime_" + label,
                     LARGE_MERGE_PREFIX + LEAF_KEY_TO_PATH_STORE_MIDDLE + label + MERGE_SUFFIX);
         }
-        leafPathToKeyValueStoreSmallMergeTime = buildDoubleGauge(
+        leafPathToHashKeyValueStoreSmallMergeTime = buildDoubleGauge(
                 metrics,
                 "leafHKVSmallMergeTime_" + label,
                 SMALL_MERGE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + MERGE_SUFFIX);
-        leafPathToKeyValueStoreMediumMergeTime = buildDoubleGauge(
+        leafPathToHashKeyValueStoreMediumMergeTime = buildDoubleGauge(
                 metrics,
                 "leafHKVMediumMergeTime_" + label,
                 MEDIUM_MERGE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + MERGE_SUFFIX);
-        leafPathToKeyValueStoreLargeMergeTime = buildDoubleGauge(
+        leafPathToHashKeyValueStoreLargeMergeTime = buildDoubleGauge(
                 metrics,
                 "leafHKVLargeMergeTime_" + label,
                 LARGE_MERGE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + MERGE_SUFFIX);
@@ -255,26 +255,26 @@ public class MerkleDbStatistics {
     }
 
     /**
-     * Set the current value for the HashesStoreFileCount stat
+     * Set the current value for the InternalHashesStoreFileCount stat
      *
      * @param value
      * 		the value to set
      */
-    public void setHashesStoreFileCount(final int value) {
-        if (hashesStoreFileCount != null) {
-            hashesStoreFileCount.set(value);
+    public void setInternalHashesStoreFileCount(final int value) {
+        if (internalHashesStoreFileCount != null) {
+            internalHashesStoreFileCount.set(value);
         }
     }
 
     /**
-     * Set the current value for the HashesStoreTotalFileSizeInMB stat
+     * Set the current value for the InternalHashesStoreTotalFileSizeInMB stat
      *
      * @param value
      * 		the value to set
      */
-    public void setHashesStoreTotalFileSizeInMB(final double value) {
-        if (hashesStoreTotalFileSizeInMB != null) {
-            hashesStoreTotalFileSizeInMB.set(value);
+    public void setInternalHashesStoreTotalFileSizeInMB(final double value) {
+        if (internalHashesStoreTotalFileSizeInMB != null) {
+            internalHashesStoreTotalFileSizeInMB.set(value);
         }
     }
 
@@ -303,62 +303,62 @@ public class MerkleDbStatistics {
     }
 
     /**
-     * Set the current value for the LeafPathToKeyValueStoreFileCount stat
+     * Set the current value for the LeafPathToHashKeyValueStoreFileCount stat
      *
      * @param value
      * 		the value to set
      */
-    public void setLeafPathToKeyValueStoreFileCount(final int value) {
-        if (leafPathToKeyValueStoreFileCount != null) {
-            leafPathToKeyValueStoreFileCount.set(value);
+    public void setLeafPathToHashKeyValueStoreFileCount(final int value) {
+        if (leafPathToHashKeyValueStoreFileCount != null) {
+            leafPathToHashKeyValueStoreFileCount.set(value);
         }
     }
 
     /**
-     * Set the current value for the LeafPathToKeyValueStoreTotalFileSizeInMB stat
+     * Set the current value for the LeafPathToHashKeyValueStoreTotalFileSizeInMB stat
      *
      * @param value
      * 		the value to set
      */
-    public void setLeafPathToKeyValueStoreTotalFileSizeInMB(final double value) {
-        if (leafPathToKeyValueStoreTotalFileSizeInMB != null) {
-            leafPathToKeyValueStoreTotalFileSizeInMB.set(value);
+    public void setLeafPathToHashKeyValueStoreTotalFileSizeInMB(final double value) {
+        if (leafPathToHashKeyValueStoreTotalFileSizeInMB != null) {
+            leafPathToHashKeyValueStoreTotalFileSizeInMB.set(value);
         }
     }
 
     /**
-     * Set the current value for the HashesStoreSmallMergeTime stat
+     * Set the current value for the InternalHashesStoreSmallMergeTime stat
      *
      * @param value
      * 		the value to set
      */
-    public void setHashesStoreSmallMergeTime(final double value) {
-        if (hashesStoreSmallMergeTime != null) {
-            hashesStoreSmallMergeTime.set(value);
+    public void setInternalHashesStoreSmallMergeTime(final double value) {
+        if (internalHashesStoreSmallMergeTime != null) {
+            internalHashesStoreSmallMergeTime.set(value);
         }
     }
 
     /**
-     * Set the current value for the HashesStoreMediumMergeTime stat
+     * Set the current value for the InternalHashesStoreMediumMergeTime stat
      *
      * @param value
      * 		the value to set
      */
-    public void setHashesStoreMediumMergeTime(final double value) {
-        if (hashesStoreMediumMergeTime != null) {
-            hashesStoreMediumMergeTime.set(value);
+    public void setInternalHashesStoreMediumMergeTime(final double value) {
+        if (internalHashesStoreMediumMergeTime != null) {
+            internalHashesStoreMediumMergeTime.set(value);
         }
     }
 
     /**
-     * Set the current value for the HashesStoreLargeMergeTime stat
+     * Set the current value for the InternalHashesStoreLargeMergeTime stat
      *
      * @param value
      * 		the value to set
      */
-    public void setHashesStoreLargeMergeTime(final double value) {
-        if (hashesStoreLargeMergeTime != null) {
-            hashesStoreLargeMergeTime.set(value);
+    public void setInternalHashesStoreLargeMergeTime(final double value) {
+        if (internalHashesStoreLargeMergeTime != null) {
+            internalHashesStoreLargeMergeTime.set(value);
         }
     }
 
@@ -399,37 +399,37 @@ public class MerkleDbStatistics {
     }
 
     /**
-     * Set the current value for the LeafPathToKeyValueStoreSmallMergeTime stat
+     * Set the current value for the LeafPathToHashKeyValueStoreSmallMergeTime stat
      *
      * @param value
      * 		the value to set
      */
-    public void setLeafPathToKeyValueStoreSmallMergeTime(final double value) {
-        if (leafPathToKeyValueStoreSmallMergeTime != null) {
-            leafPathToKeyValueStoreSmallMergeTime.set(value);
+    public void setLeafPathToHashKeyValueStoreSmallMergeTime(final double value) {
+        if (leafPathToHashKeyValueStoreSmallMergeTime != null) {
+            leafPathToHashKeyValueStoreSmallMergeTime.set(value);
         }
     }
 
     /**
-     * Set the current value for the LeafPathToKeyValueStoreMediumMergeTime stat
+     * Set the current value for the LeafPathToHashKeyValueStoreMediumMergeTime stat
      *
      * @param value
      * 		the value to set
      */
-    public void setLeafPathToKeyValueStoreMediumMergeTime(final double value) {
-        if (leafPathToKeyValueStoreMediumMergeTime != null) {
-            leafPathToKeyValueStoreMediumMergeTime.set(value);
+    public void setLeafPathToHashKeyValueStoreMediumMergeTime(final double value) {
+        if (leafPathToHashKeyValueStoreMediumMergeTime != null) {
+            leafPathToHashKeyValueStoreMediumMergeTime.set(value);
         }
     }
 
     /**
-     * Set the current value for the LeafPathToKeyValueStoreLargeMergeTime stat
+     * Set the current value for the LeafPathToHashKeyValueStoreLargeMergeTime stat
      *
      * @param value the value to set
      */
-    public void setLeafPathToKeyValueStoreLargeMergeTime(final double value) {
-        if (leafPathToKeyValueStoreLargeMergeTime != null) {
-            leafPathToKeyValueStoreLargeMergeTime.set(value);
+    public void setLeafPathToHashKeyValueStoreLargeMergeTime(final double value) {
+        if (leafPathToHashKeyValueStoreLargeMergeTime != null) {
+            leafPathToHashKeyValueStoreLargeMergeTime.set(value);
         }
     }
 

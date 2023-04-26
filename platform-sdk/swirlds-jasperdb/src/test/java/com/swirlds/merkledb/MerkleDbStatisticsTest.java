@@ -66,21 +66,21 @@ class MerkleDbStatisticsTest {
         assertDoesNotThrow(statistics::cycleLeafWritesPerSecond);
         assertDoesNotThrow(statistics::cycleLeafByKeyReadsPerSecond);
         assertDoesNotThrow(statistics::cycleLeafByPathReadsPerSecond);
-        assertDoesNotThrow(() -> statistics.setHashesStoreFileCount(42));
-        assertDoesNotThrow(() -> statistics.setHashesStoreTotalFileSizeInMB(Math.PI));
+        assertDoesNotThrow(() -> statistics.setInternalHashesStoreFileCount(42));
+        assertDoesNotThrow(() -> statistics.setInternalHashesStoreTotalFileSizeInMB(Math.PI));
         assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreFileCount(42));
         assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreTotalFileSizeInMB(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafPathToKeyValueStoreFileCount(42));
-        assertDoesNotThrow(() -> statistics.setLeafPathToKeyValueStoreTotalFileSizeInMB(Math.PI));
-        assertDoesNotThrow(() -> statistics.setHashesStoreSmallMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setHashesStoreMediumMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setHashesStoreLargeMergeTime(Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeafPathToHashKeyValueStoreFileCount(42));
+        assertDoesNotThrow(() -> statistics.setLeafPathToHashKeyValueStoreTotalFileSizeInMB(Math.PI));
+        assertDoesNotThrow(() -> statistics.setInternalHashesStoreSmallMergeTime(Math.PI));
+        assertDoesNotThrow(() -> statistics.setInternalHashesStoreMediumMergeTime(Math.PI));
+        assertDoesNotThrow(() -> statistics.setInternalHashesStoreLargeMergeTime(Math.PI));
         assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreSmallMergeTime(Math.PI));
         assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreMediumMergeTime(Math.PI));
         assertDoesNotThrow(() -> statistics.setLeafKeyToPathStoreLargeMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafPathToKeyValueStoreSmallMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafPathToKeyValueStoreMediumMergeTime(Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafPathToKeyValueStoreLargeMergeTime(Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeafPathToHashKeyValueStoreSmallMergeTime(Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeafPathToHashKeyValueStoreMediumMergeTime(Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeafPathToHashKeyValueStoreLargeMergeTime(Math.PI));
         assertDoesNotThrow(() -> statistics.setOffHeapMemoryInternalNodesListInMB(42));
         assertDoesNotThrow(() -> statistics.setOffHeapMemoryLeafNodesListInMB(42));
         assertDoesNotThrow(() -> statistics.setOffHeapMemoryKeyToPathListInMB(42));
@@ -184,24 +184,24 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    void testSetHashesStoreFileCount() {
+    void testSetInternalHashesStoreFileCount() {
         // given
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalHashFileCount_" + LABEL);
 
         // when
-        statistics.setHashesStoreFileCount(42);
+        statistics.setInternalHashesStoreFileCount(42);
 
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetHashesStoreTotalFileSizeInMB() {
+    void testSetInternalHashesStoreTotalFileSizeInMB() {
         // given
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalHashFileSizeMb_" + LABEL);
 
         // when
-        statistics.setHashesStoreTotalFileSizeInMB(42);
+        statistics.setInternalHashesStoreTotalFileSizeInMB(42);
 
         // then
         assertValueSet(metric);
@@ -236,60 +236,60 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    void testSetLeafPathToKeyValueStoreFileCount() {
+    void testSetLeafPathToHashKeyValueStoreFileCount() {
         // given
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafHKVFileCount_" + LABEL);
 
         // when
-        statistics.setLeafPathToKeyValueStoreFileCount(42);
+        statistics.setLeafPathToHashKeyValueStoreFileCount(42);
 
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetLeafPathToKeyValueStoreTotalFileSizeInMB() {
+    void testSetLeafPathToHashKeyValueStoreTotalFileSizeInMB() {
         // given
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafHKVFileSizeMb_" + LABEL);
 
         // when
-        statistics.setLeafPathToKeyValueStoreTotalFileSizeInMB(Math.PI);
+        statistics.setLeafPathToHashKeyValueStoreTotalFileSizeInMB(Math.PI);
 
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetHashesStoreSmallMergeTime() {
+    void testSetInternalHashesStoreSmallMergeTime() {
         // given
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalHashSmallMergeTime_" + LABEL);
 
         // when
-        statistics.setHashesStoreSmallMergeTime(Math.PI);
+        statistics.setInternalHashesStoreSmallMergeTime(Math.PI);
 
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetHashesStoreMediumMergeTime() {
+    void testSetInternalHashesStoreMediumMergeTime() {
         // given
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalHashMediumMergeTime_" + LABEL);
 
         // when
-        statistics.setHashesStoreMediumMergeTime(Math.PI);
+        statistics.setInternalHashesStoreMediumMergeTime(Math.PI);
 
         // then
         assertValueSet(metric);
     }
 
     @Test
-    void testSetHashesStoreLargeMergeTime() {
+    void testSetInternalHashesStoreLargeMergeTime() {
         // given
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "internalHashLargeMergeTime_" + LABEL);
 
         // when
-        statistics.setHashesStoreLargeMergeTime(Math.PI);
+        statistics.setInternalHashesStoreLargeMergeTime(Math.PI);
 
         // then
         assertValueSet(metric);
@@ -348,7 +348,7 @@ class MerkleDbStatisticsTest {
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafHKVSmallMergeTime_" + LABEL);
 
         // when
-        statistics.setLeafPathToKeyValueStoreSmallMergeTime(Math.PI);
+        statistics.setLeafPathToHashKeyValueStoreSmallMergeTime(Math.PI);
 
         // then
         assertValueSet(metric);
@@ -360,7 +360,7 @@ class MerkleDbStatisticsTest {
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafHKVMediumMergeTime_" + LABEL);
 
         // when
-        statistics.setLeafPathToKeyValueStoreMediumMergeTime(Math.PI);
+        statistics.setLeafPathToHashKeyValueStoreMediumMergeTime(Math.PI);
 
         // then
         assertValueSet(metric);
@@ -372,7 +372,7 @@ class MerkleDbStatisticsTest {
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafHKVLargeMergeTime_" + LABEL);
 
         // when
-        statistics.setLeafPathToKeyValueStoreLargeMergeTime(Math.PI);
+        statistics.setLeafPathToHashKeyValueStoreLargeMergeTime(Math.PI);
 
         // then
         assertValueSet(metric);
