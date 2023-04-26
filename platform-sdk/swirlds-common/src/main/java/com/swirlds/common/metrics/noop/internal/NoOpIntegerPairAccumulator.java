@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.MetricConfig;

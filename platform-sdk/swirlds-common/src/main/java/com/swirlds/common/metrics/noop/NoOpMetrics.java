@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics;
+package com.swirlds.common.metrics.noop;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.noop.internal.NoOpMetricsFactory;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.metrics.internal.NoOpMetricsFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,7 +29,11 @@ import java.util.Map;
 
 /**
  * A no-op {@link Metrics} implementation.
+ *
+ * @deprecated This class serves as a temporary workaround and may be removed at a future time without notice. External
+ * parties are warned not to rely on this class.
  */
+@Deprecated(forRemoval = true)
 public class NoOpMetrics implements Metrics {
 
     private final Map<String /* category */, Map<String /* name */, Metric>> metrics = new HashMap<>();
