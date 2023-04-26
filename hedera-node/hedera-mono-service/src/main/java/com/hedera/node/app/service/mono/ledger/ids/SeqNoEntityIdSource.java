@@ -53,12 +53,17 @@ public class SeqNoEntityIdSource implements EntityIdSource {
     }
 
     @Override
-    public AccountID newAccountId(AccountID sponsor) {
+    public AccountID newAccountId() {
         return AccountID.newBuilder()
-                .setRealmNum(sponsor.getRealmNum())
-                .setShardNum(sponsor.getShardNum())
-                .setAccountNum(seqNo.get().getAndIncrement())
+                .setRealmNum(0)
+                .setShardNum(0)
+                .setAccountNum(newAccountNumber())
                 .build();
+    }
+
+    @Override
+    public long newAccountNumber() {
+        return seqNo.get().getAndIncrement();
     }
 
     /**

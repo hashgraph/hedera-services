@@ -34,12 +34,13 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public final class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
+public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
     @Inject
     public GetTopicInfoResourceUsage() {
         /* No-op */
@@ -60,15 +61,18 @@ public final class GetTopicInfoResourceUsage implements QueryResourceUsageEstima
     public FeeData usageGivenType(final Query query, final StateView view, final ResponseType responseType) {
         final var merkleTopic =
                 view.topics().get(fromTopicId(query.getConsensusGetTopicInfo().getTopicID()));
+        return usageGivenTypeAndTopic(merkleTopic, responseType);
+    }
 
-        if (merkleTopic == null) {
+    public FeeData usageGivenTypeAndTopic(@Nullable final MerkleTopic topic, final ResponseType responseType) {
+        if (topic == null) {
             return FeeData.getDefaultInstance();
         }
 
         final long bpr = BASIC_QUERY_RES_HEADER
                 + getStateProofSize(responseType)
                 + BASIC_ENTITY_ID_SIZE
-                + getTopicInfoSize(merkleTopic);
+                + getTopicInfoSize(topic);
         final var feeMatrices = FeeComponents.newBuilder()
                 .setBpt(BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE)
                 .setVpt(0)

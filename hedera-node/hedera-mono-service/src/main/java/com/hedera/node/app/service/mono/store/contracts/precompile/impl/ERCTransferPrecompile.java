@@ -35,6 +35,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.properties.CustomFeeType;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -58,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -100,7 +102,9 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
-            final boolean isLazyCreationEnabled) {
+            final Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits,
+            final boolean isLazyCreationEnabled,
+            final boolean topLevelSigsAreEnabled) {
         super(
                 ledgers,
                 updater,
@@ -111,7 +115,10 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 pricingUtils,
                 functionId,
                 callerAccount,
-                isLazyCreationEnabled);
+                htsUnsupportedCustomFeeReceiverDebits,
+                isLazyCreationEnabled,
+                topLevelSigsAreEnabled,
+                false);
         this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
         this.tokenID = tokenID;
         this.isFungible = isFungible;
@@ -130,7 +137,9 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
-            final boolean isLazyCreationEnabled) {
+            final Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits,
+            final boolean isLazyCreationEnabled,
+            final boolean topLevelSigsAreEnabled) {
         this(
                 null,
                 callerAccount,
@@ -144,7 +153,9 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 infrastructureFactory,
                 pricingUtils,
                 functionId,
-                isLazyCreationEnabled);
+                htsUnsupportedCustomFeeReceiverDebits,
+                isLazyCreationEnabled,
+                topLevelSigsAreEnabled);
     }
 
     @Override
@@ -256,8 +267,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
             addSignedAdjustment(fungibleTransfers, token, to, amount.longValueExact(), false);
 
-            boolean isApproval = !from.equals(operatorId.toGrpcAccountId());
-            addSignedAdjustment(fungibleTransfers, token, from, -amount.longValueExact(), isApproval);
+            addSignedAdjustment(fungibleTransfers, token, from, -amount.longValueExact(), true);
 
             final var tokenTransferWrappers =
                     Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));

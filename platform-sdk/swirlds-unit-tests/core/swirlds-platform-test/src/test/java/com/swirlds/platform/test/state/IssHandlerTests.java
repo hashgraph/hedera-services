@@ -21,8 +21,10 @@ import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchC
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
@@ -58,7 +60,7 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
+                (final Long round, final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -99,7 +101,9 @@ class IssHandlerTests {
         final AtomicInteger shutdownCount = new AtomicInteger();
 
         dispatchBuilder.registerObserver(
-                this, StateDumpRequestedTrigger.class, (final String reason, final Boolean blocking) -> {
+                this,
+                StateDumpRequestedTrigger.class,
+                (final Long round, final String reason, final Boolean blocking) -> {
                     assertEquals("iss", reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block if we are going to freeze");
                     dumpCount.getAndIncrement();
@@ -150,7 +154,9 @@ class IssHandlerTests {
         final AtomicInteger shutdownCount = new AtomicInteger();
 
         dispatchBuilder.registerObserver(
-                this, StateDumpRequestedTrigger.class, (final String reason, final Boolean blocking) -> {
+                this,
+                StateDumpRequestedTrigger.class,
+                (final Long round, final String reason, final Boolean blocking) -> {
                     assertEquals("iss", reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block");
                     dumpCount.getAndIncrement();
@@ -203,7 +209,7 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
+                (final Long round, final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -243,7 +249,9 @@ class IssHandlerTests {
         final AtomicInteger shutdownCount = new AtomicInteger();
 
         dispatchBuilder.registerObserver(
-                this, StateDumpRequestedTrigger.class, (final String reason, final Boolean blocking) -> {
+                this,
+                StateDumpRequestedTrigger.class,
+                (final Long round, final String reason, final Boolean blocking) -> {
                     assertEquals("iss", reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block if we are going to freeze");
                     dumpCount.getAndIncrement();
@@ -295,7 +303,9 @@ class IssHandlerTests {
         final AtomicInteger shutdownCount = new AtomicInteger();
 
         dispatchBuilder.registerObserver(
-                this, StateDumpRequestedTrigger.class, (final String reason, final Boolean blocking) -> {
+                this,
+                StateDumpRequestedTrigger.class,
+                (final Long round, final String reason, final Boolean blocking) -> {
                     assertEquals("iss", reason, "state dump reason is important, effects file path");
                     assertTrue(blocking, "should block before shutdown");
                     dumpCount.getAndIncrement();
@@ -342,7 +352,7 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
+                (final Long round, final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -383,7 +393,9 @@ class IssHandlerTests {
         final AtomicInteger shutdownCount = new AtomicInteger();
 
         dispatchBuilder.registerObserver(
-                this, StateDumpRequestedTrigger.class, (final String reason, final Boolean blocking) -> {
+                this,
+                StateDumpRequestedTrigger.class,
+                (final Long round, final String reason, final Boolean blocking) -> {
                     assertEquals("iss", reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block if we are going to freeze");
                     dumpCount.getAndIncrement();
@@ -435,7 +447,9 @@ class IssHandlerTests {
         final AtomicInteger shutdownCount = new AtomicInteger();
 
         dispatchBuilder.registerObserver(
-                this, StateDumpRequestedTrigger.class, (final String reason, final Boolean blocking) -> {
+                this,
+                StateDumpRequestedTrigger.class,
+                (final Long round, final String reason, final Boolean blocking) -> {
                     assertEquals("iss", reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block");
                     dumpCount.getAndIncrement();
@@ -489,7 +503,7 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
+                (final Long round, final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -506,7 +520,7 @@ class IssHandlerTests {
 
         dispatchBuilder.start();
 
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
@@ -530,7 +544,9 @@ class IssHandlerTests {
         final AtomicInteger shutdownCount = new AtomicInteger();
 
         dispatchBuilder.registerObserver(
-                this, StateDumpRequestedTrigger.class, (final String reason, final Boolean blocking) -> {
+                this,
+                StateDumpRequestedTrigger.class,
+                (final Long round, final String reason, final Boolean blocking) -> {
                     assertEquals("iss", reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block if we are going to freeze");
                     dumpCount.getAndIncrement();
@@ -551,14 +567,14 @@ class IssHandlerTests {
 
         dispatchBuilder.start();
 
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
@@ -582,7 +598,9 @@ class IssHandlerTests {
         final AtomicInteger shutdownCount = new AtomicInteger();
 
         dispatchBuilder.registerObserver(
-                this, StateDumpRequestedTrigger.class, (final String reason, final Boolean blocking) -> {
+                this,
+                StateDumpRequestedTrigger.class,
+                (final Long round, final String reason, final Boolean blocking) -> {
                     assertEquals("iss", reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block if we are going to freeze");
                     dumpCount.getAndIncrement();
@@ -603,14 +621,14 @@ class IssHandlerTests {
 
         dispatchBuilder.start();
 
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
@@ -634,7 +652,9 @@ class IssHandlerTests {
         final AtomicInteger shutdownCount = new AtomicInteger();
 
         dispatchBuilder.registerObserver(
-                this, StateDumpRequestedTrigger.class, (final String reason, final Boolean blocking) -> {
+                this,
+                StateDumpRequestedTrigger.class,
+                (final Long round, final String reason, final Boolean blocking) -> {
                     assertEquals("iss", reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block");
                     dumpCount.getAndIncrement();
@@ -655,14 +675,14 @@ class IssHandlerTests {
 
         dispatchBuilder.start();
 
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Throttle should prevent double dump
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");

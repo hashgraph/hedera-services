@@ -93,7 +93,8 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
         Query query = getTokenNftInfosQuery(spec, payment, false);
         response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
         if (verboseLoggingOn) {
-            log.info("NftInfo for '" + token + "': ");
+            String message = String.format("NftInfo for '%s': ", token);
+            log.info(message);
             response.getTokenGetNftInfos().getNftsList().forEach(nft -> log.info(nft.toString()));
         }
     }

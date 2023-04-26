@@ -16,111 +16,47 @@
 
 package com.hedera.test.utils;
 
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-
-import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class TestFixturesKeyLookup implements AccountKeyLookup {
+public class TestFixturesKeyLookup implements ReadableAccountStore {
     private final ReadableKVState<String, Long> aliases;
-    private final ReadableKVState<Long, HederaAccount> accounts;
+    private final ReadableKVState<EntityNumVirtualKey, Account> accounts;
 
     public TestFixturesKeyLookup(@NonNull final ReadableStates states) {
         this.accounts = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
     }
 
+    @Nullable
     @Override
-    public KeyOrLookupFailureReason getKey(final AccountID idOrAlias) {
-        final var account = accounts.get(accountNumOf(idOrAlias));
-        if (account == null) {
-            return withFailureReason(INVALID_ACCOUNT_ID);
-        }
-        return Optional.of(account.getAccountKey())
-                .map(key -> validateKey(key, false))
-                .orElse(withFailureReason(INVALID_ACCOUNT_ID));
-    }
-
-    @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(final AccountID idOrAlias) {
-        final var account = accounts.get(accountNumOf(idOrAlias));
-        if (account == null) {
-            return withFailureReason(INVALID_ACCOUNT_ID);
-        } else {
-            return Optional.of(account.getAccountKey())
-                    .map(key -> validateKey(key, false))
-                    .filter(reason -> reason.failed() || account.isReceiverSigRequired())
-                    .orElse(PRESENT_BUT_NOT_REQUIRED);
-        }
-    }
-
-    @Override
-    public KeyOrLookupFailureReason getKey(ContractID idOrAlias) {
-        final var account = accounts.get(accountNumOf(asAccount(idOrAlias)));
-        if (account == null) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        } else if (account.isDeleted() || !account.isSmartContract()) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        }
-        return validateKey(account.getAccountKey(), true);
-    }
-
-    @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(ContractID idOrAlias) {
-        final var account = accounts.get(accountNumOf(asAccount(idOrAlias)));
-        if (account == null || account.isDeleted() || !account.isSmartContract()) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        } else {
-            final var key = account.getAccountKey();
-            final var keyResult = validateKey(key, true);
-            if (account.isReceiverSigRequired()) {
-                return keyResult;
+    public Account getAccountById(@NonNull AccountID accountID) {
+        final var alias = accountID.alias();
+        if (alias != null && alias.length() > 0) {
+            final var num = aliases.get(alias.asUtf8String());
+            if (num == null) {
+                return null;
             } else {
-                return PRESENT_BUT_NOT_REQUIRED;
+                final var account = accounts.get(new EntityNumVirtualKey(num));
+                return account == null ? null : getNewAccount(num, alias, account);
             }
-        }
-    }
-
-    private KeyOrLookupFailureReason validateKey(final JKey key, final boolean isContractKey) {
-        if (key == null || key.isEmpty()) {
-            if (isContractKey) {
-                return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
-            }
-            return withFailureReason(ACCOUNT_IS_IMMUTABLE);
-        } else if (isContractKey && key instanceof JContractIDKey) {
-            return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
+        } else if (!accountID.hasAccountNum()) {
+            return null;
         } else {
-            return withKey(key);
+            final long num = accountID.accountNumOrThrow();
+            final var account = accounts.get(new EntityNumVirtualKey(num));
+            return account == null ? null : getNewAccount(num, Bytes.EMPTY, account);
         }
     }
 
-    private Long accountNumOf(final AccountID id) {
-        if (isAlias(id)) {
-            final var alias = id.getAlias();
-            if (alias.size() == EVM_ADDRESS_SIZE) {
-                final var evmAddress = alias.toByteArray();
-                if (isMirror(evmAddress)) {
-                    return numFromEvmAddress(evmAddress);
-                }
-            }
-            final var value = aliases.get(alias.toStringUtf8());
-            if (value == null) {
-                return 0L;
-            }
-            return value;
-        }
-        return id.getAccountNum();
+    private Account getNewAccount(long num, Bytes alias, Account account) {
+        return account.copyBuilder().alias(alias).accountNumber(num).build();
     }
 }

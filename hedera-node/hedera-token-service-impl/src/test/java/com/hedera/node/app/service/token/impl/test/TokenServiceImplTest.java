@@ -55,16 +55,17 @@ class TokenServiceImplTest {
 
         final var subject = TokenService.getInstance();
 
-        subject.registerSchemas(registry);
+        subject.registerMonoAdapterSchemas(registry);
         verify(registry).register(schemaCaptor.capture());
 
         final var schema = schemaCaptor.getValue();
 
         final var statesToCreate = schema.statesToCreate();
-        assertEquals(5, statesToCreate.size());
+        assertEquals(6, statesToCreate.size());
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
         assertEquals(TokenServiceImpl.ACCOUNTS_KEY, iter.next());
+        assertEquals(TokenServiceImpl.ALIASES_KEY, iter.next());
         assertEquals(TokenServiceImpl.NFTS_KEY, iter.next());
         assertEquals(TokenServiceImpl.PAYER_RECORDS_KEY, iter.next());
         assertEquals(TokenServiceImpl.TOKENS_KEY, iter.next());

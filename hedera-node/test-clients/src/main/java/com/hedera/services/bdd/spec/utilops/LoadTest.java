@@ -72,37 +72,37 @@ public class LoadTest extends HapiSuite {
         int usedArgs = 0;
         if (args.length > 0) {
             targetTPS = OptionalDouble.of(Double.parseDouble(args[0]));
-            log.info("Set targetTPS as " + targetTPS.getAsDouble());
+            log.info("Set targetTPS as {}", targetTPS.getAsDouble());
             usedArgs++;
         }
 
         if (args.length > 1) {
             testDurationMinutes = OptionalInt.of(Integer.parseInt(args[1]));
-            log.info("Set testDurationMinutes as " + testDurationMinutes.getAsInt());
+            log.info("Set testDurationMinutes as {}", testDurationMinutes.getAsInt());
             usedArgs++;
         }
 
         if (args.length > 2) {
             threadNumber = OptionalInt.of(Integer.parseInt(args[2]));
-            log.info("Set threadNumber as " + threadNumber.getAsInt());
+            log.info("Set threadNumber as {}", threadNumber.getAsInt());
             usedArgs++;
         }
 
         if (args.length > 3) {
             initialBalance = OptionalLong.of(Long.parseLong(args[3]));
-            log.info("Set initialBalance as " + initialBalance.getAsLong());
+            log.info("Set initialBalance as {}", initialBalance.getAsLong());
             usedArgs++;
         }
 
         if (args.length > 4) {
             hcsSubmitMessage = OptionalInt.of(Integer.parseInt(args[4]));
-            log.info("Set hcsSubmitMessageSize as " + hcsSubmitMessage.getAsInt());
+            log.info("Set hcsSubmitMessageSize as {}", hcsSubmitMessage.getAsInt());
             usedArgs++;
         }
 
         if (args.length > 5) {
             memoLength = OptionalInt.of(Integer.parseInt(args[5]));
-            log.info("Set Memo Length as " + memoLength.getAsInt());
+            log.info("Set Memo Length as {}", memoLength.getAsInt());
             usedArgs++;
         }
 

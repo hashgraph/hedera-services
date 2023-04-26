@@ -46,7 +46,7 @@ import java.util.Objects;
  * @param <V>
  * 		The value type
  */
-final class HashJob<K extends VirtualKey<? super K>, V extends VirtualValue> implements Hashable {
+final class HashJob<K extends VirtualKey, V extends VirtualValue> implements Hashable {
     /**
      * A singleton reference to the Cryptography libraries. Used for hashing.
      */

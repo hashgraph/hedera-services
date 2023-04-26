@@ -26,8 +26,10 @@ import java.util.Objects;
  * data stored in the {@link VirtualDataSource} and in the {@code VirtualNodeCache}.
  * These records are mutable. Since the cache maintains versions across rounds (copies), it is necessary to
  * create new copies of the VirtualRecord in each round in which it is mutated.
+ *
+ * The class is sealed, and can only be extended by {@link VirtualInternalRecord} and {@link VirtualLeafRecord}.
  */
-public abstract class VirtualRecord implements Hashable {
+public abstract sealed class VirtualRecord implements Hashable permits VirtualInternalRecord, VirtualLeafRecord {
     /**
      * The path for this record. The path can change over time as nodes are added or removed.
      */

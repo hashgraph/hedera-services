@@ -148,4 +148,10 @@ class ReadableKVStateBaseTest extends StateTestBase {
                 .toIterable()
                 .containsExactlyInAnyOrder(backingMap.keySet().toArray(new String[0]));
     }
+
+    @Test
+    @DisplayName("Size returns backing map size")
+    void testSize() {
+        assertThat(state.size()).isEqualTo(backingMap.size());
+    }
 }

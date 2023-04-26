@@ -16,27 +16,15 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import com.hedera.node.app.state.HederaState;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.hedera.node.app.components.IngestComponent;
 import dagger.Binds;
 import dagger.Module;
-import dagger.Provides;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Supplier;
 
 /**
  * Module for Ingest processing.
  */
-@Module
+@Module(subcomponents = {IngestComponent.class})
 public interface IngestModule {
     @Binds
     IngestWorkflow bindIngestWorkflow(IngestWorkflowImpl ingestWorkflow);
-
-    @Provides
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
-        // Always return the latest immutable state until we support state proofs
-        return () -> (AutoCloseableWrapper) platform.getLatestImmutableState();
-    }
 }

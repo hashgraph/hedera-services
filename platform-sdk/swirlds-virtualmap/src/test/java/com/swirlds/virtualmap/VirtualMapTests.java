@@ -34,8 +34,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -122,8 +122,8 @@ class VirtualMapTests extends VirtualTestBase {
             if (info != null) {
                 final String threadName = info.getThreadName();
                 if (!threadName.contains("hasher")
-                        && !threadName.contains("CacheCleaner-")
-                        && !threadName.contains("<virtual-pipeline: lifecycle")
+                        && !threadName.contains("virtual-map: cache-cleaner")
+                        && !threadName.contains("virtual-pipeline: lifecycle")
                         && !threadName.contains("ForkJoinPool.commonPool-worker-")
                         && !(threadName.contains("pool-") && threadName.contains("-thread-"))) {
                     threadNames.add(threadName);

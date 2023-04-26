@@ -26,28 +26,19 @@ import static org.mockito.Mockito.when;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
-import com.swirlds.platform.state.SwirldStateManagerSingle;
+import com.swirlds.platform.state.SwirldStateManagerImpl;
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class SwirldStateManagerFreezePeriodCheckerTest {
     private final State mockState = mock(State.class);
     private final DualStateImpl mockDualState = mock(DualStateImpl.class);
     private final Instant consensusTime = Instant.now();
 
-    private static Stream<Arguments> swirldStateManagers() {
-        return Stream.of(
-                Arguments.of(spy(SwirldStateManagerSingle.class)), Arguments.of(spy(SwirldStateManagerDouble.class)));
-    }
-
-    @ParameterizedTest
-    @MethodSource("swirldStateManagers")
-    void isInFreezePeriodTest(final SwirldStateManager swirldStateManager) {
+    @Test
+    void isInFreezePeriodTest() {
+        final SwirldStateManager swirldStateManager = spy(SwirldStateManagerImpl.class);
         doReturn(mockState).when(swirldStateManager).getConsensusState();
 
         when(mockState.getPlatformDualState()).thenReturn(null);

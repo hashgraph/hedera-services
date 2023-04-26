@@ -105,7 +105,7 @@ public class StatsDemoMain implements SwirldMain {
      * 		these are not used
      */
     public static void main(String[] args) {
-        Browser.launch(args);
+        Browser.parseCommandLineArgsAndLaunch(args);
     }
 
     /**

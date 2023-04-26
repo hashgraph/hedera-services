@@ -51,6 +51,11 @@ public class PrivilegedOpsSuite extends HapiSuite {
             protoDefsFromResource("testSystemFiles/only-mint-allowed.json").toByteArray();
     private static final byte[] defaultThrottles =
             protoDefsFromResource("testSystemFiles/throttles-dev.json").toByteArray();
+    private static final String ACCOUNT_88 = "0.0.88";
+    private static final String ACCOUNT_2 = "0.0.2";
+    private static final String CIVILIAN = "civilian";
+    private static final String NEW_88 = "new88";
+    private static final int BURST_SIZE = 10;
 
     public static void main(String... args) {
         new PrivilegedOpsSuite().runSuiteSync();
@@ -69,7 +74,6 @@ public class PrivilegedOpsSuite extends HapiSuite {
         });
     }
 
-    final int BURST_SIZE = 10;
     Function<String, HapiSpecOperation[]> transferBurstFn = payer -> IntStream.range(0, BURST_SIZE)
             .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
                     .payingWith(payer)
@@ -96,7 +100,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     private HapiSpec freezeAdminPrivilegesAsExpected() {
         return defaultHapiSpec("FreezeAdminPrivilegesAsExpected")
                 .given(
-                        cryptoCreate("civilian"),
+                        cryptoCreate(CIVILIAN),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_MILLION_HBARS)))
                 .when(
                         fileUpdate(UPDATE_ZIP_FILE)
@@ -112,7 +116,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
                                 .contents("Nope")
                                 .hasPrecheck(AUTHORIZATION_FAILED),
                         fileUpdate(UPDATE_ZIP_FILE)
-                                .payingWith("civilian")
+                                .payingWith(CIVILIAN)
                                 .contents("Nope")
                                 .hasPrecheck(AUTHORIZATION_FAILED))
                 .then(
@@ -138,51 +142,51 @@ public class PrivilegedOpsSuite extends HapiSuite {
     private HapiSpec systemAccountUpdatePrivilegesAsExpected() {
         final var tmpTreasury = "tmpTreasury";
         return defaultHapiSpec("SystemAccountUpdatePrivilegesAsExpected")
-                .given(newKeyNamed(tmpTreasury), newKeyNamed("new88"), cryptoCreate("civilian"))
-                .when(cryptoUpdate("0.0.88")
+                .given(newKeyNamed(tmpTreasury), newKeyNamed(NEW_88), cryptoCreate(CIVILIAN))
+                .when(cryptoUpdate(ACCOUNT_88)
                         .payingWith(GENESIS)
-                        .signedBy(GENESIS, "new88")
-                        .key("new88"))
+                        .signedBy(GENESIS, NEW_88)
+                        .key(NEW_88))
                 .then(
-                        cryptoUpdate("0.0.2")
+                        cryptoUpdate(ACCOUNT_2)
                                 .receiverSigRequired(true)
-                                .payingWith("civilian")
-                                .signedBy("civilian", GENESIS)
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN, GENESIS)
                                 .hasPrecheck(AUTHORIZATION_FAILED),
-                        cryptoUpdate("0.0.2")
+                        cryptoUpdate(ACCOUNT_2)
                                 .receiverSigRequired(true)
                                 .payingWith(SYSTEM_ADMIN)
                                 .signedBy(SYSTEM_ADMIN, GENESIS)
                                 .hasPrecheck(AUTHORIZATION_FAILED),
-                        cryptoUpdate("0.0.2")
+                        cryptoUpdate(ACCOUNT_2)
                                 .receiverSigRequired(false)
                                 .payingWith(GENESIS)
                                 .signedBy(GENESIS),
-                        cryptoUpdate("0.0.2")
+                        cryptoUpdate(ACCOUNT_2)
                                 .key(tmpTreasury)
                                 .payingWith(GENESIS)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        cryptoUpdate("0.0.2")
+                        cryptoUpdate(ACCOUNT_2)
                                 .key(tmpTreasury)
                                 .payingWith(GENESIS)
                                 .signedBy(GENESIS, tmpTreasury)
                                 .notUpdatingRegistryWithNewKey(),
-                        cryptoUpdate("0.0.2")
+                        cryptoUpdate(ACCOUNT_2)
                                 .key(GENESIS)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(GENESIS)
                                 .signedBy(GENESIS, tmpTreasury)
                                 .notUpdatingRegistryWithNewKey(),
-                        cryptoUpdate("0.0.88")
+                        cryptoUpdate(ACCOUNT_88)
                                 .key(GENESIS)
-                                .payingWith("civilian")
-                                .signedBy("civilian", "new88", GENESIS),
-                        cryptoUpdate("0.0.88")
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN, NEW_88, GENESIS),
+                        cryptoUpdate(ACCOUNT_88)
                                 .payingWith(GENESIS)
-                                .signedBy(GENESIS, "new88")
-                                .key("new88"),
-                        cryptoUpdate("0.0.88")
+                                .signedBy(GENESIS, NEW_88)
+                                .key(NEW_88),
+                        cryptoUpdate(ACCOUNT_88)
                                 .key(GENESIS)
                                 .payingWith(SYSTEM_ADMIN)
                                 .signedBy(SYSTEM_ADMIN, GENESIS));

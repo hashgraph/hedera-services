@@ -50,7 +50,7 @@ public class SStoreOperationLoadTest extends LoadTest {
         // parsing local argument specific to this test
         if (args.length > usedArgs) {
             size = Integer.parseInt(args[usedArgs]);
-            log.info("Set sizeInKb as " + size);
+            log.info("Set sizeInKb as {}", size);
         }
 
         SStoreOperationLoadTest suite = new SStoreOperationLoadTest();

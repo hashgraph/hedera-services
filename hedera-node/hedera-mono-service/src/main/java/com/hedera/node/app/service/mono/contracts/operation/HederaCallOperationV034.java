@@ -74,7 +74,8 @@ public class HederaCallOperationV034 extends CallOperation {
                     () -> cost(frame),
                     () -> super.execute(frame, evm),
                     addressValidator,
-                    precompiledContractMap);
+                    precompiledContractMap,
+                    () -> isStatic(frame));
         }
     }
 

@@ -44,6 +44,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -418,7 +419,7 @@ class AbstractLedgerWorldUpdaterTest {
 
         /* Verify we can commit the change */
         assertDoesNotThrow(() -> wrappedLedgers.commit());
-        assertTrue(subject.updatedAccounts.containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
+        assertTrue(subject.getUpdatedAccounts().containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
     }
 
     @Test
@@ -442,7 +443,7 @@ class AbstractLedgerWorldUpdaterTest {
 
         /* Verify we can commit the change */
         assertDoesNotThrow(() -> wrappedLedgers.commit());
-        assertTrue(subject.updatedAccounts.containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
+        assertTrue(subject.getUpdatedAccounts().containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
     }
 
     @Test
@@ -491,14 +492,14 @@ class AbstractLedgerWorldUpdaterTest {
         assertEquals(aHbarBalance + 2, ledgers.accounts().get(aAccount, BALANCE));
         assertEquals(bHbarBalance - 2, ledgers.accounts().get(bAccount, BALANCE));
         /* And consistently in the updatedAccounts map */
-        assertTrue(subject.updatedAccounts.containsKey(aAddress));
+        assertTrue(subject.getUpdatedAccounts().containsKey(aAddress));
         assertEquals(
                 aHbarBalance + 2,
-                subject.updatedAccounts.get(aAddress).getBalance().toLong());
-        assertTrue(subject.updatedAccounts.containsKey(bAddress));
+                subject.getUpdatedAccounts().get(aAddress).getBalance().toLong());
+        assertTrue(subject.getUpdatedAccounts().containsKey(bAddress));
         assertEquals(
                 bHbarBalance - 2,
-                subject.updatedAccounts.get(bAddress).getBalance().toLong());
+                subject.getUpdatedAccounts().get(bAddress).getBalance().toLong());
     }
 
     @Test
@@ -594,7 +595,7 @@ class AbstractLedgerWorldUpdaterTest {
         assertInstanceOf(WrappedEvmAccount.class, newAccount);
         final var newWrappedAccount = (WrappedEvmAccount) newAccount;
         assertFalse(newWrappedAccount.isImmutable());
-        assertInstanceOf(UpdateTrackingLedgerAccount.class, newWrappedAccount.getMutable());
+        assertInstanceOf(UpdateTrackingAccount.class, newWrappedAccount.getMutable());
 
         final var trackingAccounts = subject.trackingLedgers().accounts();
         assertTrue(trackingAccounts.contains(aAccount));
@@ -640,7 +641,7 @@ class AbstractLedgerWorldUpdaterTest {
     void tracksLazyCreateAccountAsExpected() {
         subject.trackLazilyCreatedAccount(Address.ALTBN128_MUL);
 
-        final var lazyAccount = subject.updatedAccounts.get(Address.ALTBN128_MUL);
+        final var lazyAccount = subject.getUpdatedAccounts().get(Address.ALTBN128_MUL);
         assertNotNull(lazyAccount);
         assertEquals(Wei.ZERO, lazyAccount.getBalance());
         assertFalse(subject.getDeletedAccounts().contains(Address.ALTBN128_MUL));

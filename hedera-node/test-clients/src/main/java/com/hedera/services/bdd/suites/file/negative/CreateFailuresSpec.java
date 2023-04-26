@@ -47,14 +47,12 @@ public class CreateFailuresSpec extends HapiSuite {
 
     private HapiSpec handleRejectsMissingWacl() {
         return defaultHapiSpec("handleRejectsMissingWacl")
-                .given(withOpContext((spec, opLog) -> {
-                    spec.registry()
-                            .saveKey(
-                                    "emptyKey",
-                                    Key.newBuilder()
-                                            .setKeyList(KeyList.getDefaultInstance())
-                                            .build());
-                }))
+                .given(withOpContext((spec, opLog) -> spec.registry()
+                        .saveKey(
+                                "emptyKey",
+                                Key.newBuilder()
+                                        .setKeyList(KeyList.getDefaultInstance())
+                                        .build())))
                 .when()
                 .then(fileCreate("notHere")
                         .contents("Not meant to be!")

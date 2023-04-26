@@ -94,6 +94,11 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
         }
     }
 
+    @Override
+    public boolean hasAtLeastOneEcdsaSig() {
+        return pojoSigMap.hasEcdsaSig();
+    }
+
     public static boolean beginsWith(byte[] pubKey, byte[] prefix) {
         if (pubKey.length < prefix.length) {
             return false;

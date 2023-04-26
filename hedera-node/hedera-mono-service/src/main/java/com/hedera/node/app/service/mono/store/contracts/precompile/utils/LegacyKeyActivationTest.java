@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.hyperledger.besu.datatypes.Address;
 
 @FunctionalInterface
@@ -49,5 +50,6 @@ public interface LegacyKeyActivationTest {
             Address target,
             Address activeContract,
             WorldLedgers worldLedgers,
-            LegacyActivationTest legacyActivationTest);
+            LegacyActivationTest legacyActivationTest,
+            HederaFunctionality function);
 }

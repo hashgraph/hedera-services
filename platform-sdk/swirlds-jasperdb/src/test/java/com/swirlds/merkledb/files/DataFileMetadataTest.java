@@ -31,75 +31,29 @@ class DataFileMetadataTest {
         final long dataItemCount = 3;
         final int index = 4;
         final Instant creationDate = Instant.ofEpochSecond(1_234_567L);
-        final boolean isMergeFile = true;
         final long serializationVersion = 7;
 
         final DataFileMetadata base = new DataFileMetadata(
-                fileFormatVersion,
-                dataItemValueSize,
-                dataItemCount,
-                index,
-                creationDate,
-                isMergeFile,
-                serializationVersion);
+                fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, serializationVersion);
         final DataFileMetadata differentFormatVersion = new DataFileMetadata(
-                fileFormatVersion + 1,
-                dataItemValueSize,
-                dataItemCount,
-                index,
-                creationDate,
-                isMergeFile,
-                serializationVersion);
+                fileFormatVersion + 1, dataItemValueSize, dataItemCount, index, creationDate, serializationVersion);
         final DataFileMetadata differentValueSize = new DataFileMetadata(
-                fileFormatVersion,
-                dataItemValueSize + 1,
-                dataItemCount,
-                index,
-                creationDate,
-                isMergeFile,
-                serializationVersion);
+                fileFormatVersion, dataItemValueSize + 1, dataItemCount, index, creationDate, serializationVersion);
         final DataFileMetadata differentItemCount = new DataFileMetadata(
-                fileFormatVersion,
-                dataItemValueSize,
-                dataItemCount + 1,
-                index,
-                creationDate,
-                isMergeFile,
-                serializationVersion);
+                fileFormatVersion, dataItemValueSize, dataItemCount + 1, index, creationDate, serializationVersion);
         final DataFileMetadata differentIndex = new DataFileMetadata(
-                fileFormatVersion,
-                dataItemValueSize,
-                dataItemCount,
-                index + 1,
-                creationDate,
-                isMergeFile,
-                serializationVersion);
+                fileFormatVersion, dataItemValueSize, dataItemCount, index + 1, creationDate, serializationVersion);
         final DataFileMetadata differentCreationDate = new DataFileMetadata(
                 fileFormatVersion,
                 dataItemValueSize,
                 dataItemCount,
                 index,
                 creationDate.plusSeconds(1),
-                isMergeFile,
                 serializationVersion);
-        final DataFileMetadata differentMergeFile = new DataFileMetadata(
-                fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, false, serializationVersion);
         final DataFileMetadata differentSerVersion = new DataFileMetadata(
-                fileFormatVersion,
-                dataItemValueSize,
-                dataItemCount,
-                index,
-                creationDate,
-                isMergeFile,
-                serializationVersion + 1);
+                fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, serializationVersion + 1);
         final DataFileMetadata otherButEqual = new DataFileMetadata(
-                fileFormatVersion,
-                dataItemValueSize,
-                dataItemCount,
-                index,
-                creationDate,
-                isMergeFile,
-                serializationVersion);
+                fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, serializationVersion);
 
         assertEquals(base, otherButEqual, "Equivalent metadata are equal");
         assertNotEquals(base, differentFormatVersion, "Different format versions are unequal");
@@ -107,7 +61,6 @@ class DataFileMetadataTest {
         assertNotEquals(base, differentItemCount, "Different item counts are unequal");
         assertNotEquals(base, differentIndex, "Different indexes are unequal");
         assertNotEquals(base, differentCreationDate, "Different creation dates are unequal");
-        assertNotEquals(base, differentMergeFile, "Different merge files are unequal");
         assertNotEquals(base, differentSerVersion, "Different serialization versions are unequal");
         assertNotEquals(base, new Object(), "Radically different objects are unequal");
     }

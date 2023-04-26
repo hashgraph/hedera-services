@@ -21,13 +21,13 @@ import java.nio.file.Path;
 
 /**
  * Interface for classes that can be snapshotted.
- * <p><b>
+ * <b>
  * Only one snapshot can happen at a time!
- * </b></p>
- * <p><b>
+ * </b>
+ * <b>
  * IMPORTANT, after this is completed the caller owns the directory. It is responsible for deleting it when it
  * is no longer needed.
- * </b></p>
+ * </b>
  */
 public interface Snapshotable {
 

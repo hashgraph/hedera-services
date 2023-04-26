@@ -16,25 +16,42 @@
 
 package com.hedera.node.app.workflows.query;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.config.NetworkInfo;
-import com.hedera.node.app.spi.meta.QueryContext;
-import javax.inject.Inject;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Provides context for query processing.Currently, it only has {@link NetworkInfo} but it might be
- * extended to provide more context for other queries in the future.
+ * Simple implementation of {@link QueryContext}.
  */
 public class QueryContextImpl implements QueryContext {
-    private final NetworkInfo networkInfo;
 
-    @Inject
-    public QueryContextImpl(final NetworkInfo networkInfo) {
-        this.networkInfo = networkInfo;
+    private final ReadableStoreFactory storeFactory;
+    private final Query query;
+
+    /**
+     * Constructor of {@code QueryContextImpl}.
+     *
+     * @param storeFactory the {@link ReadableStoreFactory} used to create the stores
+     * @param query the query that is currently being processed
+     * @throws NullPointerException if {@code query} is {@code null}
+     */
+    public QueryContextImpl(@NonNull final ReadableStoreFactory storeFactory, @NonNull final Query query) {
+        this.storeFactory = requireNonNull(storeFactory, "The supplied argument 'storeFactory' cannot be null!");
+        this.query = requireNonNull(query, "The supplied argument 'query' cannot be null!");
     }
 
     @Override
-    public ByteString getLedgerId() {
-        return networkInfo.ledgerId();
+    @NonNull
+    public Query query() {
+        return query;
+    }
+
+    @Override
+    @NonNull
+    public <C> C createStore(@NonNull Class<C> storeInterface) {
+        return storeFactory.createStore(storeInterface);
     }
 }

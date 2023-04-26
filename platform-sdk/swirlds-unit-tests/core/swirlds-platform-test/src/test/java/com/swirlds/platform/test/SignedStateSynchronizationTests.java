@@ -21,7 +21,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.common.test.state.DummySwirldState2;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
@@ -41,7 +41,7 @@ public class SignedStateSynchronizationTests {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(State.class, State::new));
         registry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));
-        registry.registerConstructable(new ClassConstructorPair(DummySwirldState2.class, DummySwirldState2::new));
+        registry.registerConstructable(new ClassConstructorPair(DummySwirldState.class, DummySwirldState::new));
     }
 
     @Test

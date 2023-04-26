@@ -58,15 +58,6 @@ class FreezeManagerTest {
     }
 
     @Test
-    void shouldSyncTest() {
-        assertFalse(freezeManager.isEventCreationFrozen(), "EventCreationFrozen should be false by default");
-        assertFalse(freezeManager.shouldSync(), "shouldSync() should return false when it is not in freeze period");
-
-        freezeManager.freezeEventCreation();
-        assertTrue(freezeManager.shouldSync(), "should sync during freeze period");
-    }
-
-    @Test
     void freezeStateTest() {
         assertFalse(freezeManager.isFreezeStarted(), "Freeze status should initialize to NOT_IN_FREEZE");
         assertFalse(freezeManager.isFreezeComplete(), "Freeze status should initialize to NOT_IN_FREEZE");

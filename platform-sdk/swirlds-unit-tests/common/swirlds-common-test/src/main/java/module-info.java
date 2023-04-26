@@ -12,6 +12,7 @@ open module com.swirlds.common.test {
     exports com.swirlds.common.test.crypto;
     exports com.swirlds.common.test.fcqueue;
 
+    requires com.swirlds.base;
     requires com.swirlds.test.framework;
     requires com.swirlds.common;
     requires org.bouncycastle.provider;
@@ -21,4 +22,5 @@ open module com.swirlds.common.test {
     requires org.apache.logging.log4j;
     requires com.fasterxml.jackson.databind;
     requires lazysodium.java;
+    requires static com.github.spotbugs.annotations;
 }

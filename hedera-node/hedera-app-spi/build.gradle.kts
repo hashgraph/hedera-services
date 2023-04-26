@@ -34,18 +34,23 @@ configurations.all {
 }
 
 dependencies {
-  implementation(libs.grpc.stub)
   implementation(libs.swirlds.virtualmap)
   implementation(libs.swirlds.jasperdb)
   implementation(libs.swirlds.common)
+  api(libs.pbj.runtime)
   api(libs.hapi)
-  api(libs.helidon.io.grpc)
   api(libs.jsr305.annotation)
+  api(project(":hedera-node:hapi"))
   compileOnlyApi(libs.spotbugs.annotations)
 
+  testRuntimeOnly(libs.swirlds.config.impl)
   testImplementation(testLibs.bundles.testing)
   testCompileOnly(libs.spotbugs.annotations)
 
   testFixturesCompileOnly(libs.spotbugs.annotations)
   testFixturesCompileOnly(testLibs.assertj.core)
+  testFixturesApi(libs.swirlds.common)
+
+  // Temporarily needed until FakePreHandleContext can be removed
+  testFixturesCompileOnly(project(":hedera-node:hedera-token-service"))
 }

@@ -52,7 +52,7 @@ concurrency:
 jobs:
   SimilarStake:
     name: SimilarStake
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -66,7 +66,7 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
   UnevenStake:
     name: UnevenStake
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -83,7 +83,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   MinStake:
     name: MinStake
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -100,7 +100,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   ZeroStake:
     name: ZeroStake
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -118,7 +118,7 @@ jobs:
 
   NewNodesSimilarStake:
     name: NewNodesSimilarStake
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -132,7 +132,7 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
   NewNodesUnevenStake:
     name: NewNodesUnevenStake
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -150,7 +150,7 @@ jobs:
 
   NewNodesMinStake:
     name: NewNodesMinStake
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -168,7 +168,7 @@ jobs:
 
   NewNodesZeroStake:
     name: NewNodesZeroStake
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}

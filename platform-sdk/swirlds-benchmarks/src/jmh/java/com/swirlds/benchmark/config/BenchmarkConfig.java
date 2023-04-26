@@ -16,8 +16,11 @@
 
 package com.swirlds.benchmark.config;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Settimgs for the benchmarks
@@ -54,17 +57,16 @@ public record BenchmarkConfig(
         @ConfigProperty(defaultValue = "false") boolean csvAppend,
         @ConfigProperty(defaultValue = "sda") String deviceName) {
     public String toString() {
-        return String.format(
-                "[benchmarkData=\"%s\", saveDataDirectory=%b, verifyResult=%b, printHistogram=%b,"
-                        + " csvOutputFolder=\"%s\", csvFileName=\"%s\", csvWriteFrequency=%d, csvAppend=%b, deviceName=\"%s\"]",
-                benchmarkData,
-                saveDataDirectory,
-                verifyResult,
-                printHistogram,
-                csvOutputFolder,
-                csvFileName,
-                csvWriteFrequency,
-                csvAppend,
-                deviceName);
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("benchmarkData", benchmarkData)
+                .append("saveDataDirectory", saveDataDirectory)
+                .append("verifyResult", verifyResult)
+                .append("printHistogram", printHistogram)
+                .append("csvOutputFolder", csvOutputFolder)
+                .append("csvFileName", csvFileName)
+                .append("csvWriteFrequency", csvWriteFrequency)
+                .append("csvAppend", csvAppend)
+                .append("deviceName", deviceName)
+                .toString();
     }
 }

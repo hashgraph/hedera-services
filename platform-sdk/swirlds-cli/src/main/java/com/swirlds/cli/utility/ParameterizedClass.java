@@ -16,6 +16,7 @@
 
 package com.swirlds.cli.utility;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import picocli.CommandLine;
@@ -38,8 +39,7 @@ public class ParameterizedClass {
     /**
      * Build an exception caused by invalid parameters.
      *
-     * @param message
-     * 		the message on the exception
+     * @param message the message on the exception
      */
     protected CommandLine.ParameterException buildParameterException(final String message) {
         throw new CommandLine.ParameterException(spec.commandLine(), message);
@@ -48,8 +48,7 @@ public class ParameterizedClass {
     /**
      * Ensure that a path from the command line exists and that this process has read access to it.
      *
-     * @param path
-     * 		a path from the command line
+     * @param path a path from the command line
      * @return the path if it passes validation
      */
     protected Path pathMustExist(final Path path) {
@@ -65,8 +64,7 @@ public class ParameterizedClass {
     /**
      * Ensure that a path from the command line does not exist.
      *
-     * @param path
-     * 		a path from the command line
+     * @param path a path from the command line
      * @return the path if it passes validation
      */
     protected Path pathMustNotExist(final Path path) {
@@ -74,5 +72,18 @@ public class ParameterizedClass {
             throw new CommandLine.ParameterException(spec.commandLine(), "Path " + path + " already exists");
         }
         return path;
+    }
+
+    /**
+     * Ensure that a path exists from the command line to a file and return the file handle.
+     *
+     * @param path a path from the command line
+     * @return the file if it passes validation
+     */
+    protected File fileMustExist(final Path path) {
+        if (!Files.isRegularFile(pathMustExist(path))) {
+            throw new CommandLine.ParameterException(spec.commandLine(), "Path " + path + " is not a file.");
+        }
+        return path.toFile();
     }
 }

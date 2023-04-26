@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
@@ -66,14 +65,6 @@ public class EntityNumMerkleDbKeySerializer implements KeySerializer<EntityNumVi
     @Override
     public int getSerializedSize() {
         return EntityNumVirtualKey.sizeInBytes();
-    }
-
-    @Override
-    public int serialize(EntityNumVirtualKey key, SerializableDataOutputStream out) throws IOException {
-        Objects.requireNonNull(key);
-        Objects.requireNonNull(out);
-        key.serialize(out);
-        return getSerializedSize();
     }
 
     @Override

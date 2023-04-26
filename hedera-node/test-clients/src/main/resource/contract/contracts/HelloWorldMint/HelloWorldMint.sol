@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.12;
 pragma experimental ABIEncoderV2;
 
 import "./IHederaTokenService.sol";
 import "./HederaResponseCodes.sol";
 
-contract HelloWorldMint {
+contract HelloWorldMint is HederaResponseCodes {
     address constant precompileAddress = address(0x167);
 
     address tokenAddress;
@@ -31,7 +31,7 @@ contract HelloWorldMint {
     function mintToken(address token, uint64 amount, bytes[] memory metadata) internal
     returns (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers)
     {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.mintToken.selector,
             token, amount, metadata));
         (responseCode, newTotalSupply, serialNumbers) =

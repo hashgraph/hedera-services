@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.12;
 pragma experimental ABIEncoderV2;
 
-import "./hip-206/HederaTokenService.sol";
+import "./HederaTokenService.sol";
 
 contract MintContract is HederaTokenService {
 
@@ -22,7 +22,7 @@ contract MintContract is HederaTokenService {
     }
 
     function mintFungibleTokenWithEvent(uint64 amount) public {
-        (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, amount, new bytes[](0));
+        (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, amount, new bytes[](0));
         emit MintedTokenInfo(newTotalSupply, 0);
 
         if (responseCode != HederaResponseCodes.SUCCESS || serialNumbers.length > 0) {
@@ -31,7 +31,7 @@ contract MintContract is HederaTokenService {
     }
 
     function mintNonFungibleTokenWithEvent(bytes[] memory metadata) external {
-         (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, metadata);
+         (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, metadata);
          emit MintedTokenInfo(newTotalSupply,serialNumbers[0]);
 
          if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -40,7 +40,7 @@ contract MintContract is HederaTokenService {
     }
 
     function mintNonFungibleTokenWithAddress(address _tokenAddress, bytes[] memory metadata) external {
-        (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers) = HederaTokenService.mintToken(_tokenAddress, 0, metadata);
+        (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(_tokenAddress, 0, metadata);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert ("Non fungible mint failed!");
         }
@@ -48,7 +48,7 @@ contract MintContract is HederaTokenService {
 
     function revertMintAfterFailedMint(address sender, address recipient, int64 amount) external {
         HederaTokenService.transferToken(tokenAddress, sender, recipient, amount);
-        (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, new bytes[](0));
+        (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, new bytes[](0));
         if (responseCode != HederaResponseCodes.SUCCESS) {
                 revert ("Mint of fungible token failed!");
             }

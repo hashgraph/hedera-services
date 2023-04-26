@@ -65,9 +65,10 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 public class Utils {
-    public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s";
+    public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s%2$s";
     public static final String UNIQUE_CLASSPATH_RESOURCE_TPL = "contract/contracts/%s/%s";
     private static final Logger log = LogManager.getLogger(Utils.class);
+    private static final String JSON_EXTENSION = ".json";
 
     public static ByteString eventSignatureOf(String event) {
         return ByteString.copyFrom(Hash.keccak256(Bytes.wrap(event.getBytes())).toArray());
@@ -92,6 +93,9 @@ public class Utils {
     }
 
     public static byte[] asAddress(final ContractID id) {
+        if (id.getEvmAddress().size() == 20) {
+            return id.getEvmAddress().toByteArray();
+        }
         return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
     }
 
@@ -144,7 +148,7 @@ public class Utils {
      */
     public static String getABIFor(final FunctionType type, final String functionName, final String contractName) {
         try {
-            final var path = getResourcePath(contractName, ".json");
+            final var path = getResourcePath(contractName, JSON_EXTENSION);
             try (final var input = new FileInputStream(path)) {
                 return getFunctionAbiFrom(input, functionName, type);
             }
@@ -155,7 +159,8 @@ public class Utils {
 
     public static String getResourceABIFor(
             final FunctionType type, final String functionName, final String contractName) {
-        final var resourcePath = String.format(UNIQUE_CLASSPATH_RESOURCE_TPL, contractName, contractName + ".json");
+        final var resourcePath =
+                String.format(UNIQUE_CLASSPATH_RESOURCE_TPL, contractName, contractName + JSON_EXTENSION);
         try (final var input = Utils.class.getClassLoader().getResourceAsStream(resourcePath)) {
             return getFunctionAbiFrom(input, functionName, type);
         } catch (final IOException e) {
@@ -182,7 +187,7 @@ public class Utils {
      * @param contractName the name of the contract
      */
     public static String getABIForContract(final String contractName) {
-        final var path = getResourcePath(contractName, ".json");
+        final var path = getResourcePath(contractName, JSON_EXTENSION);
         var ABI = EMPTY;
         try {
             ABI = FileUtils.readFileToString(new File(path), StandardCharsets.UTF_8);
@@ -200,12 +205,12 @@ public class Utils {
      */
     public static String getResourcePath(String resourceName, final String extension) {
         resourceName = resourceName.replaceAll("\\d*$", "");
-        final var path = String.format(RESOURCE_PATH + extension, resourceName);
+        final var path = String.format(RESOURCE_PATH, resourceName, extension);
         final var file = relocatedIfNotPresentInWorkingDir(new File(path));
         if (!file.exists()) {
             throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
         }
-        return path;
+        return file.getPath();
     }
 
     public enum FunctionType {

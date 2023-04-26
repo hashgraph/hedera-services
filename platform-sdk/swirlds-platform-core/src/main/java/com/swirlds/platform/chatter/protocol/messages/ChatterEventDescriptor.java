@@ -16,12 +16,15 @@
 
 package com.swirlds.platform.chatter.protocol.messages;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A stripped down description of a chatter event.
@@ -147,6 +150,10 @@ public class ChatterEventDescriptor implements EventDescriptor {
 
     @Override
     public String toString() {
-        return String.format("GossipEventDescriptor(%d,%d,%s)", creator, generation, CommonUtils.hex(hash.getValue()));
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("creator", creator)
+                .append("generation", generation)
+                .append("hash", CommonUtils.hex(hash.getValue()))
+                .toString();
     }
 }

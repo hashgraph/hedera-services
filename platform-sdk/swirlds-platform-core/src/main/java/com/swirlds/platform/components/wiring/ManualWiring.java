@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components.wiring;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.WiringConfig;
@@ -38,9 +39,11 @@ import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponentFactory;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.util.PlatformComponents;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -93,8 +96,7 @@ public class ManualWiring {
     /**
      * Creates and wires the {@link AppCommunicationComponent}.
      *
-     * @param notificationEngine
-     * 		passes notifications between the platform and the application
+     * @param notificationEngine passes notifications between the platform and the application
      * @return a fully wired {@link AppCommunicationComponent}
      */
     public AppCommunicationComponent wireAppCommunicationComponent(final NotificationEngine notificationEngine) {
@@ -107,30 +109,34 @@ public class ManualWiring {
     /**
      * Creates and wires the {@link StateManagementComponent}.
      *
-     * @param platformSigner
-     * 		signer capable of signing with this node's private key
-     * @param mainClassName
-     * 		the class that extends {@link com.swirlds.common.system.SwirldMain}
-     * @param selfId
-     * 		this node's id
-     * @param swirldName
-     * 		the name of the swirld this node is in
-     * @param prioritySystemTransactionSubmitter
-     * 		submits priority system transactions
-     * @param haltRequestedConsumer
-     * 		consumer to invoke when a halt is requested
-     * @param appCommunicationComponent
-     * 		the {@link AppCommunicationComponent}
+     * @param platformSigner                     signer capable of signing with this node's private key
+     * @param mainClassName                      the class that extends {@link com.swirlds.common.system.SwirldMain}
+     * @param selfId                             this node's id
+     * @param swirldName                         the name of the swirld this node is in
+     * @param prioritySystemTransactionSubmitter submits priority system transactions
+     * @param haltRequestedConsumer              consumer to invoke when a halt is requested
+     * @param appCommunicationComponent          the {@link AppCommunicationComponent}
+     * @param preConsensusEventWriter            writes preconsensus events to disk
      * @return a fully wired {@link StateManagementComponent}
      */
-    public StateManagementComponent wireStateManagementComponent(
-            final PlatformSigner platformSigner,
-            final String mainClassName,
-            final NodeId selfId,
-            final String swirldName,
-            final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
-            final HaltRequestedConsumer haltRequestedConsumer,
-            final AppCommunicationComponent appCommunicationComponent) {
+    public @NonNull StateManagementComponent wireStateManagementComponent(
+            @NonNull final PlatformSigner platformSigner,
+            @NonNull final String mainClassName,
+            @NonNull final NodeId selfId,
+            @NonNull final String swirldName,
+            @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
+            @NonNull final HaltRequestedConsumer haltRequestedConsumer,
+            @NonNull final AppCommunicationComponent appCommunicationComponent,
+            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+
+        throwArgNull(platformSigner, "platformSigner");
+        throwArgNull(mainClassName, "mainClassName");
+        throwArgNull(selfId, "selfId");
+        throwArgNull(swirldName, "swirldName");
+        throwArgNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
+        throwArgNull(haltRequestedConsumer, "haltRequestedConsumer");
+        throwArgNull(appCommunicationComponent, "appCommunicationComponent");
+        throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
 
         final StateManagementComponentFactory stateManagementComponentFactory =
                 new DefaultStateManagementComponentFactory(
@@ -173,6 +179,7 @@ public class ManualWiring {
         // FUTURE WORK: make this asynchronous
         stateManagementComponentFactory.issConsumer(appCommunicationComponent);
         stateManagementComponentFactory.fatalErrorConsumer(this::handleFatalError);
+        stateManagementComponentFactory.setPreConsensusEventWriter(preConsensusEventWriter);
 
         final StateManagementComponent stateManagementComponent = stateManagementComponentFactory.build();
         platformComponentList.add(stateManagementComponent);
@@ -209,8 +216,7 @@ public class ManualWiring {
     /**
      * Registers all components created by this class.
      *
-     * @param platformComponents
-     * 		the class that manages startables and registers dispatch observers.
+     * @param platformComponents the class that manages startables and registers dispatch observers.
      */
     public void registerComponents(final PlatformComponents platformComponents) {
         otherComponents.forEach(platformComponents::add);

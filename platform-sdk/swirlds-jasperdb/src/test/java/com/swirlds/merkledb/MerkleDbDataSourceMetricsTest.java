@@ -151,15 +151,17 @@ class MerkleDbDataSourceMetricsTest {
                 lastLeafIndex + DEFAULT_RESERVED_BUFFER_LENGTH,
                 lastLeafIndex + DEFAULT_RESERVED_BUFFER_LENGTH + 1,
                 Stream.empty(),
-                IntStream.of(42).mapToObj(i -> fixed_fixed.dataType().createVirtualLeafRecord(i)),
+                // valid leaf index
+                IntStream.of(lastLeafIndex + DEFAULT_RESERVED_BUFFER_LENGTH)
+                        .mapToObj(i -> fixed_fixed.dataType().createVirtualLeafRecord(i)),
                 Stream.empty());
 
         // shrink the list by one chunk
         assertMetricValue("offHeapLeafMb", 8);
 
         // longKeyToPath list doesn't shrink
-        assertMetricValue("offHeapKeyToPathMb", 24);
-        assertMetricValue("offHeapDataSourceMb", 32);
+        assertMetricValue("offHeapKeyToPathMb", 16);
+        assertMetricValue("offHeapDataSourceMb", 24);
         assertNoMemoryForInternalList();
     }
 

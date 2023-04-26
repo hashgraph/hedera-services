@@ -38,7 +38,6 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.state.signed.SignedState;
-import java.time.Instant;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -186,16 +185,6 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     public boolean createTransaction(final byte[] trans) {
         // Transaction creation always fails
         return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Instant estimateTime() {
-        // This platform will never allow the submission of a transaction,
-        // so whatever value we return here doesn't matter.
-        return Instant.now();
     }
 
     /**

@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_NFT;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -112,7 +113,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
         // --- Check required signatures ---
         final var tokenId = Id.fromGrpcToken(Objects.requireNonNull(mintOp).tokenType());
         final var hasRequiredSigs = KeyActivationUtils.validateKey(
-                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, aliases);
+                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, aliases, TokenMint);
         validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, MINT);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */

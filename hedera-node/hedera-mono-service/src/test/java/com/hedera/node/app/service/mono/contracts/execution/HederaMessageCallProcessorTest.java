@@ -37,13 +37,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.records.RecordSubmissions;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.node.app.service.mono.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
@@ -205,9 +205,9 @@ class HederaMessageCallProcessorTest {
 
     @Test
     void callsParentWithNonTokenAccountReceivingNoValue() {
-        final var sender = new UpdateTrackingLedgerAccount<>(SENDER_ADDRESS, null);
+        final var sender = new UpdateTrackingAccount<>(SENDER_ADDRESS, null);
         sender.setBalance(Wei.of(123));
-        final var receiver = new UpdateTrackingLedgerAccount<>(RECIPIENT_ADDRESS, null);
+        final var receiver = new UpdateTrackingAccount<>(RECIPIENT_ADDRESS, null);
 
         given(frame.getWorldUpdater()).willReturn(updater);
         given(frame.getValue()).willReturn(Wei.of(123));

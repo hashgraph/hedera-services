@@ -294,7 +294,7 @@ class GetAccountDetailsAnswerTest {
         final GetAccountDetailsResponse.AccountDetails details =
                 response.getAccountDetails().getAccountDetails();
         assertEquals(asAccount(payer), details.getAccountId());
-        final String address = CommonUtils.hex(asEvmAddress(0, 0L, 12_345L));
+        final String address = CommonUtils.hex(asEvmAddress(12_345L));
         assertEquals(address, details.getContractAccountId());
         assertEquals(payerAccount.getBalance(), details.getBalance());
         assertEquals(
@@ -348,7 +348,7 @@ class GetAccountDetailsAnswerTest {
         // setup:
         final Query query = validQuery(COST_ANSWER, fee, target);
 
-        given(optionValidator.queryableAccountStatus(eq(EntityNum.fromAccountId(payerId)), any()))
+        given(optionValidator.queryableAccountOrContractStatus(eq(EntityNum.fromAccountId(payerId)), any()))
                 .willReturn(ACCOUNT_DELETED);
 
         // when:
@@ -365,7 +365,8 @@ class GetAccountDetailsAnswerTest {
 
         given(aliasManager.lookupIdBy(any())).willReturn(entityNum);
 
-        given(optionValidator.queryableAccountStatus(eq(entityNum), any())).willReturn(INVALID_ACCOUNT_ID);
+        given(optionValidator.queryableAccountOrContractStatus(eq(entityNum), any()))
+                .willReturn(INVALID_ACCOUNT_ID);
 
         final ResponseCodeEnum validity = subject.checkValidity(query, view);
         assertEquals(INVALID_ACCOUNT_ID, validity);

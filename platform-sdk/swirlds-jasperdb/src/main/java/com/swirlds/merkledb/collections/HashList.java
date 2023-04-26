@@ -27,14 +27,14 @@ import java.nio.file.Path;
  * does. We do not implement analogs of many of the {@link java.util.Collection} APIs, because they are not needed.
  * The data structure does not contain a {@code size} method, or any explicit control over the size of the data
  * structure, but sub-classes may impose such restrictions.
- * <p>
+ *
  * Concurrent reads are supported. Concurrent writes to <strong>different</strong> indexes are also supported. Writes
  * to the same index are <strong>not</strong> atomic, and therefore lead to unpredictable results.
- * <p>
+ *
  * This class was designed to support the on-disk merkle database. These concurrency tradeoffs are acceptable
  * because there is only ever one flushing thread writing to the {@link HashList} and no readers will concurrently
  * read from these write locations because those indexes are covered by the in-memory cache.
- * <p>
+ *
  * Implementations of {@link HashList} may include off-heap or even on-disk variants. As such, the Hash objects
  * may be serialized to/from bytes.
  */

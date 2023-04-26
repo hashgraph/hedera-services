@@ -28,7 +28,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
@@ -51,7 +51,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MigrationTestingToolState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState2 {
+public class MigrationTestingToolState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState {
 
     private static final Logger logger = LogManager.getLogger(MigrationTestingToolState.class);
 

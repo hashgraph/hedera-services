@@ -1062,3 +1062,5 @@ hedera-node/hapi/checkouts.bin
 !platform-sdk/**/src/test/resources/**/*.test_sig
 !platform-sdk/**/src/test/resources/**/*.evts
 !platform-sdk/**/src/test/resources/**/*.evts_sig
+*.dtmp
+*.bkp

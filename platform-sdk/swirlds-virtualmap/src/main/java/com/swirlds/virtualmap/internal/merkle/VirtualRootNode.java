@@ -118,8 +118,7 @@ import org.apache.logging.log4j.Logger;
  * 		The value
  */
 @DebugIterationEndpoint
-public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends VirtualValue>
-        extends PartialBinaryMerkleInternal
+public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue> extends PartialBinaryMerkleInternal
         implements CustomReconnectRoot<Long, Long>, ExternalSelfSerializable, VirtualRoot, MerkleInternal {
 
     private static final String NO_NULL_KEYS_ALLOWED_MESSAGE = "Null keys are not allowed";
@@ -1089,7 +1088,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         final T snapshot;
         if (destination == null) {
             //noinspection unchecked
-            snapshot = (T) new RecordAccessorImpl<>(state, cache.snapshot(), dataSourceBuilder.copy(dataSource));
+            snapshot = (T) new RecordAccessorImpl<>(state, cache.snapshot(), dataSourceBuilder.copy(dataSource, false));
         } else {
             dataSourceBuilder.snapshot(destination, dataSource);
             //noinspection unchecked
@@ -1142,7 +1141,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         originalMap.dataSource.stopBackgroundCompaction();
 
         // Take a snapshot, and use the snapshot database as my data source
-        this.dataSource = dataSourceBuilder.copy(originalMap.dataSource);
+        this.dataSource = dataSourceBuilder.copy(originalMap.dataSource, true);
 
         // The old map's cache is going to become immutable, but that's OK, because the old map
         // will NEVER be updated again.

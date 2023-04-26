@@ -16,8 +16,6 @@
 
 package com.swirlds.common.system;
 
-import java.time.Instant;
-
 /**
  * An object that can be used to submit transactions.
  */
@@ -40,15 +38,4 @@ public interface TransactionSubmitter {
      * @return true if successful
      */
     boolean createTransaction(byte[] trans);
-
-    /**
-     * Find a rough estimate of what consensus timestamp a transaction would eventually have, if it were
-     * created right now through a call to createTransaction().
-     * <p>
-     * A real-time app, such as a game, will typically redraw the screen by first calling estTime(), then
-     * rendering everything to the screen reflecting the predicted state as it will be at this time.
-     *
-     * @return the estimated time
-     */
-    Instant estimateTime();
 }

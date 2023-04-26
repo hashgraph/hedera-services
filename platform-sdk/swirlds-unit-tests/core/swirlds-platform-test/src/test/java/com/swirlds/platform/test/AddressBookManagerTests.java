@@ -37,8 +37,8 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.platform.state.address.AddressBookManagerImpl;
 import com.swirlds.platform.state.address.AddressBookStore;
-import com.swirlds.platform.state.address.BranchingAddressBookStore;
 import com.swirlds.platform.state.address.MutableAddressBookManager;
+import com.swirlds.platform.state.address.SequentialAddressBookStore;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.util.HashMap;
@@ -69,7 +69,7 @@ class AddressBookManagerTests {
     private AddressBookStore buildInitialStore(
             final RandomAddressBookGenerator generator, final long firstRound, final int size) {
 
-        final AddressBookStore addressBookStore = new BranchingAddressBookStore();
+        final AddressBookStore addressBookStore = new SequentialAddressBookStore();
 
         for (long round = firstRound; round < firstRound + size; round++) {
             final AddressBook addressBook = generator.build().setRound(round);

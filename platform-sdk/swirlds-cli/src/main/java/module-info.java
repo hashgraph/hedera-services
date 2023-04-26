@@ -17,4 +17,5 @@ module com.swirlds.cli {
     requires io.github.classgraph;
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
+    requires static com.github.spotbugs.annotations;
 }

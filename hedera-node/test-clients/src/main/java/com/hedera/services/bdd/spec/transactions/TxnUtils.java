@@ -348,8 +348,10 @@ public class TxnUtils {
         final HapiGetFileInfo subOp = getFileInfo(file).payingWith(payer).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
-            log.error("Unable to look up current expiration timestamp of file 0.0."
-                    + spec.registry().getFileId(file).getFileNum());
+            String message = String.format(
+                    "Unable to look up current expiration timestamp of file 0.0.%d",
+                    spec.registry().getFileId(file).getFileNum());
+            log.error(message);
             throw error.get();
         }
         return subOp.getResponse().getFileGetInfo().getFileInfo().getExpirationTime();
@@ -363,8 +365,10 @@ public class TxnUtils {
         final HapiGetContractInfo subOp = getContractInfo(contract).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
-            log.error("Unable to look up current expiration timestamp of contract 0.0."
-                    + spec.registry().getContractId(contract).getContractNum());
+            String message = String.format(
+                    "Unable to look up current expiration timestamp of contract 0.0.%d",
+                    spec.registry().getContractId(contract).getContractNum());
+            log.error(message);
             throw error.get();
         }
         return subOp.getResponse().getContractGetInfo().getContractInfo().getExpirationTime();
@@ -374,8 +378,10 @@ public class TxnUtils {
         final HapiGetContractInfo subOp = getContractInfo(contract).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
-            log.error("Unable to look up current expiration timestamp of contract 0.0."
-                    + spec.registry().getContractId(contract).getContractNum());
+            String message = String.format(
+                    "Unable to look up current expiration timestamp of contract 0.0.%d",
+                    spec.registry().getContractId(contract).getContractNum());
+            log.error(message);
             throw error.get();
         }
         return subOp.getResponse().getContractGetInfo().getContractInfo().getMaxAutomaticTokenAssociations();

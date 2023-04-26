@@ -53,7 +53,7 @@ import java.util.stream.Stream;
 /**
  * Validator to read a data source and all its data and check the complete data set is valid.
  */
-public class VirtualMerkleLeafHasher<K extends VirtualKey<? super K>, V extends VirtualValue> {
+public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValue> {
 
     /** The data source we are validating */
     private final VirtualMap<K, V> virtualMap;

@@ -31,6 +31,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -59,6 +60,14 @@ public abstract class HapiSuite {
 
     public abstract List<HapiSpec> getSpecsInSuite();
 
+    public List<HapiSpec> getSpecsInSuiteWithOverrides() {
+        final var specs = getSpecsInSuite();
+        if (!overrides.isEmpty()) {
+            specs.forEach(spec -> spec.addOverrideProperties(overrides));
+        }
+        return specs;
+    }
+
     public static final Key EMPTY_KEY =
             Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 
@@ -82,8 +91,7 @@ public abstract class HapiSuite {
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
     public static final String CHAIN_ID_PROP = "contracts.chainId";
-    public static final String CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED =
-            "cryptoCreateWithAliasAndEvmAddress.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final Integer CHAIN_ID = 298;
     public static final String ETH_HASH_KEY = "EthHash";
     public static final String ETH_SENDER_ADDRESS = "EthSenderAddress";
@@ -144,6 +152,8 @@ public abstract class HapiSuite {
     private boolean tearDownClientsAfter = true;
     private List<HapiSpec> finalSpecs = Collections.emptyList();
 
+    private Map<String, Object> overrides = Collections.emptyMap();
+
     public String name() {
         String simpleName = this.getClass().getSimpleName();
 
@@ -184,6 +194,20 @@ public abstract class HapiSuite {
         }
     }
 
+    public void runSuiteConcurrentWithOverrides(final Map<String, Object> overrides) {
+        this.overrides = overrides;
+        runSuiteAsync();
+    }
+
+    public void runSuiteSequentialWithOverrides(final Map<String, Object> overrides) {
+        this.overrides = overrides;
+        runSuiteSync();
+    }
+
+    public void setOverrides(final Map<String, Object> overrides) {
+        this.overrides = overrides;
+    }
+
     public FinalOutcome runSuiteAsync() {
         return runSuite(HapiSuite::runConcurrentSpecs);
     }
@@ -204,6 +228,9 @@ public abstract class HapiSuite {
 
         List<HapiSpec> specs = getSpecsInSuite();
         for (final var spec : specs) {
+            if (!overrides.isEmpty()) {
+                spec.addOverrideProperties(overrides);
+            }
             if (spec.isOnlySpecToRunInSuite()) {
                 specs = List.of(spec);
                 break;

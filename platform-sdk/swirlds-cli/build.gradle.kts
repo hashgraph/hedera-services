@@ -25,4 +25,5 @@ dependencies {
   implementation(libs.bundles.picocli)
   implementation(libs.classgraph)
   implementation(libs.bundles.logging.impl)
+  compileOnly(libs.spotbugs.annotations)
 }

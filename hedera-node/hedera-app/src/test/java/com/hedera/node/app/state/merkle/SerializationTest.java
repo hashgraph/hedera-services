@@ -51,9 +51,9 @@ class SerializationTest extends MerkleTestBase {
             @Override
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
-                final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES);
-                final var animalDef = StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100);
-                final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES);
+                final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC);
+                final var animalDef = StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC, 100);
+                final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC);
                 return Set.of(fruitDef, animalDef, countryDef);
             }
 
@@ -92,8 +92,8 @@ class SerializationTest extends MerkleTestBase {
         // Given a merkle tree with some fruit and animals and country
         final var v1 = version(1, 0, 0);
         final var dir = TemporaryFileBuilder.buildTemporaryDirectory();
-        final var originalTree =
-                new MerkleHederaState(tree -> {}, (evt, meta, provider) -> {}, (round, dual, metadata) -> {});
+        final var originalTree = new MerkleHederaState(
+                (tree, state) -> {}, (evt, meta, provider) -> {}, (state, platform, dual, trigger, version) -> {});
         final var originalRegistry = new MerkleSchemaRegistry(registry, dir, FIRST_SERVICE);
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
@@ -109,13 +109,14 @@ class SerializationTest extends MerkleTestBase {
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
         final Supplier<RuntimeConstructable> constructor = () -> new MerkleHederaState(
-                tree -> newRegistry.migrate(tree, v1, v1),
+                (tree, state) -> newRegistry.migrate((MerkleHederaState) state, v1, v1),
                 (event, meta, provider) -> {},
-                (round, dualState, metadata) -> {});
+                (state, platform, dualState, trigger, version) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
 
         final MerkleHederaState loadedTree = parseTree(serializedBytes, dir);
+        newRegistry.migrate(loadedTree, null, schemaV1.getVersion());
         loadedTree.migrate(1);
 
         // Then, we should be able to see all our original states again

@@ -18,6 +18,7 @@ package com.swirlds.common.utility;
 
 import static com.swirlds.common.utility.CommonUtils.nullToBlank;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -31,6 +32,7 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.CompareToBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Represents a unique platform or core system version number and associated commit identifier. Provides methods to
@@ -310,7 +312,10 @@ public final class PlatformVersion implements SoftwareVersion {
 
     @Override
     public String toString() {
-        return "PlatformVersion[" + "versionNumber=" + versionNumber + ", " + "commit=" + commit + ']';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("versionNumber", versionNumber)
+                .append("commit", commit)
+                .toString();
     }
 
     @Override

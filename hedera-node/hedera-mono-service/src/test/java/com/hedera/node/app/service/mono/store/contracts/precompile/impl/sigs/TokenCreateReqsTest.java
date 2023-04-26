@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -80,7 +81,8 @@ class TokenCreateReqsTest {
     void requiresAutoRenewAccountToSign() {
         final var captor = forClass(LegacyKeyActivationTest.class);
 
-        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any())).willReturn(true);
+        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any(), eq(TokenCreate)))
+                .willReturn(true);
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.exists(autoRenew)).willReturn(true);
 
@@ -89,20 +91,39 @@ class TokenCreateReqsTest {
         subject.assertNonAdminOrTreasurySigs(op.build());
 
         verify(legacyKeyValidator)
-                .validateKey(eq(frame), eq(autoRenewMirrorAddress), captor.capture(), eq(ledgers), eq(aliases));
+                .validateKey(
+                        eq(frame),
+                        eq(autoRenewMirrorAddress),
+                        captor.capture(),
+                        eq(ledgers),
+                        eq(aliases),
+                        eq(TokenCreate));
         // and when:
         final var tests = captor.getAllValues();
-        tests.get(0).apply(false, autoRenewMirrorAddress, pretendActiveContract, ledgers, legacyActivationTest);
+        tests.get(0)
+                .apply(
+                        false,
+                        autoRenewMirrorAddress,
+                        pretendActiveContract,
+                        ledgers,
+                        legacyActivationTest,
+                        TokenCreate);
         verify(sigsVerifier)
                 .hasLegacyActiveKey(
-                        false, autoRenewMirrorAddress, pretendActiveContract, ledgers, legacyActivationTest);
+                        false,
+                        autoRenewMirrorAddress,
+                        pretendActiveContract,
+                        ledgers,
+                        legacyActivationTest,
+                        TokenCreate);
     }
 
     @Test
     void requiresFractionalFeeCollectorToSignButNotOtherDenominatedFixed() {
         final var captor = forClass(LegacyKeyActivationTest.class);
 
-        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any())).willReturn(true);
+        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any(), eq(TokenCreate)))
+                .willReturn(true);
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.exists(aCollector)).willReturn(true);
 
@@ -113,20 +134,23 @@ class TokenCreateReqsTest {
         subject.assertNonAdminOrTreasurySigs(op.build());
 
         verify(legacyKeyValidator)
-                .validateKey(eq(frame), eq(aCollectorAddress), captor.capture(), eq(ledgers), eq(aliases));
+                .validateKey(
+                        eq(frame), eq(aCollectorAddress), captor.capture(), eq(ledgers), eq(aliases), eq(TokenCreate));
         verifyNoMoreInteractions(legacyKeyValidator);
         // and when:
         final var tests = captor.getAllValues();
-        tests.get(0).apply(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
+        tests.get(0).apply(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest, TokenCreate);
         verify(sigsVerifier)
-                .hasLegacyActiveKey(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
+                .hasLegacyActiveKey(
+                        false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest, TokenCreate);
     }
 
     @Test
     void requiresSelfDenominatedFixedToSignButNotOtherDenominatedRoyaltyFallback() {
         final var captor = forClass(LegacyKeyActivationTest.class);
 
-        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any())).willReturn(true);
+        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any(), eq(TokenCreate)))
+                .willReturn(true);
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.exists(aCollector)).willReturn(true);
 
@@ -137,20 +161,23 @@ class TokenCreateReqsTest {
         subject.assertNonAdminOrTreasurySigs(op.build());
 
         verify(legacyKeyValidator)
-                .validateKey(eq(frame), eq(aCollectorAddress), captor.capture(), eq(ledgers), eq(aliases));
+                .validateKey(
+                        eq(frame), eq(aCollectorAddress), captor.capture(), eq(ledgers), eq(aliases), eq(TokenCreate));
         verifyNoMoreInteractions(legacyKeyValidator);
         // and when:
         final var tests = captor.getAllValues();
-        tests.get(0).apply(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
+        tests.get(0).apply(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest, TokenCreate);
         verify(sigsVerifier)
-                .hasLegacyActiveKey(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
+                .hasLegacyActiveKey(
+                        false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest, TokenCreate);
     }
 
     @Test
     void requiresSelfDenominatedFallbackToSignButNotRoyaltyWithoutFallback() {
         final var captor = forClass(LegacyKeyActivationTest.class);
 
-        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any())).willReturn(true);
+        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any(), eq(TokenCreate)))
+                .willReturn(true);
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.exists(aCollector)).willReturn(true);
 
@@ -161,13 +188,15 @@ class TokenCreateReqsTest {
         subject.assertNonAdminOrTreasurySigs(op.build());
 
         verify(legacyKeyValidator)
-                .validateKey(eq(frame), eq(aCollectorAddress), captor.capture(), eq(ledgers), eq(aliases));
+                .validateKey(
+                        eq(frame), eq(aCollectorAddress), captor.capture(), eq(ledgers), eq(aliases), eq(TokenCreate));
         verifyNoMoreInteractions(legacyKeyValidator);
         // and when:
         final var tests = captor.getAllValues();
-        tests.get(0).apply(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
+        tests.get(0).apply(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest, TokenCreate);
         verify(sigsVerifier)
-                .hasLegacyActiveKey(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
+                .hasLegacyActiveKey(
+                        false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest, TokenCreate);
     }
 
     private TokenCreateTransactionBody.Builder baseCreateOp() {

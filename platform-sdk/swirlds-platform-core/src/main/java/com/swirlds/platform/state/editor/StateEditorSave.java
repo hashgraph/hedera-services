@@ -18,6 +18,7 @@ package com.swirlds.platform.state.editor;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatFile;
+import static com.swirlds.platform.state.signed.SavedStateMetadata.NO_NODE_ID;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateFilesToDirectory;
 
 import com.swirlds.cli.utility.SubcommandOf;
@@ -57,7 +58,9 @@ public class StateEditorSave extends StateEditorOperation {
                 Files.createDirectories(directory);
             }
 
-            writeSignedStateFilesToDirectory(directory, getStateEditor().getSignedStateCopy());
+            writeSignedStateFilesToDirectory(
+                    NO_NODE_ID, directory, getStateEditor().getSignedStateCopy());
+
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         } catch (final ExecutionException | InterruptedException e) {

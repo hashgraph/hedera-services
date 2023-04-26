@@ -40,7 +40,7 @@ class AddressKeyedMapFactoryTest {
     void toAddressConversion() {
         final var mapper = toAddressMapping(LEGACY_BYTECODE_PATH_PATTERN);
         final var key = "/666/s888";
-        final var expected = EntityIdUtils.asEvmAddress(0, 666, 888);
+        final var expected = EntityIdUtils.asEvmAddress(888);
 
         final var actual = mapper.apply(key);
 
@@ -50,8 +50,8 @@ class AddressKeyedMapFactoryTest {
     @Test
     void toKeyConversionWorks() {
         final var mapper = toKeyMapping(LEGACY_BYTECODE_PATH_TEMPLATE);
-        final var address = EntityIdUtils.asEvmAddress(0, 666, 888);
-        final var expected = "/666/s888";
+        final var address = EntityIdUtils.asEvmAddress(888);
+        final var expected = "/0/s888";
 
         final var actual = mapper.apply(address);
 
@@ -72,9 +72,9 @@ class AddressKeyedMapFactoryTest {
     void bytecodeProductHasMapSemantics() {
         final Map<String, byte[]> delegate = new HashMap<>();
         delegate.put(("/2/s7"), "APRIORI".getBytes());
-        final var address1 = EntityIdUtils.asEvmAddress(0, 2, 3);
-        final var address2 = EntityIdUtils.asEvmAddress(0, 3333, 4);
-        final var address3 = EntityIdUtils.asEvmAddress(0, 4, 555555);
+        final var address1 = EntityIdUtils.asEvmAddress(3);
+        final var address2 = EntityIdUtils.asEvmAddress(4);
+        final var address3 = EntityIdUtils.asEvmAddress(555555);
         final var theData = "THE".getBytes();
         final var someData = "SOME".getBytes();
         final var moreData = "MORE".getBytes();
@@ -89,7 +89,7 @@ class AddressKeyedMapFactoryTest {
         storageMap.remove(address2);
         assertEquals(3, storageMap.size());
         assertEquals(
-                "/2/s3->SOME, /4/s555555->THE, /2/s7->APRIORI",
+                "/0/s3->SOME, /0/s555555->THE, /2/s7->APRIORI",
                 delegate.entrySet().stream()
                         .sorted(Comparator.comparingLong(entry -> Long.parseLong(entry.getKey()
                                 .substring(
@@ -119,9 +119,9 @@ class AddressKeyedMapFactoryTest {
     void storageProductHasMapSemantics() {
         final Map<String, byte[]> delegate = new HashMap<>();
         delegate.put(("/2/d7"), "APRIORI".getBytes());
-        final var address1 = EntityIdUtils.asEvmAddress(0, 2, 3);
-        final var address2 = EntityIdUtils.asEvmAddress(0, 3333, 4);
-        final var address3 = EntityIdUtils.asEvmAddress(0, 4, 555555);
+        final var address1 = EntityIdUtils.asEvmAddress(3);
+        final var address2 = EntityIdUtils.asEvmAddress(4);
+        final var address3 = EntityIdUtils.asEvmAddress(555555);
         final var theData = "THE".getBytes();
         final var someData = "SOME".getBytes();
         final var moreData = "MORE".getBytes();
@@ -137,7 +137,7 @@ class AddressKeyedMapFactoryTest {
         storageMap.remove(address2);
         assertEquals(3, storageMap.size());
         assertEquals(
-                "/2/d3->SOME, /4/d555555->THE, /2/d7->APRIORI",
+                "/0/d3->SOME, /0/d555555->THE, /2/d7->APRIORI",
                 delegate.entrySet().stream()
                         .sorted(Comparator.comparingLong(entry -> Long.parseLong(entry.getKey()
                                 .substring(

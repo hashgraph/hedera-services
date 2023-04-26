@@ -16,6 +16,8 @@
 
 package com.swirlds.common.merkle.utility;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -119,7 +121,9 @@ public class KeyedMerkleLong<K extends FastCopyable & SelfSerializable> extends 
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this).append("value", value).toString();
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("value", value)
+                .toString();
     }
 
     /**

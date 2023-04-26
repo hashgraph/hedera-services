@@ -182,7 +182,7 @@ public class ContractCallSuite extends HapiSuite {
     private static final String NESTED_TRANSFERRING_CONTRACT = "NestedTransferringContract";
     private static final String ACC_INFO = "accInfo";
     private static final String RECEIVER_1 = "receiver1";
-    private static final String RECEIVER_2 = "receiver2";
+    public static final String RECEIVER_2 = "receiver2";
     private static final String RECEIVER_3 = "receiver3";
     private static final String RECEIVER_1_INFO = "receiver1Info";
     private static final String RECEIVER_2_INFO = "receiver2Info";
@@ -2089,10 +2089,12 @@ public class ContractCallSuite extends HapiSuite {
                         tokenAssociate(dev, sauce),
                         sourcing(
                                 () -> contractCallWithFunctionAbi(farm, setSauceAbi, asHeadlongAddress(sauceAddr.get()))
-                                        .gas(gasToOffer)),
+                                        .gas(gasToOffer)
+                                        .refusingEthConversion()),
                         sourcing(
                                 () -> contractCallWithFunctionAbi(farm, transferAbi, asHeadlongAddress(ownerAddr.get()))
-                                        .gas(gasToOffer)))
+                                        .gas(gasToOffer)
+                                        .refusingEthConversion()))
                 .when(
                         sourcing(() -> contractCallWithFunctionAbi(
                                         farm,
@@ -2101,26 +2103,30 @@ public class ContractCallSuite extends HapiSuite {
                                         asHeadlongAddress(lpTokenAddr.get()))
                                 .via("add")
                                 .payingWith(OWNER)
-                                .gas(gasToOffer)),
+                                .gas(gasToOffer)
+                                .refusingEthConversion()),
                         newKeyNamed("contractControl").shape(KeyShape.CONTRACT.signedWith(farm)),
                         tokenUpdate(sauce).supplyKey("contractControl"),
                         sourcing(() -> contractCallWithFunctionAbi(
                                         farm, depositAbi, BigInteger.ZERO, BigInteger.valueOf(100_000))
                                 .sending(ONE_HUNDRED_HBARS)
                                 .payingWith(dev)
-                                .gas(gasToOffer)),
+                                .gas(gasToOffer)
+                                .refusingEthConversion()),
                         sleepFor(1000),
                         sourcing(() -> contractCallWithFunctionAbi(
                                         farm, depositAbi, BigInteger.ZERO, BigInteger.valueOf(100_000))
                                 .sending(ONE_HUNDRED_HBARS)
                                 .payingWith(dev)
                                 .gas(gasToOffer)
-                                .via("second")),
+                                .via("second")
+                                .refusingEthConversion()),
                         getTxnRecord("second").andAllChildRecords().logged())
                 .then(sourcing(() -> contractCallWithFunctionAbi(
                                 farm, withdrawAbi, BigInteger.ZERO, BigInteger.valueOf(200_000))
                         .payingWith(dev)
-                        .gas(gasToOffer)));
+                        .gas(gasToOffer)
+                        .refusingEthConversion()));
     }
 
     private HapiSpec consTimeManagementWorksWithRevertedInternalCreations() {

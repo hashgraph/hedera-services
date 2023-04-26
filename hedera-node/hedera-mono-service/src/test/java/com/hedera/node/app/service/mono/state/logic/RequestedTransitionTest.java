@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
-import com.hedera.node.app.service.mono.txns.TransitionRunner;
+import com.hedera.node.app.service.mono.txns.TransactionLastStep;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -41,7 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RequestedTransitionTest {
     @Mock
-    private TransitionRunner transitionRunner;
+    private TransactionLastStep lastStep;
 
     @Mock
     private SystemOpPolicies opPolicies;
@@ -65,7 +65,7 @@ class RequestedTransitionTest {
 
     @BeforeEach
     void setUp() {
-        subject = new RequestedTransition(transitionRunner, opPolicies, txnCtx, networkCtxManager, hapiOpPermissions);
+        subject = new RequestedTransition(lastStep, opPolicies, txnCtx, networkCtxManager, hapiOpPermissions);
     }
 
     @Test
@@ -81,7 +81,7 @@ class RequestedTransitionTest {
 
         // then:
         verify(txnCtx).setStatus(IMPERMISSIBLE.asStatus());
-        verify(transitionRunner, never()).tryTransition(accessor);
+        verify(lastStep, never()).tryTransition(accessor);
     }
 
     @Test
@@ -96,7 +96,7 @@ class RequestedTransitionTest {
 
         // then:
         verify(txnCtx).setStatus(AUTHORIZATION_FAILED);
-        verify(transitionRunner, never()).tryTransition(accessor);
+        verify(lastStep, never()).tryTransition(accessor);
     }
 
     @Test
@@ -106,13 +106,13 @@ class RequestedTransitionTest {
         given(hapiOpPermissions.permissibilityOf(HederaFunctionality.CryptoTransfer, payer))
                 .willReturn(OK);
         given(opPolicies.checkAccessor(accessor)).willReturn(UNNECESSARY);
-        given(transitionRunner.tryTransition(accessor)).willReturn(true);
+        given(lastStep.tryTransition(accessor)).willReturn(true);
 
         // when:
         subject.finishFor(accessor);
 
         // then:
-        verify(transitionRunner).tryTransition(accessor);
+        verify(lastStep).tryTransition(accessor);
         verify(networkCtxManager).finishIncorporating(HederaFunctionality.CryptoTransfer);
     }
 

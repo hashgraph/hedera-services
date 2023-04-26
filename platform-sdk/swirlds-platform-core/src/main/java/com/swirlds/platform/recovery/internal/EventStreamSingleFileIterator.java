@@ -42,12 +42,10 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
     /**
      * Create an iterator that walks over an event stream file.
      *
-     * @param objectStreamFile
-     * 		the file
-     * @param toleratePartialFile
-     * 		if true then allow the event stream file to end abruptly (possibly mid-event),
-     * 		and return all events that are complete within the stream. If false then throw
-     * 		if the file is incomplete.
+     * @param objectStreamFile    the file
+     * @param toleratePartialFile if true then allow the event stream file to end abruptly (possibly mid-event), and
+     *                            return all events that are complete within the stream. If false then throw if the file
+     *                            is incomplete.
      * @throws IOException
      */
     public EventStreamSingleFileIterator(final Path objectStreamFile, final boolean toleratePartialFile)
@@ -58,12 +56,10 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
     /**
      * Create an iterator that walks over an event stream file.
      *
-     * @param in
-     * 		the input stream
-     * @param toleratePartialFile
-     * 		if true then allow the event stream file to end abruptly (possibly mid-event),
-     * 		and return all events that are complete within the stream. If false then throw
-     * 		if the file is incomplete.
+     * @param in                  the input stream
+     * @param toleratePartialFile if true then allow the event stream file to end abruptly (possibly mid-event), and
+     *                            return all events that are complete within the stream. If false then throw if the file
+     *                            is incomplete.
      * @throws IOException
      */
     public EventStreamSingleFileIterator(final InputStream in, final boolean toleratePartialFile) throws IOException {
@@ -71,14 +67,10 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
         iterator = new ObjectStreamIterator<>(in, toleratePartialFile);
         this.toleratePartialFile = toleratePartialFile;
 
-        if (!iterator.hasNext()) {
-            startHash = null;
-            throw new IOException("event stream file has not objects");
-        }
-
         // First thing in the stream is a hash
         if (!iterator.hasNext()) {
-            throw new IOException("iterator contains no objects");
+            startHash = null;
+            throw new IOException("event stream file has no objects");
         }
         final SelfSerializable firstObject = iterator.next();
         if (firstObject != null && firstObject.getClassId() != Hash.CLASS_ID) {
@@ -182,12 +174,12 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
     }
 
     /**
-     * Is this file damaged? A file can be damaged if the JVM is killed abruptly while data is being written,
-     * or if the file is closed before the final hash has been written.
+     * Is this file damaged? A file can be damaged if the JVM is killed abruptly while data is being written, or if the
+     * file is closed before the final hash has been written.
      *
      * @return true if this file is damaged
      */
     public boolean isDamaged() {
-        return iterator.isDamaged() || (finished && endHash == null);
+        return finished && endHash == null;
     }
 }

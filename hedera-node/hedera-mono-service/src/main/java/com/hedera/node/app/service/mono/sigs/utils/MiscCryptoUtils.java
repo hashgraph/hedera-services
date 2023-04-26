@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.sigs.utils;
 
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+
+import java.util.Arrays;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
@@ -64,5 +67,17 @@ public class MiscCryptoUtils {
         System.arraycopy(decompressedKey, 0, decompressedBytes, 1, 32);
         System.arraycopy(decompressedKey, 32, decompressedBytes, 33, 32);
         return curveSecp256k1.decodePoint(decompressedBytes).getEncoded(true);
+    }
+
+    /**
+     * Given a 64-byte decompressed ECDSA(secp256k1) public key, returns the evm address
+     * derived from the last 20 bytes of the keccak256 hash of the public key.
+     *
+     * @param decompressedKey a decompressed ECDSA(secp256k1) public key
+     * @return the raw bytes of the evm address derived from that key
+     */
+    public static byte[] extractEvmAddressFromDecompressedECDSAKey(final byte[] decompressedKey) {
+        final var publicKeyHash = MiscCryptoUtils.keccak256DigestOf(decompressedKey);
+        return Arrays.copyOfRange(publicKeyHash, publicKeyHash.length - EVM_ADDRESS_SIZE, publicKeyHash.length);
     }
 }

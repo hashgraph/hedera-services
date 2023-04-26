@@ -164,7 +164,7 @@ public class TransferLogic {
         }
     }
 
-    public void payAutoCreationFee(final long autoCreationFee) {
+    private void payAutoCreationFee(final long autoCreationFee) {
         feeDistribution.distributeChargedFee(autoCreationFee, accountsLedger);
 
         // deduct the auto creation fee from payer of the transaction

@@ -9,7 +9,8 @@ module com.hedera.node.app.service.contract.impl.test {
     requires org.assertj.core;
     requires org.mockito.junit.jupiter;
     requires com.hedera.node.app.spi;
-    requires hedera.services.hedera.node.hedera.app.spi.testFixtures;
+    requires com.hedera.node.app.spi.fixtures;
+    requires com.hedera.pbj.runtime;
 
     opens com.hedera.node.app.service.contract.impl.test to
             org.junit.platform.commons;

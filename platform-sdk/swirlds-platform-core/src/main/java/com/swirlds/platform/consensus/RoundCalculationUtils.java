@@ -72,6 +72,10 @@ public final class RoundCalculationUtils {
      * @return minimum non-ancient generation
      */
     public static long getMinGenNonAncient(final int roundsNonAncient, final SignedState signedState) {
-        return getMinGenNonAncient(roundsNonAncient, signedState.getRound(), signedState::getMinGen);
+        return getMinGenNonAncient(roundsNonAncient, signedState.getRound(), round -> signedState
+                .getState()
+                .getPlatformState()
+                .getPlatformData()
+                .getMinGen(round));
     }
 }

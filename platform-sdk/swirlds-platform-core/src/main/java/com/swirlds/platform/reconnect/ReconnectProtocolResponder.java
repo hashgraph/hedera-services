@@ -38,7 +38,8 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
     private final LatestSignedStateProvider latestSignedStateProvider;
     private final ReconnectSettings settings;
     /**
-     * This object is responsible for limiting the frequency of reconnect attempts (in the role of the sender)
+     * This object is responsible for limiting the frequency of reconnect attempts (in the role of
+     * the sender)
      */
     private final ReconnectThrottle reconnectThrottle;
 
@@ -46,12 +47,13 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
     private final ThreadManager threadManager;
 
     /**
-     * @param threadManager             responsible for managing thread lifecycles
-     * @param latestSignedStateProvider a function that provides the latest signed state, reserved. The caller is
-     *                                  responsible for releasing the reservation when finished.
-     * @param settings                  reconnect settings
-     * @param reconnectThrottle         limits when reconnect may start
-     * @param stats                     reconnect metrics
+     * @param threadManager responsible for managing thread lifecycles
+     * @param latestSignedStateProvider a function that provides the latest signed state, either
+     *     strongly or weakly reserved. The caller is responsible for releasing the reservation when
+     *     finished.
+     * @param settings reconnect settings
+     * @param reconnectThrottle limits when reconnect may start
+     * @param stats reconnect metrics
      */
     public ReconnectProtocolResponder(
             final ThreadManager threadManager,
@@ -66,9 +68,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
         this.stats = stats;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void protocolInitiated(final byte initialByte, final Connection connection) throws IOException {
         logger.info(
@@ -104,9 +104,9 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
             ReconnectUtils.denyReconnect(connection);
             logger.error(
                     RECONNECT.getMarker(),
-                    "Rejecting reconnect request from node {} "
-                            + "due to lack of a fully signed state. The signed state manager attempted to provide "
-                            + "a state that was not fully signed, which should not be possible.",
+                    "Rejecting reconnect request from node {} due to lack of a fully signed state."
+                            + " The signed state manager attempted to provide a state that was not"
+                            + " fully signed, which should not be possible.",
                     connection.getOtherId().getId());
             return;
         }

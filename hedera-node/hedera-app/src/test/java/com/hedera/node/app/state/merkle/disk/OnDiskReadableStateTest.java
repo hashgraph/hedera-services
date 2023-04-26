@@ -38,8 +38,21 @@ class OnDiskReadableStateTest extends MerkleTestBase {
         md = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100));
+                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC, 100));
         virtualMap = createVirtualMap("TEST LABEL", md);
+    }
+
+    @Test
+    @DisplayName("The size of the state is the size of the virtual map")
+    void sizeWorks() {
+        final var state = new OnDiskReadableKVState<>(md, virtualMap);
+        assertThat(state.size()).isEqualTo(0);
+
+        add(virtualMap, md, A_KEY, APPLE);
+        add(virtualMap, md, B_KEY, BANANA);
+        add(virtualMap, md, C_KEY, CHERRY);
+        assertThat(state.size()).isEqualTo(virtualMap.size());
+        assertThat(state.size()).isEqualTo(3);
     }
 
     @Nested

@@ -29,6 +29,7 @@ import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.node.app.service.mono.utils.PendingCompletion;
 import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -41,6 +42,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -60,6 +62,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     private LinkedRefs linkedRefs;
     private ResponseCodeEnum expandedSigStatus;
     private RationalizedSigMeta sigMeta = null;
+    private List<PendingCompletion> pendingCompletions = Collections.emptyList();
 
     protected PlatformTxnAccessor(final TxnAccessor delegate) {
         this.delegate = delegate;
@@ -142,6 +145,16 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     @Override
     public LinkedRefs getLinkedRefs() {
         return linkedRefs;
+    }
+
+    @Override
+    public void setPendingCompletions(final List<PendingCompletion> pendingCompletions) {
+        this.pendingCompletions = pendingCompletions;
+    }
+
+    @Override
+    public List<PendingCompletion> getPendingCompletions() {
+        return this.pendingCompletions;
     }
 
     @Override

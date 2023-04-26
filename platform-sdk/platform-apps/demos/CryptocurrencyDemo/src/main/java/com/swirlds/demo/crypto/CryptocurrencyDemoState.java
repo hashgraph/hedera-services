@@ -35,7 +35,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.Utilities;
@@ -52,7 +52,7 @@ import java.util.Random;
  * entirely new cryptocurrency is created every time all the computers start the program over again, so
  * these cryptocurrencies won't have any actual value.
  */
-public class CryptocurrencyDemoState extends PartialMerkleLeaf implements SwirldState2, MerkleLeaf {
+public class CryptocurrencyDemoState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
     /**
      * The version history of this class.

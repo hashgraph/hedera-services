@@ -44,7 +44,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.defaultMinAutoRenewPeriod;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.DEFAULT_MIN_AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
 import static com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSSuite.HTS_COLLECTOR;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
@@ -75,11 +75,14 @@ public class ContractAutoExpirySpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractAutoExpirySpecs.class);
     private static final String INIT_CODE = "initcode";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
-    private static final String CREATION = "creation";
+    private static final String TRANSACTION_TYPE_CREATION = "creation";
     private static final String CONTRACT_TO_RENEW = "InstantStorageHog";
     private static final String SUPPLY_KEY = "multi";
     private static final String UPDATE_TXN = "updateTxn";
     private static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION = "ledger.autoRenewPeriod.minDuration";
+    private static final String EXPECTING_POST_RENEWAL_EXPIRY_OF = "Expecting post-renewal expiry of {}";
+    private static final String MINT_TOKEN_METADATA_TIME_MOVED_YET_SEEMED_TO_STOP = "Time moved, yet seemed to stop";
+    private static final String MINT_TOKEN_METADATA_AS_TWERE_A_SPINNING_TOP = "As 'twere a spinning-top";
 
     public static void main(String... args) {
         new ContractAutoExpirySpecs().runSuiteSync();
@@ -102,20 +105,17 @@ public class ContractAutoExpirySpecs extends HapiSuite {
     }
 
     private HapiSpec renewalWithCustomFeesWorks() {
-        final var initcode = "initcode";
-        final var contractToRemove = "InstantStorageHog";
         final var minimalLifetime = 4;
         final var aFungibleToken = "aFT";
         final var bFungibleToken = "bFT";
         final var nonFungibleToken = "NFT";
-        final var supplyKey = "multi";
         final var aFungibleAmount = 1_000_000L;
         final var bFungibleAmount = 666L;
         final var feeDenom = "feeDenom";
 
         return defaultHapiSpec("RenewalWithCustomFeesWorks")
                 .given(
-                        newKeyNamed(supplyKey),
+                        newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY).receiverSigRequired(true),
                         cryptoCreate(HTS_COLLECTOR).maxAutomaticTokenAssociations(5),
                         tokenCreate(feeDenom).treasury(TOKEN_TREASURY),
@@ -134,26 +134,26 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .withCustom(royaltyFeeWithFallback(
                                         1, 2, fixedHtsFeeInheritingRoyaltyCollector(1, aFungibleToken), HTS_COLLECTOR))
-                                .supplyKey(supplyKey)
+                                .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY),
                         mintToken(
                                 nonFungibleToken,
                                 List.of(
-                                        ByteString.copyFromUtf8("Time moved, yet seemed to stop"),
-                                        ByteString.copyFromUtf8("As 'twere a spinning-top"))),
-                        createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_TIME_MOVED_YET_SEEMED_TO_STOP),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_AS_TWERE_A_SPINNING_TOP))),
+                        createLargeFile(GENESIS, INIT_CODE, literalInitcodeFor(CONTRACT_TO_RENEW)),
                         enableContractAutoRenewWith(minimalLifetime, 0),
-                        contractCreate(contractToRemove, new BigInteger("63"))
+                        contractCreate(CONTRACT_TO_RENEW, new BigInteger("63"))
                                 .gas(2_000_000)
                                 .entityMemo("")
-                                .bytecode(initcode)
+                                .bytecode(INIT_CODE)
                                 .balance(0)
                                 .autoRenewSecs(minimalLifetime),
-                        tokenAssociate(contractToRemove, List.of(aFungibleToken, bFungibleToken, nonFungibleToken)),
+                        tokenAssociate(CONTRACT_TO_RENEW, List.of(aFungibleToken, bFungibleToken, nonFungibleToken)),
                         cryptoTransfer(
-                                moving(aFungibleAmount, aFungibleToken).between(TOKEN_TREASURY, contractToRemove),
-                                moving(bFungibleAmount, bFungibleToken).between(TOKEN_TREASURY, contractToRemove),
-                                movingUnique(nonFungibleToken, 1L, 2L).between(TOKEN_TREASURY, contractToRemove)),
+                                moving(aFungibleAmount, aFungibleToken).between(TOKEN_TREASURY, CONTRACT_TO_RENEW),
+                                moving(bFungibleAmount, bFungibleToken).between(TOKEN_TREASURY, CONTRACT_TO_RENEW),
+                                movingUnique(nonFungibleToken, 1L, 2L).between(TOKEN_TREASURY, CONTRACT_TO_RENEW)),
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
@@ -163,7 +163,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
                         // Now the contract is gone
-                        getContractInfo(contractToRemove).hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
+                        getContractInfo(CONTRACT_TO_RENEW).hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
                         // And the fungible units were returned to the treasury
                         getAccountBalance(TOKEN_TREASURY)
                                 .hasTokenBalance(aFungibleToken, aFungibleAmount)
@@ -175,17 +175,14 @@ public class ContractAutoExpirySpecs extends HapiSuite {
     }
 
     private HapiSpec receiverSigReqBypassedForTreasuryAtEndOfGracePeriod() {
-        final var initcode = "initcode";
-        final var contractToRemove = "InstantStorageHog";
         final var minimalLifetime = 4;
         final var aFungibleToken = "aFT";
         final var nonFungibleToken = "NFT";
-        final var supplyKey = "multi";
         final var aFungibleAmount = 1_000_000L;
 
         return defaultHapiSpec("receiverSigReqBypassedForTreasuryAtEndOfGracePeriod")
                 .given(
-                        newKeyNamed(supplyKey),
+                        newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY).receiverSigRequired(true),
                         tokenCreate(aFungibleToken)
                                 .initialSupply(aFungibleAmount)
@@ -193,26 +190,26 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         tokenCreate(nonFungibleToken)
                                 .initialSupply(0)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(supplyKey)
+                                .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY),
                         mintToken(
                                 nonFungibleToken,
                                 List.of(
                                         ByteString.copyFromUtf8("My lovely NFT 1"),
                                         ByteString.copyFromUtf8("My lovely NFT 2"))),
-                        createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
+                        createLargeFile(GENESIS, INIT_CODE, literalInitcodeFor(CONTRACT_TO_RENEW)),
                         enableContractAutoRenewWith(minimalLifetime, 0),
-                        contractCreate(contractToRemove, new BigInteger("63"))
+                        contractCreate(CONTRACT_TO_RENEW, new BigInteger("63"))
                                 .gas(2_000_000)
                                 .entityMemo("")
-                                .bytecode(initcode)
+                                .bytecode(INIT_CODE)
                                 .balance(0)
                                 .autoRenewSecs(minimalLifetime),
-                        tokenAssociate(contractToRemove, List.of(aFungibleToken, nonFungibleToken)),
+                        tokenAssociate(CONTRACT_TO_RENEW, List.of(aFungibleToken, nonFungibleToken)),
                         cryptoTransfer(
-                                moving(aFungibleAmount, aFungibleToken).between(TOKEN_TREASURY, contractToRemove),
-                                movingUnique(nonFungibleToken, 1L, 2L).between(TOKEN_TREASURY, contractToRemove)),
-                        getAccountBalance(contractToRemove)
+                                moving(aFungibleAmount, aFungibleToken).between(TOKEN_TREASURY, CONTRACT_TO_RENEW),
+                                movingUnique(nonFungibleToken, 1L, 2L).between(TOKEN_TREASURY, CONTRACT_TO_RENEW)),
+                        getAccountBalance(CONTRACT_TO_RENEW)
                                 .hasTokenBalance(aFungibleToken, aFungibleAmount)
                                 .hasTokenBalance(nonFungibleToken, 2),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(aFungibleToken, 0),
@@ -229,7 +226,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
                         // Now the contract is gone
-                        getContractInfo(contractToRemove)
+                        getContractInfo(CONTRACT_TO_RENEW)
                                 .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)
                                 .logged(),
                         // And the fungible units were returned to the treasury
@@ -357,7 +354,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime)
                                 .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
                                 .balance(0L)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
@@ -385,7 +382,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         getContractInfo(CONTRACT_TO_RENEW)
                                 .has(contractWith().isDeleted())
                                 .logged(),
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, defaultMinAutoRenewPeriod));
+                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
     private HapiSpec autoRenewInGracePeriodIfEnoughBalance() {
@@ -407,9 +404,9 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime)
                                 .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
                                 .balance(0L)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(CREATION);
+                            final var lookup = getTxnRecord(TRANSACTION_TYPE_CREATION);
                             allRunFor(spec, lookup);
 
                             final var responseRecord = lookup.getResponseRecord();
@@ -445,7 +442,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
 
                             allRunFor(spec, lookup);
                         }),
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, defaultMinAutoRenewPeriod));
+                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
     private HapiSpec renewalFeeDistributedToStakingAccounts() {
@@ -470,15 +467,15 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .bytecode(INIT_CODE)
                                 .autoRenewSecs(minimalLifetime)
                                 .balance(initBalance)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(CREATION);
+                            final var lookup = getTxnRecord(TRANSACTION_TYPE_CREATION);
                             allRunFor(spec, lookup);
                             final var responseRecord = lookup.getResponseRecord();
                             final var birth =
                                     responseRecord.getConsensusTimestamp().getSeconds();
                             expectedExpiryPostRenew.set(birth + minimalLifetime + standardLifetime);
-                            opLog.info("Expecting post-renewal expiry of {}", expectedExpiryPostRenew.get());
+                            opLog.info(EXPECTING_POST_RENEWAL_EXPIRY_OF, expectedExpiryPostRenew.get());
                         }),
                         contractUpdate(CONTRACT_TO_RENEW).newAutoRenew(7776000L),
                         sleepFor(minimalLifetime * 1_000L + 500L))
@@ -518,7 +515,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                     .hasTinyBars(changeFromSnapshot("nodeReward", nodeAccountFee))
                                     .logged();
                         }),
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, defaultMinAutoRenewPeriod));
+                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
     private HapiSpec chargesContractFundsWhenAutoRenewAccountHasZeroBalance() {
@@ -542,15 +539,15 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime)
                                 .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
                                 .balance(initBalance)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(CREATION);
+                            final var lookup = getTxnRecord(TRANSACTION_TYPE_CREATION);
                             allRunFor(spec, lookup);
                             final var responseRecord = lookup.getResponseRecord();
                             final var birth =
                                     responseRecord.getConsensusTimestamp().getSeconds();
                             expectedExpiryPostRenew.set(birth + minimalLifetime + standardLifetime);
-                            opLog.info("Expecting post-renewal expiry of {}", expectedExpiryPostRenew.get());
+                            opLog.info(EXPECTING_POST_RENEWAL_EXPIRY_OF, expectedExpiryPostRenew.get());
                         }),
                         contractUpdate(CONTRACT_TO_RENEW).newAutoRenew(7776000L).via(UPDATE_TXN),
                         sleepFor(minimalLifetime * 1_000L + 500L),
@@ -586,7 +583,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                             final var canonicalUsdFee = 0.026;
                             assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
                         }),
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, defaultMinAutoRenewPeriod));
+                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
     private HapiSpec renewsUsingAutoRenewAccountIfSet() {
@@ -609,15 +606,15 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime)
                                 .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
                                 .balance(initBalance)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(CREATION);
+                            final var lookup = getTxnRecord(TRANSACTION_TYPE_CREATION);
                             allRunFor(spec, lookup);
                             final var responseRecord = lookup.getResponseRecord();
                             final var birth =
                                     responseRecord.getConsensusTimestamp().getSeconds();
                             expectedExpiryPostRenew.set(birth + minimalLifetime + standardLifetime);
-                            opLog.info("Expecting post-renewal expiry of {}", expectedExpiryPostRenew.get());
+                            opLog.info(EXPECTING_POST_RENEWAL_EXPIRY_OF, expectedExpiryPostRenew.get());
                         }),
                         contractUpdate(CONTRACT_TO_RENEW).newAutoRenew(7776000L).via(UPDATE_TXN),
                         sleepFor(minimalLifetime * 1_000L + 500L),
@@ -653,7 +650,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                             final var canonicalUsdFee = 0.026;
                             assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
                         }),
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, defaultMinAutoRenewPeriod));
+                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
     private HapiSpec storageExpiryWorksAtTheExpectedInterval() {
@@ -691,8 +688,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         mintToken(
                                 nonFungibleToken,
                                 List.of(
-                                        ByteString.copyFromUtf8("Time moved, yet seemed to stop"),
-                                        ByteString.copyFromUtf8("As 'twere a spinning-top"))),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_TIME_MOVED_YET_SEEMED_TO_STOP),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_AS_TWERE_A_SPINNING_TOP))),
                         createLargeFile(GENESIS, INIT_CODE, literalInitcodeFor(CONTRACT_TO_RENEW)),
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         contractCreate(CONTRACT_TO_RENEW, BigInteger.valueOf(63))
@@ -771,8 +768,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         mintToken(
                                 nonFungibleToken,
                                 List.of(
-                                        ByteString.copyFromUtf8("Time moved, yet seemed to stop"),
-                                        ByteString.copyFromUtf8("As 'twere a spinning-top"))),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_TIME_MOVED_YET_SEEMED_TO_STOP),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_AS_TWERE_A_SPINNING_TOP))),
                         createLargeFile(GENESIS, INIT_CODE, literalInitcodeFor(CONTRACT_TO_RENEW)),
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         contractCreate(CONTRACT_TO_RENEW, BigInteger.valueOf(63))
@@ -825,15 +822,15 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .bytecode(INIT_CODE)
                                 .autoRenewSecs(minimalLifetime)
                                 .balance(initBalance)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(CREATION);
+                            final var lookup = getTxnRecord(TRANSACTION_TYPE_CREATION);
                             allRunFor(spec, lookup);
                             final var responseRecord = lookup.getResponseRecord();
                             final var birth =
                                     responseRecord.getConsensusTimestamp().getSeconds();
                             expectedExpiryPostRenew.set(birth + minimalLifetime + standardLifetime);
-                            opLog.info("Expecting post-renewal expiry of {}", expectedExpiryPostRenew.get());
+                            opLog.info(EXPECTING_POST_RENEWAL_EXPIRY_OF, expectedExpiryPostRenew.get());
                         }),
                         contractUpdate(CONTRACT_TO_RENEW).newAutoRenew(7776000L),
                         sleepFor(minimalLifetime * 1_000L + 500L))
@@ -869,7 +866,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                             final var canonicalUsdFee = 0.026;
                             assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
                         }),
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, defaultMinAutoRenewPeriod));
+                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD));
     }
 
     @Override

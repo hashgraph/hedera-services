@@ -47,9 +47,7 @@ public class File {
                 wacl.getListOf().get(i).registerWith(spec, under(name + i));
             }
         }
-        entityId.ifPresent(id -> {
-            spec.registry().saveFileId(name, id.asFile());
-        });
+        entityId.ifPresent(id -> spec.registry().saveFileId(name, id.asFile()));
     }
 
     public HapiQueryOp<?> existenceCheck(String name) {

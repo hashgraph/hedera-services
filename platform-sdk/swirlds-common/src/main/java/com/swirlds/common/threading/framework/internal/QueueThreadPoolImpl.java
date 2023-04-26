@@ -93,7 +93,7 @@ public class QueueThreadPoolImpl<T> extends AbstractBlockingQueue<T> implements 
      *
      * @param behavior
      * 		the type of {@link StopBehavior} that should be used to stop each thread
-     * @return
+     * @return true if all threads were stopped successfully, false otherwise
      */
     @Override
     public boolean stop(final StopBehavior behavior) {

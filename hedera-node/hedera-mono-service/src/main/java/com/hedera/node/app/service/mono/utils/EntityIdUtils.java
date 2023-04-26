@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUti
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
 import static java.lang.System.arraycopy;
 
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -187,27 +186,27 @@ public final class EntityIdUtils {
     }
 
     public static String asHexedEvmAddress(final AccountID id) {
-        return CommonUtils.hex(asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
+        return CommonUtils.hex(asEvmAddress(id.getAccountNum()));
     }
 
     public static byte[] asEvmAddress(final ContractID id) {
         if (id.getEvmAddress().size() == EVM_ADDRESS_SIZE) {
             return id.getEvmAddress().toByteArray();
         } else {
-            return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+            return asEvmAddress(id.getContractNum());
         }
     }
 
     public static byte[] asEvmAddress(final AccountID id) {
-        return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+        return asEvmAddress(id.getAccountNum());
     }
 
     public static byte[] asEvmAddress(final TokenID id) {
-        return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+        return asEvmAddress(id.getTokenNum());
     }
 
     public static byte[] asEvmAddress(final EntityId id) {
-        return asEvmAddress((int) id.shard(), id.realm(), id.num());
+        return asEvmAddress(id.num());
     }
 
     public static Address asTypedEvmAddress(final AccountID id) {
@@ -227,25 +226,13 @@ public final class EntityIdUtils {
     }
 
     public static String asHexedEvmAddress(final Id id) {
-        return CommonUtils.hex(asEvmAddress((int) id.shard(), id.realm(), id.num()));
+        return CommonUtils.hex(asEvmAddress(id.num()));
     }
 
-    public static byte[] asEvmAddress(final int shard, final long realm, final long num) {
+    public static byte[] asEvmAddress(final long num) {
         final byte[] evmAddress = new byte[20];
-
-        arraycopy(Ints.toByteArray(shard), 0, evmAddress, 0, 4);
-        arraycopy(Longs.toByteArray(realm), 0, evmAddress, 4, 8);
         arraycopy(Longs.toByteArray(num), 0, evmAddress, 12, 8);
-
         return evmAddress;
-    }
-
-    public static long shardFromEvmAddress(final byte[] bytes) {
-        return Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4));
-    }
-
-    public static long realmFromEvmAddress(final byte[] bytes) {
-        return Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12));
     }
 
     public static long numFromEvmAddress(final byte[] bytes) {
@@ -265,25 +252,17 @@ public final class EntityIdUtils {
     }
 
     public static AccountID accountIdFromEvmAddress(final byte[] bytes) {
-        return AccountID.newBuilder()
-                .setShardNum(shardFromEvmAddress(bytes))
-                .setRealmNum(realmFromEvmAddress(bytes))
-                .setAccountNum(numFromEvmAddress(bytes))
-                .build();
+        return AccountID.newBuilder().setAccountNum(numFromEvmAddress(bytes)).build();
     }
 
     public static ContractID contractIdFromEvmAddress(final byte[] bytes) {
         return ContractID.newBuilder()
-                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
-                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
                 .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
                 .build();
     }
 
     public static TokenID tokenIdFromEvmAddress(final byte[] bytes) {
         return TokenID.newBuilder()
-                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
-                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
                 .setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
                 .build();
     }

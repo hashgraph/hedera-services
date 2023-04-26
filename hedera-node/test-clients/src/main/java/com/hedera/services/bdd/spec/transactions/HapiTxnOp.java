@@ -144,7 +144,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             Transaction txn = finalizedTxn(spec, opBodyDef(spec));
 
             if (!loggingOff) {
-                log.info(spec.logPrefix() + " submitting " + this + " via " + txnToString(txn));
+                String message = String.format("%s submitting %s via %s", spec.logPrefix(), this, txnToString(txn));
+                log.info(message);
             }
 
             TransactionResponse response;

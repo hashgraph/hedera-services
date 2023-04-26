@@ -6,11 +6,12 @@
 # All other values are true.
 #######################################################################################
 
-maxOutgoingSyncs,          1
-state.saveStatePeriod,     0
-showInternalStats,         1
-doUpnp,                    false
-useLoopbackIp,             false
-csvFileName,               PlatformTesting
-checkSignedStateFromDisk,  1
-loadKeysFromPfxFiles,      0
+maxOutgoingSyncs,                 1
+state.saveStatePeriod,            0
+showInternalStats,                true
+doUpnp,                           false
+useLoopbackIp,                    false
+csvFileName,                      PlatformTesting
+checkSignedStateFromDisk,         true
+loadKeysFromPfxFiles,             false
+event.preconsensus.enableStorage, false

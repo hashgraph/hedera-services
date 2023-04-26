@@ -16,14 +16,15 @@
 
 package com.hedera.services.bdd.spec.verification.traceability;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.regex.Pattern;
@@ -45,7 +46,11 @@ public class SidecarWatcher {
     private static final int POLLING_INTERVAL_MS = 250;
 
     private final Queue<ExpectedSidecar> expectedSidecars = new LinkedBlockingDeque<>();
-    private final Multimap<String, MismatchedSidecar> failedSidecars = HashMultimap.create();
+
+    // LinkedHashMap lets us easily print mismatches _in the order added_. Important if the
+    // records get out-of-sync at one particular test, then all the _rest_ of the tests fail
+    // too: It's good to know the _first_ test which fails.
+    private final LinkedHashMap<String, List<MismatchedSidecar>> failedSidecars = new LinkedHashMap<>();
     private final Path recordStreamFolderPath;
 
     private boolean hasSeenFirstExpectedSidecar = false;
@@ -142,7 +147,8 @@ public class SidecarWatcher {
 
         if (!actualSidecar.equals(expectedSidecarRecord)) {
             final var spec = expectedSidecar.spec();
-            failedSidecars.put(spec, new MismatchedSidecar(expectedSidecarRecord, actualSidecar));
+            failedSidecars.computeIfAbsent(spec, k -> new ArrayList<>());
+            failedSidecars.get(spec).add(new MismatchedSidecar(expectedSidecarRecord, actualSidecar));
         }
     }
 
@@ -172,16 +178,16 @@ public class SidecarWatcher {
         return failedSidecars.isEmpty();
     }
 
-    public String getErrors() {
+    public String getMismatchErrors() {
         final var messageBuilder = new StringBuilder();
         messageBuilder.append("Mismatch(es) between actual/expected sidecars present: ");
-        for (final var key : failedSidecars.keySet()) {
-            final var faultySidecars = failedSidecars.get(key);
+        for (final var kv : failedSidecars.entrySet()) {
+            final var faultySidecars = kv.getValue();
             messageBuilder
                     .append("\n\n")
                     .append(faultySidecars.size())
                     .append(" SIDECAR MISMATCH(ES) in SPEC {")
-                    .append(key)
+                    .append(kv.getKey())
                     .append("}:");
             int i = 1;
             for (final var pair : faultySidecars) {
@@ -200,6 +206,23 @@ public class SidecarWatcher {
 
     public boolean thereAreNoPendingSidecars() {
         return expectedSidecars.isEmpty();
+    }
+
+    public String getPendingErrors() {
+        final var messageBuilder = new StringBuilder();
+        messageBuilder.append("Pending sidecars not yet seen: ");
+        int i = 1;
+        for (final var pendingSidecar : expectedSidecars) {
+            messageBuilder
+                    .append("\n****** PENDING #")
+                    .append(i++)
+                    .append("******\n")
+                    .append("*** Pending sidecar***\n")
+                    .append(pendingSidecar.spec())
+                    .append(": ")
+                    .append(pendingSidecar.expectedSidecarRecord());
+        }
+        return messageBuilder.toString();
     }
 
     public void tearDown() {

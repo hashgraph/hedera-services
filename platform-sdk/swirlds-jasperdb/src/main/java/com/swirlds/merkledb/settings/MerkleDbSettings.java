@@ -31,7 +31,7 @@ public interface MerkleDbSettings {
      * Get the maximum number of unique keys we expect to be stored in this database. This is used
      * for calculating in memory index sizes.
      *
-     * <p><b>IMPORTANT: This can only be set before a new database is created, changing on an
+     * <b>IMPORTANT: This can only be set before a new database is created, changing on an
      * existing database will break it.</b>
      */
     long getMaxNumOfKeys();
@@ -43,7 +43,7 @@ public interface MerkleDbSettings {
      * where the lower levels of the tree nodes hashes are in ram and the upper larger less changing
      * layers are on disk.
      *
-     * <p><b>IMPORTANT: This can only be set before a new database is created, changing on an
+     * <b>IMPORTANT: This can only be set before a new database is created, changing on an
      * existing database will break it.</b>
      */
     long getInternalHashesRamToDiskThreshold();
@@ -213,4 +213,23 @@ public interface MerkleDbSettings {
      * @return length of a reserved buffer
      */
     int getReservedBufferLengthForLeafList();
+
+    /**
+     * Get the percentage, from 0.0 to 100.0, of available processors to use for {@link
+     * com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap} background flushing threads. Flushing
+     * happens on the main lifecycle thread, but some work can be done on these background
+     * threads, e.g. parallel bucket reads before they are updated and written back to disk.
+     *
+     * @return the configured percentage of processors to use for HalfDiskHashMap flushing
+     */
+    double getPercentHalfDiskHashMapFlushThreads();
+
+    /**
+     * Get the number of threads to use for {@link com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap}
+     * background flushing. If not set explicitly, it is equal to the number of available CPUs multiplied
+     * by {@link #getPercentHalfDiskHashMapFlushThreads()}.
+     *
+     * @return the number of threads to use for HalfDiskHashMap flushing
+     */
+    int getNumHalfDiskHashMapFlushThreads();
 }

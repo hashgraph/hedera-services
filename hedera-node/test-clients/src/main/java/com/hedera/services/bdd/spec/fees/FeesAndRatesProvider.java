@@ -104,7 +104,8 @@ public class FeesAndRatesProvider {
 
     public void updateRateSet(ExchangeRateSet newSet) {
         rateSet = newSet;
-        log.info("Updating rates! Now :: " + rateSetAsString(newSet));
+        final String message = String.format("Updating rates! Now :: %s", rateSetAsString(newSet));
+        log.info(message);
     }
 
     public ExchangeRateSet rateSet() {
@@ -122,7 +123,11 @@ public class FeesAndRatesProvider {
         File f = new File(setup.clientExchangeRatesPath());
         byte[] bytes = Files.readAllBytes(f.toPath());
         rateSet = ExchangeRateSet.parseFrom(bytes);
-        log.info("The exchange rates from '" + f.getAbsolutePath() + "' are :: " + rateSetAsString(rateSet));
+        String newSetAsString = rateSetAsString(rateSet);
+
+        final String message =
+                String.format("The exchange rates from '%s' are :: %s", f.getAbsolutePath(), newSetAsString);
+        log.info(message);
     }
 
     public boolean hasRateSet() {
@@ -134,7 +139,10 @@ public class FeesAndRatesProvider {
         FileGetContentsResponse response = downloadWith(queryFee, false, setup.exchangeRatesId());
         byte[] bytes = response.getFileContents().getContents().toByteArray();
         rateSet = ExchangeRateSet.parseFrom(bytes);
-        log.info("The exchange rates are :: " + rateSetAsString(rateSet));
+        String newSetAsString = rateSetAsString(rateSet);
+
+        final String message = String.format("The exchange rates are :: %s", newSetAsString);
+        log.info(message);
     }
 
     private void readFeeSchedule() throws Throwable {
@@ -142,11 +150,10 @@ public class FeesAndRatesProvider {
         byte[] bytes = Files.readAllBytes(f.toPath());
         CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
         feeSchedule = wrapper.getCurrentFeeSchedule();
-        log.info("The fee schedule from '"
-                + f.getAbsolutePath()
-                + "' covers "
-                + feeSchedule.getTransactionFeeScheduleList().size()
-                + " ops.");
+        final String message = String.format(
+                "The fee schedule from '%s' covers %s ops.",
+                f.getAbsolutePath(), feeSchedule.getTransactionFeeScheduleList().size());
+        log.info(message);
     }
 
     private void downloadFeeSchedule() throws Throwable {
@@ -155,9 +162,10 @@ public class FeesAndRatesProvider {
         byte[] bytes = response.getFileContents().getContents().toByteArray();
         CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
         feeSchedule = typePatching.withPatchedTypesIfNecessary(wrapper.getCurrentFeeSchedule());
-        log.info("The fee schedule covers "
-                + feeSchedule.getTransactionFeeScheduleList().size()
-                + " ops.");
+        String message = String.format(
+                "The fee schedule covers %s ops.",
+                feeSchedule.getTransactionFeeScheduleList().size());
+        log.info(message);
     }
 
     private long lookupDownloadFee(FileID fileId) throws Throwable {
@@ -234,8 +242,8 @@ public class FeesAndRatesProvider {
 
         ExchangeRateSet perturbedSet =
                 rateSet.toBuilder().setCurrentRate(curRate).build();
-
-        log.info("Computed a new rate set :: " + rateSetAsString(perturbedSet));
+        String message = String.format("Computed a new rate set :: %s", rateSetAsString(perturbedSet));
+        log.info(message);
 
         return perturbedSet;
     }
@@ -251,8 +259,8 @@ public class FeesAndRatesProvider {
                 .setCurrentRate(curRate)
                 .setNextRate(nextRate)
                 .build();
-
-        log.info("Computed a new rate set :: " + rateSetAsString(perturbedSet));
+        String message = String.format("Computed a new rate set :: %s", rateSetAsString(perturbedSet));
+        log.info(message);
 
         return perturbedSet;
     }

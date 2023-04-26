@@ -4714,8 +4714,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                                                                                     somebodyElse))),
                                                                             serialNumberId)
                                                                     .array())))
-                                                    .setError(ByteString.copyFrom(
-                                                            "ERROR_DECODING_PRECOMPILE_INPUT".getBytes()))
+                                                    .setError(ByteString.copyFrom("PRECOMPILE_ERROR".getBytes()))
                                                     .setCallDepth(2)
                                                     .build())));
                 }));
@@ -4988,12 +4987,12 @@ public class TraceabilitySuite extends HapiSuite {
                     sidecarWatcher.tearDown();
                 }))
                 .then(assertionsHold((spec, assertLog) -> {
-                    assertTrue(sidecarWatcher.thereAreNoMismatchedSidecars(), sidecarWatcher.getErrors());
+                    assertTrue(sidecarWatcher.thereAreNoMismatchedSidecars(), sidecarWatcher.getMismatchErrors());
                     assertTrue(
                             sidecarWatcher.thereAreNoPendingSidecars(),
                             "There are some sidecars that have not been yet"
                                     + " externalized in the sidecar files after all"
-                                    + " specs.");
+                                    + " specs: " + sidecarWatcher.getPendingErrors());
                 }));
     }
 
@@ -5160,6 +5159,14 @@ public class TraceabilitySuite extends HapiSuite {
         final var recordStreamFolderPath = HapiSpec.isRunningInCi()
                 ? HapiSpec.ciPropOverrides().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY)
                 : HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY);
+
+        {
+            final var absolutePath =
+                    Paths.get(recordStreamFolderPath).toAbsolutePath().toString();
+            log.info("recordStreamFolderPath from config %s: %s (absolute %s)"
+                    .formatted(HapiSpec.isRunningInCi() ? "CI" : "not CI", recordStreamFolderPath, absolutePath));
+        }
+
         sidecarWatcher = new SidecarWatcher(Paths.get(recordStreamFolderPath));
         sidecarWatcher.watch();
     }

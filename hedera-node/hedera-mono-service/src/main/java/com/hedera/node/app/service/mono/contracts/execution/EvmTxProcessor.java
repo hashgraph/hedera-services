@@ -27,6 +27,8 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer.EmitActionSidecars;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer.ValidateActionSidecars;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
@@ -131,8 +133,13 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
 
         // Enable tracing of contract actions if action sidecars are enabled and this is not a
         // static call
-        final HederaTracer hederaTracer =
-                new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
+        final HederaTracer.EmitActionSidecars doEmitActionSidecars =
+                !isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION)
+                        ? EmitActionSidecars.ENABLED
+                        : EmitActionSidecars.DISABLED;
+        final HederaTracer.ValidateActionSidecars doValidateActionSidecars =
+                isSidecarValidationEnabled() ? ValidateActionSidecars.ENABLED : ValidateActionSidecars.DISABLED;
+        final HederaTracer hederaTracer = new HederaTracer(doEmitActionSidecars, doValidateActionSidecars);
         super.setOperationTracer(hederaTracer);
 
         try {
@@ -228,6 +235,10 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
 
     private boolean isSideCarTypeEnabled(final SidecarType sidecarType) {
         return ((GlobalDynamicProperties) dynamicProperties).enabledSidecars().contains(sidecarType);
+    }
+
+    private boolean isSidecarValidationEnabled() {
+        return ((GlobalDynamicProperties) dynamicProperties).validateSidecarsEnabled();
     }
 
     private void sendToCoinbase(

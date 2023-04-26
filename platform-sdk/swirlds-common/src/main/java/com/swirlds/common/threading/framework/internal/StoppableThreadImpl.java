@@ -24,6 +24,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.THREADS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.ThreadSeed;
@@ -36,6 +37,7 @@ import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -684,6 +686,6 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
      */
     @Override
     public String toString() {
-        return "StoppableThread(" + getName() + ")";
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE).append(getName()).toString();
     }
 }

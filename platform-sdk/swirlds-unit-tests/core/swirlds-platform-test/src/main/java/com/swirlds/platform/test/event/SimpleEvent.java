@@ -43,11 +43,6 @@ public class SimpleEvent extends EventImpl {
     }
 
     @Override
-    public boolean isLastOneBeforeShutdown() {
-        return false;
-    }
-
-    @Override
     public long getRoundReceived() {
         return 1;
     }

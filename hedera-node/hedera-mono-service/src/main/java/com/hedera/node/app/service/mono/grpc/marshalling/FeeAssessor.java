@@ -39,6 +39,9 @@ public class FeeAssessor {
     private final RoyaltyFeeAssessor royaltyFeeAssessor;
     private final FractionalFeeAssessor fractionalFeeAssessor;
 
+    public static final boolean IS_NOT_FALLBACK_FEE = false;
+    public static final boolean IS_FALLBACK_FEE = true;
+
     @Inject
     public FeeAssessor(
             FixedFeeAssessor fixedFeeAssessor,
@@ -109,7 +112,8 @@ public class FeeAssessor {
                 continue;
             }
             if (fee.getFeeType() == FIXED_FEE) {
-                fixedFeeAssessor.assess(payer, feeMeta, fee, balanceChangeManager, accumulator);
+                // This is a top-level fixed fee, not a fallback royalty fee
+                fixedFeeAssessor.assess(payer, feeMeta, fee, balanceChangeManager, accumulator, IS_NOT_FALLBACK_FEE);
                 if (balanceChangeManager.numChangesSoFar() > maxBalanceChanges) {
                     return ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
                 }

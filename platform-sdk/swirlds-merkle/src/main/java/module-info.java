@@ -16,4 +16,5 @@ open module com.swirlds.merkle {
     requires org.apache.logging.log4j;
     requires org.apache.commons.lang3;
     requires java.sql;
+    requires static com.github.spotbugs.annotations;
 }

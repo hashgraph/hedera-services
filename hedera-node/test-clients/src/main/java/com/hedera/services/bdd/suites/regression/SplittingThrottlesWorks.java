@@ -48,6 +48,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SplittingThrottlesWorks.class);
 
     private static final int scheduleCreatesPerCryptoCreate = 12;
+    private static final String CIVILIAN = "civilian";
     private AtomicLong duration = new AtomicLong(120);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
     private AtomicInteger maxOpsPerSec = new AtomicInteger(4 * scheduleCreatesPerCryptoCreate + 2);
@@ -97,7 +98,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
         return spec -> new OpProvider() {
             @Override
             public List<HapiSpecOperation> suggestedInitializers() {
-                return List.of(cryptoCreate("civilian")
+                return List.of(cryptoCreate(CIVILIAN)
                         .payingWith(GENESIS)
                         .balance(ONE_MILLION_HBARS)
                         .withRecharging());
@@ -111,17 +112,17 @@ public class SplittingThrottlesWorks extends HapiSuite {
                     op = cryptoCreate("w/e" + nextI)
                             .noLogging()
                             .deferStatusResolution()
-                            .payingWith("civilian")
+                            .payingWith(CIVILIAN)
                             .hasPrecheckFrom(OK, BUSY);
                 } else {
                     op = scheduleCreate(
                                     "scheduleW/e" + nextI,
-                                    cryptoTransfer(tinyBarsFromTo("civilian", FUNDING, 1))
+                                    cryptoTransfer(tinyBarsFromTo(CIVILIAN, FUNDING, 1))
                                             .memo(TxnUtils.randomAlphaNumeric(32))
                                             .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS))
                             .noLogging()
                             .deferStatusResolution()
-                            .payingWith("civilian")
+                            .payingWith(CIVILIAN)
                             .hasPrecheckFrom(OK, BUSY);
                 }
                 return Optional.of(op);

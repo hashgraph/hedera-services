@@ -16,7 +16,32 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import com.hedera.node.app.spi.records.RecordBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
  */
-public interface TransactionHandler {}
+public interface TransactionHandler {
+
+    /**
+     * Pre-handles a transaction, extracting all non-payer keys, which signatures need to be validated
+     *
+     * @param context the {@link PreHandleContext} which collects all information
+     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws PreCheckException if the transaction is invalid
+     */
+    default void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        // TODO: remove default implementation once all handlers were updated
+    }
+
+    /**
+     * Returns an instance of the transaction-specific {@link RecordBuilder}.
+     *
+     * @return an instance of the transaction-specific {@link RecordBuilder}
+     * @param <R> the type of the transaction-specific {@link RecordBuilder}
+     */
+    default <R extends RecordBuilder<R>> R newRecordBuilder() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+}

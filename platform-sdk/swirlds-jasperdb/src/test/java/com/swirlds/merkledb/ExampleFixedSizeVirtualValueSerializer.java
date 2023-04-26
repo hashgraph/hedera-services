@@ -67,10 +67,9 @@ public final class ExampleFixedSizeVirtualValueSerializer implements ValueSerial
     }
 
     @Override
-    public int serialize(final ExampleFixedSizeVirtualValue data, final SerializableDataOutputStream out)
-            throws IOException {
-        out.writeInt(data.getId());
-        out.write(data.getData());
+    public int serialize(final ExampleFixedSizeVirtualValue data, final ByteBuffer buffer) throws IOException {
+        buffer.putInt(data.getId());
+        buffer.put(data.getData());
         return getSerializedSize();
     }
 
@@ -84,17 +83,13 @@ public final class ExampleFixedSizeVirtualValueSerializer implements ValueSerial
         return new ExampleFixedSizeVirtualValue(id, bytes);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean equals(final Object obj) {
         return obj instanceof ExampleFixedSizeVirtualValueSerializer;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int hashCode() {
         return (int) CLASS_ID;

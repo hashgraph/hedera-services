@@ -19,6 +19,7 @@ package com.swirlds.common.metrics;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_3;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import java.util.EnumSet;
 import java.util.function.DoubleBinaryOperator;
@@ -236,7 +237,7 @@ public interface DoubleAccumulator extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this)
+            return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                     .appendSuper(super.toString())
                     .append("initialValue", initialValue)
                     .toString();

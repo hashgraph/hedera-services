@@ -42,11 +42,11 @@ class LongListTest {
     void constructWithTooBigChunkSizeThrowsException() {
         assertThrows(
                 ArithmeticException.class,
-                () -> new LongListHeap((Integer.MAX_VALUE / 8) + 1, Integer.MAX_VALUE),
+                () -> new LongListHeap((Integer.MAX_VALUE / 8) + 1, Integer.MAX_VALUE, 0),
                 "Check that ArithmeticException of num longs per chuck is too big");
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new LongListHeap(Integer.MAX_VALUE - 1, Integer.MAX_VALUE),
+                () -> new LongListHeap(Integer.MAX_VALUE - 1, Integer.MAX_VALUE, 0),
                 "Check that IllegalArgumentException of num longs per chuck is too big");
     }
 
@@ -55,7 +55,7 @@ class LongListTest {
         final LongConsumer firstConsumer = mock(LongConsumer.class);
         final LongConsumer secondConsumer = mock(LongConsumer.class);
 
-        final LongListHeap list = new LongListHeap(32, 32);
+        final LongListHeap list = new LongListHeap(32, 32, 0);
         for (int i = 1; i <= 3; i++) {
             list.put(i, i);
         }
@@ -88,7 +88,7 @@ class LongListTest {
 
     @ParameterizedTest
     @MethodSource("provideLongLists")
-    void test4089(final LongList list) {
+    void test4089(final AbstractLongList<?> list) {
         // Issue #4089: ArrayIndexOutOfBoundsException from VirtualMap.put()
         final long maxLongs = list.maxLongs;
         final int defaultValue = -1;
@@ -98,7 +98,7 @@ class LongListTest {
             if (thread == 0) {
                 // Getter
                 while (!done.get()) {
-                    assertEquals(list.get(maxLongs - 2, defaultValue), defaultValue, "Value should be whats expected.");
+                    assertEquals(defaultValue, list.get(maxLongs - 2, defaultValue), "Value should be whats expected.");
                 }
             } else {
                 // Putter
@@ -112,7 +112,7 @@ class LongListTest {
         final int numLongsPerChunk = 32;
         final int maxLongs = numLongsPerChunk * 4096;
         return Stream.of(
-                new LongListHeap(numLongsPerChunk, maxLongs),
+                new LongListHeap(numLongsPerChunk, maxLongs, 0),
                 new LongListOffHeap(numLongsPerChunk, maxLongs, DEFAULT_RESERVED_BUFFER_LENGTH));
     }
 }

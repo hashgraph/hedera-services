@@ -81,4 +81,13 @@ public interface PubKeyToSigBytes {
     default void resetAllSigsToUnused() {
         /* No-op */
     }
+
+    /**
+     * Checks for presence of an ECDSA signature in all of the public-key-to-signature mappings.
+     *
+     * @return true if there is at least one ECDSA signature; false if there is none
+     */
+    default boolean hasAtLeastOneEcdsaSig() {
+        return false;
+    }
 }

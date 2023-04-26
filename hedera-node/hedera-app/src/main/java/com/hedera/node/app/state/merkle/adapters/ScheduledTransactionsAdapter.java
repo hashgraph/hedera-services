@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVi
  * A trivial non-Merkle implementation of {@link ScheduledTransactions}. (The {@code mono-service}
  * version has Merkle baggage that doesn't make sense here.)
  */
-public class ScheduledTransactionsAdapter implements ScheduledTransactions {
+public final class ScheduledTransactionsAdapter implements ScheduledTransactions {
     private final MerkleScheduledTransactionsState state;
     private final MerkleMapLike<EntityNumVirtualKey, ScheduleVirtualValue> byId;
     private final MerkleMapLike<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirySec;

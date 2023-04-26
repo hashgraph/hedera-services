@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -43,6 +42,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -62,6 +62,8 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,7 +79,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     public static final String UPD_KEY = "updKey";
 
     public static void main(String... args) {
-        new CryptoUpdateSuite().runSuiteAsync();
+        new CryptoUpdateSuite().runSuiteConcurrentWithOverrides(Map.of("spec.autoScheduledTxns", "CryptoUpdate"));
     }
 
     private final SigControl twoLevelThresh = SigControl.threshSigs(
@@ -221,9 +223,9 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .maxAutomaticAssociations(11)
                                 .via(plusTenTxn))
                 .then(
-                        validateChargedUsd(baseTxn, baseFee),
-                        validateChargedUsd(plusOneTxn, plusOneSlotFee),
-                        validateChargedUsd(plusTenTxn, plusTenSlotsFee));
+                        validateChargedUsd(baseTxn, baseFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(plusOneTxn, plusOneSlotFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(plusTenTxn, plusTenSlotsFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)));
     }
 
     private HapiSpec updateFailsWithOverlyLongLifetime() {
@@ -388,7 +390,7 @@ public class CryptoUpdateSuite extends HapiSuite {
         final String CONTRACT = "Multipurpose";
         final String ADMIN_KEY = "adminKey";
 
-        return onlyDefaultHapiSpec("updateMaxAutoAssociationsWorks")
+        return defaultHapiSpec("updateMaxAutoAssociationsWorks")
                 .given(
                         cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ADMIN_KEY),

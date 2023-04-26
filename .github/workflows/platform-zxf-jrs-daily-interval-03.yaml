@@ -49,7 +49,7 @@ concurrency:
 jobs:
   neterror:
     name: NetError
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -63,7 +63,7 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
   multisbreconnect-2r:
     name: MultiSBReconnect-2R
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -80,7 +80,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   multinireconnect-7n:
     name: MultiNIReconnect-7N
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -95,7 +95,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   multisbreconnect-3r:
     name: MultiSBReconnect-3R-10N
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -112,7 +112,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   multinireconnect-10n:
     name: MultiNIReconnect-10N
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -127,7 +127,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   multindreconnect-10n:
     name: MultiNDReconnect-10N
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}

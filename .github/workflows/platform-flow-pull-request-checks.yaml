@@ -102,7 +102,7 @@ jobs:
 
   abbreviated-panel:
     name: JRS Panel
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs:
       - final-label-check
     with:

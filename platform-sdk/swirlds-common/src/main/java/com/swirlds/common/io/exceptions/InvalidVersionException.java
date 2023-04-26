@@ -17,11 +17,12 @@
 package com.swirlds.common.io.exceptions;
 
 import com.swirlds.common.io.SerializableDet;
+import java.io.IOException;
 
 /**
  * Exception that is caused when illegal version is read from the stream
  */
-public class InvalidVersionException extends IllegalArgumentException {
+public class InvalidVersionException extends IOException {
     public InvalidVersionException(final int expectedVersion, final int version) {
         super(String.format("Illegal version %d was read from the stream. Expected %d", version, expectedVersion));
     }

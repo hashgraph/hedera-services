@@ -52,6 +52,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,6 +62,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -112,6 +114,7 @@ public abstract class HapiSpecOperation {
     protected HapiSpecSetup.TxnProtoStructure txnProtoStructure = HapiSpecSetup.TxnProtoStructure.ALTERNATE;
     protected boolean useRandomNode = false;
     protected boolean unavailableNode = false;
+    protected Set<HederaFunctionality> skipIfAutoScheduling = Collections.emptySet();
     protected Optional<String> expectedLedgerId = Optional.empty();
     protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
     protected Optional<SigMapGenerator> sigMapGen = Optional.empty();
@@ -199,6 +202,29 @@ public abstract class HapiSpecOperation {
         }
     }
 
+    /**
+     * Gives the {@link HapiSpec} author the option to skip this operation if certain
+     * functions are being auto-scheduled.
+     *
+     * @param functions the functions being auto-scheduled
+     * @return this operation
+     */
+    public HapiSpecOperation skippedIfAutoScheduling(final Set<HederaFunctionality> functions) {
+        skipIfAutoScheduling = functions;
+        return this;
+    }
+
+    /**
+     * Indicates whether this operation should be skipped, given a set of functions being
+     * auto-scheduled.
+     *
+     * @param beingAutoScheduled the functions being auto-scheduled
+     * @return true if this operation should be skipped
+     */
+    public boolean shouldSkipWhenAutoScheduling(final Set<HederaFunctionality> beingAutoScheduled) {
+        return !Collections.disjoint(skipIfAutoScheduling, beingAutoScheduled);
+    }
+
     private AccountID randomNodeFrom(final HapiSpec spec) {
         final List<NodeConnectInfo> nodes = spec.setup().nodes();
         return nodes.get(r.nextInt(nodes.size())).getAccount();
@@ -228,9 +254,11 @@ public abstract class HapiSpecOperation {
                 return Optional.empty();
             }
             if (verboseLoggingOn) {
-                log.warn(spec.logPrefix() + this + " failed - {}", t);
+                String message = MessageFormat.format("{0}{1} failed - {2}", spec.logPrefix(), this, t);
+                log.warn(message);
             } else if (!loggingOff) {
-                log.warn(spec.logPrefix() + this + " failed {}!", t.getMessage());
+                String message = MessageFormat.format("{0}{1} failed - {2}!", spec.logPrefix(), this, t.getMessage());
+                log.warn(message);
             }
             return Optional.of(t);
         }
@@ -290,10 +318,8 @@ public abstract class HapiSpecOperation {
             } else {
                 node.ifPresent(builder::setNodeAccountID);
             }
-            validDurationSecs.ifPresent(s -> {
-                builder.setTransactionValidDuration(
-                        Duration.newBuilder().setSeconds(s).build());
-            });
+            validDurationSecs.ifPresent(s -> builder.setTransactionValidDuration(
+                    Duration.newBuilder().setSeconds(s).build()));
             genRecord.ifPresent(builder::setGenerateRecord);
             memo.ifPresent(builder::setMemo);
         };
@@ -401,15 +427,17 @@ public abstract class HapiSpecOperation {
                 : spec.keys().sign(spec, builder, keys, overrides);
     }
 
-    private void setKeyControlOverrides(final HapiSpec spec) {
+    public Map<Key, SigControl> setKeyControlOverrides(final HapiSpec spec) {
         if (controlOverrides.isPresent()) {
             overrides = new HashMap<>();
             Stream.of(controlOverrides.get())
                     .forEach(c -> overrides.put(lookupKey(spec, c.getKeyName()), c.getController()));
+            return overrides;
         }
+        return Collections.emptyMap();
     }
 
-    private List<Key> signersToUseFor(final HapiSpec spec) {
+    public List<Key> signersToUseFor(final HapiSpec spec) {
         final List<Key> active = signers.orElse(defaultSigners()).stream()
                 .map(f -> f.apply(spec))
                 .filter(k -> k != Key.getDefaultInstance())

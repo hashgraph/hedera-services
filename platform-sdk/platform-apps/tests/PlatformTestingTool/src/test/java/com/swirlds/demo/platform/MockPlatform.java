@@ -27,9 +27,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import java.time.Instant;
 
 public class MockPlatform implements Platform {
 
@@ -48,15 +46,6 @@ public class MockPlatform implements Platform {
     @Override
     public boolean createTransaction(final byte[] trans) {
         return false;
-    }
-
-    @Override
-    public Instant estimateTime() {
-        return null;
-    }
-
-    public PlatformEvent[] getAllEvents() {
-        return new PlatformEvent[0];
     }
 
     @Override

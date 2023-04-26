@@ -50,7 +50,7 @@ concurrency:
 jobs:
   assorted:
     name: Assorted
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -64,7 +64,7 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
   dynamic-freeze:
     name: DynamicFreeze
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -81,7 +81,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   reconnect:
     name: Reconnect
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -96,7 +96,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   fcmfcq:
     name: FCMFCQ
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -111,7 +111,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   genesis:
     name: Genesis
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -126,7 +126,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
 #  recovery:
 #    name: Recovery
-#    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+#    uses: ./.github/workflows/zxc-jrs-regression.yaml
 #    with:
 #      ref: ${{ github.event.inputs.ref }}
 #      branch-name: ${{ github.event.inputs.branch-name }}
@@ -143,7 +143,7 @@ jobs:
 #    if: ${{ !cancelled() && always() }}
   restart:
     name: Restart
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}

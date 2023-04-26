@@ -76,8 +76,8 @@ class ConsensusHashManagerTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
-                .setAverageStake(100)
-                .setStakeStandardDeviation(50)
+                .setAverageWeight(100)
+                .setWeightStandardDeviation(50)
                 .setSequentialIds(false)
                 .build();
 
@@ -118,8 +118,8 @@ class ConsensusHashManagerTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
                 .setSequentialIds(false)
-                .setAverageStake(100)
-                .setStakeStandardDeviation(50)
+                .setAverageWeight(100)
+                .setWeightStandardDeviation(50)
                 .build();
 
         final long selfId = addressBook.getId(0);
@@ -314,8 +314,8 @@ class ConsensusHashManagerTests {
         final int roundsNonAncient = consensusConfig.roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
-                .setAverageStake(100)
-                .setStakeStandardDeviation(50)
+                .setAverageWeight(100)
+                .setWeightStandardDeviation(50)
                 .setSequentialIds(false)
                 .build();
         final long selfId = addressBook.getId(0);
@@ -378,8 +378,8 @@ class ConsensusHashManagerTests {
         final int roundsNonAncient = consensusConfig.roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
-                .setAverageStake(100)
-                .setStakeStandardDeviation(50)
+                .setAverageWeight(100)
+                .setWeightStandardDeviation(50)
                 .setSequentialIds(false)
                 .build();
         final long selfId = addressBook.getId(0);
@@ -428,8 +428,8 @@ class ConsensusHashManagerTests {
         final int roundsNonAncient = consensusConfig.roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
-                .setAverageStake(100)
-                .setStakeStandardDeviation(50)
+                .setAverageWeight(100)
+                .setWeightStandardDeviation(50)
                 .setSequentialIds(false)
                 .build();
         final long selfId = addressBook.getId(0);
@@ -462,14 +462,14 @@ class ConsensusHashManagerTests {
             }
         }
 
-        long submittedStake = 0;
+        long submittedWeight = 0;
         for (final RoundHashValidatorTests.NodeHashInfo info : data.nodeList()) {
-            final long stake = addressBook.getAddress(info.nodeId()).getStake();
-            if (isMajority(submittedStake + stake, addressBook.getTotalStake())) {
+            final long weight = addressBook.getAddress(info.nodeId()).getWeight();
+            if (isMajority(submittedWeight + weight, addressBook.getTotalWeight())) {
                 // If we add less than a majority then we won't be able to detect the ISS no matter what
                 break;
             }
-            submittedStake += stake;
+            submittedWeight += weight;
 
             manager.postConsensusSignatureObserver(targetRound, info.nodeId(), info.nodeStateHash());
         }
@@ -491,17 +491,17 @@ class ConsensusHashManagerTests {
         final List<RoundHashValidatorTests.NodeHashInfo> data = new LinkedList<>();
 
         // Almost add enough hashes to create a consensus hash, but not quite enough.
-        // Put these at the beginning. Since we will need just a little extra stake to
+        // Put these at the beginning. Since we will need just a little extra weight to
         // cross the 1/3 threshold, the detection algorithm will not make a decision
         // once it reaches a >2/3 threshold
 
         final Hash almostConsensusHash = randomHash(random);
-        long almostConsensusStake = 0;
+        long almostConsensusWeight = 0;
         for (final Address address : addressBook) {
-            if (isMajority(almostConsensusStake + address.getStake(), addressBook.getTotalStake())) {
+            if (isMajority(almostConsensusWeight + address.getWeight(), addressBook.getTotalWeight())) {
                 data.add(new RoundHashValidatorTests.NodeHashInfo(address.getId(), randomHash(), targetRound));
             } else {
-                almostConsensusStake += address.getStake();
+                almostConsensusWeight += address.getWeight();
                 data.add(new RoundHashValidatorTests.NodeHashInfo(address.getId(), almostConsensusHash, targetRound));
             }
         }
@@ -517,8 +517,8 @@ class ConsensusHashManagerTests {
         final int roundsNonAncient = consensusConfig.roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
-                .setAverageStake(100)
-                .setStakeStandardDeviation(50)
+                .setAverageWeight(100)
+                .setWeightStandardDeviation(50)
                 .setSequentialIds(false)
                 .build();
         final long selfId = addressBook.getId(0);
@@ -551,16 +551,16 @@ class ConsensusHashManagerTests {
             }
         }
 
-        long submittedStake = 0;
+        long submittedWeight = 0;
         for (final RoundHashValidatorTests.NodeHashInfo info : data) {
-            final long stake = addressBook.getAddress(info.nodeId()).getStake();
+            final long weight = addressBook.getAddress(info.nodeId()).getWeight();
 
             manager.postConsensusSignatureObserver(targetRound, info.nodeId(), info.nodeStateHash());
 
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
-            submittedStake += stake;
-            if (isSuperMajority(submittedStake, addressBook.getTotalStake())) {
+            submittedWeight += weight;
+            if (isSuperMajority(submittedWeight, addressBook.getTotalWeight())) {
                 break;
             }
         }
@@ -580,8 +580,8 @@ class ConsensusHashManagerTests {
         final int roundsNonAncient = consensusConfig.roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
-                .setAverageStake(100)
-                .setStakeStandardDeviation(50)
+                .setAverageWeight(100)
+                .setWeightStandardDeviation(50)
                 .setSequentialIds(false)
                 .build();
         final long selfId = addressBook.getId(0);
@@ -614,16 +614,16 @@ class ConsensusHashManagerTests {
             }
         }
 
-        long submittedStake = 0;
+        long submittedWeight = 0;
         for (final RoundHashValidatorTests.NodeHashInfo info : data) {
-            final long stake = addressBook.getAddress(info.nodeId()).getStake();
+            final long weight = addressBook.getAddress(info.nodeId()).getWeight();
 
             manager.postConsensusSignatureObserver(targetRound, info.nodeId(), info.nodeStateHash());
 
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
-            submittedStake += stake;
-            if (isSuperMajority(submittedStake, addressBook.getTotalStake())) {
+            submittedWeight += weight;
+            if (isSuperMajority(submittedWeight, addressBook.getTotalWeight())) {
                 break;
             }
         }

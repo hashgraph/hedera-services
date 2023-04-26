@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -118,8 +119,8 @@ public class MerkleDataOutputStream extends SerializableDataOutputStream {
             throw new IllegalArgumentException("invalid write permissions for directory " + directory);
         }
 
-        try {
-            final List<Path> contents = Files.list(directory).toList();
+        try (final Stream<Path> list = Files.list(directory)) {
+            final List<Path> contents = list.toList();
             if (contents.size() > 1) {
                 // At this point in time, the only thing in this directory should be SignedState.swh.
                 // If there are other files, then something funny may be going on.

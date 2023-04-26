@@ -16,6 +16,8 @@
 
 package com.swirlds.common.threading.framework.internal;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
@@ -25,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Implements a thread that continuously takes elements from a queue and handles them.
@@ -289,6 +292,6 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
      */
     @Override
     public String toString() {
-        return "QueueThread(" + getName() + ")";
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE).append(getName()).toString();
     }
 }

@@ -37,7 +37,7 @@ import java.util.Objects;
  * @param <K> The key type
  * @param <V> The value type
  */
-public class MapWritableKVState<K extends Comparable<K>, V> extends WritableKVStateBase<K, V> {
+public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
     /** Represents the backing storage for this state */
     private final Map<K, V> backingStore;
 
@@ -89,6 +89,13 @@ public class MapWritableKVState<K extends Comparable<K>, V> extends WritableKVSt
         backingStore.remove(key);
     }
 
+    /** {@inheritDoc} */
+    @NonNull
+    @Override
+    public long sizeOfDataSource() {
+        return backingStore.size();
+    }
+
     /**
      * Create a new {@link Builder} for building a {@link MapWritableKVState}. The builder has
      * convenience methods for pre-populating the map.
@@ -98,7 +105,7 @@ public class MapWritableKVState<K extends Comparable<K>, V> extends WritableKVSt
      * @param <K> The key type
      * @param <V> The value type
      */
-    public static <K extends Comparable<K>, V> Builder<K, V> builder(@NonNull final String stateKey) {
+    public static <K, V> Builder<K, V> builder(@NonNull final String stateKey) {
         return new Builder<>(stateKey);
     }
 
@@ -106,7 +113,7 @@ public class MapWritableKVState<K extends Comparable<K>, V> extends WritableKVSt
      * A convenient builder for creating instances of {@link
      * com.hedera.node.app.spi.fixtures.state.MapWritableKVState}.
      */
-    public static final class Builder<K extends Comparable<K>, V> {
+    public static final class Builder<K, V> {
         private final Map<K, V> backingStore = new HashMap<>();
         private final String stateKey;
 

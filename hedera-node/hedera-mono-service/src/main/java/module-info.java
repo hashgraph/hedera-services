@@ -17,7 +17,10 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app,
-            com.hedera.node.app.service.schedule.impl.test;
+            com.hedera.node.app.service.schedule.impl.test,
+            com.hedera.node.app.service.token.impl;
+    exports com.hedera.node.app.service.mono.context.domain.process to
+            com.hedera.node.app;
     exports com.hedera.node.app.service.mono.legacy.core.jproto to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.token.impl,
@@ -27,7 +30,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.contract.impl.test,
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app,
-            com.hedera.node.app.service.consensus.impl.test;
+            com.hedera.node.app.service.consensus.impl.test,
+            com.hedera.node.app.service.schedule.impl;
     exports com.hedera.node.app.service.mono.utils to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -40,7 +44,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app.service.network.impl,
             com.hedera.node.app.service.consensus.impl.test,
-            com.hedera.node.app.service.network.impl.test;
+            com.hedera.node.app.service.network.impl.test,
+            com.hedera.services.cli;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app;
@@ -60,12 +65,16 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app.service.network.impl.test,
             com.hedera.node.app.service.schedule.impl.test,
-            com.hedera.node.app.service.consensus.impl.test;
+            com.hedera.node.app.service.consensus.impl.test,
+            com.hedera.node.app.service.admin.impl,
+            com.hedera.node.app.service.admin.impl.test;
     exports com.hedera.node.app.service.mono.state.validation to
             com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app.service.consensus.impl.test;
     exports com.hedera.node.app.service.mono.utils.accessors;
+    exports com.hedera.node.app.service.mono.sigs.metadata to
+            com.hedera.node.app;
     exports com.hedera.node.app.service.mono.sigs.utils to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.sigs.verification to
@@ -150,6 +159,7 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.txns.validation;
     exports com.hedera.node.app.service.mono.ledger.ids;
     exports com.hedera.node.app.service.mono.txns.auth;
+    exports com.hedera.node.app.service.mono.state.codec;
     exports com.hedera.node.app.service.mono.state.expiry;
     exports com.hedera.node.app.service.mono.throttling.annotations;
     exports com.hedera.node.app.service.mono.state.virtual.temporal;
@@ -233,7 +243,11 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.fees.calculation.token;
     exports com.hedera.node.app.service.mono.fees.calculation.crypto;
     exports com.hedera.node.app.service.mono.fees.calculation.ethereum;
+    exports com.hedera.node.app.service.mono.legacy.exception;
+    exports com.hedera.node.app.service.mono.pbj;
+    exports com.hedera.node.app.service.mono.sigs.sourcing;
 
+    requires com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
     requires dagger;
@@ -243,13 +257,14 @@ module com.hedera.node.app.service.mono {
     requires com.google.common;
     requires org.slf4j;
     requires org.apache.logging.log4j;
+    requires com.hedera.node.hapi;
+    requires com.hedera.pbj.runtime;
     requires com.hedera.node.app.hapi.utils;
     requires com.swirlds.merkle;
     requires com.swirlds.virtualmap;
     requires tuweni.bytes;
     requires org.hyperledger.besu.datatypes;
     requires org.hyperledger.besu.evm;
-    requires static com.github.spotbugs.annotations;
     requires org.apache.commons.codec;
     requires com.swirlds.fchashmap;
     requires com.swirlds.jasperdb;

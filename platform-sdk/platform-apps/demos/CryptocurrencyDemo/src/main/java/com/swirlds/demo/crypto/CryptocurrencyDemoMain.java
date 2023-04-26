@@ -108,7 +108,7 @@ public class CryptocurrencyDemoMain implements SwirldMain {
      * @param args these are not used
      */
     public static void main(String[] args) {
-        Browser.launch(args);
+        Browser.parseCommandLineArgsAndLaunch(args);
     }
 
     private void generateTransactions() {

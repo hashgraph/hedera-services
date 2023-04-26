@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.throwIfFileExists;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
+import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
@@ -108,7 +109,6 @@ class SignedStateFileReadWriteTest {
         final String hashInfoString = new MerkleTreeVisualizer(state)
                 .setDepth(StateSettings.getDebugHashDepth())
                 .render();
-        final String platformInfoString = state.getPlatformState().getInfoString();
 
         final StringBuilder sb = new StringBuilder();
         try (final BufferedReader br = new BufferedReader(new FileReader(hashInfoFile.toFile()))) {
@@ -117,7 +117,6 @@ class SignedStateFileReadWriteTest {
 
         final String fileString = sb.toString();
         assertTrue(fileString.contains(hashInfoString), "hash info string not found");
-        assertTrue(fileString.contains(platformInfoString), "platform info string not found");
     }
 
     @Test
@@ -152,14 +151,15 @@ class SignedStateFileReadWriteTest {
         final Path stateFile = directory.resolve(SIGNED_STATE_FILE_NAME);
         final Path hashInfoFile = directory.resolve(HASH_INFO_FILE_NAME);
         final Path settingsUsedFile = directory.resolve("settingsUsed.txt");
+        final Path addressBookFile = directory.resolve(CURRENT_ADDRESS_BOOK_FILE_NAME);
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
-
-        writeSignedStateToDisk(directory, signedState, "test");
+        writeSignedStateToDisk(0, directory, signedState, "test");
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");
         assertTrue(exists(settingsUsedFile), "settings used file should exist");
+        assertTrue(exists(addressBookFile), "address book file should exist");
     }
 
     @Test
@@ -284,13 +284,14 @@ class SignedStateFileReadWriteTest {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ss, path, success) -> {});
+                (ss, path, success) -> {},
+                x -> {});
         manager.start();
 
         final int rounds = 3;
 
         // Save a few states to the directory
-        for (int round = 0; round < rounds; round++) {
+        for (int round = 1; round <= rounds; round++) {
             final SignedState signedState =
                     new RandomSignedStateGenerator().setRound(round).build();
 
@@ -300,7 +301,7 @@ class SignedStateFileReadWriteTest {
         // The states should have been written by now
         AssertionUtils.assertEventuallyDoesNotThrow(
                 () -> {
-                    for (int round = 0; round < rounds; round++) {
+                    for (int round = 1; round <= rounds; round++) {
                         final Path stateFile = getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, round)
                                 .resolve("SignedState.swh");
                         assertTrue(Files.exists(stateFile), "Signed state file " + stateFile + " does not exist");
@@ -340,7 +341,7 @@ class SignedStateFileReadWriteTest {
         assertEquals(2, Files.walk(getSignedStatesBaseDirectory(), 1).count(), "too many files in directory");
 
         // Each of the states should still be present
-        for (int round = 0; round < rounds; round++) {
+        for (int round = 1; round <= rounds; round++) {
             final Path stateFile = getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, round)
                     .resolve("SignedState.swh");
             assertTrue(Files.exists(stateFile), "Signed state file " + stateFile + " does not exist");

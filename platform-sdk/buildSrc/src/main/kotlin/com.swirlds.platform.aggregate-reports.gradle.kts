@@ -32,18 +32,18 @@ plugins {
 sonarqube {
     properties {
         property("sonar.host.url", "https://sonarcloud.io")
-        property("sonar.organization", "swirlds")
+        property("sonar.organization", "hashgraph")
         property("sonar.projectKey", "com.swirlds:swirlds-platform")
-        property("sonar.projectName", "Swirlds Platform")
+        property("sonar.projectName", "Platform SDK")
         property("sonar.projectVersion", project.version)
-        property(
-            "sonar.projectDescription",
-            "Swirlds is a software platform designed to build fully-distributed applications that harness the power of the cloud without servers. Now you can develop applications with fairness in decision making, speed, trust and reliability, at a fraction of the cost of traditional server-based platforms."
-        )
-        property("sonar.links.homepage", "https://github.com/swirlds/swirlds-platform")
-        property("sonar.links.ci", "https://github.com/swirlds/swirlds-platform/actions")
-        property("sonar.links.issue", "https://github.com/swirlds/swirlds-platform-/issues")
-        property("sonar.links.scm", "https://github.com/swirlds/swirlds-platform.git")
+//        property(
+//            "sonar.projectDescription",
+//            ""
+//        )
+        property("sonar.links.homepage", "https://github.com/hashgraph/hedera-services")
+        property("sonar.links.ci", "https://github.com/hashgraph/hedera-services/actions")
+        property("sonar.links.issue", "https://github.com/hashgraph/hedera-services/issues")
+        property("sonar.links.scm", "https://github.com/hashgraph/hedera-services.git")
     }
 }
 

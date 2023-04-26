@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UNPAUSE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -87,7 +88,7 @@ public class UnpausePrecompile extends AbstractWritePrecompile {
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(Objects.requireNonNull(unpauseOp).token());
         final var hasRequiredSigs = KeyActivationUtils.validateKey(
-                frame, tokenId.asEvmAddress(), sigsVerifier::hasActivePauseKey, ledgers, aliases);
+                frame, tokenId.asEvmAddress(), sigsVerifier::hasActivePauseKey, ledgers, aliases, TokenUnpause);
         validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */

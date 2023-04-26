@@ -19,100 +19,41 @@ package com.swirlds.merkledb.files.hashmap;
 import static com.swirlds.common.utility.Units.BYTES_PER_LONG;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * A key serializer used by {@link HalfDiskVirtualKeySet} when MerkleDb is operating in long key mode.
- * This key serializer only implements methods require to serialize a long key, and is not a general
- * purpose key serializer.
+ * A key serializer used by {@link HalfDiskVirtualKeySet} when MerkleDb is operating in long key
+ * mode. This key serializer only implements methods require to serialize a long key, and is not a
+ * general purpose key serializer.
  */
 @ConstructableIgnored
-public class VirtualKeySetSerializer implements KeySerializer<VirtualKey<VirtualLongKey>> {
+public class VirtualKeySetSerializer extends AbstractFixedSizeKeySerializer<VirtualLongKey> {
 
-    /**
-     * {@inheritDoc}
-     */
+    public VirtualKeySetSerializer() {
+        // Class ID / version aren't used for this class
+        super(0, 0, BYTES_PER_LONG, 0);
+    }
+
+    /** {@inheritDoc} */
     @Override
-    public int getSerializedSize() {
+    public int serialize(final VirtualLongKey data, final ByteBuffer buffer) throws IOException {
+        buffer.putLong(data.getKeyAsLong());
         return BYTES_PER_LONG;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
-    public int serialize(final VirtualKey<VirtualLongKey> data, final ByteBuffer buffer) throws IOException {
-        buffer.putLong(((VirtualLongKey) data).getKeyAsLong());
-        return BYTES_PER_LONG;
+    public VirtualLongKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
-    public int serialize(final VirtualKey<VirtualLongKey> data, final SerializableDataOutputStream outputStream)
+    public boolean equals(final ByteBuffer buffer, final int dataVersion, final VirtualLongKey keyToCompare)
             throws IOException {
-        outputStream.writeLong(((VirtualLongKey) data).getKeyAsLong());
-        return BYTES_PER_LONG;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VirtualKey<VirtualLongKey> deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getCurrentDataVersion() {
-        return 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return BYTES_PER_LONG;
-    }
-
-    @Override
-    public long getClassId() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getVersion() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final VirtualKey<VirtualLongKey> keyToCompare)
-            throws IOException {
-
-        return buffer.getLong() == ((VirtualLongKey) keyToCompare).getKeyAsLong();
+        return buffer.getLong() == keyToCompare.getKeyAsLong();
     }
 }

@@ -16,8 +16,6 @@
 
 package com.swirlds.merkledb;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.BaseSerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
@@ -47,16 +45,6 @@ public final class ExampleVariableSizeVirtualValueSerializer
         return ClassVersion.ORIGINAL;
     }
 
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        // no-op
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        // no-op
-    }
-
     // ValueSerializer
 
     @Override
@@ -70,12 +58,11 @@ public final class ExampleVariableSizeVirtualValueSerializer
     }
 
     @Override
-    public int serialize(final ExampleVariableSizeVirtualValue data, final SerializableDataOutputStream out)
-            throws IOException {
-        out.writeInt(data.getId());
+    public int serialize(final ExampleVariableSizeVirtualValue data, final ByteBuffer buffer) throws IOException {
+        buffer.putInt(data.getId());
         final int dataLength = data.getDataLength();
-        out.writeInt(dataLength);
-        out.write(data.getData());
+        buffer.putInt(dataLength);
+        buffer.put(data.getData());
         return Integer.BYTES + Integer.BYTES + dataLength;
     }
 
@@ -90,17 +77,13 @@ public final class ExampleVariableSizeVirtualValueSerializer
         return new ExampleVariableSizeVirtualValue(id, bytes);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean equals(final Object obj) {
         return obj instanceof ExampleVariableSizeVirtualValueSerializer;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int hashCode() {
         return (int) CLASS_ID;

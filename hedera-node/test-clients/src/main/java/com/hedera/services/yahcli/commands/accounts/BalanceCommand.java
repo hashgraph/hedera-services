@@ -43,7 +43,7 @@ public class BalanceCommand implements Callable<Integer> {
         StringBuilder balanceRegister = new StringBuilder();
         String serviceBorder = "---------------------|----------------------|";
         balanceRegister.append(serviceBorder).append("\n");
-        balanceRegister.append(String.format("%20s | %20s |\n", "Account Id", "Balance"));
+        balanceRegister.append(String.format("%20s | %20s |%n", "Account Id", "Balance"));
         balanceRegister.append(serviceBorder);
 
         printTable(balanceRegister);

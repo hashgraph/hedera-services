@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.PrngSystemPrecompiledContract.PSEUDORANDOM_SEED_GENERATOR_SELECTOR;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
@@ -39,12 +40,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Longs;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -53,7 +54,6 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.txns.util.PrngLogic;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -164,7 +164,7 @@ class PrngSystemPrecompiledContractTest {
         assertNull(result.getOutput());
         verify(updater).manageInProgressRecord(eq(recordsHistorian), any(), captor.capture());
         final var synthTxn = captor.getValue().build();
-        final var synthTxnType = MiscUtils.functionOf(synthTxn);
+        final var synthTxnType = functionOf(synthTxn);
         assertEquals(UtilPrng, synthTxnType);
     }
 

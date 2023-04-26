@@ -186,7 +186,7 @@ public abstract class TestBase {
         suite.skipClientTearDown();
         // Don't log unnecessary detail
         suite.setOnlyLogHeader();
-        return suite.getSpecsInSuite().stream().map(spec -> spec.setSuitePrefix(suite.name() + suffix));
+        return suite.getSpecsInSuiteWithOverrides().stream().map(spec -> spec.setSuitePrefix(suite.name() + suffix));
     }
 
     /**
@@ -197,7 +197,7 @@ public abstract class TestBase {
      */
     protected final DynamicContainer extractSpecsFromSuite(final Supplier<HapiSuite> suiteSupplier) {
         final var suite = suiteSupplier.get();
-        final var tests = suite.getSpecsInSuite().stream()
+        final var tests = suite.getSpecsInSuiteWithOverrides().stream()
                 .map(s -> dynamicTest(s.getName(), () -> {
                     s.run();
                     assertEquals(
@@ -217,7 +217,7 @@ public abstract class TestBase {
 
     protected final DynamicContainer extractSpecsFromSuiteForEth(final Supplier<HapiSuite> suiteSupplier) {
         final var suite = suiteSupplier.get();
-        final var tests = suite.getSpecsInSuite().stream()
+        final var tests = suite.getSpecsInSuiteWithOverrides().stream()
                 .map(s -> dynamicTest(s.getName() + ETH_SUFFIX, () -> {
                     s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
                     s.run();

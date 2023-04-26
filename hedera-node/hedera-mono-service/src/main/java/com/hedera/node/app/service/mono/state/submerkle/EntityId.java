@@ -271,6 +271,14 @@ public class EntityId implements SelfSerializable {
                 .build();
     }
 
+    public com.hedera.hapi.node.base.AccountID toPbjAccountId() {
+        return com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .accountNum(num)
+                .build();
+    }
+
     public EntityNum asNum() {
         return EntityNum.fromLong(num);
     }
@@ -280,7 +288,7 @@ public class EntityId implements SelfSerializable {
     }
 
     public Address toEvmAddress() {
-        final var evmAddress = asEvmAddress((int) shard, realm, num);
+        final var evmAddress = asEvmAddress(num);
         return Address.wrap(Bytes.wrap(evmAddress));
     }
 }

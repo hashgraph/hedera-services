@@ -21,8 +21,6 @@ import static com.hedera.node.app.service.mono.context.BasicTransactionContext.E
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.create1ContractAddress;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.create1ContractId;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.create1ContractResolvedAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -437,8 +435,6 @@ class ContractCreateTransitionLogicTest {
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
-        given(aliasManager.resolveForEvm(contractAccount.getId().asEvmAddress()))
-                .willReturn(contractAccount.getId().asEvmAddress());
         given(evmTxProcessor.execute(
                         senderAccount,
                         contractAccount.getId().asEvmAddress(),
@@ -498,8 +494,6 @@ class ContractCreateTransitionLogicTest {
                 new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
-                .willReturn(contractAccount.getId().asEvmAddress());
-        given(aliasManager.resolveForEvm(contractAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
         given(evmTxProcessor.execute(
                         senderAccount,
@@ -565,8 +559,6 @@ class ContractCreateTransitionLogicTest {
                 new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
-                .willReturn(contractAccount.getId().asEvmAddress());
-        given(aliasManager.resolveForEvm(contractAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
         given(evmTxProcessor.execute(
                         senderAccount,
@@ -790,7 +782,6 @@ class ContractCreateTransitionLogicTest {
         final var newEvmAddress = contractAccount.getId().asEvmAddress();
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(newEvmAddress);
-        given(aliasManager.resolveForEvm(newEvmAddress)).willReturn(newEvmAddress);
         given(evmTxProcessor.execute(
                         senderAccount,
                         contractAccount.getId().asEvmAddress(),
@@ -847,7 +838,6 @@ class ContractCreateTransitionLogicTest {
         final var newEvmAddress = contractAccount.getId().asEvmAddress();
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(newEvmAddress);
-        given(aliasManager.resolveForEvm(newEvmAddress)).willReturn(newEvmAddress);
         final Bytes initCode = Bytes.fromHexString(new String(bytecode));
         given(evmTxProcessor.execute(
                         senderAccount,
@@ -910,7 +900,6 @@ class ContractCreateTransitionLogicTest {
         final var newEvmAddress = contractAccount.getId().asEvmAddress();
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(newEvmAddress);
-        given(aliasManager.resolveForEvm(newEvmAddress)).willReturn(newEvmAddress);
         given(evmTxProcessor.execute(
                         senderAccount,
                         contractAccount.getId().asEvmAddress(),
@@ -965,7 +954,6 @@ class ContractCreateTransitionLogicTest {
         given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
         given(autoRenewModel.isSmartContract()).willReturn(false);
-        given(aliasManager.resolveForEvm(create1ContractAddress)).willReturn(create1ContractResolvedAddress);
         final var result = TransactionProcessingResult.successful(
                 null, 1234L, 0L, 124L, Bytes.EMPTY, create1ContractAddress, Map.of(), new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
@@ -981,20 +969,22 @@ class ContractCreateTransitionLogicTest {
                         biOfferedGasPrice,
                         maxGas))
                 .willReturn(result);
+        given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+                .willReturn(contractAccount.getId().asEvmAddress());
 
         // when:
         subject.doStateTransitionOperation(
                 contractCreateTxn, senderAccount.getId(), true, relayerAccount.getId(), maxGas, biOfferedGasPrice);
 
         // then:
-        verify(sigImpactHistorian).markEntityChanged(create1ContractId.getContractNum());
+        verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
         verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
         verify(worldState).setHapiSenderCustomizer(captor.capture());
         verify(worldState).getCreatedContractIds();
         verify(recordServices).externalizeSuccessfulEvmCreate(result, create1ContractAddress.toArray());
         verify(worldState, never()).reclaimContractId();
         verify(worldState).resetHapiSenderCustomizer();
-        verify(txnCtx).setTargetedContract(create1ContractId);
+        verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
         verify(accountStore).loadAccount(senderAccount.getId());
         verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
         // and:
@@ -1018,7 +1008,6 @@ class ContractCreateTransitionLogicTest {
         given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
         given(autoRenewModel.isSmartContract()).willReturn(false);
-        given(aliasManager.resolveForEvm(create1ContractAddress)).willReturn(create1ContractResolvedAddress);
 
         final var output = Bytes.of(123);
         final var result = TransactionProcessingResult.successful(
@@ -1042,7 +1031,7 @@ class ContractCreateTransitionLogicTest {
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
         sidecarUtilsMockedStatic
                 .when(() -> SidecarUtils.createContractBytecodeSidecarFrom(
-                        create1ContractId, initCode.toArrayUnsafe(), output.toArrayUnsafe()))
+                        contractAccount.getId().asGrpcContract(), initCode.toArrayUnsafe(), output.toArrayUnsafe()))
                 .thenReturn(sidecarRecord);
         final var nextChildRecordSourceId = 1234;
         given(recordsHistorian.nextChildRecordSourceId()).willReturn(nextChildRecordSourceId);
@@ -1053,20 +1042,22 @@ class ContractCreateTransitionLogicTest {
         given(entityCreator.createSuccessfulSyntheticRecord(
                         anyList(), any(SideEffectsTracker.class), any(String.class)))
                 .willReturn(recordBuilder);
+        given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+                .willReturn(contractAccount.getId().asEvmAddress());
 
         // when:
         subject.doStateTransitionOperation(
                 contractCreateTxn, senderAccount.getId(), true, relayerAccount.getId(), maxGas, biOfferedGasPrice);
 
         // then:
-        verify(sigImpactHistorian).markEntityChanged(create1ContractId.getContractNum());
+        verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
         verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
         verify(worldState).setHapiSenderCustomizer(captor.capture());
         verify(worldState).getCreatedContractIds();
         verify(recordServices).externalizeSuccessfulEvmCreate(result, create1ContractAddress.toArray());
         verify(worldState, never()).reclaimContractId();
         verify(worldState).resetHapiSenderCustomizer();
-        verify(txnCtx).setTargetedContract(create1ContractId);
+        verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
         verify(accountStore).loadAccount(senderAccount.getId());
         verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
         verify(recordsHistorian)

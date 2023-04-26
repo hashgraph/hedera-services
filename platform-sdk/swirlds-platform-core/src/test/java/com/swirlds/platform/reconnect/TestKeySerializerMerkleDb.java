@@ -67,13 +67,7 @@ public class TestKeySerializerMerkleDb implements KeySerializer<TestKey> {
     }
 
     @Override
-    public int serialize(final TestKey data, final SerializableDataOutputStream outputStream) throws IOException {
-        data.serialize(outputStream);
-        return TestKey.BYTES;
-    }
-
-    @Override
-    public int serialize(final TestKey data, final ByteBuffer buffer) throws IOException {
+    public int serialize(final TestKey data, final ByteBuffer buffer) {
         data.serialize(buffer);
         return TestKey.BYTES;
     }

@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.datasource;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -26,6 +28,7 @@ import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import java.io.IOException;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A {@link VirtualRecord} for leaf data. The leaf record contains the hash, path, key, and value.
@@ -182,10 +185,11 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      */
     @Override
     public String toString() {
-        return "VirtualLeafRecord{" + "key="
-                + key + ", value="
-                + value + ", path="
-                + getPath() + ", hash="
-                + getHash() + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("key", key)
+                .append("value", value)
+                .append("path", getPath())
+                .append("hash", getHash())
+                .toString();
     }
 }

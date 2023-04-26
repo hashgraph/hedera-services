@@ -34,8 +34,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manage a single connection with another member, which can be initiated by self or by them. Once the
- * connection is established, it can be used for syncing, and will have heartbeats that keep it alive.
+ * Manage a single connection with another member, which can be initiated by self or by them. Once the connection is
+ * established, it can be used for syncing, and will have heartbeats that keep it alive.
  */
 public class SocketConnection implements Connection {
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
@@ -52,20 +52,13 @@ public class SocketConnection implements Connection {
     private final String description;
 
     /**
-     * @param connectionTracker
-     * 		tracks open connections
-     * @param selfId
-     * 		the ID number of the local member
-     * @param otherId
-     * 		the ID number of the other member
-     * @param outbound
-     * 		is the connection outbound
-     * @param socket
-     * 		the socket connecting the two members over TCP/IP
-     * @param dis
-     * 		the input stream
-     * @param dos
-     * 		the output stream
+     * @param connectionTracker tracks open connections
+     * @param selfId            the ID number of the local member
+     * @param otherId           the ID number of the other member
+     * @param outbound          is the connection outbound
+     * @param socket            the socket connecting the two members over TCP/IP
+     * @param dis               the input stream
+     * @param dos               the output stream
      */
     protected SocketConnection(
             final NodeId selfId,
@@ -93,20 +86,13 @@ public class SocketConnection implements Connection {
     /**
      * Creates a new connection instance
      *
-     * @param connectionTracker
-     * 		tracks open connections
-     * @param selfId
-     * 		the ID number of the local member
-     * @param otherId
-     * 		the ID number of the other member
-     * @param outbound
-     * 		is the connection outbound
-     * @param socket
-     * 		the socket connecting the two members over TCP/IP
-     * @param dis
-     * 		the input stream
-     * @param dos
-     * 		the output stream
+     * @param connectionTracker tracks open connections
+     * @param selfId            the ID number of the local member
+     * @param otherId           the ID number of the other member
+     * @param outbound          is the connection outbound
+     * @param socket            the socket connecting the two members over TCP/IP
+     * @param dis               the input stream
+     * @param dos               the output stream
      */
     public static SocketConnection create(
             final NodeId selfId,
@@ -153,10 +139,8 @@ public class SocketConnection implements Connection {
     /**
      * Sets the timeout of the underlying socket using {@link Socket#setSoTimeout(int)}
      *
-     * @param timeoutMillis
-     * 		the timeout value to set in milliseconds
-     * @throws SocketException
-     * 		if there is an error in the underlying protocol, such as a TCP error.
+     * @param timeoutMillis the timeout value to set in milliseconds
+     * @throws SocketException if there is an error in the underlying protocol, such as a TCP error.
      */
     @Override
     public void setTimeout(final int timeoutMillis) throws SocketException {
@@ -171,7 +155,7 @@ public class SocketConnection implements Connection {
         final boolean wasConnected = connected.getAndSet(false);
         if (wasConnected) {
             // only update when closing an open connection. Not when closing the same twice.
-            connectionTracker.connectionClosed(isOutbound());
+            connectionTracker.connectionClosed(isOutbound(), this);
         }
         logger.debug(SYNC.getMarker(), "disconnecting connection from {} to {}", selfId, otherId);
 

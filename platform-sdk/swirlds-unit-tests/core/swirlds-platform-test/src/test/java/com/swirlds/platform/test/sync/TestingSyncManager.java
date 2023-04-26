@@ -42,16 +42,6 @@ public class TestingSyncManager implements SyncManager, FallenBehindManager {
     }
 
     @Override
-    public boolean transThrottle() {
-        return false;
-    }
-
-    @Override
-    public boolean transThrottleCallAndCreate() {
-        return false;
-    }
-
-    @Override
     public boolean shouldCreateEvent(NodeId otherId, boolean oneNodeFallenBehind, int eventsRead, int eventsWritten) {
         // For testing purposes, never create a new event to commemorate the sync
         return false;
@@ -62,9 +52,6 @@ public class TestingSyncManager implements SyncManager, FallenBehindManager {
         // For testing purposes, never create a new event to commemorate the sync
         return false;
     }
-
-    @Override
-    public void successfulSync() {}
 
     @Override
     public void reportFallenBehind(NodeId id) {

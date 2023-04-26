@@ -9,4 +9,6 @@ module com.swirlds.config {
     exports com.swirlds.config.api.validation.annotation;
 
     uses ConfigurationBuilderFactory;
+
+    requires static com.github.spotbugs.annotations;
 }

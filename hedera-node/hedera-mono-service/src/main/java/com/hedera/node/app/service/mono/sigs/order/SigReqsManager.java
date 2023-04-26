@@ -25,6 +25,7 @@ import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.sigs.ExpansionHelper;
 import com.hedera.node.app.service.mono.sigs.Rationalization;
@@ -75,6 +76,7 @@ public class SigReqsManager {
     private final GlobalDynamicProperties dynamicProperties;
     // Convenience wrapper for children of a given immutable state
     private final MutableStateChildren immutableChildren = new MutableStateChildren();
+    private final AliasManager aliasManager;
 
     private SigReqsFactory sigReqsFactory = SigRequirements::new;
     private StateChildrenLookupsFactory lookupsFactory = StateChildrenSigMetadataLookup::new;
@@ -91,12 +93,14 @@ public class SigReqsManager {
             final ExpansionHelper expansionHelper,
             final SignatureWaivers signatureWaivers,
             final MutableStateChildren workingState,
-            final GlobalDynamicProperties dynamicProperties) {
+            final GlobalDynamicProperties dynamicProperties,
+            final AliasManager aliasManager) {
         this.fileNumbers = fileNumbers;
         this.workingState = workingState;
         this.expansionHelper = expansionHelper;
         this.signatureWaivers = signatureWaivers;
         this.dynamicProperties = dynamicProperties;
+        this.aliasManager = aliasManager;
     }
 
     /**
@@ -121,7 +125,7 @@ public class SigReqsManager {
      */
     private void expandFromWorkingState(final SwirldsTxnAccessor accessor) {
         ensureWorkingStateSigReqsIsConstructed();
-        expansionHelper.expandIn(accessor, workingSigReqs, accessor.getPkToSigsFn());
+        expansionHelper.expandIn(accessor, workingSigReqs, accessor.getPkToSigsFn(), aliasManager);
     }
 
     /**
@@ -151,7 +155,7 @@ public class SigReqsManager {
 
     private void expandFromImmutableState(final SwirldsTxnAccessor accessor) {
         ensureImmutableStateSigReqsIsConstructed();
-        expansionHelper.expandIn(accessor, immutableSigReqs, accessor.getPkToSigsFn());
+        expansionHelper.expandIn(accessor, immutableSigReqs, accessor.getPkToSigsFn(), aliasManager);
     }
 
     private void ensureWorkingStateSigReqsIsConstructed() {

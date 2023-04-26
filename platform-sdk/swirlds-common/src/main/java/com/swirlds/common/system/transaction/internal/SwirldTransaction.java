@@ -17,6 +17,7 @@
 package com.swirlds.common.system.transaction.internal;
 
 import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A container for an application transaction that contains extra information.
@@ -472,7 +474,10 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public String toString() {
-        return "Transaction{" + "contents=" + Arrays.toString(contents) + ", signatures=" + signatures + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("contents", contents)
+                .append("signatures", signatures)
+                .toString();
     }
 
     /**

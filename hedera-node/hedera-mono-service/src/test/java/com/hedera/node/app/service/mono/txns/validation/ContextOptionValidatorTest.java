@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.txns.validation;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromContractId;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asSecondsTimestamp;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asFile;
@@ -50,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doCallRealMethod;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -890,5 +892,31 @@ class ContextOptionValidatorTest {
     @Test
     void rejectsDecodeEmptyKey() {
         assertFailsWith(() -> subject.attemptToDecodeOrThrow(Key.getDefaultInstance(), BAD_ENCODING), BAD_ENCODING);
+    }
+
+    @Test
+    void delegatesExpiryValidation() {
+        final var then = 1234L;
+        final var timeThen = asSecondsTimestamp(then);
+
+        final var subject = mock(OptionValidator.class);
+        doCallRealMethod().when(subject).isValidExpiry(then);
+
+        subject.isValidExpiry(then);
+
+        verify(subject).isValidExpiry(timeThen);
+    }
+
+    @Test
+    void delegatesAutoRenewValidation() {
+        final var len = 1234L;
+        final var duration = Duration.newBuilder().setSeconds(len).build();
+
+        final var subject = mock(OptionValidator.class);
+        doCallRealMethod().when(subject).isValidAutoRenewPeriod(len);
+
+        subject.isValidAutoRenewPeriod(len);
+
+        verify(subject).isValidAutoRenewPeriod(duration);
     }
 }

@@ -66,7 +66,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -122,7 +121,6 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 invalidOwnerFails(),
                 happyPathWorks(),
                 emptyAllowancesRejected(),
-                spenderSameAsOwnerFails(),
                 negativeAmountFailsForFungible(),
                 tokenNotAssociatedToAccountFails(),
                 invalidTokenTypeFails(),
@@ -1065,64 +1063,6 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasPrecheck(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT))
-                .then(getAccountDetails(OWNER)
-                        .payingWith(GENESIS)
-                        .has(accountDetailsWith()
-                                .cryptoAllowancesCount(0)
-                                .nftApprovedForAllAllowancesCount(0)
-                                .tokenAllowancesCount(0)));
-    }
-
-    private HapiSpec spenderSameAsOwnerFails() {
-        return defaultHapiSpec("spenderSameAsOwnerFails")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey(SUPPLY_KEY)
-                                .maxSupply(1000L)
-                                .initialSupply(10L)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        mintToken(
-                                        NON_FUNGIBLE_TOKEN,
-                                        List.of(
-                                                ByteString.copyFromUtf8("a"),
-                                                ByteString.copyFromUtf8("b"),
-                                                ByteString.copyFromUtf8("c")))
-                                .via(NFT_TOKEN_MINT_TXN),
-                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                        cryptoTransfer(
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addCryptoAllowance(OWNER, OWNER, 100L)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, OWNER, 100L)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, OWNER, false, List.of(1L))
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheck(ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER))
                 .then(getAccountDetails(OWNER)
                         .payingWith(GENESIS)
                         .has(accountDetailsWith()

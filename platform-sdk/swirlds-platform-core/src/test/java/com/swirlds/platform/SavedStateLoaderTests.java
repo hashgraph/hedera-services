@@ -41,6 +41,7 @@ import com.swirlds.platform.state.signed.SignedStateFileWriter;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -109,7 +110,7 @@ public class SavedStateLoaderTests {
 
     private void testNullShutdownTrigger() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         null,
                         addressBook,
@@ -122,7 +123,7 @@ public class SavedStateLoaderTests {
 
     private void testNullAddressBook() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         null,
                         addressBook,
@@ -147,7 +148,7 @@ public class SavedStateLoaderTests {
 
     private void testNullVersion() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         shutdownTrigger,
                         addressBook,
@@ -160,7 +161,7 @@ public class SavedStateLoaderTests {
 
     private void testNullEmergencyValidatorSupplier() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         shutdownTrigger, addressBook, new SavedStateInfo[0], version, null, emergencyRecoveryManager),
                 "exception should be thrown for null emergency state validator supplier");
@@ -168,7 +169,7 @@ public class SavedStateLoaderTests {
 
     private void testNullEmergencyValidatorValue() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         shutdownTrigger,
                         addressBook,
@@ -181,7 +182,7 @@ public class SavedStateLoaderTests {
 
     private void testNullEmergencyRecoveryManager() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new SavedStateLoader(
                         shutdownTrigger, addressBook, new SavedStateInfo[0], version, () -> emergencyValidator, null),
                 "exception should be thrown for null emergency recovery manager");
@@ -264,7 +265,7 @@ public class SavedStateLoaderTests {
 
     private void writeEmergencyFile(final long round) {
         try {
-            new EmergencyRecoveryFile(round, RandomUtils.randomHash()).write(tmpDir);
+            new EmergencyRecoveryFile(round, RandomUtils.randomHash(), Instant.now()).write(tmpDir);
         } catch (final IOException e) {
             fail("Unable to write emergency recovery file to temporary dir " + tmpDir);
         }
@@ -396,10 +397,9 @@ public class SavedStateLoaderTests {
         for (int i = 1; i < numStates + 1; i++) {
             states.addFirst(generator.setRound(i * 5L).build());
         }
-
         states.forEach(ss -> {
             try {
-                SignedStateFileWriter.writeSignedStateToDisk(getStateDir(ss.getRound()), ss, "test");
+                SignedStateFileWriter.writeSignedStateToDisk(0, getStateDir(ss.getRound()), ss, "test");
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }

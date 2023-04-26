@@ -18,6 +18,7 @@ package com.swirlds.common.formatting;
 
 import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -200,5 +201,28 @@ public final class StringFormattingUtils {
         final StringBuilder sb = new StringBuilder();
         commaSeparatedNumber(sb, value, decimalPlaces);
         return sb.toString();
+    }
+
+    /**
+     * Sanitize a timestamp to a string that is save to use in a file name. Replaces ":" with "+".
+     *
+     * @param timestamp
+     * 		the timestamp to sanitize
+     * @return the sanitized timestamp
+     */
+    public static String sanitizeTimestamp(final Instant timestamp) {
+        return timestamp.toString().replace(":", "+");
+    }
+
+    /**
+     * Parse a timestamp from a sanitized string created by {@link #sanitizeTimestamp(Instant)}
+     * where ":" was replaced with "+".
+     *
+     * @param timestamp
+     * 		the string to parse
+     * @return the parsed timestamp
+     */
+    public static Instant parseSanitizedTimestamp(final String timestamp) {
+        return Instant.parse(timestamp.replace("+", ":"));
     }
 }

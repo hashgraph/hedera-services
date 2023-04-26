@@ -32,7 +32,12 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -56,9 +61,9 @@ class MerkleHederaStateTest extends MerkleTestBase {
     void setUp() {
         setupFruitMerkleMap();
         hederaMerkle = new MerkleHederaState(
-                tree -> onMigrateCalled.set(true),
-                (evt, meta, provider) -> onPreHandleCalled.set(true),
-                (round, dual, metadata) -> onHandleCalled.set(true));
+                (tree, state) -> onPreHandleCalled.set(true),
+                (evt, meta, state) -> onHandleCalled.set(true),
+                (state, platform, dual, trigger, version) -> onMigrateCalled.set(true));
     }
 
     /** Looks for a merkle node with the given label */
@@ -103,7 +108,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("Adding a service node with a label that doesn't match service name and state key" + " throws IAE")
+        @DisplayName("Adding a service node with a label that doesn't match service name and state key throws IAE")
         void addingBadServiceNodeNameThrows() {
             fruitMerkleMap.setLabel("Some Random Label");
             assertThatThrownBy(() -> hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap))
@@ -165,7 +170,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("Adding the same service twice with two different nodes causes the original node to" + " remain")
+        @DisplayName("Adding the same service twice with two different nodes causes the original node to remain")
         void addingServiceTwiceWithDifferentNodesDoesNotReplaceFirstNode() {
             // Given an empty merkle tree, when I add the same metadata twice but with different
             // nodes,
@@ -186,7 +191,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var fruitMetadata2 = new StateMetadata<>(
                     FIRST_SERVICE,
                     new TestSchema(1),
-                    StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, LONG_SERDES));
+                    StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, LONG_CODEC));
 
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata2, fruitMerkleMap);
@@ -270,7 +275,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
                 final var md = new StateMetadata<>(
                         serviceName,
                         new TestSchema(1),
-                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES));
+                        StateDefinition.<String, String>inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
 
                 final var node = createMerkleMap(label);
                 map.put(serviceName, node);
@@ -610,18 +615,6 @@ class MerkleHederaStateTest extends MerkleTestBase {
     }
 
     @Nested
-    @DisplayName("Handling Migrate Tests")
-    final class MigrationTest {
-        @Test
-        @DisplayName("The onMigrate handler is called when a migration happens")
-        void onMigrateCalled() {
-            assertThat(onMigrateCalled).isFalse();
-            hederaMerkle.migrate(1);
-            assertThat(onMigrateCalled).isTrue();
-        }
-    }
-
-    @Nested
     @DisplayName("Handling Pre-Handle Tests")
     final class PreHandleTest {
         @Test
@@ -637,18 +630,17 @@ class MerkleHederaStateTest extends MerkleTestBase {
     @DisplayName("Handling Consensus Rounds Tests")
     final class ConsensusRoundTest {
         @Test
-        @DisplayName("Notifications are sent to onHandleConsensusRound when handleConsensusRound is" + " called")
+        @DisplayName("Notifications are sent to onHandleConsensusRound when handleConsensusRound is called")
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
             final var dualState = Mockito.mock(SwirldDualState.class);
             final var state = new MerkleHederaState(
-                    tree -> onMigrateCalled.set(true),
-                    (evt, meta, provider) -> onPreHandleCalled.set(true),
-                    (r, d, m) -> {
-                        assertThat(round).isSameAs(r);
-                        assertThat(dualState).isSameAs(d);
+                    (tree, st) -> onPreHandleCalled.set(true),
+                    (evt, meta, provider) -> {
+                        assertThat(round).isSameAs(evt);
                         onHandleCalled.set(true);
-                    });
+                    },
+                    (s, p, d, t, v) -> {});
 
             state.handleConsensusRound(round, dualState);
             assertThat(onHandleCalled).isTrue();
@@ -659,7 +651,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
     @DisplayName("Copy Tests")
     final class CopyTest {
         @Test
-        @DisplayName("When a copy is made, the original loses the onConsensusRoundCallback, and the copy" + " gains it")
+        @DisplayName("When a copy is made, the original loses the onConsensusRoundCallback, and the copy gains it")
         void originalLosesConsensusRoundCallbackAfterCopy() {
             final var copy = hederaMerkle.copy();
 

@@ -49,6 +49,11 @@ import org.junit.jupiter.api.Test;
 @DisplayName("EventStreamSingleFileIterator Test")
 class EventStreamSingleFileIteratorTest {
 
+    public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
+        assertEquals(expected.getBaseEvent(), actual.getBaseEvent());
+        assertEquals(expected.getConsensusData(), actual.getConsensusData());
+    }
+
     @Test
     @DisplayName("Simple Stream Test")
     void simpleStreamTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
@@ -77,7 +82,7 @@ class EventStreamSingleFileIteratorTest {
                 // Convert to event impl to allow comparison
                 final EventImpl e = new EventImpl(
                         event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEquals(e, events.get(eventIndex), "event should match input event");
+                assertEventsAreEqual(e, events.get(eventIndex));
                 eventIndex++;
             }
 
@@ -169,7 +174,7 @@ class EventStreamSingleFileIteratorTest {
                 // Convert to event impl to allow comparison
                 final EventImpl e = new EventImpl(
                         event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEquals(e, events.get(eventIndex), "event should match input event");
+                assertEventsAreEqual(e, events.get(eventIndex));
                 eventIndex++;
             }
 
@@ -222,7 +227,7 @@ class EventStreamSingleFileIteratorTest {
                 // Convert to event impl to allow comparison
                 final EventImpl e = new EventImpl(
                         event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEquals(e, events.get(eventIndex), "event should match input event");
+                assertEventsAreEqual(e, events.get(eventIndex));
                 eventIndex++;
             }
 

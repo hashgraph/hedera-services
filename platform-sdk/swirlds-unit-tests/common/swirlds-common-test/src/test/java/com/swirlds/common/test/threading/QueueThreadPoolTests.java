@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.threading.framework.QueueThreadPool;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.ThreadSeed;
@@ -403,8 +403,8 @@ class QueueThreadPoolTests {
             pool.add(i);
         }
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<Void> future = executorService.submit(() -> {
+        final ExecutorService executorService = Executors.newSingleThreadExecutor();
+        final Future<Void> future = executorService.submit(() -> {
             // Stop with blocking behavior instead of default interruptable behavior
             pool.stop(Stoppable.StopBehavior.BLOCKING);
             return null;

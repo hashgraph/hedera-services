@@ -16,10 +16,15 @@
 
 package com.swirlds.platform.event;
 
+import static com.swirlds.platform.event.EventUtils.toShortString;
+import static com.swirlds.platform.event.EventUtils.toShortStrings;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.platform.RoundInfo;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.ArrayList;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A class that stores temporary data that is used while calculating consensus inside the platform. This data is not
@@ -65,12 +70,6 @@ public class InternalEventData {
     /** the time at which each unique famous witness in the received round first received this event */
     private ArrayList<Instant> recTimes;
 
-    /**
-     * only used for event streaming
-     * this is the last event to be written to event stream before restart
-     */
-    private boolean isLastEventBeforeShutdown = false;
-
     public InternalEventData() {
         this.timeReceived = Instant.now();
         this.estimatedTime = this.timeReceived; // until a better estimate is found, just guess the time it was received
@@ -85,26 +84,27 @@ public class InternalEventData {
 
     @Override
     public String toString() {
-        return "InternalEventData{" + "selfParent="
-                + EventUtils.toShortString(selfParent) + ", otherParent="
-                + EventUtils.toShortString(otherParent) + ", timeReceived="
-                + timeReceived + ", estimatedTime="
-                + estimatedTime + ", cleared="
-                + cleared + ", isWitness="
-                + isWitness + ", isFamous="
-                + isFamous + ", isFrozen="
-                + isFrozen + ", isFameDecided="
-                + isFameDecided + ", isConsensus="
-                + isConsensus + ", reachedConsTimestamp="
-                + reachedConsTimestamp + ", firstElection="
-                + firstElection + ", hasUserTransactions="
-                + hasUserTransactions + ", lastSee="
-                + EventUtils.toShortStrings(lastSee) + ", stronglySeeP="
-                + EventUtils.toShortStrings(stronglySeeP) + ", firstSelfWitnessS="
-                + EventUtils.toShortString(firstSelfWitnessS) + ", firstWitnessS="
-                + EventUtils.toShortString(firstWitnessS) + ", mark="
-                + mark + ", recTimes="
-                + recTimes + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("selfParent", toShortString(selfParent))
+                .append("otherParent", toShortString(otherParent))
+                .append("timeReceived", timeReceived)
+                .append("estimatedTime", estimatedTime)
+                .append("cleared", cleared)
+                .append("isWitness", isWitness)
+                .append("isFamous", isFamous)
+                .append("isFrozen", isFrozen)
+                .append("isFameDecided", isFameDecided)
+                .append("isConsensus", isConsensus)
+                .append("reachedConsTimestamp", reachedConsTimestamp)
+                .append("firstElection", firstElection)
+                .append("hasUserTransactions", hasUserTransactions)
+                .append("lastSee", toShortStrings(lastSee))
+                .append("stronglySeeP", toShortStrings(stronglySeeP))
+                .append("firstSelfWitnessS", toShortString(firstSelfWitnessS))
+                .append("firstWitnessS", toShortString(firstWitnessS))
+                .append("mark", mark)
+                .append("recTimes", recTimes)
+                .toString();
     }
 
     /**
@@ -449,20 +449,5 @@ public class InternalEventData {
      */
     public void setRecTimes(ArrayList<Instant> recTimes) {
         this.recTimes = recTimes;
-    }
-
-    /**
-     * @return whether this event is the last event to be written to event stream before shut down
-     */
-    public boolean isLastEventBeforeShutdown() {
-        return isLastEventBeforeShutdown;
-    }
-
-    /**
-     * @param isLastEventBeforeShutdown
-     * 		whether this event is the last event to be written to event stream before shut down
-     */
-    public void setLastEventBeforeShutdown(boolean isLastEventBeforeShutdown) {
-        this.isLastEventBeforeShutdown = isLastEventBeforeShutdown;
     }
 }

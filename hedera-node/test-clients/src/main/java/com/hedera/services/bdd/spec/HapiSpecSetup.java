@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -116,7 +117,6 @@ public class HapiSpecSetup {
      */
     public void addOverrides(final Map<String, Object> props) {
         this.props = HapiPropertySource.inPriorityOrder(new MapPropertySource(props), this.props);
-        System.out.println("addOverrides = " + this.props);
     }
 
     public String defaultRecordLoc() {
@@ -184,6 +184,15 @@ public class HapiSpecSetup {
             ciPropertiesMap = MapPropertySource.parsedFromCommaDelimited(props.get("ci.properties.map"));
         }
         return ciPropertiesMap;
+    }
+
+    public Set<HederaFunctionality> txnTypesToSchedule() {
+        final var commaDelimited = props.get("spec.autoScheduledTxns");
+        return commaDelimited.isBlank()
+                ? Collections.emptySet()
+                : Arrays.stream(commaDelimited.split(","))
+                        .map(HederaFunctionality::valueOf)
+                        .collect(toSet());
     }
 
     public Duration defaultAutoRenewPeriod() {

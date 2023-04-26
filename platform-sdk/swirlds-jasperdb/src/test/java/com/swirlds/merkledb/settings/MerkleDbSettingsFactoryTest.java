@@ -61,9 +61,9 @@ class MerkleDbSettingsFactoryTest {
                 defaultTestSettings.getMergeActivatePeriod(),
                 "Default merge activation period should be 1 (SECONDS)");
         assertEquals(
-                64L,
+                1024L,
                 defaultTestSettings.getMaxNumberOfFilesInMerge(),
-                "Default max number of files in merge should be 64");
+                "Default max number of files in merge should be 1024");
         assertEquals(
                 8L,
                 defaultTestSettings.getMinNumberOfFilesInMerge(),
