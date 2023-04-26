@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -1142,7 +1143,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             final var sponsor = spec.registry().getAccountID(SPONSOR);
                             final var payer = spec.registry().getAccountID(PAYER);
                             final var parent = lookup.getResponseRecord();
-                            final var child = lookup.getChildRecord(0);
+                            var child = lookup.getChildRecord(0);
+                            if (isEndOfStakingPeriodRecord(child)) {
+                                child = lookup.getChildRecord(1);
+                            }
                             assertAliasBalanceAndFeeInChildRecord(
                                     parent, child, sponsor, payer, ONE_HUNDRED_HBARS + ONE_HBAR, transferFee);
                             creationTime.set(child.getConsensusTimestamp().getSeconds());
