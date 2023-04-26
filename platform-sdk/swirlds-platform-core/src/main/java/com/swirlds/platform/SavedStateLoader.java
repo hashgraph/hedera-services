@@ -70,19 +70,14 @@ public class SavedStateLoader {
     /**
      * Creates a new instance.
      *
-     * @param platformContext the platform context
-     * @param shutdownRequestedTrigger
-     * 		a trigger capable of dispatching shutdown requests
-     * @param addressBook
-     * 		the address book used to validate the signed state
-     * @param savedStateFiles
-     * 		an array of saved state files to consider for loading, ordered from newest to oldest
-     * @param currentSoftwareVersion
-     * 		the current software version
-     * @param emergencyStateValidator
-     * 		a supplier of an emergency state validator
-     * @param emergencyRecoveryManager
-     * 		the emergency recovery manager
+     * @param platformContext          the platform context
+     * @param shutdownRequestedTrigger a trigger capable of dispatching shutdown requests
+     * @param addressBook              the address book used to validate the signed state
+     * @param savedStateFiles          an array of saved state files to consider for loading, ordered from newest to
+     *                                 oldest
+     * @param currentSoftwareVersion   the current software version
+     * @param emergencyStateValidator  a supplier of an emergency state validator
+     * @param emergencyRecoveryManager the emergency recovery manager
      */
     public SavedStateLoader(
             final PlatformContext platformContext,
@@ -144,10 +139,9 @@ public class SavedStateLoader {
      * Gets a saved state from disk to load, or null if there are no signed states on disk.
      *
      * @return the state to load
-     * @throws SignedStateLoadingException
-     * 		if the node is configured to require a saved state to load but none are available
-     * @throws IOException
-     * 		if there was an exception reading a saved state file
+     * @throws SignedStateLoadingException if the node is configured to require a saved state to load but none are
+     *                                     available
+     * @throws IOException                 if there was an exception reading a saved state file
      */
     @NonNull
     public ReservedSignedState getSavedStateToLoad() throws SignedStateLoadingException, IOException {
@@ -162,8 +156,7 @@ public class SavedStateLoader {
      * Returns the most recent, compatible emergency signed state to load into the system at startup, if found.
      *
      * @return a compatible emergency recovery signed state to load, or null if none was found
-     * @throws IOException
-     * 		if there was an exception reading a saved state file
+     * @throws IOException if there was an exception reading a saved state file
      */
     @NonNull
     private ReservedSignedState getEmergencySavedStateToLoad() throws IOException {
@@ -173,41 +166,44 @@ public class SavedStateLoader {
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
             final SignedStateWithHashes stateWithHashes = readAndRehashState(platformContext, savedStateFile);
-            final Hash oldHash = stateWithHashes.oldHash;
-            final Hash newHash = stateWithHashes.newHash;
+            try (final ReservedSignedState signedState = stateWithHashes.signedState) {
+                final Hash oldHash = stateWithHashes.oldHash;
+                final Hash newHash = stateWithHashes.newHash;
 
-            if (!oldHash.equals(newHash)) {
-                logger.error(EXCEPTION.getMarker(), "Emergency recovery must not be performed during migration.");
-                shutdownRequestedTrigger.dispatch(
-                        "Migration During Emergency Recovery", SystemExitReason.EMERGENCY_RECOVERY_ERROR.getExitCode());
-                return createNullReservation();
-            }
+                if (!oldHash.equals(newHash)) {
+                    logger.error(EXCEPTION.getMarker(), "Emergency recovery must not be performed during migration.");
+                    shutdownRequestedTrigger.dispatch(
+                            "Migration During Emergency Recovery",
+                            SystemExitReason.EMERGENCY_RECOVERY_ERROR.getExitCode());
+                    return createNullReservation();
+                }
 
-            final ReservedSignedState signedState = stateWithHashes.signedState;
+                // Don't check any states for rounds earlier than the emergency state round
+                if (signedState.get().getRound()
+                        < emergencyRecoveryManager.getEmergencyRecoveryFile().round()) {
+                    break;
+                }
 
-            // Don't check any states for rounds earlier than the emergency state round
-            if (signedState.get().getRound()
-                    < emergencyRecoveryManager.getEmergencyRecoveryFile().round()) {
-                break;
-            }
-
-            try {
-                emergencyStateValidator.get().validate(signedState.get(), addressBook, null);
-                emergencyRecoveryManager.emergencyStateLoaded();
-                logger.info(
-                        STARTUP.getMarker(),
-                        "Found signed state (round {}) on disk that is compatible with the emergency recovery state.",
-                        signedState.get().getRound());
-                return signedState;
-            } catch (final SignedStateInvalidException e) {
-                logger.info(
-                        STARTUP.getMarker(),
-                        "Signed state from disk for round {} cannot be used "
-                                + "for emergency recovery ({}), checking next state.",
-                        stateWithHashes.signedState.get().getRound(),
-                        e.getMessage());
+                try {
+                    emergencyStateValidator.get().validate(signedState.get(), addressBook, null);
+                    emergencyRecoveryManager.emergencyStateLoaded();
+                    logger.info(
+                            STARTUP.getMarker(),
+                            "Found signed state (round {}) on disk that is compatible with the emergency recovery state.",
+                            signedState.get().getRound());
+                    return signedState.getAndReserve("SavedStateLoader.getEmergencySavedStateToLoad()");
+                } catch (final SignedStateInvalidException e) {
+                    logger.info(
+                            STARTUP.getMarker(),
+                            "Signed state from disk for round {} cannot be used "
+                                    + "for emergency recovery ({}), checking next state.",
+                            stateWithHashes.signedState.get().getRound(),
+                            e.getMessage());
+                }
             }
         }
+
+        // TODO should we return a null wrapper here?
 
         logger.info(
                 STARTUP.getMarker(),
@@ -217,36 +213,34 @@ public class SavedStateLoader {
         // Since no state matched, we must load a state for a round before the emergency recovery state. If we already
         // have a later state loaded, the emergency reconnect state received in emergency reconnect will be rejected
         // because it is older than the already loaded state.
-        final long maxStateRound =
-                emergencyRecoveryManager.getEmergencyRecoveryFile().round() - 1;
-        ReservedSignedState latest = null;
-        try {
-            latest = getRegularSavedStateToLoad(maxStateRound);
-        } catch (final SignedStateLoadingException e) {
-            // intentionally ignored
-        } finally {
-            if (latest != null) {
+        final long maxStateRound = emergencyRecoveryManager.getEmergencyRecoveryFile().round() - 1;
+        try(final ReservedSignedState latest = getRegularSavedStateToLoad(maxStateRound)) {
+            if (latest.isNotNull()) {
                 logger.info(
                         STARTUP.getMarker(),
                         "Loading the latest available [round={}] as a starting point for emergency reconnect.",
                         latest.get().getRound());
+                return latest.getAndReserve("SavedStateLoader.getEmergencySavedStateToLoad()");
             } else {
                 logger.info(
                         STARTUP.getMarker(),
                         "No states on disk could be loaded as a starting point. Starting from a genesis state.");
+                return createNullReservation();
             }
+        } catch (final SignedStateLoadingException e) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Unable to load latest state. Starting from a genesis state.", e);
+            return createNullReservation();
         }
-        return latest == null ? createNullReservation() : latest;
     }
 
     /**
      * Returns the most recent signed state to load into the system at startup, if found.
      *
      * @return a signed state to load, or null if none was found
-     * @throws IOException
-     * 		if there was an exception reading a saved state file
-     * @throws SignedStateLoadingException
-     * 		if a signed state is required to start the node and none are found
+     * @throws IOException                 if there was an exception reading a saved state file
+     * @throws SignedStateLoadingException if a signed state is required to start the node and none are found
      */
     @NonNull
     private ReservedSignedState getRegularSavedStateToLoad() throws IOException, SignedStateLoadingException {
@@ -256,13 +250,10 @@ public class SavedStateLoader {
     /**
      * Returns the most recent signed state to load into the system at startup, if found.
      *
-     * @param maxRound
-     * 		the maximum round number (inclusive) the returned state is permitted to have
+     * @param maxRound the maximum round number (inclusive) the returned state is permitted to have
      * @return a signed state to load, or null if none was found
-     * @throws IOException
-     * 		if there was an exception reading a saved state file
-     * @throws SignedStateLoadingException
-     * 		if a signed state is required to start the node and none are found
+     * @throws IOException                 if there was an exception reading a saved state file
+     * @throws SignedStateLoadingException if a signed state is required to start the node and none are found
      */
     @NonNull
     private ReservedSignedState getRegularSavedStateToLoad(final long maxRound)
@@ -328,9 +319,9 @@ public class SavedStateLoader {
                 logger.info(
                         STARTUP.getMarker(),
                         """
-								Signed state loaded from disk has an invalid hash (expected during an upgrade)
-								disk:{}
-								calc:{}""",
+                                Signed state loaded from disk has an invalid hash (expected during an upgrade)
+                                disk:{}
+                                calc:{}""",
                         stateWithHashes.oldHash,
                         stateWithHashes.newHash);
             }
