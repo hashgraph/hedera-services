@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.components;
 
+import com.hedera.node.app.service.token.CryptoSignatureWaivers;
+import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
@@ -32,6 +34,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenComponent;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
@@ -48,16 +51,17 @@ import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccount
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
-import dagger.Component;
-import javax.inject.Singleton;
+import dagger.Binds;
+import dagger.Module;
 
-@Singleton
-@Component
-public interface TokenComponent {
-    @Component.Factory
-    interface Factory {
-        TokenComponent create();
-    }
+/**
+ * Dagger module of the token service
+ */
+@Module
+public interface TokenServiceModule {
+
+    @Binds
+    CryptoSignatureWaivers cryptoSignatureWaivers(CryptoSignatureWaiversImpl impl);
 
     CryptoAddLiveHashHandler cryptoAddLiveHashHandler();
 
@@ -122,4 +126,6 @@ public interface TokenComponent {
     TokenUnpauseHandler tokenUnpauseHandler();
 
     TokenUpdateHandler tokenUpdateHandler();
+
+    TokenComponent tokenComponent();
 }
