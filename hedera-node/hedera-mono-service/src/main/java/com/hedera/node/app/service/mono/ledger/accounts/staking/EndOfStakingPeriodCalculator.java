@@ -212,13 +212,14 @@ public class EndOfStakingPeriodCalculator {
             // If a node's stake is not zero then totalStakeOfAllNodes can't be zero.
             // This error should never happen. It is added to avoid divide by zero exception, in case of any bug.
             if (totalStakeOfAllNodes <= 0L) {
-                throw new IllegalStateException("Total stake of all nodes should be greater than 0");
+                log.warn("Total stake of all nodes should be greater than 0. But got {}", totalStakeOfAllNodes);
+                return 0;
             }
             final var weight = BigInteger.valueOf(stake)
                     .multiply(BigInteger.valueOf(500))
                     .divide(BigInteger.valueOf(totalStakeOfAllNodes))
                     .longValue();
-            return (int) Math.max(Math.floor(weight), 1);
+            return (int) Math.max(weight, 1);
         }
     }
 
