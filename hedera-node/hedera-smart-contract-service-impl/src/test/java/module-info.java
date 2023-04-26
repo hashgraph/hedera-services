@@ -11,6 +11,7 @@ module com.hedera.node.app.service.contract.impl.test {
     requires com.hedera.node.app.spi;
     requires com.hedera.node.app.spi.fixtures;
     requires com.hedera.pbj.runtime;
+    requires com.hedera.node.app.service.token;
 
     opens com.hedera.node.app.service.contract.impl.test to
             org.junit.platform.commons;
