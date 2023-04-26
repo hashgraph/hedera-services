@@ -25,10 +25,7 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountUpdate;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.TransferToRandomEVMAddress;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.TransferToRandomKey;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.*;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyInventoryCreation;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -83,6 +80,27 @@ public class IdFuzzingProviderFactory {
                     .withInitialization(keyInventory.creationOps())
                     /* ----- CRYPTO ----- */
                     .withOp(new TransferToRandomKey(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props));
+        };
+    }
+
+    /**
+     * Testing Lazy Create with random EVM addresses.
+     * Operation: creation of random evm addresses and sending hbars through Ethereum Transaction (Lazy Create)
+     *
+     * @param resource config
+     */
+    public static Function<HapiSpec, OpProvider> evmAddressFuzzing(final String resource) {
+        return spec -> {
+            final var props = RegressionProviderFactory.propsFrom(resource);
+
+            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
+
+            return new BiasedDelegatingProvider()
+                    .shouldLogNormalFlow(true)
+                    .withInitialization(onlyEcdsaKeys())
+                    .withOp(
+                            new TransferToRandomLazyCreate(spec.registry(), keys),
+                            intPropOrElse("randomEthereumTransactionTransfer.bias", 0, props));
         };
     }
 

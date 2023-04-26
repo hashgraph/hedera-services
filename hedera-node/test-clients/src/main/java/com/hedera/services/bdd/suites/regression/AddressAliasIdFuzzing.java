@@ -17,19 +17,23 @@
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers.KEY_FOR_INCONGRUENT_ALIAS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
-import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idFuzzingWith;
-import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idTransferToRandomKeyWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
+import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.AUTO_ACCOUNT;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,6 +47,7 @@ public class AddressAliasIdFuzzing extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AddressAliasIdFuzzing.class);
 
     private static final String PROPERTIES = "id-fuzzing.properties";
+    private final AtomicInteger maxOpsPerSec = new AtomicInteger(1);
 
     public static void main(String... args) {
         new AddressAliasIdFuzzing().runSuiteSync();
@@ -50,7 +55,7 @@ public class AddressAliasIdFuzzing extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing());
+        return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing(), ethereumTransactionLazyCreateFuzzing());
     }
 
     private HapiSpec addressAliasIdFuzzing() {
@@ -71,6 +76,35 @@ public class AddressAliasIdFuzzing extends HapiSuite {
                         .withRecharging())
                 .when()
                 .then(runWithProvider(idTransferToRandomKeyWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+    }
+
+    private HapiSpec ethereumTransactionLazyCreateFuzzing() {
+
+        return propertyPreservingHapiSpec("EthereumTransactionLazyCreateFuzzing")
+                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
+                /**
+                 * Initialization operations:
+                 * override Ethereum network config (CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP, V_0_34)
+                 * initiate key name for signing the Ethereum Transaction (SECP_256K1_SOURCE_KEY)
+                 * create account for paying the Ethereum Transaction (RELAYER).
+                 * transfer ONE_HUNDRED_HBARS to SECP_256K1_SOURCE_KEY for signing the transaction
+                 */
+                .given(
+                        overridingThree(
+                                CHAIN_ID_PROP,
+                                "298",
+                                LAZY_CREATE_PROPERTY_NAME,
+                                "true",
+                                CONTRACTS_EVM_VERSION_PROP,
+                                V_0_34),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS).withRecharging(),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via(AUTO_ACCOUNT))
+                .when()
+                .then(runWithProvider(evmAddressFuzzing(PROPERTIES))
+                        .lasting(10L, TimeUnit.SECONDS)
+                        .maxOpsPerSec(maxOpsPerSec::get));
     }
 
     @Override
