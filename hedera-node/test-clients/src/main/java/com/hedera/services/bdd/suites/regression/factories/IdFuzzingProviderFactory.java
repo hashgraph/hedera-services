@@ -99,7 +99,7 @@ public class IdFuzzingProviderFactory {
                     .shouldLogNormalFlow(true)
                     .withInitialization(onlyEcdsaKeys())
                     .withOp(
-                            new TransferToRandomLazyCreate(spec.registry(), keys),
+                            new EthereumTransferToRandomEVMAddress(spec.registry(), keys),
                             intPropOrElse("randomEthereumTransactionTransfer.bias", 0, props));
         };
     }

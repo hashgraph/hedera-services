@@ -31,12 +31,12 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
-public class TransferToRandomLazyCreate implements OpProvider {
+public class EthereumTransferToRandomEVMAddress implements OpProvider {
     private final EntityNameProvider<Key> keys;
     private final HapiSpecRegistry registry;
     private static int nonce = 0;
 
-    public TransferToRandomLazyCreate(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
+    public EthereumTransferToRandomEVMAddress(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
         this.registry = registry;
         this.keys = keys;
     }
