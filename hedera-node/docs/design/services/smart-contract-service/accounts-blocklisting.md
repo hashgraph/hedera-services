@@ -3,7 +3,7 @@
 ## Purpose
 
 In Ethereum, everyone that knows a private key is able to authorize a transaction from the corresponding EVM public address, and the first to send a transaction would be eligible to withdraw any funds from that address.
-In Hedera, it is possible for an account with associated EVM address alias to have a key that does not correspond to the alias. This is what we refer to as “EVM address squatting” i.e. using a key that’s different from the key that’s used to derive the EVM address alias from.
+In Hedera, it is possible for an account with associated EVM address alias to have a key that does not correspond to the alias. When an account is created with EVM address alias matching some publicly known exposed private key, this is what we refer to as “EVM address squatting”.
 
 It is possible to “squat” on an EVM address in a couple of ways:
 1. Create an account with an alias and then update the account key.
@@ -66,3 +66,8 @@ All created blocked accounts will be externalized as synthetic account creations
 
 ### New Classes
 `BlocklistAccountCreator` class will encapsulate the logic for reading blocked accounts from file and creating them in state.
+
+## Acceptance Tests
+
+* Verify that blocked accounts are created in state and that synthetic records are externalized for them when the node starts after the first transaction is handled.
+* Verify that funds cannot be transferred to blocked accounts unless the transaction is initiated by `GENESIS` account.
