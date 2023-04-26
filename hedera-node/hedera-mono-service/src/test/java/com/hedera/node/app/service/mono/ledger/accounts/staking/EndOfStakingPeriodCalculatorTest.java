@@ -105,6 +105,68 @@ class EndOfStakingPeriodCalculatorTest {
     }
 
     @Test
+    void convertsStakeValueToWeightCorrectly() {
+        final var stake1 = 100_000_000L;
+        final var stake2 = 123_456_789_123L;
+        final var stake3 = 500_000_867_919L;
+        final var stake4 = 900_000_789_111L;
+        final var stake5 = 0L;
+        final var totalStake = stake1 + stake2 + stake3 + stake4;
+        final var updatedWeight1 = subject.calculateWeightFromStake(stake1, totalStake);
+        final var updatedWeight2 = subject.calculateWeightFromStake(stake2, totalStake);
+        final var updatedWeight3 = subject.calculateWeightFromStake(stake3, totalStake);
+        final var updatedWeight4 = subject.calculateWeightFromStake(stake4, totalStake);
+        final var updatedWeight5 = subject.calculateWeightFromStake(stake5, totalStake);
+        final var totalWeight = updatedWeight1 + updatedWeight2 + updatedWeight3 + updatedWeight4 + updatedWeight5;
+        assertTrue(totalWeight <= 500);
+        assertEquals(1, updatedWeight1);
+        assertEquals((stake2 * 500) / totalStake, updatedWeight2);
+        assertEquals((stake3 * 500) / totalStake, updatedWeight3);
+        assertEquals((stake4 * 500) / totalStake, updatedWeight4);
+        assertEquals(0, updatedWeight5);
+    }
+
+    @Test
+    void scalesBackWeightToStake() {
+        final var minStake = 100_000_000L;
+        final var maxStake = 900_000_789_000L;
+
+        final var equalsMinStake = 100_000_000L;
+        final var stakeInBetween1 = 123_456_789_123L;
+        final var stakeInBetween2 = 123_456_000_000L;
+        final var stakeEqualsMax = 900_000_789_000L;
+        final var zeroStake = 0L;
+
+        final var totalStake = equalsMinStake + stakeInBetween1 + stakeInBetween2 + stakeEqualsMax + zeroStake;
+        final var weightForEqualsMin = subject.calculateWeightFromStake(equalsMinStake, totalStake);
+        final var weightInBetween1 = subject.calculateWeightFromStake(stakeInBetween1, totalStake);
+        final var weightInBetween2 = subject.calculateWeightFromStake(stakeInBetween2, totalStake);
+        final var weightForEqualsMax = subject.calculateWeightFromStake(stakeEqualsMax, totalStake);
+        final var weightForZeroStake = subject.calculateWeightFromStake(zeroStake, totalStake);
+        final var totalWeight =
+                weightForEqualsMin + weightInBetween1 + weightInBetween2 + weightForEqualsMax + weightForZeroStake;
+
+        assertTrue(totalWeight <= 500);
+        assertEquals(1, weightForEqualsMin);
+        assertEquals((stakeInBetween1 * 500) / totalStake, weightInBetween1);
+        assertEquals((stakeInBetween2 * 500) / totalStake, weightInBetween2);
+        assertEquals((stakeEqualsMax * 500) / totalStake, weightForEqualsMax);
+        assertEquals(0, weightForZeroStake);
+
+        final var scaledStake1 = subject.scaleUpWeightToStake(weightForEqualsMin, minStake, maxStake, totalStake);
+        final var scaledStake2 = subject.scaleUpWeightToStake(weightInBetween1, minStake, maxStake, totalStake);
+        final var scaledStake3 = subject.scaleUpWeightToStake(weightInBetween2, minStake, maxStake, totalStake);
+        final var scaledStake4 = subject.scaleUpWeightToStake(weightForEqualsMax, minStake, maxStake, totalStake);
+        final var scaledStake5 = subject.scaleUpWeightToStake(weightForZeroStake, minStake, maxStake, totalStake);
+
+        assertEquals(equalsMinStake, scaledStake1);
+        assertEquals(119_779_900_327L, scaledStake2);
+        assertEquals(119_779_900_327L, scaledStake3);
+        assertEquals(stakeEqualsMax, scaledStake4);
+        assertEquals(zeroStake, scaledStake5);
+    }
+
+    @Test
     void calculatesNewTotalStakesAsExpected() {
         final var consensusTime = Instant.now();
         final var balance_800 = 100_000_000_000L;
