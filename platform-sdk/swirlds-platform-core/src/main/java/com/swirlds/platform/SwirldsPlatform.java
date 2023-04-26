@@ -1277,7 +1277,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 stateManagementComponent::getLastCompleteRound,
                 new ReconnectLearnerThrottle(selfId, reconnectConfig),
                 this::loadReconnectState,
-                new ReconnectLearnerFactory(threadManager, initialAddressBook, reconnectConfig, reconnectMetrics));
+                new ReconnectLearnerFactory(
+                        threadManager,
+                        initialAddressBook,
+                        reconnectConfig.asyncStreamTimeoutMilliseconds(),
+                        reconnectMetrics));
         if (settings.getChatter().isChatterUsed()) {
             reconnectController.set(new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter));
             startChatterNetwork();

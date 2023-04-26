@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.reconnect;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.sync.FallenBehindManager;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -54,11 +56,17 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     volatile int numReportFallenBehind;
 
     public FallenBehindManagerImpl(
-            final NodeId selfId,
-            final RandomGraph connectionGraph,
-            final Runnable notifyPlatform,
-            final Runnable fallenBehindCallback,
-            final ReconnectConfig config) {
+            @NonNull final NodeId selfId,
+            @NonNull final RandomGraph connectionGraph,
+            @NonNull final Runnable notifyPlatform,
+            @NonNull final Runnable fallenBehindCallback,
+            @NonNull final ReconnectConfig config) {
+        ArgumentUtils.throwArgNull(selfId, "selfId");
+        ArgumentUtils.throwArgNull(connectionGraph, "connectionGraph");
+        ArgumentUtils.throwArgNull(notifyPlatform, "notifyPlatform");
+        ArgumentUtils.throwArgNull(fallenBehindCallback, "fallenBehindCallback");
+        ArgumentUtils.throwArgNull(config, "config");
+
         notYetReportFallenBehind = ConcurrentHashMap.newKeySet();
         reportFallenBehind = new HashSet<>();
         allNeighbors = new HashSet<>();

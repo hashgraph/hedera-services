@@ -18,6 +18,7 @@ package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Connection;
@@ -25,6 +26,7 @@ import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.unidirectional.NetworkProtocolResponder;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,11 +57,17 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
      * @param stats                     reconnect metrics
      */
     public ReconnectProtocolResponder(
-            final ThreadManager threadManager,
-            final LatestSignedStateProvider latestSignedStateProvider,
-            final ReconnectConfig config,
-            final ReconnectThrottle reconnectThrottle,
-            final ReconnectMetrics stats) {
+            @NonNull final ThreadManager threadManager,
+            @NonNull final LatestSignedStateProvider latestSignedStateProvider,
+            @NonNull final ReconnectConfig config,
+            @NonNull final ReconnectThrottle reconnectThrottle,
+            @NonNull final ReconnectMetrics stats) {
+        ArgumentUtils.throwArgNull(threadManager, "threadManager");
+        ArgumentUtils.throwArgNull(latestSignedStateProvider, "latestSignedStateProvider");
+        ArgumentUtils.throwArgNull(config, "config");
+        ArgumentUtils.throwArgNull(reconnectThrottle, "reconnectThrottle");
+        ArgumentUtils.throwArgNull(stats, "stats");
+
         this.threadManager = threadManager;
         this.latestSignedStateProvider = latestSignedStateProvider;
         this.config = config;
