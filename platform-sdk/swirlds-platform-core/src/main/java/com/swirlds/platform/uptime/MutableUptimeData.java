@@ -17,7 +17,6 @@
 package com.swirlds.platform.uptime;
 
 import com.swirlds.common.system.UptimeData;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -41,9 +40,16 @@ public interface MutableUptimeData extends UptimeData {
     void recordLastJudge(@NonNull final EventImpl event);
 
     /**
-     * Remove uptime data for any node not in the address book, and add entries for new nodes in the address book.
+     * Start tracking data for a new node.
      *
-     * @param addressBook the address book
+     * @param node the node ID
      */
-    void adjustToAddressBook(@NonNull final AddressBook addressBook);
+    void addNode(final long node);
+
+    /**
+     * Stop tracking data for a node.
+     *
+     * @param node the node ID
+     */
+    void removeNode(final long node);
 }

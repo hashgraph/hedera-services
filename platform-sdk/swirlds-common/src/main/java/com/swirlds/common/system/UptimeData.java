@@ -16,8 +16,10 @@
 
 package com.swirlds.common.system;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Set;
 
 /**
  * Uptime data about nodes in the address book.
@@ -69,4 +71,12 @@ public interface UptimeData {
      * from the given node has ever been observed
      */
     long getLastJudgeRound(final long id);
+
+    /**
+     * Get the set of node IDs that are currently being tracked.
+     *
+     * @return the set of node IDs that are currently being tracked
+     */
+    @NonNull
+    Set<Long> getTrackedNodes();
 }

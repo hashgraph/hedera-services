@@ -20,14 +20,14 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -125,6 +125,14 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
         }
         return nodeData.getLastJudgeRound();
     }
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Set<Long> getTrackedNodes() {
+        return new HashSet<>(data.keySet());
+    }
 
     /**
      * {@inheritDoc}
@@ -150,17 +158,13 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      * {@inheritDoc}
      */
     @Override
-    public void adjustToAddressBook(@NonNull final AddressBook addressBook) {
+    public void addNode(final long node) {
+        data.put(node, new NodeUptimeData());
+    }
 
-        // remove nodes that are no longer present
-        data.keySet().removeIf(nodeId -> !addressBook.contains(nodeId));
-
-        // add new nodes
-        for (final Address address : addressBook) {
-            if (!data.containsKey(address.getId())) {
-                data.put(address.getId(), new NodeUptimeData());
-            }
-        }
+    @Override
+    public void removeNode(final long node) {
+        data.remove(node);
     }
 
     /**

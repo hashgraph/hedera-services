@@ -34,21 +34,39 @@ class UptimeMetrics {
 
     private static final String CATEGORY = "platform";
 
+    private final Metrics metrics;
+
     /**
      * A map from node to the time since the last consensus event was observed from that node.
      */
     private final Map<Long, RunningAverageMetric> timeSinceLastConsensusEvent = new HashMap<>();
 
     /**
+     * A map from node to the number of rounds since the last consensus event was observed from that node.
+     */
+    private final Map<Long, RunningAverageMetric> roundsSinceLastConsensusEvent = new HashMap<>();
+
+    /**
      * A map from node to the time since the last consensus event was observed from that node.
      */
     private final Map<Long, RunningAverageMetric> timeSinceLastJudge = new HashMap<>();
+
+    /**
+     * A map from node to the number of rounds since the last judge was observed from that node.
+     */
+    private final Map<Long, RunningAverageMetric> roundsSinceLastJudge = new HashMap<>();
 
     private static final RunningAverageMetric.Config FRACTION_OF_NETWORK_ALIVE_CONFIG = new RunningAverageMetric.Config(
                     CATEGORY, "fractionOfNetworkAlive")
             .withUnit("fraction")
             .withDescription("The fraction (out of 1.0) of the network that is alive, weighted by consensus weight.");
     private final RunningAverageMetric fractionOfNetworkAlive;
+
+    private static final RunningAverageMetric.Config UPTIME_COMPUTATION_TIME = new RunningAverageMetric.Config(
+                    CATEGORY, "uptimeComputationTime")
+            .withUnit("microseconds")
+            .withDescription("The time, in microseconds, required to compute uptime information each round.");
+    private final RunningAverageMetric uptimeComputationTime;
 
     /**
      * Construct a new uptime metrics object.
@@ -58,6 +76,8 @@ class UptimeMetrics {
     public UptimeMetrics(
             @NonNull Metrics metrics, @NonNull final AddressBook addressBook, @NonNull Supplier<Boolean> isDegraded) {
 
+        this.metrics = metrics;
+
         fractionOfNetworkAlive = metrics.getOrCreate(FRACTION_OF_NETWORK_ALIVE_CONFIG);
 
         final FunctionGauge.Config<Boolean> degradedConfig = new FunctionGauge.Config<>(
@@ -66,21 +86,66 @@ class UptimeMetrics {
                 .withDescription("False if this node is healthy, true if this node is degraded.");
         metrics.getOrCreate(degradedConfig);
 
-        for (final Address address : addressBook) {
-            final RunningAverageMetric.Config timeSinceLastConensusEventConfig = new RunningAverageMetric.Config(
-                            CATEGORY, "timeSinceLastConsensusEvent-" + address.getId())
-                    .withUnit("seconds")
-                    .withDescription("The consensus time in seconds since the "
-                            + "last consensus event created by this node was observed");
-            timeSinceLastConsensusEvent.put(address.getId(), metrics.getOrCreate(timeSinceLastConensusEventConfig));
+        uptimeComputationTime = metrics.getOrCreate(UPTIME_COMPUTATION_TIME);
 
-            final RunningAverageMetric.Config timeSinceLastJudgeConfig = new RunningAverageMetric.Config(
-                            CATEGORY, "timeSinceLastJudge-" + address.getId())
-                    .withUnit("seconds")
-                    .withDescription("The consensus time in seconds since the "
-                            + "last judge created by this node was observed");
-            timeSinceLastJudge.put(address.getId(), metrics.getOrCreate(timeSinceLastJudgeConfig));
+        for (final Address address : addressBook) {
+            addMetricsForNode(address.getId());
         }
+    }
+
+    // TODO string constants
+
+    /**
+     * Add the metrics for a node.
+     *
+     * @param nodeId the id of the node
+     */
+    public void addMetricsForNode(final long nodeId) {
+        final RunningAverageMetric.Config timeSinceLastConensusEventConfig = new RunningAverageMetric.Config(
+                        CATEGORY, "timeSinceLastConsensusEvent-" + nodeId)
+                .withUnit("seconds")
+                .withDescription("The consensus time in seconds since the "
+                        + "last consensus event created by this node was observed");
+        timeSinceLastConsensusEvent.put(nodeId, metrics.getOrCreate(timeSinceLastConensusEventConfig));
+
+        final RunningAverageMetric.Config roundsSinceLastConensusEventConfig = new RunningAverageMetric.Config(
+                        CATEGORY, "roundsSinceLastConsensusEvent-" + nodeId)
+                .withUnit("rounds")
+                .withDescription(
+                        "The number of rounds since the " + "last consensus event created by this node was observed");
+        roundsSinceLastConsensusEvent.put(nodeId, metrics.getOrCreate(roundsSinceLastConensusEventConfig));
+
+        final RunningAverageMetric.Config timeSinceLastJudgeConfig = new RunningAverageMetric.Config(
+                        CATEGORY, "timeSinceLastJudge-" + nodeId)
+                .withUnit("seconds")
+                .withDescription(
+                        "The consensus time in seconds since the " + "last judge created by this node was observed");
+        timeSinceLastJudge.put(nodeId, metrics.getOrCreate(timeSinceLastJudgeConfig));
+
+        final RunningAverageMetric.Config roundsSinceLastJudgeConfig = new RunningAverageMetric.Config(
+                        CATEGORY, "roundsSinceLastJudge-" + nodeId)
+                .withUnit("rounds")
+                .withDescription("The number of rounds since the " + "last judge created by this node was observed");
+        roundsSinceLastJudge.put(nodeId, metrics.getOrCreate(roundsSinceLastJudgeConfig));
+    }
+
+    /**
+     * Remove the metrics for a node.
+     *
+     * @param nodeId the id of the node
+     */
+    public void removeMetricsForNode(final long nodeId) {
+        timeSinceLastConsensusEvent.remove(nodeId);
+        metrics.remove(new RunningAverageMetric.Config(CATEGORY, "timeSinceLastConsensusEvent-" + nodeId));
+
+        roundsSinceLastConsensusEvent.remove(nodeId);
+        metrics.remove(new RunningAverageMetric.Config(CATEGORY, "roundsSinceLastConsensusEvent-" + nodeId));
+
+        timeSinceLastJudge.remove(nodeId);
+        metrics.remove(new RunningAverageMetric.Config(CATEGORY, "timeSinceLastJudge-" + nodeId));
+
+        roundsSinceLastJudge.remove(nodeId);
+        metrics.remove(new RunningAverageMetric.Config(CATEGORY, "roundsSinceLastJudge-" + nodeId));
     }
 
     /**
@@ -94,6 +159,16 @@ class UptimeMetrics {
     }
 
     /**
+     * Get the metric that tracks the number of rounds since the last consensus event was observed from a node.
+     *
+     * @param id the id of the node
+     * @return the metric
+     */
+    public @NonNull RunningAverageMetric getRoundsSinceLastConsensusEventMetric(final long id) {
+        return Objects.requireNonNull(roundsSinceLastConsensusEvent.get(id));
+    }
+
+    /**
      * Get the metric that tracks the time since the last judge was observed from a node.
      *
      * @param id the id of the node
@@ -104,11 +179,30 @@ class UptimeMetrics {
     }
 
     /**
+     * Get the metric that tracks the number of rounds since the last judge was observed from a node.
+     *
+     * @param id the id of the node
+     * @return the metric
+     */
+    public @NonNull RunningAverageMetric getRoundsSinceLastJudgeMetric(final long id) {
+        return Objects.requireNonNull(roundsSinceLastJudge.get(id));
+    }
+
+    /**
      * Get the metric that tracks the fraction of the network that is alive.
      *
      * @return the metric
      */
     public @NonNull RunningAverageMetric getFractionOfNetworkAliveMetric() {
         return fractionOfNetworkAlive;
+    }
+
+    /**
+     * Get the metric that tracks the time required to compute uptime information each round.
+     *
+     * @return the metric
+     */
+    public @NonNull RunningAverageMetric getUptimeComputationTimeMetric() {
+        return uptimeComputationTime;
     }
 }

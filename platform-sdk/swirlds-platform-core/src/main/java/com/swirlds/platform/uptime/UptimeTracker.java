@@ -16,7 +16,10 @@
 
 package com.swirlds.platform.uptime;
 
+import static com.swirlds.common.system.UptimeData.NO_ROUND;
+import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
+import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_SECONDS;
 
 import com.swirlds.common.context.PlatformContext;
@@ -34,6 +37,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -84,18 +88,50 @@ public class UptimeTracker { // TODO test
             @NonNull final MutableUptimeData uptimeData,
             @NonNull final AddressBook addressBook) {
 
-        // TODO metric that measures how long this method takes to execute
-
         if (round.isEmpty()) {
             return;
         }
 
+        final Instant start = time.now();
+
+        addAndRemoveNodes(uptimeData, addressBook);
         final Map<Long, ConsensusEvent> lastEventsInRoundByCreator = new HashMap<>();
         final Map<Long, ConsensusEvent> judgesByCreator = new HashMap<>();
-
         scanRound(round, lastEventsInRoundByCreator, judgesByCreator);
         updateState(addressBook, uptimeData, lastEventsInRoundByCreator, judgesByCreator);
-        reportUptime(uptimeData, ((ConsensusRound) round).getLastEvent().getConsensusTimestamp());
+        reportUptime(uptimeData, ((ConsensusRound) round).getLastEvent().getConsensusTimestamp(), round.getRoundNum());
+
+        final Instant end = time.now();
+        final Duration elapsed = Duration.between(start, end);
+        uptimeMetrics
+                .getUptimeComputationTimeMetric()
+                .update(UNIT_NANOSECONDS.convertTo(elapsed.toNanos(), UNIT_MICROSECONDS));
+    }
+
+    /**
+     * Add and remove nodes as necessary. Will only make changes if address book membership in this round is different
+     * from the address book in the previous round, or at genesis.
+     *
+     * @param uptimeData  the uptime data
+     * @param addressBook the current address book
+     */
+    private void addAndRemoveNodes(MutableUptimeData uptimeData, AddressBook addressBook) {
+        final Set<Long> addressBookNodes = addressBook.getNodeIdSet();
+        final Set<Long> trackedNodes = uptimeData.getTrackedNodes();
+        for (final long nodeId : addressBookNodes) {
+            if (!trackedNodes.contains(nodeId)) {
+                // node was added
+                uptimeMetrics.addMetricsForNode(nodeId);
+                uptimeData.addNode(nodeId);
+            }
+        }
+        for (final long nodeId : trackedNodes) {
+            if (!addressBookNodes.contains(nodeId)) {
+                // node was removed
+                uptimeMetrics.removeMetricsForNode(nodeId);
+                uptimeData.removeNode(nodeId);
+            }
+        }
     }
 
     /**
@@ -114,8 +150,6 @@ public class UptimeTracker { // TODO test
         final Duration durationSinceLastEvent = Duration.between(lastEventTime, now);
         return CompareTo.isGreaterThan(durationSinceLastEvent, degradationThreshold);
     }
-
-    // TODO add other methods to query uptime data
 
     /**
      * Scan all events in the round.
@@ -155,9 +189,6 @@ public class UptimeTracker { // TODO test
             @NonNull final Map<Long, ConsensusEvent> lastEventsInRoundByCreator,
             @NonNull final Map<Long, ConsensusEvent> judgesByCreator) {
 
-        // TODO uptime metrics don't adjust to a changing address book
-        uptimeData.adjustToAddressBook(addressBook);
-
         for (final Address address : addressBook) {
             final ConsensusEvent lastEvent = lastEventsInRoundByCreator.get(address.getId());
             if (lastEvent != null) {
@@ -176,13 +207,15 @@ public class UptimeTracker { // TODO test
      *
      * @param uptimeData the uptime data
      */
-    private void reportUptime(@NonNull final MutableUptimeData uptimeData, @NonNull final Instant lastRoundEndTime) {
+    private void reportUptime(
+            @NonNull final MutableUptimeData uptimeData,
+            @NonNull final Instant lastRoundEndTime,
+            final long currentRound) {
+
         for (final Address address : addressBook) {
             final long id = address.getId();
 
             long nonDegradedConsensusWeight = 0;
-
-            // TODO round based metrics
 
             final Instant lastConsensusEventTime = uptimeData.getLastEventTime(id);
             if (lastConsensusEventTime != null) {
@@ -199,12 +232,22 @@ public class UptimeTracker { // TODO test
             final double fractionOfNetworkAlive = (double) nonDegradedConsensusWeight / addressBook.getTotalWeight();
             uptimeMetrics.getFractionOfNetworkAliveMetric().update(fractionOfNetworkAlive);
 
+            final long lastEventRound = uptimeData.getLastEventRound(id);
+            if (lastEventRound != NO_ROUND) {
+                uptimeMetrics.getRoundsSinceLastJudgeMetric(id).update(currentRound - lastEventRound);
+            }
+
             final Instant lastJudgeTime = uptimeData.getLastJudgeTime(id);
             if (lastJudgeTime != null) {
                 final Duration timeSinceLastJudge = Duration.between(lastJudgeTime, lastRoundEndTime);
                 uptimeMetrics
                         .getTimeSinceLastJudgeMetric(id)
                         .update(UNIT_MILLISECONDS.convertTo(timeSinceLastJudge.toMillis(), UNIT_SECONDS));
+            }
+
+            final long lastJudgeRound = uptimeData.getLastJudgeRound(id);
+            if (lastJudgeRound != NO_ROUND) {
+                uptimeMetrics.getRoundsSinceLastJudgeMetric(id).update(currentRound - lastJudgeRound);
             }
         }
     }
