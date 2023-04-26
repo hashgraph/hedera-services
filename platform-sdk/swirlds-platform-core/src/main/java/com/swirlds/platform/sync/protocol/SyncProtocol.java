@@ -41,7 +41,7 @@ import java.util.List;
  * Executes the sync protocol where events are exchanged with a peer and all events are sent and received in topological
  * order.
  * <p>
- * This object will be instantiated once per pair of peers, and is bidirectional
+ * This object will be instantiated once per peer, and is bidirectional
  */
 public class SyncProtocol implements Protocol {
     /**
