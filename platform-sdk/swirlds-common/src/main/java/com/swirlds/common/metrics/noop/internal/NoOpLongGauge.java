@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.IntegerGauge;
+import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.MetricConfig;
 
 /**
- * A no-op implementation of an integer gauge.
+ * A no-op implementation of a long gauge.
  */
-public class NoOpIntegerGauge extends AbstractNoOpMetric implements IntegerGauge {
+public class NoOpLongGauge extends AbstractNoOpMetric implements LongGauge {
 
-    public NoOpIntegerGauge(final MetricConfig<?, ?> config) {
+    public NoOpLongGauge(final MetricConfig<?, ?> config) {
         super(config);
     }
 
@@ -32,7 +32,7 @@ public class NoOpIntegerGauge extends AbstractNoOpMetric implements IntegerGauge
      * {@inheritDoc}
      */
     @Override
-    public int get() {
+    public long get() {
         return 0;
     }
 
@@ -40,5 +40,5 @@ public class NoOpIntegerGauge extends AbstractNoOpMetric implements IntegerGauge
      * {@inheritDoc}
      */
     @Override
-    public void set(final int newValue) {}
+    public void set(final long newValue) {}
 }
