@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 /** The value stored in a {@link MerkleMap} for in memory states */
-public final class InMemoryValue<K extends Comparable<? super K>, V> extends PartialMerkleLeaf
+public final class InMemoryValue<K, V> extends PartialMerkleLeaf
         implements MerkleNode, Keyed<InMemoryKey<K>>, SelfSerializable, MerkleLeaf {
 
     @Deprecated(forRemoval = true)

@@ -47,14 +47,14 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.assertj.core.api.Assertions;
@@ -68,7 +68,7 @@ class TokenRevokeKycFromAccountHandlerTest {
     private static final AccountID ACCOUNT_100 =
             AccountID.newBuilder().accountNum(100).build();
 
-    private AccountAccess accountStore;
+    private ReadableAccountStore accountStore;
     private ReadableTokenStore tokenStore;
     private TokenRevokeKycFromAccountHandler subject;
 
@@ -85,8 +85,9 @@ class TokenRevokeKycFromAccountHandlerTest {
         void tokenRevokeKycWithExtant() throws PreCheckException {
             final var txn = txnFrom(VALID_REVOKE_WITH_EXTANT_TOKEN);
 
-            final var context = new PreHandleContext(accountStore, txn);
-            subject.preHandle(context, tokenStore);
+            final var context = new FakePreHandleContext(accountStore, txn);
+            context.registerStore(ReadableTokenStore.class, tokenStore);
+            subject.preHandle(context);
 
             assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
             assertThat(context.requiredNonPayerKeys(), contains(TOKEN_KYC_KT.asPbjKey()));
@@ -97,16 +98,18 @@ class TokenRevokeKycFromAccountHandlerTest {
         void tokenRevokeMissingTxnBody() throws PreCheckException {
             final var txn = txnFrom(REVOKE_WITH_MISSING_TXN_BODY);
 
-            final var context = new PreHandleContext(accountStore, txn);
-            assertThrows(NullPointerException.class, () -> subject.preHandle(context, tokenStore));
+            final var context = new FakePreHandleContext(accountStore, txn);
+            context.registerStore(ReadableTokenStore.class, tokenStore);
+            assertThrows(NullPointerException.class, () -> subject.preHandle(context));
         }
 
         @Test
         void tokenRevokeKycWithInvalidToken() throws PreCheckException {
             final var txn = txnFrom(REVOKE_WITH_INVALID_TOKEN);
 
-            final var context = new PreHandleContext(accountStore, txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context, tokenStore), INVALID_TOKEN_ID);
+            final var context = new FakePreHandleContext(accountStore, txn);
+            context.registerStore(ReadableTokenStore.class, tokenStore);
+            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
             assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
             assertTrue(context.requiredNonPayerKeys().isEmpty());
         }
@@ -115,8 +118,9 @@ class TokenRevokeKycFromAccountHandlerTest {
         void tokenRevokeKycWithoutKyc() throws PreCheckException {
             final var txn = txnFrom(REVOKE_FOR_TOKEN_WITHOUT_KYC);
 
-            final var context = new PreHandleContext(accountStore, txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context, tokenStore), TOKEN_HAS_NO_KYC_KEY);
+            final var context = new FakePreHandleContext(accountStore, txn);
+            context.registerStore(ReadableTokenStore.class, tokenStore);
+            assertThrowsPreCheck(() -> subject.preHandle(context), TOKEN_HAS_NO_KYC_KEY);
             assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
             assertTrue(context.requiredNonPayerKeys().isEmpty());
         }

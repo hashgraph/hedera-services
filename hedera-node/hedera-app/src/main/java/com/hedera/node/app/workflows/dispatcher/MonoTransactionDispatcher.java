@@ -28,7 +28,6 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -51,10 +50,9 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             @NonNull HandleContext handleContext,
             @NonNull TransactionContext txnCtx,
             @NonNull TransactionHandlers handlers,
-            @NonNull HederaAccountNumbers accountNumbers,
             @NonNull GlobalDynamicProperties dynamicProperties,
             @NonNull UsageLimits usageLimits) {
-        super(handleContext, handlers, accountNumbers, dynamicProperties);
+        super(handleContext, handlers, dynamicProperties);
         this.txnCtx = requireNonNull(txnCtx);
         this.usageLimits = requireNonNull(usageLimits);
     }

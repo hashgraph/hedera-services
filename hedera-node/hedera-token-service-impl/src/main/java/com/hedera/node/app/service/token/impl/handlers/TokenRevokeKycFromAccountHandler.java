@@ -25,7 +25,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -37,7 +37,7 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#TOKEN_REVOKE_KYC_FROM_ACCOUNT}.
+ * HederaFunctionality#TOKEN_REV}.
  */
 @Singleton
 public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
@@ -50,14 +50,13 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
      * This method is called during the pre-handle workflow.
      *
      * @param context the {@link PreHandleContext} which collects all information
-     * @param tokenStore the {@link ReadableTokenStore}
-     * @throws PreCheckException for invalid tokens or if the token has no KYC key
+     * @throws PreCheckException    for invalid tokens or if the token has no KYC key
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
-            throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenRevokeKycOrThrow();
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(ResponseCodeEnum.INVALID_TOKEN_ID);
         if (tokenMeta.hasKycKey()) {
@@ -70,7 +69,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * @param txn the {@link TransactionBody} of the active transaction
+     * @param txn           the {@link TransactionBody} of the active transaction
      * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
