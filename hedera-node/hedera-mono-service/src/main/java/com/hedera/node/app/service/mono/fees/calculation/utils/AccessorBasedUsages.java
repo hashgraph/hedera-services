@@ -52,8 +52,6 @@ import javax.inject.Singleton;
 
 @Singleton
 public class AccessorBasedUsages {
-    // A default lifetime for auto-association slots
-    private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
             FileAppend,
             CryptoTransfer,
