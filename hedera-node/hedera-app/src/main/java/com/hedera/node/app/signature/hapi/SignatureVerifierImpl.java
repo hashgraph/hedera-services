@@ -43,13 +43,6 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 
-// A few problems:
-//  - A single signature MAY apply to more than one key. If a signature doesn't have a prefix at all, it might
-//    apply to any key! Or maybe the prefix isn't very long, and it matches multiple keys.
-//  - A single key MAY match multiple signature prefixes. Which one to use? (try to match both? or most specific?)
-//  - Maybe the same key shows up more than once. How does that happen? We have to deduplicate somehow...
-//  - We should only match prefixes on the key types that match the key we have on hand
-
 /**
  * A concrete implementation of {@link SignatureVerifier} that uses the {@link Cryptography} engine to verify the
  * signatures.
@@ -175,7 +168,8 @@ public class SignatureVerifierImpl implements SignatureVerifier {
      * @param sigPairs The signature pairs to match against
      */
     private List<HapiTransactionSignature> collectSignatures(
-            @NonNull final KeyList keyList, @NonNull final Bytes signedBytes,
+            @NonNull final KeyList keyList,
+            @NonNull final Bytes signedBytes,
             @NonNull final List<SignaturePair> sigPairs) {
         // Every single key in the key list must contribute at least one TransactionSignature, or
         // the key was invalid for some reason. A KeyList is basically a ThresholdKey with the threshold
@@ -212,7 +206,8 @@ public class SignatureVerifierImpl implements SignatureVerifier {
      * succeed.
      */
     private List<HapiTransactionSignature> collectSignatures(
-            @NonNull final ThresholdKey thresholdKey, @NonNull final Bytes signedBytes,
+            @NonNull final ThresholdKey thresholdKey,
+            @NonNull final Bytes signedBytes,
             @NonNull final List<SignaturePair> sigPairs) {
         // The ThresholdKey is like a KeyList, but only `threshold` number of keys must contribute at least
         // one signature.

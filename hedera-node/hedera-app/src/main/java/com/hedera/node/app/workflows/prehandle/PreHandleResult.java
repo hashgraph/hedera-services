@@ -113,7 +113,8 @@ public record PreHandleResult(
             @NonNull final AccountID node,
             @NonNull final ResponseCodeEnum responseCode,
             @Nullable final TransactionInfo txInfo) {
-        return new PreHandleResult(node, Status.NODE_DUE_DILIGENCE_FAILURE, responseCode, txInfo, null, null, null, null);
+        return new PreHandleResult(
+                node, Status.NODE_DUE_DILIGENCE_FAILURE, responseCode, txInfo, null, null, null, null);
     }
 
     /**
@@ -130,6 +131,7 @@ public record PreHandleResult(
             @NonNull final ResponseCodeEnum responseCode,
             @NonNull final TransactionInfo txInfo,
             @Nullable Future<SignatureVerification> payerVerification) {
-        return new PreHandleResult(payer, Status.PRE_HANDLE_FAILURE, responseCode, txInfo, payerVerification, null, null, null);
+        return new PreHandleResult(
+                payer, Status.PRE_HANDLE_FAILURE, responseCode, txInfo, payerVerification, null, null, null);
     }
 }

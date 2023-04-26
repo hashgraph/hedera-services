@@ -36,6 +36,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +47,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.commons.codec.DecoderException;
 
 @Singleton
@@ -76,8 +76,10 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
             final var cryptoSignatures = new ArrayList<TransactionSignature>();
             // Add the TransactionSignature for the payer
             final var payerVerificationFuture = metadata.payerVerification();
-            final var payerVerification = payerVerificationFuture == null ? null : payerVerificationFuture.get(3, TimeUnit.MINUTES);
-            final var payerTxSigs = payerVerification == null ? null : ((SignatureVerificationImpl) payerVerification).txSigs();
+            final var payerVerification =
+                    payerVerificationFuture == null ? null : payerVerificationFuture.get(3, TimeUnit.MINUTES);
+            final var payerTxSigs =
+                    payerVerification == null ? null : ((SignatureVerificationImpl) payerVerification).txSigs();
             cryptoSignatures.addAll(payerTxSigs);
 
             // Add the TransactionSignatures for the non-payers
@@ -94,12 +96,10 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
                 } else {
                     final List<JKey> otherPayerKeys = metadata.nonPayerVerifications() == null
                             ? Collections.emptyList()
-                            : metadata.nonPayerVerifications().keySet().stream().map(this::mapToJKey).toList();
-                    accessor.setSigMeta(forPayerAndOthers(
-                            payerKey,
-                            otherPayerKeys,
-                            cryptoSignatures,
-                            accessor));
+                            : metadata.nonPayerVerifications().keySet().stream()
+                                    .map(this::mapToJKey)
+                                    .toList();
+                    accessor.setSigMeta(forPayerAndOthers(payerKey, otherPayerKeys, cryptoSignatures, accessor));
                 }
             } else {
                 accessor.setSigMeta(noneAvailable());
@@ -128,7 +128,8 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
                     } catch (InterruptedException | ExecutionException | TimeoutException e) {
                         throw new RuntimeException(e);
                     }
-                }).map(SignatureVerificationImpl.class::cast)
+                })
+                .map(SignatureVerificationImpl.class::cast)
                 .map(SignatureVerificationImpl::txSigs)
                 .flatMap(List::stream)
                 .toList();

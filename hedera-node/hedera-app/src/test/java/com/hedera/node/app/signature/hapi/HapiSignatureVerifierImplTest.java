@@ -50,6 +50,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 final class HapiSignatureVerifierImplTest extends AppTestBase implements Scenarios {
+    // A few problems:
+    //  - A single signature MAY apply to more than one key. If a signature doesn't have a prefix at all, it might
+    //    apply to any key! Or maybe the prefix isn't very long, and it matches multiple keys.
+    //  - A single key MAY match multiple signature prefixes. Which one to use? (try to match both? or most specific?)
+    //  - Maybe the same key shows up more than once. How does that happen? We have to deduplicate somehow...
+    //  - We should only match prefixes on the key types that match the key we have on hand
+
     /**
      * The "signed" bytes to test with. This really doesn't matter because we mock out the crypto engine, so it will
      * always return true (or false) as needed regardless of the actual bytes.

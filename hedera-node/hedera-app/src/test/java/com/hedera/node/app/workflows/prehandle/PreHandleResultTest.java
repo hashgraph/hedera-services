@@ -26,7 +26,6 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.UNK
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -45,27 +44,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PreHandleResultTest {
     @SuppressWarnings("ConstantConditions")
     @Test
-    void statusMustNotBeNull(
-            @Mock AccountID payer,
-            @Mock TransactionInfo txInfo,
-            @Mock PreHandleResult innerResult) {
+    void statusMustNotBeNull(@Mock AccountID payer, @Mock TransactionInfo txInfo, @Mock PreHandleResult innerResult) {
         final Future<SignatureVerification> payerFuture = completedFuture(null);
         final Map<Key, Future<SignatureVerification>> nonPayers = Map.of();
         final Map<Long, Future<SignatureVerification>> hollows = Map.of();
-        assertThatThrownBy(() -> new PreHandleResult(payer, null, OK, txInfo, payerFuture, nonPayers, hollows, innerResult))
+        assertThatThrownBy(() ->
+                        new PreHandleResult(payer, null, OK, txInfo, payerFuture, nonPayers, hollows, innerResult))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void responseCodeMustNotBeNull(
-            @Mock AccountID payer,
-            @Mock TransactionInfo txInfo,
-            @Mock PreHandleResult innerResult) {
+            @Mock AccountID payer, @Mock TransactionInfo txInfo, @Mock PreHandleResult innerResult) {
         final Future<SignatureVerification> payerFuture = completedFuture(null);
         final Map<Key, Future<SignatureVerification>> nonPayers = Map.of();
         final Map<Long, Future<SignatureVerification>> hollows = Map.of();
-        assertThatThrownBy(() -> new PreHandleResult(payer, SO_FAR_SO_GOOD, null, txInfo, payerFuture, nonPayers, hollows, innerResult))
+        assertThatThrownBy(() -> new PreHandleResult(
+                        payer, SO_FAR_SO_GOOD, null, txInfo, payerFuture, nonPayers, hollows, innerResult))
                 .isInstanceOf(NullPointerException.class);
     }
 

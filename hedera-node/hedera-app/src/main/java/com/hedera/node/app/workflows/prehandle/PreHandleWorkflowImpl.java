@@ -245,7 +245,15 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         }
 
         // 7. Create and return TransactionMetadata
-        return new PreHandleResult(payer, SO_FAR_SO_GOOD, OK, txInfo, payerVerificationFuture, nonPayerFutures, nonPayerHollowFutures, null);
+        return new PreHandleResult(
+                payer,
+                SO_FAR_SO_GOOD,
+                OK,
+                txInfo,
+                payerVerificationFuture,
+                nonPayerFutures,
+                nonPayerHollowFutures,
+                null);
     }
 
     /** A platform transaction and the future that produces its {@link PreHandleResult} */

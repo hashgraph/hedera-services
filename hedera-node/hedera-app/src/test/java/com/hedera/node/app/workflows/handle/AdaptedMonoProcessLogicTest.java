@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
