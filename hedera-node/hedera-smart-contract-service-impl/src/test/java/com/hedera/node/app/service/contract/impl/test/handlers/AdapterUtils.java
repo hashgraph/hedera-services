@@ -77,7 +77,7 @@ import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.AccountTokenAllowance;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -99,13 +99,13 @@ public class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountAccess} containing the "well-known" accounts and aliases that
+     * Returns the {@link ReadableAccountStore} containing the "well-known" accounts and aliases that
      * exist in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in
-     * unit tests that require an {@link AccountAccess}.
+     * unit tests that require an {@link ReadableAccountStore}.
      *
      * @return the well-known account store
      */
-    public static AccountAccess wellKnownKeyLookupAt() {
+    public static ReadableAccountStore wellKnownKeyLookupAt() {
         return new TestFixturesKeyLookup(mockStates(Map.of(
                 ALIASES_KEY, wellKnownAliasState(),
                 ACCOUNTS_KEY, wellKnownAccountsState())));

@@ -28,27 +28,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContractCreateHandlerParityTest {
-    private AccountAccess keyLookup;
+    private ReadableAccountStore accountStore;
     private final ContractCreateHandler subject = new ContractCreateHandler();
 
     @BeforeEach
     void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 
     @Test
     void getsContractCreateWithAutoRenew() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
@@ -58,7 +58,7 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateNoAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_CREATE_NO_ADMIN_KEY);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
@@ -68,7 +68,7 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateDeprecatedAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
@@ -78,7 +78,7 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateWithAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_CREATE_WITH_ADMIN_KEY);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
