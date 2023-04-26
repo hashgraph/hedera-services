@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.MetricConfig;
-import java.time.Duration;
+import com.swirlds.common.metrics.SpeedometerMetric;
 
 /**
- * A no-op implementation of a duration gauge.
+ * A no-op implementation of a speedometer metric.
  */
-public class NoOpDurationGauge extends AbstractNoOpMetric implements DurationGauge {
+public class NoOpSpeedometerMetric extends AbstractNoOpMetric implements SpeedometerMetric {
 
-    public NoOpDurationGauge(final MetricConfig<?, ?> config) {
+    public NoOpSpeedometerMetric(final MetricConfig<?, ?> config) {
         super(config);
     }
 
@@ -33,7 +32,15 @@ public class NoOpDurationGauge extends AbstractNoOpMetric implements DurationGau
      * {@inheritDoc}
      */
     @Override
-    public long getNanos() {
+    public Double get(final ValueType valueType) {
+        return 0.0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public double getHalfLife() {
         return 0;
     }
 
@@ -41,7 +48,13 @@ public class NoOpDurationGauge extends AbstractNoOpMetric implements DurationGau
      * {@inheritDoc}
      */
     @Override
-    public void set(final Duration duration) {}
+    public void update(final double value) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void cycle() {}
 
     /**
      * {@inheritDoc}
