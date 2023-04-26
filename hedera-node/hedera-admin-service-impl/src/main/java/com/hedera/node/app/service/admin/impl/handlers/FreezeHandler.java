@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.admin.ReadableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.WritableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.config.AdminServiceConfig;
@@ -119,19 +120,20 @@ public class FreezeHandler implements TransactionHandler {
     }
 
     public void handle(
-            @NonNull FreezeTransactionBody freezeTxn,
+            @NonNull TransactionBody txn,
             @NonNull final AdminServiceConfig adminServiceConfig,
             @NonNull WritableSpecialFileStore specialFileStore,
             @NonNull SwirldDualState dualState) {
         final FreezeUpgradeActions upgradeActions =
                 new FreezeUpgradeActions(adminServiceConfig, dualState, specialFileStore);
 
-        requireNonNull(freezeTxn);
+        requireNonNull(txn);
         requireNonNull(adminServiceConfig);
         requireNonNull(specialFileStore);
         // TODO: requireNonNull(dualState);
         // for the time being, this will always be null because we are not using SwirldDualState
 
+        FreezeTransactionBody freezeTxn = txn.freeze();
         final Timestamp freezeStartTime = freezeTxn.startTimeOrThrow();
         final Instant freezeStartTimeInstant =
                 Instant.ofEpochSecond(freezeStartTime.seconds(), freezeStartTime.nanos());

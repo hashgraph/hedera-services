@@ -23,9 +23,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
-import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.WritableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.config.AdminServiceConfig;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
@@ -108,8 +106,7 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
-            case FREEZE -> dispatchFreeze(
-                    txn, writableStoreFactory.createSpecialFileStore(), dualState);
+            case FREEZE -> dispatchFreeze(txn, writableStoreFactory.createSpecialFileStore(), dualState);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -335,7 +332,7 @@ public class TransactionDispatcher {
     }
 
     private void dispatchFreeze(
-            @NonNull final FreezeTransactionBody freezeTxn,
+            @NonNull final TransactionBody freezeTxn,
             @NonNull final WritableSpecialFileStore specialFileStore,
             @NonNull final SwirldDualState dualState) {
         final var handler = handlers.freezeHandler();

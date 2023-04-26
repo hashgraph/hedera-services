@@ -48,6 +48,7 @@ public final class UnzipUtility {
      * Extracts (unzips) a zipped file from a byte array
      * @param bytes the byte array containing the zipped file
      * @param dstDir the destination directory to extract the unzipped file to
+     * @return false if no zip entry was found in bytes, true if bytes argument was successfully unzipped
      * @throws IOException if the destination does not exist and can't be created, or if the file can't be written
      */
     public static boolean unzip(@NonNull final byte[] bytes, @NonNull final String dstDir) throws IOException {
