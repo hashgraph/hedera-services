@@ -940,7 +940,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     }
 
     public long explicitAutoAssocSlotLifetime() {
-        // If account auto-renew is disabled, we use the SDK default auto-renew period for slot lifetime
+        // If account auto-renew is disabled we use the SDK default auto-renew period for slot lifetime
         return expireAccounts ? 0 : THREE_MONTHS_IN_SECONDS;
     }
 }
