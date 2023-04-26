@@ -427,8 +427,15 @@ public class PreConsensusEventFileManager {
      */
     public void finishedWritingFile(@NonNull final PreConsensusEventMutableFile file) {
 
+        final long previousFileHighestGeneration;
+        if (files.size() == 1) {
+            previousFileHighestGeneration = 0;
+        } else {
+            previousFileHighestGeneration = files.get(files.size() - 2).maximumGeneration();
+        }
+
         // Compress the generational span of the file. Reduces overlap between files.
-        final PreConsensusEventFile compressedDescriptor = file.compressGenerationalSpan();
+        final PreConsensusEventFile compressedDescriptor = file.compressGenerationalSpan(previousFileHighestGeneration);
         files.set(files.size() - 1, compressedDescriptor);
 
         // Update metrics

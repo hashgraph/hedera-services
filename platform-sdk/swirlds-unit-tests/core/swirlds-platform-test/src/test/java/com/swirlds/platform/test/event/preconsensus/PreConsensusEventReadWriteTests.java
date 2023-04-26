@@ -446,7 +446,7 @@ class PreConsensusEventReadWriteTests {
         }
 
         mutableFile.close();
-        final PreConsensusEventFile compressedFile = mutableFile.compressGenerationalSpan();
+        final PreConsensusEventFile compressedFile = mutableFile.compressGenerationalSpan(0);
 
         assertEquals(file.path().getParent(), compressedFile.path().getParent());
         assertEquals(file.sequenceNumber(), compressedFile.sequenceNumber());

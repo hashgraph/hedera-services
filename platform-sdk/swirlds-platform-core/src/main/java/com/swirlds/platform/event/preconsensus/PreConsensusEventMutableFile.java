@@ -98,15 +98,19 @@ public class PreConsensusEventMutableFile {
     /**
      * Atomically rename this file so that its un-utilized span is 0.
      *
+     * @param highestGenerationInPreviousFile the previous file's highest generation. Even if we are not utilizing the
+     *                                        entire span of this file, we cannot reduce the highest generation so that
+     *                                        it is smaller than the previous file's highest generation.
      * @return the new span compressed file
      */
-    public PreConsensusEventFile compressGenerationalSpan() {
+    public PreConsensusEventFile compressGenerationalSpan(final long highestGenerationInPreviousFile) {
         if (highestGenerationInFile == descriptor.maximumGeneration()) {
             // No need to compress, we used the entire span.
             return descriptor;
         }
 
-        final PreConsensusEventFile newDescriptor = descriptor.buildFileWithCompressedSpan(highestGenerationInFile);
+        final PreConsensusEventFile newDescriptor = descriptor.buildFileWithCompressedSpan(
+                Math.max(highestGenerationInFile, highestGenerationInPreviousFile));
 
         try {
             Files.move(descriptor.path(), newDescriptor.path(), StandardCopyOption.ATOMIC_MOVE);
