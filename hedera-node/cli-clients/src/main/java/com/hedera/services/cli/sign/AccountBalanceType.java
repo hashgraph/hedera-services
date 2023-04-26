@@ -64,12 +64,12 @@ public final class AccountBalanceType implements StreamType {
     @Override
     // not used in BalanceFile
     public int[] getFileHeader() {
-        return new int[0];
+        throw new UnsupportedOperationException("Not supported in BalanceFile");
     }
 
     @Override
     // not used in BalanceFile
     public byte[] getSigFileHeader() {
-        return new byte[0];
+        throw new UnsupportedOperationException("Not supported in BalanceFile");
     }
 }

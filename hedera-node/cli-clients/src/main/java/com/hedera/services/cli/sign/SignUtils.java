@@ -43,12 +43,12 @@ public class SignUtils {
     private static final int BYTES_COUNT_IN_INT = 4;
     private static final Logger logger = LogManager.getLogger(SignUtils.class);
 
-    private SignUtils(){}
+    private SignUtils() {}
 
     public static byte[] sign(final byte[] data, final KeyPair sigKeyPair)
             throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException {
-        final Signature signature;
-        signature = Signature.getInstance(SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
+        final Signature signature =
+                Signature.getInstance(SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
         signature.initSign(sigKeyPair.getPrivate());
         if (logger.isDebugEnabled()) {
             logger.debug(

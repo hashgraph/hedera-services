@@ -21,7 +21,6 @@ import static com.hedera.services.cli.sign.SignUtils.TYPE_SIGNATURE;
 import static com.hedera.services.cli.sign.SignUtils.integerToBytes;
 import static com.hedera.services.cli.sign.SignUtils.sign;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeEntireHash;
-import static com.swirlds.logging.LogMarker.FILE_SIGN;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.util.BootstrapUtils;
@@ -37,21 +36,16 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Utility class for signing account balance files
  */
 public class AccountBalanceSigningUtils {
 
-    private static final Logger logger = LogManager.getLogger(AccountBalanceSigningUtils.class);
     /**
      * Hidden constructor
      */
     private AccountBalanceSigningUtils() {}
-
-
 
     /**
      * Sets up the constructable registry, and configures
@@ -114,11 +108,8 @@ public class AccountBalanceSigningUtils {
             output.write(signature);
             output.flush();
         } catch (final IOException e) {
-            logger.error(
-                    FILE_SIGN.getMarker(),
-                    "generateSigBalanceFile :: Fail to generate signature file for {}. Exception: {}",
-                    filePath,
-                    e);
+            System.err.println("generateSigBalanceFile :: Fail to generate signature file for " + filePath
+                    + " with exception :" + e);
         }
     }
 }
