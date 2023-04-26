@@ -34,7 +34,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
@@ -67,22 +67,12 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Determines signatures needed for submitting a new message to a consensus topic
-     *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@code handle()}
-     * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
-            throws PreCheckException {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        requireNonNull(topicStore);
 
         final var op = context.body().consensusSubmitMessageOrThrow();
+        final var topicStore = context.createStore(ReadableTopicStore.class);
         // The topic ID must be present on the transaction and the topic must exist.
         final var topic = topicStore.getTopicMetadata(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);

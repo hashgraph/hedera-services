@@ -33,8 +33,9 @@ import com.hedera.hapi.node.token.CryptoAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState.Builder;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -136,7 +137,7 @@ public class CryptoHandlerTestBase {
         writableAliases = emptyWritableAliasState();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         given(readableStates.<String, EntityNumValue>get(ALIASES)).willReturn(readableAliases);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
     }
 
     protected void refreshStoresWithCurrentTokenInWritable() {
@@ -148,7 +149,7 @@ public class CryptoHandlerTestBase {
         given(readableStates.<String, EntityNumValue>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<String, EntityNumValue>get(ALIASES)).willReturn(writableAliases);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
     }
 
     @NonNull

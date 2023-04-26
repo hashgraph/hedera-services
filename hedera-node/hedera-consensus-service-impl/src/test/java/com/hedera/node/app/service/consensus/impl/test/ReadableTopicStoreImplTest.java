@@ -24,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -35,12 +36,12 @@ import java.util.OptionalLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
+class ReadableTopicStoreImplTest extends ConsensusHandlerTestBase {
     private ReadableTopicStore subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ReadableTopicStore(readableStates);
+        subject = new ReadableTopicStoreImpl(readableStates);
     }
 
     @Test
@@ -67,8 +68,8 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
         readableTopicState = readableTopicState();
         given(readableStates.<EntityNum, com.hedera.hapi.node.state.consensus.Topic>get(TOPICS))
                 .willReturn(readableTopicState);
-        readableStore = new ReadableTopicStore(readableStates);
-        subject = new ReadableTopicStore(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates);
+        subject = new ReadableTopicStoreImpl(readableStates);
 
         final var topicMeta = subject.getTopicMetadata(WELL_KNOWN_TOPIC_ID);
 
@@ -91,19 +92,19 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
         final var state =
                 MapReadableKVState.<Long, MerkleTopic>builder("TOPICS").build();
         given(readableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(state);
-        subject = new ReadableTopicStore(readableStates);
+        subject = new ReadableTopicStoreImpl(readableStates);
 
         assertThat(subject.getTopicMetadata(WELL_KNOWN_TOPIC_ID)).isNull();
     }
 
     @Test
     void constructorCreatesTopicState() {
-        final var store = new ReadableTopicStore(readableStates);
+        final var store = new ReadableTopicStoreImpl(readableStates);
         assertNotNull(store);
     }
 
     @Test
     void nullArgsFail() {
-        assertThrows(NullPointerException.class, () -> new ReadableTopicStore(null));
+        assertThrows(NullPointerException.class, () -> new ReadableTopicStoreImpl(null));
     }
 }

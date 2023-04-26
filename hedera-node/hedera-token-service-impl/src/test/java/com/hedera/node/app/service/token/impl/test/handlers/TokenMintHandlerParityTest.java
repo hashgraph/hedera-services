@@ -27,9 +27,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.Test;
 
 class TokenMintHandlerParityTest extends ParityTestBase {
@@ -39,8 +40,9 @@ class TokenMintHandlerParityTest extends ParityTestBase {
     void tokenMintWithSupplyKeyedTokenScenario() throws PreCheckException {
         final var theTxn = txnFrom(MINT_WITH_SUPPLY_KEYED_TOKEN);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(1, context.requiredNonPayerKeys().size());
@@ -51,16 +53,18 @@ class TokenMintHandlerParityTest extends ParityTestBase {
     void tokenMintWithMissingTokenScenario() throws PreCheckException {
         final var theTxn = txnFrom(MINT_WITH_MISSING_TOKEN);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
     }
 
     @Test
     void tokenMintWithoutSupplyScenario() throws PreCheckException {
         final var theTxn = txnFrom(MINT_FOR_TOKEN_WITHOUT_SUPPLY);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(0, context.requiredNonPayerKeys().size());

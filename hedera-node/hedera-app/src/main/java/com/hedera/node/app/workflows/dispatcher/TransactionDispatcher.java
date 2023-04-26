@@ -23,22 +23,15 @@ import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.service.token.CryptoSignatureWaivers;
-import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -59,7 +52,6 @@ public class TransactionDispatcher {
     public static final String TYPE_NOT_SUPPORTED = "This transaction type is not supported";
     private final HandleContext handleContext;
     private final TransactionHandlers handlers;
-    private final CryptoSignatureWaivers cryptoSignatureWaivers;
     private final GlobalDynamicProperties dynamicProperties;
 
     /**
@@ -67,19 +59,16 @@ public class TransactionDispatcher {
      *
      * @param handleContext     the context of the handle workflow
      * @param handlers          the handlers for all transaction types
-     * @param accountNumbers    the account numbers of the system
      * @param dynamicProperties the dynamic properties of the system
      */
     @Inject
     public TransactionDispatcher(
             @NonNull final HandleContext handleContext,
             @NonNull final TransactionHandlers handlers,
-            @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final GlobalDynamicProperties dynamicProperties) {
         this.handlers = requireNonNull(handlers);
         this.handleContext = requireNonNull(handleContext);
         this.dynamicProperties = requireNonNull(dynamicProperties);
-        this.cryptoSignatureWaivers = new CryptoSignatureWaiversImpl(requireNonNull(accountNumbers));
     }
 
     /**
@@ -132,11 +121,11 @@ public class TransactionDispatcher {
             case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler()
                     .preHandle(context);
             case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler()
-                    .preHandle(context, context.createStore(ReadableTopicStore.class));
+                    .preHandle(context);
             case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler()
-                    .preHandle(context, context.createStore(ReadableTopicStore.class));
+                    .preHandle(context);
             case CONSENSUS_SUBMIT_MESSAGE -> handlers.consensusSubmitMessageHandler()
-                    .preHandle(context, context.createStore(ReadableTopicStore.class));
+                    .preHandle(context);
 
             case CONTRACT_CREATE_INSTANCE -> handlers.contractCreateHandler().preHandle(context);
             case CONTRACT_UPDATE_INSTANCE -> handlers.contractUpdateHandler().preHandle(context);
@@ -145,12 +134,8 @@ public class TransactionDispatcher {
             case ETHEREUM_TRANSACTION -> handlers.etherumTransactionHandler().preHandle(context);
 
             case CRYPTO_CREATE_ACCOUNT -> handlers.cryptoCreateHandler().preHandle(context);
-            case CRYPTO_UPDATE_ACCOUNT -> handlers.cryptoUpdateHandler().preHandle(context, cryptoSignatureWaivers);
-            case CRYPTO_TRANSFER -> handlers.cryptoTransferHandler()
-                    .preHandle(
-                            context,
-                            context.createStore(ReadableAccountStore.class),
-                            context.createStore(ReadableTokenStore.class));
+            case CRYPTO_UPDATE_ACCOUNT -> handlers.cryptoUpdateHandler().preHandle(context);
+            case CRYPTO_TRANSFER -> handlers.cryptoTransferHandler().preHandle(context);
             case CRYPTO_DELETE -> handlers.cryptoDeleteHandler().preHandle(context);
             case CRYPTO_APPROVE_ALLOWANCE -> handlers.cryptoApproveAllowanceHandler()
                     .preHandle(context);
@@ -165,8 +150,7 @@ public class TransactionDispatcher {
             case FILE_DELETE -> handlers.fileDeleteHandler().preHandle(context);
             case FILE_APPEND -> handlers.fileAppendHandler().preHandle(context);
 
-            case FREEZE -> handlers.freezeHandler()
-                    .preHandle(context, context.createStore(ReadableSpecialFileStore.class));
+            case FREEZE -> handlers.freezeHandler().preHandle(context);
 
             case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler().preHandle(context);
 
@@ -176,33 +160,22 @@ public class TransactionDispatcher {
             case SCHEDULE_DELETE -> handlers.scheduleDeleteHandler()
                     .preHandle(context, context.createStore(ReadableScheduleStore.class));
             case TOKEN_CREATION -> handlers.tokenCreateHandler().preHandle(context);
-            case TOKEN_UPDATE -> handlers.tokenUpdateHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_MINT -> handlers.tokenMintHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_BURN -> handlers.tokenBurnHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_DELETION -> handlers.tokenDeleteHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_WIPE -> handlers.tokenAccountWipeHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_FREEZE -> handlers.tokenFreezeAccountHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_UNFREEZE -> handlers.tokenUnfreezeAccountHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_GRANT_KYC -> handlers.tokenGrantKycToAccountHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_REVOKE_KYC -> handlers.tokenRevokeKycFromAccountHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
+            case TOKEN_UPDATE -> handlers.tokenUpdateHandler().preHandle(context);
+            case TOKEN_MINT -> handlers.tokenMintHandler().preHandle(context);
+            case TOKEN_BURN -> handlers.tokenBurnHandler().preHandle(context);
+            case TOKEN_DELETION -> handlers.tokenDeleteHandler().preHandle(context);
+            case TOKEN_WIPE -> handlers.tokenAccountWipeHandler().preHandle(context);
+            case TOKEN_FREEZE -> handlers.tokenFreezeAccountHandler().preHandle(context);
+            case TOKEN_UNFREEZE -> handlers.tokenUnfreezeAccountHandler().preHandle(context);
+            case TOKEN_GRANT_KYC -> handlers.tokenGrantKycToAccountHandler().preHandle(context);
+            case TOKEN_REVOKE_KYC -> handlers.tokenRevokeKycFromAccountHandler().preHandle(context);
             case TOKEN_ASSOCIATE -> handlers.tokenAssociateToAccountHandler().preHandle(context);
             case TOKEN_DISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
                     .preHandle(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_PAUSE -> handlers.tokenPauseHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
+                    .preHandle(context);
+            case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(context);
+            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(context);
 
             case UTIL_PRNG -> handlers.utilPrngHandler().preHandle(context);
 
