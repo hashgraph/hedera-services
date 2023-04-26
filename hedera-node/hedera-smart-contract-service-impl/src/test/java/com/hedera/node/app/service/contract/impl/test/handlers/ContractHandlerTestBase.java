@@ -30,7 +30,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -63,7 +63,7 @@ public class ContractHandlerTestBase implements TransactionFactory {
     protected Account payerAccount;
 
     @Mock
-    protected AccountAccess keyLookup;
+    protected ReadableAccountStore accountStore;
 
     @BeforeEach
     void commonSetUp() {
@@ -79,7 +79,7 @@ public class ContractHandlerTestBase implements TransactionFactory {
     }
 
     protected void setUpPayer() throws PreCheckException {
-        lenient().when(keyLookup.getAccountById(payer)).thenReturn(payerAccount);
+        lenient().when(accountStore.getAccountById(payer)).thenReturn(payerAccount);
         lenient().when(payerAccount.key()).thenReturn(payerKey);
         lenient().when(payerMerkleAccount.getAccountKey()).thenReturn((JKey) payerHederaKey);
     }
