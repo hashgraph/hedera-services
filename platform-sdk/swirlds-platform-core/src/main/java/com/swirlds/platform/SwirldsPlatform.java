@@ -144,6 +144,7 @@ import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
+import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
@@ -1699,6 +1700,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             PlatformVersion.locateOrDefault(),
                                             !settings.isGossipWithDifferentVersions())),
                             new NegotiationProtocols(List.of(
+                                    new HeartbeatProtocol(
+                                            otherId,
+                                            Duration.ofMillis(basicConfig.syncProtocolHeartbeatPeriod()),
+                                            networkMetrics),
                                     new EmergencyReconnectProtocol(
                                             threadManager,
                                             notificationEngine,
