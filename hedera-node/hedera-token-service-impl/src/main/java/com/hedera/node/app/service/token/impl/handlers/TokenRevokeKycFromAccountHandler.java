@@ -37,7 +37,7 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#TOKEN_REV}.
+ * HederaFunctionality#TOKEN_REVOKE_KYC_FROM_ACCOUNT}.
  */
 @Singleton
 public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
