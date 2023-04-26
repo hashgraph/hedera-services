@@ -162,6 +162,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
@@ -419,6 +420,7 @@ class BootstrapPropertiesTest {
             entry(LEDGER_ID, "0x03"),
             entry(LEDGER_CHANGE_HIST_MEM_SECS, 20),
             entry(LEDGER_FUNDING_ACCOUNT, 98L),
+            entry(LEDGER_MAX_AUTO_ASSOCIATIONS, 5000),
             entry(LEDGER_NUM_SYSTEM_ACCOUNTS, 100),
             entry(LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT, 180),
             entry(LEDGER_TRANSFERS_MAX_LEN, 10),

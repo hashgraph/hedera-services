@@ -91,6 +91,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
@@ -307,6 +308,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(55, subject.maxNumQueryableRecords());
         assertEquals(86, subject.maxNumTokenRels());
         assertEquals(89, subject.getSidecarMaxSizeMb());
+        assertEquals(97, subject.maxAllowedAutoAssociations());
     }
 
     @Test
@@ -487,6 +489,28 @@ class GlobalDynamicPropertiesTest {
     }
 
     @Test
+    void usesThreeMonthsForAutoAssocSlotLifetimeIfNotAutoRenewingAccounts() {
+        givenPropsWithSeed(3);
+
+        // when:
+        subject = new GlobalDynamicProperties(numbers, properties);
+
+        // then:
+        assertEquals(7776000L, subject.explicitAutoAssocSlotLifetime());
+    }
+
+    @Test
+    void usesZeroForAutoAssocSlotLifetimeIfAutoRenewingAccounts() {
+        givenPropsWithSeed(2);
+
+        // when:
+        subject = new GlobalDynamicProperties(numbers, properties);
+
+        // then:
+        assertEquals(0L, subject.explicitAutoAssocSlotLifetime());
+    }
+
+    @Test
     void reloadsMiscAsExpected() {
         givenPropsWithSeed(2);
 
@@ -664,6 +688,7 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(i + 93L);
         given(properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED))
                 .willReturn((i + 95) % 2 == 0);
+        given(properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS)).willReturn(i + 96);
     }
 
     private Set<EntityType> typesFor(final int i) {
