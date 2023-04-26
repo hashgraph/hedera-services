@@ -581,6 +581,32 @@ class MonoTransactionDispatcherTest {
 
     private static Stream<Arguments> getDispatchParameters() {
         return Stream.of(
+                // consensus
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .consensusCreateTopic(ConsensusCreateTopicTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::consensusCreateTopicHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .consensusUpdateTopic(ConsensusUpdateTopicTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::consensusUpdateTopicHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .consensusDeleteTopic(ConsensusDeleteTopicTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::consensusDeleteTopicHandler),
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>)
+                                TransactionHandlers::consensusSubmitMessageHandler),
+
                 // crypto
                 Arguments.of(
                         TransactionBody.newBuilder()
@@ -626,6 +652,13 @@ class MonoTransactionDispatcherTest {
                                 .build(),
                         (Function<TransactionHandlers, TransactionHandler>)
                                 TransactionHandlers::cryptoDeleteLiveHashHandler),
+
+                // freeze
+                Arguments.of(
+                        TransactionBody.newBuilder()
+                                .freeze(FreezeTransactionBody.DEFAULT)
+                                .build(),
+                        (Function<TransactionHandlers, TransactionHandler>) TransactionHandlers::freezeHandler),
 
                 // token
                 Arguments.of(
@@ -729,32 +762,6 @@ class MonoTransactionDispatcherTest {
 
     private static Stream<Arguments> getDispatchParametersOld() {
         return Stream.of(
-                // consensus
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .consensusCreateTopic(ConsensusCreateTopicTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.consensusCreateTopicHandler()).preHandle(meta)),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .consensusUpdateTopic(ConsensusUpdateTopicTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.consensusUpdateTopicHandler()).preHandle(eq(meta), any())),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .consensusDeleteTopic(ConsensusDeleteTopicTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.consensusDeleteTopicHandler()).preHandle(eq(meta), any())),
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.consensusSubmitMessageHandler()).preHandle(eq(meta), any())),
-
                 // contract
                 Arguments.of(
                         TransactionBody.newBuilder()
@@ -812,14 +819,6 @@ class MonoTransactionDispatcherTest {
                                 .build(),
                         (DispatchToHandler) (handlers, meta) ->
                                 verify(handlers.fileAppendHandler()).preHandle(meta)),
-
-                // freeze
-                Arguments.of(
-                        TransactionBody.newBuilder()
-                                .freeze(FreezeTransactionBody.DEFAULT)
-                                .build(),
-                        (DispatchToHandler) (handlers, meta) ->
-                                verify(handlers.freezeHandler()).preHandle(eq(meta), any())),
 
                 // network
                 Arguments.of(

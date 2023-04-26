@@ -23,8 +23,6 @@ import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
@@ -123,11 +121,11 @@ public class TransactionDispatcher {
             case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler()
                     .preHandle(context);
             case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler()
-                    .preHandle(context, context.createStore(ReadableTopicStore.class));
+                    .preHandle(context);
             case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler()
-                    .preHandle(context, context.createStore(ReadableTopicStore.class));
+                    .preHandle(context);
             case CONSENSUS_SUBMIT_MESSAGE -> handlers.consensusSubmitMessageHandler()
-                    .preHandle(context, context.createStore(ReadableTopicStore.class));
+                    .preHandle(context);
 
             case CONTRACT_CREATE_INSTANCE -> handlers.contractCreateHandler().preHandle(context);
             case CONTRACT_UPDATE_INSTANCE -> handlers.contractUpdateHandler().preHandle(context);
@@ -152,8 +150,7 @@ public class TransactionDispatcher {
             case FILE_DELETE -> handlers.fileDeleteHandler().preHandle(context);
             case FILE_APPEND -> handlers.fileAppendHandler().preHandle(context);
 
-            case FREEZE -> handlers.freezeHandler()
-                    .preHandle(context, context.createStore(ReadableSpecialFileStore.class));
+            case FREEZE -> handlers.freezeHandler().preHandle(context);
 
             case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler().preHandle(context);
 

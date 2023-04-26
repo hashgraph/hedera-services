@@ -25,7 +25,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.DeleteTopicRecordBuilder;
@@ -47,22 +47,12 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Determines signatures needed for deleting a consensus topic
-     *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@code handle()}
-     * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
-     * @throws NullPointerException if any of the arguments are {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
-            throws PreCheckException {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        requireNonNull(topicStore);
 
         final var op = context.body().consensusDeleteTopicOrThrow();
+        final var topicStore = context.createStore(ReadableTopicStore.class);
         // The topic ID must be present on the transaction and the topic must exist.
         final var topic = topicStore.getTopicMetadata(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);
