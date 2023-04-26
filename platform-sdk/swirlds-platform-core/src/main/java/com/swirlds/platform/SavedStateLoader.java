@@ -203,8 +203,6 @@ public class SavedStateLoader {
             }
         }
 
-        // TODO should we return a null wrapper here?
-
         logger.info(
                 STARTUP.getMarker(),
                 "No states on disk are compatible with the emergency recovery state. Attempting to load a recent "
@@ -213,8 +211,9 @@ public class SavedStateLoader {
         // Since no state matched, we must load a state for a round before the emergency recovery state. If we already
         // have a later state loaded, the emergency reconnect state received in emergency reconnect will be rejected
         // because it is older than the already loaded state.
-        final long maxStateRound = emergencyRecoveryManager.getEmergencyRecoveryFile().round() - 1;
-        try(final ReservedSignedState latest = getRegularSavedStateToLoad(maxStateRound)) {
+        final long maxStateRound =
+                emergencyRecoveryManager.getEmergencyRecoveryFile().round() - 1;
+        try (final ReservedSignedState latest = getRegularSavedStateToLoad(maxStateRound)) {
             if (latest.isNotNull()) {
                 logger.info(
                         STARTUP.getMarker(),
@@ -228,9 +227,7 @@ public class SavedStateLoader {
                 return createNullReservation();
             }
         } catch (final SignedStateLoadingException e) {
-            logger.info(
-                    STARTUP.getMarker(),
-                    "Unable to load latest state. Starting from a genesis state.", e);
+            logger.info(STARTUP.getMarker(), "Unable to load latest state. Starting from a genesis state.", e);
             return createNullReservation();
         }
     }
