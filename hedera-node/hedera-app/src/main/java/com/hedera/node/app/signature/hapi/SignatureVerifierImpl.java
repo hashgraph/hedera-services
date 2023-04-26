@@ -71,7 +71,7 @@ public class SignatureVerifierImpl implements SignatureVerifier {
             @NonNull final Key key, @NonNull final Bytes signedBytes, @NonNull final List<SignaturePair> sigPairs) {
         // Walk through the key and collect a HapiTransactionSignature for each signature that needs to be verified. If
         // there are no signatures to verify, then we clearly cannot verify the key!
-        final var list = collectSignatures(signedBytes, sigPairs, key);
+        final var list = collectSignatures(key, signedBytes, sigPairs);
         if (list.isEmpty()) {
             return CompletableFuture.completedFuture(invalid(key));
         }
@@ -88,15 +88,22 @@ public class SignatureVerifierImpl implements SignatureVerifier {
                 key, null, txSigs.stream().collect(Collectors.toMap(pair -> pair.key, pair -> pair)));
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     public Future<SignatureVerification> verify(
             @NonNull Account hollowAccount, @NonNull Bytes signedBytes, @NonNull List<SignaturePair> sigPairs) {
+        // Start by verifying the account is indeed a hollow account. We actually perform this same check in a few
+        // other places, but feel like defence in depth is a good idea here.
         final var alias = hollowAccount.alias();
         if (hollowAccount.key() != null || alias == null || alias.length() != 20) {
             return CompletableFuture.completedFuture(invalid(hollowAccount));
         }
 
+        // Search through the signature pairs, looking for any ECDSA_SECP256K1 pairs with a prefix that, when hashed
+        // and truncated to 20 bytes, exactly matches the alias. Right now, we only support hollow account signatures
+        // where the full public key is included as the prefix. In the future, we could implement support to extract
+        // the public key from the signature and signed bytes as well.
         for (final var sigPair : sigPairs) {
             // Only ECDSA(secp256k1) keys can be used for hollow accounts
             if (sigPair.signature().kind() == SignatureOneOfType.ECDSA_SECP256K1) {
@@ -111,7 +118,6 @@ public class SignatureVerifierImpl implements SignatureVerifier {
                 final var hashedPrefix = Bytes.wrap(hashedPrefixByteArray);
                 if (hashedPrefix.equals(alias)) {
                     // We have found it!
-                    // Gather this signature to verify
                     final var key = Key.newBuilder()
                             .ecdsaSecp256k1(Bytes.wrap(prefixByteArray))
                             .build();
@@ -129,20 +135,23 @@ public class SignatureVerifierImpl implements SignatureVerifier {
         return CompletableFuture.completedFuture(invalid(hollowAccount));
     }
 
+    // ================================================================================================================
+    // Private implementation methods
+
     /**
      * Given a {@link Key}, find all applicable {@link SignaturePair}s. For example, if the key
      * is a {@link KeyList}, then find all {@link SignaturePair}s with a key prefix matching the
      * required key in the list.
      *
+     * @param key      The {@link Key} we use to find matching pairs
      * @param sigPairs The list of {@link SignaturePair}s to look through for matches.
-     * @param key The {@link Key} we use to find matching pairs
      * @return An empty {@link List} if the method is unable to find all required {@link SignaturePair}s.
      * A single element {@link List} if the key was (ultimately) a simple type (ED25519, ECDSA(secp256k1), etc.
      * Multiple elements in the {@link List} if the key resolved to a {@link KeyList} with multiple elements,
      * or a {@link ThresholdKey} with a threshold greater than 1, etc.
      */
     private List<HapiTransactionSignature> collectSignatures(
-            @NonNull final Bytes signedBytes, @NonNull final List<SignaturePair> sigPairs, @NonNull final Key key) {
+            @NonNull final Key key, @NonNull final Bytes signedBytes, @NonNull final List<SignaturePair> sigPairs) {
 
         return switch (key.key().kind()) {
             case ED25519 -> {
@@ -153,8 +162,8 @@ public class SignatureVerifierImpl implements SignatureVerifier {
                 final var txSig = collectSignature(signedBytes, sigPairs, key, key.ecdsaSecp256k1OrThrow());
                 yield txSig == null ? emptyList() : List.of(txSig);
             }
-            case KEY_LIST -> collectSignatures(signedBytes, sigPairs, key.keyListOrThrow());
-            case THRESHOLD_KEY -> collectSignatures(signedBytes, sigPairs, key.thresholdKeyOrThrow());
+            case KEY_LIST -> collectSignatures(key.keyListOrThrow(), signedBytes, sigPairs);
+            case THRESHOLD_KEY -> collectSignatures(key.thresholdKeyOrThrow(), signedBytes, sigPairs);
             case ECDSA_384, RSA_3072, CONTRACT_ID, DELEGATABLE_CONTRACT_ID, UNSET -> emptyList();
         };
     }
@@ -162,21 +171,25 @@ public class SignatureVerifierImpl implements SignatureVerifier {
     /**
      * Gets the list of applicable signatures in the case of a {@link KeyList}.
      *
+     * @param keyList  The list of keys to find corresponding signatures for
      * @param sigPairs The signature pairs to match against
-     * @param keyList The list of keys to find corresponding signatures for
      */
     private List<HapiTransactionSignature> collectSignatures(
-            @NonNull final Bytes signedBytes,
-            @NonNull final List<SignaturePair> sigPairs,
-            @NonNull final KeyList keyList) {
+            @NonNull final KeyList keyList, @NonNull final Bytes signedBytes,
+            @NonNull final List<SignaturePair> sigPairs) {
         // Every single key in the key list must contribute at least one TransactionSignature, or
         // the key was invalid for some reason. A KeyList is basically a ThresholdKey with the threshold
-        // set to the number of keys in the list. Every single key must be valid.
+        // set to the number of keys in the list. If the KeyList is invalid, then it contributes no signatures
+        // for verification, so it returns an empty list.
         if (keyList.hasKeys()) {
             final var list = keyList.keysOrThrow();
             final var results = new ArrayList<HapiTransactionSignature>();
             for (final var subKey : list) {
-                final var sigs = collectSignatures(signedBytes, sigPairs, subKey);
+                final var sigs = collectSignatures(subKey, signedBytes, sigPairs);
+                // Accumulate what we found. We still might not use it in the end. If we have 10 keys, and
+                // the first 9 all contribute signatures, we will accumulate them into "results". But then if
+                // the last key doesn't contribute results, then 1 of 10 keys was bad, and the entire key list
+                // ends up contributing nothing, so we return an empty list from this method.
                 if (sigs.isEmpty()) {
                     return emptyList();
                 } else {
@@ -199,9 +212,8 @@ public class SignatureVerifierImpl implements SignatureVerifier {
      * succeed.
      */
     private List<HapiTransactionSignature> collectSignatures(
-            @NonNull final Bytes signedBytes,
-            @NonNull final List<SignaturePair> sigPairs,
-            @NonNull final ThresholdKey thresholdKey) {
+            @NonNull final ThresholdKey thresholdKey, @NonNull final Bytes signedBytes,
+            @NonNull final List<SignaturePair> sigPairs) {
         // The ThresholdKey is like a KeyList, but only `threshold` number of keys must contribute at least
         // one signature.
         if (thresholdKey.hasKeys()) {
@@ -214,11 +226,12 @@ public class SignatureVerifierImpl implements SignatureVerifier {
                 // user a chance to fix their account.
                 final var list = keys.keysOrThrow();
                 final var threshold = Math.max(Math.min(list.size(), thresholdKey.threshold()), 1);
-
+                // Keep track of the number of failures we can tolerate before the entire ThresholdKey is considered
+                // to have failed.
                 var numCanFail = list.size() - threshold;
                 final var results = new ArrayList<HapiTransactionSignature>();
                 for (final var subKey : list) {
-                    final var sigs = collectSignatures(signedBytes, sigPairs, subKey);
+                    final var sigs = collectSignatures(subKey, signedBytes, sigPairs);
                     if (sigs.isEmpty() && --numCanFail < 0) {
                         return emptyList();
                     } else {
@@ -238,6 +251,9 @@ public class SignatureVerifierImpl implements SignatureVerifier {
             @NonNull final Key key,
             @NonNull final Bytes keyBytes) {
 
+        // We only want to look at signature pairs for keys matching the kind of key we're collecting
+        // signatures for. So if we're gathering signatures for ED25519, we only look at ED25519 signatures.
+        // So we start off here by collecting the type of signature we should be looking for.
         final var sigType =
                 switch (key.key().kind()) {
                     case ED25519 -> SignatureOneOfType.ED25519;
@@ -245,24 +261,31 @@ public class SignatureVerifierImpl implements SignatureVerifier {
                     default -> throw new IllegalArgumentException("Unsupported signature type");
                 };
 
+        // Loop through all signatures pairs, looking for the best match
         SignaturePair foundSigPair = null;
         for (final var sigPair : sigPairs) {
+            // Only consider signature pairs of the same type as our key
             if (sigPair.signature().kind() == sigType) {
+                // We are looking for the *most specific* signature pair that matches the key. Maybe one prefix matched
+                // our first byte, but another prefix matches 10 bytes. We want the one that matched the most bytes.
+                // We only consider a prefix if its length is greater than the length of the prefix of the best match
+                // we've found so far.
                 final var prefix = sigPair.pubKeyPrefix();
                 final var foundSigPairPrefixLength =
                         foundSigPair == null ? -1 : foundSigPair.pubKeyPrefix().length();
                 if (prefix.length() > foundSigPairPrefixLength && keyBytes.matchesPrefix(prefix)) {
-                    // Figure out the SignatureType
                     foundSigPair = sigPair;
                 }
             }
         }
 
+        // If we found a signature pair, then we can create a transaction signature
         if (foundSigPair != null) {
             return switch (foundSigPair.signature().kind()) {
                 case ED25519 -> createTransactionSignature(
                         signedBytes, key, foundSigPair, SignatureType.ED25519, keyBytes);
                 case ECDSA_SECP256K1 -> {
+                    // We've got to uncompress the key before we can do a signature check on it
                     final var compressedByteArray = new byte[(int) keyBytes.length()];
                     keyBytes.getBytes(0, compressedByteArray);
                     final var uncompressedByteArray = MiscCryptoUtils.decompressSecp256k1(compressedByteArray);
@@ -277,6 +300,7 @@ public class SignatureVerifierImpl implements SignatureVerifier {
         return null;
     }
 
+    /** Convenience method for creating a {@link HapiTransactionSignature} */
     private HapiTransactionSignature createTransactionSignature(
             @NonNull final Bytes signedBytes,
             @NonNull final Key key,
@@ -312,6 +336,9 @@ public class SignatureVerifierImpl implements SignatureVerifier {
 
     /**
      * Extends {@link TransactionSignature} to include the {@link Key} that we're checking the signature for.
+     * We need this because as a final step we construct a Map of Key -> TransactionSignature that allows us
+     * later, after all signature checks have completed, to re-walk the key structure and verify that the key
+     * is valid or not based on the signature checks.
      */
     private static final class HapiTransactionSignature extends TransactionSignature {
         private final Key key;
