@@ -53,6 +53,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
      * @throws PreCheckException    for invalid tokens or if the token has no KYC key
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenRevokeKycOrThrow();
