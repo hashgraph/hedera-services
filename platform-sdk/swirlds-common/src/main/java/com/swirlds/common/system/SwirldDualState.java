@@ -16,6 +16,8 @@
 
 package com.swirlds.common.system;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * Contains any data that is either read or written by the platform and the application,
  * and contains methods available to the application
@@ -25,5 +27,6 @@ public interface SwirldDualState extends DualState {
     /**
      * Get the node uptime data.
      */
+    @NonNull
     UptimeData getUptimeData();
 }
