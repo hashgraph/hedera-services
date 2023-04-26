@@ -34,7 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
-    private CryptoCreateHandler subject = new CryptoCreateHandler();
+    private final CryptoCreateHandler subject = new CryptoCreateHandler();
 
     @BeforeEach
     public void setUp() {
