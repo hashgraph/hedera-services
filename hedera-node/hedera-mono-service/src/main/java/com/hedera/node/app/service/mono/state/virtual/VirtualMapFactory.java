@@ -115,7 +115,7 @@ public class VirtualMapFactory {
                     new VirtualBlobMerkleDbValueSerializer());
             tableConfig.maxNumberOfKeys(MAX_BLOBS);
             tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-            // use hashesRamToDiskThreshold after migration to 0.37-SNAPSHOT
+            // use hashesRamToDiskThreshold after migration to 0.38-SNAPSHOT
             tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
             dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         } else {

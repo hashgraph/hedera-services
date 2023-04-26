@@ -1187,8 +1187,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
         final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
         pathHashRecords.forEach(rec -> {
-            final long path = rec.path();
-            assert path > lastPath.getAndSet(path) : "Path should be in ascending order!";
+            assert rec.path() > lastPath.getAndSet(rec.path()) : "Path should be in ascending order!";
             statistics.cycleInternalNodeWritesPerSecond();
             if (rec.path() < tableConfig.getHashesRamToDiskThreshold()) {
                 hashStoreRam.put(rec.path(), rec.hash());

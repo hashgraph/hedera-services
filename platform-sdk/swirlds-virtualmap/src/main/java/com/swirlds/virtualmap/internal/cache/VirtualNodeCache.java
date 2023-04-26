@@ -1114,22 +1114,22 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param dirtyPaths
      * 		The {@link ConcurrentArray} holding references to the dirty paths (leaf or internal).
      * 		Cannot be null.
-     * @param <LV>
-     * 		The type of value stored in the mutation. Either a leaf key (K) or an internal record.
+     * @param <V1>
+     * 		The type of value stored in the mutation. Either a leaf key (K) or a hash.
      * @throws NullPointerException
      * 		if {@code dirtyPaths} is null.
      */
-    private <LV> void updatePaths(
-            final LV value,
+    private <V1> void updatePaths(
+            final V1 value,
             final long path,
-            final Map<Long, Mutation<Long, LV>> index,
-            final ConcurrentArray<Mutation<Long, LV>> dirtyPaths) {
+            final Map<Long, Mutation<Long, V1>> index,
+            final ConcurrentArray<Mutation<Long, V1>> dirtyPaths) {
         index.compute(path, (key, mutation) -> {
             // If there is no mutation or the mutation isn't for this version, then we need to create a new mutation.
             // Note that this code DEPENDS on hashing only a single round at a time. VirtualPipeline
             // enforces this constraint.
-            Mutation<Long, LV> nextMutation = mutation;
-            Mutation<Long, LV> previousMutation = null;
+            Mutation<Long, V1> nextMutation = mutation;
+            Mutation<Long, V1> previousMutation = null;
             while (nextMutation != null && nextMutation.version > fastCopyVersion.get()) {
                 previousMutation = nextMutation;
                 nextMutation = nextMutation.next;
@@ -1163,12 +1163,12 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      *
      * @param mutation
      * 		The mutation list, can be null.
-     * @param <LK> The key type held by the mutation.
-     * @param <LV>>
-     * 		The value type held by the mutation. It will be either a Key, leaf record, or internal record.
+     * @param <K1> The key type held by the mutation. Either a Key or a path.
+     * @param <V1>>
+     * 		The value type held by the mutation. It will be either a Key, leaf record, or a hash.
      * @return null if the mutation could be found, or the mutation.
      */
-    private <LK, LV> Mutation<LK, LV> lookup(Mutation<LK, LV> mutation) {
+    private <K1, V1> Mutation<K1, V1> lookup(Mutation<K1, V1> mutation) {
         // Walk the list of values until we find the best match for our version
         for (; ; ) {
             // If mutation is null, then there is nothing else to look for. We're done.
