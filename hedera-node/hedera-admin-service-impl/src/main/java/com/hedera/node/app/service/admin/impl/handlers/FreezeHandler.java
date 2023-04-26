@@ -141,30 +141,27 @@ public class FreezeHandler implements TransactionHandler {
                 freezeTxn.updateFile(); // only some freeze types require this, it may be null for others
 
         switch (freezeTxn.freezeType()) {
-            case PREPARE_UPGRADE:
+            case PREPARE_UPGRADE -> {
                 requireNonNull(updateFileNum);
                 final Optional<byte[]> updateFileZip = specialFileStore.get(updateFileNum.fileNum());
-                if (updateFileZip.isEmpty()) throw new IllegalStateException("Update file not found");
+                if (updateFileZip.isEmpty())
+                    throw new IllegalStateException("Update file not found");
                 upgradeActions.extractSoftwareUpgrade(updateFileZip.get());
-                // TODO:      networkCtx.recordPreparedUpgrade(freezeTxn);
-                break;
-            case FREEZE_UPGRADE:
-                upgradeActions.scheduleFreezeUpgradeAt(freezeStartTimeInstant);
-                break;
-            case FREEZE_ABORT:
-                upgradeActions.abortScheduledFreeze();
-                // TODO:       networkCtx.discardPreparedUpgradeMeta();
-                break;
-            case TELEMETRY_UPGRADE:
+            }
+            // TODO:      networkCtx.recordPreparedUpgrade(freezeTxn);
+            case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(freezeStartTimeInstant);
+            case FREEZE_ABORT -> upgradeActions.abortScheduledFreeze();
+
+            // TODO:       networkCtx.discardPreparedUpgradeMeta();
+            case TELEMETRY_UPGRADE -> {
                 requireNonNull(updateFileNum);
                 final Optional<byte[]> telemetryUpdateZip = specialFileStore.get(updateFileNum.fileNum());
-                if (telemetryUpdateZip.isEmpty()) throw new IllegalStateException("Telemetry update file not found");
+                if (telemetryUpdateZip.isEmpty())
+                    throw new IllegalStateException("Telemetry update file not found");
                 upgradeActions.extractTelemetryUpgrade(telemetryUpdateZip.get(), freezeStartTimeInstant);
-                break;
-            default:
-            case FREEZE_ONLY:
-                upgradeActions.scheduleFreezeOnlyAt(freezeStartTimeInstant);
-                break;
+            }
+            // case FREEZE_ONLY is default
+            default -> upgradeActions.scheduleFreezeOnlyAt(freezeStartTimeInstant);
         }
     }
 
