@@ -219,7 +219,7 @@ public class EndOfStakingPeriodCalculator {
             return zeroStake;
         } else {
             // This should never happen, but if it does, return zero
-            if(totalStakeOfAllNodes == 0) {
+            if (totalStakeOfAllNodes == 0) {
                 return 0;
             }
             final var oldMinWeight = 1;

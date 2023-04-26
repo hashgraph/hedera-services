@@ -661,7 +661,7 @@ public class StakingSuite extends HapiSuite {
     }
 
     private HapiSpec endOfStakingPeriodRecTest() {
-        return onlyDefaultHapiSpec("EndOfStakingPeriodRecTest")
+        return defaultHapiSpec("EndOfStakingPeriodRecTest")
                 .given(
                         cryptoCreate("a1").balance(24000 * ONE_MILLION_HBARS).stakedNodeId(0),
                         cryptoCreate("a2").balance(2000 * ONE_MILLION_HBARS).stakedNodeId(0),
