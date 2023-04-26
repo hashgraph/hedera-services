@@ -38,6 +38,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
+
+    // @todo('6249') This constructor should be removed and the @Inject annotation added to the remaining constructor
     @Inject
     public ScheduleCreateHandler() {
         // Exists for injection
