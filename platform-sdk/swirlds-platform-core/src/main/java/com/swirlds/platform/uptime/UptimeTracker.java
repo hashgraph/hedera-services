@@ -212,10 +212,10 @@ public class UptimeTracker { // TODO test
             @NonNull final Instant lastRoundEndTime,
             final long currentRound) {
 
+        long nonDegradedConsensusWeight = 0;
+
         for (final Address address : addressBook) {
             final long id = address.getId();
-
-            long nonDegradedConsensusWeight = 0;
 
             final Instant lastConsensusEventTime = uptimeData.getLastEventTime(id);
             if (lastConsensusEventTime != null) {
@@ -228,9 +228,6 @@ public class UptimeTracker { // TODO test
                     nonDegradedConsensusWeight += addressBook.getAddress(id).getWeight();
                 }
             }
-
-            final double fractionOfNetworkAlive = (double) nonDegradedConsensusWeight / addressBook.getTotalWeight();
-            uptimeMetrics.getFractionOfNetworkAliveMetric().update(fractionOfNetworkAlive);
 
             final long lastEventRound = uptimeData.getLastEventRound(id);
             if (lastEventRound != NO_ROUND) {
@@ -250,5 +247,8 @@ public class UptimeTracker { // TODO test
                 uptimeMetrics.getRoundsSinceLastJudgeMetric(id).update(currentRound - lastJudgeRound);
             }
         }
+
+        final double fractionOfNetworkAlive = (double) nonDegradedConsensusWeight / addressBook.getTotalWeight();
+        uptimeMetrics.getHealthyNetworkFraction().update(fractionOfNetworkAlive);
     }
 }

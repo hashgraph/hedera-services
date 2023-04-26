@@ -56,11 +56,12 @@ class UptimeMetrics {
      */
     private final Map<Long, RunningAverageMetric> roundsSinceLastJudge = new HashMap<>();
 
-    private static final RunningAverageMetric.Config FRACTION_OF_NETWORK_ALIVE_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "fractionOfNetworkAlive")
+    private static final RunningAverageMetric.Config HEALTHY_NETWORK_FRACTION_CONFIG = new RunningAverageMetric.Config(
+                    CATEGORY, "healthyNetworkFraction")
             .withUnit("fraction")
-            .withDescription("The fraction (out of 1.0) of the network that is alive, weighted by consensus weight.");
-    private final RunningAverageMetric fractionOfNetworkAlive;
+            .withDescription(
+                    "The fraction (out of 1.0) of the network that is alive and healthy, weighted by consensus weight.");
+    private final RunningAverageMetric healthyNetworkFraction;
 
     private static final RunningAverageMetric.Config UPTIME_COMPUTATION_TIME = new RunningAverageMetric.Config(
                     CATEGORY, "uptimeComputationTime")
@@ -78,7 +79,7 @@ class UptimeMetrics {
 
         this.metrics = metrics;
 
-        fractionOfNetworkAlive = metrics.getOrCreate(FRACTION_OF_NETWORK_ALIVE_CONFIG);
+        healthyNetworkFraction = metrics.getOrCreate(HEALTHY_NETWORK_FRACTION_CONFIG);
 
         final FunctionGauge.Config<Boolean> degradedConfig = new FunctionGauge.Config<>(
                         CATEGORY, "degraded", Boolean.class, isDegraded)
@@ -193,8 +194,8 @@ class UptimeMetrics {
      *
      * @return the metric
      */
-    public @NonNull RunningAverageMetric getFractionOfNetworkAliveMetric() {
-        return fractionOfNetworkAlive;
+    public @NonNull RunningAverageMetric getHealthyNetworkFraction() {
+        return healthyNetworkFraction;
     }
 
     /**

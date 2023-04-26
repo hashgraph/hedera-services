@@ -64,7 +64,7 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
     /**
      * Data on node uptime.
      */
-    private UptimeDataImpl uptimeData;
+    private UptimeDataImpl uptimeData = new UptimeDataImpl();
 
     public DualStateImpl() {}
 
@@ -94,8 +94,6 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
         lastFrozenTime = in.readInstant();
         if (version >= ClassVersion.UPTIME_DATA) {
             uptimeData = in.readSerializable(false, UptimeDataImpl::new);
-        } else {
-            uptimeData = new UptimeDataImpl();
         }
     }
 
