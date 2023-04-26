@@ -33,6 +33,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomLazyCreateERC20Transfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomLazyCreateFungibleTransfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomLazyCreateNonFungibleTransfer;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
@@ -53,6 +54,7 @@ public class LazyCreatePrecompileFuzzingFactory {
     public static final String ECDSA_KEY = "abcdECDSAkey";
     public static final String TRANSFER_TOKEN_TXN = "transferTokenTxn";
     public static final String TRANSFER_NFT_TXN = "transferNFTTxn";
+    public static final String ERC_20_CONTRACT = "ERC20Contract";
     private static final String SPENDER = "spender";
     private static final String FIRST = "FIRST";
     public static final ByteString FIRST_META = ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
@@ -107,6 +109,27 @@ public class LazyCreatePrecompileFuzzingFactory {
         };
     }
 
+    public static HapiSpecOperation[] initOperationsTransferERC20() {
+        final AtomicReference<String> tokenAddr = new AtomicReference<>();
+        return new HapiSpecOperation[] {
+            newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+            newKeyNamed(MULTI_KEY),
+            cryptoCreate(TOKEN_TREASURY),
+            tokenCreate(FUNGIBLE_TOKEN)
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .initialSupply(5)
+                    .treasury(TOKEN_TREASURY)
+                    .adminKey(MULTI_KEY)
+                    .supplyKey(MULTI_KEY)
+                    .exposingCreatedIdTo(id ->
+                            tokenAddr.set(HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
+            uploadInitCode(ERC_20_CONTRACT),
+            contractCreate(ERC_20_CONTRACT),
+            tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
+            cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT))
+        };
+    }
+
     public static Function<HapiSpec, OpProvider> transferFungibleTokenFuzzingWith(final String resource) {
         return spec -> {
             final var props = RegressionProviderFactory.propsFrom(resource);
@@ -134,6 +157,21 @@ public class LazyCreatePrecompileFuzzingFactory {
                     .withOp(
                             new RandomLazyCreateNonFungibleTransfer(spec.registry(), keys),
                             intPropOrElse("randomNonFungibleTransfer.bias", 0, props));
+        };
+    }
+
+    public static Function<HapiSpec, OpProvider> transferERC20FuzzingWith(final String resource) {
+        return spec -> {
+            final var props = RegressionProviderFactory.propsFrom(resource);
+
+            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
+
+            return new BiasedDelegatingProvider()
+                    .shouldLogNormalFlow(true)
+                    .withInitialization(onlyEcdsaKeys(NUM_DISTINCT_ECDSA_KEYS))
+                    .withOp(
+                            new RandomLazyCreateERC20Transfer(spec.registry(), keys),
+                            intPropOrElse("randomERC20Transfer.bias", 0, props));
         };
     }
 }
