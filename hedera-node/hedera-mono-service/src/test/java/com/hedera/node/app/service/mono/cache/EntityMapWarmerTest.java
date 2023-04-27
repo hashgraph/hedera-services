@@ -25,7 +25,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
@@ -61,7 +60,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -102,22 +100,6 @@ class EntityMapWarmerTest {
     private TokenRelStorageAdapter tokenRelAdpt;
 
     private final Supplier<TokenRelStorageAdapter> tokenRelAdptSupplier = () -> tokenRelAdpt;
-
-    @Test
-    void getInstanceReturnsSameReference() {
-        // given:
-        final var globalProps = mock(GlobalDynamicProperties.class);
-        lenient().when(globalProps.cacheCryptoTransferWarmThreads()).thenReturn(3); // Any number > 0
-
-        // when:
-        final var firstInstance =
-                EntityMapWarmer.getInstance(accountAdptSupplier, nftAdptSupplier, tokenRelAdptSupplier, globalProps);
-        final var secondInstance =
-                EntityMapWarmer.getInstance(accountAdptSupplier, nftAdptSupplier, tokenRelAdptSupplier, globalProps);
-
-        // then:
-        Assertions.assertThat(firstInstance).isSameAs(secondInstance);
-    }
 
     @Test
     void warmOnNullRoundDoesNotWarm() {

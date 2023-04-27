@@ -101,21 +101,11 @@ public class EntityMapWarmer {
         this.nftsAdapter = nftsAdapter;
         this.tokenRelsAdapter = tokenRelsAdapter;
         this.threadpool = threadpool;
-        this.acctsOnDisk = accountsStorageAdapter.get().areOnDisk();
-        this.nftsOnDisk = nftsAdapter.get().isVirtual();
-        this.tokenRelsOnDisk = tokenRelsAdapter.get().areOnDisk();
-    }
-
-    public static EntityMapWarmer getInstance(
-            Supplier<AccountStorageAdapter> accountsStorageAdapter,
-            Supplier<UniqueTokenMapAdapter> nftsAdapter,
-            Supplier<TokenRelStorageAdapter> tokenRelsAdapter,
-            GlobalDynamicProperties globalDynamicProperties) {
-        if (instance == null) {
-            instance =
-                    new EntityMapWarmer(accountsStorageAdapter, nftsAdapter, tokenRelsAdapter, globalDynamicProperties);
-        }
-        return instance;
+        this.acctsOnDisk = accountsStorageAdapter.get() != null
+                && accountsStorageAdapter.get().areOnDisk();
+        this.nftsOnDisk = nftsAdapter.get() != null && nftsAdapter.get().isVirtual();
+        this.tokenRelsOnDisk =
+                tokenRelsAdapter.get() != null && tokenRelsAdapter.get().areOnDisk();
     }
 
     /**

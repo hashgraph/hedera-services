@@ -55,6 +55,9 @@ import com.hedera.node.app.service.mono.state.initialization.TreasuryCloner;
 import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
 import com.hedera.node.app.service.mono.state.logic.ReconnectListener;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.validation.BasedLedgerValidator;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.stats.ServicesStatsManager;
@@ -92,6 +95,15 @@ class ServicesAppTest {
     @Mock
     private PropertySource overridingProps;
 
+    @Mock
+    private AccountStorageAdapter accountsStorageAdapter;
+
+    @Mock
+    private UniqueTokenMapAdapter nftsAdapter;
+
+    @Mock
+    private TokenRelStorageAdapter tokenRelsAdapter;
+
     private ServicesApp subject;
 
     @BeforeEach
@@ -122,6 +134,12 @@ class ServicesAppTest {
                 .crypto(cryptography)
                 .selfId(selfId)
                 .build();
+
+        // Make sure the MutableStateChildren has the needed children to instantiate EntityMapWarmer
+        subject.workingState().setAccounts(accountsStorageAdapter);
+        subject.workingState().setTokenAssociations(tokenRelsAdapter);
+        subject.workingState().setUniqueTokens(nftsAdapter);
+        assertThat(subject.mapWarmer(), instanceOf(EntityMapWarmer.class));
     }
 
     @Test
