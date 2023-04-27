@@ -1,6 +1,7 @@
 open module com.hedera.node.app.service.consensus.impl.test {
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.consensus.impl;
+    requires com.hedera.node.app.service.token;
     requires org.junit.jupiter.api;
     requires com.hedera.node.app.service.mono.testFixtures;
     requires com.hedera.node.app.service.mono;

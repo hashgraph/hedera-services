@@ -45,6 +45,7 @@ module com.swirlds.common {
     exports com.swirlds.common.metrics;
     exports com.swirlds.common.metrics.atomic;
     exports com.swirlds.common.metrics.config;
+    exports com.swirlds.common.metrics.noop;
     exports com.swirlds.common.metrics.platform;
     exports com.swirlds.common.metrics.platform.prometheus;
     exports com.swirlds.common.notification;
