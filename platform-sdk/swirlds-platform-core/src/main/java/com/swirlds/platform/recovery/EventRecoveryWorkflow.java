@@ -88,6 +88,7 @@ public final class EventRecoveryWorkflow {
      * @param selfId                  the self ID of the node
      * @param allowPartialRounds      if true then allow the last round to be missing events, if false then ignore the
      *                                last round if it does not have all of its events
+     * @param loadSigningKeys         if true then load the signing keys
      */
     public static void recoverState(
             final Path signedStateFile,
@@ -97,7 +98,8 @@ public final class EventRecoveryWorkflow {
             final Boolean allowPartialRounds,
             final Long finalRound,
             final Path resultingStateDirectory,
-            final Long selfId)
+            final Long selfId,
+            final boolean loadSigningKeys)
             throws IOException {
 
         setupConstructableRegistry();
@@ -135,8 +137,8 @@ public final class EventRecoveryWorkflow {
 
         logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
-        final SignedState resultingState =
-                reapplyTransactions(configuration, initialState, appMain, roundIterator, finalRound, selfId);
+        final SignedState resultingState = reapplyTransactions(
+                configuration, initialState, appMain, roundIterator, finalRound, selfId, loadSigningKeys);
 
         logger.info(
                 STARTUP.getMarker(), "Finished reapplying transactions, writing state to {}", resultingStateDirectory);
@@ -213,7 +215,8 @@ public final class EventRecoveryWorkflow {
             final SwirldMain appMain,
             final IOIterator<Round> roundIterator,
             final long finalRound,
-            final long selfId)
+            final long selfId,
+            final boolean loadSigningKeys)
             throws IOException {
 
         throwArgNull(configuration, "configuration");
@@ -228,7 +231,7 @@ public final class EventRecoveryWorkflow {
 
         logger.info(STARTUP.getMarker(), "Initializing application state");
 
-        final RecoveryPlatform platform = new RecoveryPlatform(configuration, initialState, selfId);
+        final RecoveryPlatform platform = new RecoveryPlatform(configuration, initialState, selfId, loadSigningKeys);
 
         initialState
                 .getSwirldState()
