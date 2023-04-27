@@ -165,7 +165,6 @@ public class SyncProtocol implements Protocol {
 
         // are there any reasons not to initiate?
         if (!syncCooldownComplete()
-                || permit.isLockAcquired()
                 || !peerAgnosticSyncChecks.shouldSync()
                 || fallenBehindManager.hasFallenBehind()) {
             syncMetrics.updateDeclinedToInitiateSyncRatio(true);
@@ -200,7 +199,6 @@ public class SyncProtocol implements Protocol {
 
         // are there any reasons not to accept?
         if (!syncCooldownComplete()
-                || permit.isLockAcquired()
                 || !peerAgnosticSyncChecks.shouldSync()
                 || fallenBehindManager.hasFallenBehind()) {
             syncMetrics.updateRejectedSyncRatio(true);
