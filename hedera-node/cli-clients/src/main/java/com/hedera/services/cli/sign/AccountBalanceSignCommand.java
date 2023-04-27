@@ -16,7 +16,6 @@
 
 package com.hedera.services.cli.sign;
 
-import com.hedera.services.cli.ServiceSignCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.platform.cli.SignCommand;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,9 +26,9 @@ import picocli.CommandLine;
 /**
  * A subcommand of the {@link SignCommand}, for signing account balance files
  */
-@CommandLine.Command(name = "balance", mixinStandardHelpOptions = true, description = "Sign account balance files")
-@SubcommandOf(ServiceSignCommand.class)
-public final class BalanceFileSignCommand extends SignCommand {
+@CommandLine.Command(name = "sign", mixinStandardHelpOptions = true, description = "Sign account balance files")
+@SubcommandOf(AccountBalanceCommand.class)
+public final class AccountBalanceSignCommand extends SignCommand {
     /**
      * {@inheritDoc}
      */

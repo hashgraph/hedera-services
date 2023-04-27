@@ -1,5 +1,6 @@
 module com.hedera.services.cli {
     exports com.hedera.services.cli;
+    exports com.hedera.services.cli.sign;
 
     requires static com.github.spotbugs.annotations;
     requires com.hedera.node.app.service.mono;
