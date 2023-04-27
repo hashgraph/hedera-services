@@ -58,6 +58,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
@@ -866,6 +867,33 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.UNIQUE_TOKENS, mmap);
         assertFalse(subject.uniqueTokens().isVirtual());
         assertSame(mmap, subject.uniqueTokens().merkleMap());
+    }
+
+    @Test
+    void updatesAddressBookWithZeroWeightOnGenesisStart() {
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
+        assertEquals(1, stakingMap.size());
+        assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
+
+        subject.updateWeight(addressBook, platform.getContext());
+        verify(addressBook).updateWeight(0, 0);
+    }
+
+    @Test
+    void updatesAddressBookWithNonZeroWeightsOnGenesisStart() {
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
+        assertEquals(1, stakingMap.size());
+        assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
+
+        stakingMap.forEach((k, v) -> {
+            v.setStake(1000L);
+            v.setWeight(500);
+        });
+        assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
+        subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
+
+        subject.updateWeight(addressBook, platform.getContext());
+        verify(addressBook).updateWeight(0, 500);
     }
 
     private static ServicesApp createApp(final Platform platform) {

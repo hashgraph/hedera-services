@@ -180,7 +180,13 @@ public class AccessorBasedUsages {
             SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
         final var cryptoUpdateMeta = accessor.getSpanMapAccessor().getCryptoUpdateMeta(accessor);
         final var cryptoContext = opUsageCtxHelper.ctxForCryptoUpdate(accessor.getTxn());
-        cryptoOpsUsage.cryptoUpdateUsage(sigUsage, baseMeta, cryptoUpdateMeta, cryptoContext, into);
+        cryptoOpsUsage.cryptoUpdateUsage(
+                sigUsage,
+                baseMeta,
+                cryptoUpdateMeta,
+                cryptoContext,
+                into,
+                dynamicProperties.explicitAutoAssocSlotLifetime());
     }
 
     private void estimateCryptoApproveAllowance(
