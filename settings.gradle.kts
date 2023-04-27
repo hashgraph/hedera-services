@@ -102,7 +102,7 @@ gitRepositories {
     // choose tag or branch of HAPI you would like to test with
     // this looks for a tag in hedera-protobufs repo
     // This version needs to match tha HAPI version below in versionCatalogs
-    tag.set("0.38.0")
+    tag.set("v0.38.0")
     // do not load project from repo
     autoInclude.set(false)
   }
