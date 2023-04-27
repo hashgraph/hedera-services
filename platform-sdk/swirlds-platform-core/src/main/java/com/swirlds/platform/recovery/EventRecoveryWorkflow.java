@@ -93,6 +93,7 @@ public final class EventRecoveryWorkflow {
      * @param selfId                  the self ID of the node
      * @param allowPartialRounds      if true then allow the last round to be missing events, if false then ignore the
      *                                last round if it does not have all of its events
+     * @param loadSigningKeys         if true then load the signing keys
      */
     public static void recoverState(
             final Path signedStateFile,
@@ -102,7 +103,8 @@ public final class EventRecoveryWorkflow {
             final Boolean allowPartialRounds,
             final Long finalRound,
             final Path resultingStateDirectory,
-            final Long selfId)
+            final Long selfId,
+            final boolean loadSigningKeys)
             throws IOException {
 
         setupConstructableRegistry();
@@ -145,7 +147,14 @@ public final class EventRecoveryWorkflow {
             logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
             final ReservedSignedState resultingState = reapplyTransactions(
-                    platformContext, configuration, initialState, appMain, roundIterator, finalRound, selfId);
+                    platformContext,
+                    configuration,
+                    initialState,
+                    appMain,
+                    roundIterator,
+                    finalRound,
+                    selfId,
+                    loadSigningKeys);
 
             logger.info(
                     STARTUP.getMarker(),
@@ -219,6 +228,7 @@ public final class EventRecoveryWorkflow {
      * @param finalRound      the last round to apply to the state (inclusive), will stop earlier if the event stream
      *                        does not have events from the final round
      * @param selfId          the self ID of the node
+     * @param loadSigningKeys if true then load the signing keys
      * @return the resulting signed state
      * @throws IOException if there is a problem reading from the event stream file
      */
@@ -230,7 +240,8 @@ public final class EventRecoveryWorkflow {
             @NonNull final SwirldMain appMain,
             @NonNull final IOIterator<Round> roundIterator,
             final long finalRound,
-            final long selfId)
+            final long selfId,
+            final boolean loadSigningKeys)
             throws IOException {
 
         Objects.requireNonNull(platformContext);
@@ -246,7 +257,8 @@ public final class EventRecoveryWorkflow {
 
         logger.info(STARTUP.getMarker(), "Initializing application state");
 
-        final RecoveryPlatform platform = new RecoveryPlatform(configuration, initialState.get(), selfId);
+        final RecoveryPlatform platform =
+                new RecoveryPlatform(configuration, initialState.get(), selfId, loadSigningKeys);
 
         initialState
                 .get()

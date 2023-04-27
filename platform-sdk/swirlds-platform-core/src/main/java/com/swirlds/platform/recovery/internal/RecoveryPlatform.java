@@ -58,17 +58,27 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     /**
      * Create a new recovery platform.
      *
-     * @param configuration the node's configuration
-     * @param initialState  the starting signed state
-     * @param selfId        the ID of the node
+     * @param configuration   the node's configuration
+     * @param initialState    the starting signed state
+     * @param selfId          the ID of the node
+     * @param loadSigningKeys whether to load the signing keys, if false then {@link #sign(byte[])} will throw if
+     *                        called
      */
-    public RecoveryPlatform(final Configuration configuration, final SignedState initialState, final long selfId) {
+    public RecoveryPlatform(
+            final Configuration configuration,
+            final SignedState initialState,
+            final long selfId,
+            final boolean loadSigningKeys) {
 
         this.selfId = new NodeId(false, selfId);
 
         this.addressBook = initialState.getAddressBook();
 
-        crypto = initNodeSecurity(addressBook, configuration)[(int) selfId];
+        if (loadSigningKeys) {
+            crypto = initNodeSecurity(addressBook, configuration)[(int) selfId];
+        } else {
+            crypto = null;
+        }
 
         final Metrics metrics = new NoOpMetrics();
 
@@ -93,6 +103,10 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      */
     @Override
     public Signature sign(final byte[] data) {
+        if (crypto == null) {
+            throw new UnsupportedOperationException(
+                    "RecoveryPlatform was not loaded with signing keys, this operation is not supported");
+        }
         return crypto.sign(data);
     }
 
