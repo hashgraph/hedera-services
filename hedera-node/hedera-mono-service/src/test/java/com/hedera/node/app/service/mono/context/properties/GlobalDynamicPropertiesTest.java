@@ -112,6 +112,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.STAKING_NODE_MAX_TO_M
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
 import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_AUTO_CREATIONS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_AGGREGATE_RELS;
 import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_CUSTOM_FEES_ALLOWED;
@@ -278,6 +279,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
         assertEquals(78, subject.recordFileVersion());
         assertEquals(79, subject.recordSignatureFileVersion());
+        assertEquals(80, subject.sumOfConsensusWeights());
     }
 
     @Test
@@ -452,6 +454,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(79, subject.recordFileVersion());
         assertEquals(80, subject.recordSignatureFileVersion());
         assertEquals(90, subject.getSidecarMaxSizeMb());
+        assertEquals(91, subject.sumOfConsensusWeights());
     }
 
     @Test
@@ -664,6 +667,7 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(i + 93L);
         given(properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED))
                 .willReturn((i + 95) % 2 == 0);
+        given(properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS)).willReturn(i + 96);
     }
 
     private Set<EntityType> typesFor(final int i) {

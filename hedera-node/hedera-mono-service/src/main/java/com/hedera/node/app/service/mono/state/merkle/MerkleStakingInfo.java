@@ -86,7 +86,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     private long[] rewardSumHistory;
     // The consensus weight of this node in the network. This is computed based on the stake of this node
     // at midnight UTC of the current day. If the stake of this node is less than minStake, then the
-    // weight is 0. Sum of all weights of nodes in the network should be less than 500.
+    // weight is 0. Sum of all weights of nodes in the network should be less than or equal to 500.
     // If the stake of this node A is greater than minStake, then A's weight is computed based
     // on EndOfStakingPeriodCalculator.calculateWeightFromStake method
     private int weight;

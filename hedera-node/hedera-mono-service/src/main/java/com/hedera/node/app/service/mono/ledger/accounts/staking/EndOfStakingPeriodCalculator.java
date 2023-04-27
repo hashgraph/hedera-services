@@ -159,6 +159,7 @@ public class EndOfStakingPeriodCalculator {
         // Update node stake infos for the record with the updated consensus weights.
         // The weights are updated based on the updated stake of the node.
         for (final NodeStake.Builder builder : nodeStakingInfosBuilder) {
+            final var sumOfConsensusWeights = dynamicProperties.sumOfConsensusWeights();
             final var nodeNum = builder.getNodeId();
             final var stakingInfo = curStakingInfos.getForModify(EntityNum.fromLong(nodeNum));
             // If the total stake(rewarded + non-rewarded) of a node is less than minStake, stakingInfo's stake field
@@ -166,18 +167,24 @@ public class EndOfStakingPeriodCalculator {
             // Similarly, the total stake(rewarded + non-rewarded) of the node is greater than maxStake,
             // stakingInfo's stake field is set to maxStake.So, there is no need to clamp the stake value here. Sum of
             // all stakes can be used to calculate the weight.
-            final var updatedWeight = calculateWeightFromStake(stakingInfo.getStake(), newTotalStakedStart);
+            final var updatedWeight =
+                    calculateWeightFromStake(stakingInfo.getStake(), newTotalStakedStart, sumOfConsensusWeights);
             final var oldWeight = stakingInfo.getWeight();
             stakingInfo.setWeight(updatedWeight);
             log.info("Node {} weight is updated. Old weight {}, updated weight {}", nodeNum, oldWeight, updatedWeight);
 
-            // Scale the consensus weight  range [0, 500] to [minStake, trueMaxStakeOfAllNodes] range and export
+            // Scale the consensus weight  range [0, sumOfConsensusWeights] to [minStake, trueMaxStakeOfAllNodes] range
+            // and export
             // to mirror node. We need to consider the true maxStakeOfAllNodes instead of maxStake because
-            // for a one node network, whose stake < maxStake, we assign a weight of 500 to the node.
+            // for a one node network, whose stake < maxStake, we assign a weight of sumOfConsensusWeights to the node.
             // When we scale it back to stake, we need to give back the real stake of the node
             // instead of maxStake set on the node.
             final var scaledWeightToStake = scaleUpWeightToStake(
-                    updatedWeight, stakingInfo.getMinStake(), maxStakeOfAllNodes, newTotalStakedStart);
+                    updatedWeight,
+                    stakingInfo.getMinStake(),
+                    maxStakeOfAllNodes,
+                    newTotalStakedStart,
+                    sumOfConsensusWeights);
             builder.setStake(scaledWeightToStake);
             nodeStakingInfos.add(builder.build());
         }
@@ -202,17 +209,19 @@ public class EndOfStakingPeriodCalculator {
     }
 
     /**
-     * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes] from the consensus weight range [0, 500].
+     * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes] from the consensus weight range [0, sumOfConsensusWeights].
      * @param weight weight of the node
-     * @param minStake min stake of the node
-     * @param maxStakeOfAllNodes real max stake of all nodes computed by taking max(stakeOfNode1, stakeOfNode2, ...)
+     * @param newMinStake min stake of the node
+     * @param newMaxStake real max stake of all nodes computed by taking max(stakeOfNode1, stakeOfNode2, ...)
      * @return scaled weight of the node
      */
     long scaleUpWeightToStake(
-            final int weight, final long minStake, final long maxStakeOfAllNodes, final long totalStakeOfAllNodes) {
+            final int weight,
+            final long newMinStake,
+            final long newMaxStake,
+            final long totalStakeOfAllNodes,
+            final int sumOfConsensusWeights) {
         final var zeroStake = 0;
-        final var newMin = minStake;
-        final var newMax = maxStakeOfAllNodes;
         // If zero stake return zero
         if (weight == zeroStake) {
             return zeroStake;
@@ -224,26 +233,27 @@ public class EndOfStakingPeriodCalculator {
             final var oldMinWeight = 1L;
             // Since we are calculating weights based on the real stake values, we need to consider
             // the real max Stake and not theoretical max stake of nodes.
-            // Otherwise, on a one node network with a stake < maxStake where we assign a weight of 500,
+            // Otherwise, on a one node network with a stake < maxStake where we assign a weight of
+            // sumOfConsensusWeights,
             // the scaled stake value will be greater than its real stake.
-            final var oldMaxWeight = BigInteger.valueOf(maxStakeOfAllNodes)
-                    .multiply(BigInteger.valueOf(500))
+            final var oldMaxWeight = BigInteger.valueOf(newMaxStake)
+                    .multiply(BigInteger.valueOf(sumOfConsensusWeights))
                     .divide(BigInteger.valueOf(totalStakeOfAllNodes))
                     .longValue();
             // Otherwise compute the interpolation of the weight in the range [minStake, maxStake]
-            return BigInteger.valueOf(newMax)
-                    .subtract(BigInteger.valueOf(newMin))
+            return BigInteger.valueOf(newMaxStake)
+                    .subtract(BigInteger.valueOf(newMinStake))
                     .multiply(BigInteger.valueOf(weight - oldMinWeight))
                     .divide(BigInteger.valueOf(oldMaxWeight - oldMinWeight))
-                    .add(BigInteger.valueOf(newMin))
+                    .add(BigInteger.valueOf(newMinStake))
                     .longValue();
         }
     }
 
     /**
      * Calculates consensus weight of the node. The network normalizes the weights of nodes above minStake so that the
-     * total sum of weight is approximately 500. The stake field in {@code MerkleStakingInfo} is already clamped to
-     * [minStake, maxStake].
+     * total sum of weight is approximately as described by {@code GlobalDynamicProperties#sumOfConsensusWeights}.
+     * The stake field in {@code MerkleStakingInfo} is already clamped to [minStake, maxStake].
      * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake, the weight of a node A
      * will be computed so that every node above minStake has weight at least 1; but any node that has staked at least 1
      * out of every 250 whole hbars staked will have weight >= 2.
@@ -251,7 +261,7 @@ public class EndOfStakingPeriodCalculator {
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
      * @return calculated consensus weight of the node
      */
-    int calculateWeightFromStake(long stake, long totalStakeOfAllNodes) {
+    int calculateWeightFromStake(final long stake, final long totalStakeOfAllNodes, final int sumOfConsensusWeights) {
         // if node's total stake is less than minStake, MerkleStakingInfo stake will be zero as per calculation
         // in reviewElectionsAndRecomputeStakes and weight will be zero.
         if (stake == 0) {
@@ -264,7 +274,7 @@ public class EndOfStakingPeriodCalculator {
                 return 0;
             }
             final var weight = BigInteger.valueOf(stake)
-                    .multiply(BigInteger.valueOf(500))
+                    .multiply(BigInteger.valueOf(sumOfConsensusWeights))
                     .divide(BigInteger.valueOf(totalStakeOfAllNodes))
                     .longValue();
             return (int) Math.max(weight, 1);
