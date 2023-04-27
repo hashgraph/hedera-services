@@ -24,7 +24,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -42,19 +41,7 @@ public class ContractUpdateHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, and warms the cache.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().contractUpdateInstanceOrThrow();
