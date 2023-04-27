@@ -26,15 +26,15 @@ public final class AccountBalanceType implements StreamType {
     /**
      * description of the streamType, used for logging
      */
-    public static final String ACCOUNT_BALANCE_DESCRIPTION = "account balance";
+    private static final String ACCOUNT_BALANCE_DESCRIPTION = "account balance";
     /**
      * file name extension
      */
-    public static final String ACCOUNT_BALANCE_EXTENSION = "pb";
+    private static final String ACCOUNT_BALANCE_EXTENSION = "pb";
     /**
      * file name extension of signature file
      */
-    public static final String ACCOUNT_BALANCE_SIG_EXTENSION = "pb_sig";
+    private static final String ACCOUNT_BALANCE_SIG_EXTENSION = "pb_sig";
     /**
      * a singleton denotes AccountBalanceType
      */

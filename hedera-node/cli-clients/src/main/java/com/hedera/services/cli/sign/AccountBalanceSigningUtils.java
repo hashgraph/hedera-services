@@ -19,11 +19,10 @@ package com.hedera.services.cli.sign;
 import static com.hedera.services.cli.sign.SignUtils.TYPE_FILE_HASH;
 import static com.hedera.services.cli.sign.SignUtils.TYPE_SIGNATURE;
 import static com.hedera.services.cli.sign.SignUtils.integerToBytes;
-import static com.hedera.services.cli.sign.SignUtils.sign;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeEntireHash;
+import static com.swirlds.platform.util.FileSigningUtils.signData;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -48,23 +47,6 @@ public class AccountBalanceSigningUtils {
     private AccountBalanceSigningUtils() {}
 
     /**
-     * Sets up the constructable registry, and configures
-     * <p>
-     * Should be called before using stream utilities
-     * <p>
-     * Do <strong>NOT</strong> call this during standard node operation, as it will interfere with static settings
-     */
-    public static void initializeSystem() {
-        BootstrapUtils.setupConstructableRegistry();
-
-        // we don't want deserialization to fail based on any of these settings, not needed for services
-        //        SettingsCommon.maxTransactionCountPerEvent = Integer.MAX_VALUE;
-        //        SettingsCommon.maxTransactionBytesPerEvent = Integer.MAX_VALUE;
-        //        SettingsCommon.transactionMaxBytes = Integer.MAX_VALUE;
-        //        SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
-    }
-
-    /**
      * Generates a signature file for the account balance file
      *
      * @param signatureFileDestination the full path where the signature file will be generated
@@ -84,7 +66,7 @@ public class AccountBalanceSigningUtils {
         try {
             final Hash entireHash = computeEntireHash(streamFileToSign.toFile());
             final byte[] fileHashByte = entireHash.getValue();
-            final byte[] signature = sign(fileHashByte, keyPair);
+            final byte[] signature = signData(fileHashByte, keyPair);
 
             generateSigBalanceFile(signatureFileDestination.toFile(), signature, fileHashByte);
 
@@ -95,6 +77,7 @@ public class AccountBalanceSigningUtils {
             System.err.println("Failed to sign file " + streamFileToSign.getFileName() + ". Exception: " + e);
             return false;
         } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
+            System.err.println("Irrecoverable error encountered: " + e);
             throw new RuntimeException("Irrecoverable error encountered", e);
         }
     }

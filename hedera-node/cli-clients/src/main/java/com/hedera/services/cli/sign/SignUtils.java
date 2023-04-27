@@ -16,17 +16,7 @@
 
 package com.hedera.services.cli.sign;
 
-import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.LogMarker.FILE_SIGN;
-
-import com.swirlds.common.crypto.SignatureType;
 import java.nio.ByteBuffer;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.Signature;
-import java.security.SignatureException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,22 +34,6 @@ public class SignUtils {
     private static final Logger logger = LogManager.getLogger(SignUtils.class);
 
     private SignUtils() {}
-
-    public static byte[] sign(final byte[] data, final KeyPair sigKeyPair)
-            throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException {
-        final Signature signature =
-                Signature.getInstance(SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
-        signature.initSign(sigKeyPair.getPrivate());
-        if (logger.isDebugEnabled()) {
-            logger.debug(
-                    FILE_SIGN.getMarker(),
-                    "data is being signed, publicKey={}",
-                    hex(sigKeyPair.getPublic().getEncoded()));
-        }
-
-        signature.update(data);
-        return signature.sign();
-    }
 
     public static byte[] integerToBytes(final int number) {
         final ByteBuffer b = ByteBuffer.allocate(BYTES_COUNT_IN_INT);

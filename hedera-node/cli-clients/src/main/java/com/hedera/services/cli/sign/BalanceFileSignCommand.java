@@ -47,14 +47,4 @@ public final class BalanceFileSignCommand extends SignCommand {
     public boolean isFileSupported(@NonNull final Path path) {
         return AccountBalanceType.getInstance().isStreamFile(path.toFile());
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Integer call() {
-        AccountBalanceSigningUtils.initializeSystem();
-
-        return super.call();
-    }
 }
