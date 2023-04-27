@@ -74,11 +74,10 @@ public class SyncPermitProvider {
     }
 
     /**
-     * First acquires all permits uninterruptibly, then releases them again
-     * <p>
-     * The purpose of this method is to allow the caller to wait for all syncs to complete before proceeding
+     * First acquires all permits uninterruptibly, then releases them again. The effect of this is the caller waiting
+     * for all permits to be returned before proceeding
      */
-    public void join() {
+    public void waitForAllSyncsToFinish() {
         syncPermits.acquireUninterruptibly(numPermits);
         syncPermits.release(numPermits);
     }

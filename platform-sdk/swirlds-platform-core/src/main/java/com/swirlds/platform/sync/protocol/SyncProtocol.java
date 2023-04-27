@@ -164,9 +164,7 @@ public class SyncProtocol implements Protocol {
         syncMetrics.opportunityToInitiateSync();
 
         // are there any reasons not to initiate?
-        if (!syncCooldownComplete()
-                || !peerAgnosticSyncChecks.shouldSync()
-                || fallenBehindManager.hasFallenBehind()) {
+        if (!syncCooldownComplete() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
             syncMetrics.updateDeclinedToInitiateSyncRatio(true);
             return false;
         }
@@ -198,9 +196,7 @@ public class SyncProtocol implements Protocol {
         syncMetrics.incomingSyncRequestReceived();
 
         // are there any reasons not to accept?
-        if (!syncCooldownComplete()
-                || !peerAgnosticSyncChecks.shouldSync()
-                || fallenBehindManager.hasFallenBehind()) {
+        if (!syncCooldownComplete() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
             syncMetrics.updateRejectedSyncRatio(true);
             return false;
         }

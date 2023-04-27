@@ -96,7 +96,7 @@ class SyncPermitProviderTest {
     }
 
     @Test
-    void testJoin() {
+    void testWaitForAllSyncsToFinish() {
         final int numPermits = 3;
         final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits);
 
@@ -112,29 +112,31 @@ class SyncPermitProviderTest {
         final MaybeLocked shouldNotAcquire = syncPermitProvider.tryAcquire();
         assertFalse(shouldNotAcquire.isLockAcquired(), "no further permits should be able to be acquired");
 
-        final AtomicBoolean joinCalled = new AtomicBoolean(false);
+        final AtomicBoolean waitComplete = new AtomicBoolean(false);
 
-        // Have a separate thread attempt to join the syncPermitProvider
+        // Have a separate thread wait for syncs to finish
         final ExecutorService executorService = Executors.newSingleThreadExecutor();
         final Future<Void> future = executorService.submit(() -> {
-            syncPermitProvider.join();
-            joinCalled.set(true);
+            syncPermitProvider.waitForAllSyncsToFinish();
+            waitComplete.set(true);
             return null;
         });
 
         try {
-            // wait a bit, to give join time to potentially misbehave
+            // wait a bit, to give waitForAllSyncsToFinish time to potentially misbehave
             MILLISECONDS.sleep(50);
         } catch (final InterruptedException e) {
             throw new RuntimeException(e);
         }
 
-        assertFalse(joinCalled.get(), "join should not be called until all permits are released");
+        assertFalse(waitComplete.get(),
+                "waitForAllSyncsToFinish should not return until all permits are released");
 
-        // close the permits that have already been acquired, so the join will succeed
+        // close the permits that have already been acquired, so waitForAllSyncsToFinish will return
         permits.forEach(MaybeLocked::close);
 
         assertEventuallyTrue(
-                joinCalled::get, Duration.ofMillis(1000), "join should be called after all permits are released");
+                waitComplete::get, Duration.ofMillis(1000),
+                "waitForAllSyncsToFinish should return after all permits are released");
     }
 }

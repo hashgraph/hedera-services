@@ -351,8 +351,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private SequenceCycle<EventIntakeTask> intakeCycle = null;
     /** sleep in ms after each sync in SyncCaller. A public setter for this exists. */
     private long delayAfterSync = 0;
-    /** Executes a sync with a remote node */
-    private ShadowGraphSynchronizer shadowgraphSynchronizer;
+    /**
+     * Executes a sync with a remote node. Only used for sync, not chatter.
+     */
+    private ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     /** Stores and passes pre-consensus events to {@link SwirldStateManager} for handling */
     private PreConsensusEventHandler preConsensusEventHandler;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
@@ -1284,7 +1286,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         shadowgraphExecutor.start();
-        shadowgraphSynchronizer = new ShadowGraphSynchronizer(
+        syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 getShadowGraph(),
                 getAddressBook().getSize(),
                 syncMetrics,
@@ -1307,7 +1309,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 gossipHalted.set(true);
                 // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
                 // we've fallen behind
-                syncPermitProvider.join();
+                syncPermitProvider.waitForAllSyncsToFinish();
             };
         } else {
             // wait and acquire all sync ongoing locks and release them immediately
@@ -1590,7 +1592,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         UnidirectionalProtocols.SYNC.getInitialByte(),
                         new SyncProtocolResponder(
                                 simultaneousSyncThrottle,
-                                shadowgraphSynchronizer,
+                                syncShadowgraphSynchronizer,
                                 syncManager,
                                 syncManager::shouldAcceptSync,
                                 syncMetrics)),
@@ -1726,7 +1728,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             fallenBehindManager),
                                     new SyncProtocol(
                                             otherId,
-                                            shadowgraphSynchronizer,
+                                            syncShadowgraphSynchronizer,
                                             fallenBehindManager,
                                             syncPermitProvider,
                                             criticalQuorum,
@@ -2146,10 +2148,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * @return the platform instance of the {@link ShadowGraphSynchronizer}
+     * @return the platform instance of the {@link ShadowGraphSynchronizer} used for sync
      */
-    public ShadowGraphSynchronizer getShadowGraphSynchronizer() {
-        return shadowgraphSynchronizer;
+    public ShadowGraphSynchronizer getSyncShadowGraphSynchronizer() {
+        return syncShadowgraphSynchronizer;
     }
 
     /**
