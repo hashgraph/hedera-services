@@ -199,13 +199,14 @@ public final class EventRecoveryWorkflow {
     /**
      * Apply transactions on top of a state to produce a new state
      *
-     * @param configuration the configuration for the node
-     * @param initialState  the starting signed state
-     * @param appMain       the {@link SwirldMain} for the app. Ignored if null.
-     * @param roundIterator an iterator that walks over transactions
-     * @param finalRound    the last round to apply to the state (inclusive), will stop earlier if the event stream does
-     *                      not have events from the final round
-     * @param selfId        the self ID of the node
+     * @param configuration   the configuration for the node
+     * @param initialState    the starting signed state
+     * @param appMain         the {@link SwirldMain} for the app. Ignored if null.
+     * @param roundIterator   an iterator that walks over transactions
+     * @param finalRound      the last round to apply to the state (inclusive), will stop earlier if the event stream
+     *                        does not have events from the final round
+     * @param selfId          the self ID of the node
+     * @param loadSigningKeys if true then load the signing keys
      * @return the resulting signed state
      * @throws IOException if there is a problem reading from the event stream file
      */

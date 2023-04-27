@@ -64,9 +64,11 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     /**
      * Create a new recovery platform.
      *
-     * @param configuration the node's configuration
-     * @param initialState  the starting signed state
-     * @param selfId        the ID of the node
+     * @param configuration   the node's configuration
+     * @param initialState    the starting signed state
+     * @param selfId          the ID of the node
+     * @param loadSigningKeys whether to load the signing keys, if false then {@link #sign(byte[])} will throw if
+     *                        called
      */
     public RecoveryPlatform(
             final Configuration configuration,
