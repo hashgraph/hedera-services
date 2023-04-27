@@ -21,18 +21,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.sync.FallenBehindManager;
 import com.swirlds.platform.sync.ShadowGraphSynchronizer;
+import com.swirlds.platform.sync.SyncException;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -404,6 +408,27 @@ class SyncProtocolTests {
     }
 
     @Test
+    @DisplayName("Permit closes after failed accept")
+    void permitClosesAfterFailedAccept() {
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                permitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSync,
+                syncMetrics,
+                time);
+
+        assertEquals(2, permitProvider.getNumAvailable());
+        assertTrue(protocol.shouldAccept());
+        assertEquals(1, permitProvider.getNumAvailable());
+        protocol.acceptFailed();
+        assertEquals(2, permitProvider.getNumAvailable());
+    }
+
+    @Test
     @DisplayName("Permit closes after failed initiate")
     void permitClosesAfterFailedInitiate() {
         final SyncProtocol protocol = new SyncProtocol(
@@ -468,7 +493,7 @@ class SyncProtocolTests {
 
     @Test
     @DisplayName("Protocol doesn't run without first obtaining a permit")
-    void failedProtocol() {
+    void noPermit() {
         final SyncProtocol protocol = new SyncProtocol(
                 peerId,
                 shadowGraphSynchronizer,
@@ -481,5 +506,105 @@ class SyncProtocolTests {
                 time);
 
         assertThrows(NetworkProtocolException.class, () -> protocol.runProtocol(mock(Connection.class)));
+    }
+
+    @Test
+    @DisplayName("ParallelExecutionException is caught and rethrown as NetworkProtocolException")
+    void rethrowParallelExecutionException()
+            throws ParallelExecutionException, IOException, SyncException, InterruptedException {
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                permitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSync,
+                syncMetrics,
+                time);
+
+        // mock synchronize to throw a ParallelExecutionException
+        Mockito.when(shadowGraphSynchronizer.synchronize(any()))
+                .thenThrow(new ParallelExecutionException(mock(Throwable.class)));
+
+        assertEquals(2, permitProvider.getNumAvailable());
+        protocol.shouldAccept();
+        assertEquals(1, permitProvider.getNumAvailable());
+
+        assertThrows(NetworkProtocolException.class, () -> protocol.runProtocol(mock(Connection.class)));
+
+        assertEquals(2, permitProvider.getNumAvailable());
+    }
+
+    @Test
+    @DisplayName("Exception with IOException as root cause is caught and rethrown as IOException")
+    void rethrowRootCauseIOException()
+            throws ParallelExecutionException, IOException, SyncException, InterruptedException {
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                permitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSync,
+                syncMetrics,
+                time);
+
+        // mock synchronize to throw a ParallelExecutionException with root cause being an IOException
+        Mockito.when(shadowGraphSynchronizer.synchronize(any()))
+                .thenThrow(new ParallelExecutionException(new IOException()));
+
+        assertEquals(2, permitProvider.getNumAvailable());
+        protocol.shouldAccept();
+        assertEquals(1, permitProvider.getNumAvailable());
+
+        assertThrows(IOException.class, () -> protocol.runProtocol(mock(Connection.class)));
+
+        assertEquals(2, permitProvider.getNumAvailable());
+    }
+
+    @Test
+    @DisplayName("SyncException is caught and rethrown as NetworkProtocolException")
+    void rethrowSyncException()
+            throws ParallelExecutionException, IOException, SyncException, InterruptedException {
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                permitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSync,
+                syncMetrics,
+                time);
+
+        // mock synchronize to throw a SyncException
+        Mockito.when(shadowGraphSynchronizer.synchronize(any())).thenThrow(new SyncException(""));
+
+        assertEquals(2, permitProvider.getNumAvailable());
+        protocol.shouldAccept();
+        assertEquals(1, permitProvider.getNumAvailable());
+
+        assertThrows(NetworkProtocolException.class, () -> protocol.runProtocol(mock(Connection.class)));
+
+        assertEquals(2, permitProvider.getNumAvailable());
+    }
+
+    @Test
+    @DisplayName("acceptOnSimultaneousInitiate should return true")
+    void acceptOnSimultaneousInitiate() {
+        final SyncProtocol protocol = new SyncProtocol(
+                peerId,
+                shadowGraphSynchronizer,
+                fallenBehindManager,
+                permitProvider,
+                criticalQuorum,
+                peerAgnosticSyncChecks,
+                sleepAfterSync,
+                syncMetrics,
+                time);
+
+        assertTrue(protocol.acceptOnSimultaneousInitiate());
     }
 }
