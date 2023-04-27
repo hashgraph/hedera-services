@@ -22,7 +22,7 @@ import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
-import com.hedera.node.app.service.token.impl.components.TokenComponent;
+import com.hedera.node.app.service.token.impl.handlers.TokenComponent;
 import com.hedera.node.app.service.util.impl.components.UtilComponent;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import dagger.Module;
@@ -35,14 +35,14 @@ public interface HandlersModule {
     @Provides
     @Singleton
     static TransactionHandlers provideTransactionHandlers(
-            @NonNull AdminComponent adminComponent,
-            @NonNull ConsensusComponent consensusComponent,
-            @NonNull FileComponent fileComponent,
-            @NonNull NetworkComponent networkComponent,
-            @NonNull ContractComponent contractComponent,
-            @NonNull ScheduleComponent scheduleComponent,
-            @NonNull TokenComponent tokenComponent,
-            @NonNull UtilComponent utilComponent) {
+            @NonNull final AdminComponent adminComponent,
+            @NonNull final ConsensusComponent consensusComponent,
+            @NonNull final FileComponent fileComponent,
+            @NonNull final NetworkComponent networkComponent,
+            @NonNull final ContractComponent contractComponent,
+            @NonNull final ScheduleComponent scheduleComponent,
+            @NonNull final TokenComponent tokenComponent,
+            @NonNull final UtilComponent utilComponent) {
         return new TransactionHandlers(
                 consensusComponent.consensusCreateTopicHandler(),
                 consensusComponent.consensusUpdateTopicHandler(),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,39 +14,39 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.MetricConfig;
 
 /**
- * A no-op implementation of a function gauge.
- *
- * @param <T>
- * 		the type of the function gauge
+ * A no-op implementation of an integer accumulator.
  */
-public class NoOpFunctionGauge<T> extends AbstractNoOpMetric implements FunctionGauge<T> {
+public class NoOpIntegerAccumulator extends AbstractNoOpMetric implements IntegerAccumulator {
 
-    private final T value;
-
-    public NoOpFunctionGauge(final MetricConfig<?, ?> config, final T value) {
+    public NoOpIntegerAccumulator(final MetricConfig<?, ?> config) {
         super(config);
-        this.value = value;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public T get() {
-        return value;
+    public int get() {
+        return 0;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public DataType getDataType() {
-        return DataType.INT;
+    public int getInitialValue() {
+        return 0;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void update(final int other) {}
 }

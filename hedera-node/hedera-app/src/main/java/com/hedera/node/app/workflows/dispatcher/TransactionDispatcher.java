@@ -20,11 +20,11 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
@@ -40,17 +40,18 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and
- * handle-transaction requests to the appropriate handler
+ * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and handle-transaction
+ * requests to the appropriate handler
  *
  * <p>For handle, mostly just supports the limited form of the Consensus Service handlers
- * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to
- * make a bit of progress toward the general implementation.
+ * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to make a bit of progress
+ * toward the general implementation.
  */
 @Singleton
 public class TransactionDispatcher {
@@ -62,8 +63,8 @@ public class TransactionDispatcher {
     /**
      * Creates a {@code TransactionDispatcher}.
      *
-     * @param handleContext     the context of the handle workflow
-     * @param handlers          the handlers for all transaction types
+     * @param handleContext the context of the handle workflow
+     * @param handlers the handlers for all transaction types
      * @param dynamicProperties the dynamic properties of the system
      */
     @Inject
@@ -81,8 +82,7 @@ public class TransactionDispatcher {
      *
      * <p>This will not be final signature of the dispatch method, since as per
      * <a href="https://github.com/hashgraph/hedera-services/issues/4945">issue #4945</a>, we are currently
-     * just adapting the last step of mono-service "workflow"; and only for
-     * Consensus Service transactions.
+     * just adapting the last step of mono-service "workflow"; and only for Consensus Service transactions.
      *
      * @param function the type of the consensus service transaction
      * @param txn the consensus transaction to be handled
@@ -112,8 +112,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of
-     * the specific functionality
+     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of the specific
+     * functionality
      *
      * @param context the context of the pre-handle workflow
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -122,87 +122,81 @@ public class TransactionDispatcher {
     public void dispatchPreHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context, "The supplied argument 'context' cannot be null!");
 
-        final var txBody = context.body();
-        switch (txBody.data().kind()) {
-            case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler()
-                    .preHandle(context);
-            case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler()
-                    .preHandle(context);
-            case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler()
-                    .preHandle(context);
-            case CONSENSUS_SUBMIT_MESSAGE -> handlers.consensusSubmitMessageHandler()
-                    .preHandle(context);
+        try {
+            final var handler = getHandler(context.body());
+            handler.preHandle(context);
+        } catch (UnsupportedOperationException ex) {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
+    }
 
-            case CONTRACT_CREATE_INSTANCE -> handlers.contractCreateHandler().preHandle(context);
-            case CONTRACT_UPDATE_INSTANCE -> handlers.contractUpdateHandler().preHandle(context);
-            case CONTRACT_CALL -> handlers.contractCallHandler().preHandle(context);
-            case CONTRACT_DELETE_INSTANCE -> handlers.contractDeleteHandler().preHandle(context);
-            case ETHEREUM_TRANSACTION -> handlers.etherumTransactionHandler().preHandle(context);
+    @NonNull
+    private TransactionHandler getHandler(@NonNull final TransactionBody txBody) {
+        return switch (txBody.data().kind()) {
+            case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler();
+            case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler();
+            case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler();
+            case CONSENSUS_SUBMIT_MESSAGE -> handlers.consensusSubmitMessageHandler();
 
-            case CRYPTO_CREATE_ACCOUNT -> handlers.cryptoCreateHandler().preHandle(context);
-            case CRYPTO_UPDATE_ACCOUNT -> handlers.cryptoUpdateHandler().preHandle(context);
-            case CRYPTO_TRANSFER -> handlers.cryptoTransferHandler().preHandle(context);
-            case CRYPTO_DELETE -> handlers.cryptoDeleteHandler().preHandle(context);
-            case CRYPTO_APPROVE_ALLOWANCE -> handlers.cryptoApproveAllowanceHandler()
-                    .preHandle(context);
-            case CRYPTO_DELETE_ALLOWANCE -> handlers.cryptoDeleteAllowanceHandler()
-                    .preHandle(context);
-            case CRYPTO_ADD_LIVE_HASH -> handlers.cryptoAddLiveHashHandler().preHandle(context);
-            case CRYPTO_DELETE_LIVE_HASH -> handlers.cryptoDeleteLiveHashHandler()
-                    .preHandle(context);
+            case CONTRACT_CREATE_INSTANCE -> handlers.contractCreateHandler();
+            case CONTRACT_UPDATE_INSTANCE -> handlers.contractUpdateHandler();
+            case CONTRACT_CALL -> handlers.contractCallHandler();
+            case CONTRACT_DELETE_INSTANCE -> handlers.contractDeleteHandler();
+            case ETHEREUM_TRANSACTION -> handlers.etherumTransactionHandler();
 
-            case FILE_CREATE -> handlers.fileCreateHandler().preHandle(context);
-            case FILE_UPDATE -> handlers.fileUpdateHandler().preHandle(context);
-            case FILE_DELETE -> handlers.fileDeleteHandler().preHandle(context);
-            case FILE_APPEND -> handlers.fileAppendHandler().preHandle(context);
+            case CRYPTO_CREATE_ACCOUNT -> handlers.cryptoCreateHandler();
+            case CRYPTO_UPDATE_ACCOUNT -> handlers.cryptoUpdateHandler();
+            case CRYPTO_TRANSFER -> handlers.cryptoTransferHandler();
+            case CRYPTO_DELETE -> handlers.cryptoDeleteHandler();
+            case CRYPTO_APPROVE_ALLOWANCE -> handlers.cryptoApproveAllowanceHandler();
+            case CRYPTO_DELETE_ALLOWANCE -> handlers.cryptoDeleteAllowanceHandler();
+            case CRYPTO_ADD_LIVE_HASH -> handlers.cryptoAddLiveHashHandler();
+            case CRYPTO_DELETE_LIVE_HASH -> handlers.cryptoDeleteLiveHashHandler();
 
-            case FREEZE -> handlers.freezeHandler()
-                    .preHandle(context, context.createStore(ReadableSpecialFileStore.class));
+            case FILE_CREATE -> handlers.fileCreateHandler();
+            case FILE_UPDATE -> handlers.fileUpdateHandler();
+            case FILE_DELETE -> handlers.fileDeleteHandler();
+            case FILE_APPEND -> handlers.fileAppendHandler();
 
-            case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler().preHandle(context);
+            case FREEZE -> handlers.freezeHandler();
 
-            case SCHEDULE_CREATE -> handlers.scheduleCreateHandler().preHandle(context, this::dispatchPreHandle);
-            case SCHEDULE_SIGN -> handlers.scheduleSignHandler()
-                    .preHandle(context, context.createStore(ReadableScheduleStore.class), this::dispatchPreHandle);
-            case SCHEDULE_DELETE -> handlers.scheduleDeleteHandler()
-                    .preHandle(context, context.createStore(ReadableScheduleStore.class));
-            case TOKEN_CREATION -> handlers.tokenCreateHandler().preHandle(context);
-            case TOKEN_UPDATE -> handlers.tokenUpdateHandler().preHandle(context);
-            case TOKEN_MINT -> handlers.tokenMintHandler().preHandle(context);
-            case TOKEN_BURN -> handlers.tokenBurnHandler().preHandle(context);
-            case TOKEN_DELETION -> handlers.tokenDeleteHandler().preHandle(context);
-            case TOKEN_WIPE -> handlers.tokenAccountWipeHandler().preHandle(context);
-            case TOKEN_FREEZE -> handlers.tokenFreezeAccountHandler().preHandle(context);
-            case TOKEN_UNFREEZE -> handlers.tokenUnfreezeAccountHandler().preHandle(context);
-            case TOKEN_GRANT_KYC -> handlers.tokenGrantKycToAccountHandler().preHandle(context);
-            case TOKEN_REVOKE_KYC -> handlers.tokenRevokeKycFromAccountHandler().preHandle(context);
-            case TOKEN_ASSOCIATE -> handlers.tokenAssociateToAccountHandler().preHandle(context);
-            case TOKEN_DISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
-                    .preHandle(context);
-            case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
-                    .preHandle(context);
-            case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(context);
-            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(context);
+            case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler();
 
-            case UTIL_PRNG -> handlers.utilPrngHandler().preHandle(context);
+            case SCHEDULE_CREATE -> handlers.scheduleCreateHandler();
+            case SCHEDULE_SIGN -> handlers.scheduleSignHandler();
+            case SCHEDULE_DELETE -> handlers.scheduleDeleteHandler();
 
-            case SYSTEM_DELETE -> {
-                switch (txBody.systemDeleteOrThrow().id().kind()) {
-                    case CONTRACT_ID -> handlers.contractSystemDeleteHandler().preHandle(context);
-                    case FILE_ID -> handlers.fileSystemDeleteHandler().preHandle(context);
-                    case UNSET -> throw new IllegalArgumentException("SystemDelete without IdCase");
-                }
-            }
-            case SYSTEM_UNDELETE -> {
-                switch (txBody.systemUndeleteOrThrow().id().kind()) {
-                    case CONTRACT_ID -> handlers.contractSystemUndeleteHandler().preHandle(context);
-                    case FILE_ID -> handlers.fileSystemUndeleteHandler().preHandle(context);
-                    case UNSET -> throw new IllegalArgumentException("SystemUndelete without IdCase");
-                }
-            }
+            case TOKEN_CREATION -> handlers.tokenCreateHandler();
+            case TOKEN_UPDATE -> handlers.tokenUpdateHandler();
+            case TOKEN_MINT -> handlers.tokenMintHandler();
+            case TOKEN_BURN -> handlers.tokenBurnHandler();
+            case TOKEN_DELETION -> handlers.tokenDeleteHandler();
+            case TOKEN_WIPE -> handlers.tokenAccountWipeHandler();
+            case TOKEN_FREEZE -> handlers.tokenFreezeAccountHandler();
+            case TOKEN_UNFREEZE -> handlers.tokenUnfreezeAccountHandler();
+            case TOKEN_GRANT_KYC -> handlers.tokenGrantKycToAccountHandler();
+            case TOKEN_REVOKE_KYC -> handlers.tokenRevokeKycFromAccountHandler();
+            case TOKEN_ASSOCIATE -> handlers.tokenAssociateToAccountHandler();
+            case TOKEN_DISSOCIATE -> handlers.tokenDissociateFromAccountHandler();
+            case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler();
+            case TOKEN_PAUSE -> handlers.tokenPauseHandler();
+            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler();
+
+            case UTIL_PRNG -> handlers.utilPrngHandler();
+
+            case SYSTEM_DELETE -> switch (txBody.systemDeleteOrThrow().id().kind()) {
+                case CONTRACT_ID -> handlers.contractSystemDeleteHandler();
+                case FILE_ID -> handlers.fileSystemDeleteHandler();
+                default -> throw new UnsupportedOperationException("SystemDelete without IdCase");
+            };
+            case SYSTEM_UNDELETE -> switch (txBody.systemUndeleteOrThrow().id().kind()) {
+                case CONTRACT_ID -> handlers.contractSystemUndeleteHandler();
+                case FILE_ID -> handlers.fileSystemUndeleteHandler();
+                default -> throw new UnsupportedOperationException("SystemUndelete without IdCase");
+            };
 
             default -> throw new UnsupportedOperationException(TYPE_NOT_SUPPORTED);
-        }
+        };
     }
 
     // TODO: In all the below methods, commit will be called in workflow or some other place
@@ -216,9 +210,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param topicStore the topic store used for the update
      */
@@ -235,9 +228,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param topicStore the topic store used for the update
      */
@@ -261,9 +253,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param recordBuilder the completed record builder for the creation
      * @param topicStore the topic store used for the creation
@@ -289,9 +280,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param recordBuilder the completed record builder for the message submission
      * @param topicStore the topic store used for the message submission
