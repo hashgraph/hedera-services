@@ -26,8 +26,9 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.TopicMetadata;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -50,9 +51,9 @@ public final class ConsensusTestUtils {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    static Key mockPayerLookup(Key key, AccountID accountId, AccountAccess keyLookup) throws PreCheckException {
+    static Key mockPayerLookup(Key key, AccountID accountId, ReadableAccountStore accountStore) {
         final var account = mock(Account.class);
-        given(keyLookup.getAccountById(accountId)).willReturn(account);
+        given(accountStore.getAccountById(accountId)).willReturn(account);
         given(account.key()).willReturn(key);
         return key;
     }
@@ -74,8 +75,8 @@ public final class ConsensusTestUtils {
                 .willReturn(newTopicMeta(adminKey != null ? adminKey : null, submitKey != null ? submitKey : null));
     }
 
-    static ReadableTopicStore.TopicMetadata newTopicMeta(Key admin, Key submit) {
-        return new ReadableTopicStore.TopicMetadata(
+    static TopicMetadata newTopicMeta(Key admin, Key submit) {
+        return new TopicMetadata(
                 Optional.of(Instant.now() + ""),
                 admin,
                 submit,

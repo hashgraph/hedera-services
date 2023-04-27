@@ -381,8 +381,9 @@ public class BaseOperationUsage {
                 .build();
         final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(), now);
         final var into = new UsageAccumulator();
+        // Purposely don't include an explicit auto-assoc slot lifetime here
         CRYPTO_OPS_USAGE.cryptoUpdateUsage(
-                SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoUpdateMeta, ctx, into);
+                SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoUpdateMeta, ctx, into, 0);
         return into;
     }
 

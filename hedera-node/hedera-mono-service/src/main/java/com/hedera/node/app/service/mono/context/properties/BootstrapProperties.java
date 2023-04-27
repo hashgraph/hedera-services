@@ -156,6 +156,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
@@ -502,6 +503,7 @@ public final class BootstrapProperties implements PropertySource {
             AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE,
             AUTO_RENEW_GRACE_PERIOD,
             LEDGER_CHANGE_HIST_MEM_SECS,
+            LEDGER_MAX_AUTO_ASSOCIATIONS,
             LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION,
             LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION,
             LEDGER_XFER_BAL_CHANGES_MAX_LEN,
@@ -700,6 +702,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(FEES_PERCENT_CONGESTION_MULTIPLIERS, AS_CONGESTION_MULTIPLIERS),
             entry(FEES_PERCENT_UTILIZATION_SCALE_FACTORS, AS_ENTITY_SCALE_FACTORS),
             entry(LEDGER_CHANGE_HIST_MEM_SECS, AS_INT),
+            entry(LEDGER_MAX_AUTO_ASSOCIATIONS, AS_INT),
             entry(LEDGER_XFER_BAL_CHANGES_MAX_LEN, AS_INT),
             entry(LEDGER_FUNDING_ACCOUNT, AS_LONG),
             entry(LEDGER_NUM_SYSTEM_ACCOUNTS, AS_INT),

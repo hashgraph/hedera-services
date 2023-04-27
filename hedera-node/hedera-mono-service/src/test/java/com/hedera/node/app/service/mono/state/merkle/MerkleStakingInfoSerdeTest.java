@@ -34,14 +34,14 @@ public class MerkleStakingInfoSerdeTest extends SelfSerializableDataTest<MerkleS
 
     @Override
     protected MerkleStakingInfo getExpectedObject(SeededPropertySource propertySource) {
-        return propertySource.next038StakingInfo();
+        return propertySource.next0371StakingInfo();
     }
 
     @Override
     protected MerkleStakingInfo getExpectedObject(final int version, final int testCaseNo) {
         final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
-        return version < MerkleStakingInfo.RELEASE_0380_VERSION
+        return version < MerkleStakingInfo.RELEASE_0371_VERSION
                 ? propertySource.next0370StakingInfo()
-                : propertySource.next038StakingInfo();
+                : propertySource.next0371StakingInfo();
     }
 }

@@ -68,8 +68,8 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
 
     static final int RELEASE_0270_VERSION = 1;
-    static final int RELEASE_0380_VERSION = 2;
-    public static final int CURRENT_VERSION = RELEASE_0380_VERSION;
+    static final int RELEASE_0371_VERSION = 2;
+    public static final int CURRENT_VERSION = RELEASE_0371_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xb8b383ccd3caed5bL;
 
     private int number;
@@ -86,9 +86,9 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     private long[] rewardSumHistory;
     // The consensus weight of this node in the network. This is computed based on the stake of this node
     // at midnight UTC of the current day. If the stake of this node is less than minStake, then the
-    // weight is 0. Sum of all weights of nodes in the network should be less than or equal to 500.
-    // If the stake of this node A is greater than minStake, then A's weight is computed based
-    // on EndOfStakingPeriodCalculator.calculateWeightFromStake method
+    // weight is 0. Sum of all weights of nodes in the network should be less than 500.
+    // If the stake of this node A is greater than minStake,
+    // then A's weight is computed as (node A stake * 500/ total stake of all nodes).
     private int weight;
 
     @Nullable
@@ -352,7 +352,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         stakeRewardStart = in.readLong();
         unclaimedStakeRewardStart = in.readLong();
         stake = in.readLong();
-        if (version >= RELEASE_0380_VERSION) {
+        if (version >= RELEASE_0371_VERSION) {
             weight = in.readInt();
         }
         rewardSumHistory = in.readLongArray(Integer.MAX_VALUE);

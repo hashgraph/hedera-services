@@ -33,10 +33,10 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private Account updateAccount;
 
-    private CryptoUpdateHandler subject = new CryptoUpdateHandler();
+    private CryptoUpdateHandler subject;
 
     @BeforeEach
     public void setUp() {
@@ -60,7 +60,9 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(updateAccountId.accountNum()), updateAccount)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
+
+        subject = new CryptoUpdateHandler(waivers);
     }
 
     @Test
@@ -70,8 +72,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
 
-        final var context = new PreHandleContext(readableStore, txn);
-        subject.preHandle(context, waivers);
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.preHandle(context);
         basicMetaAssertions(context, 2);
         assertEquals(key, context.payerKey());
         assertTrue(context.requiredNonPayerKeys().contains(otherKey));
@@ -84,8 +86,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
 
-        final var context = new PreHandleContext(readableStore, txn);
-        subject.preHandle(context, waivers);
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.preHandle(context);
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
         assertIterableEquals(List.of(otherKey), context.requiredNonPayerKeys());
@@ -97,8 +99,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(true);
 
-        final var context = new PreHandleContext(readableStore, txn);
-        subject.preHandle(context, waivers);
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.preHandle(context);
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
         assertFalse(context.requiredNonPayerKeys().contains(otherKey));
@@ -111,13 +113,13 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(accountNum), account)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
 
         given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
 
-        final var context = new PreHandleContext(readableStore, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, waivers), INVALID_ACCOUNT_ID);
+        final var context = new FakePreHandleContext(readableStore, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
