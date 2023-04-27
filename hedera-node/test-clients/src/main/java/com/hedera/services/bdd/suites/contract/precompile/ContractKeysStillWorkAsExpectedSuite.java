@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyPropertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -466,7 +465,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final AtomicReference<Address> bSenderAddr = new AtomicReference<>();
         final AtomicReference<Address> bReceiverAddr = new AtomicReference<>();
 
-        return onlyPropertyPreservingHapiSpec("ApprovalFallbacksRequiredWithoutTopLevelSigAccess")
+        return propertyPreservingHapiSpec("ApprovalFallbacksRequiredWithoutTopLevelSigAccess")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         streamMustInclude(recordedChildBodyWithId(TOKEN_UNIT_FROM_TO_OTHERS_TXN, 1, (spec, txn) -> {
