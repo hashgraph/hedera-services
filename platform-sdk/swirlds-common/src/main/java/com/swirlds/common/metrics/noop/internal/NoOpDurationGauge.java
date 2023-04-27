@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
 
+import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.MetricConfig;
-import com.swirlds.common.metrics.RunningAverageMetric;
+import java.time.Duration;
 
 /**
- * A no-op implementation of a running average metric.
+ * A no-op implementation of a duration gauge.
  */
-public class NoOpRunningAverageMetric extends AbstractNoOpMetric implements RunningAverageMetric {
+public class NoOpDurationGauge extends AbstractNoOpMetric implements DurationGauge {
 
-    public NoOpRunningAverageMetric(final MetricConfig<?, ?> config) {
+    public NoOpDurationGauge(final MetricConfig<?, ?> config) {
         super(config);
     }
 
@@ -32,15 +33,7 @@ public class NoOpRunningAverageMetric extends AbstractNoOpMetric implements Runn
      * {@inheritDoc}
      */
     @Override
-    public Double get(final ValueType valueType) {
-        return 0.0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double getHalfLife() {
+    public long getNanos() {
         return 0;
     }
 
@@ -48,7 +41,7 @@ public class NoOpRunningAverageMetric extends AbstractNoOpMetric implements Runn
      * {@inheritDoc}
      */
     @Override
-    public void update(final double value) {}
+    public void set(final Duration duration) {}
 
     /**
      * {@inheritDoc}

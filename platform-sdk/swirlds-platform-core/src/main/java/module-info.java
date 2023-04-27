@@ -15,6 +15,7 @@ module com.swirlds.platform {
     exports com.swirlds.platform.chatter.protocol.output;
     exports com.swirlds.platform.chatter.protocol.peer;
     exports com.swirlds.platform.chatter.protocol.heartbeat;
+    exports com.swirlds.platform.cli;
     exports com.swirlds.platform.components;
     exports com.swirlds.platform.components.appcomm;
     exports com.swirlds.platform.components.common.output;
