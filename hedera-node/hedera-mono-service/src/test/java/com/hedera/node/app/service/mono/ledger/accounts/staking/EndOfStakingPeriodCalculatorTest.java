@@ -166,7 +166,7 @@ class EndOfStakingPeriodCalculatorTest {
                 ((maxStake - minStake) * (weightInBetween2 - 1)) / (maxWeight - 1) + minStake;
         // stake equals min stake
         assertEquals(equalsMinStake, scaledStake1);
-        // Both these fall in the same bucket since their weight is the same. So, they get same scaled wight
+        // Both these fall in the same bucket since their weight is the same. So, they get same scaled weight
         assertEquals(expectedEqualScaledStake, scaledStake2);
         assertEquals(expectedEqualScaledStake, scaledStake3);
         // stake equals max stake, will return max stake
