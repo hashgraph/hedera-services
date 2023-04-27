@@ -36,9 +36,9 @@ public interface StateToDiskAttemptConsumer {
      * The signed state holds a reservation for the duration of this call. Implementers must not release this
      * reservation.
      *
-     * @param signedStateWrapper A wrapper with the {@link SignedState} attempted to be written to disk
-     * @param directory          The directory where the state was attempted to be written
-     * @param success            {@code true} if the attempt was successful, {@code false} otherwise
+     * @param signedState the {@link SignedState} attempted to be written to disk
+     * @param directory   The directory where the state was attempted to be written
+     * @param success     {@code true} if the attempt was successful, {@code false} otherwise
      */
-    void stateToDiskAttempt(@NonNull SignedState signedStateWrapper, @NonNull Path directory, boolean success);
+    void stateToDiskAttempt(@NonNull SignedState signedState, @NonNull Path directory, boolean success);
 }

@@ -88,9 +88,9 @@ public class EmergencyReconnectTeacher {
         try {
             final long round = connection.getDis().readLong();
             final Hash hash = connection.getDis().readSerializable();
-            try (final ReservedSignedState stateWrapper =
+            try (final ReservedSignedState reservedState =
                     stateFinder.find(emergencyStateCriteria(round, hash), "EmergencyReconnectTeacher.execute() find")) {
-                if (stateWrapper.isNotNull()) {
+                if (reservedState.isNotNull()) {
                     writeHasState(connection, true);
                     logger.info(
                             RECONNECT.getMarker(),
@@ -103,9 +103,9 @@ public class EmergencyReconnectTeacher {
                                     reconnectSocketTimeout,
                                     connection.getSelfId().getId(),
                                     connection.getOtherId().getId(),
-                                    stateWrapper.get().getRound(),
+                                    reservedState.get().getRound(),
                                     reconnectMetrics)
-                            .execute(stateWrapper.get());
+                            .execute(reservedState.get());
                 } else {
                     writeHasState(connection, false);
                     logger.info(

@@ -43,11 +43,11 @@ public class SignedStateHistory {
          */
         CREATION,
         /**
-         * When {@link SignedState#incrementReservationCount(ReservedSignedState)} is called.
+         * When {@link SignedState#incrementReservationCount(String, long)} is called.
          */
         RESERVE,
         /**
-         * When {@link SignedState#decrementReservationCount(ReservedSignedState)} is called.
+         * When {@link SignedState#decrementReservationCount(String, long)} is called.
          */
         RELEASE,
         /**

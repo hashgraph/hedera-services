@@ -47,10 +47,11 @@ public class StateEditorSave extends StateEditorOperation {
      */
     @Override
     public void run() {
-        try {
+        try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorSave.run()")) {
+
             System.out.println("Hashing state");
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(getStateEditor().getState())
+                    .digestTreeAsync(reservedSignedState.get().getState())
                     .get();
 
             System.out.println("Writing signed state file to " + formatFile(directory));

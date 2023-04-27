@@ -29,6 +29,7 @@ import com.swirlds.logging.payloads.ReconnectDataUsagePayload;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
@@ -55,7 +56,6 @@ public class ReconnectLearner {
     private final State currentState;
     private final int reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
-    private SignedState newSignedState;
     private final SignedStateValidationData stateValidationData;
     private SigSet sigSet;
     private final PlatformContext platformContext;
@@ -145,17 +145,20 @@ public class ReconnectLearner {
      * @throws ReconnectException
      * 		thrown if I/O related errors occur, when there is an error in the underlying protocol, or the received
      * 		state is invalid
+     * @return the state received from the other node
      */
-    public void execute(final SignedStateValidator validator) throws ReconnectException {
+    public ReservedSignedState execute(final SignedStateValidator validator) throws ReconnectException {
         increaseSocketTimeout();
         try {
             receiveSignatures();
-            reconnect();
-            validator.validate(newSignedState, addressBook, stateValidationData);
+            final ReservedSignedState reservedSignedState = reconnect();
+            validator.validate(reservedSignedState.get(), addressBook, stateValidationData);
+            return reservedSignedState;
         } catch (final IOException | SignedStateInvalidException e) {
             throw new ReconnectException(e);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
+            throw new ReconnectException("interrupted while attempting to reconnect", e);
         } finally {
             resetSocketTimeout();
         }
@@ -167,7 +170,7 @@ public class ReconnectLearner {
      * @throws InterruptedException
      * 		if the current thread is interrupted
      */
-    private void reconnect() throws InterruptedException {
+    private ReservedSignedState reconnect() throws InterruptedException {
         statistics.incrementReceiverStartTimes();
 
         final MerkleDataInputStream in = new MerkleDataInputStream(connection.getDis());
@@ -181,7 +184,7 @@ public class ReconnectLearner {
         synchronizer.synchronize();
 
         final State state = (State) synchronizer.getRoot();
-        newSignedState = new SignedState(platformContext, state, "ReconnectLearner.reconnect()");
+        final SignedState newSignedState = new SignedState(platformContext, state, "ReconnectLearner.reconnect()");
         newSignedState.setSigSet(sigSet);
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();
@@ -190,6 +193,8 @@ public class ReconnectLearner {
                 () -> new ReconnectDataUsagePayload("Reconnect data usage report", mbReceived).toString());
 
         statistics.incrementReceiverEndTimes();
+
+        return newSignedState.reserve("ReconnectLearner.reconnect()");
     }
 
     /**
@@ -206,12 +211,5 @@ public class ReconnectLearner {
         sb.append("Received signatures from nodes ");
         formattedList(sb, sigSet.iterator());
         logger.info(RECONNECT.getMarker(), sb);
-    }
-
-    /**
-     * Get the signed state that was copied from the other node.
-     */
-    public SignedState getSignedState() {
-        return newSignedState;
     }
 }

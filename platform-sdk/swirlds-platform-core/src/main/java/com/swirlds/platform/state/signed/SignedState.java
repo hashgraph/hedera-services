@@ -261,16 +261,16 @@ public class SignedState implements SignedStateInfo {
     /**
      * Increment reservation count.
      */
-    void incrementReservationCount(@NonNull final ReservedSignedState reservation) {
-        history.recordAction(RESERVE, getReservationCount(), reservation.getReason(), reservation.getReservationId());
+    void incrementReservationCount(@NonNull final String reason, final long reservationId) {
+        history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
         reservations.reserve();
     }
 
     /**
      * Decrement reservation count.
      */
-    void decrementReservationCount(@NonNull final ReservedSignedState reservation) {
-        history.recordAction(RELEASE, getReservationCount(), reservation.getReason(), reservation.getReservationId());
+    void decrementReservationCount(@NonNull final String reason, final long reservationId) {
+        history.recordAction(RELEASE, getReservationCount(), reason, reservationId);
         reservations.release();
     }
 
@@ -446,12 +446,7 @@ public class SignedState implements SignedStateInfo {
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        for (final MinGenInfo minGenInfo : getMinGenInfo()) {
-            if (minGenInfo.round() == round) {
-                return minGenInfo.minimumGeneration();
-            }
-        }
-        throw new NoSuchElementException("No minimum generation found for round: " + round);
+        return getState().getPlatformState().getPlatformData().getMinGen(round);
     }
 
     /**
@@ -460,10 +455,7 @@ public class SignedState implements SignedStateInfo {
      * @return the generation of the oldest round
      */
     public long getMinRoundGeneration() {
-        return getMinGenInfo().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
-                .minimumGeneration();
+        return getState().getPlatformState().getPlatformData().getMinRoundGeneration();
     }
 
     /**

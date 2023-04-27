@@ -111,8 +111,6 @@ public class ReconnectProtocol implements Protocol {
         }
 
         // Check if we have a state that is legal to send to a learner.
-        // This method reserves the signed state which is later manually
-        // released by the ReconnectTeacher (or by this component if we don't fail first).
         teacherState = lastCompleteSignedState.get();
 
         if (teacherState.isNull()) {

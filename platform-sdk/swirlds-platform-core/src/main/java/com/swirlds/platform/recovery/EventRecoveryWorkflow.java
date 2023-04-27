@@ -129,33 +129,39 @@ public final class EventRecoveryWorkflow {
         final PlatformContext platformContext =
                 new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 
-        final ReservedSignedState initialState = SignedStateFileReader.readStateFile(platformContext, signedStateFile)
-                .reservedSignedState();
+        try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
+                        platformContext, signedStateFile)
+                .reservedSignedState()) {
 
-        logger.info(
-                STARTUP.getMarker(),
-                "State from round {} loaded.",
-                initialState.get().getRound());
-        logger.info(STARTUP.getMarker(), "Loading event stream at {}", eventStreamDirectory);
+            logger.info(
+                    STARTUP.getMarker(),
+                    "State from round {} loaded.",
+                    initialState.get().getRound());
+            logger.info(STARTUP.getMarker(), "Loading event stream at {}", eventStreamDirectory);
 
-        final IOIterator<Round> roundIterator = new EventStreamRoundIterator(
-                eventStreamDirectory, initialState.get().getRound() + 1, allowPartialRounds);
+            final IOIterator<Round> roundIterator = new EventStreamRoundIterator(
+                    eventStreamDirectory, initialState.get().getRound() + 1, allowPartialRounds);
 
-        logger.info(STARTUP.getMarker(), "Reapplying transactions");
+            logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
-        final ReservedSignedState resultingState = reapplyTransactions(
-                platformContext, configuration, initialState, appMain, roundIterator, finalRound, selfId);
+            final ReservedSignedState resultingState = reapplyTransactions(
+                    platformContext, configuration, initialState, appMain, roundIterator, finalRound, selfId);
 
-        logger.info(
-                STARTUP.getMarker(), "Finished reapplying transactions, writing state to {}", resultingStateDirectory);
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Finished reapplying transactions, writing state to {}",
+                    resultingStateDirectory);
 
-        SignedStateFileWriter.writeSignedStateFilesToDirectory(selfId, resultingStateDirectory, resultingState.get());
+            SignedStateFileWriter.writeSignedStateFilesToDirectory(
+                    selfId, resultingStateDirectory, resultingState.get());
 
-        updateEmergencyRecoveryFile(resultingStateDirectory, initialState.get().getConsensusTimestamp());
+            updateEmergencyRecoveryFile(
+                    resultingStateDirectory, initialState.get().getConsensusTimestamp());
 
-        logger.info(STARTUP.getMarker(), "Recovery process completed");
+            logger.info(STARTUP.getMarker(), "Recovery process completed");
 
-        resultingState.close();
+            resultingState.close();
+        }
     }
 
     /**

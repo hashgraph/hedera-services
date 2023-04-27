@@ -138,23 +138,23 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
-     * Get a wrapper containing the last complete signed state.
+     * Get the last complete signed state
      *
      * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
      *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
-     * @return a wrapper with the latest complete signed state, or null if no recent states that are complete
+     * @return the latest complete signed state, or a null reservation if no recent states that are complete
      */
     public @NonNull ReservedSignedState getLatestSignedState(@NonNull final String reason) {
         return completeStates.getLatestAndReserve(reason);
     }
 
     /**
-     * Get a wrapper containing the latest immutable signed state. May be unhashed, may or may not have all required
+     * Get the latest immutable signed state. May be unhashed, may or may not have all required
      * signatures. State is returned with a reservation.
      *
      * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
      *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
-     * @return a wrapper with the latest signed state, or null if none are complete
+     * @return the latest signed state, or a null reservation if none are complete
      */
     public @NonNull ReservedSignedState getLatestImmutableState(@NonNull final String reason) {
         return lastState.getAndReserve(reason);
@@ -268,14 +268,14 @@ public class SignedStateManager implements SignedStateFinder {
             signedStateMetrics.getStateSignatureAge().update(signatureAge);
         }
 
-        try (final ReservedSignedState wrapper = getIncompleteState(round)) {
-            if (wrapper.isNull()) {
+        try (final ReservedSignedState reservedState = getIncompleteState(round)) {
+            if (reservedState.isNull()) {
                 // This round has already been completed, or it is really old or in the future
                 savedSignatures.add(new SavedSignature(round, signerId, signature));
                 return;
             }
 
-            addSignature(wrapper.get(), signerId, signature);
+            addSignature(reservedState.get(), signerId, signature);
         }
     }
 
@@ -383,7 +383,7 @@ public class SignedStateManager implements SignedStateFinder {
      * Get an unsigned state for a particular round, if it exists.
      *
      * @param round the round in question
-     * @return a wrapper around a signed state for a round, or a wrapper around null if a signed state for that round is
+     * @return a signed state for a round, or a null reservation if a signed state for that round is
      * not present
      */
     private @NonNull ReservedSignedState getIncompleteState(final long round) {

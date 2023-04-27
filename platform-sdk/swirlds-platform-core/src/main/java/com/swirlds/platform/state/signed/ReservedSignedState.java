@@ -32,22 +32,23 @@ import org.apache.logging.log4j.Logger;
  * contained within will not be destroyed.
  * <p>
  * This class is not thread safe. That is, it is not safe for one thread to access this object while another thread is
- * asynchronously closing it. Each thread should hold its own reservation on a state if it needs to access a state.
+ * asynchronously closing it. Each thread should hold its instance of this class (and therefore its own
+ * reservation) if it needs to access a state.
  */
-public class ReservedSignedState implements AutoCloseableNonThrowing {
+public final class ReservedSignedState implements AutoCloseableNonThrowing {
 
     private static final Logger logger = LogManager.getLogger(ReservedSignedState.class);
-
-    private final SignedState signedState;
-    private final String reason;
-    private final long reservationId = nextReservationId.getAndIncrement();
-    private boolean closed = false;
 
     /**
      * The next reservation id to use. It is ok that this is static, since we don't care which ID any particular
      * reservation has, as long as that ID is unique.
      */
     private static final AtomicLong nextReservationId = new AtomicLong(0);
+
+    private final SignedState signedState;
+    private final String reason;
+    private final long reservationId = nextReservationId.getAndIncrement();
+    private boolean closed = false;
 
     /**
      * Create a wrapper around null.
@@ -76,9 +77,7 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
         this.signedState = Objects.requireNonNull(signedState);
         this.reason = Objects.requireNonNull(reason);
 
-        // It is safe to "leak this" here.
-        // All fields are final, this class is final, and everything has been instantiated.
-        signedState.incrementReservationCount(this);
+        signedState.incrementReservationCount(reason, reservationId);
     }
 
     /**
@@ -154,7 +153,7 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
         throwIfClosed();
         closed = true;
         if (signedState != null) {
-            signedState.decrementReservationCount(this);
+            signedState.decrementReservationCount(reason, reservationId);
         }
     }
 

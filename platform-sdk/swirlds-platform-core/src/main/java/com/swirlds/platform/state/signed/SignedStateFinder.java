@@ -32,7 +32,7 @@ public interface SignedStateFinder {
      * @param criteria the first state that matches this criteria is returned
      * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
      *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
-     * @return a wrapper around the first matching state, or a wrapper around null if no state currently in memory
+     * @return the first matching state, or a reservation on null if no state currently in memory
      * matches the criteria
      */
     @NonNull

@@ -215,13 +215,11 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
         final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ss -> {
             stateHasEnoughSignatures(ss);
-            // This consumer releases the wrapper, so it must be last
             stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(ss);
         };
 
         final StateLacksSignaturesConsumer combinedStateLacksSignaturesConsumer = ss -> {
             stateLacksSignatures(ss);
-            // This consumer releases the wrapper, so it must be last.
             stateLacksSignaturesConsumer.stateLacksSignatures(ss);
         };
 
@@ -458,10 +456,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public void onFatalError() {
         if (stateConfig.dumpStateOnFatal()) {
-            try (final ReservedSignedState wrapper =
+            try (final ReservedSignedState reservedState =
                     signedStateManager.getLatestSignedState("DefaultStateManagementComponent.onFatalError()")) {
-                if (wrapper.isNotNull()) {
-                    signedStateFileManager.dumpState(wrapper.get(), "fatal", true);
+                if (reservedState.isNotNull()) {
+                    signedStateFileManager.dumpState(reservedState.get(), "fatal", true);
                 }
             }
         }
@@ -496,12 +494,12 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             return;
         }
 
-        try (final ReservedSignedState wrapper =
+        try (final ReservedSignedState reservedState =
                 signedStateManager.find(state -> state.getRound() == round, "state dump requested for " + reason)) {
 
-            if (wrapper.isNotNull()) {
+            if (reservedState.isNotNull()) {
                 // We were able to find the requested round. Dump it.
-                signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
+                signedStateFileManager.dumpState(reservedState.get(), reason, blocking);
                 return;
             }
         }
@@ -522,13 +520,13 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param blocking if true then block until the state dump is complete
      */
     private void dumpLatestImmutableState(@NonNull final String reason, final boolean blocking) {
-        try (final ReservedSignedState wrapper = signedStateManager.getLatestImmutableState(
+        try (final ReservedSignedState reservedState = signedStateManager.getLatestImmutableState(
                 "DefaultStateManagementComponent.dumpLatestImmutableState()")) {
 
-            if (wrapper.isNull()) {
+            if (reservedState.isNull()) {
                 logger.warn(STATE_TO_DISK.getMarker(), "State dump requested, but no state is available.");
             } else {
-                signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
+                signedStateFileManager.dumpState(reservedState.get(), reason, blocking);
             }
         }
     }
