@@ -62,6 +62,7 @@ public class PropertyNames {
     public static final String HEDERA_FIRST_USER_ENTITY = "hedera.firstUserEntity";
     public static final String HEDERA_REALM = "hedera.realm";
     public static final String HEDERA_SHARD = "hedera.shard";
+    public static final String LEDGER_MAX_AUTO_ASSOCIATIONS = "ledger.maxAutoAssociations";
     public static final String LEDGER_NUM_SYSTEM_ACCOUNTS = "ledger.numSystemAccounts";
     public static final String LEDGER_TOTAL_TINY_BAR_FLOAT = "ledger.totalTinyBarFloat";
     public static final String LEDGER_ID = "ledger.id";
