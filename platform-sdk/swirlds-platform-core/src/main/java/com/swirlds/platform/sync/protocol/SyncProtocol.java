@@ -255,8 +255,6 @@ public class SyncProtocol implements Protocol {
     public void runProtocol(@NonNull final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
 
-        Objects.requireNonNull(connection);
-
         if (!permit.isLockAcquired()) {
             throw new NetworkProtocolException("sync permit not acquired prior to executing sync protocol");
         }
