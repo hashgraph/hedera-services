@@ -21,7 +21,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -40,34 +43,38 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * Pre-handles a {@link HederaFunctionality#TOKEN_GRANT_KYC_TO_ACCOUNT} transaction,
-     * returning the metadata required to, at minimum, validate the signatures of all required
-     * signing keys.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore)
-            throws PreCheckException {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenGrantKycOrThrow();
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        tokenMeta.kycKey().ifPresent(context::requireKey);
+        if (tokenMeta.hasKycKey()) {
+            context.requireKey(tokenMeta.kycKey());
+        }
     }
 
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
+     * @param txnBody the {@link TokenGrantKycTransactionBody} of the active transaction
+     * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle() {
-        throw new UnsupportedOperationException("Not implemented");
+    public void handle(@NonNull final TransactionBody txnBody, @NonNull WritableTokenRelationStore tokenRelStore) {
+        requireNonNull(txnBody);
+        requireNonNull(tokenRelStore);
+
+        final var op = txnBody.tokenGrantKycOrThrow();
+
+        final var targetTokenId = op.tokenOrThrow();
+        final var targetAccountId = op.accountOrThrow();
+        final var tokenRelation =
+                tokenRelStore.getForModify(targetTokenId.tokenNum(), targetAccountId.accountNumOrThrow());
+
+        final var tokenRelBuilder = tokenRelation.orElseThrow().copyBuilder();
+        tokenRelBuilder.kycGranted(true);
+        tokenRelStore.put(tokenRelBuilder.build());
     }
 }

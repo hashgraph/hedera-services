@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -37,22 +36,14 @@ public class CryptoCreateHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * Pre-handles a {@link HederaFunctionality#CRYPTO_CREATE} transaction, returning the metadata
-     * required to, at minimum, validate the signatures of all required signing keys.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var op = context.body().cryptoCreateAccountOrThrow();
         if (op.hasKey()) {
-            final var key = asHederaKey(op.keyOrThrow());
             final var receiverSigReq = op.receiverSigRequired();
-            if (receiverSigReq && key.isPresent()) {
-                context.requireKey(key.get());
+            if (receiverSigReq && op.hasKey()) {
+                context.requireKey(op.keyOrThrow());
             }
         }
     }

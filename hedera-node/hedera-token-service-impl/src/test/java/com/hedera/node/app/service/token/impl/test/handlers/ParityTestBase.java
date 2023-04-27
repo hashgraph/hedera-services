@@ -20,8 +20,8 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +33,7 @@ public class ParityTestBase {
 
     @BeforeEach
     void setUp() {
-        readableAccountStore = AdapterUtils.wellKnownAccountStoreAt();
+        readableAccountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
     }
 

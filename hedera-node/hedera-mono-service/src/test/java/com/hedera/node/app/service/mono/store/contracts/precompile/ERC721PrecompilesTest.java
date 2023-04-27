@@ -967,7 +967,7 @@ class ERC721PrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.serviceFee()).willReturn(1L);
 
-        given(syntheticTxnFactory.createApproveAllowanceForAllNFT(SET_APPROVAL_FOR_ALL_WRAPPER))
+        given(syntheticTxnFactory.createApproveAllowanceForAllNFT(SET_APPROVAL_FOR_ALL_WRAPPER, new EntityId(0, 0, 7L)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder().build());
@@ -1036,7 +1036,7 @@ class ERC721PrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.serviceFee()).willReturn(1L);
 
-        given(syntheticTxnFactory.createApproveAllowanceForAllNFT(SET_APPROVAL_FOR_ALL_WRAPPER))
+        given(syntheticTxnFactory.createApproveAllowanceForAllNFT(SET_APPROVAL_FOR_ALL_WRAPPER, new EntityId(0, 0, 7L)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder().build());

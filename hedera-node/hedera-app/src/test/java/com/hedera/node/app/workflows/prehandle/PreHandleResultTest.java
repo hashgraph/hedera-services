@@ -18,14 +18,21 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -38,11 +45,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleResultTest {
-    @Mock
-    private HederaKey payerKey;
+    private Key payerKey = A_COMPLEX_KEY;
+    private Key otherKey = A_COMPLEX_KEY;
 
-    @Mock
-    private HederaKey otherKey;
+    private HederaKey validHederaKey = asHederaKey(payerKey).get();
 
     private final TransactionBody txBody = TransactionBody.newBuilder().build();
     private final AccountID payer = AccountID.newBuilder().accountNum(42L).build();
@@ -68,7 +74,9 @@ class PreHandleResultTest {
         assertThat(metadata.txnBody()).isEqualTo(txBody);
         assertThat(metadata.payer()).isEqualTo(payer);
         assertThat(metadata.signatureMap()).isEqualTo(signatureMap);
-        assertThat(metadata.payerKey()).isEqualTo(payerKey);
+        // Since equals method is not implemented for JKey, converting to PBJ key and comparing
+        // JKey and HederaKey will be removed in future.
+        assertEquals(payerKey, toPbj(asKeyUnchecked((JKey) metadata.payerKey())));
         assertThat(metadata.cryptoSignatures()).isEqualTo(expectedSigs);
     }
 

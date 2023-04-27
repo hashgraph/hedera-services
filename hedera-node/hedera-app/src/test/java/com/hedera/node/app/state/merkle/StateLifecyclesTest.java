@@ -111,9 +111,9 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
     private Platform createMockPlatformWithCrypto() {
         final var platform = mock(Platform.class);
         when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
-        when(platform.getCryptography())
+        when(platform.getContext().getCryptography())
                 .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
-        assertNotNull(platform.getCryptography());
+        assertNotNull(platform.getContext().getCryptography());
         return platform;
     }
 
@@ -147,6 +147,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
 
     private static HederaApp createApp(final Platform platform) {
         return DaggerHederaApp.builder()
+                .initTrigger(InitTrigger.GENESIS)
                 .initialHash(new Hash())
                 .platform(platform)
                 .crypto(CryptographyHolder.get())

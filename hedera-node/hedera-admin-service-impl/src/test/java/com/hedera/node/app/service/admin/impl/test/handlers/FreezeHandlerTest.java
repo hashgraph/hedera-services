@@ -26,10 +26,10 @@ import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
@@ -38,12 +38,11 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.ReadableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
-import com.hedera.node.app.spi.accounts.Account;
-import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -56,29 +55,32 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
-    @Mock
+    @Mock(strictness = LENIENT)
     ReadableSpecialFileStore specialFileStore;
 
-    @Mock
-    private AccountAccess keyLookup;
+    @Mock(strictness = LENIENT)
+    private ReadableAccountStore accountStore;
 
-    @Mock
+    @Mock(strictness = LENIENT)
+    private PreHandleContext context;
+
+    @Mock(strictness = LENIENT)
     private Account account;
 
     private final Key key = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
-    private final HederaKey nonAdminKey = asHederaKey(key).get();
-
     private final AccountID nonAdminAccount =
             AccountID.newBuilder().accountNum(9999L).build();
-
     private final FreezeHandler subject = new FreezeHandler();
 
     @BeforeEach
     void setUp() {
-        given(keyLookup.getAccountById(nonAdminAccount)).willReturn(account);
-        given(account.getKey()).willReturn(nonAdminKey);
+        given(accountStore.getAccountById(nonAdminAccount)).willReturn(account);
+        given(account.key()).willReturn(key);
+
+        given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.createStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
     }
 
     @Test
@@ -89,8 +91,8 @@ class FreezeHandlerTest {
                         .freezeType(UNKNOWN_FREEZE_TYPE)
                         .build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -104,8 +106,8 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .build())
                     .build();
-            final var context = new PreHandleContext(keyLookup, txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+            given(context.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
         }
     }
 
@@ -125,8 +127,8 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(1000).build()))
                     .build();
-            final var context = new PreHandleContext(keyLookup, txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), FREEZE_START_TIME_MUST_BE_FUTURE);
+            given(context.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_START_TIME_MUST_BE_FUTURE);
         }
     }
 
@@ -145,8 +147,8 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(2000).build()))
                     .build();
-            final var context = new PreHandleContext(keyLookup, txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
+            given(context.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
         }
     }
 
@@ -171,9 +173,8 @@ class FreezeHandlerTest {
                             .updateFile(fileId)
                             .build())
                     .build();
-            final var context = new PreHandleContext(keyLookup, txn);
-            assertThrowsPreCheck(
-                    () -> subject.preHandle(context, specialFileStore), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+            given(context.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
     }
 
@@ -186,8 +187,8 @@ class FreezeHandlerTest {
                         .freezeType(FREEZE_ABORT)
                         .build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertDoesNotThrow(() -> subject.preHandle(context, specialFileStore));
+        given(context.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(context));
     }
 
     @Test
@@ -212,8 +213,8 @@ class FreezeHandlerTest {
                             .fileHash(Bytes.wrap(new byte[48]))
                             .build())
                     .build();
-            final var context = new PreHandleContext(keyLookup, txn);
-            assertDoesNotThrow(() -> subject.preHandle(context, specialFileStore));
+            given(context.body()).willReturn(txn);
+            assertDoesNotThrow(() -> subject.preHandle(context));
         }
     }
 
@@ -234,8 +235,8 @@ class FreezeHandlerTest {
                         .fileHash(Bytes.wrap(new byte[48]))
                         .build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertDoesNotThrow(() -> subject.preHandle(context, specialFileStore));
+        given(context.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(context));
     }
 
     @Test
@@ -253,8 +254,8 @@ class FreezeHandlerTest {
                         .startTime(Timestamp.newBuilder().seconds(2000).build())
                         .build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertDoesNotThrow(() -> subject.preHandle(context, specialFileStore));
+        given(context.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(context));
     }
 
     @Test
@@ -264,8 +265,8 @@ class FreezeHandlerTest {
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().startHour(3).build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -275,8 +276,8 @@ class FreezeHandlerTest {
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().startMin(31).build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -286,8 +287,8 @@ class FreezeHandlerTest {
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().endHour(3).build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -297,7 +298,7 @@ class FreezeHandlerTest {
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().endMin(16).build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, specialFileStore), INVALID_FREEZE_TRANSACTION_BODY);
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
     }
 }

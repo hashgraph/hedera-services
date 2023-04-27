@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.test.consensus;
 
-import com.swirlds.common.test.StakeGenerator;
+import com.swirlds.common.test.WeightGenerator;
 
-public record ConsensusTestParams(int numNodes, StakeGenerator stakeGenerator, String stakeDesc, long... seeds) {
+public record ConsensusTestParams(int numNodes, WeightGenerator weightGenerator, String weightDesc, long... seeds) {
     @Override
     public String toString() {
-        return numNodes + " nodes, " + stakeDesc;
+        return numNodes + " nodes, " + weightDesc;
     }
 }

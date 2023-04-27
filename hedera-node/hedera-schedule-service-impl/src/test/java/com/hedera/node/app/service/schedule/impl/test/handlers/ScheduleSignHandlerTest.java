@@ -41,7 +41,6 @@ import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.Collections;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -90,7 +89,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     void scheduleSignFailsIfScheduleMissing() throws PreCheckException {
         final var txn = scheduleSignTransaction();
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.getKey()).willReturn(schedulerKey);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(null);
         final var context = new PreHandleContext(keyLookup, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore, dispatcher), INVALID_SCHEDULE_ID);
@@ -107,7 +106,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         // @migration this use of PbjConverter is temporary until services complete PBJ migration
         given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(PbjConverter.fromPbj(payer)));
         given(keyLookup.getAccountById(payer)).willReturn(payerAccount);
-        given(payerAccount.getKey()).willReturn(adminKey);
+        given(payerAccount.key()).willReturn(adminKey);
 
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context, scheduleStore, dispatcher);
@@ -134,9 +133,8 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
 
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.getKey()).willReturn(schedulerKey);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(scheduledTxn));
-        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
         given(schedule.hasExplicitPayer()).willReturn(false);
 
         final var context = new PreHandleContext(keyLookup, txn);
@@ -154,9 +152,8 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
                 .build();
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
         given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.getKey()).willReturn(schedulerKey);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(scheduledTxn));
-        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
         return scheduledTxn;
     }
 

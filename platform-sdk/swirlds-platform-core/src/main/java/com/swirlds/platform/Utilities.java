@@ -361,7 +361,7 @@ public final class Utilities {
      * @param part
      * 		a long value, the fraction of the whole being compared
      * @param whole
-     * 		a long value, the whole being considered (such as the sum of the entire stake)
+     * 		a long value, the whole being considered (such as the sum of the entire weight)
      * @return true if part is more than two thirds of the whole
      */
     public static boolean isSuperMajority(final long part, final long whole) {
@@ -395,7 +395,7 @@ public final class Utilities {
      * @param part
      * 		a long value, the fraction of the whole being compared
      * @param whole
-     * 		a long value, the whole being considered (such as the sum of the entire stake)
+     * 		a long value, the whole being considered (such as the sum of the entire weight)
      * @return true if part is greater than or equal to one third of the whole
      */
     public static boolean isStrongMinority(final long part, final long whole) {
@@ -413,7 +413,7 @@ public final class Utilities {
      * @param part
      * 		a long value, the fraction of the whole being compared
      * @param whole
-     * 		a long value, the whole being considered (such as the sum of the entire stake)
+     * 		a long value, the whole being considered (such as the sum of the entire weight)
      * @return true if part is greater or equal to one half of the whole
      */
     public static boolean isMajority(final long part, final long whole) {

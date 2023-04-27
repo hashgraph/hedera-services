@@ -86,10 +86,10 @@ class UtilitiesTest {
         assertTrue(Utilities.isSuperMajority(7, 10));
 
         // Test behavior with large numbers
-        long totalStake = 50L * 1_000_000_000L * 100L * 1_000_000L;
-        long quarterStake = totalStake / 4;
-        assertTrue(Utilities.isSuperMajority(3 * quarterStake, totalStake));
-        assertFalse(Utilities.isSuperMajority(2 * quarterStake, totalStake));
+        long totalWeight = 50L * 1_000_000_000L * 100L * 1_000_000L;
+        long quarterWeight = totalWeight / 4;
+        assertTrue(Utilities.isSuperMajority(3 * quarterWeight, totalWeight));
+        assertFalse(Utilities.isSuperMajority(2 * quarterWeight, totalWeight));
     }
 
     @Test
@@ -103,10 +103,10 @@ class UtilitiesTest {
         assertTrue(Utilities.isStrongMinority(4, 10));
 
         // Test behavior with large numbers
-        long totalStake = 50L * 1_000_000_000L * 100L * 1_000_000L;
-        long quarterStake = totalStake / 4;
-        assertTrue(Utilities.isStrongMinority(2 * quarterStake, totalStake));
-        assertFalse(Utilities.isStrongMinority(1 * quarterStake, totalStake));
+        long totalWeight = 50L * 1_000_000_000L * 100L * 1_000_000L;
+        long quarterWeight = totalWeight / 4;
+        assertTrue(Utilities.isStrongMinority(2 * quarterWeight, totalWeight));
+        assertFalse(Utilities.isStrongMinority(1 * quarterWeight, totalWeight));
     }
 
     @Test
