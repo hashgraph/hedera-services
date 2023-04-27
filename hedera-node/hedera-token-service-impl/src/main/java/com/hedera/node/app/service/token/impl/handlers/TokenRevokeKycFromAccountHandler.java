@@ -79,7 +79,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         requireNonNull(tokenRelStore);
 
         final var op = txn.tokenRevokeKycOrThrow();
-        verifyOp(op);
+        pureChecks(op);
 
         final var tokenId = op.tokenOrThrow().tokenNum();
         final var accountId = op.accountOrElse(AccountID.DEFAULT).accountNumOrThrow();
@@ -90,7 +90,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         tokenRelStore.put(tokenRelBuilder.build());
     }
 
-    private void verifyOp(TokenRevokeKycTransactionBody op) {
+    private void pureChecks(TokenRevokeKycTransactionBody op) {
         if (!op.hasToken()) {
             throw new HandleException(ResponseCodeEnum.INVALID_TOKEN_ID);
         }
