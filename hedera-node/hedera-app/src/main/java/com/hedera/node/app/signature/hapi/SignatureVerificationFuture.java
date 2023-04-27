@@ -261,7 +261,7 @@ class SignatureVerificationFuture implements Future<SignatureVerification> {
             if (keyList.hasKeys()) {
                 final var list = keyList.keysOrThrow();
                 if (list.isEmpty()) return false;
-                final var threshold = Math.max(Math.min(list.size(), thresholdKey.threshold()), 1);
+                final var threshold = Math.max(1, Math.min(list.size(), thresholdKey.threshold()));
                 var numCanFail = list.size() - threshold;
                 for (final var subKey : list) {
                     final var passed = checkIfPassed(subKey, map);

@@ -62,6 +62,11 @@ public class SignatureVerifierImpl implements SignatureVerifier {
     @NonNull
     public Future<SignatureVerification> verify(
             @NonNull final Key key, @NonNull final Bytes signedBytes, @NonNull final List<SignaturePair> sigPairs) {
+
+        requireNonNull(key);
+        requireNonNull(signedBytes);
+        requireNonNull(sigPairs);
+
         // Walk through the key and collect a HapiTransactionSignature for each signature that needs to be verified. If
         // there are no signatures to verify, then we clearly cannot verify the key!
         final var list = collectSignatures(key, signedBytes, sigPairs);
@@ -98,26 +103,32 @@ public class SignatureVerifierImpl implements SignatureVerifier {
         // where the full public key is included as the prefix. In the future, we could implement support to extract
         // the public key from the signature and signed bytes as well.
         for (final var sigPair : sigPairs) {
-            // Only ECDSA(secp256k1) keys can be used for hollow accounts
-            if (sigPair.signature().kind() == SignatureOneOfType.ECDSA_SECP256K1) {
-                final var prefix = sigPair.pubKeyPrefix();
+            // Only ECDSA(secp256k1) keys can be used for hollow accounts, and the only valid prefix is exactly
+            // 33 bytes long (32 bytes plus a 1 byte header to indicate positive or negative number space)
+            final var prefix = sigPair.pubKeyPrefix();
+            if (sigPair.signature().kind() == SignatureOneOfType.ECDSA_SECP256K1 && prefix.length() == 33) {
                 // Keccak hash the prefix and compare to the alias. Note that this prefix WILL BE COMPRESSED. We need
                 // to uncompress it first.
                 final var compressedPrefixByteArray = new byte[(int) prefix.length()];
                 prefix.getBytes(0, compressedPrefixByteArray);
-                final var prefixByteArray = MiscCryptoUtils.decompressSecp256k1(compressedPrefixByteArray);
-                final var hashedPrefixByteArray =
-                        MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(prefixByteArray);
-                final var hashedPrefix = Bytes.wrap(hashedPrefixByteArray);
-                if (hashedPrefix.equals(alias)) {
-                    // We have found it!
-                    final var key = Key.newBuilder()
-                            .ecdsaSecp256k1(Bytes.wrap(prefixByteArray))
-                            .build();
-                    final var sigTx = createTransactionSignature(
-                            signedBytes, key, sigPair, SignatureType.ECDSA_SECP256K1, key.ecdsaSecp256k1OrThrow());
-                    cryptoEngine.verifyAsync(sigTx);
-                    return new SignatureVerificationFuture(key, hollowAccount, Map.of(key, sigTx));
+                // It may be that the bytes are random nonsense, in which case decompressing will throw an exception.
+                try {
+                    final var prefixByteArray = MiscCryptoUtils.decompressSecp256k1(compressedPrefixByteArray);
+                    final var hashedPrefixByteArray =
+                            MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(prefixByteArray);
+                    final var hashedPrefix = Bytes.wrap(hashedPrefixByteArray);
+                    if (hashedPrefix.equals(alias)) {
+                        // We have found it!
+                        final var key = Key.newBuilder()
+                                .ecdsaSecp256k1(Bytes.wrap(prefixByteArray))
+                                .build();
+                        final var sigTx = createTransactionSignature(
+                                signedBytes, key, sigPair, SignatureType.ECDSA_SECP256K1, key.ecdsaSecp256k1OrThrow());
+                        cryptoEngine.verifyAsync(sigTx);
+                        return new SignatureVerificationFuture(key, hollowAccount, Map.of(key, sigTx));
+                    }
+                } catch (IllegalArgumentException ignored) {
+                    // This isn't the key we're looking for. Move along.
                 }
             }
         }
