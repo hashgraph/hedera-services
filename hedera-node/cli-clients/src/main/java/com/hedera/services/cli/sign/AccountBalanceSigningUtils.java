@@ -78,7 +78,7 @@ public class AccountBalanceSigningUtils {
             return false;
         } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
             System.err.println("Irrecoverable error encountered: " + e);
-            return false;
+            throw new RuntimeException("Irrecoverable error encountered", e);
         }
     }
 
