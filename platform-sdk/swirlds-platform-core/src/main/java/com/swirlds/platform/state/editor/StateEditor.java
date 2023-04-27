@@ -30,14 +30,16 @@ import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.route.MerkleRouteUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateReference;
+import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
@@ -48,7 +50,7 @@ import picocli.CommandLine;
  */
 public class StateEditor {
 
-    private SignedStateReference signedState;
+    private final SignedStateReference signedState = new SignedStateReference();
     private MerkleRoute currentWorkingRoute = MerkleRouteFactory.getEmptyRoute();
     private boolean alive = true;
     private final PlatformContext platformContext;
@@ -60,8 +62,9 @@ public class StateEditor {
      */
     public StateEditor(final Path statePath) throws IOException {
 
-        platformContext = new DefaultPlatformContext(
-                ConfigurationBuilder.create().build(), new NoOpMetrics(), CryptographyHolder.get());
+        final Configuration configuration = BootstrapUtils.loadConfiguration(List.of());
+
+        platformContext = new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);
