@@ -266,7 +266,8 @@ public interface ContractsModule {
     @Singleton
     @Named("HederaSystemAccountDetector")
     static Predicate<Address> provideHederaSystemAccountDetector() {
-        // all addresses between 0-750 (inclusive) are treated as precompile accounts from the perspective of the EVM.
+        // all addresses between 0-750 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
         return address ->
                 address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 750) <= 0;
     }
@@ -275,8 +276,8 @@ public interface ContractsModule {
     @Singleton
     @Named("StrictHederaSystemAccountDetector")
     static Predicate<Address> provideStrictHederaSystemAccountDetector() {
-        // all addresses between 0-1000 (inclusive) are treated as precompile accounts from the perspective of the
-        // ExtCode ops.
+        // all addresses between 0-999 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing ExtCode operations
         return address ->
                 address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 999) <= 0;
     }
