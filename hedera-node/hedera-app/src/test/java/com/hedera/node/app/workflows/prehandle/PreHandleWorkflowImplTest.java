@@ -149,14 +149,14 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         /**
          * A dishonest node may send, in an event, a transaction that cannot be parsed. It might just
          * be random bytes. Or no bytes. Or too many bytes. In all of those cases, we should immediately
-         * terminate with a {@link PreHandleResult} that as a status, a payer for the node that sent the
+         * terminate with a {@link PreHandleResult} that as a response code, a payer for the node that sent the
          * transaction, and nothing else.
          *
          * <p>Or, after successfully parsing the transaction from protobuf bytes, we perform a whole set of syntactic
          * checks on the transaction using the {@link TransactionChecker}. We don't need to verify every possible
          * bad transaction here (since the tests for {@link TransactionChecker} do that). If **any** failure happens
-         * due to a syntactic check, we should immediately terminate with a {@link PreHandleResult} that has the status
-         * of the failure and the payer should be node (as it failed due-diligence checks).
+         * due to a syntactic check, we should immediately terminate with a {@link PreHandleResult} that has the
+         * response code of the failure and the payer should be node (as it failed due-diligence checks).
          *
          * <p>Both cases look the same to the handler.
          */
@@ -211,6 +211,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         @Test
         @DisplayName("Fail pre-handle because the payer account cannot be found")
         void preHandlePayerAccountNotFound() throws PreCheckException {
+            // TODO This test failed at least once
             // Given a transactionID that refers to an account that does not exist
             // (Erin doesn't exist yet)
             final var txInfo = scenario().withPayer(ERIN.accountID()).txInfo();
@@ -224,7 +225,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
             // Then the transaction fails and the node is the payer
             final PreHandleResult result1 = platformTx.getMetadata();
-            assertThat(result1.status()).isEqualTo(PAYER_ACCOUNT_NOT_FOUND);
+            assertThat(result1.responseCode()).isEqualTo(PAYER_ACCOUNT_NOT_FOUND);
             assertThat(result1.payer()).isEqualTo(NODE_1.nodeAccountID());
         }
 
@@ -255,7 +256,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         //
         //            // Then the transaction still succeeds (since the payer signature check is async)
         //            final PreHandleResult result1 = platformTx.getMetadata();
-        //            assertThat(result1.status()).isEqualTo(OK);
+        //            assertThat(result1.responseCode()).isEqualTo(OK);
         //            assertThat(result1.payer()).isEqualTo(ALICE.accountID());
         //
         //            // But when we check the future for the signature, we find it will end up failing.
