@@ -279,7 +279,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
         assertEquals(78, subject.recordFileVersion());
         assertEquals(79, subject.recordSignatureFileVersion());
-        assertEquals(80, subject.sumOfConsensusWeights());
+        assertEquals(97, subject.sumOfConsensusWeights());
     }
 
     @Test
@@ -454,7 +454,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(79, subject.recordFileVersion());
         assertEquals(80, subject.recordSignatureFileVersion());
         assertEquals(90, subject.getSidecarMaxSizeMb());
-        assertEquals(91, subject.sumOfConsensusWeights());
+        assertEquals(98, subject.sumOfConsensusWeights());
     }
 
     @Test

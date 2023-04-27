@@ -192,6 +192,7 @@ class EndOfStakingPeriodCalculatorTest {
         final var account_800 = mock(MerkleAccount.class);
 
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        given(dynamicProperties.sumOfConsensusWeights()).willReturn(500);
         given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(Long.MAX_VALUE);
         given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(100L);
         given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(stakingRewardAccount);
