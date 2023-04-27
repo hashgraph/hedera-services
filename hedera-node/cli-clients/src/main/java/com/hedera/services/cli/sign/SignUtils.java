@@ -17,8 +17,6 @@
 package com.hedera.services.cli.sign;
 
 import java.nio.ByteBuffer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class SignUtils {
     /**
@@ -31,7 +29,6 @@ public class SignUtils {
     public static final byte TYPE_FILE_HASH = 4;
 
     private static final int BYTES_COUNT_IN_INT = 4;
-    private static final Logger logger = LogManager.getLogger(SignUtils.class);
 
     private SignUtils() {}
 
