@@ -16,15 +16,16 @@
 
 package com.swirlds.config.impl.internal;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -67,7 +68,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     /**
      * initialization flag
      */
-    private AtomicBoolean initialized = new AtomicBoolean();
+    private final AtomicBoolean initialized = new AtomicBoolean();
 
     /**
      * Default constructor that creates all internal services
@@ -80,6 +81,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
         configuration = new ConfigurationImpl(propertiesService, converterService, validationService);
     }
 
+    @NonNull
     @Override
     public Configuration build() {
         try (final Locked ignored = initializationLock.lock()) {
@@ -96,80 +98,88 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
         return configuration;
     }
 
+    @NonNull
     @Override
-    public ConfigurationBuilder withSource(final ConfigSource configSource) {
+    public ConfigurationBuilder withSource(@NonNull final ConfigSource configSource) {
         addConfigSource(configSource);
         return this;
     }
 
+    @NonNull
     @Override
-    public ConfigurationBuilder withSources(final ConfigSource... configSources) {
+    public ConfigurationBuilder withSources(@NonNull final ConfigSource... configSources) {
         Arrays.stream(configSources).forEach(this::addConfigSource);
         return this;
     }
 
-    private void addConfigSource(final ConfigSource configSource) {
-        CommonUtils.throwArgNull(configSource, "configSource");
+    private void addConfigSource(@NonNull final ConfigSource configSource) {
+        ArgumentUtils.throwArgNull(configSource, "configSource");
         if (initialized.get()) {
             throw new IllegalStateException("ConfigSource can not be added to initialized config");
         }
         configSourceService.addConfigSource(configSource);
     }
 
+    @NonNull
     @Override
-    public ConfigurationBuilder withConverter(final ConfigConverter<?> converter) {
+    public ConfigurationBuilder withConverter(@NonNull final ConfigConverter<?> converter) {
         addConverter(converter);
         return this;
     }
 
+    @NonNull
     @Override
-    public ConfigurationBuilder withConverters(final ConfigConverter<?>... converters) {
+    public ConfigurationBuilder withConverters(@NonNull final ConfigConverter<?>... converters) {
         Arrays.stream(converters).forEach(this::addConverter);
         return this;
     }
 
-    private void addConverter(final ConfigConverter<?> converter) {
-        CommonUtils.throwArgNull(converter, "converter");
+    private void addConverter(@NonNull final ConfigConverter<?> converter) {
+        ArgumentUtils.throwArgNull(converter, "converter");
         if (initialized.get()) {
             throw new IllegalStateException("Converters can not be added to initialized config");
         }
         converterService.addConverter(converter);
     }
 
+    @NonNull
     @Override
-    public ConfigurationBuilder withValidator(final ConfigValidator validator) {
+    public ConfigurationBuilder withValidator(@NonNull final ConfigValidator validator) {
         addValidator(validator);
         return this;
     }
 
+    @NonNull
     @Override
-    public ConfigurationBuilder withValidators(final ConfigValidator... validators) {
+    public ConfigurationBuilder withValidators(@NonNull final ConfigValidator... validators) {
         Arrays.stream(validators).forEach(this::addValidator);
         return this;
     }
 
-    private void addValidator(final ConfigValidator validator) {
-        CommonUtils.throwArgNull(validator, "validator");
+    private void addValidator(@NonNull final ConfigValidator validator) {
+        ArgumentUtils.throwArgNull(validator, "validator");
         if (initialized.get()) {
             throw new IllegalStateException("ConfigValidator can not be added to initialized config");
         }
         validationService.addValidator(validator);
     }
 
+    @NonNull
     @Override
-    public <T extends Record> ConfigurationBuilder withConfigDataType(final Class<T> type) {
+    public <T extends Record> ConfigurationBuilder withConfigDataType(@NonNull final Class<T> type) {
         addConfigDataType(type);
         return this;
     }
 
+    @NonNull
     @Override
-    public ConfigurationBuilder withConfigDataTypes(final Class<? extends Record>... types) {
+    public ConfigurationBuilder withConfigDataTypes(@NonNull final Class<? extends Record>... types) {
         Arrays.stream(types).forEach(this::addConfigDataType);
         return this;
     }
 
-    private <T extends Record> void addConfigDataType(final Class<T> type) {
-        CommonUtils.throwArgNull(type, "type");
+    private <T extends Record> void addConfigDataType(@NonNull final Class<T> type) {
+        ArgumentUtils.throwArgNull(type, "type");
         if (initialized.get()) {
             throw new IllegalStateException("ConfigDataType can not be added to initialized config");
         }

@@ -32,9 +32,9 @@ public class HashPartition {
     private final Hash hash;
 
     /**
-     * The total stake of the nodes known to agree with a given hash.
+     * The total weight of the nodes known to agree with a given hash.
      */
-    private long totalStake = 0;
+    private long totalWeight = 0;
 
     /**
      * The node IDs that are known to agree with this hash.
@@ -56,15 +56,15 @@ public class HashPartition {
      *
      * @param nodeId
      * 		the ID of the node
-     * @param stake
-     * 		the stake held by the node
+     * @param weight
+     * 		the weight held by the node
      */
-    public void addNodeHash(final long nodeId, final long stake) {
+    public void addNodeHash(final long nodeId, final long weight) {
         final boolean added = nodes.add(nodeId);
         if (!added) {
             throw new IllegalStateException("node " + nodeId + " is already in the partition");
         }
-        totalStake += stake;
+        totalWeight += weight;
     }
 
     /**
@@ -75,10 +75,10 @@ public class HashPartition {
     }
 
     /**
-     * Get the total stake known to agree with this hash.
+     * Get the total weight known to agree with this hash.
      */
-    public long getTotalStake() {
-        return totalStake;
+    public long getTotalWeight() {
+        return totalWeight;
     }
 
     /**
@@ -94,8 +94,8 @@ public class HashPartition {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
-        sb.append("Partition stake =  ")
-                .append(totalStake)
+        sb.append("Partition weight =  ")
+                .append(totalWeight)
                 .append(", hash = ")
                 .append(hash)
                 .append(", nodes = ");

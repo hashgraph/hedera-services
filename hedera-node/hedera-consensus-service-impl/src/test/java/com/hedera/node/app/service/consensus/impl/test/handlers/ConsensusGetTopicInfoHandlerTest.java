@@ -41,7 +41,8 @@ import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -126,7 +127,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         final var state =
                 MapReadableKVState.<Long, MerkleTopic>builder("TOPICS").build();
         given(readableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(state);
-        final var store = new ReadableTopicStore(readableStates);
+        final var store = new ReadableTopicStoreImpl(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         when(context.query()).thenReturn(query);
@@ -142,7 +143,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         givenValidTopic(autoRenewId.accountNum(), true);
         readableTopicState = readableTopicState();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
-        readableStore = new ReadableTopicStore(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         when(context.query()).thenReturn(query);

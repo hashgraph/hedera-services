@@ -50,7 +50,7 @@ class SwirldTransactionSubmitterTest {
 
     private SwirldTransactionSubmitter transactionSubmitter;
 
-    private static Stream<Arguments> zeroStakeParams() {
+    private static Stream<Arguments> zeroWeightParams() {
         return Stream.of(Arguments.of(true), Arguments.of(false));
     }
 

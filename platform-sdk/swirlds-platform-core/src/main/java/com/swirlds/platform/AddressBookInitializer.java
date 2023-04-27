@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookValidator;
@@ -64,6 +65,9 @@ public class AddressBookInitializer {
             DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-m-ss").withZone(ZoneId.systemDefault());
     /** For logging info, warn, and error. */
     private static final Logger logger = LogManager.getLogger(AddressBookInitializer.class);
+    /** The context for the platform */
+    @NonNull
+    private final PlatformContext platformContext;
     /** The current version of the application from config.txt. */
     @NonNull
     private final SoftwareVersion currentVersion;
@@ -93,22 +97,24 @@ public class AddressBookInitializer {
      * Constructs an AddressBookInitializer to initialize an address book from config.txt, the saved state from disk, or
      * the SwirldState on upgrade.
      *
-     * @param currentVersion    The current version of the application. Must not be null.
+     * @param currentVersion    The current version of the application.
      * @param softwareUpgrade   Indicate that the software version has upgraded.
-     * @param signedState       The signed state loaded from disk.  May be null.
-     * @param configAddressBook The address book derived from config.txt. Must not be null.
-     * @param addressBookConfig The configuration settings for AddressBooks.
+     * @param signedState       The signed state loaded from disk.
+     * @param configAddressBook The address book derived from config.txt.
+     * @param platformContext   The context for the platform.
      */
     public AddressBookInitializer(
             @NonNull final SoftwareVersion currentVersion,
             final boolean softwareUpgrade,
             @Nullable final SignedState signedState,
             @NonNull final AddressBook configAddressBook,
-            @NonNull final AddressBookConfig addressBookConfig) {
+            @NonNull final PlatformContext platformContext) {
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
         this.softwareUpgrade = softwareUpgrade;
         this.configAddressBook = Objects.requireNonNull(configAddressBook, "The configAddressBook must not be null.");
-        Objects.requireNonNull(addressBookConfig, "The addressBookConfig must not be null.");
+        this.platformContext = Objects.requireNonNull(platformContext, "The platformContext must not be null.");
+        final AddressBookConfig addressBookConfig =
+                platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
         this.loadedSignedState = signedState;
         this.loadedAddressBook = loadedSignedState == null ? null : loadedSignedState.getAddressBook();
         this.pathToAddressBookDirectory = Path.of(addressBookConfig.addressBookDirectory());
@@ -136,7 +142,7 @@ public class AddressBookInitializer {
 
     /**
      * Determines the address book to use.  If the configured current version of the application is higher than the save
-     * state version, the swirld state is given the config address book to determine stake weights.  If the address book
+     * state version, the swirld state is given the config address book to determine weights.  If the address book
      * returned by the swirld application is valid, it is the initial address book to use, otherwise the configuration
      * address book is the one to use.  All three address books, the configuration address book, the save state address
      * book, and the new address book to use are recorded in the address book directory.
@@ -159,16 +165,16 @@ public class AddressBookInitializer {
                             + "the address book from config.txt.");
             candidateAddressBook = configAddressBook;
         } else if (!softwareUpgrade) {
-            logger.info(STARTUP.getMarker(), "Using the loaded signed state's address book and stake values.");
+            logger.info(STARTUP.getMarker(), "Using the loaded signed state's address book and weight values.");
             candidateAddressBook = loadedAddressBook;
         } else {
             // There is a software upgrade
             logger.info(
                     STARTUP.getMarker(),
-                    "The address book stake may be updated by the application using data from the state snapshot.");
+                    "The address book weight may be updated by the application using data from the state snapshot.");
             candidateAddressBook = loadedSignedState
                     .getSwirldState()
-                    .updateStake(configAddressBook.copy())
+                    .updateWeight(configAddressBook.copy(), platformContext)
                     .copy();
         }
         candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
@@ -178,8 +184,8 @@ public class AddressBookInitializer {
 
     /**
      * Checks if the candidateAddressBook is valid and returns it, otherwise returns the configAddressBook if it has
-     * non-zero stake.   If the candidateAddressBook's addresses are out of sync with the configAddressBook or both
-     * address books have 0 stake, an IllegalStateException is thrown.
+     * non-zero weight.   If the candidateAddressBook's addresses are out of sync with the configAddressBook or both
+     * address books have 0 weight, an IllegalStateException is thrown.
      *
      * @return the valid address book to use.
      */
@@ -188,12 +194,12 @@ public class AddressBookInitializer {
         if (candidateAddressBook == null) {
             logger.warn(STARTUP.getMarker(), "The candidateAddressBook is null, using configAddressBook instead.");
             return configAddressBook;
-        } else if (!AddressBookValidator.hasNonZeroStake(candidateAddressBook)
-                || !AddressBookValidator.sameExceptForStake(configAddressBook, candidateAddressBook)) {
+        } else if (!AddressBookValidator.hasNonZeroWeight(candidateAddressBook)
+                || !AddressBookValidator.sameExceptForWeight(configAddressBook, candidateAddressBook)) {
             // an error was recorded by the address book validator.  Check the configuration address book for usability.
-            if (!AddressBookValidator.hasNonZeroStake(configAddressBook)) {
+            if (!AddressBookValidator.hasNonZeroWeight(configAddressBook)) {
                 throw new IllegalStateException(
-                        "The candidateAddressBook is not valid and the configAddressBook has 0 total stake.");
+                        "The candidateAddressBook is not valid and the configAddressBook has 0 total weight.");
             } else {
                 logger.warn(
                         STARTUP.getMarker(), "The candidateAddressBook is not valid, using configAddressBook instead.");

@@ -29,19 +29,19 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -73,7 +73,7 @@ class AddressBookInitializerTest {
                 false,
                 getMockSignedState(0),
                 configAddressBook,
-                getAddressBookConfig(true));
+                getPlatformContext(true));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -94,7 +94,7 @@ class AddressBookInitializerTest {
                 false,
                 signedState,
                 configAddressBook,
-                getAddressBookConfig(true));
+                getPlatformContext(true));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -115,7 +115,7 @@ class AddressBookInitializerTest {
                 false,
                 getMockSignedState(0),
                 configAddressBook,
-                getAddressBookConfig(false));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -125,8 +125,8 @@ class AddressBookInitializerTest {
     }
 
     @Test
-    @DisplayName("No state loaded from disk. Genesis State set 0 stake.")
-    void noStateLoadedFromDiskGenesisStateSetZeroStake() throws IOException {
+    @DisplayName("No state loaded from disk. Genesis State set 0 weight.")
+    void noStateLoadedFromDiskGenesisStateSetZeroWeight() throws IOException {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
         final AddressBookInitializer initializer = new AddressBookInitializer(
@@ -135,7 +135,7 @@ class AddressBookInitializerTest {
                 false,
                 getMockSignedState(0),
                 configAddressBook,
-                getAddressBookConfig(false));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -155,7 +155,7 @@ class AddressBookInitializerTest {
                 false,
                 getMockSignedState(0),
                 configAddressBook,
-                getAddressBookConfig(false));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -169,14 +169,14 @@ class AddressBookInitializerTest {
     void currentVersionEqualsStateVersion() throws IOException {
         clearTestDirectory();
         final SignedState signedState = getMockSignedState(2);
-        final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 10);
+        final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 getMockSoftwareVersion(2),
                 // no software upgrade
                 false,
                 signedState,
                 configAddressBook,
-                getAddressBookConfig(false));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 signedState.getAddressBook(),
@@ -187,18 +187,18 @@ class AddressBookInitializerTest {
     }
 
     @Test
-    @DisplayName("Version upgrade, SwirldState set 0 Stake.")
-    void versionUpgradeSwirldStateZeroStake() throws IOException {
+    @DisplayName("Version upgrade, SwirldState set 0 weight.")
+    void versionUpgradeSwirldStateZeroWeight() throws IOException {
         clearTestDirectory();
         final SignedState signedState = getMockSignedState(2, 0);
-        final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 10);
+        final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 getMockSoftwareVersion(3),
                 // software upgrade
                 true,
                 signedState,
                 configAddressBook,
-                getAddressBookConfig(false));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -213,14 +213,14 @@ class AddressBookInitializerTest {
     void versionUpgradeSwirldStateModifiedAddressBook() throws IOException {
         clearTestDirectory();
         final SignedState signedState = getMockSignedState(2, 2);
-        final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 3);
+        final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 3);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 getMockSoftwareVersion(3),
                 // software upgrade
                 true,
                 signedState,
                 configAddressBook,
-                getAddressBookConfig(false));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -231,18 +231,18 @@ class AddressBookInitializerTest {
     }
 
     @Test
-    @DisplayName("Version upgrade, Swirld State updates stake successfully.")
-    void versionUpgradeSwirldStateStakeUpdateWorks() throws IOException {
+    @DisplayName("Version upgrade, Swirld State updates weight successfully.")
+    void versionUpgradeSwirldStateWeightUpdateWorks() throws IOException {
         clearTestDirectory();
         final SignedState signedState = getMockSignedState(2);
-        final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 5);
+        final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 5);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 getMockSoftwareVersion(3),
                 // software upgrade
                 true,
                 signedState,
                 configAddressBook,
-                getAddressBookConfig(false));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertNotEquals(
                 configAddressBook,
@@ -257,16 +257,16 @@ class AddressBookInitializerTest {
     }
 
     /**
-     * Copies the address book while setting stake per address to the given stake value.
+     * Copies the address book while setting weight per address to the given weight value.
      *
      * @param addressBook The address book to copy
-     * @param stakeValue  The new stake value per address.
-     * @return the copy of the input address book with the given stake value per address.
+     * @param weightValue The new weight value per address.
+     * @return the copy of the input address book with the given weight value per address.
      */
-    private AddressBook copyWithStakeChanges(AddressBook addressBook, int stakeValue) {
+    private AddressBook copyWithWeightChanges(AddressBook addressBook, int weightValue) {
         final AddressBook newAddressBook = new AddressBook();
         for (Address address : addressBook) {
-            newAddressBook.add(address.copySetStake(stakeValue));
+            newAddressBook.add(address.copySetWeight(weightValue));
         }
         return newAddressBook;
     }
@@ -297,7 +297,8 @@ class AddressBookInitializerTest {
     }
 
     /**
-     * Creates a mock signed state with the given scenario and a SwirldState that sets all addresses to have stake = 7.
+     * Creates a mock signed state with the given scenario and a SwirldState that sets all addresses to have weight =
+     * 7.
      *
      * @param scenario The scenario of mock signed state to create.
      * @return The mock SignedState with the input scenario loaded.
@@ -308,24 +309,24 @@ class AddressBookInitializerTest {
 
     /**
      * Creates a mock signed state with the given scenario and a SwirldState that sets all addresses to the given
-     * stakeValue.
+     * weightValue.
      *
-     * @param scenario   The scenario of mock signed state to create.
-     * @param stakeValue The stake value that the SwirldState should set all addresses to in its updateStake method.
+     * @param scenario    The scenario of mock signed state to create.
+     * @param weightValue The weight value that the SwirldState should set all addresses to in its updateWeight method.
      * @return The mock SignedState with the input scenario loaded and SwirldState configured to set all addresses with
-     * given stakeValue.
+     * given weightValue.
      */
-    private SignedState getMockSignedState(final int scenario, final int stakeValue) {
+    private SignedState getMockSignedState(final int scenario, final int weightValue) {
         final SignedState signedState = mock(SignedState.class);
         switch (scenario) {
                 // case 0: null SignedState
             case 0:
                 return null;
-                // default case: swirldstate exists with given staking scenario
+                // default case: swirldstate exists with given weighting scenario
             default:
                 final SoftwareVersion softwareVersion = getMockSoftwareVersion(2);
                 final SwirldState swirldState =
-                        getMockSwirldStateSupplier(stakeValue).get();
+                        getMockSwirldStateSupplier(weightValue).get();
                 final AddressBook stateAddressBook = getRandomAddressBook();
                 when(signedState.getAddressBook()).thenReturn(stateAddressBook);
                 when(signedState.getSwirldState()).thenReturn(swirldState);
@@ -351,14 +352,16 @@ class AddressBookInitializerTest {
         final AtomicReference<AddressBook> configAddressBook = new AtomicReference<>();
         final SwirldState swirldState = mock(SwirldState.class);
 
-        final OngoingStubbing<AddressBook> stub = when(swirldState.updateStake(argThat(confAB -> {
-            configAddressBook.set(confAB);
-            return true;
-        })));
+        final OngoingStubbing<AddressBook> stub = when(swirldState.updateWeight(
+                argThat(confAB -> {
+                    configAddressBook.set(confAB);
+                    return true;
+                }),
+                argThat(context -> true)));
 
         switch (scenario) {
             case 0:
-                stub.thenAnswer(foo -> copyWithStakeChanges(configAddressBook.get(), 0));
+                stub.thenAnswer(foo -> copyWithWeightChanges(configAddressBook.get(), 0));
                 break;
             case 1:
                 stub.thenAnswer(foo -> configAddressBook.get());
@@ -372,17 +375,17 @@ class AddressBookInitializerTest {
                                 .copySetId(configAddressBook.get().getNextNodeId())));
                 break;
             case 7:
-                stub.thenAnswer(foo -> copyWithStakeChanges(configAddressBook.get(), 7));
+                stub.thenAnswer(foo -> copyWithWeightChanges(configAddressBook.get(), 7));
                 break;
             default:
-                stub.thenAnswer(foo -> copyWithStakeChanges(configAddressBook.get(), 10));
+                stub.thenAnswer(foo -> copyWithWeightChanges(configAddressBook.get(), 10));
         }
 
         return () -> swirldState;
     }
 
     /**
-     * Creates an address book where each address has stake equal to its node ID.
+     * Creates an address book where each address has weight equal to its node ID.
      *
      * @return the address book created.
      */
@@ -391,7 +394,7 @@ class AddressBookInitializerTest {
         return new RandomAddressBookGenerator()
                 .setSequentialIds(true)
                 .setSize(5)
-                .setCustomStakeGenerator(i -> i)
+                .setCustomWeightGenerator(i -> i)
                 .build();
     }
 
@@ -482,18 +485,18 @@ class AddressBookInitializerTest {
     }
 
     /**
-     * Creates an AddressBookConfig object with the given forceUseOfConfigAddressBook value.
+     * Creates an PlatformContext object with a configuration able to return AddressBookConfiguration with the given
+     * forceUseOfConfigAddressBook value.
      *
      * @param forceUseOfConfigAddressBook the value to use for the forceUseOfConfigAddressBook property.
-     * @return the AddressBookConfig object.
+     * @return the PlatformContext object.
      */
-    private AddressBookConfig getAddressBookConfig(boolean forceUseOfConfigAddressBook) {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("addressBook.forceUseOfConfigAddressBook", forceUseOfConfigAddressBook)
-                .withValue("addressBook.addressBookDirectory", testDirectory.toString())
-                .withValue("addressBook.maxRecordedAddressBookFiles", 50)
-                .getOrCreateConfig();
-        final AddressBookConfig addressBookConfig = configuration.getConfigData(AddressBookConfig.class);
-        return addressBookConfig;
+    private PlatformContext getPlatformContext(boolean forceUseOfConfigAddressBook) {
+        return TestPlatformContextBuilder.create()
+                .withConfigBuilder(new TestConfigBuilder()
+                        .withValue("addressBook.forceUseOfConfigAddressBook", forceUseOfConfigAddressBook)
+                        .withValue("addressBook.addressBookDirectory", testDirectory.toString())
+                        .withValue("addressBook.maxRecordedAddressBookFiles", 50))
+                .build();
     }
 }

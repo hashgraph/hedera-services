@@ -23,14 +23,14 @@ import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WI
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.Test;
 
 class TokenDeleteHandlerParityTest extends ParityTestBase {
@@ -41,30 +41,33 @@ class TokenDeleteHandlerParityTest extends ParityTestBase {
     void tokenDeletionWithValidTokenScenario() throws PreCheckException {
         final var theTxn = txnFrom(DELETE_WITH_KNOWN_TOKEN);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.requiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
     }
 
     @Test
     void tokenDeletionWithMissingTokenScenario() throws PreCheckException {
         final var theTxn = txnFrom(DELETE_WITH_MISSING_TOKEN);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, readableTokenStore), INVALID_TOKEN_ID);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
     }
 
     @Test
     void tokenDeletionWithTokenWithoutAnAdminKeyScenario() throws PreCheckException {
         final var theTxn = txnFrom(DELETE_WITH_MISSING_TOKEN_ADMIN_KEY);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestoredToPbj(context.payerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(0, context.requiredNonPayerKeys().size());
     }
 }

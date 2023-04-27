@@ -18,7 +18,7 @@ package com.swirlds.common.merkle.impl.internal;
 
 import static com.swirlds.common.merkle.route.MerkleRouteFactory.getEmptyRoute;
 
-import com.swirlds.common.Mutable;
+import com.swirlds.base.state.Mutable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.MerkleNode;
@@ -63,7 +63,7 @@ public abstract sealed class AbstractMerkleNode extends AbstractReservable
      * {@inheritDoc}
      */
     @Override
-    public void setHash(Hash hash) {
+    public void setHash(final Hash hash) {
         this.hash = hash;
     }
 

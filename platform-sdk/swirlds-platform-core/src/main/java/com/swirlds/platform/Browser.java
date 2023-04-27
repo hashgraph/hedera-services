@@ -640,12 +640,9 @@ public class Browser {
                 // check software version compatibility
                 final boolean softwareUpgrade = BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState);
 
-                final AddressBookConfig addressBookConfig =
-                        platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
-
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                        appVersion, softwareUpgrade, loadedSignedState, addressBook.copy(), addressBookConfig);
+                        appVersion, softwareUpgrade, loadedSignedState, addressBook.copy(), platformContext);
 
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
@@ -713,7 +710,12 @@ public class Browser {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final AddressBook configAddressBook,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
-        final SavedStateInfo[] savedStateFiles = getSavedStateFiles(mainClassName, selfId, swirldName);
+
+        final String actualMainClassName =
+                configuration.getConfigData(StateConfig.class).getMainClassName(mainClassName);
+
+        final SavedStateInfo[] savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
+
         // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
         // time this class is used.
         final SavedStateLoader savedStateLoader = new SavedStateLoader(

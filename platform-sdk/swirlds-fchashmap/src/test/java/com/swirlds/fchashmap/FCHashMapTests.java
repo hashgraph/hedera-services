@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fcqueue.FCInt;
 import java.util.Collection;
@@ -74,8 +74,8 @@ public class FCHashMapTests {
     /**
      * For each copy that has been made ensure that the reference copy is the same.
      */
-    void assertAllCopiesAreEqual(Collection<MapPair> equivalentCopies) {
-        for (MapPair pair : equivalentCopies) {
+    void assertAllCopiesAreEqual(final Collection<MapPair> equivalentCopies) {
+        for (final MapPair pair : equivalentCopies) {
             assertMapEquality(pair.fcHashMap, pair.hashMap);
         }
     }
@@ -87,16 +87,16 @@ public class FCHashMapTests {
      * @return The mutable copy of the FCHashMap.
      */
     FCHashMap<Integer, String> makeCopies(
-            Collection<MapPair> equivalentCopies,
-            FCHashMap<Integer, String> fcHashMap,
-            HashMap<Integer, String> hashMap) {
+            final Collection<MapPair> equivalentCopies,
+            final FCHashMap<Integer, String> fcHashMap,
+            final HashMap<Integer, String> hashMap) {
         // Deep copy the hash map
         final Map<Integer, String> hashMapCopy = new HashMap<>();
-        for (Map.Entry<Integer, String> entry : hashMap.entrySet()) {
+        for (final Map.Entry<Integer, String> entry : hashMap.entrySet()) {
             hashMapCopy.put(entry.getKey(), entry.getValue());
         }
 
-        FCHashMap<Integer, String> mutableCopy = fcHashMap.copy();
+        final FCHashMap<Integer, String> mutableCopy = fcHashMap.copy();
 
         equivalentCopies.add(new MapPair(fcHashMap, hashMapCopy));
 
@@ -109,10 +109,10 @@ public class FCHashMapTests {
      * @return the mutable copy of the FCHashMap
      */
     FCHashMap<Integer, String> makeCopiesAndVerify(
-            Collection<MapPair> equivalentCopies,
-            FCHashMap<Integer, String> fcHashMap,
-            HashMap<Integer, String> hashMap) {
-        FCHashMap<Integer, String> mutableCopy = makeCopies(equivalentCopies, fcHashMap, hashMap);
+            final Collection<MapPair> equivalentCopies,
+            final FCHashMap<Integer, String> fcHashMap,
+            final HashMap<Integer, String> hashMap) {
+        final FCHashMap<Integer, String> mutableCopy = makeCopies(equivalentCopies, fcHashMap, hashMap);
         assertAllCopiesAreEqual(equivalentCopies);
         return mutableCopy;
     }
@@ -122,11 +122,11 @@ public class FCHashMapTests {
      * Also checks all existing copies to make sure they haven't changed.
      */
     void put(
-            Collection<MapPair> equivalentCopies,
-            FCHashMap<Integer, String> fcHashMap,
-            HashMap<Integer, String> hashMap,
-            Integer key,
-            String value) {
+            final Collection<MapPair> equivalentCopies,
+            final FCHashMap<Integer, String> fcHashMap,
+            final HashMap<Integer, String> hashMap,
+            final Integer key,
+            final String value) {
         fcHashMap.put(key, value);
         hashMap.put(key, value);
         assertMapEquality(fcHashMap, hashMap);
@@ -138,10 +138,10 @@ public class FCHashMapTests {
      * Also checks all existing copies to make sure they haven't changed.
      */
     void remove(
-            Collection<MapPair> equivalentCopies,
-            FCHashMap<Integer, String> fcHashMap,
-            HashMap<Integer, String> hashMap,
-            Integer key) {
+            final Collection<MapPair> equivalentCopies,
+            final FCHashMap<Integer, String> fcHashMap,
+            final HashMap<Integer, String> hashMap,
+            final Integer key) {
         fcHashMap.remove(key);
         hashMap.remove(key);
         assertMapEquality(fcHashMap, hashMap);
@@ -153,9 +153,9 @@ public class FCHashMapTests {
      * Also checks all existing copies to make sure they haven't changed.
      */
     void clear(
-            Collection<MapPair> equivalentCopies,
-            FCHashMap<Integer, String> fcHashMap,
-            HashMap<Integer, String> hashMap) {
+            final Collection<MapPair> equivalentCopies,
+            final FCHashMap<Integer, String> fcHashMap,
+            final HashMap<Integer, String> hashMap) {
         fcHashMap.clear();
         hashMap.clear();
         assertMapEquality(fcHashMap, hashMap);
@@ -171,10 +171,10 @@ public class FCHashMapTests {
     @Test
     @DisplayName("Basic Behavior")
     void basicBehavior() {
-        List<MapPair> equivalentCopies = new LinkedList<>();
+        final List<MapPair> equivalentCopies = new LinkedList<>();
 
         final FCHashMap<Integer, String> fcHashMap = new FCHashMap<>();
-        HashMap<Integer, String> hashMap = new HashMap<>();
+        final HashMap<Integer, String> hashMap = new HashMap<>();
 
         final FCHashMap<Integer, String> fcHashMap01 = makeCopies(equivalentCopies, fcHashMap, hashMap);
 
@@ -234,7 +234,7 @@ public class FCHashMapTests {
         private final Collection<MapPair> equivalentCopies;
         private final Thread backgroundChecker;
 
-        public BackgroundVerifier(Collection<MapPair> equivalentCopies) {
+        public BackgroundVerifier(final Collection<MapPair> equivalentCopies) {
             this.alive = true;
             this.equivalentCopies = equivalentCopies;
             this.backgroundChecker = new Thread(this);
@@ -304,7 +304,7 @@ public class FCHashMapTests {
     @Test
     @DisplayName("Check For Deletion Error")
     void checkForDeletionError() throws InterruptedException {
-        FCHashMap<Integer, String> fcHashMap = new FCHashMap<>();
+        final FCHashMap<Integer, String> fcHashMap = new FCHashMap<>();
 
         // When this happens before first copy it used to crash the purging process
         fcHashMap.put(0, "a");
@@ -313,7 +313,7 @@ public class FCHashMapTests {
         assertEquals(0, fcHashMap.size(), "map should be empty");
 
         // Creating the first copy and deleting it will trigger the mutation of key 0 to be purged
-        FCHashMap<Integer, String> copy = fcHashMap.copy();
+        final FCHashMap<Integer, String> copy = fcHashMap.copy();
         copy.release();
 
         fcHashMap.release();

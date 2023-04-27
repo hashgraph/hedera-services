@@ -32,6 +32,7 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SocketConnection;
@@ -63,7 +64,7 @@ class OutboundConnectionCreatorTest {
         final Random r = new Random();
         final AddressBook addressBook = new RandomAddressBookGenerator(r)
                 .setSize(numNodes)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .setSequentialIds(true)
                 .build();
@@ -159,7 +160,7 @@ class OutboundConnectionCreatorTest {
         final Random r = new Random();
         final AddressBook addressBook = new RandomAddressBookGenerator(r)
                 .setSize(numNodes)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .setSequentialIds(true)
                 .build();
@@ -218,7 +219,7 @@ class OutboundConnectionCreatorTest {
         final Random r = new Random();
         final AddressBook addressBook = new RandomAddressBookGenerator(r)
                 .setSize(numNodes)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .setSequentialIds(true)
                 .build();

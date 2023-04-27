@@ -22,7 +22,6 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -52,10 +51,9 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
             final String name,
             final int stackItemsConsumed,
             final int stackItemsProduced,
-            final int opSize,
             final GasCalculator gasCalculator,
             final CreateOperationExternalizer createOperationExternalizer) {
-        super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator);
+        super(opcode, name, stackItemsConsumed, stackItemsProduced, gasCalculator);
         this.createOperationExternalizer = createOperationExternalizer;
     }
 
@@ -151,7 +149,7 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
                 .sender(frame.getRecipientAddress())
                 .value(value)
                 .apparentValue(value)
-                .code(CodeFactory.createCode(inputData, Hash.EMPTY, 0, false))
+                .code(CodeFactory.createCode(inputData, 0, false))
                 .blockValues(frame.getBlockValues())
                 .depth(frame.getMessageStackDepth() + 1)
                 .completer(child -> complete(frame, child))

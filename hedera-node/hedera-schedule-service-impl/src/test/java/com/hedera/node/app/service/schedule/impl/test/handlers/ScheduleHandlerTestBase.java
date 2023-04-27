@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -24,11 +23,10 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
@@ -42,7 +40,7 @@ class ScheduleHandlerTestBase {
     protected static final Key TEST_KEY = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
             .build();
-    protected HederaKey adminKey = asHederaKey(TEST_KEY).get();
+    protected Key adminKey = TEST_KEY;
     protected AccountID scheduler = AccountID.newBuilder().accountNum(1001L).build();
     protected AccountID payer = AccountID.newBuilder().accountNum(2001L).build();
 
@@ -56,10 +54,10 @@ class ScheduleHandlerTestBase {
     protected AccountAccess keyLookup;
 
     @Mock
-    protected HederaKey payerKey;
+    protected Key payerKey;
 
     @Mock
-    protected HederaKey schedulerKey;
+    protected Key schedulerKey;
 
     @Mock
     protected PreHandleDispatcher dispatcher;
