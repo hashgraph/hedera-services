@@ -165,7 +165,6 @@ public class SyncProtocol implements Protocol {
 
         // are there any reasons not to initiate?
         if (!syncCooldownComplete() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
-            syncMetrics.updateDeclinedToInitiateSyncRatio(true);
             return false;
         }
 
@@ -179,11 +178,8 @@ public class SyncProtocol implements Protocol {
                 syncMetrics.outgoingSyncRequestSent();
             }
 
-            syncMetrics.updateDeclinedToInitiateSyncRatio(!isLockAcquired);
-
             return isLockAcquired;
         } else {
-            syncMetrics.updateDeclinedToInitiateSyncRatio(true);
             return false;
         }
     }
@@ -197,7 +193,6 @@ public class SyncProtocol implements Protocol {
 
         // are there any reasons not to accept?
         if (!syncCooldownComplete() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
-            syncMetrics.updateRejectedSyncRatio(true);
             return false;
         }
 
@@ -208,8 +203,6 @@ public class SyncProtocol implements Protocol {
             syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
             syncMetrics.acceptedSyncRequest();
         }
-
-        syncMetrics.updateRejectedSyncRatio(!isLockAcquired);
 
         return isLockAcquired;
     }

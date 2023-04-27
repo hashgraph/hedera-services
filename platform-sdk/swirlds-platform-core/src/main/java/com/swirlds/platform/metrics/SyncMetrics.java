@@ -34,7 +34,6 @@ import com.swirlds.platform.stats.AverageTimeStat;
 import com.swirlds.platform.stats.MaxStat;
 import com.swirlds.platform.sync.ShadowGraph;
 import com.swirlds.platform.sync.ShadowGraphSynchronizer;
-import com.swirlds.platform.sync.SyncManager;
 import com.swirlds.platform.sync.SyncResult;
 import com.swirlds.platform.sync.SyncTiming;
 import java.time.temporal.ChronoUnit;
@@ -117,12 +116,7 @@ public class SyncMetrics {
     private final AverageAndMax avgEventsPerSyncRec;
     private final MaxStat multiTipsPerSync;
     private final AverageStat gensWaitingForExpiry;
-    private final AverageStat rejectedSyncRatio;
 
-    /**
-     * The ratio of opportunities to initiate an outgoing sync that were declined
-     */
-    private final AverageStat declinedToInitiateSyncRatio;
 
     /**
      * Constructor of {@code SyncMetrics}
@@ -222,20 +216,6 @@ public class SyncMetrics {
                 PlatformStatNames.GENS_WAITING_FOR_EXPIRY,
                 "the average number of generations waiting to be expired",
                 FORMAT_5_3,
-                AverageStat.WEIGHT_VOLATILE);
-        rejectedSyncRatio = new AverageStat(
-                metrics,
-                INTERNAL_CATEGORY,
-                PlatformStatNames.REJECTED_SYNC_RATIO,
-                "the averaged ratio of rejected syncs to accepted syncs over time",
-                FORMAT_1_3,
-                AverageStat.WEIGHT_VOLATILE);
-        declinedToInitiateSyncRatio = new AverageStat(
-                metrics,
-                INTERNAL_CATEGORY,
-                "declinedToInitiateSyncRatio",
-                "the ratio of declining to initiate a sync when given the opportunity to do so",
-                FORMAT_1_3,
                 AverageStat.WEIGHT_VOLATILE);
 
         permitsAvailable = metrics.getOrCreate(PERMITS_AVAILABLE_CONFIG);
@@ -359,17 +339,6 @@ public class SyncMetrics {
     }
 
     /**
-     * Called by {@link SyncManager#shouldAcceptSync()} when a sync is accepted or rejected to maintain the ratio of
-     * rejected syncs to accepted syncs.
-     *
-     * @param syncRejected
-     * 		true is a sync was rejected, false otherwise
-     */
-    public void updateRejectedSyncRatio(final boolean syncRejected) {
-        rejectedSyncRatio.update(syncRejected);
-    }
-
-    /**
      * Updates the number of permits available for syncs
      *
      * @param permits the number of permits available
@@ -404,14 +373,5 @@ public class SyncMetrics {
      */
     public void outgoingSyncRequestSent() {
         outgoingSyncRequestsPerSec.cycle();
-    }
-
-    /**
-     * Indicate whether an opportunity to initiate a sync was declined
-     *
-     * @param declinedToInitiate true if the opportunity was declined, false otherwise
-     */
-    public void updateDeclinedToInitiateSyncRatio(final boolean declinedToInitiate) {
-        declinedToInitiateSyncRatio.update(declinedToInitiate);
     }
 }

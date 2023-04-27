@@ -1594,8 +1594,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                 simultaneousSyncThrottle,
                                 syncShadowgraphSynchronizer,
                                 syncManager,
-                                syncManager::shouldAcceptSync,
-                                syncMetrics)),
+                                syncManager::shouldAcceptSync)),
                 ProtocolMapping.map(
                         UnidirectionalProtocols.RECONNECT.getInitialByte(),
                         new ReconnectProtocolResponder(
