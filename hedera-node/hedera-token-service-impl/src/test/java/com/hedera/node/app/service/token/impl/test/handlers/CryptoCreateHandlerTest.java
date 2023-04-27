@@ -26,15 +26,15 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
-    private CryptoCreateHandler subject = new CryptoCreateHandler();
+    private final CryptoCreateHandler subject = new CryptoCreateHandler();
 
     @BeforeEach
     public void setUp() {
@@ -43,14 +43,14 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(accountNum), account)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
     }
 
     @Test
     void preHandleCryptoCreateVanilla() throws PreCheckException {
         final var txn = createAccountTransaction(true);
 
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
         assertEquals(txn, context.body());
@@ -61,9 +61,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void noReceiverSigRequiredPreHandleCryptoCreate() throws PreCheckException {
         final var txn = createAccountTransaction(false);
-        final var expected = new PreHandleContext(readableStore, txn);
+        final var expected = new FakePreHandleContext(readableStore, txn);
 
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
         assertEquals(expected.body(), context.body());
