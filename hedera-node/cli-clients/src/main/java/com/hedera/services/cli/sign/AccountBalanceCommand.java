@@ -22,7 +22,7 @@ import com.swirlds.cli.utility.SubcommandOf;
 import picocli.CommandLine;
 
 /**
- * A collection of operations on account balance.
+ * A subcommand of the {@link PlatformCli}, for account balance files
  */
 @CommandLine.Command(
         name = "account-balance",
