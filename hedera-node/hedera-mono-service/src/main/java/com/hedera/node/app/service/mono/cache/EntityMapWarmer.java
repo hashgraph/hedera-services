@@ -60,7 +60,6 @@ import org.slf4j.LoggerFactory;
 public class EntityMapWarmer {
 
     private static final Logger log = LoggerFactory.getLogger(EntityMapWarmer.class);
-    private static EntityMapWarmer instance;
     // Note: these suppliers need to be stored here as they are (instead of storing what
     // the supplier references) in order for this class to get the latest copies of the
     // underlying data structures
