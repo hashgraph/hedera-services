@@ -31,12 +31,16 @@ import com.swirlds.config.api.validation.ConfigValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Helper for use the config in test and change the config for specific tests. Instance can be used per class or per
  * test.
  */
 public class TestConfigBuilder {
+
+    private static final String SWIRLDS_PACKAGE = "com.swirlds";
+    private static final String HEDERA_PACKAGE = "com.hedera";
 
     private final AutoClosableLock configLock = Locks.createAutoLock();
 
@@ -74,7 +78,8 @@ public class TestConfigBuilder {
      */
     public TestConfigBuilder(final boolean registerAllTypes) {
         if (registerAllTypes) {
-            this.builder = ConfigUtils.scanAndRegisterAllConfigTypes(ConfigurationBuilder.create());
+            this.builder = ConfigUtils.scanAndRegisterAllConfigTypes(
+                    ConfigurationBuilder.create(), Set.of(SWIRLDS_PACKAGE, HEDERA_PACKAGE));
         } else {
             this.builder = ConfigurationBuilder.create();
         }

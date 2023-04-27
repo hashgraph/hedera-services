@@ -34,16 +34,11 @@ import java.util.stream.Collectors;
  */
 public final class ConfigUtils {
 
-    private static final String SWIRLDS_PACKAGE = "com.swirlds";
-    private static final String HEDERA_PACKAGE = "com.hedera";
-
     private ConfigUtils() {}
 
     /**
-     * Scan all classes in classpath/modulepath and register all configuration data types with a configuration builder.
-     * This call will only scan the {@code com.swirlds} and {@code com.hedera} packages. If you want to scan all
-     * available packages you need to call {@link #scanAndRegisterAllConfigTypes(ConfigurationBuilder, Set)} with an
-     * empty string Set.
+     * Scan all classes on the classpath / modulepath and register all configuration data types with a configuration
+     * builder.
      *
      * @param configurationBuilder a configuration builder
      * @return the configuration builder that was passed as a param (for fluent api)
@@ -51,12 +46,13 @@ public final class ConfigUtils {
     @NonNull
     public static ConfigurationBuilder scanAndRegisterAllConfigTypes(
             @NonNull final ConfigurationBuilder configurationBuilder) {
-        return scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_PACKAGE, HEDERA_PACKAGE));
+        return scanAndRegisterAllConfigTypes(configurationBuilder, Set.of());
     }
 
     /**
-     * Scan all classes in a classpath and register all configuration data types with a configuration builder. If the
-     * given {@code packagePrefixes} array is empty all packages will be scanned.
+     * Scan all classes on the classpath / modulepath that are under the provided {@code packagePrefixes} and register
+     * all configuration data types to the given {@code configurationBuilder}. If the given {@code packagePrefixes} Set
+     * is empty all packages will be scanned.
      *
      * @param configurationBuilder a configuration builder
      * @param packagePrefixes      the package prefixes to scan
