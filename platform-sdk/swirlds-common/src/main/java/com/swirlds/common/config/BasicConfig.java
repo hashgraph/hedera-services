@@ -264,7 +264,7 @@ public record BasicConfig(
         @ConfigProperty(value = "maxIncomingSyncsInc", defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(value = "maxOutgoingSyncs", defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath,
-        @ConfigProperty(value = "syncAsProtocolEnabled", defaultValue = "true") boolean syncAsProtocolEnabled,
+        @ConfigProperty(value = "syncAsProtocolEnabled", defaultValue = "false") boolean syncAsProtocolEnabled,
         @ConfigProperty(value = "syncSleepAfterFailedNegotiation", defaultValue = "25")
                 int syncSleepAfterFailedNegotiation,
         @ConfigProperty(value = "syncProtocolPermitCount", defaultValue = "17") int syncProtocolPermitCount,
