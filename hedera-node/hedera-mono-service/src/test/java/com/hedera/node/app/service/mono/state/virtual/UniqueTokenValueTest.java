@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;

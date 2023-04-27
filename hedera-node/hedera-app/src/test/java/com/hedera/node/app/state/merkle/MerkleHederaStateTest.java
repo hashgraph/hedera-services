@@ -26,7 +26,7 @@ import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
