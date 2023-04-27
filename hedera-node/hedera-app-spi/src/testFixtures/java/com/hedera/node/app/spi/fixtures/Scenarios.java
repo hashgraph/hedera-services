@@ -36,14 +36,15 @@ import java.util.Map;
  *     <li>0.0.1000</li>: Node 3's operator account.
  *     <li>0.0.1001</li>: Node 4's operator account.
  *     <li>0.0.1002</li>: Alice's account. Alice is a user with an ECDSA account but no alias.
- *     <li>0.0.1002</li>: Bob's account. Bob is a user with an ED25519 account but no alias.
- *     <li>0.0.1002</li>: Carol's account. Carol is a user with an ECDSA account with an alias.
- *     <li>0.0.1002</li>: Dave's account. Dave has a multi-sig account with a 2/3 threshold controlled by Alice, Bob,
+ *     <li>0.0.1003</li>: Bob's account. Bob is a user with an ED25519 account but no alias.
+ *     <li>0.0.1004</li>: Carol's account. Carol is a user with an ECDSA account with an alias.
+ *     <li>0.0.1005</li>: Dave's account. Dave has a multi-sig account with a 2/3 threshold controlled by Alice, Bob,
  *     and Carol.
+ *     <li>0.0.1006</li>: Erin's account. This is a hollow account (account number with evm alias, but no keys)
  * </ol>
  *
- * <p>Two additional accounts do not exist yet, but have keys associated with them, so they can be used in various
- * transaction scenarios. These include Erin and Frank.
+ * <p>An additional account for "Frank" does not exist yet, but has keys associated with it, so it can be used in
+ * transaction scenarios.
  */
 public interface Scenarios extends TransactionFactory {
     static byte hexDecode(char c) {
@@ -254,7 +255,18 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ED25519_KEY_INFOS[1]);
 
-    TestUser ERIN = new TestUser(AccountID.newBuilder().accountNum(2000L).build(), null, FAKE_ECDSA_KEY_INFOS[3]);
+    TestUser ERIN = new TestUser(
+            AccountID.newBuilder().accountNum(1006L).build(),
+            Account.newBuilder()
+                    .accountNumber(1006L)
+                    .alias(FAKE_ECDSA_KEY_INFOS[3]
+                            .publicKey()
+                            .ecdsaSecp256k1OrThrow()
+                            .slice(0, 20)) // Not true
+                    .build(),
+            FAKE_ECDSA_KEY_INFOS[3]);
+
+    TestUser FRANK = new TestUser(AccountID.newBuilder().accountNum(2000L).build(), null, FAKE_ECDSA_KEY_INFOS[3]);
 
     default UserScenarioBuilder with(TestUser user) {
         return new UserScenarioBuilder(user);
@@ -263,7 +275,8 @@ public interface Scenarios extends TransactionFactory {
     default Map<Long, Account> defaultAccounts() {
         return Map.of(
                 NODE_1.nodeAccountID().accountNumOrThrow(), NODE_1.account(),
-                ALICE.accountID().accountNumOrThrow(), ALICE.account());
+                ALICE.accountID().accountNumOrThrow(), ALICE.account(),
+                ERIN.accountID().accountNumOrThrow(), ERIN.account());
     }
 
     default Map<String, AccountID> defaultAliases() {

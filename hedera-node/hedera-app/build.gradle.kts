@@ -16,6 +16,7 @@
 
 plugins {
   id("com.hedera.hashgraph.conventions")
+  id("com.hedera.hashgraph.benchmark-conventions")
   `java-test-fixtures`
 }
 
@@ -55,6 +56,10 @@ dependencies {
   implementation(libs.helidon.grpc.server)
   implementation(libs.pbj.runtime)
   implementation(libs.commons.codec) // Temporarily needed for AdaptedMonoProcessLogic
+
+  jmhImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  jmhImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  //  jmhAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.36")
 
   itestImplementation(project(":hedera-node:hapi"))
   itestImplementation(testFixtures(project(":hedera-node:hapi")))

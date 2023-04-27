@@ -137,6 +137,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // as the transaction's metadata.
         for (final var task : tasks) {
             try {
+                // FUTURE: Enhance this so the timeout duration is a configuration property (and then update the
+                // unit tests, so they use a much shorter configuration, so test execution is faster).
                 final var result = task.future.get(1, TimeUnit.SECONDS);
                 task.platformTx.setMetadata(result);
             } catch (InterruptedException e) {

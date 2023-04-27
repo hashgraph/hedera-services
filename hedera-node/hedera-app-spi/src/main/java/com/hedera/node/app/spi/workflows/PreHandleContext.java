@@ -119,10 +119,8 @@ public final class PreHandleContext {
         // Find the account, which must exist or throw a PreCheckException with the given response code.
         final var account = accountAccess.getAccountById(payer);
         mustExist(account, responseCode);
-        // NOTE: While it is true that the key can be null on some special accounts like
-        // account 800, those accounts cannot be the payer.
+        // It is possible for the payer key to be null if the payer is a hollow account!
         this.payerKey = account.key();
-        mustExist(this.payerKey, responseCode);
     }
 
     /**
