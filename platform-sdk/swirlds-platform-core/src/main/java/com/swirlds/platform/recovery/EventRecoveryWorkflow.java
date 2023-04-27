@@ -59,6 +59,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -109,7 +110,7 @@ public final class EventRecoveryWorkflow {
         }
 
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, "com.swirlds");
+        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
 
         // Recovery workflow doesn't need the metrics output.
         configurationBuilder.withSource(new SimpleConfigSource("disableMetricsOutput", "true"));
