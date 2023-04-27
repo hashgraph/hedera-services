@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
+
+import static com.swirlds.common.metrics.Metric.DataType.INT;
 
 import com.swirlds.common.metrics.MetricConfig;
-import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.statistics.StatsBuffered;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
- * A no-op implementation of a speedometer metric.
+ * A no-op implementation of a stat entry.
  */
-public class NoOpSpeedometerMetric extends AbstractNoOpMetric implements SpeedometerMetric {
+public class NoOpStatEntry extends AbstractNoOpMetric implements StatEntry {
 
-    public NoOpSpeedometerMetric(final MetricConfig<?, ?> config) {
+    public NoOpStatEntry(final MetricConfig<?, ?> config) {
         super(config);
     }
 
@@ -32,35 +37,39 @@ public class NoOpSpeedometerMetric extends AbstractNoOpMetric implements Speedom
      * {@inheritDoc}
      */
     @Override
-    public Double get(final ValueType valueType) {
-        return 0.0;
+    public DataType getDataType() {
+        return INT;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public double getHalfLife() {
-        return 0;
+    public StatsBuffered getBuffered() {
+        return new NoOpStatsBuffered();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void update(final double value) {}
+    public Consumer<Double> getReset() {
+        return x -> {};
+    }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void cycle() {}
+    public Supplier<Object> getStatsStringSupplier() {
+        return () -> "";
+    }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public double get() {
-        return 0;
+    public Supplier<Object> getResetStatsStringSupplier() {
+        return () -> "";
     }
 }

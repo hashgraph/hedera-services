@@ -22,8 +22,8 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +37,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     @DisplayName("Succeeds for valid payer account")
     void validPayer() throws PreCheckException {
         final var txn = contractCallTransaction();
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 0);
         assertThat(context.payerKey()).isEqualTo(payerKey);

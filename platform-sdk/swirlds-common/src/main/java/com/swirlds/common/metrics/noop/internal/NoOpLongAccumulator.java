@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.DoubleAccumulator;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.MetricConfig;
 
 /**
- * A no-op double accumulator.
+ * A no-op implementation of a long accumulator.
  */
-public class NoOpDoubleAccumulator extends AbstractNoOpMetric implements DoubleAccumulator {
+public class NoOpLongAccumulator extends AbstractNoOpMetric implements LongAccumulator {
 
-    public NoOpDoubleAccumulator(final MetricConfig<?, ?> config) {
+    public NoOpLongAccumulator(final MetricConfig<?, ?> config) {
         super(config);
     }
 
@@ -32,7 +32,7 @@ public class NoOpDoubleAccumulator extends AbstractNoOpMetric implements DoubleA
      * {@inheritDoc}
      */
     @Override
-    public double get() {
+    public long get() {
         return 0;
     }
 
@@ -40,7 +40,7 @@ public class NoOpDoubleAccumulator extends AbstractNoOpMetric implements DoubleA
      * {@inheritDoc}
      */
     @Override
-    public double getInitialValue() {
+    public long getInitialValue() {
         return 0;
     }
 
@@ -48,5 +48,5 @@ public class NoOpDoubleAccumulator extends AbstractNoOpMetric implements DoubleA
      * {@inheritDoc}
      */
     @Override
-    public void update(final double other) {}
+    public void update(final long other) {}
 }

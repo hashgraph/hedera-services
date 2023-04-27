@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.manager;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.test.metrics.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
