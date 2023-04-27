@@ -24,7 +24,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
