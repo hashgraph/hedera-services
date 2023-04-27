@@ -70,6 +70,7 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.spi.config.PropertyNames;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -284,7 +285,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     @Override
-    public AddressBook updateWeight(@NonNull AddressBook configAddressBook) {
+    public AddressBook updateWeight(@NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
         throwIfImmutable();
         stakingInfo()
                 .forEach((nodeNum, stakingInfo) ->

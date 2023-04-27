@@ -80,12 +80,12 @@ import com.hedera.test.utils.CryptoConfigUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.ResponsibleVMapUser;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -875,7 +875,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertEquals(1, stakingMap.size());
         assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
 
-        subject.updateWeight(addressBook);
+        subject.updateWeight(addressBook, platform.getContext());
         verify(addressBook).updateWeight(0, 0);
     }
 
@@ -892,7 +892,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
         subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
 
-        subject.updateWeight(addressBook);
+        subject.updateWeight(addressBook, platform.getContext());
         verify(addressBook).updateWeight(0, 500);
     }
 
