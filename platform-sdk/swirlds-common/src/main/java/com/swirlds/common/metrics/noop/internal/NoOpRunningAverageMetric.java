@@ -14,43 +14,33 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.metrics.internal;
+package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.statistics.StatsBuffered;
-import com.swirlds.common.statistics.internal.StatsBuffer;
+import com.swirlds.common.metrics.MetricConfig;
+import com.swirlds.common.metrics.RunningAverageMetric;
 
 /**
- * A no-op implementation of {@link StatsBuffered}.
+ * A no-op implementation of a running average metric.
  */
-public class NoOpStatsBuffered implements StatsBuffered {
+public class NoOpRunningAverageMetric extends AbstractNoOpMetric implements RunningAverageMetric {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public StatsBuffer getAllHistory() {
-        return new StatsBuffer(0, 0, 0);
+    public NoOpRunningAverageMetric(final MetricConfig<?, ?> config) {
+        super(config);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public StatsBuffer getRecentHistory() {
-        return new StatsBuffer(0, 0, 0);
+    public Double get(final ValueType valueType) {
+        return 0.0;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void reset(final double halflife) {}
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double getMean() {
+    public double getHalfLife() {
         return 0;
     }
 
@@ -58,23 +48,13 @@ public class NoOpStatsBuffered implements StatsBuffered {
      * {@inheritDoc}
      */
     @Override
-    public double getMax() {
-        return 0;
-    }
+    public void update(final double value) {}
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public double getMin() {
-        return 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double getStdDev() {
+    public double get() {
         return 0;
     }
 }
