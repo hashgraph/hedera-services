@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono;
 
-import com.hedera.node.app.service.mono.cache.CacheModule;
 import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
@@ -123,8 +122,7 @@ import javax.inject.Singleton;
             ExpiryModule.class,
             LastStepModule.class,
             ProcessLogicModule.class,
-            FeeCalculatorModule.class,
-            CacheModule.class
+            FeeCalculatorModule.class
         })
 public interface ServicesApp {
     /* Needed by ServicesState */

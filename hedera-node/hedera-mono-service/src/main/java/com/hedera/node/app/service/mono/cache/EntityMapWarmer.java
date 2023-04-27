@@ -42,6 +42,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +56,7 @@ import org.slf4j.LoggerFactory;
  * <p>This class is geared towards accounts, unique tokens (NFTs), and token relations, but could
  * also be enhanced for other types.
  */
+@Singleton
 public class EntityMapWarmer {
 
     private static final Logger log = LoggerFactory.getLogger(EntityMapWarmer.class);
@@ -64,9 +67,14 @@ public class EntityMapWarmer {
     private final Supplier<AccountStorageAdapter> accountsStorageAdapter;
     private final Supplier<UniqueTokenMapAdapter> nftsAdapter;
     private final Supplier<TokenRelStorageAdapter> tokenRelsAdapter;
+
+    private final boolean acctsOnDisk;
+    private final boolean nftsOnDisk;
+    private final boolean tokenRelsOnDisk;
     private final ThreadPoolExecutor threadpool;
 
-    private EntityMapWarmer(
+    @Inject
+    EntityMapWarmer(
             Supplier<AccountStorageAdapter> accountsStorageAdapter,
             Supplier<UniqueTokenMapAdapter> nftsAdapter,
             Supplier<TokenRelStorageAdapter> tokenRelsAdapter,
@@ -93,6 +101,9 @@ public class EntityMapWarmer {
         this.nftsAdapter = nftsAdapter;
         this.tokenRelsAdapter = tokenRelsAdapter;
         this.threadpool = threadpool;
+        this.acctsOnDisk = accountsStorageAdapter.get().areOnDisk();
+        this.nftsOnDisk = nftsAdapter.get().isVirtual();
+        this.tokenRelsOnDisk = tokenRelsAdapter.get().areOnDisk();
     }
 
     public static EntityMapWarmer getInstance(
@@ -121,19 +132,16 @@ public class EntityMapWarmer {
     // "warmTokenObjs" as in "warm the token and its associated token relation objects"
     // for both the sending and receiving accounts
     private void warmTokenObjs(AccountID sender, AccountID receiver, long tokenNum, long senderSerialNum) {
-        if (accountsStorageAdapter.get().areOnDisk()
-                && nftsAdapter.get().isVirtual()
-                && tokenRelsAdapter.get().areOnDisk()) {
-
+        if (acctsOnDisk && nftsOnDisk && tokenRelsOnDisk) {
             threadpool.execute(() -> {
                 // Sender:
                 final var acctMap = accountsStorageAdapter.get().getOnDiskAccounts();
-                final OnDiskAccount account =
+                final OnDiskAccount senderAcct =
                         Objects.requireNonNull(acctMap).get(EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
-                if (account != null) {
-                    final var headNum = account.getHeadNftTokenNum();
+                if (senderAcct != null) {
+                    final var headNum = senderAcct.getHeadNftTokenNum();
                     if (headNum != 0) {
-                        final var headSerialNum = account.getHeadNftSerialNum();
+                        final var headSerialNum = senderAcct.getHeadNftSerialNum();
                         final var nftMap = nftsAdapter.get().getOnDiskNfts();
                         Objects.requireNonNull(nftMap).warm(new UniqueTokenKey(headNum, headSerialNum));
                     }
@@ -193,14 +201,14 @@ public class EntityMapWarmer {
             log.debug(
                     "no-op 'warm' not called on any token objects due to non-matching config:"
                             + " accounts on disk = {}, nfts on disk = {}, tokenRels on disk = {}",
-                    accountsStorageAdapter.get().areOnDisk(),
-                    nftsAdapter.get().isVirtual(),
-                    tokenRelsAdapter.get().areOnDisk());
+                    acctsOnDisk,
+                    nftsOnDisk,
+                    tokenRelsOnDisk);
         }
     }
 
     private void warmAccount(AccountID account) {
-        if (accountsStorageAdapter.get().areOnDisk()) {
+        if (acctsOnDisk) {
             threadpool.execute(() -> {
                 final var acctMap = accountsStorageAdapter.get().getOnDiskAccounts();
                 Objects.requireNonNull(acctMap).warm(EntityNumVirtualKey.from(EntityNum.fromAccountId(account)));
