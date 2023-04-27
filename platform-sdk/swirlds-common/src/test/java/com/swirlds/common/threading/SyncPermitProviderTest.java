@@ -129,14 +129,14 @@ class SyncPermitProviderTest {
             throw new RuntimeException(e);
         }
 
-        assertFalse(waitComplete.get(),
-                "waitForAllSyncsToFinish should not return until all permits are released");
+        assertFalse(waitComplete.get(), "waitForAllSyncsToFinish should not return until all permits are released");
 
         // close the permits that have already been acquired, so waitForAllSyncsToFinish will return
         permits.forEach(MaybeLocked::close);
 
         assertEventuallyTrue(
-                waitComplete::get, Duration.ofMillis(1000),
+                waitComplete::get,
+                Duration.ofMillis(1000),
                 "waitForAllSyncsToFinish should return after all permits are released");
     }
 }

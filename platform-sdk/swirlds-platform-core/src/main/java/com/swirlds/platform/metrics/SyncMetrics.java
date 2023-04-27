@@ -117,7 +117,6 @@ public class SyncMetrics {
     private final MaxStat multiTipsPerSync;
     private final AverageStat gensWaitingForExpiry;
 
-
     /**
      * Constructor of {@code SyncMetrics}
      *

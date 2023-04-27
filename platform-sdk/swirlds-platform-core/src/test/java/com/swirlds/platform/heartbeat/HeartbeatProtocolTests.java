@@ -31,7 +31,6 @@ import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.sync.SyncInputStream;
 import com.swirlds.platform.sync.SyncOutputStream;
-import com.swirlds.platform.sync.protocol.SyncProtocol;
 import java.io.IOException;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;

@@ -566,8 +566,7 @@ class SyncProtocolTests {
 
     @Test
     @DisplayName("SyncException is caught and rethrown as NetworkProtocolException")
-    void rethrowSyncException()
-            throws ParallelExecutionException, IOException, SyncException, InterruptedException {
+    void rethrowSyncException() throws ParallelExecutionException, IOException, SyncException, InterruptedException {
         final SyncProtocol protocol = new SyncProtocol(
                 peerId,
                 shadowGraphSynchronizer,
