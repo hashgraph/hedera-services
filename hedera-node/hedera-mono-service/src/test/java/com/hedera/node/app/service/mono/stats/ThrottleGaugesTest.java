@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.stats;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -25,6 +26,7 @@ import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
@@ -78,7 +80,9 @@ class ThrottleGaugesTest {
     void initializesMetricsAsExpected() {
         givenThrottleMocksWithGas();
         givenThrottleCollabs();
-        given(platform.getMetrics()).willReturn(metrics);
+        final var platformContext = mock(PlatformContext.class);
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 
@@ -95,7 +99,9 @@ class ThrottleGaugesTest {
         given(bThrottle.percentUsed(any())).willReturn(50.0);
         given(consGasThrottle.percentUsed(any())).willReturn(33.0);
         given(hapiGasThrottle.percentUsed(any())).willReturn(13.0);
-        given(platform.getMetrics()).willReturn(metrics);
+        final var platformContext = mock(PlatformContext.class);
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(pretendGauge);
 
         subject.registerWith(platform);
@@ -113,7 +119,9 @@ class ThrottleGaugesTest {
         givenThrottleCollabs();
         given(aThrottle.percentUsed(any())).willReturn(10.0);
         given(bThrottle.percentUsed(any())).willReturn(50.0);
-        given(platform.getMetrics()).willReturn(metrics);
+        final var platformContext = mock(PlatformContext.class);
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(pretendGauge);
 
         subject.registerWith(platform);
@@ -127,7 +135,9 @@ class ThrottleGaugesTest {
     void initializesWithoutGasMetricsAsExpected() {
         givenThrottleMocksWithoutGas();
         givenThrottleCollabs();
-        given(platform.getMetrics()).willReturn(metrics);
+        final var platformContext = mock(PlatformContext.class);
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 

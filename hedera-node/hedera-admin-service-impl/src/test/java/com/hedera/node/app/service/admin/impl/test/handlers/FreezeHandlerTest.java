@@ -20,16 +20,16 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FREEZE_START_TIME_MUST_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ONLY;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
@@ -38,12 +38,12 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.ReadableSpecialFileStore;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Optional;
@@ -55,43 +55,48 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
-    @Mock
+    @Mock(strictness = LENIENT)
     ReadableSpecialFileStore specialFileStore;
 
-    @Mock
-    private AccountAccess keyLookup;
+    @Mock(strictness = LENIENT)
+    private ReadableAccountStore accountStore;
+
+    @Mock(strictness = LENIENT)
+    private PreHandleContext context;
+
+    @Mock(strictness = LENIENT)
+    private Account account;
 
     private final Key key = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
-    private final HederaKey nonAdminKey = asHederaKey(key).get();
-
     private final AccountID nonAdminAccount =
             AccountID.newBuilder().accountNum(9999L).build();
-
     private final FreezeHandler subject = new FreezeHandler();
 
     @BeforeEach
     void setUp() {
-        given(keyLookup.getKey(nonAdminAccount)).willReturn(KeyOrLookupFailureReason.withKey(nonAdminKey));
+        given(accountStore.getAccountById(nonAdminAccount)).willReturn(account);
+        given(account.key()).willReturn(key);
+
+        given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.createStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
     }
 
     @Test
-    void rejectIfUnknownFreezeType() {
+    void rejectIfUnknownFreezeType() throws PreCheckException {
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder()
                         .freezeType(UNKNOWN_FREEZE_TYPE)
                         .build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, specialFileStore);
-
-        assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
-    void rejectIfStartTimeNotSetForCertainFreezeTypes() {
+    void rejectIfStartTimeNotSetForCertainFreezeTypes() throws PreCheckException {
         // when using these freeze types, it is required to set start time
         FreezeType[] freezeTypes = {FREEZE_ONLY, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
         for (FreezeType freezeType : freezeTypes) {
@@ -101,15 +106,13 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .build())
                     .build();
-            final var context = new PreHandleContext(keyLookup, txn);
-
-            subject.preHandle(context, specialFileStore);
-            assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
+            given(context.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
         }
     }
 
     @Test
-    void rejectIfStartTimeInPastForCertainFreezeTypes() {
+    void rejectIfStartTimeInPastForCertainFreezeTypes() throws PreCheckException {
         // when using these freeze types, it is required to set start time to a time after the effective consensus time
         FreezeType[] freezeTypes = {FREEZE_ONLY, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
@@ -124,15 +127,13 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(1000).build()))
                     .build();
-            final var context = new PreHandleContext(keyLookup, txn);
-
-            subject.preHandle(context, specialFileStore);
-            assertEquals(FREEZE_START_TIME_MUST_BE_FUTURE, context.getStatus());
+            given(context.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_START_TIME_MUST_BE_FUTURE);
         }
     }
 
     @Test
-    void rejectIfUpdateFileNotSetForCertainFreezeTypes() {
+    void rejectIfUpdateFileNotSetForCertainFreezeTypes() throws PreCheckException {
         // when using these freeze types, it is required to set an update file
         FreezeType[] freezeTypes = {PREPARE_UPGRADE, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
         for (FreezeType freezeType : freezeTypes) {
@@ -146,15 +147,13 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(2000).build()))
                     .build();
-            final var context = new PreHandleContext(keyLookup, txn);
-
-            subject.preHandle(context, specialFileStore);
-            assertEquals(FREEZE_UPDATE_FILE_DOES_NOT_EXIST, context.getStatus());
+            given(context.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
         }
     }
 
     @Test
-    void rejectIfFileHashNotSetForCertainFreezeTypes() {
+    void rejectIfFileHashNotSetForCertainFreezeTypes() throws PreCheckException {
         // when using these freeze types, it is required to set an update file
         FreezeType[] freezeTypes = {PREPARE_UPGRADE, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
@@ -174,15 +173,13 @@ class FreezeHandlerTest {
                             .updateFile(fileId)
                             .build())
                     .build();
-            final var context = new PreHandleContext(keyLookup, txn);
-
-            subject.preHandle(context, specialFileStore);
-            assertEquals(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH, context.getStatus());
+            given(context.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
     }
 
     @Test
-    void happyPathFreezeAbort() {
+    void happyPathFreezeAbort() throws PreCheckException {
         // freeze_abort always returns OK, to allow the node to send multiple commands to abort
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
@@ -190,14 +187,12 @@ class FreezeHandlerTest {
                         .freezeType(FREEZE_ABORT)
                         .build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-
-        subject.preHandle(context, specialFileStore);
-        assertEquals(OK, context.getStatus());
+        given(context.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(context));
     }
 
     @Test
-    void happyPathFreezeUpgradeOrTelemetryUpgrade() {
+    void happyPathFreezeUpgradeOrTelemetryUpgrade() throws PreCheckException {
         // when using these freeze types, it is required to set an update file and file hash and they must match
         // also must set start time to a time after the effective consensus time
         FreezeType[] freezeTypes = {FREEZE_UPGRADE, TELEMETRY_UPGRADE};
@@ -218,14 +213,13 @@ class FreezeHandlerTest {
                             .fileHash(Bytes.wrap(new byte[48]))
                             .build())
                     .build();
-            final var context = new PreHandleContext(keyLookup, txn);
-            subject.preHandle(context, specialFileStore);
-            assertEquals(OK, context.getStatus());
+            given(context.body()).willReturn(txn);
+            assertDoesNotThrow(() -> subject.preHandle(context));
         }
     }
 
     @Test
-    void happyPathPrepareUpgrade() {
+    void happyPathPrepareUpgrade() throws PreCheckException {
         // when using these freeze types, it is required to set an update file and file hash and they must match
         // start time not required
 
@@ -241,13 +235,12 @@ class FreezeHandlerTest {
                         .fileHash(Bytes.wrap(new byte[48]))
                         .build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, specialFileStore);
-        assertEquals(OK, context.getStatus());
+        given(context.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(context));
     }
 
     @Test
-    void happyPathFreezeOnly() {
+    void happyPathFreezeOnly() throws PreCheckException {
         // for FREEZE_ONLY, start time is required and it must be in the future
 
         TransactionID txnId = TransactionID.newBuilder()
@@ -261,56 +254,51 @@ class FreezeHandlerTest {
                         .startTime(Timestamp.newBuilder().seconds(2000).build())
                         .build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, specialFileStore);
-        assertEquals(OK, context.getStatus());
+        given(context.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(context));
     }
 
     @Test
-    void rejectIfStartHourSet() {
+    void rejectIfStartHourSet() throws PreCheckException {
         // start hour is not supported
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().startHour(3).build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, specialFileStore);
-        assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
-    void rejectIfStartMinSet() {
+    void rejectIfStartMinSet() throws PreCheckException {
         // start min is not supported
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().startMin(31).build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, specialFileStore);
-        assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
-    void rejectIfEndHourSet() {
+    void rejectIfEndHourSet() throws PreCheckException {
         // end hour is not supported
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().endHour(3).build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, specialFileStore);
-        assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
-    void rejectIfEndMinSet() {
+    void rejectIfEndMinSet() throws PreCheckException {
         // end min is not supported
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().endMin(16).build())
                 .build();
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, specialFileStore);
-        assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
     }
 }

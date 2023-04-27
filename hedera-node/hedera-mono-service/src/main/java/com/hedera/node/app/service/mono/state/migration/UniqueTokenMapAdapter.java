@@ -176,14 +176,6 @@ public class UniqueTokenMapAdapter {
         }
     }
 
-    /** Archive a copy of the map. This is a no-op for VirtualMap. */
-    public void archive() {
-        // VirtualMap does not need to be archived. We can safely ignore the call.
-        if (!isVirtual) {
-            merkleMap.archive();
-        }
-    }
-
     /**
      * @return the computed hash of the map's entries.
      */

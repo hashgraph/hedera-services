@@ -48,7 +48,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
     public static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
         registry.register(scheduleSchema());
     }
 

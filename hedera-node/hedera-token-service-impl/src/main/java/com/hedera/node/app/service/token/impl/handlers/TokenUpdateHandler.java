@@ -16,13 +16,15 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,41 +52,26 @@ public class TokenUpdateHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * Pre-handles a {@link HederaFunctionality#TOKEN_UPDATE}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.getTxn().tokenUpdateOrThrow();
+        final var op = context.body().tokenUpdateOrThrow();
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
 
-        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
-        if (tokenMeta.failed()) {
-            context.status(tokenMeta.failureReason());
-            return;
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
+        final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
+        if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
+        if (tokenMetadata.hasAdminKey()) {
+            context.requireKey(tokenMetadata.adminKey());
         }
-        final var tokenMetadata = tokenMeta.metadata();
-        final var adminKey = tokenMetadata.adminKey();
-        adminKey.ifPresent(context::addToReqNonPayerKeys);
         if (op.hasAutoRenewAccount()) {
-            context.addNonPayerKey(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
+            context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
         if (op.hasTreasury()) {
-            context.addNonPayerKey(op.treasuryOrThrow());
+            context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_ACCOUNT_ID);
         }
         if (op.hasAdminKey()) {
-            final var newAdminKey = asHederaKey(op.adminKeyOrThrow());
-            newAdminKey.ifPresent(context::addToReqNonPayerKeys);
+            context.requireKey(op.adminKeyOrThrow());
         }
     }
 

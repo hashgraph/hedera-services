@@ -9,6 +9,8 @@ module com.hedera.node.app.service.admin.impl.test {
     requires com.swirlds.common;
     requires com.swirlds.fcqueue;
     requires com.google.protobuf;
+    requires com.hedera.node.app.spi.fixtures;
+    requires com.hedera.node.app.service.token;
 
     opens com.hedera.node.app.service.admin.impl.test to
             org.junit.platform.commons,

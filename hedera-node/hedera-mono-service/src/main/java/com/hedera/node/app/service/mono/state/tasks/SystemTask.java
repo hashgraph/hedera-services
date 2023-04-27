@@ -22,6 +22,9 @@ import java.time.Instant;
 /**
  * Minimal interface for a system task that needs to perform deterministic work on (possibly) every
  * entity in state.
+ * <p>
+ * When you add a new `SystemTask` remember to wire it up in {@link TaskModule} or it
+ * won't get run.
  */
 public interface SystemTask {
     /**

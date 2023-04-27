@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.utils.TestUtils;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.io.EOFException;
 import java.io.IOException;
@@ -32,7 +33,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import utils.TestUtils;
 
 final class KnownLengthStreamTest {
     @Test

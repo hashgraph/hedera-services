@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.utils.TestUtils;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -33,7 +34,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
-import utils.TestUtils;
 
 final class DataBufferMarshallerTest {
     private final DataBufferMarshaller marshaller = new DataBufferMarshaller();

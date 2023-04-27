@@ -45,17 +45,17 @@ import com.swirlds.platform.observers.EventAddedObserver;
  *
  * <p>
  * The algorithm for deriving a critical quorum is defined below. A critical quorum will always contain 1/3 or
- * more of the stake of the network (up to and including all stake in the network if the number of events
+ * more of the weight of the network (up to and including all weight in the network if the number of events
  * from each node is exactly the same).
  * </p>
  *
  * <ol>
  * <li> Start with a threshold of 0. </li>
- * <li> Count the stake of all nodes that have a number of events (in the current round) equal or less
+ * <li> Count the weight of all nodes that have a number of events (in the current round) equal or less
  * than the threshold. </li>
- * <li> If the stake counted meets or exceeds 1/3 of the whole then stop. All nodes with a number of events that do not
+ * <li> If the weight counted meets or exceeds 1/3 of the whole then stop. All nodes with a number of events that do not
  * exceed the threshold are considered to be part of the critical quorum. </li>
- * <li> If the stake counted is below 1/3 then increase the threshold by 1 and go to step 2. </li>
+ * <li> If the weight counted is below 1/3 then increase the threshold by 1 and go to step 2. </li>
  * </ol>
  */
 public interface CriticalQuorum extends EventAddedObserver, ParentBasedCreationRule {

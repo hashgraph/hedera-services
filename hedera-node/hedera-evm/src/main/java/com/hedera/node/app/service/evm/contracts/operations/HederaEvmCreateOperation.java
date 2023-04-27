@@ -29,7 +29,7 @@ public class HederaEvmCreateOperation extends AbstractEvmRecordingCreateOperatio
     @Inject
     public HederaEvmCreateOperation(
             final GasCalculator gasCalculator, final CreateOperationExternalizer createOperationExternalizer) {
-        super(0xF0, "ħCREATE", 3, 1, 1, gasCalculator, createOperationExternalizer);
+        super(0xF0, "ħCREATE", 3, 1, gasCalculator, createOperationExternalizer);
     }
 
     @Override

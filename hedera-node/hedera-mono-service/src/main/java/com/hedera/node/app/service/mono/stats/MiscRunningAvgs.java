@@ -35,22 +35,26 @@ public class MiscRunningAvgs {
     }
 
     public void registerWith(final Platform platform) {
-        gasPerConsSec = platform.getMetrics()
+        gasPerConsSec = platform.getContext()
+                .getMetrics()
                 .getOrCreate(new RunningAverageMetric.Config(STAT_CATEGORY, Names.GAS_PER_CONSENSUS_SEC)
                         .withDescription(Descriptions.GAS_PER_CONSENSUS_SEC)
                         .withFormat(RUNNING_AVG_FORMAT)
                         .withHalfLife(halfLife));
-        handledSubmitMessageSize = platform.getMetrics()
+        handledSubmitMessageSize = platform.getContext()
+                .getMetrics()
                 .getOrCreate(new RunningAverageMetric.Config(STAT_CATEGORY, Names.HANDLED_SUBMIT_MESSAGE_SIZE)
                         .withDescription(Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE)
                         .withFormat(RUNNING_AVG_FORMAT)
                         .withHalfLife(halfLife));
-        writeQueueSizeRecordStream = platform.getMetrics()
+        writeQueueSizeRecordStream = platform.getContext()
+                .getMetrics()
                 .getOrCreate(new RunningAverageMetric.Config(STAT_CATEGORY, Names.WRITE_QUEUE_SIZE_RECORD_STREAM)
                         .withDescription(Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM)
                         .withFormat(RUNNING_AVG_FORMAT)
                         .withHalfLife(halfLife));
-        hashQueueSizeRecordStream = platform.getMetrics()
+        hashQueueSizeRecordStream = platform.getContext()
+                .getMetrics()
                 .getOrCreate(new RunningAverageMetric.Config(STAT_CATEGORY, Names.HASH_QUEUE_SIZE_RECORD_STREAM)
                         .withDescription(Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM)
                         .withFormat(RUNNING_AVG_FORMAT)

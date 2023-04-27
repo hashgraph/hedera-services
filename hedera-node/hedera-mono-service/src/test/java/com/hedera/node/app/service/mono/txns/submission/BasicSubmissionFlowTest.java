@@ -68,7 +68,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void rejectsPrecheckFailures() {
-        setupStakedNode();
+        setupNonZeroStakeNode();
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someFailure, null));
 
         final var response = subject.submit(someTxn);
@@ -79,7 +79,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void translatesPlatformCreateFailure() {
-        setupStakedNode();
+        setupNonZeroStakeNode();
         givenValidPrecheck();
         given(submissionManager.trySubmission(any())).willReturn(PLATFORM_TRANSACTION_NOT_CREATED);
 
@@ -90,7 +90,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void rejectsInvalidAccessor() {
-        setupStakedNode();
+        setupNonZeroStakeNode();
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, null));
 
         final var response = subject.submit(someTxn);
@@ -101,7 +101,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void followsHappyPathToOk() {
-        setupStakedNode();
+        setupNonZeroStakeNode();
         givenValidPrecheck();
         givenOkSubmission();
 
@@ -118,7 +118,7 @@ class BasicSubmissionFlowTest {
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, someAccessor));
     }
 
-    private void setupStakedNode() {
+    private void setupNonZeroStakeNode() {
         subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
     }
 
