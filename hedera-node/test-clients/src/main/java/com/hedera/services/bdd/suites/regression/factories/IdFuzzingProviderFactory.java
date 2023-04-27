@@ -64,7 +64,10 @@ public class IdFuzzingProviderFactory {
                     .withOp(new TransferToRandomKey(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props))
                     .withOp(
                             new RandomAccountUpdate(keys, accounts),
-                            intPropOrElse("randomAccountUpdate.bias", 0, props));
+                            intPropOrElse("randomAccountUpdate.bias", 0, props))
+                    .withOp(
+                            new EthereumTransferToRandomEVMAddress(spec.registry(), keys),
+                            intPropOrElse("randomEthereumTransactionTransfer.bias", 0, props));
         };
     }
 
@@ -80,27 +83,6 @@ public class IdFuzzingProviderFactory {
                     .withInitialization(keyInventory.creationOps())
                     /* ----- CRYPTO ----- */
                     .withOp(new TransferToRandomKey(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props));
-        };
-    }
-
-    /**
-     * Testing Lazy Create with random EVM addresses.
-     * Operation: creation of random evm addresses and sending hbars through Ethereum Transaction (Lazy Create)
-     *
-     * @param resource config
-     */
-    public static Function<HapiSpec, OpProvider> evmAddressFuzzing(final String resource) {
-        return spec -> {
-            final var props = RegressionProviderFactory.propsFrom(resource);
-
-            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
-
-            return new BiasedDelegatingProvider()
-                    .shouldLogNormalFlow(true)
-                    .withInitialization(onlyEcdsaKeys())
-                    .withOp(
-                            new EthereumTransferToRandomEVMAddress(spec.registry(), keys),
-                            intPropOrElse("randomEthereumTransactionTransfer.bias", 0, props));
         };
     }
 

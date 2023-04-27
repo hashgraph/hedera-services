@@ -50,6 +50,12 @@ public class EthereumTransferToRandomEVMAddress implements OpProvider {
         return keys.getQualifying().filter(k -> !k.isEmpty());
     }
 
+    /**
+     * Testing Lazy Create with random EVM addresses.
+     * Operation: creation of random evm addresses and sending hbars through Ethereum Transaction (Lazy Create)
+     *
+     * @param addressRecipient evm address of the recipient
+     */
     private HapiEthereumCall generateLazyCreateEthereumTransaction(String addressRecipient) {
         HapiEthereumCall ethereumCall = TxnVerbs.ethereumCryptoTransferToAlias(
                         getEvmAddress(addressRecipient), FIVE_HBARS)

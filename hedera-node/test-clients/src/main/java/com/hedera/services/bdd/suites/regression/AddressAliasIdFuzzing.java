@@ -48,6 +48,8 @@ public class AddressAliasIdFuzzing extends HapiSuite {
 
     private static final String PROPERTIES = "id-fuzzing.properties";
     private final AtomicInteger maxOpsPerSec = new AtomicInteger(1);
+    private final AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
+    private final AtomicInteger backoffSleepSecs = new AtomicInteger(Integer.MAX_VALUE);
 
     public static void main(String... args) {
         new AddressAliasIdFuzzing().runSuiteSync();
@@ -55,32 +57,11 @@ public class AddressAliasIdFuzzing extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing(), ethereumTransactionLazyCreateFuzzing());
+        return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing());
     }
 
     private HapiSpec addressAliasIdFuzzing() {
-        return defaultHapiSpec("AddressAliasIdFuzzing")
-                .given(
-                        newKeyNamed(KEY_FOR_INCONGRUENT_ALIAS).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(UNIQUE_PAYER_ACCOUNT)
-                                .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
-                                .withRecharging())
-                .when()
-                .then(runWithProvider(idFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
-    }
-
-    private HapiSpec transferToKeyFuzzing() {
-        return defaultHapiSpec("TransferToKeyFuzzing")
-                .given(cryptoCreate(UNIQUE_PAYER_ACCOUNT)
-                        .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
-                        .withRecharging())
-                .when()
-                .then(runWithProvider(idTransferToRandomKeyWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
-    }
-
-    private HapiSpec ethereumTransactionLazyCreateFuzzing() {
-
-        return propertyPreservingHapiSpec("EthereumTransactionLazyCreateFuzzing")
+        return propertyPreservingHapiSpec("AddressAliasIdFuzzing")
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 /**
                  * Initialization operations:
@@ -97,14 +78,29 @@ public class AddressAliasIdFuzzing extends HapiSuite {
                                 "true",
                                 CONTRACTS_EVM_VERSION_PROP,
                                 V_0_34),
+                        newKeyNamed(KEY_FOR_INCONGRUENT_ALIAS).shape(SECP_256K1_SHAPE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+                                .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
+                                .withRecharging(),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS).withRecharging(),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via(AUTO_ACCOUNT))
                 .when()
-                .then(runWithProvider(evmAddressFuzzing(PROPERTIES))
+                .then(runWithProvider(idFuzzingWith(PROPERTIES))
                         .lasting(10L, TimeUnit.SECONDS)
-                        .maxOpsPerSec(maxOpsPerSec::get));
+                        .maxOpsPerSec(maxOpsPerSec::get)
+                        .maxPendingOps(maxPendingOps::get)
+                        .backoffSleepSecs(backoffSleepSecs::get));
+    }
+
+    private HapiSpec transferToKeyFuzzing() {
+        return defaultHapiSpec("TransferToKeyFuzzing")
+                .given(cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+                        .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
+                        .withRecharging())
+                .when()
+                .then(runWithProvider(idTransferToRandomKeyWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
     }
 
     @Override
