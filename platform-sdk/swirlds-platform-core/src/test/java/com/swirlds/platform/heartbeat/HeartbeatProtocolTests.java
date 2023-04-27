@@ -31,6 +31,7 @@ import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.sync.SyncInputStream;
 import com.swirlds.platform.sync.SyncOutputStream;
+import com.swirlds.platform.sync.protocol.SyncProtocol;
 import java.io.IOException;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
@@ -114,6 +115,18 @@ class HeartbeatProtocolTests {
     }
 
     @Test
+    @DisplayName("shouldAccept always returns true")
+    void shouldAccept() {
+        final HeartbeatProtocol heartbeatProtocol =
+                new HeartbeatProtocol(peerId, heartbeatPeriod, networkMetrics, time);
+
+        assertTrue(heartbeatProtocol.shouldAccept());
+
+        // additional calls to shouldAccept should always return true, without any cooldown being required
+        assertTrue(heartbeatProtocol.shouldAccept());
+    }
+
+    @Test
     @DisplayName("Exception is thrown if the peer doesn't send a heartbeat byte")
     void peerSendsInvalidHeartbeat() {
         final HeartbeatProtocol heartbeatProtocol =
@@ -151,5 +164,14 @@ class HeartbeatProtocolTests {
         Mockito.when(heartbeatSendingConnection.getDis()).thenReturn(badInputStream);
 
         assertThrows(NetworkProtocolException.class, () -> heartbeatProtocol.runProtocol(heartbeatSendingConnection));
+    }
+
+    @Test
+    @DisplayName("acceptOnSimultaneousInitiate should return true")
+    void acceptOnSimultaneousInitiate() {
+        final HeartbeatProtocol heartbeatProtocol =
+                new HeartbeatProtocol(peerId, heartbeatPeriod, networkMetrics, time);
+
+        assertTrue(heartbeatProtocol.acceptOnSimultaneousInitiate());
     }
 }
