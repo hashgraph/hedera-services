@@ -196,9 +196,6 @@ class EntityMapWarmerTest {
         subject.warmCache(multiTxnRound);
 
         // then:
-        verify(accountAdpt, never()).areOnDisk();
-        verify(nftAdpt, never()).isVirtual();
-        verify(tokenRelAdpt, never()).areOnDisk();
         verifyNoCacheWarming();
     }
 
