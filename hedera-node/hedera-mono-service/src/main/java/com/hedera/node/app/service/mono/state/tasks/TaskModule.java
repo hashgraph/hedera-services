@@ -25,7 +25,7 @@ import javax.inject.Singleton;
 
 /**
  * Binds the {@link SystemTask} implementations, which should always include {@link ExpiryProcess},
- * but may include others such as the 0.31.x {@link TraceabilityExportTask}.
+ * but may include others such as the 0.31.x/0.36/0.37 {@link TraceabilityExportTask}.
  *
  * <p>Note we are keeping {@link TraceabilityExportTask} in the codebase at this time for two
  * reasons:
@@ -43,4 +43,10 @@ public interface TaskModule {
     @Singleton
     @StringKey("1_ENTITY_EXPIRATION")
     SystemTask bindEntityExpirationTask(ExpiryProcess expiryProcess);
+
+    @Binds
+    @IntoMap
+    @Singleton
+    @StringKey("2_TRACEABILITY_EXPORT")
+    SystemTask bindTraceabilityExportTask(TraceabilityExportTask traceabilityExportTask);
 }

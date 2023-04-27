@@ -162,6 +162,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
@@ -202,6 +203,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTOR
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
@@ -419,6 +421,7 @@ class BootstrapPropertiesTest {
             entry(LEDGER_ID, "0x03"),
             entry(LEDGER_CHANGE_HIST_MEM_SECS, 20),
             entry(LEDGER_FUNDING_ACCOUNT, 98L),
+            entry(LEDGER_MAX_AUTO_ASSOCIATIONS, 5000),
             entry(LEDGER_NUM_SYSTEM_ACCOUNTS, 100),
             entry(LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT, 180),
             entry(LEDGER_TRANSFERS_MAX_LEN, 10),
@@ -533,7 +536,8 @@ class BootstrapPropertiesTest {
             entry(WORKFLOWS_ENABLED, Set.of()),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, true),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, true),
-            entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"));
+            entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"),
+            entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500));
 
     @Test
     void containsProperty() {

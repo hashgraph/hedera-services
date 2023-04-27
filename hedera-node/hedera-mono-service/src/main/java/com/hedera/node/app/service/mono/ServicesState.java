@@ -70,6 +70,7 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.spi.config.PropertyNames;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -281,6 +282,15 @@ public class ServicesState extends PartialNaryMerkleInternal
     @Override
     public void preHandle(final Event event) {
         metadata.app().eventExpansion().expandAllSigs(event, this);
+    }
+
+    @Override
+    public AddressBook updateWeight(@NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
+        throwIfImmutable();
+        stakingInfo()
+                .forEach((nodeNum, stakingInfo) ->
+                        configAddressBook.updateWeight(nodeNum.longValue(), stakingInfo.getWeight()));
+        return configAddressBook;
     }
 
     private ServicesApp deserializedInit(
@@ -565,7 +575,6 @@ public class ServicesState extends PartialNaryMerkleInternal
         setChild(StateChildIndices.SPECIAL_FILES, new MerkleSpecialFiles());
         setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions());
         setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
-        //        setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
         setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
         setChild(
                 StateChildIndices.STAKING_INFO,

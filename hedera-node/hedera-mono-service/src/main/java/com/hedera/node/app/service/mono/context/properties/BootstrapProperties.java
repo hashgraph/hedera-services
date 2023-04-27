@@ -156,6 +156,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
@@ -196,6 +197,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTOR
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
@@ -426,7 +428,8 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_PERIOD_MINS,
             STAKING_REWARD_HISTORY_NUM_STORED_PERIODS,
             STAKING_STARTUP_HELPER_RECOMPUTE,
-            WORKFLOWS_ENABLED);
+            WORKFLOWS_ENABLED,
+            STAKING_SUM_OF_CONSENSUS_WEIGHTS);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
             ACCOUNTS_MAX_NUM,
@@ -500,6 +503,7 @@ public final class BootstrapProperties implements PropertySource {
             AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE,
             AUTO_RENEW_GRACE_PERIOD,
             LEDGER_CHANGE_HIST_MEM_SECS,
+            LEDGER_MAX_AUTO_ASSOCIATIONS,
             LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION,
             LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION,
             LEDGER_XFER_BAL_CHANGES_MAX_LEN,
@@ -698,6 +702,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(FEES_PERCENT_CONGESTION_MULTIPLIERS, AS_CONGESTION_MULTIPLIERS),
             entry(FEES_PERCENT_UTILIZATION_SCALE_FACTORS, AS_ENTITY_SCALE_FACTORS),
             entry(LEDGER_CHANGE_HIST_MEM_SECS, AS_INT),
+            entry(LEDGER_MAX_AUTO_ASSOCIATIONS, AS_INT),
             entry(LEDGER_XFER_BAL_CHANGES_MAX_LEN, AS_INT),
             entry(LEDGER_FUNDING_ACCOUNT, AS_LONG),
             entry(LEDGER_NUM_SYSTEM_ACCOUNTS, AS_INT),
@@ -725,6 +730,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, AS_BOOLEAN),
             entry(STAKING_REWARD_RATE, AS_LONG),
             entry(STAKING_START_THRESH, AS_LONG),
+            entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, AS_INT),
             entry(TOKENS_MAX_AGGREGATE_RELS, AS_LONG),
             entry(TOKENS_STORE_RELS_ON_DISK, AS_BOOLEAN),
             entry(TOKENS_MAX_NUM, AS_LONG),
