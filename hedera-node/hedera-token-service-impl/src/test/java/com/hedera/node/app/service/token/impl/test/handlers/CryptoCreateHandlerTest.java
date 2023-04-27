@@ -70,9 +70,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private CryptoCreateHandler subject = new CryptoCreateHandler();
     private TransactionBody txn;
     private CryptoCreateRecordBuilder recordBuilder;
-
-    private static final boolean CREATABLE_ACCOUNTS = true;
-    private static final boolean NON_CREATABLE_ACCOUNTS = false;
     private static final long defaultInitialBalance = 100L;
 
     @BeforeEach
@@ -193,8 +190,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void failsWhenAccountCannotBeCreated() {
         final var recordBuilder = subject.newRecordBuilder();
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, txn, writableStore, recordBuilder, NON_CREATABLE_ACCOUNTS));
+                HandleException.class, () -> subject.handle(handleContext, txn, writableStore, recordBuilder));
         assertThat(msg.getStatus()).isEqualTo(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
     }
 
@@ -209,7 +205,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
         assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
 
-        subject.handle(handleContext, txn, writableStore, recordBuilder, CREATABLE_ACCOUNTS);
+        subject.handle(handleContext, txn, writableStore, recordBuilder);
 
         // newly created account and payer account are modified
         assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
@@ -275,7 +271,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
         assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
 
-        subject.handle(handleContext, txn, writableStore, recordBuilder, CREATABLE_ACCOUNTS);
+        subject.handle(handleContext, txn, writableStore, recordBuilder);
 
         // newly created account and payer account are modified
         assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
@@ -341,8 +337,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
 
         assertThrows(
-                NullPointerException.class,
-                () -> subject.handle(handleContext, txn, writableStore, recordBuilder, CREATABLE_ACCOUNTS));
+                NullPointerException.class, () -> subject.handle(handleContext, txn, writableStore, recordBuilder));
     }
 
     @Test
@@ -356,8 +351,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
 
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, txn, writableStore, recordBuilder, CREATABLE_ACCOUNTS));
+                HandleException.class, () -> subject.handle(handleContext, txn, writableStore, recordBuilder));
         assertEquals(INSUFFICIENT_PAYER_BALANCE, msg.getStatus());
 
         final var recordMsg = assertThrows(IllegalStateException.class, () -> recordBuilder.getCreatedAccount());
@@ -374,8 +368,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         changeAccountToDeleted();
 
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, txn, writableStore, recordBuilder, CREATABLE_ACCOUNTS));
+                HandleException.class, () -> subject.handle(handleContext, txn, writableStore, recordBuilder));
         assertEquals(ACCOUNT_DELETED, msg.getStatus());
 
         final var recordMsg = assertThrows(IllegalStateException.class, () -> recordBuilder.getCreatedAccount());
@@ -393,8 +386,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .build();
 
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, txn, writableStore, recordBuilder, CREATABLE_ACCOUNTS));
+                HandleException.class, () -> subject.handle(handleContext, txn, writableStore, recordBuilder));
         assertEquals(INVALID_PAYER_ACCOUNT_ID, msg.getStatus());
 
         final var recordMsg = assertThrows(IllegalStateException.class, () -> recordBuilder.getCreatedAccount());
@@ -417,7 +409,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
         assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
 
-        subject.handle(handleContext, txn, writableStore, recordBuilder, CREATABLE_ACCOUNTS);
+        subject.handle(handleContext, txn, writableStore, recordBuilder);
 
         // newly created account and payer account are modified
         assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));

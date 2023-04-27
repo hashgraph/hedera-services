@@ -124,9 +124,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                     case UNSET -> EntityNumValue.DEFAULT.num();
                 };
 
-        return accountNum == null
-                ? Optional.empty()
-                : Optional.ofNullable(accountState.getForModify(EntityNumVirtualKey.fromLong(accountNum)));
+        return Optional.ofNullable(accountState.getForModify(EntityNumVirtualKey.fromLong(accountNum)));
     }
 
     /**

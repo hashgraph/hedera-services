@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_I
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static java.util.Objects.requireNonNull;
@@ -94,8 +93,7 @@ public class CryptoCreateHandler implements TransactionHandler {
             @NonNull final HandleContext handleContext,
             @NonNull final TransactionBody txnBody,
             @NonNull final WritableAccountStore accountStore,
-            @NonNull final CryptoCreateRecordBuilder recordBuilder,
-            @NonNull final boolean areCreatableAccounts) {
+            @NonNull final CryptoCreateRecordBuilder recordBuilder) {
         final var op = txnBody.cryptoCreateAccount();
 
         // validate fields in the transaction body that involves checking with
@@ -105,10 +103,8 @@ public class CryptoCreateHandler implements TransactionHandler {
             throw new HandleException(validationResult);
         }
 
-        // If accounts can't be created, due to the usage of a price regime, throw an exception
-        if (!areCreatableAccounts) {
-            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
-        }
+        // TODO: Use the config and check if accounts can be created.
+        //  Currently this check is being done in `finishCryptoCreate` before `commit`
 
         // validate payer account exists and has enough balance
         final var optionalPayer = accountStore.getForModify(

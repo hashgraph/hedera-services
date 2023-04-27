@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -28,9 +29,9 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CreateAccountRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -74,14 +75,15 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
 
     @Override
     protected void finishCryptoCreate(
-            @NonNull final CryptoCreateRecordBuilder recordBuilder,
-            @NonNull final WritableAccountStore accountStore) {
+            @NonNull final CryptoCreateRecordBuilder recordBuilder, @NonNull final WritableAccountStore accountStore) {
+        // If accounts can't be created, due to the usage of a price regime, throw an exception
+        if (!usageLimits.areCreatableAccounts(1)) {
+            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        }
         // Adapt the record builder outcome for mono-service
-        txnCtx.setCreated(
-                PbjConverter.fromPbj(
-                        AccountID.newBuilder()
-                                .accountNum(recordBuilder.getCreatedAccount())
-                                .build()));
+        txnCtx.setCreated(PbjConverter.fromPbj(AccountID.newBuilder()
+                .accountNum(recordBuilder.getCreatedAccount())
+                .build()));
         accountStore.commit();
     }
 
