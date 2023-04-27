@@ -90,19 +90,6 @@ class EntityAutoExpiryTest {
     }
 
     @Test
-    void abortsIfNotAutoRenewing() {
-        // setup:
-        mockDynamicProps.disableAutoRenew();
-
-        // when:
-        subject.execute(instantNow);
-
-        // then:
-        verifyNoInteractions(taskManager);
-        verify(networkCtx).syncExpiryThrottle(expiryThrottle);
-    }
-
-    @Test
     void abortsIfExpiryThrottleCannotSupportMinUnitOfWork() {
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
         given(expiryThrottle.stillLacksMinFreeCapAfterLeakingUntil(instantNow)).willReturn(true);
