@@ -78,6 +78,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -88,11 +89,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TransferPrecompile extends AbstractWritePrecompile {
+    private static final Logger log = LogManager.getLogger(TransferPrecompile.class);
     private static final Function CRYPTO_TRANSFER_FUNCTION =
             new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", INT);
     private static final Function CRYPTO_TRANSFER_FUNCTION_V2 = new Function(
@@ -123,6 +127,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private static final Bytes TRANSFER_NFT_SELECTOR = Bytes.wrap(TRANSFER_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> TRANSFER_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
     private static final String TRANSFER = String.format(FAILURE_MESSAGE, "transfer");
+    private static final String CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN =
+            "Change {} switched to approval without matching adjustment in {}";
     private final HederaStackedWorldStateUpdater updater;
     private final EvmSigsVerifier sigsVerifier;
     private final int functionId;
@@ -276,7 +282,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 // one of the HAPI-style transfer precompiles
                 if (!senderHasSignedOrIsMsgSenderInFrame && !topLevelSigsAreEnabled && canFallbackToApprovals) {
                     change.switchToApproved();
-                    updateBodyForAutoApprovalOf(transactionBody.getCryptoTransferBuilder(), change);
+                    updateSynthOpForAutoApprovalOf(transactionBody.getCryptoTransferBuilder(), change);
                     continue;
                 } else {
                     validateTrue(
@@ -365,77 +371,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var hbarOnly = transferOp.transferWrapper().hbarTransfers().size();
         impliedTransfers = impliedTransfersMarshal.assessCustomFeesAndValidate(
                 hbarOnly, 0, numLazyCreates, explicitChanges, NO_ALIASES, impliedTransfersMarshal.currentProps());
-    }
-
-    @VisibleForTesting
-    static void updateBodyForAutoApprovalOf(
-            final CryptoTransferTransactionBody.Builder opBuilder, final BalanceChange switchedChange) {
-        if (switchedChange.isForHbar()) {
-            updateBodyForAutoApprovalOfHbar(opBuilder, switchedChange);
-        } else {
-            updateBodyForAutoApprovalOfToken(opBuilder, switchedChange);
-        }
-    }
-
-    private static void updateBodyForAutoApprovalOfHbar(
-            final CryptoTransferTransactionBody.Builder opBuilder, final BalanceChange switchedChange) {
-        final var transfersBuilder = opBuilder.getTransfersBuilder();
-        for (int i = 0, n = transfersBuilder.getAccountAmountsCount(); i < n; i++) {
-            final var hbarAdjust = transfersBuilder.getAccountAmountsBuilder(i);
-            if (hbarAdjust.getAccountID().equals(switchedChange.accountId())) {
-                hbarAdjust.setIsApproval(true);
-                return;
-            }
-        }
-    }
-
-    private static void updateBodyForAutoApprovalOfToken(
-            final CryptoTransferTransactionBody.Builder opBuilder, final BalanceChange switchedChange) {
-        for (int i = 0, n = opBuilder.getTokenTransfersCount(); i < n; i++) {
-            final var tokenTransfers = opBuilder.getTokenTransfers(i);
-            if (tokenTransfers.getToken().equals(switchedChange.tokenId())) {
-                if (switchedChange.isForNft()) {
-                    updateBodyForAutoApprovalOfNonFungible(opBuilder, tokenTransfers, switchedChange, i);
-                } else {
-                    updateBodyForAutoApprovalOfFungible(opBuilder, tokenTransfers, switchedChange, i);
-                }
-            }
-        }
-    }
-
-    private static void updateBodyForAutoApprovalOfFungible(
-            final CryptoTransferTransactionBody.Builder opBuilder,
-            final TokenTransferList tokenTransfers,
-            final BalanceChange switchedChange,
-            final int tokenTransfersIndex) {
-        for (int j = 0, m = tokenTransfers.getTransfersCount(); j < m; j++) {
-            final var adjust = tokenTransfers.getTransfers(j);
-            if (adjust.getAccountID().equals(switchedChange.accountId())) {
-                opBuilder
-                        .getTokenTransfersBuilder(tokenTransfersIndex)
-                        .getTransfersBuilder(j)
-                        .setIsApproval(true);
-                break;
-            }
-        }
-    }
-
-    private static void updateBodyForAutoApprovalOfNonFungible(
-            final CryptoTransferTransactionBody.Builder opBuilder,
-            final TokenTransferList tokenTransfers,
-            final BalanceChange switchedChange,
-            final int tokenTransfersIndex) {
-        for (int j = 0, m = tokenTransfers.getNftTransfersCount(); j < m; j++) {
-            final var change = tokenTransfers.getNftTransfers(j);
-            if (change.getSenderAccountID().equals(switchedChange.accountId())
-                    && change.getSerialNumber() == switchedChange.serialNo()) {
-                opBuilder
-                        .getTokenTransfersBuilder(tokenTransfersIndex)
-                        .getNftTransfersBuilder(j)
-                        .setIsApproval(true);
-                break;
-            }
-        }
     }
 
     @Override
@@ -752,5 +687,139 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     public void setCanFallbackToApprovals(final boolean canFallbackToApprovals) {
         this.canFallbackToApprovals = canFallbackToApprovals;
+    }
+
+    /**
+     * Given a {@link BalanceChange} that was switched from key-based authorization to approval-based authorization,
+     * tries to update the matching adjustment in the transfer list of the in-progress synthetic {@code CryptoTransfer}
+     * op to reflect the switch.
+     *
+     * <p><b>Important:</b> this method acts via side effects, mutating the given {@code opBuilder} in-place.
+     *
+     * @param opBuilder the builder for the in-progress synthetic {@code CryptoTransfer} op
+     * @param switchedChange the {@code BalanceChange} switched to approval-based authorization
+     */
+    @VisibleForTesting
+    static void updateSynthOpForAutoApprovalOf(
+            @NonNull final CryptoTransferTransactionBody.Builder opBuilder,
+            @NonNull final BalanceChange switchedChange) {
+        if (switchedChange.isForCustomFee()) {
+            // The synthetic CryptoTransfer op won't have any transfer list entry for a custom fee adjustment,
+            // so we can't externalize any more info in this case (given the current record creation logic)
+            return;
+        }
+        if (switchedChange.isForHbar()) {
+            updateSynthOpForAutoApprovalOfHbar(opBuilder, switchedChange);
+        } else {
+            updateSynthOpForAutoApprovalOfToken(opBuilder, switchedChange);
+        }
+    }
+
+    /**
+     * Given an hbar {@link BalanceChange} that was switched from key-based authorization to approval-based
+     * authorization, tries to update the matching adjustment in the hbar transfer list of the in-progress
+     * synthetic {@code CryptoTransfer} op to reflect the switch.
+     *
+     * @param opBuilder the builder for the in-progress synthetic {@code CryptoTransfer} op
+     * @param switchedChange the hbar {@code BalanceChange} switched to approval-based authorization
+     */
+    private static void updateSynthOpForAutoApprovalOfHbar(
+            @NonNull final CryptoTransferTransactionBody.Builder opBuilder,
+            @NonNull final BalanceChange switchedChange) {
+        final var transfersBuilder = opBuilder.getTransfersBuilder();
+        for (int i = 0, n = transfersBuilder.getAccountAmountsCount(); i < n; i++) {
+            final var hbarAdjust = transfersBuilder.getAccountAmountsBuilder(i);
+            if (hbarAdjust.getAccountID().equals(switchedChange.accountId())) {
+                hbarAdjust.setIsApproval(true);
+                return;
+            }
+        }
+        // This doesn't make sense, as it implies the TransferPrecompile has switched a non-custom-fee hbar
+        // adjustment to approval-based authorization, but the synthetic CryptoTransfer op doesn't have a
+        // matching adjustment in its transfer list
+        log.warn(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
+    }
+
+    /**
+     * Given a token {@link BalanceChange} that was switched from key-based authorization to approval-based
+     * authorization, tries to update the matching adjustment in the token transfer list of the in-progress
+     * synthetic {@code CryptoTransfer} op to reflect the switch.
+     *
+     * @param opBuilder the builder for the in-progress synthetic {@code CryptoTransfer} op
+     * @param switchedChange the token {@code BalanceChange} switched to approval-based authorization
+     */
+    private static void updateSynthOpForAutoApprovalOfToken(
+            final CryptoTransferTransactionBody.Builder opBuilder, final BalanceChange switchedChange) {
+        for (int i = 0, n = opBuilder.getTokenTransfersCount(); i < n; i++) {
+            final var tokenTransfers = opBuilder.getTokenTransfers(i);
+            if (tokenTransfers.getToken().equals(switchedChange.tokenId())) {
+                if (switchedChange.isForNft()) {
+                    updateBodyForAutoApprovalOfNonFungible(opBuilder, tokenTransfers, switchedChange, i);
+                } else {
+                    updateBodyForAutoApprovalOfFungible(opBuilder, tokenTransfers, switchedChange, i);
+                }
+                // Token ids cannot be repeated, so if there was an adjustment matching this change, it was in this list
+                return;
+            }
+        }
+    }
+
+    /**
+     * Given a fungible {@link BalanceChange} that was switched from key-based authorization to approval-based
+     * authorization, tries to update the matching adjustment in the token transfer list of the in-progress
+     * synthetic {@code CryptoTransfer} op to reflect the switch.
+     *
+     * @param opBuilder the builder for the in-progress synthetic {@code CryptoTransfer} op
+     * @param switchedChange the fungible {@code BalanceChange} switched to approval-based authorization
+     */
+    private static void updateBodyForAutoApprovalOfFungible(
+            final CryptoTransferTransactionBody.Builder opBuilder,
+            final TokenTransferList tokenTransfers,
+            final BalanceChange switchedChange,
+            final int tokenTransfersIndex) {
+        for (int j = 0, m = tokenTransfers.getTransfersCount(); j < m; j++) {
+            final var adjust = tokenTransfers.getTransfers(j);
+            if (adjust.getAccountID().equals(switchedChange.accountId())) {
+                opBuilder
+                        .getTokenTransfersBuilder(tokenTransfersIndex)
+                        .getTransfersBuilder(j)
+                        .setIsApproval(true);
+                return;
+            }
+        }
+        // This doesn't make sense, as it implies the TransferPrecompile has switched a non-custom-fee fungible
+        // adjustment to approval-based authorization, but the synthetic CryptoTransfer op doesn't have a
+        // matching adjustment in its token transfer list
+        log.warn(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
+    }
+
+    /**
+     * Given a non-fungible {@link BalanceChange} that was switched from key-based authorization to approval-based
+     * authorization, tries to update the matching adjustment in the token transfer list of the in-progress
+     * synthetic {@code CryptoTransfer} op to reflect the switch.
+     *
+     * @param opBuilder the builder for the in-progress synthetic {@code CryptoTransfer} op
+     * @param switchedChange the non-fungible {@code BalanceChange} switched to approval-based authorization
+     */
+    private static void updateBodyForAutoApprovalOfNonFungible(
+            final CryptoTransferTransactionBody.Builder opBuilder,
+            final TokenTransferList tokenTransfers,
+            final BalanceChange switchedChange,
+            final int tokenTransfersIndex) {
+        for (int j = 0, m = tokenTransfers.getNftTransfersCount(); j < m; j++) {
+            final var change = tokenTransfers.getNftTransfers(j);
+            if (change.getSenderAccountID().equals(switchedChange.accountId())
+                    && change.getSerialNumber() == switchedChange.serialNo()) {
+                opBuilder
+                        .getTokenTransfersBuilder(tokenTransfersIndex)
+                        .getNftTransfersBuilder(j)
+                        .setIsApproval(true);
+                return;
+            }
+        }
+        // This doesn't make sense, as it implies the TransferPrecompile has switched a non-custom-fee NFT
+        // ownership change to approval-based authorization, but the synthetic CryptoTransfer op doesn't
+        // have a matching ownership change in its token transfer list
+        log.warn(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
     }
 }

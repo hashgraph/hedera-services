@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.updateBodyForAutoApprovalOf;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.updateSynthOpForAutoApprovalOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
@@ -44,9 +44,29 @@ class SynthApprovalRecordsTest {
                         .addAccountAmounts(
                                 aaWith(debited.asGrpcAccount(), -amount).setIsApproval(true)));
 
-        updateBodyForAutoApprovalOf(synthOp, hbarAdjust);
+        updateSynthOpForAutoApprovalOf(synthOp, hbarAdjust);
 
         assertEquals(approvedSynthOp.build(), synthOp.build());
+    }
+
+    @Test
+    void updatesNoHbarAutoApprovalsIfNoneMatch() {
+        final var amount = 10;
+        final var debited = IdUtils.asModelId("0.0.3");
+        final var actualDebited = IdUtils.asModelId("0.0.6");
+        final var payer = IdUtils.asModelId("0.0.5");
+        final var hbarAdjust = BalanceChange.changingHbar(
+                aaWith(debited.asGrpcAccount(), -amount).build(), payer.asGrpcAccount());
+        final var synthOp = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(
+                        TransferList.newBuilder().addAccountAmounts(aaWith(actualDebited.asGrpcAccount(), -amount)));
+        final var unApprovedSynthOp = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(
+                        TransferList.newBuilder().addAccountAmounts(aaWith(actualDebited.asGrpcAccount(), -amount)));
+
+        updateSynthOpForAutoApprovalOf(synthOp, hbarAdjust);
+
+        assertEquals(unApprovedSynthOp.build(), synthOp.build());
     }
 
     @Test
@@ -56,24 +76,80 @@ class SynthApprovalRecordsTest {
         final var credited = IdUtils.asModelId("0.0.6");
         final var payer = IdUtils.asModelId("0.0.5");
         final var tokenId = IdUtils.asModelId("0.0.4");
-        final var tokenCredit =
-                BalanceChange.tokenAdjust(credited, tokenId, +amount, payer.asGrpcAccount(), false, false);
+        final var otherTokenId = IdUtils.asModelId("0.0.7");
         final var tokenDebit =
                 BalanceChange.tokenAdjust(debited, tokenId, -amount, payer.asGrpcAccount(), false, false);
         final var synthOp = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder().setToken(otherTokenId.asGrpcToken()))
                 .addTokenTransfers(TokenTransferList.newBuilder()
                         .setToken(tokenId.asGrpcToken())
                         .addTransfers(aaWith(credited.asGrpcAccount(), +amount))
                         .addTransfers(aaWith(debited.asGrpcAccount(), -amount)));
         final var approvedSynthOp = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder().setToken(otherTokenId.asGrpcToken()))
                 .addTokenTransfers(TokenTransferList.newBuilder()
                         .setToken(tokenId.asGrpcToken())
                         .addTransfers(aaWith(credited.asGrpcAccount(), +amount))
                         .addTransfers(aaWith(debited.asGrpcAccount(), -amount).setIsApproval(true)));
 
-        updateBodyForAutoApprovalOf(synthOp, tokenDebit);
+        updateSynthOpForAutoApprovalOf(synthOp, tokenDebit);
 
         assertEquals(approvedSynthOp.build(), synthOp.build());
+    }
+
+    @Test
+    void updatesNoFungibleAutoApprovalsIfNoneMatch() {
+        final var amount = 10;
+        final var debited = IdUtils.asModelId("0.0.3");
+        final var changeDebited = IdUtils.asModelId("0.0.8");
+        final var credited = IdUtils.asModelId("0.0.6");
+        final var payer = IdUtils.asModelId("0.0.5");
+        final var tokenId = IdUtils.asModelId("0.0.4");
+        final var otherTokenId = IdUtils.asModelId("0.0.7");
+        final var tokenDebit =
+                BalanceChange.tokenAdjust(changeDebited, tokenId, -amount, payer.asGrpcAccount(), false, false);
+        final var synthOp = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder().setToken(otherTokenId.asGrpcToken()))
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(tokenId.asGrpcToken())
+                        .addTransfers(aaWith(credited.asGrpcAccount(), +amount))
+                        .addTransfers(aaWith(debited.asGrpcAccount(), -amount)));
+        final var unApprovedSynthOp = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder().setToken(otherTokenId.asGrpcToken()))
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(tokenId.asGrpcToken())
+                        .addTransfers(aaWith(credited.asGrpcAccount(), +amount))
+                        .addTransfers(aaWith(debited.asGrpcAccount(), -amount)));
+
+        updateSynthOpForAutoApprovalOf(synthOp, tokenDebit);
+
+        assertEquals(unApprovedSynthOp.build(), synthOp.build());
+    }
+
+    @Test
+    void doesNotUpdateFungibleAutoApprovalsForCustomFees() {
+        final var amount = 10;
+        final var debited = IdUtils.asModelId("0.0.3");
+        final var credited = IdUtils.asModelId("0.0.6");
+        final var tokenId = IdUtils.asModelId("0.0.4");
+        final var otherTokenId = IdUtils.asModelId("0.0.7");
+        final var tokenDebit = BalanceChange.tokenCustomFeeAdjust(debited, tokenId, -amount);
+        final var synthOp = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder().setToken(otherTokenId.asGrpcToken()))
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(tokenId.asGrpcToken())
+                        .addTransfers(aaWith(credited.asGrpcAccount(), +amount))
+                        .addTransfers(aaWith(debited.asGrpcAccount(), -amount)));
+        final var unApprovedSynthOp = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder().setToken(otherTokenId.asGrpcToken()))
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(tokenId.asGrpcToken())
+                        .addTransfers(aaWith(credited.asGrpcAccount(), +amount))
+                        .addTransfers(aaWith(debited.asGrpcAccount(), -amount)));
+
+        updateSynthOpForAutoApprovalOf(synthOp, tokenDebit);
+
+        assertEquals(unApprovedSynthOp.build(), synthOp.build());
     }
 
     @Test
@@ -102,9 +178,44 @@ class SynthApprovalRecordsTest {
                         .addNftTransfers(
                                 nftTransfer.toBuilder().setIsApproval(true).build()));
 
-        updateBodyForAutoApprovalOf(synthOp, nftExchange);
+        updateSynthOpForAutoApprovalOf(synthOp, nftExchange);
 
         assertEquals(approvedSynthOp.build(), synthOp.build());
+    }
+
+    @Test
+    void updatesNoNonFungibleAutoApprovalsIfNonMatch() {
+        final var changedSerialNo = 666L;
+        final var unchangedSerialNo = 777L;
+        final var sender = IdUtils.asModelId("0.0.3");
+        final var otherSender = IdUtils.asModelId("0.0.8");
+        final var receiver = IdUtils.asModelId("0.0.6");
+        final var payer = IdUtils.asModelId("0.0.5");
+        final var tokenId = IdUtils.asModelId("0.0.4");
+        final var nftTransfer = ntWith(sender.asGrpcAccount(), receiver.asGrpcAccount(), changedSerialNo)
+                .build();
+        final var otherNftTransfer = ntWith(sender.asGrpcAccount(), receiver.asGrpcAccount(), unchangedSerialNo)
+                .build();
+        final var nftExchange = BalanceChange.changingNftOwnership(
+                tokenId,
+                tokenId.asGrpcToken(),
+                ntWith(otherSender.asGrpcAccount(), receiver.asGrpcAccount(), changedSerialNo)
+                        .build(),
+                payer.asGrpcAccount());
+        final var synthOp = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(tokenId.asGrpcToken())
+                        .addNftTransfers(otherNftTransfer)
+                        .addNftTransfers(nftTransfer));
+        final var unApprovedSynthOp = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(tokenId.asGrpcToken())
+                        .addNftTransfers(otherNftTransfer)
+                        .addNftTransfers(nftTransfer));
+
+        updateSynthOpForAutoApprovalOf(synthOp, nftExchange);
+
+        assertEquals(unApprovedSynthOp.build(), synthOp.build());
     }
 
     private static AccountAmount.Builder aaWith(final AccountID account, final long amount) {
