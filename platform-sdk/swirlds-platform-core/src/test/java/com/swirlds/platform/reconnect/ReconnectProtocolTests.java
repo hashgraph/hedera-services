@@ -245,14 +245,13 @@ public class ReconnectProtocolTests {
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
                 fallenBehindManager);
-        final SignedState signedState = mock(SignedState.class);
+        final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
         final State state = mock(State.class);
         when(signedState.getState()).thenReturn(state);
         when(state.isInitialized()).thenReturn(true);
 
-        final ReservedSignedState reservedSignedState = mock(ReservedSignedState.class);
-        when(reservedSignedState.get()).thenReturn(signedState);
+        final ReservedSignedState reservedSignedState = signedState.reserve("test");
 
         final ReconnectProtocol peer2 = new ReconnectProtocol(
                 getStaticThreadManager(),

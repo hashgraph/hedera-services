@@ -350,7 +350,6 @@ class SyncCaller implements Runnable {
             } catch (final Exception e) {
                 peerInfo.addPeerInfo(neighborId, "exception occurred: " + e.getMessage());
                 // if we failed to receive a state from this node, we will try the next one
-                continue;
             }
         }
 
