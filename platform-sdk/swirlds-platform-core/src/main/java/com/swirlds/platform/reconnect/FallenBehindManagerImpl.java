@@ -63,9 +63,6 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
             @NonNull final ReconnectConfig config) {
         ArgumentUtils.throwArgNull(selfId, "selfId");
         ArgumentUtils.throwArgNull(connectionGraph, "connectionGraph");
-        ArgumentUtils.throwArgNull(notifyPlatform, "notifyPlatform");
-        ArgumentUtils.throwArgNull(fallenBehindCallback, "fallenBehindCallback");
-        ArgumentUtils.throwArgNull(config, "config");
 
         notYetReportFallenBehind = ConcurrentHashMap.newKeySet();
         reportFallenBehind = new HashSet<>();
@@ -76,9 +73,9 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
         for (final int neighbor : neighbors) {
             allNeighbors.add((long) neighbor);
         }
-        this.notifyPlatform = notifyPlatform;
-        this.fallenBehindCallback = fallenBehindCallback;
-        this.config = config;
+        this.notifyPlatform = ArgumentUtils.throwArgNull(notifyPlatform, "notifyPlatform");
+        this.fallenBehindCallback = ArgumentUtils.throwArgNull(fallenBehindCallback, "fallenBehindCallback");
+        this.config = ArgumentUtils.throwArgNull(config, "config");
     }
 
     @Override

@@ -62,17 +62,12 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
             @NonNull final ReconnectConfig config,
             @NonNull final ReconnectThrottle reconnectThrottle,
             @NonNull final ReconnectMetrics stats) {
-        ArgumentUtils.throwArgNull(threadManager, "threadManager");
-        ArgumentUtils.throwArgNull(latestSignedStateProvider, "latestSignedStateProvider");
-        ArgumentUtils.throwArgNull(config, "config");
-        ArgumentUtils.throwArgNull(reconnectThrottle, "reconnectThrottle");
-        ArgumentUtils.throwArgNull(stats, "stats");
-
-        this.threadManager = threadManager;
-        this.latestSignedStateProvider = latestSignedStateProvider;
-        this.config = config;
-        this.reconnectThrottle = reconnectThrottle;
-        this.stats = stats;
+        this.threadManager = ArgumentUtils.throwArgNull(threadManager, "threadManager");
+        this.latestSignedStateProvider =
+                ArgumentUtils.throwArgNull(latestSignedStateProvider, "latestSignedStateProvider");
+        this.config = ArgumentUtils.throwArgNull(config, "config");
+        this.reconnectThrottle = ArgumentUtils.throwArgNull(reconnectThrottle, "reconnectThrottle");
+        this.stats = ArgumentUtils.throwArgNull(stats, "stats");
     }
 
     /** {@inheritDoc} */

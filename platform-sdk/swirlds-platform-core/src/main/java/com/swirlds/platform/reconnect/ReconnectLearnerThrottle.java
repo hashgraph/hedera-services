@@ -48,11 +48,8 @@ public class ReconnectLearnerThrottle {
     private int failedReconnectsInARow;
 
     public ReconnectLearnerThrottle(@NonNull final NodeId selfId, @NonNull final ReconnectConfig config) {
-        ArgumentUtils.throwArgNull(selfId, "selfId");
-        ArgumentUtils.throwArgNull(config, "config");
-
-        this.selfId = selfId;
-        this.config = config;
+        this.selfId = ArgumentUtils.throwArgNull(selfId, "selfId");
+        this.config = ArgumentUtils.throwArgNull(config, "config");
         this.failedReconnectsInARow = 0;
     }
 

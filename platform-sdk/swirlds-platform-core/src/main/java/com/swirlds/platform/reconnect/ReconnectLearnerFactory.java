@@ -42,16 +42,13 @@ public class ReconnectLearnerFactory {
     public ReconnectLearnerFactory(
             @NonNull final ThreadManager threadManager,
             @NonNull final AddressBook addressBook,
-            @NonNull final int reconnectSocketTimeout,
+            final int reconnectSocketTimeout,
             @NonNull final ReconnectMetrics statistics) {
-        ArgumentUtils.throwArgNull(threadManager, "threadManager");
-        ArgumentUtils.throwArgNull(addressBook, "addressBook");
-        ArgumentUtils.throwArgNull(statistics, "statistics");
 
-        this.threadManager = threadManager;
-        this.addressBook = addressBook;
+        this.threadManager = ArgumentUtils.throwArgNull(threadManager, "threadManager");
+        this.addressBook = ArgumentUtils.throwArgNull(addressBook, "addressBook");
         this.reconnectSocketTimeout = reconnectSocketTimeout;
-        this.statistics = statistics;
+        this.statistics = ArgumentUtils.throwArgNull(statistics, "statistics");
     }
 
     /**
