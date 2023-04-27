@@ -61,7 +61,7 @@ public final class HederaOperationUtil {
      * @param supplierHaltGasCost        Supplier for the gas cost
      * @param supplierExecution          Supplier with the execution
      * @param addressValidator           Address validator predicate
-     * @param precompileDetector         A predicate that determines if an address is a precompile address
+     * @param systemAccountDetector         A predicate that determines if an address is a system account address
      * @param supplierIsChildStatic      Supplier for is child static check
      * @return The operation result of the execution
      */
@@ -72,9 +72,9 @@ public final class HederaOperationUtil {
             final LongSupplier supplierHaltGasCost,
             final Supplier<Operation.OperationResult> supplierExecution,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Predicate<Address> precompileDetector,
+            final Predicate<Address> systemAccountDetector,
             final BooleanSupplier supplierIsChildStatic) {
-        if (precompileDetector.test(address)) {
+        if (systemAccountDetector.test(address)) {
             // all calls to system addresses are treated as precompile calls;
             // let them through here, so a frame is created and there is adequate traceability info for the attempted
             // call,

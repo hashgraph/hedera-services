@@ -82,14 +82,14 @@ class HederaStaticCallOperationTest {
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     @Mock
-    private Predicate<Address> precompileDetector;
+    private Predicate<Address> systemAccountDetector;
 
     private final long cost = 100L;
     private HederaStaticCallOperation subject;
 
     @BeforeEach
     void setup() {
-        subject = new HederaStaticCallOperation(calc, addressValidator, precompileDetector);
+        subject = new HederaStaticCallOperation(calc, addressValidator, systemAccountDetector);
     }
 
     @Test

@@ -63,17 +63,17 @@ import org.hyperledger.besu.evm.operation.CallCodeOperation;
 public class HederaCallCodeOperation extends CallCodeOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Predicate<Address> precompileDetector;
+    private final Predicate<Address> systemAccountDetector;
 
     public HederaCallCodeOperation(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Predicate<Address> precompileDetector) {
+            final Predicate<Address> systemAccountDetector) {
         super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
-        this.precompileDetector = precompileDetector;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
@@ -85,7 +85,7 @@ public class HederaCallCodeOperation extends CallCodeOperation {
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompileDetector,
+                systemAccountDetector,
                 () -> isStatic(frame));
     }
 }

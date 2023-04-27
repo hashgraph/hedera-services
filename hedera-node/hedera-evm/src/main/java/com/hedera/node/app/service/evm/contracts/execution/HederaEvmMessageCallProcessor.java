@@ -48,19 +48,19 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     protected final Map<Address, PrecompiledContract> hederaPrecompiles;
     protected long gasRequirement;
     protected Bytes output;
-    private final Predicate<Address> isNativePrecompile;
-    private final Predicate<Address> precompileDetector;
+    private final Predicate<Address> ethNativePrecompileDetector;
+    private final Predicate<Address> systemAccountDetector;
 
     public HederaEvmMessageCallProcessor(
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
-            final Predicate<Address> precompileDetector) {
+            final Predicate<Address> systemAccountDetector) {
         super(evm, precompiles);
         hederaPrecompiles = new HashMap<>();
         hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
-        this.isNativePrecompile = addr -> precompiles.get(addr) != null;
-        this.precompileDetector = precompileDetector;
+        this.ethNativePrecompileDetector = addr -> precompiles.get(addr) != null;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
@@ -71,9 +71,9 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
         } else {
             // Non-system-precompile execution flow
             final var frameHasValue = frame.getValue().greaterThan(Wei.ZERO);
-            if (precompileDetector.test(frame.getContractAddress())) {
+            if (systemAccountDetector.test(frame.getContractAddress())) {
                 // we have a non-system-contract call to a system address
-                if (!isNativePrecompile.test(frame.getContractAddress())) {
+                if (!ethNativePrecompileDetector.test(frame.getContractAddress())) {
                     // a call to a system address, on which a native precompile does not exist, should always fail
                     frame.setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);

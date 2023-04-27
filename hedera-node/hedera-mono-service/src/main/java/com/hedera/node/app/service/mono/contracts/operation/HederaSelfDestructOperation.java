@@ -50,19 +50,19 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
     private final TransactionContext txnCtx;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final EvmSigsVerifier sigsVerifier;
-    private final Predicate<Address> precompileDetector;
+    private final Predicate<Address> systemAccountDetector;
 
     public HederaSelfDestructOperation(
             final GasCalculator gasCalculator,
             final TransactionContext txnCtx,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final EvmSigsVerifier sigsVerifier,
-            final Predicate<Address> precompileDetector) {
+            final Predicate<Address> systemAccountDetector) {
         super(gasCalculator);
         this.txnCtx = txnCtx;
         this.addressValidator = addressValidator;
         this.sigsVerifier = sigsVerifier;
-        this.precompileDetector = precompileDetector;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
@@ -70,7 +70,7 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var beneficiaryAddress = Words.toAddress(frame.getStackItem(0));
         final var toBeDeleted = frame.getRecipientAddress();
-        if (precompileDetector.test(beneficiaryAddress) || !addressValidator.test(beneficiaryAddress, frame)) {
+        if (systemAccountDetector.test(beneficiaryAddress) || !addressValidator.test(beneficiaryAddress, frame)) {
             return reversionWith(null, HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
         }
         final var beneficiary = updater.get(beneficiaryAddress);

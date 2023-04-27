@@ -41,8 +41,8 @@ public interface HederaEvmOperationsUtil {
      * @param supplierHaltGasCost          Supplier for the gas cost
      * @param supplierExecution            Supplier with the execution
      * @param addressValidator             Address validator predicate
-     * @param precompileDetector           Precompile address detector
-     * @param precompileExecutionSupplier  Supplier for precompile execution
+     * @param systemAccountDetector  Hedera system account detector
+     * @param systemAccountExecutionSupplier  Supplier for system account execution
      * @return The operation result of the execution
      */
     static Operation.OperationResult addressCheckExecution(
@@ -51,12 +51,12 @@ public interface HederaEvmOperationsUtil {
             @NonNull final LongSupplier supplierHaltGasCost,
             @NonNull final Supplier<Operation.OperationResult> supplierExecution,
             @NonNull final BiPredicate<Address, MessageFrame> addressValidator,
-            @NonNull final Predicate<Address> precompileDetector,
-            @NonNull final Supplier<Operation.OperationResult> precompileExecutionSupplier) {
+            @NonNull final Predicate<Address> systemAccountDetector,
+            @NonNull final Supplier<Operation.OperationResult> systemAccountExecutionSupplier) {
         try {
             final var address = Words.toAddress(supplierAddressBytes.get());
-            if (precompileDetector.test(address)) {
-                return precompileExecutionSupplier.get();
+            if (systemAccountDetector.test(address)) {
+                return systemAccountExecutionSupplier.get();
             }
             if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
                 return new Operation.OperationResult(

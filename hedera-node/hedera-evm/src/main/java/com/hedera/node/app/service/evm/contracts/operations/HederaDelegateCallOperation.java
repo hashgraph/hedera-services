@@ -34,15 +34,15 @@ import org.hyperledger.besu.evm.operation.DelegateCallOperation;
 public class HederaDelegateCallOperation extends DelegateCallOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Predicate<Address> precompileDetector;
+    private final Predicate<Address> systemAccountDetector;
 
     public HederaDelegateCallOperation(
             GasCalculator gasCalculator,
             BiPredicate<Address, MessageFrame> addressValidator,
-            Predicate<Address> precompileDetector) {
+            Predicate<Address> systemAccountDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
-        this.precompileDetector = precompileDetector;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class HederaDelegateCallOperation extends DelegateCallOperation {
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompileDetector,
+                systemAccountDetector,
                 () -> super.execute(frame, evm));
     }
 }

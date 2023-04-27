@@ -189,8 +189,8 @@ public interface ContractsModule {
             final @V_0_30 EVM evm,
             final @V_0_30 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList, precompileDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
+        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList, hederaSystemAccountDetector);
     }
 
     @Provides
@@ -211,9 +211,9 @@ public interface ContractsModule {
             final @V_0_34 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
         return new HederaMessageCallProcessor(
-                evm, precompiles, hederaPrecompileList, infrastructureFactory, precompileDetector);
+                evm, precompiles, hederaPrecompileList, infrastructureFactory, hederaSystemAccountDetector);
     }
 
     @Provides
@@ -225,9 +225,9 @@ public interface ContractsModule {
             final @V_0_38 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
         return new HederaMessageCallProcessor(
-                evm, precompiles, hederaPrecompileList, infrastructureFactory, precompileDetector);
+                evm, precompiles, hederaPrecompileList, infrastructureFactory, hederaSystemAccountDetector);
     }
 
     @Provides
@@ -264,8 +264,8 @@ public interface ContractsModule {
 
     @Provides
     @Singleton
-    @Named("PrecompileDetector")
-    static Predicate<Address> providePrecompileDetector() {
+    @Named("HederaSystemAccountDetector")
+    static Predicate<Address> provideHederaSystemAccountDetector() {
         // all addresses between 0-750 (inclusive) are treated as precompile accounts from the perspective of the EVM.
         return address ->
                 address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 750) <= 0;
@@ -273,8 +273,8 @@ public interface ContractsModule {
 
     @Provides
     @Singleton
-    @Named("ExtCodePrecompileDetector")
-    static Predicate<Address> provideExtCodePrecompileDetector() {
+    @Named("StrictHederaSystemAccountDetector")
+    static Predicate<Address> provideStrictHederaSystemAccountDetector() {
         // all addresses between 0-1000 (inclusive) are treated as precompile accounts from the perspective of the
         // ExtCode ops.
         return address ->

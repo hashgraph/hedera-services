@@ -192,8 +192,8 @@ class ContractsModuleTest {
     }
 
     @Test
-    void precompileDetectorWorksAsExpected() {
-        final var addressPredicate = ContractsModule.providePrecompileDetector();
+    void systemAccountDetectorWorksAsExpected() {
+        final var addressPredicate = ContractsModule.provideHederaSystemAccountDetector();
 
         assertFalse(addressPredicate.test(
                 Address.fromHexString("0x000000000000000000000000000000000010000"))); // 18th byte is not 0
@@ -207,8 +207,8 @@ class ContractsModuleTest {
     }
 
     @Test
-    void extCodeOpsPrecompileDetectorWorksAsExpected() {
-        final var addressPredicate = ContractsModule.provideExtCodePrecompileDetector();
+    void strictHederaSystemAccountDetectorWorksAsExpected() {
+        final var addressPredicate = ContractsModule.provideStrictHederaSystemAccountDetector();
 
         assertFalse(addressPredicate.test(
                 Address.fromHexString("0x000000000000000000000000000000000010000"))); // 18th byte is not 0

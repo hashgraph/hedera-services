@@ -35,20 +35,20 @@ import org.hyperledger.besu.evm.operation.ExtCodeSizeOperation;
  */
 public class HederaExtCodeSizeOperation extends ExtCodeSizeOperation {
     private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Predicate<Address> precompileDetector;
+    private final Predicate<Address> systemAccountDetector;
 
     public HederaExtCodeSizeOperation(
             GasCalculator gasCalculator,
             BiPredicate<Address, MessageFrame> addressValidator,
-            Predicate<Address> precompileDetector) {
+            Predicate<Address> systemAccountDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
-        this.precompileDetector = precompileDetector;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
-        final Supplier<OperationResult> precompileSupplierExecution = () -> {
+        final Supplier<OperationResult> systemAccountExecutionSupplier = () -> {
             frame.popStackItems(1);
             frame.pushStackItem(UInt256.ZERO);
             return new OperationResult(cost(true), null);
@@ -59,7 +59,7 @@ public class HederaExtCodeSizeOperation extends ExtCodeSizeOperation {
                 () -> cost(true),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompileDetector,
-                precompileSupplierExecution);
+                systemAccountDetector,
+                systemAccountExecutionSupplier);
     }
 }

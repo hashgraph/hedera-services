@@ -75,7 +75,7 @@ class HederaCallOperationV034Test {
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     @Mock
-    private Predicate<Address> precompileDetector;
+    private Predicate<Address> systemAccountDetector;
 
     @Mock
     private GlobalDynamicProperties globalDynamicProperties;
@@ -89,7 +89,7 @@ class HederaCallOperationV034Test {
     @BeforeEach
     void setup() {
         subject = new HederaCallOperationV034(
-                sigsVerifier, calc, addressValidator, precompileDetector, globalDynamicProperties);
+                sigsVerifier, calc, addressValidator, systemAccountDetector, globalDynamicProperties);
     }
 
     @Test

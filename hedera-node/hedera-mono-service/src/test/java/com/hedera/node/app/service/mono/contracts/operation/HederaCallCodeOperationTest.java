@@ -89,7 +89,7 @@ class HederaCallCodeOperationTest {
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     @Mock
-    private Predicate<Address> precompileDetector;
+    private Predicate<Address> systemAccountDetector;
 
     private final long cost = 100L;
 
@@ -97,7 +97,7 @@ class HederaCallCodeOperationTest {
 
     @BeforeEach
     void setup() {
-        subject = new HederaCallCodeOperation(sigsVerifier, calc, addressValidator, precompileDetector);
+        subject = new HederaCallCodeOperation(sigsVerifier, calc, addressValidator, systemAccountDetector);
         commonSetup(evmMsgFrame, worldUpdater, acc);
     }
 

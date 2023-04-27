@@ -60,22 +60,22 @@ import org.hyperledger.besu.evm.operation.ExtCodeCopyOperation;
 public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Predicate<Address> precompileDetector;
+    private final Predicate<Address> systemAccountDetector;
 
     public HederaExtCodeCopyOperation(
             GasCalculator gasCalculator,
             BiPredicate<Address, MessageFrame> addressValidator,
-            Predicate<Address> precompileDetector) {
+            Predicate<Address> systemAccountDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
-        this.precompileDetector = precompileDetector;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
         final long memOffset = clampedToLong(frame.getStackItem(1));
         final long numBytes = clampedToLong(frame.getStackItem(3));
-        final Supplier<OperationResult> operationResultSupplier = () -> {
+        final Supplier<OperationResult> systemAccountExecutionSupplier = () -> {
             final var sourceOffset = clampedToLong(frame.getStackItem(2));
             frame.writeMemory(memOffset, sourceOffset, numBytes, Bytes.EMPTY);
             frame.popStackItems(4); // clear all the input arguments from the stack
@@ -87,7 +87,7 @@ public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
                 () -> cost(frame, memOffset, numBytes, true),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompileDetector,
-                operationResultSupplier);
+                systemAccountDetector,
+                systemAccountExecutionSupplier);
     }
 }

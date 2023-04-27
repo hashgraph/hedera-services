@@ -146,8 +146,8 @@ public interface ContractsV_0_34Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @V_0_34 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaCallCodeOperation(sigsVerifier, gasCalculator, addressValidator, precompileDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
+        return new HederaCallCodeOperation(sigsVerifier, gasCalculator, addressValidator, hederaSystemAccountDetector);
     }
 
     @Provides
@@ -158,10 +158,10 @@ public interface ContractsV_0_34Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @V_0_34 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector,
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector,
             final GlobalDynamicProperties globalDynamicProperties) {
         return new HederaCallOperationV034(
-                sigsVerifier, gasCalculator, addressValidator, precompileDetector, globalDynamicProperties);
+                sigsVerifier, gasCalculator, addressValidator, hederaSystemAccountDetector, globalDynamicProperties);
     }
 
     @Provides
@@ -171,8 +171,8 @@ public interface ContractsV_0_34Module {
     static Operation bindDelegateCallOperation(
             GasCalculator gasCalculator,
             @V_0_34 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaDelegateCallOperation(gasCalculator, addressValidator, precompileDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
+        return new HederaDelegateCallOperation(gasCalculator, addressValidator, hederaSystemAccountDetector);
     }
 
     @Provides
@@ -182,8 +182,8 @@ public interface ContractsV_0_34Module {
     static Operation bindStaticCallOperation(
             final GasCalculator gasCalculator,
             @V_0_34 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaStaticCallOperation(gasCalculator, addressValidator, precompileDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
+        return new HederaStaticCallOperation(gasCalculator, addressValidator, hederaSystemAccountDetector);
     }
 
     @Provides
@@ -193,8 +193,8 @@ public interface ContractsV_0_34Module {
     static Operation bindBalanceOperation(
             GasCalculator gasCalculator,
             @ContractsModule.V_0_34 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaBalanceOperation(gasCalculator, addressValidator, precompileDetector);
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
+        return new HederaBalanceOperation(gasCalculator, addressValidator, hederaSystemAccountDetector);
     }
 
     @Provides
@@ -204,8 +204,8 @@ public interface ContractsV_0_34Module {
     static Operation bindExtCodeCopyOperation(
             GasCalculator gasCalculator,
             @ContractsModule.V_0_34 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("ExtCodePrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaExtCodeCopyOperation(gasCalculator, addressValidator, precompileDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
+        return new HederaExtCodeCopyOperation(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
     }
 
     @Provides
@@ -215,8 +215,8 @@ public interface ContractsV_0_34Module {
     static Operation bindExtCodeHashOperation(
             GasCalculator gasCalculator,
             @ContractsModule.V_0_34 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("ExtCodePrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaExtCodeHashOperation(gasCalculator, addressValidator, precompileDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
+        return new HederaExtCodeHashOperation(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
     }
 
     @Provides
@@ -226,8 +226,8 @@ public interface ContractsV_0_34Module {
     static Operation bindExtCodeSizeOperation(
             GasCalculator gasCalculator,
             @ContractsModule.V_0_34 BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("ExtCodePrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaExtCodeSizeOperation(gasCalculator, addressValidator, precompileDetector);
+            final @Named("StrictHederaSystemAccountDetector") Predicate<Address> strictHederaSystemAccountDetector) {
+        return new HederaExtCodeSizeOperation(gasCalculator, addressValidator, strictHederaSystemAccountDetector);
     }
 
     @Provides
@@ -240,9 +240,9 @@ public interface ContractsV_0_34Module {
             /* Deliberately import the V_0_30 validator, we still want self-destructs to fail if the beneficiary is invalid */
             @ContractsModule.V_0_30 BiPredicate<Address, MessageFrame> addressValidator,
             final EvmSigsVerifier sigsVerifier,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
         return new HederaSelfDestructOperation(
-                gasCalculator, txnCtx, addressValidator, sigsVerifier, precompileDetector);
+                gasCalculator, txnCtx, addressValidator, sigsVerifier, hederaSystemAccountDetector);
     }
 
     @Provides

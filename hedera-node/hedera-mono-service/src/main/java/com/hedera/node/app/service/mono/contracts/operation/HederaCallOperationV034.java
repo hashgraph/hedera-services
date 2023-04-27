@@ -45,19 +45,19 @@ import org.hyperledger.besu.evm.operation.CallOperation;
 public class HederaCallOperationV034 extends CallOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Predicate<Address> precompileDetector;
+    private final Predicate<Address> systemAccountDetector;
     private final GlobalDynamicProperties globalDynamicProperties;
 
     public HederaCallOperationV034(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Predicate<Address> precompileDetector,
+            final Predicate<Address> systemAccountDetector,
             final GlobalDynamicProperties globalDynamicProperties) {
         super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
-        this.precompileDetector = precompileDetector;
+        this.systemAccountDetector = systemAccountDetector;
         this.globalDynamicProperties = globalDynamicProperties;
     }
 
@@ -73,7 +73,7 @@ public class HederaCallOperationV034 extends CallOperation {
                     () -> cost(frame),
                     () -> super.execute(frame, evm),
                     addressValidator,
-                    precompileDetector,
+                    systemAccountDetector,
                     () -> isStatic(frame));
         }
     }

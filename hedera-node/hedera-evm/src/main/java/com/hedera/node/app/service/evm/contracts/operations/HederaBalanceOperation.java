@@ -36,20 +36,20 @@ import org.hyperledger.besu.evm.operation.BalanceOperation;
 public class HederaBalanceOperation extends BalanceOperation {
 
     private BiPredicate<Address, MessageFrame> addressValidator;
-    private final Predicate<Address> precompileDetector;
+    private final Predicate<Address> systemAccountDetector;
 
     public HederaBalanceOperation(
             GasCalculator gasCalculator,
             BiPredicate<Address, MessageFrame> addressValidator,
-            Predicate<Address> precompileDetector) {
+            Predicate<Address> systemAccountDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
-        this.precompileDetector = precompileDetector;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
-        final Supplier<OperationResult> precompileExecutionSupplier = () -> {
+        final Supplier<OperationResult> systemAccountExecutionSupplier = () -> {
             frame.popStackItems(1); // clear the address from the stack
             frame.pushStackItem(UInt256.ZERO);
             return new OperationResult(cost(true), null);
@@ -60,8 +60,8 @@ public class HederaBalanceOperation extends BalanceOperation {
                 () -> cost(true),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompileDetector,
-                precompileExecutionSupplier);
+                systemAccountDetector,
+                systemAccountExecutionSupplier);
     }
 
     @VisibleForTesting

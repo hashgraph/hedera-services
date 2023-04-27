@@ -60,22 +60,22 @@ import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Predicate<Address> precompileDetector;
+    private final Predicate<Address> systemAccountDetector;
 
     public HederaExtCodeHashOperation(
             GasCalculator gasCalculator,
             BiPredicate<Address, MessageFrame> addressValidator,
-            Predicate<Address> precompileDetector) {
+            Predicate<Address> systemAccountDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
-        this.precompileDetector = precompileDetector;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
         try {
             final Address address = Words.toAddress(frame.popStackItem());
-            if (precompileDetector.test(address)) {
+            if (systemAccountDetector.test(address)) {
                 frame.pushStackItem(UInt256.ZERO);
                 return new OperationResult(cost(true), null);
             }

@@ -58,8 +58,8 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
-            Predicate<Address> precompileDetector) {
-        super(evm, precompiles, hederaPrecompileList, precompileDetector);
+            Predicate<Address> systemAccountDetector) {
+        super(evm, precompiles, hederaPrecompileList, systemAccountDetector);
         isNativePrecompileCheck = addr -> precompiles.get(addr) != null;
     }
 
@@ -68,8 +68,8 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory,
-            final Predicate<Address> precompileDetector) {
-        this(evm, precompiles, hederaPrecompileList, precompileDetector);
+            final Predicate<Address> systemAccountDetector) {
+        this(evm, precompiles, hederaPrecompileList, systemAccountDetector);
         this.infrastructureFactory = infrastructureFactory;
     }
 

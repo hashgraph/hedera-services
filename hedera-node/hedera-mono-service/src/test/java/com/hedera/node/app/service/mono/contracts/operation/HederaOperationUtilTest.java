@@ -82,7 +82,7 @@ class HederaOperationUtilTest {
     private Supplier<Operation.OperationResult> executionSupplier;
 
     @Mock
-    private Predicate<Address> precompileDetector;
+    private Predicate<Address> systemAccountDetector;
 
     @Mock
     private WorldLedgers ledgers;
@@ -108,7 +108,7 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompileDetector,
+                systemAccountDetector,
                 isChildStatic);
 
         assertSame(degenerateResult, result);
@@ -128,7 +128,7 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> false,
-                precompileDetector,
+                systemAccountDetector,
                 isChildStatic);
 
         // then:
@@ -162,7 +162,7 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompileDetector,
+                systemAccountDetector,
                 isChildStatic);
 
         // then:
@@ -181,7 +181,7 @@ class HederaOperationUtilTest {
     @Test
     void shortCircuitsPrecompileAddressCall() {
         // given:
-        given(precompileDetector.test(Address.ECREC)).willReturn(true);
+        given(systemAccountDetector.test(Address.ECREC)).willReturn(true);
         final var operationResult = mock(Operation.OperationResult.class);
         given(executionSupplier.get()).willReturn(operationResult);
         // when:
@@ -192,7 +192,7 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompileDetector,
+                systemAccountDetector,
                 isChildStatic);
         // then:
         assertEquals(operationResult, result);
@@ -222,7 +222,7 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompileDetector,
+                systemAccountDetector,
                 isChildStatic);
 
         // then:
@@ -261,7 +261,7 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompileDetector,
+                systemAccountDetector,
                 isChildStatic);
 
         // then:
