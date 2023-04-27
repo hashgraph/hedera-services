@@ -170,6 +170,7 @@ public class PropertyNames {
     public static final String STAKING_REQUIRE_MIN_STAKE_TO_REWARD = "staking.requireMinStakeToReward";
     public static final String STAKING_REWARD_RATE = "staking.rewardRate";
     public static final String STAKING_START_THRESH = "staking.startThreshold";
+    public static final String STAKING_SUM_OF_CONSENSUS_WEIGHTS = "staking.sumOfConsensusWeights";
     public static final String TOKENS_MAX_AGGREGATE_RELS = "tokens.maxAggregateRels";
     public static final String TOKENS_STORE_RELS_ON_DISK = "tokens.storeRelsOnDisk";
     public static final String TOKENS_MAX_NUM = "tokens.maxNumber";
