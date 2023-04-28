@@ -169,6 +169,30 @@ class TokenUpdateLogicTest {
     }
 
     @Test
+    void updateTokenHappyPathForFungibleTokenWithEmptyUpdateMemoButNonEmptyExisting() {
+        final var memoToPreserve = "Should be preserved";
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        op = op.toBuilder().clearMemo().build();
+        final var expectedOpToUseForUpdate =
+                op.toBuilder().setMemo(StringValue.of(memoToPreserve)).build();
+        givenContextForSuccessFullCalls();
+        given(ledgers.accounts()).willReturn(accounts);
+        given(accounts.contains(account)).willReturn(true);
+        given(store.get(fungible)).willReturn(merkleToken);
+        given(merkleToken.memo()).willReturn(memoToPreserve);
+        given(store.update(expectedOpToUseForUpdate, CONSENSUS_TIME)).willReturn(OK);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+        // when
+        subject.validate(transactionBody);
+        subject.updateToken(op, CONSENSUS_TIME, true);
+        // then
+        verify(store).update(expectedOpToUseForUpdate, CONSENSUS_TIME);
+        verify(sigImpactHistorian).markEntityChanged(fungible.getTokenNum());
+    }
+
+    @Test
     void updateTokenForFungibleTokenFailsWhenTransferringBetweenTreasuries() {
         // given
         givenTokenUpdateLogic(true);
