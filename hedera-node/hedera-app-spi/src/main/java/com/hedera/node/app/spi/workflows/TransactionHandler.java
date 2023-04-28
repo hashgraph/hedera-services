@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.records.RecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -28,7 +29,7 @@ public interface TransactionHandler {
      * Pre-handles a transaction, extracting all non-payer keys, which signatures need to be validated
      *
      * @param context the {@link PreHandleContext} which collects all information
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws NullPointerException if {@code context} is {@code null}
      * @throws PreCheckException if the transaction is invalid
      */
     default void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -43,5 +44,16 @@ public interface TransactionHandler {
      */
     default <R extends RecordBuilder<R>> R newRecordBuilder() {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Handles a transaction
+     *
+     * @param context the {@link HandleContext} which collects all information
+     * @throws NullPointerException if {@code context} is {@code null}
+     * @throws HandleException if an expected failure occurred
+     */
+    default void handle(@NonNull final HandleContext context) throws HandleException {
+        // TODO: remove default implementation once all handlers were updated
     }
 }

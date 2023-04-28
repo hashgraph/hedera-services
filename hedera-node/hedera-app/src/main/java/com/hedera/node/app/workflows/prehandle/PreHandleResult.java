@@ -80,6 +80,11 @@ public record PreHandleResult(
         this(null, null, null, status, null, Collections.emptySet(), Collections.emptyList(), null);
     }
 
+    public boolean isDueDiligenceFailure() {
+        // TODO: Needs to be implemented in pre-handle workflow
+        return false;
+    }
+
     /**
      * Checks the failure by validating the status is not {@link ResponseCodeEnum OK}
      *
