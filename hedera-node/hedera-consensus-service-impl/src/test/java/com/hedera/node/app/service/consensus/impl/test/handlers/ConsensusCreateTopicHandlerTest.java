@@ -19,7 +19,6 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +39,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
@@ -47,16 +47,14 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.accounts.Account;
-import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.time.Instant;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,7 +71,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
             AccountID.newBuilder().accountNum(4L).build();
 
     @Mock
-    private AccountAccess accountAccess;
+    private ReadableAccountStore accountStore;
 
     @Mock
     private HandleContext handleContext;
@@ -127,14 +125,12 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(adminKey, submitKey, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(adminKey, submitKey, false));
         subject.preHandle(context);
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        final var expectedHederaAdminKey = asHederaKey(adminKey).orElseThrow();
-        final var expectedHederaSubmitKey = asHederaKey(submitKey).orElseThrow();
-        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(expectedHederaAdminKey);
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(adminKey);
     }
 
     @Test
@@ -145,13 +141,12 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var adminKey = SIMPLE_KEY_A;
 
         // when:
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(adminKey, null, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(adminKey, null, false));
         subject.preHandle(context);
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        final var expectedHederaAdminKey = asHederaKey(adminKey).orElseThrow();
-        assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(expectedHederaAdminKey));
+        assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(adminKey));
     }
 
     @Test
@@ -162,7 +157,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(null, submitKey, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(null, submitKey, false));
         subject.preHandle(context);
 
         // then:
@@ -178,7 +173,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(protoPayerKey, null, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(protoPayerKey, null, false));
         subject.preHandle(context);
 
         // then:
@@ -194,7 +189,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(null, protoPayerKey, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(null, protoPayerKey, false));
         subject.preHandle(context);
 
         // then:
@@ -207,7 +202,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         // given:
         mockPayerLookup();
         final var acct1234 = AccountID.newBuilder().accountNum(1234).build();
-        given(accountAccess.getAccountById(acct1234)).willReturn(null);
+        given(accountStore.getAccountById(acct1234)).willReturn(null);
         final var inputTxn = TransactionBody.newBuilder()
                 .transactionID(
                         TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build())
@@ -217,7 +212,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .build();
 
         // when:
-        final var context = new PreHandleContext(accountAccess, inputTxn);
+        final var context = new FakePreHandleContext(accountStore, inputTxn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_AUTORENEW_ACCOUNT);
     }
 
@@ -226,7 +221,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     void requiresPayerKey() throws PreCheckException {
         // given:
         final var payerKey = mockPayerLookup();
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(null, null, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(null, null, false));
 
         // when:
         subject.preHandle(context);
@@ -419,15 +414,14 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java
 
-    private HederaKey mockPayerLookup() throws PreCheckException {
+    private Key mockPayerLookup() throws PreCheckException {
         return mockPayerLookup(A_COMPLEX_KEY);
     }
 
-    private HederaKey mockPayerLookup(Key key) throws PreCheckException {
-        final var returnKey = asHederaKey(key).orElseThrow();
+    private Key mockPayerLookup(Key key) throws PreCheckException {
         final var account = mock(Account.class);
-        given(account.getKey()).willReturn(returnKey);
-        given(accountAccess.getAccountById(ACCOUNT_ID_3)).willReturn(account);
-        return returnKey;
+        given(account.key()).willReturn(key);
+        given(accountStore.getAccountById(ACCOUNT_ID_3)).willReturn(account);
+        return key;
     }
 }

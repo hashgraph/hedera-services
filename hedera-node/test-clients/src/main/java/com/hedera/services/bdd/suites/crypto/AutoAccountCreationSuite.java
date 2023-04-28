@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -96,6 +97,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -194,7 +196,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 transferHbarsToEVMAddressAlias(),
                 transferFungibleToEVMAddressAlias(),
                 transferNonFungibleToEVMAddressAlias(),
-                transferHbarsToECDSAKey());
+                transferHbarsToECDSAKey(),
+                cannotAutoCreateWithTxnToLongZero());
     }
 
     private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
@@ -1142,7 +1145,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             final var sponsor = spec.registry().getAccountID(SPONSOR);
                             final var payer = spec.registry().getAccountID(PAYER);
                             final var parent = lookup.getResponseRecord();
-                            final var child = lookup.getChildRecord(0);
+                            var child = lookup.getChildRecord(0);
+                            if (isEndOfStakingPeriodRecord(child)) {
+                                child = lookup.getChildRecord(1);
+                            }
                             assertAliasBalanceAndFeeInChildRecord(
                                     parent, child, sponsor, payer, ONE_HUNDRED_HBARS + ONE_HBAR, transferFee);
                             creationTime.set(child.getConsensusTimestamp().getSeconds());
@@ -1522,5 +1528,42 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then(getTxnRecord(NFT_XFER)
                         .hasChildRecordCount(1)
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
+    }
+
+    private HapiSpec cannotAutoCreateWithTxnToLongZero() {
+        final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
+        final var longZeroAddress = ByteString.copyFrom(CommonUtils.unhex("0000000000000000000000000000000fffffffff"));
+
+        return defaultHapiSpec("CannotAutoCreateWithTxnToLongZero")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(PAYER).balance(10 * ONE_HBAR),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                            final var addressBytes = recoverAddressFromPubKey(tmp);
+                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                            evmAddress.set(evmAddressBytes);
+                        }))
+                .when(withOpContext((spec, opLog) -> {
+                    final var validTransfer = cryptoTransfer(tinyBarsFromTo(PAYER, evmAddress.get(), ONE_HBAR))
+                            .hasKnownStatus(SUCCESS)
+                            .via("passedTxn");
+
+                    final var invalidTransferToLongZero = cryptoTransfer(
+                                    tinyBarsFromTo(PAYER, longZeroAddress, ONE_HBAR))
+                            .hasKnownStatus(INVALID_ACCOUNT_ID)
+                            .via("failedTxn");
+
+                    allRunFor(spec, validTransfer, invalidTransferToLongZero);
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    getTxnRecord("failedTxn").logged();
+                    getTxnRecord("passedTxn")
+                            .hasChildRecordCount(1)
+                            .hasChildRecords(
+                                    recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(evmAddress.get()));
+                }));
     }
 }

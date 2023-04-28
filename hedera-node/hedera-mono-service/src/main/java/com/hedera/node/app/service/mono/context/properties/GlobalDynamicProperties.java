@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_MAX_NUM;
 import static com.hedera.node.app.spi.config.PropertyNames.AUTO_CREATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRACE_PERIOD;
@@ -30,6 +31,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABL
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
@@ -57,6 +59,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_D
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
@@ -93,6 +96,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
@@ -114,6 +118,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.STAKING_NODE_MAX_TO_M
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
 import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_AUTO_CREATIONS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_AGGREGATE_RELS;
 import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_CUSTOM_FEES_ALLOWED;
@@ -249,6 +254,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enableHTSPrecompileCreate;
     private Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits;
     private boolean atomicCryptoTransferEnabled;
+    private boolean enableHRCAssociate;
     private KnownBlockValues knownBlockValues;
     private long exchangeRateGasReq;
     private long stakingRewardRate;
@@ -287,8 +293,11 @@ public class GlobalDynamicProperties implements EvmProperties {
     private Set<Address> permittedDelegateCallers;
     private EntityScaleFactors entityScaleFactors;
     private long maxNumWithHapiSigsAccess;
+    private int maxAutoAssociations;
     private Set<Address> contractsWithSpecialHapiSigsAccess;
     private LegacyContractIdActivations legacyContractIdActivations;
+    private int sumOfConsensusWeights;
+    private int cacheWarmThreads;
 
     @Inject
     public GlobalDynamicProperties(final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
@@ -394,6 +403,7 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getCustomFeesProperty(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS);
         atomicCryptoTransferEnabled =
                 properties.getBooleanProperty(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED);
+        enableHRCAssociate = properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
         exchangeRateGasReq = properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
         stakingRewardRate = properties.getLongProperty(STAKING_REWARD_RATE);
@@ -437,6 +447,13 @@ public class GlobalDynamicProperties implements EvmProperties {
         legacyContractIdActivations = properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
         contractsWithSpecialHapiSigsAccess = properties.getEvmAddresses(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS);
         maxNumWithHapiSigsAccess = properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS);
+        maxAutoAssociations = properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS);
+        sumOfConsensusWeights = properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS);
+        cacheWarmThreads = properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS);
+    }
+
+    public int sumOfConsensusWeights() {
+        return sumOfConsensusWeights;
     }
 
     public int maxTokensPerAccount() {
@@ -763,6 +780,10 @@ public class GlobalDynamicProperties implements EvmProperties {
         return atomicCryptoTransferEnabled;
     }
 
+    public boolean isHRCAssociateEnabled() {
+        return enableHRCAssociate;
+    }
+
     public KnownBlockValues knownBlockValues() {
         return knownBlockValues;
     }
@@ -929,5 +950,18 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public Set<Address> contractsWithSpecialHapiSigsAccess() {
         return contractsWithSpecialHapiSigsAccess;
+    }
+
+    public int maxAllowedAutoAssociations() {
+        return maxAutoAssociations;
+    }
+
+    public long explicitAutoAssocSlotLifetime() {
+        // If account auto-renew is disabled we use the SDK default auto-renew period for slot lifetime
+        return expireAccounts ? 0 : THREE_MONTHS_IN_SECONDS;
+    }
+
+    public int cacheCryptoTransferWarmThreads() {
+        return cacheWarmThreads;
     }
 }

@@ -30,120 +30,119 @@ import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.MISC_A
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.MISC_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.SIMPLE_NEW_ADMIN_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContractUpdateHandlerParityTest {
-    private AccountAccess keyLookup;
+    private ReadableAccountStore accountStore;
     private final ContractUpdateHandler subject = new ContractUpdateHandler();
 
     @BeforeEach
     void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 
     @Test
     void getsContractUpdateWithAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_WITH_NEW_ADMIN_KEY);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.requiredNonPayerKeys()))
-                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys())
+                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asPbjKey(), SIMPLE_NEW_ADMIN_KT.asPbjKey());
     }
 
     @Test
     void getsContractUpdateNewExpirationTimeOnly() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_ONLY_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(context.requiredNonPayerKeys()).isEmpty());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().isEmpty());
     }
 
     @Test
     void getsContractUpdateWithDeprecatedAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_DEPRECATED_CID_ADMIN_KEY_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(context.requiredNonPayerKeys()).isEmpty());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().isEmpty());
     }
 
     @Test
     void getsContractUpdateNewExpirationTimeAndAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_ADMIN_KEY_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.requiredNonPayerKeys()))
-                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys())
+                .containsExactlyInAnyOrder(MISC_ADMIN_KT.asPbjKey(), SIMPLE_NEW_ADMIN_KT.asPbjKey());
     }
 
     @Test
     void getsContractUpdateNewExpirationTimeAndProxy() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_PROXY_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(sanityRestored(context.requiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.requiredNonPayerKeys(), Set.of(MISC_ADMIN_KT.asPbjKey()));
     }
 
     @Test
     void getsContractUpdateNewExpirationTimeAndAutoRenew() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_AUTORENEW_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(sanityRestored(context.requiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.requiredNonPayerKeys(), Set.of(MISC_ADMIN_KT.asPbjKey()));
     }
 
     @Test
     void getsContractUpdateNewExpirationTimeAndFile() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_FILE_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(sanityRestored(context.requiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.requiredNonPayerKeys(), Set.of(MISC_ADMIN_KT.asPbjKey()));
     }
 
     @Test
     void getsContractUpdateNewExpirationTimeAndMemo() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(sanityRestored(context.requiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.requiredNonPayerKeys(), Set.of(MISC_ADMIN_KT.asPbjKey()));
     }
 
     @Test
     void getsContractUpdateNewAutoRenewAccount() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_NEW_AUTO_RENEW_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
-        assertEquals(sanityRestored(context.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(sanityRestored(context.requiredNonPayerKeys()), List.of(MISC_ACCOUNT_KT.asKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(context.requiredNonPayerKeys(), Set.of(MISC_ACCOUNT_KT.asPbjKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

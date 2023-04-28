@@ -17,6 +17,7 @@
 package com.hedera.node.app.metrics;
 
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
@@ -37,6 +38,7 @@ public interface MetricsDaggerModule {
                 platform.getSelfId(),
                 new MetricKeyRegistry(),
                 Executors.newSingleThreadScheduledExecutor(),
-                new DefaultMetricsFactory());
+                new DefaultMetricsFactory(),
+                platform.getContext().getConfiguration().getConfigData(MetricsConfig.class));
     }
 }

@@ -51,12 +51,12 @@ public class FCMConfig implements Serializable {
     private int csvUpdatePeriod = 1000;
 
     /**
-     * Expected amount of create transactions for each EntityType to be submitted by each staked node
+     * Expected amount of create transactions for each EntityType to be submitted by each weighted node
      */
     private Map<EntityType, Integer> expectedEntityAmountForTypePerNode;
 
     /**
-     * Expected total amount of create transactions to be submitted by each staked node
+     * Expected total amount of create transactions to be submitted by each weighted node
      */
     private int expectedEntityAmountTotalPerNode;
 

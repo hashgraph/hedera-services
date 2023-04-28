@@ -107,7 +107,7 @@ class LegacyConfigPropertiesLoaderTest {
                 "A", properties.getAddressConfigs().get(0).nickname(), "value must match to config" + ".txt");
         Assertions.assertEquals(
                 "Alice", properties.getAddressConfigs().get(0).selfName(), "value must match to config.txt");
-        Assertions.assertEquals(1, properties.getAddressConfigs().get(0).stake(), "value must match to config.txt");
+        Assertions.assertEquals(1, properties.getAddressConfigs().get(0).weight(), "value must match to config.txt");
         Assertions.assertEquals(
                 localhost,
                 properties.getAddressConfigs().get(0).internalInetAddressName(),
@@ -126,7 +126,7 @@ class LegacyConfigPropertiesLoaderTest {
                 "B", properties.getAddressConfigs().get(1).nickname(), "value must match to config" + ".txt");
         Assertions.assertEquals(
                 "Bob", properties.getAddressConfigs().get(1).selfName(), "value must match to config.txt");
-        Assertions.assertEquals(1, properties.getAddressConfigs().get(1).stake(), "value must match to config.txt");
+        Assertions.assertEquals(1, properties.getAddressConfigs().get(1).weight(), "value must match to config.txt");
         Assertions.assertEquals(
                 localhost,
                 properties.getAddressConfigs().get(1).internalInetAddressName(),
@@ -145,7 +145,7 @@ class LegacyConfigPropertiesLoaderTest {
                 "C", properties.getAddressConfigs().get(2).nickname(), "value must match to config" + ".txt");
         Assertions.assertEquals(
                 "Carol", properties.getAddressConfigs().get(2).selfName(), "value must match to config.txt");
-        Assertions.assertEquals(1, properties.getAddressConfigs().get(2).stake(), "value must match to config.txt");
+        Assertions.assertEquals(1, properties.getAddressConfigs().get(2).weight(), "value must match to config.txt");
         Assertions.assertEquals(
                 localhost,
                 properties.getAddressConfigs().get(2).internalInetAddressName(),
@@ -164,7 +164,7 @@ class LegacyConfigPropertiesLoaderTest {
                 "D", properties.getAddressConfigs().get(3).nickname(), "value must match to config" + ".txt");
         Assertions.assertEquals(
                 "Dave", properties.getAddressConfigs().get(3).selfName(), "value must match to config.txt");
-        Assertions.assertEquals(1, properties.getAddressConfigs().get(3).stake(), "value must match to config.txt");
+        Assertions.assertEquals(1, properties.getAddressConfigs().get(3).weight(), "value must match to config.txt");
         Assertions.assertEquals(
                 localhost,
                 properties.getAddressConfigs().get(3).internalInetAddressName(),

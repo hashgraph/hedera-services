@@ -36,7 +36,7 @@ public class ImmutableStateManager<S extends MerkleNode> implements StateManager
      */
     @Override
     public AutoCloseableWrapper<S> getState() {
-        // TODO this is not thread safe
+        // FUTURE WORK this is not thread safe
         //  What if this state is deleted before we are finished with it?
 
         return new AutoCloseableWrapper<>(states.size() == 0 ? null : states.getLast(), () -> {});

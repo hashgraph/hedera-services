@@ -37,7 +37,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
@@ -172,15 +171,6 @@ class UniqueTokenMapAdapterTest {
         final var virtualKey = NftId.withDefaultShardRealm(3, 4);
         virtualMapAdapter.remove(virtualKey);
         verify(virtualMap, times(1)).remove(UniqueTokenKey.from(virtualKey));
-    }
-
-    @Test
-    void testArchive() {
-        merkleMapAdapter.archive();
-        verify(merkleMap, times(1)).archive();
-
-        virtualMapAdapter.archive();
-        Mockito.verifyNoInteractions(virtualMap);
     }
 
     @Test

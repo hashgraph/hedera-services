@@ -18,6 +18,7 @@ package com.swirlds.platform.state.editor;
 
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.merkle.utility.MerkleUtils;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -32,6 +33,8 @@ public class StateEditorRehash extends StateEditorOperation {
      */
     @Override
     public void run() {
-        MerkleUtils.rehashTree(getStateEditor().getState());
+        try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorRehash.run()")) {
+            MerkleUtils.rehashTree(reservedSignedState.get().getState());
+        }
     }
 }

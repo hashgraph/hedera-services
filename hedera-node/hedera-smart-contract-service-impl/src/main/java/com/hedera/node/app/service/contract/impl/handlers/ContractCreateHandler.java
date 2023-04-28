@@ -17,12 +17,10 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -43,19 +41,7 @@ public class ContractCreateHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, and warms the cache.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().contractCreateInstanceOrThrow();
@@ -66,7 +52,7 @@ public class ContractCreateHandler implements TransactionHandler {
         if (op.hasAdminKey()) {
             final var adminKey = op.adminKeyOrThrow();
             if (!adminKey.hasContractID()) {
-                context.requireKey(asHederaKey(adminKey).orElseThrow());
+                context.requireKey(adminKey);
             }
         }
 

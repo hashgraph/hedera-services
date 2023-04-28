@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -35,21 +34,16 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoUpdateHandler implements TransactionHandler {
+
+    private final CryptoSignatureWaivers waivers;
+
     @Inject
-    public CryptoUpdateHandler() {
-        // Exists for injection
+    public CryptoUpdateHandler(@NonNull final CryptoSignatureWaivers waivers) {
+        this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
     }
 
-    /**
-     * Pre-handles a {@link HederaFunctionality#CRYPTO_UPDATE} transaction, returning the metadata
-     * required to, at minimum, validate the signatures of all required signing keys.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final CryptoSignatureWaivers waivers)
-            throws PreCheckException {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         requireNonNull(waivers);
         final var txn = context.body();
@@ -63,8 +57,7 @@ public class CryptoUpdateHandler implements TransactionHandler {
             context.requireKeyOrThrow(updateAccountId, INVALID_ACCOUNT_ID);
         }
         if (newAccountKeyMustSign && op.hasKey()) {
-            final var candidate = asHederaKey(op.keyOrThrow());
-            candidate.ifPresent(context::requireKey);
+            context.requireKey(op.keyOrThrow());
         }
     }
 

@@ -19,9 +19,12 @@ package com.hedera.services.bdd.suites.regression;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers.KEY_FOR_INCONGRUENT_ALIAS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idFuzzingWith;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idTransferToRandomKeyWith;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -47,16 +50,27 @@ public class AddressAliasIdFuzzing extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(addressAliasIdFuzzing());
+        return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing());
     }
 
     private HapiSpec addressAliasIdFuzzing() {
         return defaultHapiSpec("AddressAliasIdFuzzing")
+                .given(
+                        newKeyNamed(KEY_FOR_INCONGRUENT_ALIAS).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+                                .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
+                                .withRecharging())
+                .when()
+                .then(runWithProvider(idFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+    }
+
+    private HapiSpec transferToKeyFuzzing() {
+        return defaultHapiSpec("TransferToKeyFuzzing")
                 .given(cryptoCreate(UNIQUE_PAYER_ACCOUNT)
                         .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
                         .withRecharging())
                 .when()
-                .then(runWithProvider(idFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(idTransferToRandomKeyWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
     }
 
     @Override

@@ -24,11 +24,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
-import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +39,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("Adds valid admin key")
     void validAdminKey() throws PreCheckException {
         final var txn = contractCreateTransaction(adminKey, null);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         basicMetaAssertions(context, 1);
@@ -52,7 +52,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("admin key with contractID is not added")
     void adminKeyWithContractID() throws PreCheckException {
         final var txn = contractCreateTransaction(adminContractKey, null);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         basicMetaAssertions(context, 0);
@@ -63,19 +63,19 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("autoRenew account key is added")
     void autoRenewAccountIdAdded() throws PreCheckException {
         final var txn = contractCreateTransaction(adminContractKey, autoRenewAccountId);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         basicMetaAssertions(context, 1);
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(autoRenewHederaKey);
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(autoRenewKey);
     }
 
     @Test
     @DisplayName("autoRenew account key is not added when it is sentinel value")
     void autoRenewAccountIdAsSentinelNotAdded() throws PreCheckException {
         final var txn = contractCreateTransaction(adminContractKey, asAccount("0.0.0"));
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         basicMetaAssertions(context, 0);
@@ -87,7 +87,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("autoRenew account and adminKey both added")
     void autoRenewAccountIdAndAdminBothAdded() throws PreCheckException {
         final var txn = contractCreateTransaction(adminKey, autoRenewAccountId);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
         basicMetaAssertions(context, 2);
@@ -108,8 +108,8 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         if (autoRenewId != null) {
             if (!autoRenewId.equals(asAccount("0.0.0"))) {
                 final var autoRenewAccount = mock(Account.class);
-                given(keyLookup.getAccountById(autoRenewId)).willReturn(autoRenewAccount);
-                given(autoRenewAccount.getKey()).willReturn(autoRenewHederaKey);
+                given(accountStore.getAccountById(autoRenewId)).willReturn(autoRenewAccount);
+                given(autoRenewAccount.key()).willReturn(autoRenewKey);
             }
             createTxnBody.autoRenewAccountId(autoRenewId);
         }
