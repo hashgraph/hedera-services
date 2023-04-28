@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.context.internal;
+package com.swirlds.common.context;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.Metrics;

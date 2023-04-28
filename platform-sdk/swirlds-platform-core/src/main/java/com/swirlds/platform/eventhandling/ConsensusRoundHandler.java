@@ -46,11 +46,13 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
@@ -102,7 +104,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
     /** A queue that accepts signed states for hashing and signature collection. */
-    private final BlockingQueue<SignedState> stateHashSignQueue;
+    private final BlockingQueue<ReservedSignedState> stateHashSignQueue;
 
     /** puts the system in a freeze state when executed */
     private final Runnable enterFreezePeriod;
@@ -122,6 +124,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * The number of non-ancient rounds.
      */
     private final int roundsNonAncient;
+
+    private final PlatformContext platformContext;
 
     /**
      * Instantiate, but don't start any threads yet. The Platform should first instantiate the {@link
@@ -148,12 +152,13 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
-            @NonNull final BlockingQueue<SignedState> stateHashSignQueue,
+            @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final Runnable enterFreezePeriod,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.roundAppliedToStateConsumer = roundAppliedToStateConsumer;
 
         this.settings = settings;
@@ -228,9 +233,9 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * Clears and releases any signed states in the {@code stateHashSignQueueThread} queue.
      */
     private void clearStateHashSignQueueThread() {
-        SignedState signedState = stateHashSignQueue.poll();
+        ReservedSignedState signedState = stateHashSignQueue.poll();
         while (signedState != null) {
-            signedState.release();
+            signedState.close();
             signedState = stateHashSignQueue.poll();
         }
     }
@@ -240,8 +245,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * previously saved on disk
      *
      * @param signedState the state to load data from
-     * @param isReconnect if it is true, the signedState is loaded at reconnect; if it is false, the signedState is
-     *                    loaded at startup
+     * @param isReconnect if it is true, the reservedSignedState is loaded at reconnect; if it is false, the
+     *                    reservedSignedState is loaded at startup
      */
     public void loadDataFromSignedState(final SignedState signedState, final boolean isReconnect) {
         eventsAndGenerations.loadDataFromSignedState(signedState);
@@ -259,7 +264,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 "consensus event handler minGenFamous after startup: {}",
                 () -> Arrays.toString(signedState.getMinGenInfo().toArray()));
 
-        // get startRunningHash from signedState
+        // get startRunningHash from reservedSignedState
         final Hash initialHash = new Hash(signedState.getHashEventsCons());
         eventStreamManager.setInitialHash(initialHash);
 
@@ -439,11 +444,12 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         ssTimingStat.setTimePoint(1);
 
-        final SignedState signedState = new SignedState(immutableStateCons, savedStateInFreeze);
+        final SignedState signedState = new SignedState(
+                platformContext, immutableStateCons, "ConsensusHandler.createSignedState()", savedStateInFreeze);
 
         ssTimingStat.setTimePoint(2);
 
-        stateHashSignQueue.put(signedState);
+        stateHashSignQueue.put(signedState.reserve("ConsensusHandler.createSignedState()"));
 
         ssTimingStat.stopCycle();
     }

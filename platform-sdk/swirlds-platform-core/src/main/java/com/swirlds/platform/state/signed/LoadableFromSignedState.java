@@ -22,7 +22,7 @@ package com.swirlds.platform.state.signed;
 public interface LoadableFromSignedState {
 
     /**
-     * Loads all necessary data from the {@code signedState}.
+     * Loads all necessary data from the {@code reservedSignedState}.
      *
      * @param signedState
      * 		the signed state to load

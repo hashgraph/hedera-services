@@ -31,6 +31,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.SystemExitReason.NODE_ADDRESS_MISMATCH;
 
@@ -45,8 +46,8 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
@@ -94,8 +95,8 @@ import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
@@ -634,15 +635,26 @@ public class Browser {
                 final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
                         Shutdown::immediateShutDown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
 
-                final SignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
-                        mainClassName, swirldName, nodeId, appVersion, addressBook.copy(), emergencyRecoveryManager);
+                final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
+                        platformContext,
+                        mainClassName,
+                        swirldName,
+                        nodeId,
+                        appVersion,
+                        addressBook.copy(),
+                        emergencyRecoveryManager);
 
                 // check software version compatibility
-                final boolean softwareUpgrade = BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState);
+                final boolean softwareUpgrade =
+                        BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.getNullable());
 
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                        appVersion, softwareUpgrade, loadedSignedState, addressBook.copy(), platformContext);
+                        appVersion,
+                        softwareUpgrade,
+                        loadedSignedState.getNullable(),
+                        addressBook.copy(),
+                        platformContext);
 
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
@@ -703,7 +715,9 @@ public class Browser {
      * @param emergencyRecoveryManager the emergency recovery manager to use for emergency recovery.
      * @return the signed state loaded from disk.
      */
-    private SignedState getUnmodifiedSignedStateFromDisk(
+    @NonNull
+    private ReservedSignedState getUnmodifiedSignedStateFromDisk(
+            @NonNull final PlatformContext platformContext,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
@@ -719,6 +733,7 @@ public class Browser {
         // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
         // time this class is used.
         final SavedStateLoader savedStateLoader = new SavedStateLoader(
+                platformContext,
                 Shutdown::immediateShutDown,
                 configAddressBook,
                 savedStateFiles,
@@ -733,7 +748,7 @@ public class Browser {
                 SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
             }
         }
-        return null;
+        return createNullReservation();
     }
 
     /**
