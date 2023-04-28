@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.forensics;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -102,7 +103,7 @@ class ServicesIssListenerTest {
         given(issEventInfo.shouldLogThisRound()).willReturn(true);
         given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
         given(wrapper.get()).willReturn(state);
-        given(platform.getLatestImmutableState(this.getClass().getName())).willReturn(wrapper);
+        given(platform.getLatestImmutableState(notNull())).willReturn(wrapper);
 
         subject.notify(issNotification);
 
@@ -122,7 +123,7 @@ class ServicesIssListenerTest {
         given(issEventInfo.shouldLogThisRound()).willReturn(false);
         given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
         given(wrapper.get()).willReturn(state);
-        given(platform.getLatestImmutableState(this.getClass().getName())).willReturn(wrapper);
+        given(platform.getLatestImmutableState(notNull())).willReturn(wrapper);
 
         // when:
         subject.notify(issNotification);

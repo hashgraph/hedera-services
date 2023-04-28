@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -102,19 +103,17 @@ import com.swirlds.common.system.events.Event;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -837,12 +836,15 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Test
     void testLoading0305State() {
         ClassLoaderHelper.loadClassPathDependencies();
-        final AtomicReference<SignedState> ref = new AtomicReference<>();
-        assertDoesNotThrow(() -> ref.set(loadSignedState(signedStateDir + "v0.30.5/SignedState.swh")));
-        final var mockPlatform = createMockPlatformWithCrypto();
-        given(mockPlatform.getAddressBook()).willReturn(addressBook);
-        ServicesState swirldState = (ServicesState) ref.get().getSwirldState();
-        tracked(swirldState).init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));
+        // This signed state should be auto-closed by the try block
+        try (ReservedSignedState state = loadSignedState(signedStateDir + "v0.30.5/SignedState.swh")) {
+            final var mockPlatform = createMockPlatformWithCrypto();
+            given(mockPlatform.getAddressBook()).willReturn(addressBook);
+            ServicesState swirldState = (ServicesState) state.get().getSwirldState();
+            swirldState.init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));
+        } catch (IOException e) {
+            fail("State file should be loaded correctly!");
+        }
     }
 
     @Test
@@ -926,15 +928,18 @@ class ServicesStateTest extends ResponsibleVMapUser {
         return platform;
     }
 
-    private static SignedState loadSignedState(final String path) throws IOException {
+    /**
+     * Because this method returns a {@code ReservedSignedState}, <b>make sure to close it when done!</b>
+     *
+     * @param path the path to the signed state file
+     * @throws IOException if the file cannot be read
+     */
+    private static ReservedSignedState loadSignedState(final String path) throws IOException {
         final PlatformContext platformContext = new DefaultPlatformContext(
                 ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
         final var signedPair = SignedStateFileReader.readStateFile(platformContext, Paths.get(path));
         // Because it's possible we are loading old data, we cannot check equivalence of the hash.
-        try (var reservedSignedState = signedPair.reservedSignedState()) {
-            Assertions.assertNotNull(reservedSignedState.get());
-            return reservedSignedState.get();
-        }
+        return signedPair.reservedSignedState();
     }
 
     private void mockAllMaps(final MerkleMap<?, ?> mockMm, final VirtualMap<?, ?> mockVm) {
