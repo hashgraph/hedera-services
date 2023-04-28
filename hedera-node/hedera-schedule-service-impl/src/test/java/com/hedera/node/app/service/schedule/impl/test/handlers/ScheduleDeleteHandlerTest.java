@@ -31,11 +31,12 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.codec.DecoderException;
@@ -64,7 +65,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     void setUp() {
         BDDMockito.given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID"))
                 .willReturn(schedulesById);
-        scheduleStore = new ReadableScheduleStore(states);
+        scheduleStore = new ReadableScheduleStoreImpl(states);
     }
 
     @Test
@@ -75,8 +76,10 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         BDDMockito.given(schedule.adminKey()).willReturn(Optional.of(JKey.mapKey(TEST_KEY)));
         BDDMockito.given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
 
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, scheduleStore);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        subject.preHandle(context);
         assertEquals(scheduleDeleter, context.payer());
         assertEquals(Set.of(), context.requiredNonPayerKeys());
     }
@@ -87,8 +90,10 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleDeleteTransaction();
         scheduledTxn = givenSetupForScheduleDelete(txn);
 
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), INVALID_SCHEDULE_ID);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_SCHEDULE_ID);
     }
 
     @Test
@@ -98,8 +103,10 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         scheduledTxn = givenSetupForScheduleDelete(txn);
         BDDMockito.given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
 
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), SCHEDULE_IS_IMMUTABLE);
     }
 
     private TransactionBody givenSetupForScheduleDelete(TransactionBody txn) throws PreCheckException {
@@ -109,7 +116,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
                 .build();
         // must be lenient here, because Mockito is a bit too sensitive, and not setting this causes NPE's
         BDDMockito.lenient().when(schedule.ordinaryViewOfScheduledTxn()).thenReturn(PbjConverter.fromPbj(scheduledTxn));
-        given(keyLookup.getAccountById(scheduleDeleter)).willReturn(payerAccount);
+        given(accountStore.getAccountById(scheduleDeleter)).willReturn(payerAccount);
         given(payerAccount.key()).willReturn(adminKey);
         return scheduledTxn;
     }

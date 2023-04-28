@@ -52,4 +52,13 @@ public interface SolvencyPreCheck {
      */
     void checkSolvencyOfVerifiedPayer(@NonNull HederaState state, @NonNull Transaction transaction)
             throws InsufficientBalanceException;
+
+    /**
+     * Checks if the payer account of the given transaction can afford to cover its fees (with the option to include or
+     * exclude the service component).
+     *
+     * @param transaction the {@link Transaction} to check
+     * @throws PreCheckException if the payer account cannot afford the fees
+     */
+    void assessWithSvcFees(@NonNull Transaction transaction) throws PreCheckException;
 }
