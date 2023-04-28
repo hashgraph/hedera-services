@@ -23,7 +23,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
@@ -40,30 +40,20 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
     @Inject
     public ScheduleSignHandler() {
         // Exists for injection
+        super(null);
     }
 
-    /**
-     * Pre-handles a {@link HederaFunctionality#SCHEDULE_SIGN} transaction, returning the metadata
-     * required to, at minimum, validate the signatures of all required signing keys.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @param scheduleStore the {@link ReadableScheduleStore} to use for schedule resolution
-     * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
-     *     txn
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(
-            @NonNull final PreHandleContext context,
-            @NonNull final ReadableScheduleStore scheduleStore,
-            @NonNull final PreHandleDispatcher dispatcher)
-            throws PreCheckException {
+    public ScheduleSignHandler(@NonNull final PreHandleDispatcher dispatcher) {
+        super(dispatcher);
+    }
+
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        requireNonNull(scheduleStore);
-        requireNonNull(dispatcher);
         final var txn = context.body();
         final var op = txn.scheduleSignOrThrow();
         final var id = op.scheduleIDOrElse(ScheduleID.DEFAULT);
+        final var scheduleStore = context.createStore(ReadableScheduleStore.class);
 
         final var scheduleLookupResult = scheduleStore.get(id);
         if (scheduleLookupResult.isEmpty()) {
@@ -75,7 +65,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         final var payerForNested = optionalPayer.orElse(
                 scheduledTxn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
 
-        preHandleScheduledTxn(context, scheduledTxn, payerForNested, dispatcher);
+        preHandleScheduledTxn(context, scheduledTxn, payerForNested);
     }
 
     /**

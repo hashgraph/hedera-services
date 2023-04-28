@@ -141,7 +141,6 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
-import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -349,7 +348,6 @@ class MonoTransactionDispatcherTest {
         when(state.createReadableStates(any())).thenReturn(readableStates);
         when(readableAccountStore.getAccountById(any(AccountID.class))).thenReturn(account);
         lenient().when(account.key()).thenReturn(payerKey);
-        when(readableStoreFactory.createStore(AccountAccess.class)).thenReturn(readableAccountStore);
         when(readableStoreFactory.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
 
         handlers = new TransactionHandlers(
@@ -542,6 +540,16 @@ class MonoTransactionDispatcherTest {
 
         dispatcher.dispatchHandle(
                 HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT, transactionBody, writableStoreFactory);
+
+        verify(writableTokenRelStore).commit();
+    }
+
+    @Test
+    void dispatchesTokenRevokeKycAsExpected() {
+        given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
+
+        dispatcher.dispatchHandle(
+                HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT, transactionBody, writableStoreFactory);
 
         verify(writableTokenRelStore).commit();
     }

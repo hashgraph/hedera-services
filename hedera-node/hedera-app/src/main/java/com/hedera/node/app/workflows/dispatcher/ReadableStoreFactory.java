@@ -27,14 +27,14 @@ import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.network.impl.ReadableRunningHashLeafStoreImpl;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
-import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,11 +53,10 @@ public class ReadableStoreFactory {
     // This is the hard-coded part that needs to be replaced by a dynamic approach later,
     // e.g. services have to register their stores
     private static final Map<Class<?>, StoreEntry> STORE_FACTORY = Map.of(
-            AccountAccess.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
             ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
             ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new),
             ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new),
-            ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStore::new),
+            ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new),
             ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStoreImpl::new),
             ReadableRunningHashLeafStore.class,
                     new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new));
