@@ -45,6 +45,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -58,6 +59,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
@@ -79,12 +81,12 @@ import com.hedera.test.utils.CryptoConfigUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.ResponsibleVMapUser;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -361,10 +363,13 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setMetadata(metadata);
 
         given(metadata.app()).willReturn(app);
+        final var mapWarmer = mock(EntityMapWarmer.class);
+        given(app.mapWarmer()).willReturn(mapWarmer);
         given(app.logic()).willReturn(logic);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 
         subject.handleConsensusRound(round, dualState);
+        verify(mapWarmer).warmCache(round);
         verify(dualStateAccessor).setDualState(dualState);
         verify(logic).incorporateConsensus(round);
     }
@@ -420,6 +425,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(appBuilder.initialHash(EMPTY_HASH)).willReturn(appBuilder);
         given(appBuilder.platform(platform)).willReturn(appBuilder);
         given(appBuilder.selfId(1L)).willReturn(appBuilder);
+        given(appBuilder.initTrigger(InitTrigger.GENESIS)).willReturn(appBuilder);
         given(appBuilder.build()).willReturn(app);
         // and:
         given(app.hashLogger()).willReturn(hashLogger);
@@ -487,6 +493,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(appBuilder.consoleCreator(any())).willReturn(appBuilder);
         given(appBuilder.initialHash(EMPTY_HASH)).willReturn(appBuilder);
         given(appBuilder.platform(platform)).willReturn(appBuilder);
+        given(appBuilder.initTrigger(InitTrigger.GENESIS)).willReturn(appBuilder);
         given(appBuilder.selfId(1L)).willReturn(appBuilder);
         given(appBuilder.build()).willReturn(app);
         // and:
@@ -866,8 +873,36 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertSame(mmap, subject.uniqueTokens().merkleMap());
     }
 
+    @Test
+    void updatesAddressBookWithZeroWeightOnGenesisStart() {
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
+        assertEquals(1, stakingMap.size());
+        assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
+
+        subject.updateWeight(addressBook, platform.getContext());
+        verify(addressBook).updateWeight(0, 0);
+    }
+
+    @Test
+    void updatesAddressBookWithNonZeroWeightsOnGenesisStart() {
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
+        assertEquals(1, stakingMap.size());
+        assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
+
+        stakingMap.forEach((k, v) -> {
+            v.setStake(1000L);
+            v.setWeight(500);
+        });
+        assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
+        subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
+
+        subject.updateWeight(addressBook, platform.getContext());
+        verify(addressBook).updateWeight(0, 500);
+    }
+
     private static ServicesApp createApp(final Platform platform) {
         return DaggerServicesApp.builder()
+                .initTrigger(InitTrigger.GENESIS)
                 .initialHash(new Hash())
                 .platform(platform)
                 .crypto(CryptographyHolder.get())

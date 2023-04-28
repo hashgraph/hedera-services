@@ -408,7 +408,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 "createDirectlyViaFungible",
                                 headlongFromHexed(ftMirrorAddr.get()),
                                 mirrorAddrWith(civilianId.get()),
-                                nonMirrorAddrWith(civilianId.get() + 1),
+                                nonMirrorAddrWith(123, civilianId.get() + 1),
                                 supply)
                         .via(creationAttempt)
                         .gas(GAS_TO_OFFER)
@@ -477,8 +477,12 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     private Address nonMirrorAddrWith(final long num) {
-        return Address.wrap(
-                Address.toChecksumAddress(new BigInteger(1, HapiPropertySource.asSolidityAddress(666, 666, num))));
+        return nonMirrorAddrWith(666, num);
+    }
+
+    private Address nonMirrorAddrWith(final long seed, final long num) {
+        return Address.wrap(Address.toChecksumAddress(
+                new BigInteger(1, HapiPropertySource.asSolidityAddress((int) seed, seed, num))));
     }
 
     private HapiSpec cryptoTransferV1LazyCreate() {

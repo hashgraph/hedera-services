@@ -26,7 +26,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
@@ -78,7 +78,7 @@ class MonoFeeAccumulatorTest {
         final var expectedFees = new FeeObject(100L, 0L, 100L);
         given(usagePricesProvider.defaultPricesGiven(ConsensusGetTopicInfo, mockTime))
                 .willReturn(mockPrices);
-        given(readableStoreFactory.createTopicStore()).willReturn(readableTopicStore);
+        given(readableStoreFactory.createStore(ReadableTopicStore.class)).willReturn(readableTopicStore);
         given(getTopicInfoUsage.computeUsage(PbjConverter.fromPbj(mockQuery), readableTopicStore))
                 .willReturn(mockUsage);
         given(usageBasedFeeCalculator.computeFromQueryResourceUsage(mockUsage, mockUsage, mockTime))
@@ -100,7 +100,7 @@ class MonoFeeAccumulatorTest {
 
         given(usagePricesProvider.defaultPricesGiven(eq(ConsensusGetTopicInfo), any()))
                 .willReturn(mockPrices);
-        given(readableStoreFactory.createTopicStore()).willReturn(readableTopicStore);
+        given(readableStoreFactory.createStore(ReadableTopicStore.class)).willReturn(readableTopicStore);
         given(getTopicInfoUsage.computeUsage(any(), eq(readableTopicStore))).willReturn(mockUsage);
         given(usageBasedFeeCalculator.computeFromQueryResourceUsage(eq(mockUsage), eq(mockPrices), any()))
                 .willReturn(expectedFee);

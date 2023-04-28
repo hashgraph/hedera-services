@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomC
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -65,6 +66,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
@@ -185,7 +187,43 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 lazyCreateViaEthereumCryptoTransfer(),
                 hollowAccountCompletionWithSimultaniousPropertiesUpdate(),
                 contractDeployAfterEthereumTransferLazyCreate(),
-                contractCallAfterEthereumTransferLazyCreate());
+                contractCallAfterEthereumTransferLazyCreate(),
+                autoAssociationPropertiesWorkAsExpected());
+    }
+
+    private HapiSpec autoAssociationPropertiesWorkAsExpected() {
+        final var minAutoRenewPeriodPropertyName = "ledger.autoRenewPeriod.minDuration";
+        final var maxAssociationsPropertyName = "ledger.maxAutoAssociations";
+        final var shortLivedAutoAssocUser = "shortLivedAutoAssocUser";
+        final var longLivedAutoAssocUser = "longLivedAutoAssocUser";
+        final var payerBalance = 100 * ONE_HUNDRED_HBARS;
+        final var updateWithExpiredAccount = "updateWithExpiredAccount";
+        final var autoAssocSlotPrice = 0.0018;
+        final var baseFee = 0.00022;
+        double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
+        return propertyPreservingHapiSpec("AutoAssociationPropertiesWorkAsExpected")
+                .preserving(maxAssociationsPropertyName, minAutoRenewPeriodPropertyName)
+                .given(
+                        overridingTwo(
+                                maxAssociationsPropertyName, "100",
+                                minAutoRenewPeriodPropertyName, "1"),
+                        cryptoCreate(longLivedAutoAssocUser)
+                                .balance(payerBalance)
+                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS),
+                        cryptoCreate(shortLivedAutoAssocUser)
+                                .balance(payerBalance)
+                                .autoRenewSecs(1))
+                .when()
+                .then(
+                        cryptoUpdate(longLivedAutoAssocUser)
+                                .payingWith(longLivedAutoAssocUser)
+                                .maxAutomaticAssociations(101)
+                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                        cryptoUpdate(shortLivedAutoAssocUser)
+                                .payingWith(shortLivedAutoAssocUser)
+                                .maxAutomaticAssociations(10)
+                                .via(updateWithExpiredAccount),
+                        validateChargedUsd(updateWithExpiredAccount, plusTenSlotsFee));
     }
 
     private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {

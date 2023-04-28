@@ -56,6 +56,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
@@ -83,6 +84,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_D
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
@@ -155,6 +157,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
@@ -195,6 +198,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTOR
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
@@ -425,7 +429,8 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_PERIOD_MINS,
             STAKING_REWARD_HISTORY_NUM_STORED_PERIODS,
             STAKING_STARTUP_HELPER_RECOMPUTE,
-            WORKFLOWS_ENABLED);
+            WORKFLOWS_ENABLED,
+            STAKING_SUM_OF_CONSENSUS_WEIGHTS);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
             ACCOUNTS_MAX_NUM,
@@ -471,6 +476,7 @@ public final class BootstrapProperties implements PropertySource {
             CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE,
             CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS,
             CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED,
+            CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED,
             CONTRACTS_EVM_VERSION,
             CONTRACTS_DYNAMIC_EVM_VERSION,
             EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
@@ -498,6 +504,7 @@ public final class BootstrapProperties implements PropertySource {
             AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE,
             AUTO_RENEW_GRACE_PERIOD,
             LEDGER_CHANGE_HIST_MEM_SECS,
+            LEDGER_MAX_AUTO_ASSOCIATIONS,
             LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION,
             LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION,
             LEDGER_XFER_BAL_CHANGES_MAX_LEN,
@@ -554,7 +561,8 @@ public final class BootstrapProperties implements PropertySource {
             UTIL_PRNG_IS_ENABLED,
             TOKENS_AUTO_CREATIONS_ENABLED,
             ACCOUNTS_BLOCKLIST_ENABLED,
-            ACCOUNTS_BLOCKLIST_RESOURCE);
+            ACCOUNTS_BLOCKLIST_RESOURCE,
+            CACHE_CRYPTO_TRANSFER_WARM_THREADS);
 
     static final Set<String> NODE_PROPS = Set.of(
             DEV_ONLY_DEFAULT_NODE_LISTENS,
@@ -696,6 +704,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(FEES_PERCENT_CONGESTION_MULTIPLIERS, AS_CONGESTION_MULTIPLIERS),
             entry(FEES_PERCENT_UTILIZATION_SCALE_FACTORS, AS_ENTITY_SCALE_FACTORS),
             entry(LEDGER_CHANGE_HIST_MEM_SECS, AS_INT),
+            entry(LEDGER_MAX_AUTO_ASSOCIATIONS, AS_INT),
             entry(LEDGER_XFER_BAL_CHANGES_MAX_LEN, AS_INT),
             entry(LEDGER_FUNDING_ACCOUNT, AS_LONG),
             entry(LEDGER_NUM_SYSTEM_ACCOUNTS, AS_INT),
@@ -723,6 +732,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, AS_BOOLEAN),
             entry(STAKING_REWARD_RATE, AS_LONG),
             entry(STAKING_START_THRESH, AS_LONG),
+            entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, AS_INT),
             entry(TOKENS_MAX_AGGREGATE_RELS, AS_LONG),
             entry(TOKENS_STORE_RELS_ON_DISK, AS_BOOLEAN),
             entry(TOKENS_MAX_NUM, AS_LONG),
@@ -771,6 +781,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, AS_BOOLEAN),
             entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, AS_BOOLEAN),
             entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, AS_BOOLEAN),
+            entry(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED, AS_BOOLEAN),
             entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, AS_BOOLEAN),
             entry(CONTRACTS_EVM_VERSION, AS_STRING),
             entry(CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),
@@ -805,5 +816,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
-            entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING));
+            entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING),
+            entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT));
 }
