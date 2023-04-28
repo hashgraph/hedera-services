@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -1086,7 +1085,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private HapiSpec updateTokenWithoutNameSymbolMemo() {
         final var updateTokenWithoutNameSymbolMemoFunc = "updateTokenWithoutNameSymbolMemo";
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return onlyDefaultHapiSpec(updateTokenWithoutNameSymbolMemoFunc)
+        return defaultHapiSpec(updateTokenWithoutNameSymbolMemoFunc)
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
