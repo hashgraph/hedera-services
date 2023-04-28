@@ -42,9 +42,7 @@ import com.swirlds.virtualmap.datasource.InMemoryBuilder;
 import com.swirlds.virtualmap.datasource.InMemoryDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,12 +55,10 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.io.TempDir;
 
 @SuppressWarnings("ALL")
@@ -223,29 +219,31 @@ class VirtualRootNodeTest extends VirtualTestBase {
         serializeRoot(fileName);
         final VirtualRootNode<TestKey, TestValue> root2 = createRoot();
 
-        deserializeRootNodeAndVerify(new FileInputStream(tempDir.resolve(fileName).toFile()));
+        deserializeRootNodeAndVerify(
+                new FileInputStream(tempDir.resolve(fileName).toFile()));
     }
 
     private void deserializeRootNodeAndVerify(InputStream resourceAsStream) throws IOException {
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
 
-        try(SerializableDataInputStream input = new SerializableDataInputStream(resourceAsStream)) {
+        try (SerializableDataInputStream input = new SerializableDataInputStream(resourceAsStream)) {
             root.deserialize(input, tempDir, -1);
             root.postInit(new DummyVirtualStateAccessor());
             for (int i = 0; i < 100; i++) {
-                if(i % 7 != 0){
+                if (i % 7 != 0) {
                     assertEquals(new TestValue(i), root.get(new TestKey(i)));
                 } else {
                     assertNull(root.get(new TestKey(i)));
-                };
+                }
             }
             root.release();
         }
     }
 
     private void serializeRoot(String fileName) throws IOException {
-        try (FileOutputStream fileOutputStream = new FileOutputStream(tempDir.resolve(fileName).toFile());
-             SerializableDataOutputStream out = new SerializableDataOutputStream(fileOutputStream)) {
+        try (FileOutputStream fileOutputStream =
+                        new FileOutputStream(tempDir.resolve(fileName).toFile());
+                SerializableDataOutputStream out = new SerializableDataOutputStream(fileOutputStream)) {
             VirtualRootNode<TestKey, TestValue> testKeyTestValueVirtualRootNode = prepareRootForSerialization();
             testKeyTestValueVirtualRootNode.serialize(out, tempDir);
             fileOutputStream.flush();
@@ -260,12 +258,12 @@ class VirtualRootNodeTest extends VirtualTestBase {
         Set<TestKey> keysToRemove = new HashSet<>();
         for (int i = 0; i < 1000; i++) {
             root.put(new TestKey(i), new TestValue(i));
-            if(i % 7 == 0){
+            if (i % 7 == 0) {
                 keysToRemove.add(new TestKey(i));
-            };
+            }
         }
 
-        for(TestKey key : keysToRemove){
+        for (TestKey key : keysToRemove) {
             root.remove(key);
         }
         root.computeHash();
