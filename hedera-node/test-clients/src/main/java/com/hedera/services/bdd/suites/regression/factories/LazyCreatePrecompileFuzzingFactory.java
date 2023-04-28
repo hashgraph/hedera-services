@@ -117,7 +117,7 @@ public class LazyCreatePrecompileFuzzingFactory {
             cryptoCreate(TOKEN_TREASURY),
             tokenCreate(FUNGIBLE_TOKEN)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .initialSupply(5)
+                    .initialSupply(1000000)
                     .treasury(TOKEN_TREASURY)
                     .adminKey(MULTI_KEY)
                     .supplyKey(MULTI_KEY)
@@ -126,7 +126,7 @@ public class LazyCreatePrecompileFuzzingFactory {
             uploadInitCode(ERC_20_CONTRACT),
             contractCreate(ERC_20_CONTRACT),
             tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
-            cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT))
+            cryptoTransfer(moving(1000000, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT))
         };
     }
 
