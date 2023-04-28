@@ -44,6 +44,6 @@ public final class AccountBalanceSignCommand extends SignCommand {
      */
     @Override
     public boolean isFileSupported(@NonNull final Path path) {
-        return AccountBalanceType.getInstance().isStreamFile(path.toFile());
+        return AccountBalanceType.getInstance().isCorrectFile(path.toFile().getName());
     }
 }

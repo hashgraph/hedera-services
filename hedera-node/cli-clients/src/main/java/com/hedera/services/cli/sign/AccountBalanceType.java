@@ -16,13 +16,11 @@
 
 package com.hedera.services.cli.sign;
 
-import com.swirlds.common.stream.StreamType;
-
 /**
  * Contains properties related to Account Balance file type;
  * Its constructor is private. Users need to use the singleton to denote this type
  */
-public final class AccountBalanceType implements StreamType {
+public final class AccountBalanceType {
     /**
      * description of the streamType, used for logging
      */
@@ -46,30 +44,19 @@ public final class AccountBalanceType implements StreamType {
         return INSTANCE;
     }
 
-    @Override
     public String getDescription() {
         return ACCOUNT_BALANCE_DESCRIPTION;
     }
 
-    @Override
     public String getExtension() {
         return ACCOUNT_BALANCE_EXTENSION;
     }
 
-    @Override
     public String getSigExtension() {
         return ACCOUNT_BALANCE_SIG_EXTENSION;
     }
 
-    @Override
-    // not used in BalanceFile
-    public int[] getFileHeader() {
-        throw new UnsupportedOperationException("Not supported in BalanceFile");
-    }
-
-    @Override
-    // not used in BalanceFile
-    public byte[] getSigFileHeader() {
-        throw new UnsupportedOperationException("Not supported in BalanceFile");
+    public boolean isCorrectFile(final String fileName) {
+        return fileName.endsWith(ACCOUNT_BALANCE_EXTENSION);
     }
 }
