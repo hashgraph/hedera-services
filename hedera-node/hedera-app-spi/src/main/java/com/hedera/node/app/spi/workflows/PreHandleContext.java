@@ -43,19 +43,8 @@ import java.util.Set;
  * <p>{@link #requireKey(Key)} is used to add a required non-payer signing key (remember, the payer signing
  * key was added when the context was created). Some basic validation is performed (the key cannot be null or empty).
  */
+@SuppressWarnings("UnusedReturnValue")
 public interface PreHandleContext {
-
-    /**
-     * Create a new store given the store's interface. This gives read-only access to the store.
-     *
-     * @param storeInterface The store interface to find and create a store for
-     * @return An implementation of store interface provided, or null if the store
-     * @param <C> Interface class for a Store
-     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code storeInterface} is {@code null}
-     */
-    @NonNull
-    <C> C createStore(@NonNull final Class<C> storeInterface);
 
     /**
      * Gets the {@link TransactionBody}
@@ -90,6 +79,18 @@ public interface PreHandleContext {
     Key payerKey();
 
     /**
+     * Create a new store given the store's interface. This gives read-only access to the store.
+     *
+     * @param storeInterface The store interface to find and create a store for
+     * @return An implementation of store interface provided, or null if the store
+     * @param <C> Interface class for a Store
+     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
+     * @throws NullPointerException if {@code storeInterface} is {@code null}
+     */
+    @NonNull
+    <C> C createStore(@NonNull final Class<C> storeInterface);
+
+    /**
      * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if the key has
      * already been added, then the call is a no-op. The key must not be null.
      *
@@ -111,7 +112,8 @@ public interface PreHandleContext {
      * @throws PreCheckException if the key is null or empty
      */
     @NonNull
-    PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
+    PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException;
 
     /**
      * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys. If
@@ -127,7 +129,8 @@ public interface PreHandleContext {
      * account does not exist.
      */
     @NonNull
-    PreHandleContext requireKeyOrThrow(@Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
+    PreHandleContext requireKeyOrThrow(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
 
     /**
      * The same as {@link #requireKeyOrThrow(AccountID, ResponseCodeEnum)} but for a {@link ContractID}.
@@ -139,7 +142,9 @@ public interface PreHandleContext {
      * contract account does not exist or the account is not a contract account.
      */
     @NonNull
-    PreHandleContext requireKeyOrThrow(@Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
+    PreHandleContext requireKeyOrThrow(
+            @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException;
 
     /**
      * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys if
@@ -153,7 +158,8 @@ public interface PreHandleContext {
      * empty key.
      */
     @NonNull
-    PreHandleContext requireKeyIfReceiverSigRequired(@Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
+    PreHandleContext requireKeyIfReceiverSigRequired(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
 
     /**
      * The same as {@link #requireKeyIfReceiverSigRequired(AccountID, ResponseCodeEnum)} but for a {@link ContractID}.
@@ -164,7 +170,9 @@ public interface PreHandleContext {
      * empty key, or the account exists but is not a contract account.
      */
     @NonNull
-    PreHandleContext requireKeyIfReceiverSigRequired(@Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
+    PreHandleContext requireKeyIfReceiverSigRequired(
+            @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException;
 
     /**
      * Creates a new {@link PreHandleContext} for a nested transaction. The nested transaction will be set on
@@ -178,7 +186,11 @@ public interface PreHandleContext {
      * @throws PreCheckException If the payer is not valid
      */
     @NonNull
-    PreHandleContext createNestedContext(@NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
+    PreHandleContext createNestedContext(
+            @NonNull final TransactionBody nestedTxn,
+            @NonNull final AccountID payerForNested,
+            @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException;
 
     /**
      * Gets the inner context, if any.

@@ -38,7 +38,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * Implementation of {@link PreHandleContext} (which will become an interface soon).
+ * Implementation of {@link PreHandleContext}.
  */
 public class PreHandleContextImpl implements PreHandleContext {
 
@@ -63,7 +63,11 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     public PreHandleContextImpl(@NonNull final ReadableStoreFactory storeFactory, @NonNull final TransactionBody txn)
             throws PreCheckException {
-        this(storeFactory, txn, txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT), ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+        this(
+                storeFactory,
+                txn,
+                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
     }
 
     /** Create a new instance */
@@ -275,14 +279,13 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     @Override
     public String toString() {
-        return "PreHandleContextImpl{" +
-                "accountStore=" + accountStore +
-                ", txn=" + txn +
-                ", payer=" + payer +
-                ", payerKey=" + payerKey +
-                ", requiredNonPayerKeys=" + requiredNonPayerKeys +
-                ", innerContext=" + innerContext +
-                ", storeFactory=" + storeFactory +
-                '}';
+        return "PreHandleContextImpl{" + "accountStore="
+                + accountStore + ", txn="
+                + txn + ", payer="
+                + payer + ", payerKey="
+                + payerKey + ", requiredNonPayerKeys="
+                + requiredNonPayerKeys + ", innerContext="
+                + innerContext + ", storeFactory="
+                + storeFactory + '}';
     }
 }

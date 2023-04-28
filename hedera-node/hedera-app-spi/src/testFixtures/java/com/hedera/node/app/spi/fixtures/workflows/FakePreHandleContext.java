@@ -73,7 +73,11 @@ public class FakePreHandleContext implements PreHandleContext {
      */
     public FakePreHandleContext(@NonNull final ReadableAccountStore accountStore, @NonNull final TransactionBody txn)
             throws PreCheckException {
-        this(accountStore, txn, txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT), INVALID_PAYER_ACCOUNT_ID);
+        this(
+                accountStore,
+                txn,
+                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                INVALID_PAYER_ACCOUNT_ID);
     }
 
     /** Create a new instance */
@@ -127,6 +131,7 @@ public class FakePreHandleContext implements PreHandleContext {
         return payer;
     }
 
+    @NonNull
     @Override
     public Set<Key> requiredNonPayerKeys() {
         return Collections.unmodifiableSet(requiredNonPayerKeys);
@@ -295,14 +300,13 @@ public class FakePreHandleContext implements PreHandleContext {
 
     @Override
     public String toString() {
-        return "FakePreHandleContext{" +
-                "accountStore=" + accountStore +
-                ", txn=" + txn +
-                ", payer=" + payer +
-                ", payerKey=" + payerKey +
-                ", requiredNonPayerKeys=" + requiredNonPayerKeys +
-                ", innerContext=" + innerContext +
-                ", stores=" + stores +
-                '}';
+        return "FakePreHandleContext{" + "accountStore="
+                + accountStore + ", txn="
+                + txn + ", payer="
+                + payer + ", payerKey="
+                + payerKey + ", requiredNonPayerKeys="
+                + requiredNonPayerKeys + ", innerContext="
+                + innerContext + ", stores="
+                + stores + '}';
     }
 }

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.workflows;
+package com.hedera.node.app.workflows.prehandle;
 
-import static com.hedera.node.app.spi.workflows.PreHandleContextListUpdatesTest.A_COMPLEX_KEY;
+import static com.hedera.node.app.workflows.prehandle.PreHandleContextListUpdatesTest.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -30,7 +30,10 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -39,7 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PreHandleContextTest {
+class PreHandleContextImplTest {
     private static final AccountID PAYER = AccountID.newBuilder().accountNum(3L).build();
 
     private Key payerKey = A_COMPLEX_KEY;
@@ -57,7 +60,10 @@ class PreHandleContextTest {
             .build();
 
     @Mock
-    AccountAccess accountAccess;
+    ReadableStoreFactory storeFactory;
+
+    @Mock
+    ReadableAccountStore accountStore;
 
     @Mock
     Account account;
@@ -66,10 +72,11 @@ class PreHandleContextTest {
 
     @Test
     void gettersWork() throws PreCheckException {
-        given(accountAccess.getAccountById(PAYER)).willReturn(account);
+        given(storeFactory.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getAccountById(PAYER)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         final var txn = createAccountTransaction();
-        subject = new PreHandleContext(accountAccess, txn).requireKey(otherKey);
+        subject = new PreHandleContextImpl(storeFactory, txn).requireKey(otherKey);
 
         assertEquals(txn, subject.body());
         assertEquals(payerKey, subject.payerKey());
