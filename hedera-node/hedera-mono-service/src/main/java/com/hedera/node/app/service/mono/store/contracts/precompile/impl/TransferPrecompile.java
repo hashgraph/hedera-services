@@ -735,7 +735,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 if (hbarAdjust.getAmount() < 0) {
                     hbarAdjust.setIsApproval(true);
                 } else {
-                    log.warn(CHANGE_SWITCHED_TO_APPROVAL_MATCHED_CREDIT_IN, switchedChange, opBuilder);
+                    log.error(CHANGE_SWITCHED_TO_APPROVAL_MATCHED_CREDIT_IN, switchedChange, opBuilder);
                 }
                 return;
             }
@@ -743,7 +743,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         // This doesn't make sense, as it implies the TransferPrecompile has switched a non-custom-fee hbar
         // adjustment to approval-based authorization, but the synthetic CryptoTransfer op doesn't have a
         // matching adjustment in its transfer list
-        log.warn(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
+        log.error(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
     }
 
     /**
@@ -792,7 +792,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                             .getTransfersBuilder(j)
                             .setIsApproval(true);
                 } else {
-                    log.warn(CHANGE_SWITCHED_TO_APPROVAL_MATCHED_CREDIT_IN, switchedChange, opBuilder);
+                    log.error(CHANGE_SWITCHED_TO_APPROVAL_MATCHED_CREDIT_IN, switchedChange, opBuilder);
                 }
                 return;
             }
@@ -800,7 +800,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         // This doesn't make sense, as it implies the TransferPrecompile has switched a non-custom-fee fungible
         // adjustment to approval-based authorization, but the synthetic CryptoTransfer op doesn't have a
         // matching adjustment in its token transfer list
-        log.warn(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
+        log.error(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
     }
 
     /**
@@ -830,6 +830,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         // This doesn't make sense, as it implies the TransferPrecompile has switched a non-custom-fee NFT
         // ownership change to approval-based authorization, but the synthetic CryptoTransfer op doesn't
         // have a matching ownership change in its token transfer list
-        log.warn(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
+        log.error(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
     }
 }
