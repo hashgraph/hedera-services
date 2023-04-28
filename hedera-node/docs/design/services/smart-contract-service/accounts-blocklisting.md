@@ -3,17 +3,17 @@
 ## Purpose
 
 In Ethereum, everyone that knows a private key is able to authorize a transaction from the corresponding EVM public address, and the first to send a transaction would be eligible to withdraw any funds from that address.
-In Hedera, it is possible for an account with associated EVM address alias to have a key that does not correspond to the alias. When an account is created with EVM address alias matching some publicly known exposed private key, this is what we refer to as “EVM address squatting”.
+In Hedera, it is possible for an account with associated EVM address alias to have a key that does not correspond to the alias. When an account is created with EVM address alias but has a non-matching account key, this is what we refer to as “EVM address squatting”.
 
 It is possible to “squat” on an EVM address in a couple of ways:
 1. Create an account with an alias and then update the account key.
 2. Create an account with an alias and a key that’s different from the key that’s used to derive the alias from.
 
-In both cases, this results in the private key losing control over the EVM address derived from the corresponding public key.
+In both cases, this results in the private key losing control over the account with EVM address derived from the corresponding private-public key pair.
 
 This means that there is a difference in how some situations, like accidental transfers to known EVM addresses, will be handled in Ethereum and in Hedera:
 - In Ethereum, everyone that knows the corresponding private key will be able to authorize a transaction from the known address, and the first to send a transaction would be eligible to withdraw the funds.
-- In Hedera, only the account with the associated corresponding alias would be eligible to withdraw the funds. If another key controls this account, then only that key can be used to withdraw the funds.
+- In Hedera, only the key that controls an account can be used to withdraw the funds. This key may not correspond to the account alias.
 
 For more information about EVM addresses, aliases and how they are used in Hedera see [Auto Account Creation](https://docs.hedera.com/hedera/core-concepts/accounts/auto-account-creation).
 
