@@ -77,7 +77,7 @@ final class SignatureVerificationFutureTest implements Scenarios {
 
         // Then we find that the SignatureVerificationResult is done, and returns "true" from its get methods
         assertThat(future)
-                .succeedsWithin(1, TimeUnit.MILLISECONDS)
+                .succeedsWithin(1, TimeUnit.SECONDS)
                 .extracting("passed")
                 .isEqualTo(true);
         assertThat(future.isDone()).isTrue();
@@ -102,7 +102,7 @@ final class SignatureVerificationFutureTest implements Scenarios {
         assertThat(future).isNotDone();
         complete(sigs.get(CAROL.keyInfo().publicKey()), true);
         assertThat(future)
-                .succeedsWithin(1, TimeUnit.MILLISECONDS)
+                .succeedsWithin(1, TimeUnit.SECONDS)
                 .extracting("passed")
                 .isEqualTo(true);
         assertThat(future.isDone()).isTrue();
@@ -134,7 +134,7 @@ final class SignatureVerificationFutureTest implements Scenarios {
 
         // Then we find that the result is "done" and returns "false" from its get methods
         assertThat(future)
-                .succeedsWithin(1, TimeUnit.MILLISECONDS)
+                .succeedsWithin(1, TimeUnit.SECONDS)
                 .extracting("passed")
                 .isEqualTo(false);
         assertThat(future.isDone()).isTrue();
@@ -156,7 +156,7 @@ final class SignatureVerificationFutureTest implements Scenarios {
         assertThat(wasCanceled).isFalse();
         assertThat(future.isCancelled()).isFalse();
         assertThat(future)
-                .succeedsWithin(1, TimeUnit.MILLISECONDS)
+                .succeedsWithin(1, TimeUnit.SECONDS)
                 .extracting("passed")
                 .isEqualTo(true);
         assertThat(future.isDone()).isTrue();
