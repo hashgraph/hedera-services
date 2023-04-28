@@ -43,5 +43,5 @@ public interface WritableStoreFactory {
      *
      * @return a new {@link WritableTokenRelationStore}
      */
-    public WritableTokenRelationStore createTokenRelStore();
+    WritableTokenRelationStore createTokenRelStore();
 }

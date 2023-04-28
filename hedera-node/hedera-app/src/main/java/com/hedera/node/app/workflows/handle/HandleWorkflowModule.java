@@ -28,6 +28,7 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WorkingStateWritableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
@@ -86,5 +87,10 @@ public interface HandleWorkflowModule {
     @Singleton
     static LongSupplier provideConsensusSecond(@NonNull final TransactionContext txnCtx) {
         return () -> txnCtx.consensusTime().getEpochSecond();
+    }
+
+    @Provides
+    static ReadableStoreFactory provideReadableStoreFactory(final Supplier<AutoCloseableWrapper<HederaState>> state) {
+        return new ReadableStoreFactory(state.get().get());
     }
 }

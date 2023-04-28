@@ -35,6 +35,7 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WorkingStateWritableStoreFactory;
 import com.hedera.node.app.workflows.handle.AdaptedMonoTransitionRunner;
@@ -71,14 +72,15 @@ class AdaptedMonoTransitionRunnerTest {
     private TxnAccessor accessor;
 
     @Mock
-    private WorkingStateWritableStoreFactory storeFactory;
+    private WorkingStateWritableStoreFactory writableStoreFactory;
 
     private AdaptedMonoTransitionRunner subject;
 
     @BeforeEach
     void setUp() {
         given(staticProperties.workflowsEnabled()).willReturn(Set.of(ConsensusCreateTopic));
-        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup, staticProperties, storeFactory);
+        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup, staticProperties,
+                writableStoreFactory);
     }
 
     @Test
@@ -88,7 +90,8 @@ class AdaptedMonoTransitionRunnerTest {
 
         subject.tryTransition(accessor);
 
-        verify(dispatcher).dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), storeFactory);
+        verify(dispatcher).dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn),
+                writableStoreFactory);
         verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
     }
 
@@ -98,11 +101,12 @@ class AdaptedMonoTransitionRunnerTest {
         given(accessor.getTxn()).willReturn(mockTxn);
         willThrow(new HandleException(INVALID_EXPIRATION_TIME))
                 .given(dispatcher)
-                .dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), storeFactory);
+                .dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), writableStoreFactory);
 
         assertTrue(subject.tryTransition(accessor));
 
-        verify(dispatcher).dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), storeFactory);
+        verify(dispatcher).dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn),
+                writableStoreFactory);
         verify(txnCtx).setStatus(fromPbj(INVALID_EXPIRATION_TIME));
     }
 

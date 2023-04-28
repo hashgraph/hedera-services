@@ -24,6 +24,9 @@ import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStoreImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
+import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
+import com.hedera.node.app.service.network.impl.ReadableRunningHashLeafStoreImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -37,6 +40,7 @@ import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.function.Function;
+import javax.inject.Inject;
 
 /**
  * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.
@@ -54,7 +58,9 @@ public class ReadableStoreFactory {
             ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new),
             ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new),
             ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStore::new),
-            ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStoreImpl::new));
+            ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStoreImpl::new),
+            ReadableRunningHashLeafStore.class,
+                    new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new));
 
     private final HederaState state;
 
@@ -63,6 +69,7 @@ public class ReadableStoreFactory {
      *
      * @param state the {@link HederaState} to use
      */
+    @Inject
     public ReadableStoreFactory(@NonNull final HederaState state) {
         this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
     }

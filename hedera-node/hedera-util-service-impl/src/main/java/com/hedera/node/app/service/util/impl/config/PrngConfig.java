@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+package com.hedera.node.app.service.util.impl.config;
 
-description = "Hedera Network Service API"
-
-dependencies {
-  api(project(":hedera-node:hedera-app-spi"))
-  implementation(libs.swirlds.common)
-}
+/**
+ * Configuration for the PRNG to check if it is enabled or not.
+ * @param isPrngEnabled true if the PRNG is enabled, false otherwise
+ */
+public record PrngConfig(boolean isPrngEnabled) {}

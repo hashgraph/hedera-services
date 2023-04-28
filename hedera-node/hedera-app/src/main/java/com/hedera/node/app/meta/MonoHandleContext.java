@@ -21,6 +21,7 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -39,17 +40,20 @@ public class MonoHandleContext implements HandleContext {
     private final ExpiryValidator expiryValidator;
     private final TransactionContext txnCtx;
     private final AttributeValidator attributeValidator;
+    private final ReadableStoreFactory readableStoreFactory;
 
     @Inject
     public MonoHandleContext(
             @NonNull final EntityIdSource ids,
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final AttributeValidator attributeValidator,
-            @NonNull final TransactionContext txnCtx) {
+            @NonNull final TransactionContext txnCtx,
+            @NonNull final ReadableStoreFactory storeFactory){
         this.nums = Objects.requireNonNull(ids)::newAccountNumber;
         this.txnCtx = Objects.requireNonNull(txnCtx);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
         this.attributeValidator = Objects.requireNonNull(attributeValidator);
+        this.readableStoreFactory = Objects.requireNonNull(storeFactory);
     }
 
     /**
@@ -82,5 +86,11 @@ public class MonoHandleContext implements HandleContext {
     @Override
     public ExpiryValidator expiryValidator() {
         return expiryValidator;
+    }
+
+    @Override
+    @NonNull
+    public <C> C createStore(@NonNull Class<C> storeInterface) {
+        return readableStoreFactory.createStore(storeInterface);
     }
 }

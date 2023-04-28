@@ -105,6 +105,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
@@ -338,6 +339,8 @@ class MonoTransactionDispatcherTest {
     @Mock
     private Account account;
 
+    private SideEffectsTracker sideEffectsTracker = new SideEffectsTracker();
+
     private TransactionHandlers handlers;
     private TransactionDispatcher dispatcher;
 
@@ -397,24 +400,24 @@ class MonoTransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, usageLimits);
+        dispatcher = new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, usageLimits, sideEffectsTracker);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(null, txnCtx, handlers, dynamicProperties, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(null, txnCtx, handlers, dynamicProperties, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() ->
-                        new MonoTransactionDispatcher(handleContext, null, handlers, dynamicProperties, usageLimits))
+                        new MonoTransactionDispatcher(handleContext, null, handlers, dynamicProperties, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() ->
-                        new MonoTransactionDispatcher(handleContext, txnCtx, null, dynamicProperties, usageLimits))
+                        new MonoTransactionDispatcher(handleContext, txnCtx, null, dynamicProperties, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, null, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, null, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
-                        () -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, null))
+                        () -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, null, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
     }
 

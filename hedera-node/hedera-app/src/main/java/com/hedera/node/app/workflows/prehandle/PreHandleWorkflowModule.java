@@ -23,6 +23,10 @@ import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.signature.MonoSignaturePreparer;
 import com.hedera.node.app.signature.SignaturePreparer;
+import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.WorkingStateWritableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.AdaptedMonoProcessLogic;
 import dagger.Binds;
 import dagger.Module;
@@ -30,6 +34,7 @@ import dagger.Provides;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
+import javax.inject.Singleton;
 
 @Module
 public interface PreHandleWorkflowModule {

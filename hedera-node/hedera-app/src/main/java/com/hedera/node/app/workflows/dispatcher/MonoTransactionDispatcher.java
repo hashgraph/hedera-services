@@ -22,10 +22,12 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
+import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -43,6 +45,7 @@ import javax.inject.Singleton;
 public class MonoTransactionDispatcher extends TransactionDispatcher {
     private final TransactionContext txnCtx;
     private final UsageLimits usageLimits;
+    private final SideEffectsTracker sideEffectsTracker;
 
     @Inject
     public MonoTransactionDispatcher(
@@ -50,10 +53,12 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             @NonNull TransactionContext txnCtx,
             @NonNull TransactionHandlers handlers,
             @NonNull GlobalDynamicProperties dynamicProperties,
-            @NonNull UsageLimits usageLimits) {
+            @NonNull UsageLimits usageLimits,
+            @NonNull SideEffectsTracker sideEffectsTracker) {
         super(handleContext, handlers, dynamicProperties);
         this.txnCtx = requireNonNull(txnCtx);
         this.usageLimits = requireNonNull(usageLimits);
+        this.sideEffectsTracker = requireNonNull(sideEffectsTracker);
     }
 
     @Override
@@ -85,5 +90,16 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         // Adapt the record builder outcome for mono-service
         txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
         topicStore.commit();
+    }
+
+    @Override
+    protected void finishUtilPrng(@NonNull final PrngRecordBuilder recordBuilder) {
+        if (recordBuilder.hasPrngNumber()) {
+            sideEffectsTracker.trackRandomNumber(
+                    recordBuilder.getGeneratedNumber().getAsInt());
+        } else {
+            sideEffectsTracker.trackRandomBytes(
+                    PbjConverter.asBytes(recordBuilder.getGeneratedBytes().get()));
+        }
     }
 }

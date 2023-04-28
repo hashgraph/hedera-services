@@ -24,6 +24,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,11 +48,14 @@ class MonoHandleContextTest {
     @Mock
     private TransactionContext txnCtx;
 
+    @Mock
+    private ReadableStoreFactory readableStoreFactory;
+
     private MonoHandleContext subject;
 
     @BeforeEach
     void setup() {
-        subject = new MonoHandleContext(ids, expiryValidator, attributeValidator, txnCtx);
+        subject = new MonoHandleContext(ids, expiryValidator, attributeValidator, txnCtx, readableStoreFactory);
     }
 
     @Test
