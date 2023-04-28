@@ -77,7 +77,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
             // Add the TransactionSignature for the payer
             final var payerVerificationFuture = metadata.payerVerification();
             final var payerVerification =
-                    payerVerificationFuture == null ? null : payerVerificationFuture.get(3, TimeUnit.MINUTES);
+                    payerVerificationFuture == null ? null : payerVerificationFuture.get(1, TimeUnit.MINUTES);
             final var payerTxSigs =
                     payerVerification == null ? null : ((SignatureVerificationImpl) payerVerification).txSigs();
             cryptoSignatures.addAll(payerTxSigs);
@@ -89,17 +89,18 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
 
             accessor.addAllCryptoSigs(cryptoSignatures);
             final var preHandleResponseCode = metadata.responseCode();
-            final var payerKey = payerVerification == null ? null : mapToJKey(payerVerification.key());
+            final var payerKey = payerVerification == null ? null : payerVerification.key();
             if (payerKey != null) {
+                final var jkey = mapToJKey(payerKey);
                 if (preHandleResponseCode != OK) {
-                    accessor.setSigMeta(forPayerOnly(payerKey, cryptoSignatures, accessor));
+                    accessor.setSigMeta(forPayerOnly(jkey, cryptoSignatures, accessor));
                 } else {
                     final List<JKey> otherPayerKeys = metadata.nonPayerVerifications() == null
                             ? Collections.emptyList()
                             : metadata.nonPayerVerifications().keySet().stream()
                                     .map(this::mapToJKey)
                                     .toList();
-                    accessor.setSigMeta(forPayerAndOthers(payerKey, otherPayerKeys, cryptoSignatures, accessor));
+                    accessor.setSigMeta(forPayerAndOthers(jkey, otherPayerKeys, cryptoSignatures, accessor));
                 }
             } else {
                 accessor.setSigMeta(noneAvailable());

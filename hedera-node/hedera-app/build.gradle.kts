@@ -57,6 +57,7 @@ dependencies {
   implementation(libs.pbj.runtime)
   implementation(libs.commons.codec) // Temporarily needed for AdaptedMonoProcessLogic
 
+  jmhImplementation(project(":hedera-node:hedera-app"))
   jmhImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   jmhImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
   //  jmhAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.36")

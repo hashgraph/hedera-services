@@ -18,43 +18,69 @@ package com.hedera.node.app.signature.hapi;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
+import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.crypto.Cryptography;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.infra.Blackhole;
 
+/**
+ * This benchmark measures the time it takes to find the matching {@link SignaturePair}.
+ */
 @State(Scope.Benchmark)
-public class VerificationBenchmark implements Scenarios {
+@Fork(value = 1, warmups = 1)
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+public class VerificationBenchmark extends AppTestBase implements Scenarios {
+    @Param({"1", "2", "5", "10"})
+    public int numSigPairs;
 
-    @Param({"100", "200", "300", "500", "1000"})
-    public int iterations;
+    @Param({"key", "keyList", "thresholdKey", "deepTree", "hollow"})
+    public String scenario;
 
-    public Key key;
-    public List<SignaturePair> sigPairs;
-    public Cryptography fakeCryptoEngine;
-    public Bytes fakeSignedBytes;
-    public SignatureVerifierImpl subject;
+    private Key key;
+    private List<SignaturePair> sigPairs;
+    private Bytes fakeSignedBytes;
+    private SignatureVerifierImpl subject;
 
     @Setup(Level.Invocation)
     public void setUp() {
-        key = FAKE_ED25519_KEY_INFOS[0].publicKey();
-        sigPairs = List.of(SignaturePair.newBuilder()
-                .pubKeyPrefix(key.ed25519OrThrow().slice(0, 10))
-                .build());
-        fakeCryptoEngine = new FakeCryptoEngine();
+        key = createKey(scenario);
+        sigPairs = createSigPairs(numSigPairs);
+        final var fakeCryptoEngine = new FakeCryptoEngine();
         fakeSignedBytes = Bytes.wrap(new byte[] {1, 2, 3, 4, 5});
         subject = new SignatureVerifierImpl(fakeCryptoEngine);
     }
 
     @Benchmark
-    public void singleKey_singleSignature(Blackhole blackhole) {
+    public void singleKeySingleSignature(Blackhole blackhole) {
         blackhole.consume(subject.verify(key, fakeSignedBytes, sigPairs));
+    }
+
+    private Key createKey(String scenario) {
+        return FAKE_ED25519_KEY_INFOS[0].publicKey();
+    }
+
+    private List<SignaturePair> createSigPairs(int numSigPairs) {
+        final var pairs = new ArrayList<SignaturePair>();
+        for (int i = 0; i < numSigPairs; i++) {
+            pairs.add(SignaturePair.newBuilder()
+                    .ed25519(randomBytes(64))
+                    .pubKeyPrefix(randomBytes(32))
+                    .build());
+        }
+        return pairs;
     }
 }
