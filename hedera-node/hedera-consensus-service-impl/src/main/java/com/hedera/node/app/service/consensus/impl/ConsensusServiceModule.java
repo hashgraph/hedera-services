@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl.components;
+package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
-import dagger.Component;
-import javax.inject.Singleton;
+import dagger.Module;
 
-@Singleton
-@Component
-public interface ConsensusComponent {
-    @Component.Factory
-    interface Factory {
-        ConsensusComponent create();
-    }
+/**
+ * Dagger module for the consensus service.
+ */
+@Module
+public interface ConsensusServiceModule {
 
     ConsensusCreateTopicHandler consensusCreateTopicHandler();
 
@@ -41,4 +39,6 @@ public interface ConsensusComponent {
     ConsensusSubmitMessageHandler consensusSubmitMessageHandler();
 
     ConsensusUpdateTopicHandler consensusUpdateTopicHandler();
+
+    ConsensusHandlers consensusHandlers();
 }

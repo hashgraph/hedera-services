@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -25,7 +26,7 @@ import javax.inject.Singleton;
  * not support Java records
  */
 @Singleton
-public class TokenComponent {
+public class TokenHandlers {
 
     private final CryptoCreateHandler cryptoCreateHandler;
     private final CryptoUpdateHandler cryptoUpdateHandler;
@@ -61,41 +62,10 @@ public class TokenComponent {
     private final TokenGetNftInfosHandler tokenGetNftInfosHandler;
 
     /**
-     * @param cryptoCreateHandler               the cryptoCreateHandler
-     * @param cryptoUpdateHandler               the cryptoUpdateHandler
-     * @param cryptoTransferHandler             the cryptoTransferHandler
-     * @param cryptoDeleteHandler               the cryptoDeleteHandler
-     * @param cryptoApproveAllowanceHandler     the cryptoApproveAllowanceHandler
-     * @param cryptoDeleteAllowanceHandler      the cryptoDeleteAllowanceHandler
-     * @param cryptoAddLiveHashHandler          the cryptoAddLiveHashHandler
-     * @param cryptoDeleteLiveHashHandler       the cryptoDeleteLiveHashHandler
-     * @param tokenCreateHandler                the tokenCreateHandler
-     * @param tokenUpdateHandler                the tokenUpdateHandler
-     * @param tokenMintHandler                  the tokenMintHandler
-     * @param tokenBurnHandler                  the tokenBurnHandler
-     * @param tokenDeleteHandler                the tokenDeleteHandler
-     * @param tokenAccountWipeHandler           the tokenAccountWipeHandler
-     * @param tokenFreezeAccountHandler         the tokenFreezeAccountHandler
-     * @param tokenUnfreezeAccountHandler       the tokenUnfreezeAccountHandler
-     * @param tokenGrantKycToAccountHandler     the tokenGrantKycToAccountHandler
-     * @param tokenRevokeKycFromAccountHandler  the tokenRevokeKycFromAccountHandler
-     * @param tokenAssociateToAccountHandler    the tokenAssociateToAccountHandler
-     * @param tokenDissociateFromAccountHandler the tokenDissociateFromAccountHandler
-     * @param tokenFeeScheduleUpdateHandler     the tokenFeeScheduleUpdateHandler
-     * @param tokenPauseHandler                 the tokenPauseHandler
-     * @param tokenUnpauseHandler               the tokenUnpauseHandler
-     * @param cryptoGetAccountBalanceHandler    the cryptoGetAccountBalanceHandler
-     * @param cryptoGetAccountInfoHandler       the cryptoGetAccountInfoHandler
-     * @param cryptoGetAccountRecordsHandler    the cryptoGetAccountRecordsHandler
-     * @param cryptoGetLiveHashHandler          the cryptoGetLiveHashHandler
-     * @param cryptoGetStakersHandler           the cryptoGetStakersHandler
-     * @param tokenGetInfoHandler               the tokenGetInfoHandler
-     * @param tokenGetAccountNftInfosHandler    the tokenGetAccountNftInfosHandler
-     * @param tokenGetNftInfoHandler            the tokenGetNftInfoHandler
-     * @param tokenGetNftInfosHandler           the tokenGetNftInfosHandler
+     * Constructor for the TokenHandlers class
      */
     @Inject
-    public TokenComponent(
+    public TokenHandlers(
             @NonNull final CryptoCreateHandler cryptoCreateHandler,
             @NonNull final CryptoUpdateHandler cryptoUpdateHandler,
             @NonNull final CryptoTransferHandler cryptoTransferHandler,
@@ -128,38 +98,59 @@ public class TokenComponent {
             @NonNull final TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler,
             @NonNull final TokenGetNftInfoHandler tokenGetNftInfoHandler,
             @NonNull final TokenGetNftInfosHandler tokenGetNftInfosHandler) {
-        this.cryptoCreateHandler = cryptoCreateHandler;
-        this.cryptoUpdateHandler = cryptoUpdateHandler;
-        this.cryptoTransferHandler = cryptoTransferHandler;
-        this.cryptoDeleteHandler = cryptoDeleteHandler;
-        this.cryptoApproveAllowanceHandler = cryptoApproveAllowanceHandler;
-        this.cryptoDeleteAllowanceHandler = cryptoDeleteAllowanceHandler;
-        this.cryptoAddLiveHashHandler = cryptoAddLiveHashHandler;
-        this.cryptoDeleteLiveHashHandler = cryptoDeleteLiveHashHandler;
-        this.tokenCreateHandler = tokenCreateHandler;
-        this.tokenUpdateHandler = tokenUpdateHandler;
-        this.tokenMintHandler = tokenMintHandler;
-        this.tokenBurnHandler = tokenBurnHandler;
-        this.tokenDeleteHandler = tokenDeleteHandler;
-        this.tokenAccountWipeHandler = tokenAccountWipeHandler;
-        this.tokenFreezeAccountHandler = tokenFreezeAccountHandler;
-        this.tokenUnfreezeAccountHandler = tokenUnfreezeAccountHandler;
-        this.tokenGrantKycToAccountHandler = tokenGrantKycToAccountHandler;
-        this.tokenRevokeKycFromAccountHandler = tokenRevokeKycFromAccountHandler;
-        this.tokenAssociateToAccountHandler = tokenAssociateToAccountHandler;
-        this.tokenDissociateFromAccountHandler = tokenDissociateFromAccountHandler;
-        this.tokenFeeScheduleUpdateHandler = tokenFeeScheduleUpdateHandler;
-        this.tokenPauseHandler = tokenPauseHandler;
-        this.tokenUnpauseHandler = tokenUnpauseHandler;
-        this.cryptoGetAccountBalanceHandler = cryptoGetAccountBalanceHandler;
-        this.cryptoGetAccountInfoHandler = cryptoGetAccountInfoHandler;
-        this.cryptoGetAccountRecordsHandler = cryptoGetAccountRecordsHandler;
-        this.cryptoGetLiveHashHandler = cryptoGetLiveHashHandler;
-        this.cryptoGetStakersHandler = cryptoGetStakersHandler;
-        this.tokenGetInfoHandler = tokenGetInfoHandler;
-        this.tokenGetAccountNftInfosHandler = tokenGetAccountNftInfosHandler;
-        this.tokenGetNftInfoHandler = tokenGetNftInfoHandler;
-        this.tokenGetNftInfosHandler = tokenGetNftInfosHandler;
+        this.cryptoCreateHandler = Objects.requireNonNull(cryptoCreateHandler, "cryptoCreateHandler must not be null");
+        this.cryptoUpdateHandler = Objects.requireNonNull(cryptoUpdateHandler, "cryptoUpdateHandler must not be null");
+        this.cryptoTransferHandler =
+                Objects.requireNonNull(cryptoTransferHandler, "cryptoTransferHandler must not be null");
+        this.cryptoDeleteHandler = Objects.requireNonNull(cryptoDeleteHandler, "cryptoDeleteHandler must not be null");
+        this.cryptoApproveAllowanceHandler =
+                Objects.requireNonNull(cryptoApproveAllowanceHandler, "cryptoApproveAllowanceHandler must not be null");
+        this.cryptoDeleteAllowanceHandler =
+                Objects.requireNonNull(cryptoDeleteAllowanceHandler, "cryptoDeleteAllowanceHandler must not be null");
+        this.cryptoAddLiveHashHandler =
+                Objects.requireNonNull(cryptoAddLiveHashHandler, "cryptoAddLiveHashHandler must not be null");
+        this.cryptoDeleteLiveHashHandler =
+                Objects.requireNonNull(cryptoDeleteLiveHashHandler, "cryptoDeleteLiveHashHandler must not be null");
+        this.tokenCreateHandler = Objects.requireNonNull(tokenCreateHandler, "tokenCreateHandler must not be null");
+        this.tokenUpdateHandler = Objects.requireNonNull(tokenUpdateHandler, "tokenUpdateHandler must not be null");
+        this.tokenMintHandler = Objects.requireNonNull(tokenMintHandler, "tokenMintHandler must not be null");
+        this.tokenBurnHandler = Objects.requireNonNull(tokenBurnHandler, "tokenBurnHandler must not be null");
+        this.tokenDeleteHandler = Objects.requireNonNull(tokenDeleteHandler, "tokenDeleteHandler must not be null");
+        this.tokenAccountWipeHandler =
+                Objects.requireNonNull(tokenAccountWipeHandler, "tokenAccountWipeHandler must not be null");
+        this.tokenFreezeAccountHandler =
+                Objects.requireNonNull(tokenFreezeAccountHandler, "tokenFreezeAccountHandler must not be null");
+        this.tokenUnfreezeAccountHandler =
+                Objects.requireNonNull(tokenUnfreezeAccountHandler, "tokenUnfreezeAccountHandler must not be null");
+        this.tokenGrantKycToAccountHandler =
+                Objects.requireNonNull(tokenGrantKycToAccountHandler, "tokenGrantKycToAccountHandler must not be null");
+        this.tokenRevokeKycFromAccountHandler = Objects.requireNonNull(
+                tokenRevokeKycFromAccountHandler, "tokenRevokeKycFromAccountHandler must not be null");
+        this.tokenAssociateToAccountHandler = Objects.requireNonNull(
+                tokenAssociateToAccountHandler, "tokenAssociateToAccountHandler must not be null");
+        this.tokenDissociateFromAccountHandler = Objects.requireNonNull(
+                tokenDissociateFromAccountHandler, "tokenDissociateFromAccountHandler must not be null");
+        this.tokenFeeScheduleUpdateHandler =
+                Objects.requireNonNull(tokenFeeScheduleUpdateHandler, "tokenFeeScheduleUpdateHandler must not be null");
+        this.tokenPauseHandler = Objects.requireNonNull(tokenPauseHandler, "tokenPauseHandler must not be null");
+        this.tokenUnpauseHandler = Objects.requireNonNull(tokenUnpauseHandler, "tokenUnpauseHandler must not be null");
+        this.cryptoGetAccountBalanceHandler = Objects.requireNonNull(
+                cryptoGetAccountBalanceHandler, "cryptoGetAccountBalanceHandler must not be null");
+        this.cryptoGetAccountInfoHandler =
+                Objects.requireNonNull(cryptoGetAccountInfoHandler, "cryptoGetAccountInfoHandler must not be null");
+        this.cryptoGetAccountRecordsHandler = Objects.requireNonNull(
+                cryptoGetAccountRecordsHandler, "cryptoGetAccountRecordsHandler must not be null");
+        this.cryptoGetLiveHashHandler =
+                Objects.requireNonNull(cryptoGetLiveHashHandler, "cryptoGetLiveHashHandler must not be null");
+        this.cryptoGetStakersHandler =
+                Objects.requireNonNull(cryptoGetStakersHandler, "cryptoGetStakersHandler must not be null");
+        this.tokenGetInfoHandler = Objects.requireNonNull(tokenGetInfoHandler, "tokenGetInfoHandler must not be null");
+        this.tokenGetAccountNftInfosHandler = Objects.requireNonNull(
+                tokenGetAccountNftInfosHandler, "tokenGetAccountNftInfosHandler must not be null");
+        this.tokenGetNftInfoHandler =
+                Objects.requireNonNull(tokenGetNftInfoHandler, "tokenGetNftInfoHandler must not be null");
+        this.tokenGetNftInfosHandler =
+                Objects.requireNonNull(tokenGetNftInfosHandler, "tokenGetNftInfosHandler must not be null");
     }
 
     /**

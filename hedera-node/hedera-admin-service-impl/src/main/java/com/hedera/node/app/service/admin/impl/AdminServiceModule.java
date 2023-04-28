@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.fees;
+package com.hedera.node.app.service.admin.impl;
 
-import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.workflows.handle.AdaptedMonoFeeCalculator;
-import dagger.Binds;
+import com.hedera.node.app.service.admin.impl.handlers.AdminHandlers;
+import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import dagger.Module;
-import javax.inject.Singleton;
 
+/**
+ * Dagger module of the admin service
+ */
 @Module
-public interface AdaptedFeeCalculatorModule {
-    @Binds
-    @Singleton
-    FeeCalculator bindFeeCalculator(AdaptedMonoFeeCalculator adaptedMonoFeeCalculator);
+public interface AdminServiceModule {
+
+    FreezeHandler freezeHandler();
+
+    AdminHandlers adminHandlers();
 }
