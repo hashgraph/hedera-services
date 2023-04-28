@@ -44,6 +44,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class CryptoOpsUsage {
@@ -55,6 +57,8 @@ public class CryptoOpsUsage {
 
     static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
     static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
+
+    private static final Logger log = LogManager.getLogger(CryptoOpsUsage.class);
 
     @Inject
     public CryptoOpsUsage() {
@@ -86,6 +90,7 @@ public class CryptoOpsUsage {
         incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
                 weightedTokensInvolved, weightedTokenXfers, xferMeta.getNumNftOwnershipChanges());
         accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        log.info("Usage for crypto transfer: bpt=" + incBpt + ", rb=" + incRb + "accumulator"+ accumulator.toString());
     }
 
     public FeeData cryptoInfoUsage(final Query cryptoInfoReq, final ExtantCryptoContext ctx) {
