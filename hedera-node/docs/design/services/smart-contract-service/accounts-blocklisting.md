@@ -3,9 +3,9 @@
 ## Purpose
 
 In Ethereum, everyone that knows a private key is able to authorize a transaction from the corresponding EVM public address, and the first to send a transaction would be eligible to withdraw any funds from that address.
-In Hedera, it is possible for an account with associated EVM address alias to have a key that does not correspond to the alias. When an account is created with EVM address alias but has a non-matching account key, this is what we refer to as “EVM address squatting”.
+In Hedera, it is possible for an account with associated EVM address alias to have a key that does not correspond to the alias. When an account is created with EVM address alias but has a non-matching account key, this is what we refer to as “EVM address reserving”.
 
-It is possible to “squat” on an EVM address in a couple of ways:
+It is possible to “reserve” an EVM address in a couple of ways:
 1. Create an account with an alias and then update the account key.
 2. Create an account with an alias and a key that’s different from the key that’s used to derive the alias from.
 
@@ -35,7 +35,7 @@ In Hedera (desired behavior):
 
 ## Goals
 
-- We want to block a list of known addresses, so that no one can “squat” on them and exercise full control on any accidentally sent and blocked funds. Sending funds to such blocked addresses should not be successful as these accounts are considered “compromised”.
+- We want to block a list of known addresses, so that no one can “reserve” them and exercise full control on any accidentally sent and blocked funds. Sending funds to such blocked addresses should not be successful as these accounts are considered “compromised”.
 
 ## Non Goals
 
@@ -57,7 +57,7 @@ After the node starts (on handling the first transaction), for each of the EVM a
 - `alias` equal to the EVM address derived from the corresponding private key
 - `memo` if specified for the blocked EVM address in the resource file, indicating the reason for blocking the account
 
-Anyone with access to the `GENESIS` key will have sole control on the accounts and the fact that a given alias can be associated only to a single account prevents squatting on the EVM addresses.
+Anyone with access to the `GENESIS` key will have sole control on the accounts and the fact that a given alias can be associated only to a single account prevents reserving of the EVM addresses.
 The EVM already has checks integrated for accounts configured with `receiverSigRequired`.
 This approach does not require us to introduce a property file with random addresses and to have custom checks and logic executed in the EVM.
 
