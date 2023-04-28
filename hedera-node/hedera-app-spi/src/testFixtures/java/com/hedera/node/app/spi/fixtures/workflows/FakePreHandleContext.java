@@ -41,8 +41,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Fake implementation of {@link PreHandleContext} to simplify moving forward without breaking all kinds of tests
- * in services. This class should be replaced with a mock of {@link PreHandleContext}.
+ * in services.
+ *
+ * @deprecated for removal in favor of a mock of {@link PreHandleContext}
  */
+@Deprecated(forRemoval = true)
 public class FakePreHandleContext implements PreHandleContext {
 
     /** Used to get keys for accounts and contracts. */
