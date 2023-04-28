@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.FastCopyable;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.exceptions.PlatformException;
 import com.swirlds.common.io.SelfSerializable;
@@ -1457,8 +1458,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         for (int index = 0; index < sizeOfMap; index++) {
             final VirtualLeafRecord<K, V> leafRecord = in.readSerializable(false, VirtualLeafRecord::new);
             if (version == ClassVersion.ORIGINAL) {
-                // skip path
-                in.readLong();
+                // skip hash
+                in.readSerializable();
             }
             final long mutationVersion = in.readLong();
             final boolean deleted = in.readBoolean();
