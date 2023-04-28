@@ -82,7 +82,8 @@ public class AccountBalanceSigningUtils {
         }
     }
 
-    private static void generateSigBalanceFile(final File filePath, final byte[] signature, final byte[] fileHash) {
+    private static void generateSigBalanceFile(final File filePath, final byte[] signature, final byte[] fileHash)
+            throws IOException {
         try (final BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(filePath))) {
             output.write(TYPE_FILE_HASH);
             output.write(fileHash);
@@ -93,6 +94,7 @@ public class AccountBalanceSigningUtils {
         } catch (final IOException e) {
             System.err.println("generateSigBalanceFile :: Fail to generate signature file for " + filePath
                     + " with exception :" + e);
+            throw e;
         }
     }
 }
