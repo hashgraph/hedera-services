@@ -190,7 +190,7 @@ class TokenRevokeKycFromAccountHandlerTest {
         void emptyGetForModifyShouldNotPersist() {
             given(tokenRelStore.getForModify(anyLong(), anyLong())).willReturn(Optional.empty());
 
-            final var txnBody = newTxnBody(true, true);
+            final var txnBody = newTxnBody();
             assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore)).isInstanceOf(NoSuchElementException.class);
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));
@@ -207,7 +207,7 @@ class TokenRevokeKycFromAccountHandlerTest {
             given(tokenRelStore.getForModify(TOKEN_10.tokenNum(), ACCOUNT_100.accountNumOrThrow()))
                     .willReturn(Optional.of(stateTokenRel));
 
-            final var txnBody = newTxnBody(true, true);
+            final var txnBody = newTxnBody();
             subject.handle(txnBody, tokenRelStore);
 
             verify(tokenRelStore)
@@ -220,14 +220,10 @@ class TokenRevokeKycFromAccountHandlerTest {
                     .accountNumber(ACCOUNT_100.accountNumOrThrow());
         }
 
-        private TransactionBody newTxnBody(final boolean tokenPresent, final boolean accountPresent) {
+        private TransactionBody newTxnBody() {
             TokenRevokeKycTransactionBody.Builder builder = TokenRevokeKycTransactionBody.newBuilder();
-            if (tokenPresent) {
-                builder.token(TOKEN_10);
-            }
-            if (accountPresent) {
-                builder.account(ACCOUNT_100);
-            }
+            builder.token(TOKEN_10);
+            builder.account(ACCOUNT_100);
             return TransactionBody.newBuilder()
                     .tokenRevokeKyc(builder.build())
                     .memo(this.getClass().getName() + System.currentTimeMillis())
