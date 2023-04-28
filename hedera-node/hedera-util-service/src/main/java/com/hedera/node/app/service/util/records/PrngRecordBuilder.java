@@ -19,8 +19,6 @@ package com.hedera.node.app.service.util.records;
 import com.hedera.node.app.spi.records.RecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
-import java.util.OptionalInt;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side-effects of a
@@ -52,7 +50,7 @@ public interface PrngRecordBuilder extends RecordBuilder<PrngRecordBuilder> {
      *
      * @return the number of the created topic
      */
-    OptionalInt getGeneratedNumber();
+    Integer getGeneratedNumber();
 
     /**
      * Returns the generated pseudorandom bytes, when no range is provided in
@@ -60,9 +58,9 @@ public interface PrngRecordBuilder extends RecordBuilder<PrngRecordBuilder> {
      *
      * @return the generated pseudorandom bytes
      */
-    Optional<Bytes> getGeneratedBytes();
+    Bytes getGeneratedBytes();
 
     default boolean hasPrngNumber() {
-        return getGeneratedNumber().isPresent();
+        return getGeneratedNumber() != null;
     }
 }

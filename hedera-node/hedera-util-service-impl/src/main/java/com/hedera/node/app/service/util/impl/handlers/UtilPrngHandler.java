@@ -57,18 +57,20 @@ public class UtilPrngHandler implements TransactionHandler {
         // Dagger2
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        checkRange(context.body().utilPrngOrThrow().range());
+        if (context.body().utilPrngOrThrow().range() < 0) {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_PRNG_RANGE);
+        }
         // Payer key is fetched in PreHandleWorkflow
     }
 
-    private void checkRange(int range) throws PreCheckException {
-        if (range < 0) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_PRNG_RANGE);
-        }
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     public void handle(
             @NonNull final HandleContext context,
             @NonNull final UtilPrngTransactionBody op,
@@ -96,6 +98,14 @@ public class UtilPrngHandler implements TransactionHandler {
         } else {
             recordBuilder.setGeneratedRandomBytes(Bytes.wrap(pseudoRandomBytes));
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PrngRecordBuilder newRecordBuilder() {
+        return new UtilPrngRecordBuilder();
     }
 
     /**
@@ -131,16 +141,8 @@ public class UtilPrngHandler implements TransactionHandler {
      * @param range range of the random number
      * @return random number
      */
-    public final int randomNumFromBytes(@NonNull final byte[] pseudoRandomBytes, final int range) {
+    private int randomNumFromBytes(@NonNull final byte[] pseudoRandomBytes, final int range) {
         final var initialBitsValue = ByteBuffer.wrap(pseudoRandomBytes, 0, 4).getInt();
         return LongMath.mod(initialBitsValue, range);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public PrngRecordBuilder newRecordBuilder() {
-        return new UtilPrngRecordBuilder();
     }
 }

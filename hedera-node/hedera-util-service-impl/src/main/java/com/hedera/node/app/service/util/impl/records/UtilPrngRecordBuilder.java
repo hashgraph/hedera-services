@@ -20,8 +20,6 @@ import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.records.UniversalRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
-import java.util.OptionalInt;
 
 /**
  * Record builder for updating prng bytes or number.
@@ -30,11 +28,11 @@ public class UtilPrngRecordBuilder extends UniversalRecordBuilder<PrngRecordBuil
     /**
      * The generated random number, when range is provided in {@code UtilPrngTransactionBody}.
      */
-    private OptionalInt randomNumber;
+    private Integer randomNumber;
     /**
      * The generated random bytes, when range is not provided in {@code UtilPrngTransactionBody}.
      */
-    private Optional<Bytes> randomBytes;
+    private Bytes randomBytes;
 
     /**
      * {@inheritDoc}
@@ -44,27 +42,39 @@ public class UtilPrngRecordBuilder extends UniversalRecordBuilder<PrngRecordBuil
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public PrngRecordBuilder setGeneratedRandomNumber(int num) {
-        this.randomNumber = OptionalInt.of(num);
+        this.randomNumber = num;
         return self();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public PrngRecordBuilder setGeneratedRandomBytes(Bytes prngBytes) {
-        this.randomBytes = Optional.of(prngBytes);
+        this.randomBytes = prngBytes;
         return self();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public OptionalInt getGeneratedNumber() {
+    public Integer getGeneratedNumber() {
         return randomNumber;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public Optional<Bytes> getGeneratedBytes() {
+    public Bytes getGeneratedBytes() {
         return randomBytes;
     }
 }

@@ -21,4 +21,5 @@ module com.hedera.node.app.service.util.impl {
     exports com.hedera.node.app.service.util.impl.handlers;
     exports com.hedera.node.app.service.util.impl.components;
     exports com.hedera.node.app.service.util.impl.config;
+    exports com.hedera.node.app.service.util.impl.records;
 }
