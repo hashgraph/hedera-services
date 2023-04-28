@@ -312,8 +312,12 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         if (op.getGas() > properties.maxGasPerSec()) {
             return MAX_GAS_LIMIT_EXCEEDED;
         }
-        if (op.getMaxAutomaticTokenAssociations() > 0 && !properties.areContractAutoAssociationsEnabled()) {
+        final var usesAutoAssociations = op.getMaxAutomaticTokenAssociations() > 0;
+        if (usesAutoAssociations && !properties.areContractAutoAssociationsEnabled()) {
             return NOT_SUPPORTED;
+        }
+        if (op.getMaxAutomaticTokenAssociations() > properties.maxAllowedAutoAssociations()) {
+            return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
         }
         if (properties.areTokenAssociationsLimited()
                 && op.getMaxAutomaticTokenAssociations() > properties.maxTokensPerAccount()) {

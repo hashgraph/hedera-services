@@ -81,15 +81,16 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -106,12 +107,12 @@ import org.junit.jupiter.api.Test;
 class ScheduleDeleteHandlerParityTest {
     static final KeyTree ADMIN_KEY = KeyTree.withRoot(ed25519());
     private final ScheduleDeleteHandler subject = new ScheduleDeleteHandler();
-    private AccountAccess keyLookup;
+    private ReadableAccountStore accountStore;
     private ReadableScheduleStore scheduleStore;
 
     @BeforeEach
     void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 
     @Test
@@ -119,9 +120,10 @@ class ScheduleDeleteHandlerParityTest {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE);
         scheduleStore = AdapterUtils.mockSchedule(
                 999L, ADMIN_KEY, theTxn); // use any schedule id that does not match UNKNOWN_SCHEDULE_ID
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
 
-        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), INVALID_SCHEDULE_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_SCHEDULE_ID);
     }
 
     @Test
@@ -129,9 +131,10 @@ class ScheduleDeleteHandlerParityTest {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY);
         scheduleStore = AdapterUtils.mockSchedule(
                 IdUtils.asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID).getScheduleNum(), null, theTxn);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
 
-        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context), SCHEDULE_IS_IMMUTABLE);
     }
 
     @Test
@@ -139,8 +142,10 @@ class ScheduleDeleteHandlerParityTest {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE);
         scheduleStore = AdapterUtils.mockSchedule(
                 IdUtils.asSchedule(KNOWN_SCHEDULE_WITH_ADMIN_ID).getScheduleNum(), ADMIN_KEY, theTxn);
-        final var context = new PreHandleContext(keyLookup, theTxn);
-        subject.preHandle(context, scheduleStore);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        subject.preHandle(context);
 
         assertTrue(context.requiredNonPayerKeys().contains(ADMIN_KEY.asPbjKey()));
     }
@@ -169,13 +174,13 @@ class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountAccess} containing the "well-known" accounts that exist in a
+     * Returns the {@link ReadableAccountStore} containing the "well-known" accounts that exist in a
      * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests
-     * that require an {@link AccountAccess}.
+     * that require an {@link ReadableAccountStore}.
      *
      * @return the well-known account store
      */
-    public static AccountAccess wellKnownKeyLookupAt() {
+    public static ReadableAccountStore wellKnownKeyLookupAt() {
         return new TestFixturesKeyLookup(mockStates(Map.of(ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
@@ -194,7 +199,7 @@ class AdapterUtils {
         given(schedule.adminKey()).willReturn(key == null ? Optional.empty() : Optional.of(key.asJKey()));
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(txnBody));
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
-        return new ReadableScheduleStore(new MapReadableStates(Map.of("SCHEDULES_BY_ID", schedulesById)));
+        return new ReadableScheduleStoreImpl(new MapReadableStates(Map.of("SCHEDULES_BY_ID", schedulesById)));
     }
 
     private static ReadableKVState<EntityNumVirtualKey, Account> wellKnownAccountsState() {
