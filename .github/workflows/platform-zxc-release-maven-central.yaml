@@ -150,6 +150,18 @@ jobs:
           git_commit_gpgsign: true
           git_tag_gpgsign: true
 
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@v1
+        if: ${{ inputs.dry-run-enabled != true }}
+        with:
+          workload_identity_provider: 'projects/229164983194/locations/global/workloadIdentityPools/registry-identity-pool/providers/gh-provider'
+          service_account: 'artifact-deployer@swirlds-registry.iam.gserviceaccount.com'
+
+      - name: Setup Google Cloud SDK
+        if: ${{ inputs.dry-run-enabled != true }}
+        uses: google-github-actions/setup-gcloud@v1
+
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
@@ -220,12 +232,12 @@ jobs:
           commit: --signoff --gpg-sign
           message: "[Automated Maven Central Release] Platform SDK v${{ inputs.new-version }}"
 
-      - name: Cache SDK Release Archives
-        id: archive-cache
-        uses: actions/cache@v3
-        with:
-          path: ~/sdk-archives
-          key: v1-sdk-release-v${{ inputs.new-version }}-jdk${{ inputs.java-version }}-${{ runner.os }}-${{ runner.arch }}-ri${{ github.run_id }}-rn${{ github.run_number }}-ra${{ github.run_attempt }}
+#      - name: Cache SDK Release Archives
+#        id: archive-cache
+#        uses: actions/cache@v3
+#        with:
+#          path: ~/sdk-archives
+#          key: v1-sdk-release-v${{ inputs.new-version }}-jdk${{ inputs.java-version }}-${{ runner.os }}-${{ runner.arch }}-ri${{ github.run_id }}-rn${{ github.run_number }}-ra${{ github.run_attempt }}
 
       - name: Stage SDK Release Archives
         if: ${{ !cancelled() && inputs.dry-run-enabled != true }}
@@ -234,11 +246,11 @@ jobs:
           SDK_ARCHIVE_DIR="${HOME}/sdk-archives"
           COMMIT_SHA="$(echo "${{ steps.commit.outputs.commit_long_sha }}" | cut -c1-8)"
 
-          if [[ "${{ steps.archive-cache.outputs.cache-hit }}" == true ]]; then
-            echo "::group::Removing Existing Archive Cache Items"
-            rm -rvf "${SDK_ARCHIVE_DIR}"/*
-            echo "::endgroup::"
-          fi
+          #if [[ "${{ steps.archive-cache.outputs.cache-hit }}" == true ]]; then
+          #  echo "::group::Removing Existing Archive Cache Items"
+          #  rm -rvf "${SDK_ARCHIVE_DIR}"/*
+          #  echo "::endgroup::"
+          #fi
 
           echo "::group::Creating Release Directories"
             [[ -f "${SDK_RELEASE_DIR}" ]] || mkdir -p "${SDK_RELEASE_DIR}"
@@ -298,3 +310,11 @@ jobs:
             gpg --output "${APPS_ARCHIVE_FILE}.sha256.asc" --detach-sig "${APPS_ARCHIVE_FILE}.sha256"
             gpg --output "${PUBLIC_ARCHIVE_FILE}.sha256.asc" --detach-sig "${PUBLIC_ARCHIVE_FILE}.sha256"
           echo "::endgroup::"
+
+      - name: Upload SDK Release Archives
+        if: ${{ !cancelled() && inputs.dry-run-enabled != true }}
+        env:
+          RELEASE_TAG: v${{ inputs.new-version }}
+        run: |
+          SDK_ARCHIVE_DIR="${HOME}/sdk-archives"
+          gsutil -m cp -r "${SDK_ARCHIVE_DIR}"/* gs://platform-sdk-ci-release-artifacts/${RELEASE_TAG}/
