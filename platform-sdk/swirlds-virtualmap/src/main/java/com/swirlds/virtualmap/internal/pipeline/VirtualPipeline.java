@@ -213,7 +213,6 @@ public class VirtualPipeline {
 
         final int backlogExcess = backlogSize - VirtualMapSettingsFactory.get().getPreferredFlushQueueSize();
         if (backlogExcess <= 0) {
-            statistics.recordFlushBackpressureMs(0);
             return;
         }
 
@@ -225,7 +224,6 @@ public class VirtualPipeline {
         final Duration maxSleepTime = VirtualMapSettingsFactory.get().getMaximumFlushThrottlePeriod();
         final Duration sleepTime = CompareTo.min(computedSleepTime, maxSleepTime);
         final int sleepTimeMillis = (int) sleepTime.toMillis();
-        statistics.recordFlushBacklogSize(backlogSize);
         statistics.recordFlushBackpressureMs(sleepTimeMillis);
 
         try {

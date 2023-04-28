@@ -18,10 +18,12 @@ package com.swirlds.benchmark;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
 
 public class CryptoBenchMerkleDb extends CryptoBench {
@@ -32,8 +34,12 @@ public class CryptoBenchMerkleDb extends CryptoBench {
         registry.registerConstructables("com.swirlds.merkledb");
     }
 
+    @Setup(Level.Invocation)
+    public void setupTest() throws Exception {
+        MerkleDb.setDefaultPath(TemporaryFileBuilder.buildTemporaryFile("merkledb"));
+    }
+
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap() {
-        MerkleDb.setDefaultPath(getTestDir().resolve("merkledb"));
         MerkleDbTableConfig<BenchmarkKey, BenchmarkValue> tableConfig = new MerkleDbTableConfig<>(
                         (short) 1, DigestType.SHA_384,
                         (short) 1, new BenchmarkKeyMerkleDbSerializer(),
@@ -41,6 +47,6 @@ public class CryptoBenchMerkleDb extends CryptoBench {
                 .preferDiskIndices(false);
         MerkleDbDataSourceBuilder<BenchmarkKey, BenchmarkValue> dataSourceBuilder =
                 new MerkleDbDataSourceBuilder<>(tableConfig);
-        return new VirtualMap<>("vm" + System.nanoTime(), dataSourceBuilder);
+        return new VirtualMap<>(LABEL, dataSourceBuilder);
     }
 }

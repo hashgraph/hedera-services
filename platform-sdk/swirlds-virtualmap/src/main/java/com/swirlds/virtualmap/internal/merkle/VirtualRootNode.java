@@ -662,16 +662,16 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
         final long path = records.findKey(key);
         if (path == INVALID_PATH) {
-            statistics.countAddedEntities();
             // The key is not stored. So add a new entry and return.
             add(key, value);
+            statistics.countAddedEntities();
+            statistics.setSize(state.size());
             return;
-        } else {
-            statistics.countUpdatedEntities();
         }
 
         final VirtualLeafRecord<K, V> rec = new VirtualLeafRecord<>(path, null, key, value);
         markDirty(rec);
+        statistics.countUpdatedEntities();
         super.setHash(null);
     }
 
@@ -693,9 +693,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         throwIfImmutable();
         Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
 
-        statistics.countUpdatedEntities();
         // Attempt to replace the existing leaf
         final boolean success = replaceImpl(key, value);
+        statistics.countUpdatedEntities();
         if (success) {
             return value;
         }
@@ -722,10 +722,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             return null;
         }
 
-        statistics.countRemovedEntities();
-
         // Mark the leaf as being deleted.
         cache.deleteLeaf(leafToDelete);
+        statistics.countRemovedEntities();
 
         // We're going to need these
         final long lastLeafPath = state.getLastLeafPath();

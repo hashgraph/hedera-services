@@ -86,19 +86,25 @@ public class MerkleDbTest {
         // same here
         Assertions.assertEquals(tempDir.resolve("tables"), instance.getTablesDir());
         // and here
-        Assertions.assertTrue(Files.exists(tempDir.resolve("metadata.mdb")));
+        // No metadata file for a just-created MerkleDb instance
+        Assertions.assertFalse(Files.exists(tempDir.resolve("metadata.mdb")));
     }
 
     @Test
     @DisplayName("MerkleDb data source paths")
     public void testDataSourcePaths() throws IOException {
-        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final Path tempDir = TemporaryFileBuilder.buildTemporaryFile();
+        final MerkleDb instance = MerkleDb.getInstance(tempDir);
+        final Path dbDir = instance.getStorageDir();
+        // Empty instance has no metadata file
+        Assertions.assertFalse(Files.exists(dbDir.resolve("metadata.mdb")));
         final String tableName = "tabley";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
-        final Path dbDir = instance.getStorageDir();
+        // Now with a table the metadata file must be created
+        Assertions.assertTrue(Files.exists(dbDir.resolve("metadata.mdb")));
         final int tableId = dataSource.getTableId();
         Assertions.assertEquals(dbDir.resolve("tables/" + tableName + "-" + tableId), dataSource.getStorageDir());
         Assertions.assertEquals(

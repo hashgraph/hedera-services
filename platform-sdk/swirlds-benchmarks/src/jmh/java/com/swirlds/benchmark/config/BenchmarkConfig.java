@@ -37,9 +37,11 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * 		The absolute or relative folder path where all the statistics CSV files will be written. If this value is null
  * 		or an empty string, the current folder selection behavior will be used (ie: the SDK base
  * 		path).
- * @param csvFileName
- * 		The prefix of the name of the CSV file that the platform will write statistics to. If this value is null or an
+ * @param csvMetricsFileName
+ * 		CSV file name that the platform will write statistics to. If this value is null or an
  * 		empty string, the platform will not write any statistics.
+ * @param csvMetricNamesFileName
+ * 		CSV file name that the platform will write all metric names to.
  * @param csvWriteFrequency
  * 		The frequency, in milliseconds, at which values are written to the statistics CSV file.
  * @param csvAppend
@@ -52,7 +54,8 @@ public record BenchmarkConfig(
         @ConfigProperty(defaultValue = "true") boolean verifyResult,
         @ConfigProperty(defaultValue = "false") boolean printHistogram,
         @ConfigProperty(defaultValue = "") String csvOutputFolder,
-        @ConfigProperty(defaultValue = "BenchmarkMetrics.csv") String csvFileName,
+        @ConfigProperty(defaultValue = "BenchmarkMetrics.csv") String csvMetricsFileName,
+        @ConfigProperty(defaultValue = "BenchmarkMetricNames.csv") String csvMetricNamesFileName,
         @ConfigProperty(defaultValue = "0") int csvWriteFrequency,
         @ConfigProperty(defaultValue = "false") boolean csvAppend,
         @ConfigProperty(defaultValue = "sda") String deviceName) {
@@ -63,7 +66,8 @@ public record BenchmarkConfig(
                 .append("verifyResult", verifyResult)
                 .append("printHistogram", printHistogram)
                 .append("csvOutputFolder", csvOutputFolder)
-                .append("csvFileName", csvFileName)
+                .append("csvMetricsFileName", csvMetricsFileName)
+                .append("csvMetricNamesFileName", csvMetricNamesFileName)
                 .append("csvWriteFrequency", csvWriteFrequency)
                 .append("csvAppend", csvAppend)
                 .append("deviceName", deviceName)

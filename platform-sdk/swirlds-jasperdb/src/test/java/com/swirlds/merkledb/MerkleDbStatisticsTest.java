@@ -62,9 +62,7 @@ class MerkleDbStatisticsTest {
 
     @Test
     void testInitialState() {
-        assertDoesNotThrow(statistics::countHashWrites);
         assertDoesNotThrow(statistics::countHashReads);
-        assertDoesNotThrow(statistics::countLeafWrites);
         assertDoesNotThrow(statistics::countLeafReads);
         assertDoesNotThrow(statistics::countLeafKeyReads);
         assertDoesNotThrow(() -> statistics.setHashesStoreFileCount(42));
@@ -127,19 +125,9 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    void testCycleInternalNodeWritesPerSecond() {
-        // given
-        final Metric metric = getMetric("queries_", "hashWrites/s_" + LABEL);
-        // when
-        statistics.countHashWrites();
-        // then
-        assertValueSet(metric);
-    }
-
-    @Test
     void testCycleInternalNodeReadsPerSecond() {
         // given
-        final Metric metric = getMetric("queries_", "hashReads/s_" + LABEL);
+        final Metric metric = getMetric("reads_", "hashes_" + LABEL);
         // when
         statistics.countHashReads();
         // then
@@ -147,19 +135,9 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    void testCycleLeafWritesPerSecond() {
-        // given
-        final Metric metric = getMetric("queries_", "leafWrites/s_" + LABEL);
-        // when
-        statistics.countLeafWrites();
-        // then
-        assertValueSet(metric);
-    }
-
-    @Test
     void testCycleLeafByKeyReadsPerSecond() {
         // given
-        final Metric metric = getMetric("queries_", "leafReads/s_" + LABEL);
+        final Metric metric = getMetric("reads_", "leaves_" + LABEL);
         // when
         statistics.countLeafReads();
         // then
@@ -167,19 +145,9 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    void testCycleLeafKeyWritesPerSecond() {
-        // given
-        final Metric metric = getMetric("queries_", "leafKeyWrites/s_" + LABEL);
-        // when
-        statistics.countLeafKeyWrites();
-        // then
-        assertValueSet(metric);
-    }
-
-    @Test
     void testCycleLeafKeyReadsPerSecond() {
         // given
-        final Metric metric = getMetric("queries_", "leafKeyReads/s_" + LABEL);
+        final Metric metric = getMetric("reads_", "leafKeys_" + LABEL);
         // when
         statistics.countLeafKeyReads();
         // then

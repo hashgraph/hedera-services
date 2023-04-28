@@ -1252,12 +1252,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             internalHashStoreDisk.startWriting(0, firstLeafPath - 1);
         }
 
-        // When we switch from Stream to List, number of hashes written will be just the size of the list
-        final AtomicLong hashesWritten = new AtomicLong(0);
         final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
         internalRecords.forEach(rec -> {
             assert rec.getPath() > lastPath.getAndSet(rec.getPath()) : "Path should be in ascending order!";
-            statistics.countHashWrites();
+            statistics.countFlushHashesWritten(1);
             if (rec.getPath() < tableConfig.getInternalHashesRamToDiskThreshold()) {
                 internalHashStoreRam.put(rec.getPath(), rec.getHash());
             } else {
@@ -1268,9 +1266,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     throw new UncheckedIOException(e);
                 }
             }
-            hashesWritten.incrementAndGet();
         });
-        statistics.setFlushHashesWritten(hashesWritten.get());
 
         if (hasDiskStoreForInternalHashes) {
             final DataFileReader<VirtualInternalRecord> newHashesFile = internalHashStoreDisk.endWriting();
@@ -1298,46 +1294,41 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
 
         // iterate over leaf records
-        final AtomicLong leavesWritten = new AtomicLong(0);
         final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
         leafRecordsToAddOrUpdate.forEach(leafRecord -> {
             assert leafRecord.getPath() > lastPath.getAndSet(leafRecord.getPath())
                     : "Path should be in ascending order!";
 
             // update objectKeyToPath
-            statistics.countLeafKeyWrites();
             if (isLongKeyMode) {
                 longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), leafRecord.getPath());
             } else {
                 objectKeyToPath.put(leafRecord.getKey(), leafRecord.getPath());
             }
+            statistics.countFlushLeafKeysWritten(1);
 
             // update pathToHashKeyValue
-            statistics.countLeafWrites();
             try {
                 pathToHashKeyValue.put(leafRecord.getPath(), leafRecord);
             } catch (final IOException e) {
                 logger.error(EXCEPTION.getMarker(), "[{}] IOException writing to pathToHashKeyValue", tableName, e);
                 throw new UncheckedIOException(e);
             }
+            statistics.countFlushLeavesWritten(1);
 
             // cache the record
             invalidateReadCache(leafRecord.getKey());
-
-            leavesWritten.incrementAndGet();
         });
-        statistics.setFlushLeavesWritten(leavesWritten.get());
 
         // iterate over leaf records to delete
-        final AtomicLong leavesDeleted = new AtomicLong(0);
         leafRecordsToDelete.forEach(leafRecord -> {
             // update objectKeyToPath
-            statistics.countLeafKeyWrites();
             if (isLongKeyMode) {
                 longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), INVALID_PATH);
             } else {
                 objectKeyToPath.delete(leafRecord.getKey());
             }
+            statistics.countFlushLeavesDeleted(1);
 
             // delete from pathToHashKeyValue, we don't need to explicitly delete leaves as
             // they will be deleted on
@@ -1347,10 +1338,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
             // delete the record from the cache
             invalidateReadCache(leafRecord.getKey());
-
-            leavesDeleted.incrementAndGet();
         });
-        statistics.setFlushLeavesDeleted(leavesDeleted.get());
 
         // end writing
         final DataFileReader<VirtualLeafRecord<K, V>> newLeavesFile = pathToHashKeyValue.endWriting();

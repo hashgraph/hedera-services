@@ -18,9 +18,10 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 
+import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.LongGauge;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.utility.CommonUtils;
@@ -36,8 +37,8 @@ public class MerkleDbStatistics {
     private static final String DS_PREFIX = "ds_";
     /** Prefix for all files related metrics */
     private static final String FILES_PREFIX = "files_";
-    /** Prefix for all metrics related to store queries */
-    private static final String QUERIES_PREFIX = "queries_";
+    /** Prefix for all metrics related to store read queries */
+    private static final String READS_PREFIX = "reads_";
     /** Prefix for all metrics related to data flushing */
     private static final String FLUSHES_PREFIX = "flushes_";
     /** Prefix for compaction related metrics */
@@ -48,17 +49,11 @@ public class MerkleDbStatistics {
     private final String label;
 
     /** Hashes - reads / s */
-    private CountPerSecond hashReadsPerSec;
-    /** Hashes - writes / s */
-    private CountPerSecond hashWritesPerSec;
+    private LongAccumulator hashReads;
     /** Leaves - reads / s */
-    private CountPerSecond leafReadsPerSec;
-    /** Leaves - writes / s */
-    private CountPerSecond leafWritesPerSec;
+    private LongAccumulator leafReads;
     /** Leaf keys - reads / s */
-    private CountPerSecond leafKeyReadsPerSec;
-    /** Leaf keys - writes / s */
-    private CountPerSecond leafKeyWritesPerSec;
+    private LongAccumulator leafKeyReads;
 
     /** Hashes store - file count */
     private IntegerGauge hashesStoreFileCount;
@@ -76,49 +71,50 @@ public class MerkleDbStatistics {
     // Should all file sizes be doubles?
     private IntegerGauge totalFileSizeMb;
 
-    private LongGauge flushHashesWritten;
-    private DoubleGauge flushHashesStoreFileSizeMb;
-    private LongGauge flushLeavesWritten;
-    private LongGauge flushLeavesDeleted;
-    private DoubleGauge flushLeavesStoreFileSizeMb;
-    private DoubleGauge flushLeafKeysStoreFileSizeMb;
+    private LongAccumulator flushHashesWritten;
+    private DoubleAccumulator flushHashesStoreFileSizeMb;
+    private LongAccumulator flushLeavesWritten;
+    private LongAccumulator flushLeavesDeleted;
+    private DoubleAccumulator flushLeavesStoreFileSizeMb;
+    private LongAccumulator flushLeafKeysWritten;
+    private DoubleAccumulator flushLeafKeysStoreFileSizeMb;
 
     /** Hashes store small compactions - time in ms */
-    private LongGauge hashesStoreSmallCompactionTimeMs;
+    private LongAccumulator hashesStoreSmallCompactionTimeMs;
     /** Hashes store small compactions - saved space in Mb */
-    private DoubleGauge hashesStoreSmallCompactionSavedSpaceMb;
+    private DoubleAccumulator hashesStoreSmallCompactionSavedSpaceMb;
     /** Hashes store medium compactions - time in ms */
-    private LongGauge hashesStoreMediumCompactionTimeMs;
+    private LongAccumulator hashesStoreMediumCompactionTimeMs;
     /** Hashes store medium compactions - saved space in Mb */
-    private DoubleGauge hashesStoreMediumCompactionSavedSpaceMb;
+    private DoubleAccumulator hashesStoreMediumCompactionSavedSpaceMb;
     /** Hashes store full compactions - time in ms */
-    private LongGauge hashesStoreFullCompactionTimeMs;
+    private LongAccumulator hashesStoreFullCompactionTimeMs;
     /** Hashes store full compactions - saved space in Mb */
-    private DoubleGauge hashesStoreFullCompactionSavedSpaceMb;
+    private DoubleAccumulator hashesStoreFullCompactionSavedSpaceMb;
     /** Leaves store small compactions - time in ms */
-    private LongGauge leavesStoreSmallCompactionTimeMs;
+    private LongAccumulator leavesStoreSmallCompactionTimeMs;
     /** Leaves store small compactions - saved space in Mb */
-    private DoubleGauge leavesStoreSmallCompactionSavedSpaceMb;
+    private DoubleAccumulator leavesStoreSmallCompactionSavedSpaceMb;
     /** Leaves store medium compactions - time in ms */
-    private LongGauge leavesStoreMediumCompactionTimeMs;
+    private LongAccumulator leavesStoreMediumCompactionTimeMs;
     /** Leaves store medium compactions - saved space in Mb */
-    private DoubleGauge leavesStoreMediumCompactionSavedSpaceMb;
+    private DoubleAccumulator leavesStoreMediumCompactionSavedSpaceMb;
     /** Leaves store full compactions - time in ms */
-    private LongGauge leavesStoreFullCompactionTimeMs;
+    private LongAccumulator leavesStoreFullCompactionTimeMs;
     /** Leaves store full compactions - saved space in Mb */
-    private DoubleGauge leavesStoreFullCompactionSavedSpaceMb;
+    private DoubleAccumulator leavesStoreFullCompactionSavedSpaceMb;
     /** Leaf keys store small compactions - time in ms */
-    private LongGauge leafKeysStoreSmallCompactionTimeMs;
+    private LongAccumulator leafKeysStoreSmallCompactionTimeMs;
     /** Leaf keys store small compactions - saved space in Mb */
-    private DoubleGauge leafKeysStoreSmallCompactionSavedSpaceMb;
+    private DoubleAccumulator leafKeysStoreSmallCompactionSavedSpaceMb;
     /** Leaf keys store medium compactions - time in ms */
-    private LongGauge leafKeysStoreMediumCompactionTimeMs;
+    private LongAccumulator leafKeysStoreMediumCompactionTimeMs;
     /** Leaf keys store medium compactions - saved space in Mb */
-    private DoubleGauge leafKeysStoreMediumCompactionSavedSpaceMb;
+    private DoubleAccumulator leafKeysStoreMediumCompactionSavedSpaceMb;
     /** Leaf keys store full compactions - time in ms */
-    private LongGauge leafKeysStoreFullCompactionTimeMs;
+    private LongAccumulator leafKeysStoreFullCompactionTimeMs;
     /** Leaf keys store full compactions - saved space in Mb */
-    private DoubleGauge leafKeysStoreFullCompactionSavedSpaceMb;
+    private DoubleAccumulator leafKeysStoreFullCompactionSavedSpaceMb;
 
     /** Off-heap usage in MB of hashes store index */
     private IntegerGauge offHeapHashesIndexMb;
@@ -158,8 +154,21 @@ public class MerkleDbStatistics {
         return metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, name).withDescription(description));
     }
 
-    private static LongGauge buildLongGauge(final Metrics metrics, final String name, final String description) {
-        return metrics.getOrCreate(new LongGauge.Config(STAT_CATEGORY, name).withDescription(description));
+    private static LongAccumulator buildLongAccumulator(
+            final Metrics metrics, final String name, final String description) {
+        return metrics.getOrCreate(new LongAccumulator.Config(STAT_CATEGORY, name)
+                .withInitialValue(0)
+                .withAccumulator(Long::sum)
+                .withDescription(description));
+    }
+
+    private static DoubleAccumulator buildDoubleAccumulator(
+            final Metrics metrics, final String name, final String description) {
+        return metrics.getOrCreate(new DoubleAccumulator.Config(STAT_CATEGORY, name)
+                .withInitialValue(0.0)
+                .withAccumulator(Double::sum)
+                .withDescription(description)
+                .withFormat(FORMAT_9_6));
     }
 
     /**
@@ -173,30 +182,12 @@ public class MerkleDbStatistics {
         CommonUtils.throwArgNull(metrics, "metrics");
 
         // Queries per second
-        hashWritesPerSec = buildCountPerSecond(
-                metrics,
-                DS_PREFIX + QUERIES_PREFIX + "hashWrites/s_" + label,
-                "Number of hash writes, " + label + ", per second");
-        hashReadsPerSec = buildCountPerSecond(
-                metrics,
-                DS_PREFIX + QUERIES_PREFIX + "hashReads/s_" + label,
-                "Number of hash reads, " + label + ", per second");
-        leafWritesPerSec = buildCountPerSecond(
-                metrics,
-                DS_PREFIX + QUERIES_PREFIX + "leafWrites/s_" + label,
-                "Number of leaf writes, " + label + ", per second");
-        leafReadsPerSec = buildCountPerSecond(
-                metrics,
-                DS_PREFIX + QUERIES_PREFIX + "leafReads/s_" + label,
-                "Number of leaf reads, " + label + ", per second");
-        leafKeyWritesPerSec = buildCountPerSecond(
-                metrics,
-                DS_PREFIX + QUERIES_PREFIX + "leafKeyWrites/s_" + label,
-                "Number of leaf key writes, " + label + ", per second");
-        leafKeyReadsPerSec = buildCountPerSecond(
-                metrics,
-                DS_PREFIX + QUERIES_PREFIX + "leafKeyReads/s_" + label,
-                "Number of leaf key reads, " + label + ", per second");
+        hashReads = buildLongAccumulator(
+                metrics, DS_PREFIX + READS_PREFIX + "hashes_" + label, "Number of hash reads, " + label);
+        leafReads = buildLongAccumulator(
+                metrics, DS_PREFIX + READS_PREFIX + "leaves_" + label, "Number of leaf reads, " + label);
+        leafKeyReads = buildLongAccumulator(
+                metrics, DS_PREFIX + READS_PREFIX + "leafKeys_" + label, "Number of leaf key reads, " + label);
 
         // File counts and sizes
         hashesStoreFileCount = metrics.getOrCreate(
@@ -226,104 +217,108 @@ public class MerkleDbStatistics {
                 "Total file size, data source, " + label + ", Mb");
 
         // Flushes
-        flushHashesWritten = buildLongGauge(
+        flushHashesWritten = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + FLUSHES_PREFIX + "hashesWritten_" + label,
                 "Number of hashes written during flush, " + label);
-        flushHashesStoreFileSizeMb = buildDoubleGauge(
+        flushHashesStoreFileSizeMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + FLUSHES_PREFIX + "hashesStoreFileSizeMb_" + label,
                 "Size of the new hashes store file created during flush, " + label + ", Mb");
-        flushLeavesWritten = buildLongGauge(
+        flushLeavesWritten = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + FLUSHES_PREFIX + "leavesWritten_" + label,
                 "Number of leaves written during flush, " + label);
-        flushLeavesDeleted = buildLongGauge(
+        flushLeavesDeleted = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + FLUSHES_PREFIX + "leavesDeleted_" + label,
                 "Number of leaves deleted during flush, " + label);
-        flushLeavesStoreFileSizeMb = buildDoubleGauge(
+        flushLeavesStoreFileSizeMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + FLUSHES_PREFIX + "leavesStoreFileSizeMb_" + label,
                 "Size of the new leaves store file created during flush, " + label + ", Mb");
-        flushLeafKeysStoreFileSizeMb = buildDoubleGauge(
+        flushLeafKeysWritten = buildLongAccumulator(
+                metrics,
+                DS_PREFIX + FLUSHES_PREFIX + "leafKeysWritten_" + label,
+                "Number of leaf keys written during flush, " + label);
+        flushLeafKeysStoreFileSizeMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + FLUSHES_PREFIX + "leafKeysStoreFileSizeMb_" + label,
                 "Size of the new leaf keys store file created during flush, " + label + ", Mb");
 
         // Compaction
         // Hashes store
-        hashesStoreSmallCompactionTimeMs = buildLongGauge(
+        hashesStoreSmallCompactionTimeMs = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "hashesSmallTimeMs_" + label,
                 "Small compactions time, hashes store, " + label + ", ms");
-        hashesStoreSmallCompactionSavedSpaceMb = buildDoubleGauge(
+        hashesStoreSmallCompactionSavedSpaceMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "hashesSmallSavedSpaceMb_" + label,
                 "Saved space during small compactions, hashes store, " + label + ", Mb");
-        hashesStoreMediumCompactionTimeMs = buildLongGauge(
+        hashesStoreMediumCompactionTimeMs = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "hashesMediumTimeMs_" + label,
                 "Medium compactions time, hashes store, " + label + ", ms");
-        hashesStoreMediumCompactionSavedSpaceMb = buildDoubleGauge(
+        hashesStoreMediumCompactionSavedSpaceMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "hashesMediumSavedSpaceMb_" + label,
                 "Saved space during medium compactions, hashes store, " + label + ", Mb");
-        hashesStoreFullCompactionTimeMs = buildLongGauge(
+        hashesStoreFullCompactionTimeMs = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "hashesFullTimeMs_" + label,
                 "Full compactions time, hashes store, " + label + ", ms");
-        hashesStoreFullCompactionSavedSpaceMb = buildDoubleGauge(
+        hashesStoreFullCompactionSavedSpaceMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "hashesFullSavedSpaceMb_" + label,
                 "Saved space during full compactions, hashes store, " + label + ", Mb");
         // Leaves store
-        leavesStoreSmallCompactionTimeMs = buildLongGauge(
+        leavesStoreSmallCompactionTimeMs = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leavesSmallTimeMs_" + label,
                 "Small compactions time, leaves store, " + label + ", ms");
-        leavesStoreSmallCompactionSavedSpaceMb = buildDoubleGauge(
+        leavesStoreSmallCompactionSavedSpaceMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leavesSmallSavedSpaceMb_" + label,
                 "Saved space during small compactions, leaves store, " + label + ", Mb");
-        leavesStoreMediumCompactionTimeMs = buildLongGauge(
+        leavesStoreMediumCompactionTimeMs = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leavesMediumTimeMs_" + label,
                 "Medium compactions time, leaves store, " + label + ", ms");
-        leavesStoreMediumCompactionSavedSpaceMb = buildDoubleGauge(
+        leavesStoreMediumCompactionSavedSpaceMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leavesMediumSavedSpaceMb_" + label,
                 "Saved space during medium compactions, leaves store, " + label + ", Mb");
-        leavesStoreFullCompactionTimeMs = buildLongGauge(
+        leavesStoreFullCompactionTimeMs = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leavesFullTimeMs_" + label,
                 "Full compactions time, leaves store, " + label + ", ms");
-        leavesStoreFullCompactionSavedSpaceMb = buildDoubleGauge(
+        leavesStoreFullCompactionSavedSpaceMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leavesFullSavedSpaceMb_" + label,
                 "Saved space during full compactions, leaves store, " + label + ", Mb");
         // Leaf keys store
-        leafKeysStoreSmallCompactionTimeMs = buildLongGauge(
+        leafKeysStoreSmallCompactionTimeMs = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysSmallTimeMs_" + label,
                 "Small compactions time, leaf keys store, " + label + ", ms");
-        leafKeysStoreSmallCompactionSavedSpaceMb = buildDoubleGauge(
+        leafKeysStoreSmallCompactionSavedSpaceMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysSmallSavedSpaceMb_" + label,
                 "Saved space during small compactions, leaf keys store, " + label + ", Mb");
-        leafKeysStoreMediumCompactionTimeMs = buildLongGauge(
+        leafKeysStoreMediumCompactionTimeMs = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysMediumTimeMs_" + label,
                 "Medium compactions time, leaf keys store, " + label + ", ms");
-        leafKeysStoreMediumCompactionSavedSpaceMb = buildDoubleGauge(
+        leafKeysStoreMediumCompactionSavedSpaceMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysMediumSavedSpaceMb_" + label,
                 "Saved space during medium compactions, leaf keys store, " + label + ", Mb");
-        leafKeysStoreFullCompactionTimeMs = buildLongGauge(
+        leafKeysStoreFullCompactionTimeMs = buildLongAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysFullTimeMs_" + label,
                 "Full compactions time, leaf keys store, " + label + ", ms");
-        leafKeysStoreFullCompactionSavedSpaceMb = buildDoubleGauge(
+        leafKeysStoreFullCompactionSavedSpaceMb = buildDoubleAccumulator(
                 metrics,
                 DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysFullSavedSpaceMb_" + label,
                 "Saved space during full compactions, leaf keys store, " + label + ", Mb");
@@ -350,56 +345,29 @@ public class MerkleDbStatistics {
     }
 
     /**
-     * Increments {@link #hashWritesPerSec} stat by 1
-     */
-    public void countHashWrites() {
-        if (hashWritesPerSec != null) {
-            hashWritesPerSec.count();
-        }
-    }
-
-    /**
-     * Increments {@link #hashReadsPerSec} stat by 1
+     * Increments {@link #hashReads} stat by 1
      */
     public void countHashReads() {
-        if (hashReadsPerSec != null) {
-            hashReadsPerSec.count();
+        if (hashReads != null) {
+            hashReads.update(1);
         }
     }
 
     /**
-     * Increments {@link #leafWritesPerSec} stat by 1
-     */
-    public void countLeafWrites() {
-        if (leafWritesPerSec != null) {
-            leafWritesPerSec.count();
-        }
-    }
-
-    /**
-     * Increments {@link #leafReadsPerSec} stat by 1
+     * Increments {@link #leafReads} stat by 1
      */
     public void countLeafReads() {
-        if (leafReadsPerSec != null) {
-            leafReadsPerSec.count();
+        if (leafReads != null) {
+            leafReads.update(1);
         }
     }
 
     /**
-     * Increments {@link #leafKeyWritesPerSec} stat by 1
-     */
-    public void countLeafKeyWrites() {
-        if (leafKeyWritesPerSec != null) {
-            leafKeyWritesPerSec.count();
-        }
-    }
-
-    /**
-     * Increment {@link #leafKeyReadsPerSec} stat by 1
+     * Increment {@link #leafKeyReads} stat by 1
      */
     public void countLeafKeyReads() {
-        if (leafKeyReadsPerSec != null) {
-            leafKeyReadsPerSec.count();
+        if (leafKeyReads != null) {
+            leafKeyReads.update(1);
         }
     }
 
@@ -487,39 +455,45 @@ public class MerkleDbStatistics {
         }
     }
 
-    public void setFlushHashesWritten(final long value) {
+    public void countFlushHashesWritten(final long value) {
         if (flushHashesWritten != null) {
-            flushHashesWritten.set(value);
+            flushHashesWritten.update(value);
         }
     }
 
     public void setFlushHashesStoreFileSizeMb(final double value) {
         if (flushHashesStoreFileSizeMb != null) {
-            flushHashesStoreFileSizeMb.set(value);
+            flushHashesStoreFileSizeMb.update(value);
         }
     }
 
-    public void setFlushLeavesWritten(final long value) {
+    public void countFlushLeavesWritten(final long value) {
         if (flushLeavesWritten != null) {
-            flushLeavesWritten.set(value);
+            flushLeavesWritten.update(value);
         }
     }
 
-    public void setFlushLeavesDeleted(final long value) {
+    public void countFlushLeavesDeleted(final long value) {
         if (flushLeavesDeleted != null) {
-            flushLeavesDeleted.set(value);
+            flushLeavesDeleted.update(value);
         }
     }
 
     public void setFlushLeavesStoreFileSizeMb(final double value) {
         if (flushLeavesStoreFileSizeMb != null) {
-            flushLeavesStoreFileSizeMb.set(value);
+            flushLeavesStoreFileSizeMb.update(value);
+        }
+    }
+
+    public void countFlushLeafKeysWritten(final long value) {
+        if (flushLeafKeysWritten != null) {
+            flushLeafKeysWritten.update(value);
         }
     }
 
     public void setFlushLeafKeysStoreFileSizeMb(final double value) {
         if (flushLeafKeysStoreFileSizeMb != null) {
-            flushLeafKeysStoreFileSizeMb.set(value);
+            flushLeafKeysStoreFileSizeMb.update(value);
         }
     }
 
@@ -531,14 +505,14 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setHashesStoreCompactionTimeMs(final CompactionType type, final long value) {
-        final LongGauge metric =
+        final LongAccumulator metric =
                 switch (type) {
                     case SMALL -> hashesStoreSmallCompactionTimeMs;
                     case MEDIUM -> hashesStoreMediumCompactionTimeMs;
                     case FULL -> hashesStoreFullCompactionTimeMs;
                 };
         if (metric != null) {
-            metric.set(value);
+            metric.update(value);
         }
     }
 
@@ -550,14 +524,14 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setHashesStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
-        final DoubleGauge metric =
+        final DoubleAccumulator metric =
                 switch (type) {
                     case SMALL -> hashesStoreSmallCompactionSavedSpaceMb;
                     case MEDIUM -> hashesStoreMediumCompactionSavedSpaceMb;
                     case FULL -> hashesStoreFullCompactionSavedSpaceMb;
                 };
         if (metric != null) {
-            metric.set(value);
+            metric.update(value);
         }
     }
 
@@ -569,14 +543,14 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeavesStoreCompactionTimeMs(final CompactionType type, final long value) {
-        final LongGauge metric =
+        final LongAccumulator metric =
                 switch (type) {
                     case SMALL -> leavesStoreSmallCompactionTimeMs;
                     case MEDIUM -> leavesStoreMediumCompactionTimeMs;
                     case FULL -> leavesStoreFullCompactionTimeMs;
                 };
         if (metric != null) {
-            metric.set(value);
+            metric.update(value);
         }
     }
 
@@ -588,14 +562,14 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeavesStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
-        final DoubleGauge metric =
+        final DoubleAccumulator metric =
                 switch (type) {
                     case SMALL -> leavesStoreSmallCompactionSavedSpaceMb;
                     case MEDIUM -> leavesStoreMediumCompactionSavedSpaceMb;
                     case FULL -> leavesStoreFullCompactionSavedSpaceMb;
                 };
         if (metric != null) {
-            metric.set(value);
+            metric.update(value);
         }
     }
 
@@ -607,14 +581,14 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeafKeysStoreCompactionTimeMs(final CompactionType type, final long value) {
-        final LongGauge metric =
+        final LongAccumulator metric =
                 switch (type) {
                     case SMALL -> leafKeysStoreSmallCompactionTimeMs;
                     case MEDIUM -> leafKeysStoreMediumCompactionTimeMs;
                     case FULL -> leafKeysStoreFullCompactionTimeMs;
                 };
         if (metric != null) {
-            metric.set(value);
+            metric.update(value);
         }
     }
 
@@ -626,14 +600,14 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeafKeysStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
-        final DoubleGauge metric =
+        final DoubleAccumulator metric =
                 switch (type) {
                     case SMALL -> leafKeysStoreSmallCompactionSavedSpaceMb;
                     case MEDIUM -> leafKeysStoreMediumCompactionSavedSpaceMb;
                     case FULL -> leafKeysStoreFullCompactionSavedSpaceMb;
                 };
         if (metric != null) {
-            metric.set(value);
+            metric.update(value);
         }
     }
 

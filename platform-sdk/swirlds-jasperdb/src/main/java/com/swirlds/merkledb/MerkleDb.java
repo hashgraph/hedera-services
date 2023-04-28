@@ -211,8 +211,6 @@ public final class MerkleDb {
         } catch (IOException z) {
             throw new UncheckedIOException(z);
         }
-        // If this is a new database, create the metadata file
-        storeMetadata();
     }
 
     /**
