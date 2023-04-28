@@ -71,3 +71,8 @@ All created blocked accounts will be externalized as synthetic account creations
 
 * Verify that blocked accounts are created in state and that synthetic records are externalized for them when the node starts after the first transaction is handled.
 * Verify that funds cannot be transferred to blocked accounts unless the transaction is initiated by `GENESIS` account.
+
+## Alternative Approaches Considered
+* Having the list of blocked accounts in a proper Hedera file so that updates to the file automatically take effect without needing to restart or upgrade the network.
+  * This is not applicable to our case because we create the accounts on upgrade and perform a migration for the mirror nodes.
+  * An additional thing to consider is that removing a private key from the file will not uncreate the account, so we can add more private keys to the list, but not remove already created ones - or more precisely, we can remove already created ones, but that will only remove them from the file, not from the network.
