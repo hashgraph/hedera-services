@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.admin.impl.components;
+package com.hedera.node.app.service.admin.impl;
 
+import com.hedera.node.app.service.admin.impl.handlers.AdminHandlers;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
-import dagger.Component;
-import javax.inject.Singleton;
+import dagger.Module;
 
-@Singleton
-@Component
-public interface AdminComponent {
-    @Component.Factory
-    interface Factory {
-        AdminComponent create();
-    }
+/**
+ * Dagger module of the admin service
+ */
+@Module
+public interface AdminServiceModule {
 
     FreezeHandler freezeHandler();
+
+    AdminHandlers adminHandlers();
 }

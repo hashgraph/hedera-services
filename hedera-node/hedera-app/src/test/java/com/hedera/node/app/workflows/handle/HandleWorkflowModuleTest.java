@@ -19,11 +19,11 @@ package com.hedera.node.app.workflows.handle;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.admin.impl.components.AdminComponent;
+import com.hedera.node.app.service.admin.impl.handlers.AdminHandlers;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
-import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
@@ -58,13 +58,13 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenComponent;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
@@ -82,10 +82,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HandleWorkflowModuleTest {
     @Mock
-    private AdminComponent adminComponent;
+    private AdminHandlers adminComponent;
 
     @Mock
-    private ConsensusComponent consensusComponent;
+    private ConsensusHandlers consensusHandlers;
 
     @Mock
     private FileComponent fileComponent;
@@ -100,7 +100,7 @@ class HandleWorkflowModuleTest {
     private ScheduleComponent scheduleComponent;
 
     @Mock
-    private TokenComponent tokenComponent;
+    private TokenHandlers tokenHandlers;
 
     @Mock
     private UtilComponent utilComponent;
@@ -245,10 +245,10 @@ class HandleWorkflowModuleTest {
 
     @Test
     void usesComponentsToGetHandlers() {
-        given(consensusComponent.consensusCreateTopicHandler()).willReturn(consensusCreateTopicHandler);
-        given(consensusComponent.consensusUpdateTopicHandler()).willReturn(consensusUpdateTopicHandler);
-        given(consensusComponent.consensusDeleteTopicHandler()).willReturn(consensusDeleteTopicHandler);
-        given(consensusComponent.consensusSubmitMessageHandler()).willReturn(consensusSubmitMessageHandler);
+        given(consensusHandlers.consensusCreateTopicHandler()).willReturn(consensusCreateTopicHandler);
+        given(consensusHandlers.consensusUpdateTopicHandler()).willReturn(consensusUpdateTopicHandler);
+        given(consensusHandlers.consensusDeleteTopicHandler()).willReturn(consensusDeleteTopicHandler);
+        given(consensusHandlers.consensusSubmitMessageHandler()).willReturn(consensusSubmitMessageHandler);
         given(contractComponent.contractCreateHandler()).willReturn(contractCreateHandler);
         given(contractComponent.contractUpdateHandler()).willReturn(contractUpdateHandler);
         given(contractComponent.contractCallHandler()).willReturn(contractCallHandler);
@@ -256,14 +256,14 @@ class HandleWorkflowModuleTest {
         given(contractComponent.contractSystemDeleteHandler()).willReturn(contractSystemDeleteHandler);
         given(contractComponent.contractSystemUndeleteHandler()).willReturn(contractSystemUndeleteHandler);
         given(contractComponent.etherumTransactionHandler()).willReturn(etherumTransactionHandler);
-        given(tokenComponent.cryptoCreateHandler()).willReturn(cryptoCreateHandler);
-        given(tokenComponent.cryptoUpdateHandler()).willReturn(cryptoUpdateHandler);
-        given(tokenComponent.cryptoTransferHandler()).willReturn(cryptoTransferHandler);
-        given(tokenComponent.cryptoDeleteHandler()).willReturn(cryptoDeleteHandler);
-        given(tokenComponent.cryptoApproveAllowanceHandler()).willReturn(cryptoApproveAllowanceHandler);
-        given(tokenComponent.cryptoDeleteAllowanceHandler()).willReturn(cryptoDeleteAllowanceHandler);
-        given(tokenComponent.cryptoAddLiveHashHandler()).willReturn(cryptoAddLiveHashHandler);
-        given(tokenComponent.cryptoDeleteLiveHashHandler()).willReturn(cryptoDeleteLiveHashHandler);
+        given(tokenHandlers.cryptoCreateHandler()).willReturn(cryptoCreateHandler);
+        given(tokenHandlers.cryptoUpdateHandler()).willReturn(cryptoUpdateHandler);
+        given(tokenHandlers.cryptoTransferHandler()).willReturn(cryptoTransferHandler);
+        given(tokenHandlers.cryptoDeleteHandler()).willReturn(cryptoDeleteHandler);
+        given(tokenHandlers.cryptoApproveAllowanceHandler()).willReturn(cryptoApproveAllowanceHandler);
+        given(tokenHandlers.cryptoDeleteAllowanceHandler()).willReturn(cryptoDeleteAllowanceHandler);
+        given(tokenHandlers.cryptoAddLiveHashHandler()).willReturn(cryptoAddLiveHashHandler);
+        given(tokenHandlers.cryptoDeleteLiveHashHandler()).willReturn(cryptoDeleteLiveHashHandler);
         given(fileComponent.fileCreateHandler()).willReturn(fileCreateHandler);
         given(fileComponent.fileUpdateHandler()).willReturn(fileUpdateHandler);
         given(fileComponent.fileDeleteHandler()).willReturn(fileDeleteHandler);
@@ -275,31 +275,31 @@ class HandleWorkflowModuleTest {
         given(scheduleComponent.scheduleCreateHandler()).willReturn(scheduleCreateHandler);
         given(scheduleComponent.scheduleSignHandler()).willReturn(scheduleSignHandler);
         given(scheduleComponent.scheduleDeleteHandler()).willReturn(scheduleDeleteHandler);
-        given(tokenComponent.tokenCreateHandler()).willReturn(tokenCreateHandler);
-        given(tokenComponent.tokenUpdateHandler()).willReturn(tokenUpdateHandler);
-        given(tokenComponent.tokenMintHandler()).willReturn(tokenMintHandler);
-        given(tokenComponent.tokenBurnHandler()).willReturn(tokenBurnHandler);
-        given(tokenComponent.tokenDeleteHandler()).willReturn(tokenDeleteHandler);
-        given(tokenComponent.tokenAccountWipeHandler()).willReturn(tokenAccountWipeHandler);
-        given(tokenComponent.tokenFreezeAccountHandler()).willReturn(tokenFreezeAccountHandler);
-        given(tokenComponent.tokenUnfreezeAccountHandler()).willReturn(tokenUnfreezeAccountHandler);
-        given(tokenComponent.tokenGrantKycToAccountHandler()).willReturn(tokenGrantKycToAccountHandler);
-        given(tokenComponent.tokenRevokeKycFromAccountHandler()).willReturn(tokenRevokeKycFromAccountHandler);
-        given(tokenComponent.tokenAssociateToAccountHandler()).willReturn(tokenAssociateToAccountHandler);
-        given(tokenComponent.tokenDissociateFromAccountHandler()).willReturn(tokenDissociateFromAccountHandler);
-        given(tokenComponent.tokenFeeScheduleUpdateHandler()).willReturn(tokenFeeScheduleUpdateHandler);
-        given(tokenComponent.tokenPauseHandler()).willReturn(tokenPauseHandler);
-        given(tokenComponent.tokenUnpauseHandler()).willReturn(tokenUnpauseHandler);
+        given(tokenHandlers.tokenCreateHandler()).willReturn(tokenCreateHandler);
+        given(tokenHandlers.tokenUpdateHandler()).willReturn(tokenUpdateHandler);
+        given(tokenHandlers.tokenMintHandler()).willReturn(tokenMintHandler);
+        given(tokenHandlers.tokenBurnHandler()).willReturn(tokenBurnHandler);
+        given(tokenHandlers.tokenDeleteHandler()).willReturn(tokenDeleteHandler);
+        given(tokenHandlers.tokenAccountWipeHandler()).willReturn(tokenAccountWipeHandler);
+        given(tokenHandlers.tokenFreezeAccountHandler()).willReturn(tokenFreezeAccountHandler);
+        given(tokenHandlers.tokenUnfreezeAccountHandler()).willReturn(tokenUnfreezeAccountHandler);
+        given(tokenHandlers.tokenGrantKycToAccountHandler()).willReturn(tokenGrantKycToAccountHandler);
+        given(tokenHandlers.tokenRevokeKycFromAccountHandler()).willReturn(tokenRevokeKycFromAccountHandler);
+        given(tokenHandlers.tokenAssociateToAccountHandler()).willReturn(tokenAssociateToAccountHandler);
+        given(tokenHandlers.tokenDissociateFromAccountHandler()).willReturn(tokenDissociateFromAccountHandler);
+        given(tokenHandlers.tokenFeeScheduleUpdateHandler()).willReturn(tokenFeeScheduleUpdateHandler);
+        given(tokenHandlers.tokenPauseHandler()).willReturn(tokenPauseHandler);
+        given(tokenHandlers.tokenUnpauseHandler()).willReturn(tokenUnpauseHandler);
         given(utilComponent.prngHandler()).willReturn(utilPrngHandler);
 
         final var handlers = HandlersModule.provideTransactionHandlers(
                 adminComponent,
-                consensusComponent,
+                consensusHandlers,
                 fileComponent,
                 networkComponent,
                 contractComponent,
                 scheduleComponent,
-                tokenComponent,
+                tokenHandlers,
                 utilComponent);
         assertInstanceOf(TransactionHandlers.class, handlers);
     }
