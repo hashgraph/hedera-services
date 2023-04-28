@@ -185,9 +185,7 @@ class SignatureVerificationFuture implements Future<SignatureVerification> {
         for (final var txSig : sigs.values()) {
             boolean futureReady = false;
             while (!futureReady) {
-                // Figure out how many milliseconds we still have remaining before timing out
                 final var now = System.currentTimeMillis();
-                millisRemaining -= System.currentTimeMillis() - now;
                 if (millisRemaining <= 0) {
                     // If there was no time left, then TimeoutException
                     throw new TimeoutException("Timed out waiting for signature verification to complete");
@@ -203,6 +201,8 @@ class SignatureVerificationFuture implements Future<SignatureVerification> {
                     txSig.getFuture().get(millisRemaining, TimeUnit.MILLISECONDS);
                     futureReady = true;
                 }
+                // Figure out how many milliseconds we still have remaining before timing out
+                millisRemaining -= System.currentTimeMillis() - now;
             }
         }
 

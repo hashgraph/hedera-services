@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.signature.hapi;
 
+import static com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType.ECDSA_SECP256K1;
 import static com.hedera.node.app.signature.hapi.SignatureVerificationImpl.invalid;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -48,6 +49,8 @@ import javax.inject.Inject;
  * signatures.
  */
 public class SignatureVerifierImpl implements SignatureVerifier {
+    private static final int ECDSA_KEY_LENGTH = 33;
+
     /** The {@link Cryptography} engine to use for signature verification. */
     private final Cryptography cryptoEngine;
 
@@ -106,12 +109,12 @@ public class SignatureVerifierImpl implements SignatureVerifier {
             // Only ECDSA(secp256k1) keys can be used for hollow accounts, and the only valid prefix is exactly
             // 33 bytes long (32 bytes plus a 1 byte header to indicate positive or negative number space)
             final var prefix = sigPair.pubKeyPrefix();
-            if (sigPair.signature().kind() == SignatureOneOfType.ECDSA_SECP256K1 && prefix.length() == 33) {
+            if (sigPair.signature().kind() == ECDSA_SECP256K1 && prefix.length() == ECDSA_KEY_LENGTH) {
                 // Keccak hash the prefix and compare to the alias. Note that this prefix WILL BE COMPRESSED. We need
                 // to uncompress it first.
                 final var compressedPrefixByteArray = new byte[(int) prefix.length()];
                 prefix.getBytes(0, compressedPrefixByteArray);
-                // It may be that the bytes are random nonsense, in which case decompressing will throw an exception.
+                // If the compressed key begins with a prefix byte other than 0x02 or 0x03, decompressing will throw
                 try {
                     final var prefixByteArray = MiscCryptoUtils.decompressSecp256k1(compressedPrefixByteArray);
                     final var hashedPrefixByteArray =
@@ -263,7 +266,7 @@ public class SignatureVerifierImpl implements SignatureVerifier {
         final var sigType =
                 switch (key.key().kind()) {
                     case ED25519 -> SignatureOneOfType.ED25519;
-                    case ECDSA_SECP256K1 -> SignatureOneOfType.ECDSA_SECP256K1;
+                    case ECDSA_SECP256K1 -> ECDSA_SECP256K1;
                     default -> throw new IllegalArgumentException("Unsupported signature type");
                 };
 

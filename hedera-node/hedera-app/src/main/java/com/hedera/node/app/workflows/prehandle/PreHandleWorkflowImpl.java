@@ -143,7 +143,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 task.platformTx.setMetadata(result);
             } catch (InterruptedException e) {
                 // The thread should only ever be interrupted during shutdown, so we can just log the error.
-                logger.error("Interrupted while waiting for a transaction to be pre handled.");
+                logger.error("Interrupted while waiting for a transaction to be pre handled.", e);
                 Thread.currentThread().interrupt();
                 task.platformTx.setMetadata(unknownFailure());
             } catch (ExecutionException e) {
@@ -178,6 +178,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // If some random exception happened, then we should not charge the node for it. Instead,
             // we will just record the exception and try again during handle. Then if we fail again
             // at handle, then we will throw away the transaction (hopefully, deterministically!)
+            logger.error("Unexpected error while parsing and checking a transaction!", th);
             return unknownFailure();
         }
 

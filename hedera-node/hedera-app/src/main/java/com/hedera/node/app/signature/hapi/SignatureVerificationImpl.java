@@ -44,6 +44,7 @@ public record SignatureVerificationImpl(
      * Create a {@link SignatureVerificationImpl} because the given {@link Key} was invalid (did not pass signature
      * check).
      */
+    @NonNull
     public static SignatureVerification invalid(@NonNull Key key) {
         return new SignatureVerificationImpl(key, null, Collections.emptyList(), false);
     }
@@ -52,6 +53,7 @@ public record SignatureVerificationImpl(
      * Create a {@link SignatureVerificationImpl} because the given hollow {@link Account} was invalid (did not pass
      * signature check).
      */
+    @NonNull
     public static SignatureVerification invalid(@NonNull Account hollowAccount) {
         return new SignatureVerificationImpl(null, hollowAccount, Collections.emptyList(), false);
     }
@@ -59,6 +61,7 @@ public record SignatureVerificationImpl(
     /**
      * Create a {@link SignatureVerificationImpl} because the given {@link Key} passed signature verification.
      */
+    @NonNull
     public static SignatureVerification valid(@NonNull Key key, @NonNull List<TransactionSignature> txSigs) {
         return new SignatureVerificationImpl(key, null, txSigs, true);
     }
@@ -66,6 +69,7 @@ public record SignatureVerificationImpl(
     /**
      * Create a {@link SignatureVerificationImpl} because the given hollow {@link Account} passed signature verification
      */
+    @NonNull
     public static SignatureVerification valid(
             @NonNull Key key, @NonNull Account hollowAccount, @NonNull List<TransactionSignature> txSigs) {
         return new SignatureVerificationImpl(key, hollowAccount, txSigs, true);

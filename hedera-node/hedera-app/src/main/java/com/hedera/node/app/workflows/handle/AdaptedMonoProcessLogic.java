@@ -51,6 +51,7 @@ import org.apache.commons.codec.DecoderException;
 
 @Singleton
 public class AdaptedMonoProcessLogic implements ProcessLogic {
+    private static final long MILLIS_TO_WAIT_FOR_SIGNATURE_VERIFICATION = 60_000L;
     private final StandardProcessLogic monoProcessLogic;
 
     @Inject
@@ -115,7 +116,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
             throw new RuntimeException("Unknown failure", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while handling sigs", e);
+            throw new IllegalStateException("Interrupted while handling sigs", e);
         } catch (TimeoutException e) {
             throw new RuntimeException("Timed out waiting for 3 minutes. This is fatal", e);
         }
@@ -126,12 +127,13 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
         return map.values().stream()
                 .map(future -> {
                     try {
-                        return future.get(3, TimeUnit.MINUTES);
+                        return future.get(MILLIS_TO_WAIT_FOR_SIGNATURE_VERIFICATION, TimeUnit.MILLISECONDS);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                        throw new RuntimeException(e);
+                        throw new RuntimeException(
+                                "Interrupted while waiting for a signature verification to complete!", e);
                     } catch (ExecutionException | TimeoutException e) {
-                        throw new RuntimeException(e);
+                        throw new RuntimeException("Signature verification failed!", e);
                     }
                 })
                 .map(SignatureVerificationImpl.class::cast)
@@ -144,7 +146,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
         try {
             return JKey.mapKey(key);
         } catch (DecoderException e) {
-            throw new RuntimeException("Unable to map key", e);
+            throw new IllegalArgumentException("Unable to map key", e);
         }
     }
 }
