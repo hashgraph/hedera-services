@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * A {@link Future} that waits on a {@link List} of {@link TransactionSignature}s to complete signature checks, and
+ * A {@link Future} that waits on a {@link Map} of {@link TransactionSignature}s to complete signature checks, and
  * yields a {@link SignatureVerification}.
  */
 class SignatureVerificationFuture implements Future<SignatureVerification> {
