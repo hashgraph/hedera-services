@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.config.internal;
+package com.hedera.node.app.spi.config.converter;
 
 import com.hedera.node.app.spi.config.types.KeyValuePair;
 import com.swirlds.config.api.converter.ConfigConverter;

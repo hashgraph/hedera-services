@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.config.validation.internal;
+package com.hedera.node.app.spi.config.validation;
 
 import com.hedera.node.app.spi.config.types.KeyValuePair;
-import com.hedera.node.app.spi.config.validation.EmulatesMap;
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
 import com.swirlds.common.config.reflection.ConfigReflectionUtils.AnnotatedProperty;
 import com.swirlds.common.config.validators.DefaultConfigViolation;

@@ -19,7 +19,7 @@ package com.hedera.node.app.spi.config.converter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.config.types.Profile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;

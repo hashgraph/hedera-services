@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
-import static com.hedera.node.app.spi.config.Profile.DEV;
-import static com.hedera.node.app.spi.config.Profile.PROD;
-import static com.hedera.node.app.spi.config.Profile.TEST;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
@@ -59,13 +56,16 @@ import static com.hedera.node.app.spi.config.PropertyNames.STATS_HAPI_THROTTLES_
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.types.Profile.DEV;
+import static com.hedera.node.app.spi.config.types.Profile.PROD;
+import static com.hedera.node.app.spi.config.types.Profile.TEST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.config.types.Profile;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

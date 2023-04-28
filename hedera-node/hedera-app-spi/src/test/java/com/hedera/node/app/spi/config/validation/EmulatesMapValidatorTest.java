@@ -19,8 +19,7 @@ package com.hedera.node.app.spi.config.validation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.node.app.spi.config.internal.KeyValuePairConverter;
-import com.hedera.node.app.spi.config.validation.internal.EmulatesMapValidator;
+import com.hedera.node.app.spi.config.converter.KeyValuePairConverter;
 import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;

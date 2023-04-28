@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.config.converter;
 
-import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.config.types.Profile;
 import com.swirlds.config.api.converter.ConfigConverter;
 
 /**

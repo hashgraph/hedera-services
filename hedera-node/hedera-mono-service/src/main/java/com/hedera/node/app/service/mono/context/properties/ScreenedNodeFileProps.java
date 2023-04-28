@@ -39,7 +39,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNEC
 import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE;
 import static java.util.Map.entry;
 
-import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.config.types.Profile;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;

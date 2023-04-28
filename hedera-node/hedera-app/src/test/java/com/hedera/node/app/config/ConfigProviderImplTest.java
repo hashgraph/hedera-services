@@ -21,14 +21,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.config.VersionedConfiguration;
-import java.util.List;
+import com.hedera.node.app.spi.config.data.GlobalConfig;
+import com.hedera.node.app.spi.config.data.GlobalDynamicConfig;
+import com.hedera.node.app.spi.config.data.NodeConfig;
+import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -41,22 +42,162 @@ class ConfigProviderImplTest {
 
     @BeforeEach
     void configureMockForConfigData() {
-        when(propertySource.getTypedProperty(ArgumentMatchers.eq(Integer.class), ArgumentMatchers.any()))
-                .thenReturn(1);
-        when(propertySource.getTypedProperty(ArgumentMatchers.eq(Long.class), ArgumentMatchers.any()))
-                .thenReturn(Long.MAX_VALUE);
-        when(propertySource.getTypedProperty(ArgumentMatchers.eq(Double.class), ArgumentMatchers.any()))
-                .thenReturn(1.2D);
-        when(propertySource.getTypedProperty(ArgumentMatchers.eq(Profile.class), ArgumentMatchers.any()))
-                .thenReturn(Profile.TEST);
-        when(propertySource.getTypedProperty(ArgumentMatchers.eq(String.class), ArgumentMatchers.any()))
-                .thenReturn("test");
-        when(propertySource.getTypedProperty(ArgumentMatchers.eq(Boolean.class), ArgumentMatchers.any()))
-                .thenReturn(true);
-        when(propertySource.getTypedProperty(ArgumentMatchers.eq(List.class), ArgumentMatchers.any()))
-                .thenReturn(List.of());
-        when(propertySource.getTypedProperty(ArgumentMatchers.eq(Set.class), ArgumentMatchers.any()))
-                .thenReturn(Set.of());
+        final Set<String> stringProperties = Set.of(
+                "pathToBalancesExportDir",
+                "evmVersion",
+                "upgradeArtifactsLoc",
+                "recordLogDir",
+                "nettyTlsCrtPath",
+                "nettyTlsKeyPath",
+                "devListeningAccount",
+                "accountsExportPath",
+                "consThrottlesToSample",
+                "hapiThrottlesToSample",
+                "sidecarDir");
+        final Set<String> booleanProperties = Set.of(
+                "allowTreasuryToOwnNfts",
+                "shouldExportBalances",
+                "shouldExportTokenBalances",
+                "dynamicEvmVersion",
+                "schedulingLongTermEnabled",
+                "areNftsEnabled",
+                "throttleByGas",
+                "autoCreationEnabled",
+                "expandSigsFromImmutableState",
+                "exportPrecompileResults",
+                "create2Enabled",
+                "redirectTokenCalls",
+                "enableAllowances",
+                "limitTokenAssociations",
+                "enableHTSPrecompileCreate",
+                "atomicCryptoTransferEnabled",
+                "contractAutoAssociationsEnabled",
+                "stakingEnabled",
+                "utilPrngEnabled",
+                "sidecarValidationEnabled",
+                "requireMinStakeToReward",
+                "itemizeStorageFees",
+                "compressRecordFilesOnCreation",
+                "tokenAutoCreationsEnabled",
+                "doTraceabilityExport",
+                "compressAccountBalanceFilesOnCreation",
+                "lazyCreationEnabled",
+                "cryptoCreateWithAliasEnabled",
+                "enforceContractCreationThrottle",
+                "recordStreamEnabled",
+                "devOnlyDefaultNodeListens",
+                "exportAccountsOnStartup");
+        final Set<String> numericProperties = Set.of(
+                "maxNftMetadataBytes",
+                "maxBatchSizeBurn",
+                "maxBatchSizeMint",
+                "maxNftTransfersLen",
+                "maxBatchSizeWipe",
+                "maxNftQueryRange",
+                "maxTokensPerAccount",
+                "maxTokenRelsPerInfoQuery",
+                "maxCustomFeesAllowed",
+                "maxTokenSymbolUtf8Bytes",
+                "maxTokenNameUtf8Bytes",
+                "maxFileSizeKb",
+                "cacheRecordsTtl",
+                "balancesExportPeriodSecs",
+                "ratesIntradayChangeLimitPercent",
+                "nodeBalanceWarningThreshold",
+                "maxTransfersLen",
+                "maxTokenTransfersLen",
+                "maxMemoUtf8Bytes",
+                "maxTxnDuration",
+                "minTxnDuration",
+                "minValidityBuffer",
+                "maxGasPerSec",
+                "defaultContractLifetime",
+                "feesTokenTransferUsageMultiplier",
+                "autoRenewNumberOfEntitiesToScan",
+                "autoRenewMaxNumberOfEntitiesToRenewOrDelete",
+                "autoRenewGracePeriod",
+                "maxAutoRenewDuration",
+                "minAutoRenewDuration",
+                "localCallEstRetBytes",
+                "schedulingMaxTxnPerSecond",
+                "schedulingMaxExpirationFutureSeconds",
+                "scheduledTxExpiryTimeSecs",
+                "messageMaxBytesAllowed",
+                "maxPrecedingRecords",
+                "maxFollowingRecords",
+                "feesMinCongestionPeriod",
+                "maxNftMints",
+                "maxXferBalanceChanges",
+                "maxCustomFeeDepth",
+                "contractMaxRefundPercentOfGasLimit",
+                "scheduleThrottleMaxGasLimit",
+                "htsDefaultGasCost",
+                "changeHistorianMemorySecs",
+                "maxAggregateContractKvPairs",
+                "maxIndividualContractKvPairs",
+                "maxMostRecentQueryableRecords",
+                "maxAllowanceLimitPerTransaction",
+                "maxAllowanceLimitPerAccount",
+                "exchangeRateGasReq",
+                "stakingRewardRate",
+                "stakingStartThreshold",
+                "nodeRewardPercent",
+                "stakingRewardPercent",
+                "maxDailyStakeRewardThPerH",
+                "recordFileVersion",
+                "recordSignatureFileVersion",
+                "maxNumAccounts",
+                "maxNumContracts",
+                "maxNumFiles",
+                "maxNumTokens",
+                "maxNumTokenRels",
+                "maxNumTopics",
+                "maxNumSchedules",
+                "sidecarMaxSizeMb",
+                "traceabilityMaxExportsPerConsSec",
+                "traceabilityMinFreeToUsedGasThrottleRatio",
+                "maxNumWithHapiSigsAccess",
+                "port",
+                "tlsPort",
+                "hapiOpStatsUpdateIntervalMs",
+                "entityUtilStatsUpdateIntervalMs",
+                "throttleUtilStatsUpdateIntervalMs",
+                "statsSpeedometerHalfLifeSecs",
+                "statsRunningAvgHalfLifeSecs",
+                "recordLogPeriod",
+                "recordStreamQueueCapacity",
+                "queryBlobLookupRetries",
+                "nettyProdKeepAliveTime",
+                "nettyMaxConnectionAge",
+                "nettyMaxConnectionAgeGrace",
+                "nettyMaxConnectionIdle",
+                "nettyMaxConcurrentCalls",
+                "nettyFlowControlWindow",
+                "nettyStartRetries",
+                "nettyStartRetryIntervalMs",
+                "numExecutionTimesToTrack",
+                "issResetPeriod",
+                "issRoundsToLog",
+                "prefetchQueueCapacity",
+                "prefetchThreadPoolSize",
+                "prefetchCodeCacheTtlSecs",
+                "workflowsPort",
+                "workflowsTlsPort",
+                "nettyProdKeepAliveTimeout");
+        final Set<String> customProperties = Set.of("fundingAccount", "activeProfile", "nettyMode");
+        final Set<String> allProperties = new HashSet<>();
+        allProperties.addAll(stringProperties);
+        allProperties.addAll(booleanProperties);
+        allProperties.addAll(numericProperties);
+        allProperties.addAll(customProperties);
+        when(propertySource.allPropertyNames()).thenReturn(allProperties);
+
+        stringProperties.forEach(
+                property -> when(propertySource.getRawValue(property)).thenReturn("test"));
+        booleanProperties.forEach(
+                property -> when(propertySource.getRawValue(property)).thenReturn("true"));
+        numericProperties.forEach(
+                property -> when(propertySource.getRawValue(property)).thenReturn("1"));
     }
 
     @Test
@@ -75,6 +216,23 @@ class ConfigProviderImplTest {
         // then
         assertThat(configuration).isNotNull();
         assertThat(configuration.getVersion()).isZero();
+    }
+
+    @Test
+    void testConfigDataCreation() {
+        // given
+        final var configProvider = new ConfigProviderImpl(propertySource);
+        final var configuration = configProvider.getConfiguration();
+
+        // when
+        final GlobalConfig globalConfig = configuration.getConfigData(GlobalConfig.class);
+        final GlobalDynamicConfig globalDynamicConfig = configuration.getConfigData(GlobalDynamicConfig.class);
+        final NodeConfig nodeConfig = configuration.getConfigData(NodeConfig.class);
+
+        // then
+        assertThat(globalConfig).isNotNull();
+        assertThat(globalDynamicConfig).isNotNull();
+        assertThat(nodeConfig).isNotNull();
     }
 
     @Test

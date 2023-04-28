@@ -256,7 +256,7 @@ import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
 import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
 import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
-import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.config.types.Profile;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;

@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelp
 import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.config.types.Profile;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -49,8 +49,8 @@ import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- * Defines a source of arbitrary properties keyed by strings. Provides strongly typed accessors for
- * commonly used property types.
+ * Defines a source of arbitrary properties keyed by strings. Provides strongly typed accessors for commonly used
+ * property types.
  */
 public interface PropertySource {
 
@@ -139,7 +139,7 @@ public interface PropertySource {
     }
 
     @SuppressWarnings("unchecked")
-    default Set<CustomFeeType> getCustomFeesProperty(String name) {
+    default Set<CustomFeeType> getCustomFeesProperty(final String name) {
         return getTypedProperty(Set.class, name);
     }
 
@@ -198,7 +198,7 @@ public interface PropertySource {
         return getTypedProperty(Profile.class, name);
     }
 
-    default Set<Address> getEvmAddresses(String name) {
+    default Set<Address> getEvmAddresses(final String name) {
         return getTypedProperty(Set.class, name);
     }
 

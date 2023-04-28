@@ -58,7 +58,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.STATS_SPEEDOMETER_HAL
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
-import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.config.types.Profile;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;

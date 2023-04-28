@@ -16,15 +16,35 @@
 
 package com.hedera.node.app.config;
 
-import com.hedera.node.app.config.internal.ConfigurationAdaptor;
+import com.hedera.node.app.config.converter.CongestionMultipliersConverter;
+import com.hedera.node.app.config.converter.EntityScaleFactorsConverter;
+import com.hedera.node.app.config.converter.EntityTypeConverter;
+import com.hedera.node.app.config.converter.KnownBlockValuesConverter;
+import com.hedera.node.app.config.converter.LegacyContractIdActivationsConverter;
+import com.hedera.node.app.config.converter.MapAccessTypeConverter;
+import com.hedera.node.app.config.converter.RecomputeTypeConverter;
+import com.hedera.node.app.config.converter.ScaleFactorConverter;
 import com.hedera.node.app.config.internal.VersionedConfigImpl;
+import com.hedera.node.app.config.source.PropertySourceBasedConfigSource;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.config.ConfigProvider;
 import com.hedera.node.app.spi.config.VersionedConfiguration;
+import com.hedera.node.app.spi.config.converter.AccountIDConverter;
+import com.hedera.node.app.spi.config.converter.ContractIDConverter;
+import com.hedera.node.app.spi.config.converter.FileIDConverter;
+import com.hedera.node.app.spi.config.converter.HederaFunctionalityConverter;
+import com.hedera.node.app.spi.config.converter.KeyValuePairConverter;
+import com.hedera.node.app.spi.config.converter.ProfileConverter;
+import com.hedera.node.app.spi.config.converter.SidecarTypeConverter;
+import com.hedera.node.app.spi.config.data.GlobalConfig;
+import com.hedera.node.app.spi.config.data.GlobalDynamicConfig;
+import com.hedera.node.app.spi.config.data.NodeConfig;
+import com.hedera.node.app.spi.config.validation.EmulatesMapValidator;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,7 +67,7 @@ public class ConfigProviderImpl implements ConfigProvider {
      */
     public ConfigProviderImpl(@NonNull final PropertySource propertySource) {
         this.propertySource = Objects.requireNonNull(propertySource, "propertySource");
-        final Configuration config = new ConfigurationAdaptor(propertySource);
+        final Configuration config = createConfiguration();
         configuration = new AtomicReference<>(new VersionedConfigImpl(config, 0));
     }
 
@@ -57,11 +77,36 @@ public class ConfigProviderImpl implements ConfigProvider {
      */
     public void update() {
         try (final var lock = updateLock.lock()) {
-            final Configuration config = new ConfigurationAdaptor(propertySource);
+            final Configuration config = createConfiguration();
             final VersionedConfiguration versionedConfig =
                     new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1);
             configuration.set(versionedConfig);
         }
+    }
+
+    private Configuration createConfiguration() {
+        return ConfigurationBuilder.create()
+                .withSource(new PropertySourceBasedConfigSource(propertySource))
+                .withConverter(new CongestionMultipliersConverter())
+                .withConverter(new EntityScaleFactorsConverter())
+                .withConverter(new EntityTypeConverter())
+                .withConverter(new KnownBlockValuesConverter())
+                .withConverter(new LegacyContractIdActivationsConverter())
+                .withConverter(new MapAccessTypeConverter())
+                .withConverter(new RecomputeTypeConverter())
+                .withConverter(new ScaleFactorConverter())
+                .withConverter(new AccountIDConverter())
+                .withConverter(new ContractIDConverter())
+                .withConverter(new FileIDConverter())
+                .withConverter(new HederaFunctionalityConverter())
+                .withConverter(new ProfileConverter())
+                .withConverter(new SidecarTypeConverter())
+                .withConverter(new KeyValuePairConverter())
+                .withValidator(new EmulatesMapValidator())
+                .withConfigDataType(GlobalConfig.class)
+                .withConfigDataType(GlobalDynamicConfig.class)
+                .withConfigDataType(NodeConfig.class)
+                .build();
     }
 
     @Override
