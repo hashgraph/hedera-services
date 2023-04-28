@@ -17,17 +17,21 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomKey.KEY_PREFIX;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
@@ -35,6 +39,7 @@ import java.util.Optional;
 public class RandomHollowAccount implements OpProvider {
     // Added to hollow account names to differentiate them from the keys created for them
     public static final String ACCOUNT_SUFFIX = "#";
+    public static final String KEY_PREFIX = "Fuzz#";
     public static final int DEFAULT_CEILING_NUM = 100;
     public static final long INITIAL_BALANCE = 1_000_000_000L;
     private int ceilingNum = DEFAULT_CEILING_NUM;
@@ -75,19 +80,27 @@ public class RandomHollowAccount implements OpProvider {
     }
 
     private HapiSpecOperation generateHollowAccount(String keyName) {
-        final ByteString evmAddress = getEvmAddress(keyName);
+        return withOpContext((spec, opLog) -> {
+            final var evmAddress = getEvmAddress(keyName);
+            final var op = cryptoTransfer(tinyBarsFromTo(GENESIS, evmAddress, ONE_HUNDRED_HBARS))
+                    .hasKnownStatusFrom(standardOutcomesAnd(ACCOUNT_DELETED))
+                    .via("LAZY_CREATE");
 
-        return cryptoCreate(keyName + ACCOUNT_SUFFIX)
-                .hasPrecheckFrom(OK, INVALID_ALIAS_KEY)
-                .hasKnownStatusFrom(SUCCESS, INVALID_ALIAS_KEY)
-                .evmAddress(evmAddress)
-                .balance(INITIAL_BALANCE)
-                .noLogging();
+            final HapiGetTxnRecord hapiGetTxnRecord =
+                    getTxnRecord("LAZY_CREATE").andAllChildRecords().assertingNothingAboutHashes();
+
+            allRunFor(spec, op, hapiGetTxnRecord);
+
+            if (hapiGetTxnRecord.getChildRecords().size() > 0) {
+                final AccountID newAccountID =
+                        hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                spec.registry().saveAccountId(keyName + ACCOUNT_SUFFIX, newAccountID);
+            }
+        });
     }
 
     private ByteString getEvmAddress(String keyName) {
         final var ecdsaKey = this.registry.getKey(keyName).getECDSASecp256K1().toByteArray();
-
         return ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
     }
 }
