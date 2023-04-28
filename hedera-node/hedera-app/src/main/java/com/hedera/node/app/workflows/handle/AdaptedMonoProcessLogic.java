@@ -114,6 +114,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
         } catch (ExecutionException e) {
             throw new RuntimeException("Unknown failure", e);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while handling sigs", e);
         } catch (TimeoutException e) {
             throw new RuntimeException("Timed out waiting for 3 minutes. This is fatal", e);
@@ -126,7 +127,10 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
                 .map(future -> {
                     try {
                         return future.get(3, TimeUnit.MINUTES);
-                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    } catch (ExecutionException | TimeoutException e) {
                         throw new RuntimeException(e);
                     }
                 })
