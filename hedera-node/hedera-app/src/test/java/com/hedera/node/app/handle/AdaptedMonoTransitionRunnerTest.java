@@ -35,7 +35,6 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WorkingStateWritableStoreFactory;
 import com.hedera.node.app.workflows.handle.AdaptedMonoTransitionRunner;
@@ -79,8 +78,8 @@ class AdaptedMonoTransitionRunnerTest {
     @BeforeEach
     void setUp() {
         given(staticProperties.workflowsEnabled()).willReturn(Set.of(ConsensusCreateTopic));
-        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup, staticProperties,
-                writableStoreFactory);
+        subject = new AdaptedMonoTransitionRunner(
+                ids, txnCtx, dispatcher, lookup, staticProperties, writableStoreFactory);
     }
 
     @Test
@@ -90,8 +89,8 @@ class AdaptedMonoTransitionRunnerTest {
 
         subject.tryTransition(accessor);
 
-        verify(dispatcher).dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn),
-                writableStoreFactory);
+        verify(dispatcher)
+                .dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), writableStoreFactory);
         verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
     }
 
@@ -105,8 +104,8 @@ class AdaptedMonoTransitionRunnerTest {
 
         assertTrue(subject.tryTransition(accessor));
 
-        verify(dispatcher).dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn),
-                writableStoreFactory);
+        verify(dispatcher)
+                .dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), writableStoreFactory);
         verify(txnCtx).setStatus(fromPbj(INVALID_EXPIRATION_TIME));
     }
 

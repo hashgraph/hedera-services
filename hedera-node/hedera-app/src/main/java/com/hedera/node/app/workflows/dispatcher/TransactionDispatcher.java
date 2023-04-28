@@ -29,7 +29,6 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.util.impl.config.PrngConfig;
@@ -40,7 +39,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -91,8 +89,7 @@ public class TransactionDispatcher {
     public void dispatchHandle(
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody txn,
-            @NonNull final WritableStoreFactory writableStoreFactory)
-    {
+            @NonNull final WritableStoreFactory writableStoreFactory) {
         switch (function) {
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(
                     txn.consensusCreateTopicOrThrow(), writableStoreFactory.createTopicStore());
@@ -371,7 +368,8 @@ public class TransactionDispatcher {
     private void dispatchPrng(@NonNull final TransactionBody utilPrng) {
         final var handler = handlers.utilPrngHandler();
         final var recordBuilder = handler.newRecordBuilder();
-        handler.handle(handleContext,
+        handler.handle(
+                handleContext,
                 utilPrng.utilPrng(),
                 new PrngConfig(dynamicProperties.isUtilPrngEnabled()),
                 recordBuilder);

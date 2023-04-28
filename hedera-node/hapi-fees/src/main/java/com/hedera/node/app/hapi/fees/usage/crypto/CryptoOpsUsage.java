@@ -90,7 +90,7 @@ public class CryptoOpsUsage {
         incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
                 weightedTokensInvolved, weightedTokenXfers, xferMeta.getNumNftOwnershipChanges());
         accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        log.info("Usage for crypto transfer: bpt=" + incBpt + ", rb=" + incRb + "accumulator"+ accumulator.toString());
+        log.info("Usage for crypto transfer: bpt=" + incBpt + ", rb=" + incRb + "accumulator" + accumulator.toString());
     }
 
     public FeeData cryptoInfoUsage(final Query cryptoInfoReq, final ExtantCryptoContext ctx) {

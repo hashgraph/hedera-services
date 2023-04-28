@@ -48,7 +48,7 @@ public class MonoHandleContext implements HandleContext {
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final TransactionContext txnCtx,
-            @NonNull final ReadableStoreFactory storeFactory){
+            @NonNull final ReadableStoreFactory storeFactory) {
         this.nums = Objects.requireNonNull(ids)::newAccountNumber;
         this.txnCtx = Objects.requireNonNull(txnCtx);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);

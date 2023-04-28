@@ -398,24 +398,27 @@ class MonoTransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, usageLimits, sideEffectsTracker);
+        dispatcher = new MonoTransactionDispatcher(
+                handleContext, txnCtx, handlers, dynamicProperties, usageLimits, sideEffectsTracker);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(null, txnCtx, handlers, dynamicProperties, usageLimits, sideEffectsTracker))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                        null, txnCtx, handlers, dynamicProperties, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new MonoTransactionDispatcher(handleContext, null, handlers, dynamicProperties, usageLimits, sideEffectsTracker))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                        handleContext, null, handlers, dynamicProperties, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new MonoTransactionDispatcher(handleContext, txnCtx, null, dynamicProperties, usageLimits, sideEffectsTracker))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                        handleContext, txnCtx, null, dynamicProperties, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, null, usageLimits, sideEffectsTracker))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                        handleContext, txnCtx, handlers, null, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, null, sideEffectsTracker))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                        handleContext, txnCtx, handlers, dynamicProperties, null, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
     }
 
