@@ -35,10 +35,10 @@ class SynthApprovalRecordsTest {
         final var amount = 10;
         final var debited = IdUtils.asModelId("0.0.3");
         final var payer = IdUtils.asModelId("0.0.5");
-        final var hbarAdjust = BalanceChange.changingHbar(
-                aaWith(debited.asGrpcAccount(), -amount).build(), payer.asGrpcAccount());
+        final var aaDebit = aaWith(debited.asGrpcAccount(), -amount).build();
+        final var hbarAdjust = BalanceChange.changingHbar(aaDebit, payer.asGrpcAccount());
         final var synthOp = CryptoTransferTransactionBody.newBuilder()
-                .setTransfers(TransferList.newBuilder().addAccountAmounts(aaWith(debited.asGrpcAccount(), -amount)));
+                .setTransfers(TransferList.newBuilder().addAccountAmounts(aaDebit));
         final var approvedSynthOp = CryptoTransferTransactionBody.newBuilder()
                 .setTransfers(TransferList.newBuilder()
                         .addAccountAmounts(

@@ -31,7 +31,7 @@ import org.opentest4j.AssertionFailedError;
  * Implementation support for a {@link RecordStreamAssertion} that filters to a single
  * record stream item, and passes as long as a given assertion does not throw an exception.
  */
-public class TransactionBodyAssertion extends IdScreenedAssertion {
+public class TransactionBodyAssertion extends BaseIdScreenedAssertion {
     private final Predicate<TransactionID> idFilter;
     private final AssertingBiConsumer<HapiSpec, TransactionBody> bodyAssertion;
 

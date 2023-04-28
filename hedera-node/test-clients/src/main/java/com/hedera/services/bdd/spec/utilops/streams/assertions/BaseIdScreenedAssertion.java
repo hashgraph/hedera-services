@@ -25,15 +25,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A small starter class for assertions that match a record stream item by {@code transactionID}, and
  * then assert something about the body or record in the item.
  *
- * <p>This class does not restrict to id's with {@code nonce=0} (i.e. it includes items for both the
- * given transaction id and all its child items); but subclasses can do so if desired by overriding
- * the {@link #filter(TransactionID)} method.
+ * <p>This class does not restrict to id's with {@code nonce=0} or with {@code scheduled=false} (i.e. it
+ * includes items for both the given transaction id and all its child items); but subclasses can do so
+ * if desired by overriding * the {@link #filter(TransactionID)} method.
  */
-public abstract class IdScreenedAssertion implements RecordStreamAssertion {
+public abstract class BaseIdScreenedAssertion implements RecordStreamAssertion {
     private final String specTxnId;
     protected final HapiSpec spec;
 
-    public IdScreenedAssertion(@NonNull final String specTxnId, @NonNull final HapiSpec spec) {
+    protected BaseIdScreenedAssertion(@NonNull final String specTxnId, @NonNull final HapiSpec spec) {
         this.specTxnId = specTxnId;
         this.spec = spec;
     }
@@ -49,7 +49,7 @@ public abstract class IdScreenedAssertion implements RecordStreamAssertion {
         }
         final var txnId = maybeTxnId.get();
         final var observedId = item.getRecord().getTransactionID();
-        return nonNonceFieldsMatch(txnId, observedId) && filter(observedId);
+        return baseFieldsMatch(txnId, observedId) && filter(observedId);
     }
 
     /**
@@ -64,7 +64,7 @@ public abstract class IdScreenedAssertion implements RecordStreamAssertion {
         return true;
     }
 
-    private boolean nonNonceFieldsMatch(@NonNull final TransactionID a, @NonNull final TransactionID b) {
+    private boolean baseFieldsMatch(@NonNull final TransactionID a, @NonNull final TransactionID b) {
         return a.getTransactionValidStart().equals(b.getTransactionValidStart())
                 && a.getAccountID().equals(b.getAccountID());
     }

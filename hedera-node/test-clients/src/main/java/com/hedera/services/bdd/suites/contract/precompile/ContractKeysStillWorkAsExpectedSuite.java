@@ -388,7 +388,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                 .then(
                         sourcing(() -> contractCall(
                                         WELL_KNOWN_TREASURY_CONTRACT,
-                                        "transferTokenUnitFromToOthers",
+                                        TOKEN_UNIT_FROM_TO_OTHERS_TXN,
                                         fungibleTokenMirrorAddr.get(),
                                         treasuryContractAddr.get(),
                                         aReceiverAddr.get())
@@ -641,7 +641,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         return blockingOrder(
                 sourcing(() -> contractCall(
                                 WELL_KNOWN_TREASURY_CONTRACT,
-                                "transferTokenUnitFromToOthers",
+                                TOKEN_UNIT_FROM_TO_OTHERS_TXN,
                                 fungibleTokenMirrorAddr.get(),
                                 aSenderAddr.get(),
                                 aReceiverAddr.get())
