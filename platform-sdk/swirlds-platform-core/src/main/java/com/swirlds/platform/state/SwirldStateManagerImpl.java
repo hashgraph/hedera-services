@@ -84,6 +84,16 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      */
     private final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
 
+    // Used for creating mock instances in unit testing
+    public SwirldStateManagerImpl() {
+        stats = null;
+        transactionPool = null;
+        preConsensusSystemTransactionManager = null;
+        postConsensusSystemTransactionManager = null;
+        transactionHandler = null;
+        uptimeTracker = null;
+    }
+
     /**
      * Creates a new instance with the provided state.
      *
