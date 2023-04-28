@@ -116,7 +116,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-        // this looks for a tag in nexus repository manager
+      // this looks for a tag in nexus repository manager
       version("hapi-version", "0.38.1-SNAPSHOT")
 
       // Definition of version numbers for all libraries
