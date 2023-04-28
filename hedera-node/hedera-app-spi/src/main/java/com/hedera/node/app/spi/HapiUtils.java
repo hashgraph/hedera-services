@@ -33,7 +33,8 @@ import java.util.Set;
  */
 public class HapiUtils {
     private static final int EVM_ADDRESS_ALIAS_LENGTH = 20;
-    private static final Key EMPTY_KEY_LIST = Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    private static final Key EMPTY_KEY_LIST =
+            Key.newBuilder().keyList(KeyList.DEFAULT).build();
 
     private HapiUtils() {}
 
