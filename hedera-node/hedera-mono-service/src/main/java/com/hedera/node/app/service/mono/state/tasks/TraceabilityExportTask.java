@@ -87,6 +87,8 @@ public class TraceabilityExportTask implements SystemTask {
     private final Supplier<AccountStorageAdapter> accounts;
     private final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> contractStorage;
 
+    private boolean firstTime = true;
+
     // Used to occasionally log the progress of the traceability export; because this is
     // not in state, will become inaccurate on a node that falls behind or restarts, but
     // that doesn't matter---exports will finish within a few hours and we can just check
@@ -122,6 +124,12 @@ public class TraceabilityExportTask implements SystemTask {
     @Override
     public SystemTaskResult process(
             final long literalNum, final Instant now, final MerkleNetworkContext curNetworkCtx) {
+
+        if (firstTime) {
+            log.info("Traceability migration is active and beginning work");
+            firstTime = false;
+        }
+
         if (!recordsHelper.canExportNow() || needsBackPressure(now, curNetworkCtx)) {
             return NEEDS_DIFFERENT_CONTEXT;
         }

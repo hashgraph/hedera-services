@@ -19,11 +19,14 @@ package com.hedera.node.app.workflows.dispatcher;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStoreImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -50,9 +53,9 @@ public class ReadableStoreFactory {
             AccountAccess.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
             ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
             ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new),
-            ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStore::new),
-            ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStore::new),
-            ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStore::new));
+            ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new),
+            ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new),
+            ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStoreImpl::new));
 
     private final HederaState state;
 

@@ -88,6 +88,7 @@ public final class EventRecoveryWorkflow {
      * @param selfId                  the self ID of the node
      * @param allowPartialRounds      if true then allow the last round to be missing events, if false then ignore the
      *                                last round if it does not have all of its events
+     * @param loadSigningKeys         if true then load the signing keys
      */
     public static void recoverState(
             final Path signedStateFile,
@@ -97,7 +98,8 @@ public final class EventRecoveryWorkflow {
             final Boolean allowPartialRounds,
             final Long finalRound,
             final Path resultingStateDirectory,
-            final Long selfId)
+            final Long selfId,
+            final boolean loadSigningKeys)
             throws IOException {
 
         setupConstructableRegistry();
@@ -135,8 +137,8 @@ public final class EventRecoveryWorkflow {
 
         logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
-        final SignedState resultingState =
-                reapplyTransactions(configuration, initialState, appMain, roundIterator, finalRound, selfId);
+        final SignedState resultingState = reapplyTransactions(
+                configuration, initialState, appMain, roundIterator, finalRound, selfId, loadSigningKeys);
 
         logger.info(
                 STARTUP.getMarker(), "Finished reapplying transactions, writing state to {}", resultingStateDirectory);
@@ -197,13 +199,14 @@ public final class EventRecoveryWorkflow {
     /**
      * Apply transactions on top of a state to produce a new state
      *
-     * @param configuration the configuration for the node
-     * @param initialState  the starting signed state
-     * @param appMain       the {@link SwirldMain} for the app. Ignored if null.
-     * @param roundIterator an iterator that walks over transactions
-     * @param finalRound    the last round to apply to the state (inclusive), will stop earlier if the event stream does
-     *                      not have events from the final round
-     * @param selfId        the self ID of the node
+     * @param configuration   the configuration for the node
+     * @param initialState    the starting signed state
+     * @param appMain         the {@link SwirldMain} for the app. Ignored if null.
+     * @param roundIterator   an iterator that walks over transactions
+     * @param finalRound      the last round to apply to the state (inclusive), will stop earlier if the event stream
+     *                        does not have events from the final round
+     * @param selfId          the self ID of the node
+     * @param loadSigningKeys if true then load the signing keys
      * @return the resulting signed state
      * @throws IOException if there is a problem reading from the event stream file
      */
@@ -213,7 +216,8 @@ public final class EventRecoveryWorkflow {
             final SwirldMain appMain,
             final IOIterator<Round> roundIterator,
             final long finalRound,
-            final long selfId)
+            final long selfId,
+            final boolean loadSigningKeys)
             throws IOException {
 
         throwArgNull(configuration, "configuration");
@@ -228,7 +232,7 @@ public final class EventRecoveryWorkflow {
 
         logger.info(STARTUP.getMarker(), "Initializing application state");
 
-        final RecoveryPlatform platform = new RecoveryPlatform(configuration, initialState, selfId);
+        final RecoveryPlatform platform = new RecoveryPlatform(configuration, initialState, selfId, loadSigningKeys);
 
         initialState
                 .getSwirldState()

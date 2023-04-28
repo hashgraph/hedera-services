@@ -23,7 +23,6 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key.ED25519_BYTE_LENGTH;
-import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.MAX_CHARGEABLE_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
@@ -667,6 +666,7 @@ class CryptoCreateTransitionLogicTest {
     void acceptsValidTxn() {
         givenValidTxnCtx();
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
         given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
         given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
@@ -687,7 +687,7 @@ class CryptoCreateTransitionLogicTest {
 
     @Test
     void rejectsTooManyMaxAutomaticAssociations() {
-        givenInvalidMaxAutoAssociations(MAX_CHARGEABLE_AUTO_ASSOCIATIONS + 1);
+        givenInvalidMaxAutoAssociations(5001);
 
         assertEquals(
                 REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
@@ -970,6 +970,7 @@ class CryptoCreateTransitionLogicTest {
     void validatesStakedId() {
         givenValidTxnCtx();
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
 
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
 
@@ -978,6 +979,7 @@ class CryptoCreateTransitionLogicTest {
 
     @Test
     void rejectsStakedIdIfStakingDisabled() {
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
         givenValidTxnCtx();
 
         assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoCreateTxn));
@@ -985,6 +987,7 @@ class CryptoCreateTransitionLogicTest {
 
     @Test
     void rejectsDeclineRewardIfStakingDisabled() {
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
         givenValidTxnCtx(KEY, false, true);
 
         assertEquals(STAKING_NOT_ENABLED, subject.semanticCheck().apply(cryptoCreateTxn));
@@ -992,6 +995,7 @@ class CryptoCreateTransitionLogicTest {
 
     @Test
     void usingProxyAccountFails() {
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
         cryptoCreateTxn = TransactionBody.newBuilder()
                 .setTransactionID(ourTxnId())
                 .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()

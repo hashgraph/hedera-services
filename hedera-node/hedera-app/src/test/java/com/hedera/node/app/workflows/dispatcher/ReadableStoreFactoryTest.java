@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.dispatcher;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import org.junit.jupiter.api.BeforeEach;

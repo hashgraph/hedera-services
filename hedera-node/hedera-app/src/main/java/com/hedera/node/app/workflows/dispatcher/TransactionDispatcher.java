@@ -41,12 +41,12 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and
- * handle-transaction requests to the appropriate handler
+ * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and handle-transaction
+ * requests to the appropriate handler
  *
  * <p>For handle, mostly just supports the limited form of the Consensus Service handlers
- * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to
- * make a bit of progress toward the general implementation.
+ * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to make a bit of progress
+ * toward the general implementation.
  */
 @Singleton
 public class TransactionDispatcher {
@@ -58,8 +58,8 @@ public class TransactionDispatcher {
     /**
      * Creates a {@code TransactionDispatcher}.
      *
-     * @param handleContext     the context of the handle workflow
-     * @param handlers          the handlers for all transaction types
+     * @param handleContext the context of the handle workflow
+     * @param handlers the handlers for all transaction types
      * @param dynamicProperties the dynamic properties of the system
      */
     @Inject
@@ -77,8 +77,7 @@ public class TransactionDispatcher {
      *
      * <p>This will not be final signature of the dispatch method, since as per
      * <a href="https://github.com/hashgraph/hedera-services/issues/4945">issue #4945</a>, we are currently
-     * just adapting the last step of mono-service "workflow"; and only for
-     * Consensus Service transactions.
+     * just adapting the last step of mono-service "workflow"; and only for Consensus Service transactions.
      *
      * @param function the type of the consensus service transaction
      * @param txn the consensus transaction to be handled
@@ -107,8 +106,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of
-     * the specific functionality
+     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of the specific
+     * functionality
      *
      * @param context the context of the pre-handle workflow
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -179,18 +178,16 @@ public class TransactionDispatcher {
 
             case UTIL_PRNG -> handlers.utilPrngHandler();
 
-            case SYSTEM_DELETE ->
-                switch (txBody.systemDeleteOrThrow().id().kind()) {
-                    case CONTRACT_ID -> handlers.contractSystemDeleteHandler();
-                    case FILE_ID -> handlers.fileSystemDeleteHandler();
-                    default -> throw new UnsupportedOperationException("SystemDelete without IdCase");
-                };
-            case SYSTEM_UNDELETE ->
-                switch (txBody.systemUndeleteOrThrow().id().kind()) {
-                    case CONTRACT_ID -> handlers.contractSystemUndeleteHandler();
-                    case FILE_ID -> handlers.fileSystemUndeleteHandler();
-                    default -> throw new UnsupportedOperationException("SystemUndelete without IdCase");
-                };
+            case SYSTEM_DELETE -> switch (txBody.systemDeleteOrThrow().id().kind()) {
+                case CONTRACT_ID -> handlers.contractSystemDeleteHandler();
+                case FILE_ID -> handlers.fileSystemDeleteHandler();
+                default -> throw new UnsupportedOperationException("SystemDelete without IdCase");
+            };
+            case SYSTEM_UNDELETE -> switch (txBody.systemUndeleteOrThrow().id().kind()) {
+                case CONTRACT_ID -> handlers.contractSystemUndeleteHandler();
+                case FILE_ID -> handlers.fileSystemUndeleteHandler();
+                default -> throw new UnsupportedOperationException("SystemUndelete without IdCase");
+            };
 
             default -> throw new UnsupportedOperationException(TYPE_NOT_SUPPORTED);
         };
@@ -207,9 +204,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param topicStore the topic store used for the update
      */
@@ -226,9 +222,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param topicStore the topic store used for the update
      */
@@ -252,9 +247,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param recordBuilder the completed record builder for the creation
      * @param topicStore the topic store used for the creation
@@ -280,9 +274,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param recordBuilder the completed record builder for the message submission
      * @param topicStore the topic store used for the message submission
@@ -308,6 +301,7 @@ public class TransactionDispatcher {
 
     /**
      * Dispatches the token unpause transaction to the appropriate handler.
+     *
      * @param tokenUnpause the token unpause transaction
      * @param tokenStore the token store
      */
@@ -320,6 +314,7 @@ public class TransactionDispatcher {
 
     /**
      * Dispatches the token pause transaction to the appropriate handler.
+     *
      * @param tokenPause the token pause transaction
      * @param tokenStore the token store
      */

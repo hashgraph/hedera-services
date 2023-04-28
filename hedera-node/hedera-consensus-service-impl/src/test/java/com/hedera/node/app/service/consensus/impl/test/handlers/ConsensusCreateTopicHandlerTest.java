@@ -47,14 +47,14 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.time.Instant;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,7 +71,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
             AccountID.newBuilder().accountNum(4L).build();
 
     @Mock
-    private AccountAccess accountAccess;
+    private ReadableAccountStore accountStore;
 
     @Mock
     private HandleContext handleContext;
@@ -125,7 +125,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(adminKey, submitKey, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(adminKey, submitKey, false));
         subject.preHandle(context);
 
         // then:
@@ -141,7 +141,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var adminKey = SIMPLE_KEY_A;
 
         // when:
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(adminKey, null, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(adminKey, null, false));
         subject.preHandle(context);
 
         // then:
@@ -157,7 +157,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(null, submitKey, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(null, submitKey, false));
         subject.preHandle(context);
 
         // then:
@@ -173,7 +173,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(protoPayerKey, null, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(protoPayerKey, null, false));
         subject.preHandle(context);
 
         // then:
@@ -189,7 +189,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(null, protoPayerKey, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(null, protoPayerKey, false));
         subject.preHandle(context);
 
         // then:
@@ -202,7 +202,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         // given:
         mockPayerLookup();
         final var acct1234 = AccountID.newBuilder().accountNum(1234).build();
-        given(accountAccess.getAccountById(acct1234)).willReturn(null);
+        given(accountStore.getAccountById(acct1234)).willReturn(null);
         final var inputTxn = TransactionBody.newBuilder()
                 .transactionID(
                         TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build())
@@ -212,7 +212,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .build();
 
         // when:
-        final var context = new PreHandleContext(accountAccess, inputTxn);
+        final var context = new FakePreHandleContext(accountStore, inputTxn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_AUTORENEW_ACCOUNT);
     }
 
@@ -221,7 +221,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     void requiresPayerKey() throws PreCheckException {
         // given:
         final var payerKey = mockPayerLookup();
-        final var context = new PreHandleContext(accountAccess, newCreateTxn(null, null, false));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(null, null, false));
 
         // when:
         subject.preHandle(context);
@@ -421,7 +421,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     private Key mockPayerLookup(Key key) throws PreCheckException {
         final var account = mock(Account.class);
         given(account.key()).willReturn(key);
-        given(accountAccess.getAccountById(ACCOUNT_ID_3)).willReturn(account);
+        given(accountStore.getAccountById(ACCOUNT_ID_3)).willReturn(account);
         return key;
     }
 }
