@@ -116,19 +116,24 @@ public class IngestChecker {
         // will convert that to INVALID_TRANSACTION_BODY.
         assert functionality != HederaFunctionality.NONE;
 
-        // 2. Check throttles
+        // 2. Deduplicate
+        // TODO: Integrate solution from preHandle workflow once it is merged
+
+        // 3. Check throttles
         if (throttleAccumulator.shouldThrottle(transactionInfo.txBody())) {
             throw new PreCheckException(ResponseCodeEnum.BUSY);
         }
 
-        // 3. Check payer's signature
-        signaturePreparer.syncGetPayerSigStatus(tx);
-
-        // 4. Check account balance
+        // 4. Get payer account
         final AccountID payerID =
                 txBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
         solvencyPreCheck.checkPayerAccountStatus(state, payerID);
+
+        // 5. Check account balance
         solvencyPreCheck.checkSolvencyOfVerifiedPayer(state, tx);
+
+        // 6. Verify payer's signatures
+        signaturePreparer.syncGetPayerSigStatus(tx);
 
         return transactionInfo;
     }

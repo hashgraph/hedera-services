@@ -112,10 +112,11 @@ public class SwirldStateManagerImplTests {
     }
 
     private static SignedState newSignedState() {
-        final State state = newState();
-        final SignedState ss = new SignedState(state);
+        final SignedState ss = new RandomSignedStateGenerator().build();
         assertEquals(
-                1, state.getReservationCount(), "Creating a signed state should increment the state reference count.");
+                1,
+                ss.getSwirldState().getReservationCount(),
+                "Creating a signed state should increment the state reference count.");
         return ss;
     }
 }

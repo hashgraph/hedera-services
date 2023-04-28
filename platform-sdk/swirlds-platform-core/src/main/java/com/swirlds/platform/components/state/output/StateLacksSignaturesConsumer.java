@@ -16,24 +16,23 @@
 
 package com.swirlds.platform.components.state.output;
 
-import com.swirlds.platform.state.signed.SignedStateWrapper;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Invoked when a signed state fails to collect sufficient signatures before being ejected from memory.
  * <p>
- * The state within the {@link SignedStateWrapper} holds a reservation. The wiring layer must release the
- * {@link SignedStateWrapper} after all consumers have completed.
+ * The state within the {@link ReservedSignedState} holds a reservation. The wiring layer must release the
+ * {@link ReservedSignedState} after all consumers have completed.
  */
 @FunctionalInterface
 public interface StateLacksSignaturesConsumer {
 
     /**
      * A signed state is about to be ejected from memory and has not collected enough signatures to be complete.
-     * <p>
-     * The signed state holds a reservation for the duration of this call. Implementers must not release this
-     * reservation.
      *
-     * @param signedStateWrapper the wrapped signed state
+     * @param signedState the signed state
      */
-    void stateLacksSignatures(SignedStateWrapper signedStateWrapper);
+    void stateLacksSignatures(@NonNull SignedState signedState);
 }

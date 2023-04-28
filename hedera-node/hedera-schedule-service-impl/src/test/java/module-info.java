@@ -11,6 +11,7 @@ module com.hedera.node.app.service.schedule.impl.test {
     requires com.hedera.node.app.spi.fixtures;
     requires com.swirlds.common;
     requires org.assertj.core;
+    requires com.hedera.node.app.service.token;
 
     opens com.hedera.node.app.service.schedule.impl.test to
             org.junit.platform.commons,
