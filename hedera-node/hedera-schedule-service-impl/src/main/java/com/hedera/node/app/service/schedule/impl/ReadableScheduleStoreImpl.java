@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,11 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asPbjKey;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,60 +28,41 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with Schedules. If the scheduleID is valid and a schedule exists returns {@link
- * ScheduleVirtualValue}.
- *
- * <p>This class is not exported from the module. It is an internal implementation detail.
+ * Default implementation of {@link ReadableScheduleStore}.
  */
-public class ReadableScheduleStore {
+public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
     /** The underlying data storage class that holds the token data. */
     private final ReadableKVState<Long, ScheduleVirtualValue> schedulesById;
 
     /**
-     * Create a new {@link ReadableScheduleStore} instance.
+     * Create a new {@link ReadableScheduleStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableScheduleStore(@NonNull final ReadableStates states) {
+    public ReadableScheduleStoreImpl(@NonNull final ReadableStates states) {
         Objects.requireNonNull(states);
         this.schedulesById = states.get("SCHEDULES_BY_ID");
     }
 
-    /**
-     * Gets the schedule with the given {@link ScheduleID}. If there is no schedule with given ID
-     * returns {@link Optional#empty()}.
-     *
-     * @param id given id for the schedule
-     * @return the schedule with the given id
-     */
-    public Optional<ScheduleMetadata> get(final ScheduleID id) {
+    @Override
+    @NonNull
+    public Optional<ScheduleMetadata> get(@NonNull final ScheduleID id) {
         final var schedule = schedulesById.get(id.scheduleNum());
         if (schedule == null) {
             return Optional.empty();
         }
         final Key adminKey;
         if (schedule.hasAdminKey()) {
-            adminKey = asPbjKey(schedule.adminKey().get());
+            adminKey = PbjConverter.asPbjKey(schedule.adminKey().get());
         } else {
             adminKey = null;
         }
         return Optional.ofNullable(schedule)
                 .map(s -> new ScheduleMetadata(
                         adminKey,
-                        toPbj(schedule.ordinaryViewOfScheduledTxn()),
+                        PbjConverter.toPbj(schedule.ordinaryViewOfScheduledTxn()),
                         schedule.hasExplicitPayer()
                                 ? Optional.of(schedule.payer().toPbjAccountId())
                                 : Optional.empty()));
     }
-
-    /**
-     * Metadata about a schedule.
-     *
-     * @param adminKey admin key on the schedule
-     * @param scheduledTxn scheduled transaction
-     * @param designatedPayer payer for the schedule execution.If there is no explicit payer,
-     *     returns {@link Optional#empty()}.
-     */
-    public record ScheduleMetadata(Key adminKey, TransactionBody scheduledTxn, Optional<AccountID> designatedPayer) {}
 }

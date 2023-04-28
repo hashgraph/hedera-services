@@ -14,19 +14,27 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.admin.impl.components;
+package com.hedera.services.cli.sign;
 
-import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
-import dagger.Component;
-import javax.inject.Singleton;
+import java.nio.ByteBuffer;
 
-@Singleton
-@Component
-public interface AdminComponent {
-    @Component.Factory
-    interface Factory {
-        AdminComponent create();
+public class SignUtils {
+    /**
+     * next bytes are signature
+     */
+    public static final byte TYPE_SIGNATURE = 3;
+    /**
+     * next 48 bytes are hash384 of content of the file to be signed
+     */
+    public static final byte TYPE_FILE_HASH = 4;
+
+    private static final int BYTES_COUNT_IN_INT = 4;
+
+    private SignUtils() {}
+
+    public static byte[] integerToBytes(final int number) {
+        final ByteBuffer b = ByteBuffer.allocate(BYTES_COUNT_IN_INT);
+        b.putInt(number);
+        return b.array();
     }
-
-    FreezeHandler freezeHandler();
 }

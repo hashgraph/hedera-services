@@ -31,6 +31,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABL
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
@@ -296,6 +297,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private Set<Address> contractsWithSpecialHapiSigsAccess;
     private LegacyContractIdActivations legacyContractIdActivations;
     private int sumOfConsensusWeights;
+    private int cacheWarmThreads;
 
     @Inject
     public GlobalDynamicProperties(final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
@@ -447,6 +449,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         maxNumWithHapiSigsAccess = properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS);
         maxAutoAssociations = properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS);
         sumOfConsensusWeights = properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS);
+        cacheWarmThreads = properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS);
     }
 
     public int sumOfConsensusWeights() {
@@ -956,5 +959,9 @@ public class GlobalDynamicProperties implements EvmProperties {
     public long explicitAutoAssocSlotLifetime() {
         // If account auto-renew is disabled we use the SDK default auto-renew period for slot lifetime
         return expireAccounts ? 0 : THREE_MONTHS_IN_SECONDS;
+    }
+
+    public int cacheCryptoTransferWarmThreads() {
+        return cacheWarmThreads;
     }
 }
