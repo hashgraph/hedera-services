@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.onlyEcdsaKeys;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.intPropOrElse;
 
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -32,12 +33,10 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.TransferToRandomEVMAddress;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomContractCallSignedBy;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomContractCreateSignedBy;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccountDeletion;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomKey;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTokenAssociateSignedBy;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTransferSignedBy;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
@@ -99,12 +98,12 @@ public class AccountCompletionFuzzingFactory {
 
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
+                    .withInitialization(onlyEcdsaKeys())
                     .withOp(
-                            new RandomKey(keys)
+                            new RandomHollowAccount(spec.registry(), keys, accounts)
                                     .ceiling(intPropOrElse(
                                             "randomAccount.ceilingNum", RandomAccount.DEFAULT_CEILING_NUM, props)),
-                            intPropOrElse("randomKey.bias", 0, props))
-                    .withOp(new TransferToRandomEVMAddress(keys), intPropOrElse("randomAccount.bias", 0, props))
+                            intPropOrElse("randomAccount.bias", 0, props))
                     .withOp(
                             new RandomTransferSignedBy(spec.registry(), accounts),
                             intPropOrElse("randomTransfer.bias", 0, props))
