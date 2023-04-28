@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -125,7 +126,8 @@ public class TokenUpdateSpecs extends HapiSuite {
                 customFeesOnlyUpdatableWithKey(),
                 updateUniqueTreasuryWithNfts(),
                 updateHappyPath(),
-                safeToUpdateCustomFeesWithNewFallbackWhileTransferring());
+                safeToUpdateCustomFeesWithNewFallbackWhileTransferring(),
+                tokenUpdateCanClearMemo());
     }
 
     private HapiSpec validatesNewExpiry() {
@@ -542,6 +544,19 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(tokenUpdate("non-fungible")
                         .treasury("newTreasury")
                         .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES));
+    }
+
+    public HapiSpec tokenUpdateCanClearMemo() {
+        final var token = "token";
+        final var multiKey = "multiKey";
+        final var memoToBeErased = "memoToBeErased";
+        return onlyDefaultHapiSpec("TokenUpdateCanClearMemo")
+                .given(
+                        newKeyNamed(multiKey),
+                        tokenCreate(token).entityMemo(memoToBeErased).adminKey(multiKey),
+                        getTokenInfo(token).hasEntityMemo(memoToBeErased))
+                .when(tokenUpdate(token).entityMemo(""))
+                .then(getTokenInfo(token).logged().hasEntityMemo(""));
     }
 
     public HapiSpec updateNftTreasuryHappyPath() {
