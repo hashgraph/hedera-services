@@ -102,7 +102,7 @@ class ServicesIssListenerTest {
         given(issEventInfo.shouldLogThisRound()).willReturn(true);
         given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
         given(wrapper.get()).willReturn(state);
-        given(platform.getLatestImmutableState()).willReturn(wrapper);
+        given(platform.getLatestImmutableState(this.getClass().getName())).willReturn(wrapper);
 
         subject.notify(issNotification);
 
@@ -122,7 +122,7 @@ class ServicesIssListenerTest {
         given(issEventInfo.shouldLogThisRound()).willReturn(false);
         given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
         given(wrapper.get()).willReturn(state);
-        given(platform.getLatestImmutableState()).willReturn(wrapper);
+        given(platform.getLatestImmutableState(this.getClass().getName())).willReturn(wrapper);
 
         // when:
         subject.notify(issNotification);
