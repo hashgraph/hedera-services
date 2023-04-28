@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.fees;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 
-import com.hedera.node.app.fees.MonoGetTopicInfoUsage;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
