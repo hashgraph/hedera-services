@@ -26,6 +26,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -145,6 +146,7 @@ import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
@@ -314,7 +316,7 @@ class MonoTransactionDispatcherTest {
     private GlobalDynamicProperties dynamicProperties;
 
     @Mock
-    private WritableStoreFactory writableStoreFactory;
+    private WorkingStateWritableStoreFactory writableStoreFactory;
 
     @Mock
     private WritableTopicStore writableTopicStore;
@@ -573,6 +575,7 @@ class MonoTransactionDispatcherTest {
         given(cryptoCreateHandler.newRecordBuilder()).willReturn(createBuilder);
         given(createBuilder.getCreatedAccount()).willReturn(666L);
         given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 
         dispatcher.dispatchHandle(HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory);
 
@@ -580,6 +583,24 @@ class MonoTransactionDispatcherTest {
                 .setCreated(PbjConverter.fromPbj(
                         AccountID.newBuilder().accountNum(666L).build()));
         verify(writableAccountStore).commit();
+    }
+
+    @Test
+    void doesntCommitWhenUsageLimitsExceeded() {
+        final var createBuilder = mock(CreateAccountRecordBuilder.class);
+
+        given(cryptoCreateHandler.newRecordBuilder()).willReturn(createBuilder);
+        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(false);
+
+        assertThatThrownBy(() -> dispatcher.dispatchHandle(
+                        HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory))
+                .isInstanceOf(HandleException.class);
+
+        verify(txnCtx, never())
+                .setCreated(PbjConverter.fromPbj(
+                        AccountID.newBuilder().accountNum(666L).build()));
+        verify(writableAccountStore, never()).commit();
     }
 
     @Test

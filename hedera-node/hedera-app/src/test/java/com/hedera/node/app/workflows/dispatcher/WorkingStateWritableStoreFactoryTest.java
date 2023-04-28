@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -65,7 +65,7 @@ class WorkingStateWritableStoreFactoryTest {
     @Test
     void returnsTopicStore() {
         workingStateAccessor.setHederaState(state);
-        given(state.createWritableStates("ConsensusService")).willReturn(writableStates);
+        given(state.createWritableStates(ConsensusService.NAME)).willReturn(writableStates);
         final var store = subject.createTopicStore();
         assertNotNull(store);
     }
@@ -73,7 +73,7 @@ class WorkingStateWritableStoreFactoryTest {
     @Test
     void returnsTokenStore() {
         workingStateAccessor.setHederaState(state);
-        given(state.createWritableStates(TokenServiceImpl.TOKENS_KEY)).willReturn(writableStates);
+        given(state.createWritableStates(TokenService.NAME)).willReturn(writableStates);
         final var store = subject.createTokenStore();
         assertNotNull(store);
     }
@@ -81,7 +81,7 @@ class WorkingStateWritableStoreFactoryTest {
     @Test
     void returnsTokenRelStore() {
         workingStateAccessor.setHederaState(state);
-        given(state.createWritableStates(TokenServiceImpl.TOKEN_RELS_KEY)).willReturn(writableStates);
+        given(state.createWritableStates(TokenService.NAME)).willReturn(writableStates);
         final var store = subject.createTokenRelStore();
         assertNotNull(store);
     }
@@ -89,7 +89,7 @@ class WorkingStateWritableStoreFactoryTest {
     @Test
     void returnsAccountStore() {
         workingStateAccessor.setHederaState(state);
-        given(state.createWritableStates(TokenServiceImpl.ACCOUNTS_KEY)).willReturn(writableStates);
+        given(state.createWritableStates(TokenService.NAME)).willReturn(writableStates);
         final var store = subject.createAccountStore();
         assertNotNull(store);
     }
