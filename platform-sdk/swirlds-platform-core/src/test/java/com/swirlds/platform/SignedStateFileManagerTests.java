@@ -132,7 +132,8 @@ class SignedStateFileManagerTests {
      */
     private void validateSavingOfState(final SignedState originalState, final Path stateDirectory) throws IOException {
 
-        assertEquals(-1, originalState.getReservationCount(), "unexpected number of reservations");
+        assertEventuallyEquals(
+                -1, originalState::getReservationCount, Duration.ofSeconds(1), "invalid reservation count");
 
         final Path stateFile = stateDirectory.resolve(SignedStateFileUtils.SIGNED_STATE_FILE_NAME);
         final Path hashInfoFile = stateDirectory.resolve(SignedStateFileUtils.HASH_INFO_FILE_NAME);
@@ -144,17 +145,21 @@ class SignedStateFileManagerTests {
 
         assertEquals(-1, originalState.getReservationCount(), "invalid reservation count");
 
-        final DeserializedSignedState deserializedSignedState = readStateFile(stateFile);
+        final DeserializedSignedState deserializedSignedState =
+                readStateFile(TestPlatformContextBuilder.create().build(), stateFile);
         MerkleCryptoFactory.getInstance()
-                .digestTreeSync(deserializedSignedState.signedState().getState());
+                .digestTreeSync(
+                        deserializedSignedState.reservedSignedState().get().getState());
 
         assertNotNull(deserializedSignedState.originalHash(), "hash should not be null");
         assertNotSame(
-                deserializedSignedState.signedState(), originalState, "deserialized object should not be the same");
+                deserializedSignedState.reservedSignedState(),
+                originalState,
+                "deserialized object should not be the same");
 
         assertEquals(
                 originalState.getState().getHash(),
-                deserializedSignedState.signedState().getState().getHash(),
+                deserializedSignedState.reservedSignedState().get().getState().getHash(),
                 "hash should match");
         assertEquals(originalState.getState().getHash(), deserializedSignedState.originalHash(), "hash should match");
     }
@@ -169,7 +174,7 @@ class SignedStateFileManagerTests {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator().build();
@@ -177,9 +182,8 @@ class SignedStateFileManagerTests {
         final AtomicBoolean saveSucceeded = new AtomicBoolean(false);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        final StateToDiskAttemptConsumer consumer = (ssw, path, success) -> {
+        final StateToDiskAttemptConsumer consumer = (ss, path, success) -> {
             saveSucceeded.set(success);
-            ssw.release();
             latch.countDown();
         };
 
@@ -223,19 +227,17 @@ class SignedStateFileManagerTests {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator().build();
         ((DummySwirldState) signedState.getSwirldState()).enableBlockingSerialization();
 
         final AtomicBoolean finished = new AtomicBoolean(false);
-        final StateToDiskAttemptConsumer consumer = (ssw, path, success) -> {
-            if (signedState.getSwirldState() != ssw.get().getState().getSwirldState()) {
+        final StateToDiskAttemptConsumer consumer = (ss, path, success) -> {
+            if (signedState.getSwirldState() != ss.getState().getSwirldState()) {
                 return;
             }
-
-            ssw.release();
             finished.set(true);
         };
 
@@ -276,18 +278,16 @@ class SignedStateFileManagerTests {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator().build();
 
         final AtomicBoolean finished = new AtomicBoolean(false);
-        final StateToDiskAttemptConsumer consumer = (ssw, path, success) -> {
-            if (signedState.getSwirldState() != ssw.get().getState().getSwirldState()) {
+        final StateToDiskAttemptConsumer consumer = (ss, path, success) -> {
+            if (signedState.getSwirldState() != ss.getState().getSwirldState()) {
                 return;
             }
-
-            ssw.release();
             finished.set(true);
         };
 
@@ -375,9 +375,8 @@ class SignedStateFileManagerTests {
     @DisplayName("Max Capacity Test")
     void maxCapacityTest() {
         final AtomicInteger statesWritten = new AtomicInteger(0);
-        final StateToDiskAttemptConsumer consumer = (ssw, path, success) -> {
+        final StateToDiskAttemptConsumer consumer = (ss, path, success) -> {
             statesWritten.getAndIncrement();
-            ssw.release();
         };
 
         final int queueSize = 5;
@@ -385,7 +384,7 @@ class SignedStateFileManagerTests {
                 .withValue("state.stateSavingQueueSize", queueSize)
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final SignedStateFileManager manager = new SignedStateFileManager(
@@ -451,7 +450,7 @@ class SignedStateFileManagerTests {
                 .withValue("state.signedStateDisk", statesOnDisk)
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final int totalStates = 1000;
@@ -468,7 +467,7 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ssw, path, success) -> ssw.release(),
+                (ssw, path, success) -> {},
                 x -> {
                     assertTrue(x > minimumGenerationNonAncientSetByCallback.get());
                     minimumGenerationNonAncientSetByCallback.set(x);
@@ -509,8 +508,6 @@ class SignedStateFileManagerTests {
             final SignedState signedState = new RandomSignedStateGenerator(random)
                     .setConsensusTimestamp(timestamp)
                     .setRound(round)
-                    //                    .setMinimumGenerationNonAncient(random.nextLong((round + 1) * 100, (round + 1)
-                    // * 101)) // TODO
                     .build();
 
             manager.determineIfStateShouldBeSaved(signedState);
@@ -550,8 +547,12 @@ class SignedStateFileManagerTests {
                                 final SavedStateInfo savedStateInfo = currentStatesOnDisk[index];
 
                                 final SignedState stateFromDisk = assertDoesNotThrow(
-                                        () -> SignedStateFileReader.readStateFile(savedStateInfo.stateFile())
-                                                .signedState(),
+                                        () -> SignedStateFileReader.readStateFile(
+                                                        TestPlatformContextBuilder.create()
+                                                                .build(),
+                                                        savedStateInfo.stateFile())
+                                                .reservedSignedState()
+                                                .get(),
                                         "should be able to read state on disk");
 
                                 final SignedState originalState = savedStates.get(savedStates.size() - index - 1);
@@ -588,7 +589,7 @@ class SignedStateFileManagerTests {
                 .withValue("state.signedStateDisk", statesOnDisk)
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final int count = 10;
@@ -601,7 +602,7 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ssw, path, success) -> ssw.release(),
+                (ssw, path, success) -> {},
                 x -> {});
         manager.start();
 

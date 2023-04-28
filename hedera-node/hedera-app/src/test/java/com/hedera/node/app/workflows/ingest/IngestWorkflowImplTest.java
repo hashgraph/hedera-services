@@ -50,8 +50,6 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -106,12 +104,6 @@ class IngestWorkflowImplTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     SubmissionManager submissionManager;
 
-    @Mock(strictness = LENIENT)
-    Metrics metrics;
-
-    @Mock(strictness = LENIENT)
-    Counter countSubmitted;
-
     @BeforeEach
     void setup() throws PreCheckException {
         // The request buffer, with basically random bytes
@@ -128,7 +120,6 @@ class IngestWorkflowImplTest extends AppTestBase {
         // The state is going to always be empty
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
         // TODO Mock out the metrics to return objects we can inspect later
-        when(metrics.getOrCreate(any())).thenReturn(countSubmitted);
 
         // Mock out the onset to always return a valid parsed object
         transaction = Transaction.newBuilder().body(transactionBody).build();
@@ -142,25 +133,19 @@ class IngestWorkflowImplTest extends AppTestBase {
         when(ingestChecker.runAllChecks(state, transaction)).thenReturn(transactionInfo);
 
         // Create the workflow we are going to test with
-        workflow = new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, submissionManager, metrics);
+        workflow = new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, submissionManager);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(() ->
-                        new IngestWorkflowImpl(null, transactionChecker, ingestChecker, submissionManager, metrics))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(null, transactionChecker, ingestChecker, submissionManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, null, ingestChecker, submissionManager, metrics))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, null, ingestChecker, submissionManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new IngestWorkflowImpl(stateAccessor, transactionChecker, null, submissionManager, metrics))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, transactionChecker, null, submissionManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, null, metrics))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        stateAccessor, transactionChecker, ingestChecker, submissionManager, null))
+        assertThatThrownBy(() -> new IngestWorkflowImpl(stateAccessor, transactionChecker, ingestChecker, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -177,8 +162,6 @@ class IngestWorkflowImplTest extends AppTestBase {
         assertThat(response.cost()).isZero();
         // And that the transaction and its bytes were actually passed to the submission manager
         verify(submissionManager).submit(transactionBody, requestBuffer);
-        // And that the metrics for counting submitted transactions was incremented
-        verify(countSubmitted).increment();
     }
 
     @Nested
@@ -202,8 +185,6 @@ class IngestWorkflowImplTest extends AppTestBase {
             assertThat(response.cost()).isZero();
             // And the transaction was not submitted
             verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
         }
 
         @ParameterizedTest
@@ -229,8 +210,6 @@ class IngestWorkflowImplTest extends AppTestBase {
                 assertThat(response.cost()).isZero();
                 // And the transaction is not submitted to the platform
                 verify(submissionManager, never()).submit(any(), any());
-                // And the metrics for counting submitted transactions was not incremented
-                verify(countSubmitted, never()).increment();
             }
         }
     }
@@ -268,8 +247,6 @@ class IngestWorkflowImplTest extends AppTestBase {
             assertThat(response.cost()).isZero();
             // And the transaction is not submitted to the platform
             verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
         }
 
         @Test
@@ -284,8 +261,6 @@ class IngestWorkflowImplTest extends AppTestBase {
                     .hasMessageContaining("parseAndCheck exception");
             // And the transaction is not submitted to the platform
             verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
         }
     }
 
@@ -317,8 +292,6 @@ class IngestWorkflowImplTest extends AppTestBase {
             assertThat(response.cost()).isZero();
             // And the transaction is not submitted to the platform
             verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
         }
 
         @Test
@@ -334,8 +307,6 @@ class IngestWorkflowImplTest extends AppTestBase {
                     .hasMessageContaining("runAllChecks exception");
             // And the transaction is not submitted to the platform
             verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
         }
     }
 
@@ -359,8 +330,6 @@ class IngestWorkflowImplTest extends AppTestBase {
             assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
             // And the cost will be zero
             assertThat(response.cost()).isZero();
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
         }
 
         @Test
@@ -375,8 +344,6 @@ class IngestWorkflowImplTest extends AppTestBase {
             assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("submit exception");
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
         }
     }
 

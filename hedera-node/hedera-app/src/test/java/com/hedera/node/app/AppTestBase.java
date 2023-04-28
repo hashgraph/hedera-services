@@ -27,6 +27,8 @@ import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -43,20 +45,26 @@ public class AppTestBase extends TestBase implements TransactionFactory {
     protected final AccountID nodeSelfAccountId =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();
 
-    private final MetricsConfig metricsConfig = new MetricsConfig(1000, true, "", "", true, 1000 * 1000 * 1000, "");
-
     /**
-     * The gRPC system has extensive metrics. This object allows us to inspect them and make sure
-     * they are being set correctly for different types of calls.
+     * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
+     * correctly for different types of calls.
      */
-    protected Metrics metrics = new DefaultMetrics(
-            nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory(), metricsConfig);
+    protected final Metrics metrics;
 
-    protected Counter counterMetric(String name) {
+    public AppTestBase() {
+        final Configuration configuration = ConfigurationBuilder.create()
+                .withConfigDataType(MetricsConfig.class)
+                .build();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        this.metrics = new DefaultMetrics(
+                nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory(), metricsConfig);
+    }
+
+    protected Counter counterMetric(final String name) {
         return (Counter) metrics.getMetric("app", name);
     }
 
-    protected SpeedometerMetric speedometerMetric(String name) {
+    protected SpeedometerMetric speedometerMetric(final String name) {
         return (SpeedometerMetric) metrics.getMetric("app", name);
     }
 }

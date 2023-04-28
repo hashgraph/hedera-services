@@ -136,20 +136,6 @@ public class StateSettings extends SubSetting {
     public boolean enableHashStreamLogging = true; // NOSONAR: Value is modified and updated by reflection.
 
     /**
-     * If true, then enable extra debug code that tracks signed states. Very useful for debugging state leaks.
-     * This debug code is relatively expensive (it takes and stores stack traces when operations are
-     * performed on signed state objects).
-     */
-    public boolean signedStateSentinelEnabled = false;
-
-    /**
-     * Ignored if {@link #signedStateSentinelEnabled} is not true. The age of a signed state, in seconds, which is
-     * considered to be suspicious. Suspicious states cause a large amount of data to be logged that helps to
-     * debug the potential state leak.
-     */
-    public Duration suspiciousSignedStateAge = Duration.ofMinutes(5);
-
-    /**
      * It's possible to receive state signatures before it's time to process the round signed by the signature.
      * This is the maximum number of rounds, in the future, for which a node will accept a state signature.
      */

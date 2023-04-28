@@ -27,8 +27,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -37,16 +37,17 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     void preHandleScheduleCreateVanilla() throws PreCheckException {
-        final var subject = new ScheduleCreateHandler();
+        final var subject = new ScheduleCreateHandler(dispatcher);
         final var txn = scheduleCreateTransaction(payer);
 
-        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);
-        given(keyLookup.getAccountById(payer)).willReturn(payerAccount);
+        given(accountStore.getAccountById(payer)).willReturn(payerAccount);
         given(payerAccount.key()).willReturn(payerKey);
 
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, dispatcher);
+        final var context = new FakePreHandleContext(accountStore, txn);
+
+        subject.preHandle(context);
 
         basicContextAssertions(context, 1);
         assertEquals(schedulerKey, context.payerKey());
@@ -62,17 +63,18 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     void preHandleScheduleCreateVanillaNoAdmin() throws PreCheckException {
-        final var subject = new ScheduleCreateHandler();
+        final var subject = new ScheduleCreateHandler(dispatcher);
         final var txn = scheduleCreateTxnWith(
                 null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
 
-        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);
-        given(keyLookup.getAccountById(payer)).willReturn(payerAccount);
+        given(accountStore.getAccountById(payer)).willReturn(payerAccount);
         given(payerAccount.key()).willReturn(payerKey);
 
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, dispatcher);
+        final var context = new FakePreHandleContext(accountStore, txn);
+
+        subject.preHandle(context);
 
         basicContextAssertions(context, 0);
         assertEquals(schedulerKey, context.payerKey());
@@ -88,13 +90,14 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     void preHandleScheduleCreateUsesSamePayerIfScheduledPayerNotSet() throws PreCheckException {
-        final var subject = new ScheduleCreateHandler();
+        final var subject = new ScheduleCreateHandler(dispatcher);
         final var txn = scheduleCreateTransaction(null);
-        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);
 
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, dispatcher);
+        final var context = new FakePreHandleContext(accountStore, txn);
+
+        subject.preHandle(context);
 
         basicContextAssertions(context, 1);
         assertEquals(schedulerKey, context.payerKey());
@@ -110,13 +113,14 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     void failsWithScheduleTransactionNotInWhitelist() throws PreCheckException {
-        final var subject = new ScheduleCreateHandler();
+        final var subject = new ScheduleCreateHandler(dispatcher);
         final var txn = scheduleTxnNotRecognized();
-        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);
 
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, dispatcher);
+        final var context = new FakePreHandleContext(accountStore, txn);
+
+        subject.preHandle(context);
 
         basicContextAssertions(context, 0);
         assertEquals(schedulerKey, context.payerKey());
@@ -135,15 +139,16 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     void innerTxnFailsSetsStatus() throws PreCheckException {
-        final var subject = new ScheduleCreateHandler();
+        final var subject = new ScheduleCreateHandler(dispatcher);
         final var txn = scheduleCreateTransaction(payer);
 
-        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);
-        given(keyLookup.getAccountById(payer)).willReturn(null);
+        given(accountStore.getAccountById(payer)).willReturn(null);
 
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, dispatcher), UNRESOLVABLE_REQUIRED_SIGNERS);
+        final var context = new FakePreHandleContext(accountStore, txn);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), UNRESOLVABLE_REQUIRED_SIGNERS);
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {
