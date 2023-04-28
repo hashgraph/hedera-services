@@ -39,7 +39,7 @@ public class PerfTestLoadSettings {
     public static final int DEFAULT_TOTAL_TEST_TOPICS = 1;
     public static final int DEFAULT_TOTAL_TEST_TOKENS = 1;
     public static final int DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS = 2;
-    public static final int DEFAULT_TEST_TREASURE_START_ACCOUNT = 1001;
+    public static final int DEFAULT_TEST_TREASURE_START_ACCOUNT = 701;
     public static final int DEFAULT_TOTAL_TOKEN_ASSOCIATIONS = 0;
     public static final int DEFAULT_TOTAL_SCHEDULED = 0;
     public static final int DEFAULT_TOTAL_CLIENTS = 1;
