@@ -36,10 +36,9 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore.TokenMetadata;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -71,24 +70,12 @@ public class CryptoTransferHandler implements TransactionHandler {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    /**
-     * Pre-handles a {@link HederaFunctionality#CRYPTO_TRANSFER} transaction, returning the metadata
-     * required to, at minimum, validate the signatures of all required signing keys.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @param accountStore the {@link AccountAccess} to use to resolve keys
-     * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(
-            @NonNull final PreHandleContext context,
-            @NonNull final ReadableAccountStore accountStore,
-            @NonNull final ReadableTokenStore tokenStore)
-            throws PreCheckException {
-        requireNonNull(accountStore);
-        requireNonNull(tokenStore);
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
         final var op = context.body().cryptoTransferOrThrow();
+        final var accountStore = context.createStore(ReadableAccountStore.class);
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
         for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
             if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
@@ -124,7 +111,7 @@ public class CryptoTransferHandler implements TransactionHandler {
     private void checkFungibleTokenTransfers(
             @NonNull final List<AccountAmount> transfers,
             @NonNull final PreHandleContext ctx,
-            @NonNull final AccountAccess accountStore,
+            @NonNull final ReadableAccountStore accountStore,
             final boolean hbarTransfer)
             throws PreCheckException {
         // We're going to iterate over all the transfers in the transfer list. Each transfer is known as an

@@ -53,8 +53,7 @@ import java.util.Set;
  * <p>{@link #requireKey(Key)} is used to add a required non-payer signing key (remember, the payer signing
  * key was added when the context was created). Some basic validation is performed (the key cannot be null or empty).
  */
-public final class PreHandleContext {
-    private final ReadableStoreFactory storeFactory;
+public class PreHandleContext {
     /** Used to get keys for accounts and contracts. */
     private final AccountAccess accountAccess;
     /** The transaction body. */
@@ -82,22 +81,13 @@ public final class PreHandleContext {
      * @param accountAccess used to get keys for accounts and contracts
      * @param txn the transaction body
      * @throws PreCheckException if the payer account ID is invalid or the key is null
-     * @deprecated Use {@link #PreHandleContext(ReadableStoreFactory, TransactionBody)} instead.
+     * @deprecated This class will become an interface. If an instance is required for testing, use a mock instead.
      */
     @Deprecated(forRemoval = true)
     public PreHandleContext(@NonNull final AccountAccess accountAccess, @NonNull final TransactionBody txn)
             throws PreCheckException {
         this(
-                new ReadableStoreFactoryHack(accountAccess),
-                txn,
-                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
-                INVALID_PAYER_ACCOUNT_ID);
-    }
-
-    public PreHandleContext(@NonNull final ReadableStoreFactory storeFactory, @NonNull final TransactionBody txn)
-            throws PreCheckException {
-        this(
-                storeFactory,
+                accountAccess,
                 txn,
                 txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
                 INVALID_PAYER_ACCOUNT_ID);
@@ -105,16 +95,14 @@ public final class PreHandleContext {
 
     /** Create a new instance */
     private PreHandleContext(
-            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final AccountAccess accountAccess,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
             @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
-        this.storeFactory = requireNonNull(storeFactory, "The supplied argument 'storeFactory' cannot be null!");
+        this.accountAccess = requireNonNull(accountAccess, "The supplied argument 'accountAccess' cannot be null!");
         this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
         this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
-
-        this.accountAccess = storeFactory.createStore(AccountAccess.class);
 
         // Find the account, which must exist or throw a PreCheckException with the given response code.
         final var account = accountAccess.getAccountById(payer);
@@ -132,9 +120,13 @@ public final class PreHandleContext {
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
+    @SuppressWarnings("unchecked")
     @NonNull
     public <C> C createStore(@NonNull final Class<C> storeInterface) {
-        return storeFactory.createStore(storeInterface);
+        if (storeInterface == AccountAccess.class) {
+            return (C) accountAccess;
+        }
+        throw new IllegalArgumentException("Unknown store interface: " + storeInterface.getName());
     }
 
     /**
@@ -426,7 +418,7 @@ public final class PreHandleContext {
             @NonNull final AccountID payerForNested,
             @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
-        this.innerContext = new PreHandleContext(storeFactory, nestedTxn, payerForNested, responseCode);
+        this.innerContext = new PreHandleContext(accountAccess, nestedTxn, payerForNested, responseCode);
         return this.innerContext;
     }
 
@@ -448,46 +440,5 @@ public final class PreHandleContext {
                 + requiredNonPayerKeys + ", status="
                 + payerKey + ", innerContext="
                 + innerContext + '}';
-    }
-
-    /**
-     * A factory for creating readable stores.
-     *
-     * <p>This interface is only a temporary solution. In the future, we probably want to turn {@code PreHandleContext}
-     * into an interface and have the implementation in hedera-app. Unfortunately this cannot easily be done,
-     * because many unit-tests in services rely on implementation details of {@code PreHandleContext}.
-     */
-    public interface ReadableStoreFactory {
-
-        /**
-         * Create a new store given the store's interface. This gives read-only access to the store.
-         *
-         * @param storeInterface The store interface to find and create a store for
-         * @param <C> Interface class for a Store
-         * @return An implementation of the provided store interface
-         * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-         * @throws NullPointerException if {@code storeInterface} is {@code null}
-         */
-        @NonNull
-        <C> C createStore(@NonNull Class<C> storeInterface) throws IllegalArgumentException;
-    }
-
-    @Deprecated(forRemoval = true)
-    private static class ReadableStoreFactoryHack implements ReadableStoreFactory {
-        private final AccountAccess accountAccess;
-
-        private ReadableStoreFactoryHack(@NonNull final AccountAccess accountAccess) {
-            this.accountAccess = requireNonNull(accountAccess, "The supplied argument 'accountAccess' cannot be null!");
-        }
-
-        @Override
-        @NonNull
-        public <C> C createStore(@NonNull final Class<C> storeInterface) {
-            requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
-            if (storeInterface == AccountAccess.class) {
-                return (C) accountAccess;
-            }
-            throw new UnsupportedOperationException("Not implemented yet");
-        }
     }
 }

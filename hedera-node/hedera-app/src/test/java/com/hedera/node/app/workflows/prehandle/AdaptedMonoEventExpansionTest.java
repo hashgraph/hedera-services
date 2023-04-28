@@ -29,13 +29,13 @@ import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
+import java.util.Set;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import java.util.Set;
-import java.util.function.Consumer;
 
 @ExtendWith(MockitoExtension.class)
 class AdaptedMonoEventExpansionTest extends AppTestBase {
@@ -101,8 +101,7 @@ class AdaptedMonoEventExpansionTest extends AppTestBase {
         given(staticProperties.workflowsEnabled()).willReturn(workflows);
         given(nonsenseTxn.getContents()).willReturn("NONSENSE".getBytes());
         willAnswer(invocation -> {
-                    final Consumer<Transaction> consumer =
-                            invocation.getArgument(0);
+                    final Consumer<Transaction> consumer = invocation.getArgument(0);
                     consumer.accept(nonsenseTxn);
                     return null;
                 })
