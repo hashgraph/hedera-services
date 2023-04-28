@@ -117,7 +117,8 @@ public class SignedStateViewFactory {
      * @throws NoValidSignedStateException
      */
     private void doWithLatest(final Consumer<StateChildrenProvider> action) throws NoValidSignedStateException {
-        try (final AutoCloseableWrapper<SwirldState> wrapper = platform.getLatestImmutableState(this.getClass().getName())) {
+        try (final AutoCloseableWrapper<SwirldState> wrapper =
+                platform.getLatestImmutableState(this.getClass().getName())) {
             final var provider = (StateChildrenProvider) wrapper.get();
             if (!isUsable(provider)) {
                 throw new NoValidSignedStateException();

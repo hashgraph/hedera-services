@@ -55,7 +55,8 @@ public class ServicesIssListener implements IssListener {
         final long round = notice.getRound();
         final long otherNodeId = notice.getOtherNodeId();
         final String msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);
-        try (final AutoCloseableWrapper<ServicesState> wrapper = platform.getLatestImmutableState(this.getClass().getName() + " " + msg)) {
+        try (final AutoCloseableWrapper<ServicesState> wrapper =
+                platform.getLatestImmutableState(this.getClass().getName() + " " + msg)) {
             final ServicesState issState = wrapper.get();
             issEventInfo.alert(issState.getTimeOfLastHandledTxn());
             if (issEventInfo.shouldLogThisRound()) {
