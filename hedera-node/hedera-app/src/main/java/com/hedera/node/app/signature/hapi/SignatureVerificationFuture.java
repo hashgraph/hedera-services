@@ -183,22 +183,26 @@ class SignatureVerificationFuture implements Future<SignatureVerification> {
             throws InterruptedException, ExecutionException, TimeoutException {
         var millisRemaining = unit.toMillis(timeout);
         for (final var txSig : sigs.values()) {
-            // Figure out how many milliseconds we still have remaining before timing out
-            final var now = System.currentTimeMillis();
-            millisRemaining -= System.currentTimeMillis() - now;
-            if (millisRemaining <= 0) {
-                // If there was no time left, then TimeoutException
-                throw new TimeoutException("Timed out waiting for signature verification to complete");
-            } else if (txSig.getFuture() == null) {
-                // If there was time left, but we didn't yet have a Future on the TransactionSignature, then
-                // rather than blocking in a tight loop (like we do for "get"), we have to just wait a bit and
-                // check for timeout and try again. That way, we can still time out.
-                Thread.sleep(1);
-            } else {
-                // We now the maximum number of millis we can wait, so we block for at most that long. If it takes
-                // longer, the future we delegate to here will throw. If it takes less, we recompute how much is
-                // remaining on the next iteration.
-                txSig.getFuture().get(millisRemaining, TimeUnit.MILLISECONDS);
+            boolean futureReady = false;
+            while (!futureReady) {
+                // Figure out how many milliseconds we still have remaining before timing out
+                final var now = System.currentTimeMillis();
+                millisRemaining -= System.currentTimeMillis() - now;
+                if (millisRemaining <= 0) {
+                    // If there was no time left, then TimeoutException
+                    throw new TimeoutException("Timed out waiting for signature verification to complete");
+                } else if (txSig.getFuture() == null) {
+                    // If there was time left, but we didn't yet have a Future on the TransactionSignature, then
+                    // rather than blocking in a tight loop (like we do for "get"), we have to just wait a bit and
+                    // check for timeout and try again. That way, we can still time out.
+                    Thread.sleep(1);
+                } else {
+                    // We know the maximum number of millis we can wait, so we block for at most that long. If it takes
+                    // longer, the future we delegate to here will throw. If it takes less, we recompute how much is
+                    // remaining on the next iteration.
+                    txSig.getFuture().get(millisRemaining, TimeUnit.MILLISECONDS);
+                    futureReady = true;
+                }
             }
         }
 

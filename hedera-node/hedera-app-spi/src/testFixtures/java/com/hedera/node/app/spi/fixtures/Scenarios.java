@@ -255,6 +255,18 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ED25519_KEY_INFOS[1]);
 
+    TestUser CAROL = new TestUser(
+            AccountID.newBuilder().accountNum(1004L).build(),
+            Account.newBuilder()
+                    .accountNumber(1004L)
+                    .key(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey())
+                    .alias(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]
+                            .publicKey()
+                            .ecdsaSecp256k1OrThrow()
+                            .slice(0, 20)) // Not true
+                    .build(),
+            FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]);
+
     TestUser ERIN = new TestUser(
             AccountID.newBuilder().accountNum(1006L).build(),
             Account.newBuilder()
