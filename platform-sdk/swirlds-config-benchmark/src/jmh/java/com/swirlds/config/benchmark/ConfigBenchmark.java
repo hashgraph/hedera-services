@@ -75,7 +75,7 @@ public class ConfigBenchmark {
     public void reset() {
         try {
             fileSystem.close();
-        } catch (IOException ignored) {
+        } catch (final IOException ignored) {
             // Intentionally ignored
         }
     }
@@ -111,5 +111,6 @@ public class ConfigBenchmark {
     }
 
     @ConfigData("app")
-    public record AppConfig(String name, int version) {}
+    public record AppConfig(String name, int version) {
+    }
 }

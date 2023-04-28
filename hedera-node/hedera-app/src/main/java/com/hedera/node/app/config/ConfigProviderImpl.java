@@ -24,6 +24,7 @@ import com.hedera.node.app.config.converter.LegacyContractIdActivationsConverter
 import com.hedera.node.app.config.converter.MapAccessTypeConverter;
 import com.hedera.node.app.config.converter.RecomputeTypeConverter;
 import com.hedera.node.app.config.converter.ScaleFactorConverter;
+import com.hedera.node.app.config.dynamic.DynamicConfigSource;
 import com.hedera.node.app.config.internal.VersionedConfigImpl;
 import com.hedera.node.app.config.source.PropertySourceBasedConfigSource;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -60,6 +61,8 @@ public class ConfigProviderImpl implements ConfigProvider {
 
     private final AutoClosableLock updateLock = Locks.createAutoLock();
 
+    private final DynamicConfigSource dynamicConfigSource = new DynamicConfigSource();
+
     /**
      * Constructor.
      *
@@ -75,8 +78,9 @@ public class ConfigProviderImpl implements ConfigProvider {
      * This method must be called if a property has changed. It will update the configuration and increase the version.
      * This should happen whenever {@link GlobalDynamicProperties#reload()} is called.
      */
-    public void update() {
+    public void update(@NonNull final String name, @NonNull final String value) {
         try (final var lock = updateLock.lock()) {
+            dynamicConfigSource.setProperty(name, value);
             final Configuration config = createConfiguration();
             final VersionedConfiguration versionedConfig =
                     new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1);
@@ -87,6 +91,7 @@ public class ConfigProviderImpl implements ConfigProvider {
     private Configuration createConfiguration() {
         return ConfigurationBuilder.create()
                 .withSource(new PropertySourceBasedConfigSource(propertySource))
+                .withSource(dynamicConfigSource)
                 .withConverter(new CongestionMultipliersConverter())
                 .withConverter(new EntityScaleFactorsConverter())
                 .withConverter(new EntityTypeConverter())

@@ -242,12 +242,30 @@ class ConfigProviderImplTest {
 
         // when
         final var configuration1 = configProvider.getConfiguration();
-        configProvider.update();
+        configProvider.update("name", "value");
         final var configuration2 = configProvider.getConfiguration();
 
         // then
         assertThat(configuration1).isNotSameAs(configuration2);
         assertThat(configuration1).returns(0L, VersionedConfiguration::getVersion);
         assertThat(configuration2).returns(1L, VersionedConfiguration::getVersion);
+    }
+
+    @Test
+    void testUpdatedValue() {
+        // given
+        final var configProvider = new ConfigProviderImpl(propertySource);
+        final var configuration1 = configProvider.getConfiguration();
+        final NodeConfig nodeConfig1 = configuration1.getConfigData(NodeConfig.class);
+
+        // when
+        configProvider.update("port", "8080");
+        final var configuration2 = configProvider.getConfiguration();
+        final NodeConfig nodeConfig2 = configuration2.getConfigData(NodeConfig.class);
+
+        // then
+        assertThat(nodeConfig1).isNotSameAs(nodeConfig2);
+        assertThat(nodeConfig1).returns(1, NodeConfig::port);
+        assertThat(nodeConfig2).returns(8080, NodeConfig::port);
     }
 }
