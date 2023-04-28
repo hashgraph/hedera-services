@@ -129,6 +129,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private static final String TRANSFER = String.format(FAILURE_MESSAGE, "transfer");
     private static final String CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN =
             "Change {} switched to approval without matching adjustment in {}";
+    private static final String CHANGE_SWITCHED_TO_APPROVAL_MATCHED_CREDIT_IN =
+            "Change {} switched to approval but matched credit in {}";
     private final HederaStackedWorldStateUpdater updater;
     private final EvmSigsVerifier sigsVerifier;
     private final int functionId;
@@ -730,7 +732,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         for (int i = 0, n = transfersBuilder.getAccountAmountsCount(); i < n; i++) {
             final var hbarAdjust = transfersBuilder.getAccountAmountsBuilder(i);
             if (hbarAdjust.getAccountID().equals(switchedChange.accountId())) {
-                hbarAdjust.setIsApproval(true);
+                if (hbarAdjust.getAmount() < 0) {
+                    hbarAdjust.setIsApproval(true);
+                } else {
+                    log.warn(CHANGE_SWITCHED_TO_APPROVAL_MATCHED_CREDIT_IN, switchedChange, opBuilder);
+                }
                 return;
             }
         }
@@ -780,10 +786,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         for (int j = 0, m = tokenTransfers.getTransfersCount(); j < m; j++) {
             final var adjust = tokenTransfers.getTransfers(j);
             if (adjust.getAccountID().equals(switchedChange.accountId())) {
-                opBuilder
-                        .getTokenTransfersBuilder(tokenTransfersIndex)
-                        .getTransfersBuilder(j)
-                        .setIsApproval(true);
+                if (adjust.getAmount() < 0) {
+                    opBuilder
+                            .getTokenTransfersBuilder(tokenTransfersIndex)
+                            .getTransfersBuilder(j)
+                            .setIsApproval(true);
+                } else {
+                    log.warn(CHANGE_SWITCHED_TO_APPROVAL_MATCHED_CREDIT_IN, switchedChange, opBuilder);
+                }
                 return;
             }
         }

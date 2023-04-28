@@ -50,6 +50,24 @@ class SynthApprovalRecordsTest {
     }
 
     @Test
+    void doesntUpdateHbarAutoApprovalsIfMatchIsCredit() {
+        final var amount = 10;
+        final var debited = IdUtils.asModelId("0.0.3");
+        final var payer = IdUtils.asModelId("0.0.5");
+        final var aaDebit = aaWith(debited.asGrpcAccount(), -amount).build();
+        final var aaCredit = aaWith(debited.asGrpcAccount(), +amount).build();
+        final var hbarAdjust = BalanceChange.changingHbar(aaDebit, payer.asGrpcAccount());
+        final var synthOp = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(TransferList.newBuilder().addAccountAmounts(aaCredit));
+        final var unapprovedSynthOp = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(TransferList.newBuilder().addAccountAmounts(aaCredit));
+
+        updateSynthOpForAutoApprovalOf(synthOp, hbarAdjust);
+
+        assertEquals(unapprovedSynthOp.build(), synthOp.build());
+    }
+
+    @Test
     void updatesNoHbarAutoApprovalsIfNoneMatch() {
         final var amount = 10;
         final var debited = IdUtils.asModelId("0.0.3");
@@ -95,6 +113,36 @@ class SynthApprovalRecordsTest {
         updateSynthOpForAutoApprovalOf(synthOp, tokenDebit);
 
         assertEquals(approvedSynthOp.build(), synthOp.build());
+    }
+
+    @Test
+    void doesntUpdateFungibleAutoApprovalsIfMatchesCredit() {
+        final var amount = 10;
+        final var debited = IdUtils.asModelId("0.0.3");
+        final var credited = IdUtils.asModelId("0.0.6");
+        final var payer = IdUtils.asModelId("0.0.5");
+        final var tokenId = IdUtils.asModelId("0.0.4");
+        final var otherTokenId = IdUtils.asModelId("0.0.7");
+        final var tokenDebit =
+                BalanceChange.tokenAdjust(debited, tokenId, -amount, payer.asGrpcAccount(), false, false);
+        final var synthOp = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder().setToken(otherTokenId.asGrpcToken()))
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(tokenId.asGrpcToken())
+                        .addTransfers(aaWith(credited.asGrpcAccount(), +amount))
+                        // Clearly should be impossible, just to cover the warning log
+                        .addTransfers(aaWith(debited.asGrpcAccount(), +amount)));
+        final var unapprovedSynthOp = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder().setToken(otherTokenId.asGrpcToken()))
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(tokenId.asGrpcToken())
+                        .addTransfers(aaWith(credited.asGrpcAccount(), +amount))
+                        // Clearly should be impossible, just to cover the warning log
+                        .addTransfers(aaWith(debited.asGrpcAccount(), +amount)));
+
+        updateSynthOpForAutoApprovalOf(synthOp, tokenDebit);
+
+        assertEquals(unapprovedSynthOp.build(), synthOp.build());
     }
 
     @Test
