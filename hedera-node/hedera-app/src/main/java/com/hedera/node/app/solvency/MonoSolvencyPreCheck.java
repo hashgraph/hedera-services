@@ -67,4 +67,14 @@ public class MonoSolvencyPreCheck implements SolvencyPreCheck {
             throw new InsufficientBalanceException(validity, solvencySummary.getRequiredFee());
         }
     }
+
+    @Override
+    public void assessWithSvcFees(@NonNull Transaction transaction) throws PreCheckException {
+        final var accessor = SignedTxnAccessor.uncheckedFrom(transaction);
+        final var solvencyStatus = delegate.assessWithSvcFees(accessor);
+        final var validity = PbjConverter.toPbj(solvencyStatus.getValidity());
+        if (validity != OK) {
+            throw new PreCheckException(validity);
+        }
+    }
 }
