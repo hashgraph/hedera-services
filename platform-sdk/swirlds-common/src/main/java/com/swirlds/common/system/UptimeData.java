@@ -29,7 +29,7 @@ public interface UptimeData {
     /**
      * The round reported if no events have been observed.
      */
-    int NO_ROUND = -1;
+    long NO_ROUND = -1;
 
     /**
      * Get the consensus time when the most recent consensus event from the given node was observed, or null if no

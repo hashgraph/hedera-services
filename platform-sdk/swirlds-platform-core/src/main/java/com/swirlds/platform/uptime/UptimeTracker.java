@@ -84,7 +84,7 @@ public class UptimeTracker { // TODO test
      * @param uptimeData the uptime data that is in the current round's state, is modified by this method
      */
     public void handleRound(
-            @NonNull final Round round,
+            @NonNull final ConsensusRound round,
             @NonNull final MutableUptimeData uptimeData,
             @NonNull final AddressBook addressBook) {
 
@@ -99,7 +99,7 @@ public class UptimeTracker { // TODO test
         final Map<Long, ConsensusEvent> judgesByCreator = new HashMap<>();
         scanRound(round, lastEventsInRoundByCreator, judgesByCreator);
         updateState(addressBook, uptimeData, lastEventsInRoundByCreator, judgesByCreator);
-        reportUptime(uptimeData, ((ConsensusRound) round).getLastEvent().getConsensusTimestamp(), round.getRoundNum());
+        reportUptime(uptimeData, round.getLastEvent().getConsensusTimestamp(), round.getRoundNum());
 
         final Instant end = time.now();
         final Duration elapsed = Duration.between(start, end);
