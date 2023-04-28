@@ -18,7 +18,8 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount.ACCOUNT_SUFFIX;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
@@ -39,8 +40,10 @@ abstract class RandomOperationSignedBy<T extends HapiTxnOp<T>> implements OpProv
 
     private final RegistrySourcedNameProvider<AccountID> accounts;
 
-    private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(BUSY, PAYER_ACCOUNT_NOT_FOUND);
-    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+    private final ResponseCodeEnum[] permissiblePrechecks =
+            standardPrechecksAnd(PAYER_ACCOUNT_NOT_FOUND, ACCOUNT_DELETED);
+    private final ResponseCodeEnum[] permissibleOutcomes =
+            standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, ACCOUNT_DELETED, PAYER_ACCOUNT_DELETED);
 
     protected RandomOperationSignedBy(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         this.registry = registry;
@@ -60,6 +63,7 @@ abstract class RandomOperationSignedBy<T extends HapiTxnOp<T>> implements OpProv
         final var key = account.replaceAll(ACCOUNT_SUFFIX + "$", "");
         final AccountID fromAccount = registry.getAccountID(account);
         registry.saveAccountId(key, fromAccount);
+        registry.saveKey(account, registry.getKey(key)); // needed for HapiTokenAssociate.defaultSigners()
         return key;
     }
 
