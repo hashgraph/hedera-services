@@ -17,7 +17,6 @@
 package com.hedera.services.cli.sign.test;
 
 import com.swirlds.platform.util.FileSigningUtils;
-
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.KeyPair;

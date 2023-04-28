@@ -34,6 +34,11 @@ public final class RecordStreamType implements StreamType {
      */
     private static final String RECORD_STREAM_EXTENSION = "rcd";
     /**
+     * file name extension with gz
+     */
+    private static final String RECORD_STREAM_GZ_EXTENSION = "rcd.gz";
+
+    /**
      * file name extension of signature file
      */
     private static final String RECORD_STREAM_SIG_EXTENSION = "rcd_sig";
@@ -82,5 +87,9 @@ public final class RecordStreamType implements StreamType {
     @Override
     public byte[] getSigFileHeader() {
         return RECORD_STREAM_SIG_FILE_HEADER;
+    }
+
+    public boolean isGzFile(final String fileName) {
+        return fileName.endsWith(RECORD_STREAM_GZ_EXTENSION);
     }
 }

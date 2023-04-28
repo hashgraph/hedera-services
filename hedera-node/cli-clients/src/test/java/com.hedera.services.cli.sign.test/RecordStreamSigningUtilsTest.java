@@ -19,17 +19,15 @@ package com.hedera.services.cli.sign.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.cli.sign.RecordStreamSigningUtils;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mock;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
 
 public class RecordStreamSigningUtilsTest {
     @Mock
