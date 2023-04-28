@@ -16,6 +16,5 @@ module com.hedera.node.app.service.admin.impl {
             com.hedera.node.app,
             com.hedera.node.app.service.admin.impl.test;
     exports com.hedera.node.app.service.admin.impl.handlers;
-    exports com.hedera.node.app.service.admin.impl.components;
     exports com.hedera.node.app.service.admin.impl.codec;
 }
