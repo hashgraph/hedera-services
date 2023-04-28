@@ -127,11 +127,20 @@ public class BiasedDelegatingProvider implements OpProvider {
         if (shouldAlwaysDefer && isTxnOp) {
             ((HapiTxnOp) op).deferStatusResolution();
         }
+
+        if (op.getPayer().isEmpty()) {
+            if (isTxnOp) {
+                ((HapiTxnOp) op).payingWith(UNIQUE_PAYER_ACCOUNT).fee(TRANSACTION_FEE);
+            } else if (isQueryOp(op)) {
+                ((HapiQueryOp) op).payingWith(UNIQUE_PAYER_ACCOUNT);
+            }
+        }
+
         if (!shouldLogNormalFlow) {
             if (isTxnOp) {
-                ((HapiTxnOp) op).noLogging().payingWith(UNIQUE_PAYER_ACCOUNT).fee(TRANSACTION_FEE);
+                ((HapiTxnOp) op).noLogging();
             } else if (isQueryOp(op)) {
-                ((HapiQueryOp) op).noLogging().payingWith(UNIQUE_PAYER_ACCOUNT);
+                ((HapiQueryOp) op).noLogging();
             }
         }
     }
