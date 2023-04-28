@@ -32,6 +32,7 @@ import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -72,8 +73,8 @@ class CriticalQuorumTest {
      * Build an event containing just the data required for this test.
      */
     private static EventImpl buildSimpleEvent(final long creatorId, final long roundCreated) {
-        final BaseEventHashedData baseEventHashedData =
-                new BaseEventHashedData(new BasicSoftwareVersion(1), creatorId, 0, 0, (byte[]) null, null, null, null);
+        final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
+                new BasicSoftwareVersion(1), creatorId, 0, 0, (byte[]) null, null, Instant.now(), null);
 
         final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData();
 
