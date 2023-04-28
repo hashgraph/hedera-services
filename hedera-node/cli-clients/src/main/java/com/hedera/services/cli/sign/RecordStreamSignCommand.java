@@ -34,7 +34,7 @@ public final class RecordStreamSignCommand extends SignCommand {
             names = {"-hv", "--hapiVersion"},
             arity = "1",
             description =
-                    "Hapi protobuf version. This is the hapi-version value ins hedera-serviecs/settings.gradle.kts. Mandatory!")
+                    "Hapi protobuf version. This is the hapi-version value in hedera-serviecs/settings.gradle.kts. Mandatory!")
     String hapiVersion;
     /**
      * {@inheritDoc}
