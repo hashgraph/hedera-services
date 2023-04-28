@@ -18,11 +18,14 @@ package com.hedera.services.cli.sign;
 
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.platform.cli.SignCommand;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Path;
-import java.security.KeyPair;
+
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
+
+import java.nio.file.Path;
+import java.security.KeyPair;
 
 /**
  * A subcommand of the {@link SignCommand}, for signing record stream files
@@ -53,5 +56,9 @@ public final class RecordStreamSignCommand extends SignCommand {
     @Override
     public boolean isFileSupported(@NonNull final Path path) {
         return RecordStreamType.getInstance().isStreamFile(path.toFile());
+    }
+
+    public void setHapiVersion(String hapiVersion) {
+        this.hapiVersion = hapiVersion;
     }
 }
