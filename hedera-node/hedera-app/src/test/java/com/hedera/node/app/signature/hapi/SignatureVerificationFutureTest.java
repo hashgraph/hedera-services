@@ -24,6 +24,10 @@ import static org.junit.jupiter.api.Named.named;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.spi.fixtures.Scenarios;
+import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.crypto.VerificationStatus;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
@@ -32,10 +36,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
-import com.hedera.node.app.spi.fixtures.Scenarios;
-import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.crypto.VerificationStatus;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -76,7 +76,8 @@ final class SignatureVerificationFutureTest implements Scenarios {
         final var future = new SignatureVerificationFuture(key, null, allSucceed);
 
         // Then we find that the SignatureVerificationResult is done, and returns "true" from its get methods
-        assertThat(future).succeedsWithin(1, TimeUnit.MILLISECONDS)
+        assertThat(future)
+                .succeedsWithin(1, TimeUnit.MILLISECONDS)
                 .extracting("passed")
                 .isEqualTo(true);
         assertThat(future.isDone()).isTrue();
@@ -100,7 +101,8 @@ final class SignatureVerificationFutureTest implements Scenarios {
         complete(sigs.get(BOB.keyInfo().publicKey()), true);
         assertThat(future).isNotDone();
         complete(sigs.get(CAROL.keyInfo().publicKey()), true);
-        assertThat(future).succeedsWithin(1, TimeUnit.MILLISECONDS)
+        assertThat(future)
+                .succeedsWithin(1, TimeUnit.MILLISECONDS)
                 .extracting("passed")
                 .isEqualTo(true);
         assertThat(future.isDone()).isTrue();
@@ -131,7 +133,8 @@ final class SignatureVerificationFutureTest implements Scenarios {
         final var future = new SignatureVerificationFuture(key, null, anyFail);
 
         // Then we find that the result is "done" and returns "false" from its get methods
-        assertThat(future).succeedsWithin(1, TimeUnit.MILLISECONDS)
+        assertThat(future)
+                .succeedsWithin(1, TimeUnit.MILLISECONDS)
                 .extracting("passed")
                 .isEqualTo(false);
         assertThat(future.isDone()).isTrue();
@@ -152,7 +155,8 @@ final class SignatureVerificationFutureTest implements Scenarios {
         // Then we find that it was not canceled and didn't pretend to
         assertThat(wasCanceled).isFalse();
         assertThat(future.isCancelled()).isFalse();
-        assertThat(future).succeedsWithin(1, TimeUnit.MILLISECONDS)
+        assertThat(future)
+                .succeedsWithin(1, TimeUnit.MILLISECONDS)
                 .extracting("passed")
                 .isEqualTo(true);
         assertThat(future.isDone()).isTrue();
@@ -183,36 +187,44 @@ final class SignatureVerificationFutureTest implements Scenarios {
 
     private static Key keyListFrom(@NonNull final Set<Key> keys) {
         return Key.newBuilder()
-                .keyList(KeyList.newBuilder()
-                        .keys(new ArrayList<>(keys)))
+                .keyList(KeyList.newBuilder().keys(new ArrayList<>(keys)))
                 .build();
     }
 
     public static Stream<Arguments> provideSuccessfulFutures() {
         return Stream.of(
                 Arguments.of(named("Keys: Alice", Map.of(ALICE.keyInfo().publicKey(), txSig(true)))),
-                Arguments.of(named("Keys: Alice, Bob", Map.of(
-                        ALICE.keyInfo().publicKey(), txSig(true),
-                        BOB.keyInfo().publicKey(), txSig(true)))),
-                Arguments.of(named("Keys: Alice, Bob, Carol", Map.of(
-                        ALICE.keyInfo().publicKey(), txSig(true),
-                        BOB.keyInfo().publicKey(), txSig(true),
-                        CAROL.keyInfo().publicKey(), txSig(true)))));
+                Arguments.of(named(
+                        "Keys: Alice, Bob",
+                        Map.of(
+                                ALICE.keyInfo().publicKey(), txSig(true),
+                                BOB.keyInfo().publicKey(), txSig(true)))),
+                Arguments.of(named(
+                        "Keys: Alice, Bob, Carol",
+                        Map.of(
+                                ALICE.keyInfo().publicKey(), txSig(true),
+                                BOB.keyInfo().publicKey(), txSig(true),
+                                CAROL.keyInfo().publicKey(), txSig(true)))));
     }
 
     public static Stream<Arguments> provideFailingFutures() {
         return Stream.of(
-                Arguments.of(named("Keys: Alice (bad)",
-                        Map.of(ALICE.keyInfo().publicKey(), txSig(false)))),
-                Arguments.of(named("Keys: Alice (good), Bob (bad)", Map.of(
-                        ALICE.keyInfo().publicKey(), txSig(true),
-                        BOB.keyInfo().publicKey(), txSig(false)))),
-                Arguments.of(named("Keys: Alice (bad), Bob (good)", Map.of(
-                        ALICE.keyInfo().publicKey(), txSig(false),
-                        BOB.keyInfo().publicKey(), txSig(true)))),
-                Arguments.of(named("Keys: Alice (bad), Bob (bad)", Map.of(
-                        ALICE.keyInfo().publicKey(), txSig(false),
-                        BOB.keyInfo().publicKey(), txSig(false)))));
+                Arguments.of(named("Keys: Alice (bad)", Map.of(ALICE.keyInfo().publicKey(), txSig(false)))),
+                Arguments.of(named(
+                        "Keys: Alice (good), Bob (bad)",
+                        Map.of(
+                                ALICE.keyInfo().publicKey(), txSig(true),
+                                BOB.keyInfo().publicKey(), txSig(false)))),
+                Arguments.of(named(
+                        "Keys: Alice (bad), Bob (good)",
+                        Map.of(
+                                ALICE.keyInfo().publicKey(), txSig(false),
+                                BOB.keyInfo().publicKey(), txSig(true)))),
+                Arguments.of(named(
+                        "Keys: Alice (bad), Bob (bad)",
+                        Map.of(
+                                ALICE.keyInfo().publicKey(), txSig(false),
+                                BOB.keyInfo().publicKey(), txSig(false)))));
     }
 
     public static TransactionSignature txSig(boolean passed) {
