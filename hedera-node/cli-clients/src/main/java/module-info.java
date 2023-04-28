@@ -9,8 +9,6 @@ module com.hedera.services.cli {
     requires com.swirlds.platform;
     requires com.swirlds.common;
     requires info.picocli;
-    requires org.apache.logging.log4j;
-    requires com.swirlds.logging;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires org.apache.commons.lang3;
     requires com.hedera.node.app.hapi.utils;
