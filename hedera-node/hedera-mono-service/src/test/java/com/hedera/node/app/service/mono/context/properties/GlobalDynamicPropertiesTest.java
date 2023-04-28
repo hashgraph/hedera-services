@@ -30,6 +30,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABL
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
@@ -281,6 +282,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(78, subject.recordFileVersion());
         assertEquals(79, subject.recordSignatureFileVersion());
         assertEquals(98, subject.sumOfConsensusWeights());
+        assertEquals(99, subject.cacheCryptoTransferWarmThreads());
     }
 
     @Test
@@ -457,6 +459,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(80, subject.recordSignatureFileVersion());
         assertEquals(90, subject.getSidecarMaxSizeMb());
         assertEquals(99, subject.sumOfConsensusWeights());
+        assertEquals(100, subject.cacheCryptoTransferWarmThreads());
     }
 
     @Test
@@ -693,6 +696,7 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 95) % 2 == 0);
         given(properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS)).willReturn(i + 96);
         given(properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS)).willReturn(i + 97);
+        given(properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS)).willReturn(i + 98);
     }
 
     private Set<EntityType> typesFor(final int i) {
