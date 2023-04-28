@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_I
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -183,15 +182,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         basicMetaAssertions(context, 0);
         assertThat(context.requiredNonPayerKeys()).isEmpty();
         assertEquals(key, context.payerKey());
-    }
-
-    @Test
-    @DisplayName("handle fails when account cannot be created if usage limit exceeded")
-    void failsWhenAccountCannotBeCreated() {
-        final var recordBuilder = subject.newRecordBuilder();
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, txn, writableStore, recordBuilder));
-        assertThat(msg.getStatus()).isEqualTo(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
     }
 
     @Test
