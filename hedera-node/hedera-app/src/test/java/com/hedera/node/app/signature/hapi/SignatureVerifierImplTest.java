@@ -769,6 +769,7 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
         @DisplayName("If the hollow account signature was found but invalid then fail")
         void failIfCryptoEngineSaysTheSignatureWasBad() throws Exception {
             final var hollowAccount = Account.newBuilder()
+                    .accountNumber(1001)
                     .alias(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].alias())
                     .build();
             doAnswer(SignatureVerifierImplTest::invalid)
@@ -842,6 +843,7 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
         void verifyHappyPath() throws Exception {
             doAnswer(SignatureVerifierImplTest::valid).when(cryptoEngine).verifyAsync(any(TransactionSignature.class));
             final var hollowAccount = Account.newBuilder()
+                    .accountNumber(1001)
                     .alias(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].alias())
                     .build();
             final var sigPairs = signatures(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]);

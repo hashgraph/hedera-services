@@ -157,7 +157,7 @@ class QueryCheckerTest {
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, Bytes.EMPTY, CONSENSUS_CREATE_TOPIC);
 
         // then
         assertThatThrownBy(() -> checker.validateAccountBalances(null, transactionInfo, 0L))
@@ -184,7 +184,7 @@ class QueryCheckerTest {
                 .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, Bytes.EMPTY, CONSENSUS_CREATE_TOPIC);
 
         // when
         assertDoesNotThrow(() -> checker.validateAccountBalances(payer, transactionInfo, fee));
@@ -208,7 +208,7 @@ class QueryCheckerTest {
                 .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, Bytes.EMPTY, CONSENSUS_CREATE_TOPIC);
         doThrow(new PreCheckException(PAYER_ACCOUNT_NOT_FOUND))
                 .when(solvencyPreCheck)
                 .assessWithSvcFees(transaction);
@@ -237,7 +237,7 @@ class QueryCheckerTest {
                 .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, Bytes.EMPTY, CONSENSUS_CREATE_TOPIC);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, fee))
                 .when(queryFeeCheck)
                 .validateQueryPaymentTransfers(txBody, fee);
@@ -267,7 +267,7 @@ class QueryCheckerTest {
                 .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, Bytes.EMPTY, CONSENSUS_CREATE_TOPIC);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
                 .when(queryFeeCheck)
                 .nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);
@@ -297,7 +297,7 @@ class QueryCheckerTest {
                 .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, Bytes.EMPTY, CONSENSUS_CREATE_TOPIC);
         when(accountNumbers.isSuperuser(4711L)).thenReturn(true);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
                 .when(queryFeeCheck)
@@ -327,7 +327,7 @@ class QueryCheckerTest {
                 .build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var transaction = Transaction.newBuilder().build();
-        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
+        final var transactionInfo = new TransactionInfo(transaction, txBody, signatureMap, Bytes.EMPTY, CONSENSUS_CREATE_TOPIC);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
                 .when(queryFeeCheck)
                 .nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);

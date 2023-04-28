@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.fixtures;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -271,6 +272,7 @@ public interface Scenarios extends TransactionFactory {
             AccountID.newBuilder().accountNum(1006L).build(),
             Account.newBuilder()
                     .accountNumber(1006L)
+                    .key(Key.newBuilder().keyList(KeyList.DEFAULT).build())
                     .alias(FAKE_ECDSA_KEY_INFOS[3]
                             .publicKey()
                             .ecdsaSecp256k1OrThrow()

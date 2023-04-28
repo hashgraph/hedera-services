@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.fixtures.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
@@ -27,6 +28,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -62,6 +64,10 @@ public class FakePreHandleContext implements PreHandleContext {
      * be updated to compare set contents rather than ordering.
      */
     private final Set<Key> requiredNonPayerKeys = new LinkedHashSet<>();
+    /**
+     * The set of all hollow accounts that need to be validated.
+     */
+    private final Set<Account> requiredHollowAccounts = new LinkedHashSet<>();
     /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
     private PreHandleContext innerContext;
 
@@ -138,6 +144,12 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     public Set<Key> requiredNonPayerKeys() {
         return Collections.unmodifiableSet(requiredNonPayerKeys);
+    }
+
+    @Override
+    @NonNull
+    public Set<Account> requiredHollowAccounts() {
+        return Collections.unmodifiableSet(requiredHollowAccounts);
     }
 
     @Override
@@ -282,6 +294,18 @@ public class FakePreHandleContext implements PreHandleContext {
         }
 
         return requireKey(key);
+    }
+
+    @Override
+    @NonNull
+    public PreHandleContext requireSignatureForHollowAccount(@NonNull final Account hollowAccount) {
+        requireNonNull(hollowAccount);
+        if (!isHollow(hollowAccount)) {
+            throw new IllegalArgumentException("Account " + hollowAccount.accountNumber() + " is not a hollow account");
+        }
+
+        requiredHollowAccounts.add(hollowAccount);
+        return this;
     }
 
     @Override

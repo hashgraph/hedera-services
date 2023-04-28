@@ -18,6 +18,7 @@ package com.hedera.node.app.signature.hapi;
 
 import static com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType.ECDSA_SECP256K1;
 import static com.hedera.node.app.signature.hapi.SignatureVerificationImpl.invalid;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -97,7 +98,7 @@ public class SignatureVerifierImpl implements SignatureVerifier {
         // Start by verifying the account is indeed a hollow account. We actually perform this same check in a few
         // other places, but feel like defence in depth is a good idea here.
         final var alias = hollowAccount.alias();
-        if (hollowAccount.key() != null || alias == null || alias.length() != 20) {
+        if (!isHollow(hollowAccount)) {
             return CompletableFuture.completedFuture(invalid(hollowAccount));
         }
 

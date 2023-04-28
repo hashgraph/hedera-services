@@ -17,9 +17,13 @@
 package com.hedera.node.app.spi;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Set;
@@ -28,7 +32,24 @@ import java.util.Set;
  * Utility class for working with the HAPI. We might move this to the HAPI project.
  */
 public class HapiUtils {
+    private static final int EVM_ADDRESS_ALIAS_LENGTH = 20;
+    private static final Key EMPTY_KEY_LIST = Key.newBuilder().keyList(KeyList.DEFAULT).build();
+
     private HapiUtils() {}
+
+    /**
+     * Determines whether the given account is a "hollow" account, i.e., one that has no keys and has an alias
+     * that matches the length of an EVM address.
+     *
+     * @param account The account to check
+     * @return {@code true} if the account is a hollow account, {@code false} otherwise.
+     */
+    public static boolean isHollow(@NonNull final Account account) {
+        return (account.accountNumber() > 1000
+                && account.keyOrElse(EMPTY_KEY_LIST).equals(EMPTY_KEY_LIST)
+                && account.alias() != null
+                && account.alias().length() == EVM_ADDRESS_ALIAS_LENGTH);
+    }
 
     public static Timestamp asTimestamp(final Instant instant) {
         return Timestamp.newBuilder()
