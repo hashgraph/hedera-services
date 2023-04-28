@@ -69,6 +69,11 @@ class UptimeMetrics {
             .withDescription("The time, in microseconds, required to compute uptime information each round.");
     private final RunningAverageMetric uptimeComputationTime;
 
+    private static final String TIME_SINCE_LAST_CONSENSUS_EVENT = "timeSinceLastConsensusEvent-";
+    private static final String TIME_SINCE_LAST_JUDGE = "timeSinceLastJudge-";
+    private static final String ROUNDS_SINCE_LAST_CONSENSUS_EVENT = "roundsSinceLastConsensusEvent-";
+    private static final String ROUNDS_SINCE_LAST_JUDGE = "roundsSinceLastJudge-";
+
     /**
      * Construct a new uptime metrics object.
      *
@@ -94,8 +99,6 @@ class UptimeMetrics {
         }
     }
 
-    // TODO string constants
-
     /**
      * Add the metrics for a node.
      *
@@ -103,28 +106,28 @@ class UptimeMetrics {
      */
     public void addMetricsForNode(final long nodeId) {
         final RunningAverageMetric.Config timeSinceLastConensusEventConfig = new RunningAverageMetric.Config(
-                        CATEGORY, "timeSinceLastConsensusEvent-" + nodeId)
+                        CATEGORY, TIME_SINCE_LAST_CONSENSUS_EVENT + nodeId)
                 .withUnit("seconds")
                 .withDescription("The consensus time in seconds since the "
                         + "last consensus event created by this node was observed");
         timeSinceLastConsensusEvent.put(nodeId, metrics.getOrCreate(timeSinceLastConensusEventConfig));
 
         final RunningAverageMetric.Config roundsSinceLastConensusEventConfig = new RunningAverageMetric.Config(
-                        CATEGORY, "roundsSinceLastConsensusEvent-" + nodeId)
+                        CATEGORY, ROUNDS_SINCE_LAST_CONSENSUS_EVENT + nodeId)
                 .withUnit("rounds")
                 .withDescription(
                         "The number of rounds since the " + "last consensus event created by this node was observed");
         roundsSinceLastConsensusEvent.put(nodeId, metrics.getOrCreate(roundsSinceLastConensusEventConfig));
 
         final RunningAverageMetric.Config timeSinceLastJudgeConfig = new RunningAverageMetric.Config(
-                        CATEGORY, "timeSinceLastJudge-" + nodeId)
+                        CATEGORY, TIME_SINCE_LAST_JUDGE + nodeId)
                 .withUnit("seconds")
                 .withDescription(
                         "The consensus time in seconds since the " + "last judge created by this node was observed");
         timeSinceLastJudge.put(nodeId, metrics.getOrCreate(timeSinceLastJudgeConfig));
 
         final RunningAverageMetric.Config roundsSinceLastJudgeConfig = new RunningAverageMetric.Config(
-                        CATEGORY, "roundsSinceLastJudge-" + nodeId)
+                        CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId)
                 .withUnit("rounds")
                 .withDescription("The number of rounds since the " + "last judge created by this node was observed");
         roundsSinceLastJudge.put(nodeId, metrics.getOrCreate(roundsSinceLastJudgeConfig));
@@ -137,16 +140,16 @@ class UptimeMetrics {
      */
     public void removeMetricsForNode(final long nodeId) {
         timeSinceLastConsensusEvent.remove(nodeId);
-        metrics.remove(new RunningAverageMetric.Config(CATEGORY, "timeSinceLastConsensusEvent-" + nodeId));
+        metrics.remove(new RunningAverageMetric.Config(CATEGORY, TIME_SINCE_LAST_CONSENSUS_EVENT + nodeId));
 
         roundsSinceLastConsensusEvent.remove(nodeId);
-        metrics.remove(new RunningAverageMetric.Config(CATEGORY, "roundsSinceLastConsensusEvent-" + nodeId));
+        metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_CONSENSUS_EVENT + nodeId));
 
         timeSinceLastJudge.remove(nodeId);
-        metrics.remove(new RunningAverageMetric.Config(CATEGORY, "timeSinceLastJudge-" + nodeId));
+        metrics.remove(new RunningAverageMetric.Config(CATEGORY, TIME_SINCE_LAST_JUDGE + nodeId));
 
         roundsSinceLastJudge.remove(nodeId);
-        metrics.remove(new RunningAverageMetric.Config(CATEGORY, "roundsSinceLastJudge-" + nodeId));
+        metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId));
     }
 
     /**

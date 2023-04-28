@@ -231,7 +231,7 @@ public class UptimeTracker { // TODO test
 
             final long lastEventRound = uptimeData.getLastEventRound(id);
             if (lastEventRound != NO_ROUND) {
-                uptimeMetrics.getRoundsSinceLastJudgeMetric(id).update(currentRound - lastEventRound);
+                uptimeMetrics.getRoundsSinceLastConsensusEventMetric(id).update(currentRound - lastEventRound);
             }
 
             final Instant lastJudgeTime = uptimeData.getLastJudgeTime(id);
