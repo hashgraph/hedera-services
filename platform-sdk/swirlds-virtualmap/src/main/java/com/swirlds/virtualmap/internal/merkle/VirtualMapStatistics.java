@@ -16,16 +16,12 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
-
 import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.utility.CommonUtils;
 
 /**
@@ -34,7 +30,6 @@ import com.swirlds.common.utility.CommonUtils;
 public class VirtualMapStatistics {
 
     public static final String STAT_CATEGORY = "virtual-map";
-    private static final double DEFAULT_HALF_LIFE = 5;
 
     /** Metric name prefix for all virtual map metric names */
     private static final String VMAP_PREFIX = "vmap_";
@@ -65,18 +60,13 @@ public class VirtualMapStatistics {
     /** Flush backpressure duration, ms */
     private IntegerAccumulator flushBackpressureMs;
     /** The average time to merge virtual map copy to the next copy, ms */
-    private DoubleAccumulator mergeDurationMs;
+    private LongAccumulator mergeDurationMs;
     /** The average time to flush virtual map copy to disk (to data source), ms */
-    private DoubleAccumulator flushDurationMs;
+    private LongAccumulator flushDurationMs;
     /** The number of virtual root node copy flushes to data source */
     private Counter flushCount;
     /** The average time to hash virtual map copy, ms */
-    private DoubleAccumulator hashDurationMs;
-
-    private static CountPerSecond buildCountPerSecond(
-            final Metrics metrics, final String name, final String description) {
-        return new CountPerSecond(metrics, new CountPerSecond.Config(STAT_CATEGORY, name).withDescription(description));
-    }
+    private LongAccumulator hashDurationMs;
 
     private static LongAccumulator buildLongAccumulator(
             final Metrics metrics, final String name, final String description) {
@@ -151,21 +141,21 @@ public class VirtualMapStatistics {
                 metrics,
                 VMAP_PREFIX + LIFECYCLE_PREFIX + "flushBackpressureMs_" + label,
                 "Virtual pipeline flush backpressure, " + label + ", ms");
-        mergeDurationMs = metrics.getOrCreate(
-                new DoubleAccumulator.Config(STAT_CATEGORY, VMAP_PREFIX + LIFECYCLE_PREFIX + "mergeDurationMs_" + label)
-                        .withFormat(FORMAT_10_2)
-                        .withDescription("Virtual root copy merge duration, " + label + ", ms"));
-        flushDurationMs = metrics.getOrCreate(
-                new DoubleAccumulator.Config(STAT_CATEGORY, VMAP_PREFIX + LIFECYCLE_PREFIX + "flushDurationMs_" + label)
-                        .withFormat(FORMAT_10_2)
-                        .withDescription("Virtual root copy flush duration, " + label + ", ms"));
+        mergeDurationMs = buildLongAccumulator(
+                metrics,
+                VMAP_PREFIX + LIFECYCLE_PREFIX + "mergeDurationMs_" + label,
+                "Virtual root copy merge duration, " + label + ", ms");
+        flushDurationMs = buildLongAccumulator(
+                metrics,
+                VMAP_PREFIX + LIFECYCLE_PREFIX + "flushDurationMs_" + label,
+                "Virtual root copy flush duration, " + label + ", ms");
         flushCount = metrics.getOrCreate(
                 new Counter.Config(STAT_CATEGORY, VMAP_PREFIX + LIFECYCLE_PREFIX + "flushCount_" + label)
                         .withDescription("Virtual root copy flush count, " + label));
-        hashDurationMs = metrics.getOrCreate(
-                new DoubleAccumulator.Config(STAT_CATEGORY, VMAP_PREFIX + LIFECYCLE_PREFIX + "hashDurationMs_" + label)
-                        .withFormat(FORMAT_10_2)
-                        .withDescription("Virtual root copy hash duration, " + label + ", ms"));
+        hashDurationMs = buildLongAccumulator(
+                metrics,
+                VMAP_PREFIX + LIFECYCLE_PREFIX + "hashDurationMs_" + label,
+                "Virtual root copy hash duration, " + label + ", ms");
     }
 
     /**
@@ -215,21 +205,6 @@ public class VirtualMapStatistics {
         }
     }
 
-    public void resetEntityCounters() {
-        if (addedEntities != null) {
-            addedEntities.reset();
-        }
-        if (updatedEntities != null) {
-            updatedEntities.reset();
-        }
-        if (removedEntities != null) {
-            removedEntities.reset();
-        }
-        if (readEntities != null) {
-            readEntities.reset();
-        }
-    }
-
     /**
      * Updates {@link #pipelineSize} stat to the given value.
      *
@@ -268,7 +243,7 @@ public class VirtualMapStatistics {
      *
      * @param mergeDurationMs merge duration, ms
      */
-    public void recordMerge(final double mergeDurationMs) {
+    public void recordMerge(final long mergeDurationMs) {
         if (this.mergeDurationMs != null) {
             this.mergeDurationMs.update(mergeDurationMs);
         }
@@ -279,7 +254,7 @@ public class VirtualMapStatistics {
      *
      * @param flushDurationMs flush duration, ms
      */
-    public void recordFlush(final double flushDurationMs) {
+    public void recordFlush(final long flushDurationMs) {
         if (this.flushCount != null) {
             this.flushCount.increment();
         }
@@ -293,7 +268,7 @@ public class VirtualMapStatistics {
      *
      * @param hashDurationMs flush duration, ms
      */
-    public void recordHash(final double hashDurationMs) {
+    public void recordHash(final long hashDurationMs) {
         if (this.hashDurationMs != null) {
             this.hashDurationMs.update(hashDurationMs);
         }

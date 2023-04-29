@@ -125,9 +125,6 @@ public class VirtualPipeline {
      */
     private final PipelineList<VirtualRoot> copies;
 
-    /** Virtual map name */
-    private final String label;
-
     private final AtomicInteger undestroyedCopies = new AtomicInteger();
 
     /**
@@ -167,8 +164,6 @@ public class VirtualPipeline {
      * Create a new pipeline for a family of fast copies on a virtual root.
      */
     public VirtualPipeline(final String label) {
-        this.label = label;
-
         copies = new PipelineList<>();
         unhashedCopies = new ConcurrentLinkedDeque<>();
 

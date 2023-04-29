@@ -26,15 +26,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.metrics.atomic.AtomicDouble;
 import com.swirlds.common.utility.Units;
-import com.swirlds.merkledb.NanoClock;
 import com.swirlds.merkledb.collections.LongListHeap;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.test.framework.TestQualifierTags;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -191,10 +188,9 @@ class MemoryIndexDiskKeyValueStoreTest {
         // check number of files created
         assertEquals(3, Files.list(tempDir).count(), "unexpected # of files #1");
         // merge all files
-        final Clock clock = new NanoClock();
         final AtomicLong timeSpent = new AtomicLong(0);
         final AtomicDouble savedSpace = new AtomicDouble(0.0);
-        store.merge(clock, Instant.now(clock), dataFileReaders -> dataFileReaders, 2, timeSpent::set, savedSpace::set);
+        store.merge(dataFileReaders -> dataFileReaders, 2, timeSpent::set, savedSpace::set);
         // check number of files after merge
         assertEquals(1, Files.list(tempDir).count(), "unexpected # of files #2");
         // check all data
@@ -221,7 +217,7 @@ class MemoryIndexDiskKeyValueStoreTest {
                 }
             } else {
                 try {
-                    store.merge(clock, Instant.now(clock), dataFileReaders -> dataFileReaders, 2, null, null);
+                    store.merge(dataFileReaders -> dataFileReaders, 2, null, null);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -299,8 +295,7 @@ class MemoryIndexDiskKeyValueStoreTest {
         store.startWriting(10, 30);
         writeDataBatch(testType, store, 10, 30, 5678);
         // merge all files
-        final Clock clock = new NanoClock();
-        store.merge(clock, Instant.now(clock), dataFileReaders -> dataFileReaders, 2, null, null);
+        store.merge(dataFileReaders -> dataFileReaders, 2, null, null);
         // finish writing range
         store.endWriting();
         checkRange(testType, store, 10, 20, 5678);

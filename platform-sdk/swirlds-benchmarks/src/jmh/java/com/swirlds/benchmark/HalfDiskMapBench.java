@@ -16,10 +16,7 @@
 
 package com.swirlds.benchmark;
 
-import com.swirlds.merkledb.NanoClock;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
-import java.time.Clock;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -74,10 +71,7 @@ public class HalfDiskMapBench extends BaseBench {
         // Merge files
         start = System.currentTimeMillis();
         final AtomicLong count = new AtomicLong(0);
-        final Clock clock = new NanoClock();
         store.merge(
-                clock,
-                Instant.now(clock),
                 list -> {
                     count.set(list.size());
                     return list;

@@ -301,7 +301,7 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    public void testOffHeapHashesIndex() {
+    void testOffHeapHashesIndex() {
         // given
         final Metric metric = getMetric("offheap_", "hashesIndexMb_" + LABEL);
         // when
@@ -311,7 +311,7 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    public void testOffHeapLeavesIndex() {
+    void testOffHeapLeavesIndex() {
         // given
         final Metric metric = getMetric("offheap_", "leavesIndexMb_" + LABEL);
         // when
@@ -321,7 +321,7 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    public void testOffHeapLongKeysIndex() {
+    void testOffHeapLongKeysIndex() {
         // given
         final Metric metric = getMetric("offheap_", "longKeysIndexMb_" + LABEL);
         // when
@@ -331,7 +331,7 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    public void testOffHeapObjectKeyBucketsIndex() {
+    void testOffHeapObjectKeyBucketsIndex() {
         // given
         final Metric metric = getMetric("offheap_", "objectKeyBucketsIndexMb_" + LABEL);
         // when
@@ -341,7 +341,7 @@ class MerkleDbStatisticsTest {
     }
 
     @Test
-    public void testOffHeadDataSource() {
+    void testOffHeadDataSource() {
         // given
         final Metric metric = getMetric("offheap_", "dataSourceMb_" + LABEL);
         // when

@@ -21,13 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.swirlds.merkledb.NanoClock;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Clock;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -441,15 +438,12 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
 
         @Override
         protected void doWork() throws Exception {
-            final Clock clock = new NanoClock();
             if (iteration % 100 == 0) {
                 // Do a big merge that includes everything
-                coll.merge(clock, Instant.now(clock), list -> list, 2, null, null);
+                coll.merge(list -> list, 2, null, null);
             } else if (iteration % 25 == 0) {
                 // Do a medium merge that just has medium size files
                 coll.merge(
-                        clock,
-                        Instant.now(clock),
                         list -> list.stream()
                                 .filter(file -> file.getSize() > 1_000_000 && file.getSize() < 32_000_000)
                                 .collect(Collectors.toList()),
@@ -459,8 +453,6 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
             } else if (iteration % 5 == 0) {
                 // Do a small merge
                 coll.merge(
-                        clock,
-                        Instant.now(clock),
                         list -> list.stream()
                                 .filter(file -> file.getSize() < 1_000_000)
                                 .collect(Collectors.toList()),

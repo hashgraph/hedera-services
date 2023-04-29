@@ -358,7 +358,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         this.records = null;
 
         this.statistics = source.statistics;
-        // this.statistics.resetEntityCounters();
     }
 
     /**

@@ -1422,9 +1422,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 // DataFileReader
                 final UnaryOperator<List<DataFileReader<VirtualInternalRecord>>> internalRecordFileFilter =
                         (UnaryOperator<List<DataFileReader<VirtualInternalRecord>>>) ((Object) filesToMergeFilter);
-                timestamp = internalHashStoreDisk.merge(
-                        clock,
-                        timestamp,
+                internalHashStoreDisk.merge(
                         internalRecordFileFilter,
                         settings.getMinNumberOfFilesInMerge(),
                         time -> statistics.setHashesStoreCompactionTimeMs(compactionType, time),
@@ -1437,9 +1435,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 // DataFileReader
                 final UnaryOperator<List<DataFileReader<Bucket<K>>>> bucketFileFilter =
                         (UnaryOperator<List<DataFileReader<Bucket<K>>>>) ((Object) filesToMergeFilter);
-                timestamp = objectKeyToPath.merge(
-                        clock,
-                        timestamp,
+                objectKeyToPath.merge(
                         bucketFileFilter,
                         settings.getMinNumberOfFilesInMerge(),
                         time -> statistics.setLeafKeysStoreCompactionTimeMs(compactionType, time),
@@ -1451,9 +1447,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // DataFileReader
             final UnaryOperator<List<DataFileReader<VirtualLeafRecord<K, V>>>> leafRecordFileFilter =
                     (UnaryOperator<List<DataFileReader<VirtualLeafRecord<K, V>>>>) ((Object) filesToMergeFilter);
-            timestamp = pathToHashKeyValue.merge(
-                    clock,
-                    timestamp,
+            pathToHashKeyValue.merge(
                     leafRecordFileFilter,
                     settings.getMinNumberOfFilesInMerge(),
                     time -> statistics.setLeavesStoreCompactionTimeMs(compactionType, time),

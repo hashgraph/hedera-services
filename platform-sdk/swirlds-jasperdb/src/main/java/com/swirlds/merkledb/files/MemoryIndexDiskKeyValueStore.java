@@ -37,16 +37,14 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
+import java.util.function.DoubleConsumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
@@ -148,29 +146,24 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * Compact (merge) all files that match the given filter.
      *
-     * @param clock clock to use to get current time
-     * @param start the moment when compaction is started
      * @param filterForFilesToMerge filter to choose which subset of files to merge
      * @param minNumberOfFilesToMerge the minimum number of files to consider for a merge
      * @param reportDurationMetricFunction function to report how long compaction took, in ms
      * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
-     * @return the moment when compaction is finished
      * @throws IOException if there was a problem merging
      * @throws InterruptedException if the merge thread was interupted
      */
-    public Instant merge(
-            final Clock clock,
-            final Instant start,
+    public void merge(
             final Function<List<DataFileReader<D>>, List<DataFileReader<D>>> filterForFilesToMerge,
             final int minNumberOfFilesToMerge,
-            @Nullable final Consumer<Long> reportDurationMetricFunction,
-            @Nullable final Consumer<Double> reportSavedSpaceMetricFunction)
+            @Nullable final LongConsumer reportDurationMetricFunction,
+            @Nullable final DoubleConsumer reportSavedSpaceMetricFunction)
             throws IOException, InterruptedException {
         final List<DataFileReader<D>> allMergeableFiles = fileCollection.getAllCompletedFiles();
         final List<DataFileReader<D>> filesToMerge = filterForFilesToMerge.apply(allMergeableFiles);
         if (filesToMerge == null) {
             // nothing to do
-            return start;
+            return;
         }
         final int filesCount = filesToMerge.size();
         if (filesCount < minNumberOfFilesToMerge) {
@@ -180,8 +173,11 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
                     storeName,
                     filesCount,
                     minNumberOfFilesToMerge);
-            return start;
+            return;
         }
+
+        final long start = System.currentTimeMillis();
+
         final long filesToMergeSize = getSizeOfFiles(filesToMerge);
         logger.debug(
                 MERKLE_DB.getMarker(),
@@ -218,8 +214,8 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             endChecking(filesToMerge);
         }
 
-        final Instant end = Instant.now(clock);
-        final long tookMillis = Duration.between(start, end).toMillis();
+        final long end = System.currentTimeMillis();
+        final long tookMillis = end - start;
         if (reportDurationMetricFunction != null) {
             reportDurationMetricFunction.accept(tookMillis);
         }
@@ -237,8 +233,6 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
                 filesCount,
                 formatSizeBytes(filesToMergeSize),
                 tookMillis);
-
-        return end;
     }
 
     /**

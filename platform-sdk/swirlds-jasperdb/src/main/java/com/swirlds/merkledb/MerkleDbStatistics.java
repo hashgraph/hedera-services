@@ -19,11 +19,9 @@ package com.swirlds.merkledb;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 
 import com.swirlds.common.metrics.DoubleAccumulator;
-import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.utility.CommonUtils;
 
 /**
@@ -137,17 +135,6 @@ public class MerkleDbStatistics {
      */
     public MerkleDbStatistics(final String label) {
         this.label = CommonUtils.throwArgNull(label, "label");
-    }
-
-    private static CountPerSecond buildCountPerSecond(
-            final Metrics metrics, final String name, final String description) {
-        return new CountPerSecond(metrics, new CountPerSecond.Config(STAT_CATEGORY, name).withDescription(description));
-    }
-
-    private static DoubleGauge buildDoubleGauge(final Metrics metrics, final String name, final String description) {
-        return metrics.getOrCreate(new DoubleGauge.Config(STAT_CATEGORY, name)
-                .withDescription(description)
-                .withFormat(FORMAT_9_6));
     }
 
     private static IntegerGauge buildIntegerGauge(final Metrics metrics, final String name, final String description) {
