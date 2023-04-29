@@ -22,15 +22,21 @@ Pre-requisites:
 
 * docker
 
-To run:
+To run on Mac/Linux:
 
 ```shell
 $ ./grafana/run-docker.sh
 ```
 
+To run on Windows:
+
+```cmd
+$ ./grafana/run-docker.cmd
+````
+
 To stop:
 
-```shell
+```shell / cmd
 $ docker stop grafana
 ```
 
