@@ -71,7 +71,7 @@ import org.apache.tuweni.units.bigints.UInt256;
  */
 public class SignedStateHolder implements AutoCloseableNonThrowing {
 
-    static final int ESTIMATED_NUMBER_OF_CONTRACTS = 2_000;
+    static final int ESTIMATED_NUMBER_OF_CONTRACTS = 100_000;
 
     @NonNull
     private final Path swh;
@@ -158,17 +158,6 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
      */
     public record Contracts(@NonNull Collection</*@NonNull*/ Contract> contracts, int registeredContractsCount) {}
 
-    /**
-     * Convenience method: Given the signed state file's name (the `.swh` file) return all the
-     * bytecodes for all the contracts in that state.
-     */
-    @NonNull
-    public static Contracts getContracts(@NonNull final Path inputFile) {
-        try (final var ssh = new SignedStateHolder(inputFile)) {
-            return ssh.getContracts();
-        }
-    }
-
     @NonNull
     public Contracts getContracts() {
         final var contractIds = getAllKnownContracts();
@@ -195,7 +184,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
     }
 
     @NonNull
-    public static String dumpContractStorage(@NonNull DumpOperation operation, @NonNull final Path inputFile) {
+    public String dumpContractStorage(@NonNull DumpOperation operation, @NonNull final Path inputFile) {
         try (final var ssh = new SignedStateHolder(inputFile)) {
             return ssh.dumpContractStorage(operation);
         }
@@ -270,6 +259,8 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
             final Pair<Long, ArrayList<Pair<UInt256, UInt256>>> contractState) {
         final var sb = new StringBuilder(contractState.getValue().size() * 100 /*???*/);
         sb.append(contractState.getKey());
+        sb.append(" #");
+        sb.append(contractState.getValue().size());
         var nextSlot = 0L;
         for (final var slotPair : contractState.getValue()) {
             final var slot = slotPair.getKey();
@@ -293,7 +284,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
     }
 
     @NonNull
-    public static String getContractStoreSlotSummary(
+    public String getContractStoreSlotSummary(
             final List<Pair<Long, ArrayList<Pair<UInt256, UInt256>>>> contractStates) {
 
         final var contractIds = new ArrayList<Long>(5000);

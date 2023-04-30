@@ -19,12 +19,14 @@ package com.hedera.services.yahcli.commands.contract.subcommands;
 import com.hedera.services.yahcli.commands.contract.ContractCommand;
 import com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder;
 import com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder.DumpOperation;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -55,27 +57,53 @@ public class DumpRawContractStateCommand implements Callable<Integer> {
             description = "Prefix for each contract bytecode line (suitable for finding lines via grep")
     String prefix = "";
 
+    @ArgGroup(exclusive = true, multiplicity = "1")
+    Operation operation;
+
+    static class Operation {
+        @Option(
+                names = {"-s", "--summary"},
+                required = true)
+        boolean doSummary;
+
+        @Option(
+                names = {"-c", "--contents"},
+                required = true)
+        boolean doDumpContents;
+    }
+
     @Override
     public Integer call() throws Exception {
 
         contractCommand.setupLogging();
 
         try (final var signedState = new SignedStateHolder(inputFile)) {
-            final var contents = signedState.dumpContractStorage(DumpOperation.CONTENTS);
-            if (null != outputFile)
-                FileUtils.writeStringToFile(new File(outputFile.toUri()), contents, StandardCharsets.UTF_8);
-            else {
-                System.out.println(contents.lines().collect(Collectors.joining("\n" + prefix, prefix, "")));
+
+            // For some reason - a limitation or possibly a bug in the virtual tree code - you can't
+            // do more than one traversal of the contract storage with the same materialized signed
+            // state.  So we've made the summary and the contents dump mutually exclusive.
+
+            if (operation.doSummary) {
+                final var summary = signedState.dumpContractStorage(DumpOperation.SUMMARIZE);
+                System.out.println(prefixLines(prefix, summary));
             }
-            // Cannot summarize _and then_ fetch storage contents _during same `SignedStateHolder` due to a
-            // limitation/but
-            // in the virtual mapping.  So commenting out the summary for now.  But _not_ deleting the code, may want it
-            // soon.
-            //        final var summary = signedState.dumpContractStorage(DumpOperation.SUMMARIZE);
-            //        System.out.println(summary);
+
+            if (operation.doDumpContents) {
+                final var contents = signedState.dumpContractStorage(DumpOperation.CONTENTS);
+                if (null != outputFile)
+                    FileUtils.writeStringToFile(new File(outputFile.toUri()), contents, StandardCharsets.UTF_8);
+                else {
+                    System.out.println(prefixLines(prefix, contents));
+                }
+            }
         }
 
         return 0;
+    }
+
+    private static String prefixLines(@NonNull final String prefix, @NonNull final String multiLineString) {
+        if (prefix.isEmpty()) return multiLineString;
+        return multiLineString.lines().collect(Collectors.joining("\n" + prefix, prefix, ""));
     }
 
     @Override

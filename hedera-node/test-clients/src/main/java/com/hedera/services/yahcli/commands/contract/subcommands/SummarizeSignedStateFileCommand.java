@@ -16,9 +16,8 @@
 
 package com.hedera.services.yahcli.commands.contract.subcommands;
 
-import static com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder.getContracts;
-
 import com.hedera.services.yahcli.commands.contract.ContractCommand;
+import com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder;
 import com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder.Contract;
 // import com.hedera.services.yahcli.commands.contract.evminfo.CodeRecognizerManager;
 import java.lang.reflect.Array;
@@ -48,18 +47,21 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
 
         contractCommand.setupLogging();
 
-        final var knownContracts = getContracts(inputFile);
+        try (final var signedState = new SignedStateHolder(inputFile)) {
 
-        final int contractsWithBytecodeFound = knownContracts.contracts().size();
-        final var bytesFound = knownContracts.contracts().stream()
-                .map(Contract::bytecode)
-                .mapToInt(Array::getLength)
-                .sum();
+            final var knownContracts = signedState.getContracts();
 
-        System.out.printf(
-                ">>> SummarizeSignedStateFile: %d contractIDs found %d contracts found in file store"
-                        + " (%d bytes total)%n",
-                knownContracts.registeredContractsCount(), contractsWithBytecodeFound, bytesFound);
+            final int contractsWithBytecodeFound = knownContracts.contracts().size();
+            final var bytesFound = knownContracts.contracts().stream()
+                    .map(Contract::bytecode)
+                    .mapToInt(Array::getLength)
+                    .sum();
+
+            System.out.printf(
+                    ">>> SummarizeSignedStateFile: %d contractIDs found %d contracts found in file store"
+                            + " (%d bytes total)%n",
+                    knownContracts.registeredContractsCount(), contractsWithBytecodeFound, bytesFound);
+        }
 
         return 0;
     }

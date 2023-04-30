@@ -16,10 +16,9 @@
 
 package com.hedera.services.yahcli.commands.contract.subcommands;
 
-import static com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder.getContracts;
-
 import com.hedera.services.yahcli.commands.contract.ContractCommand;
 import com.hedera.services.yahcli.commands.contract.utils.ByteArrayAsKey;
+import com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder;
 import com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder.Contract;
 import com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder.Contracts;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -71,28 +70,31 @@ public class DumpRawContractsCommand implements Callable<Integer> {
 
         contractCommand.setupLogging();
 
-        final var zeroLengthCount = new int[1];
+        try (final var signedState = new SignedStateHolder(inputFile)) {
 
-        var r = getNonTrivialContracts(inputFile, zeroLengthCount);
+            final var zeroLengthCount = new int[1];
 
-        final var totalContractsRegisteredWithAccounts = r.registeredContractsCount();
-        final var totalContractsPresentInFileStore = r.contracts().size();
-        int totalUniqueContractsPresentInFileStore = totalContractsPresentInFileStore;
+            var r = getNonTrivialContracts(signedState, zeroLengthCount);
 
-        if (emitUnique) {
-            r = uniquifyContracts(r);
-            totalUniqueContractsPresentInFileStore = r.contracts().size();
+            final var totalContractsRegisteredWithAccounts = r.registeredContractsCount();
+            final var totalContractsPresentInFileStore = r.contracts().size();
+            int totalUniqueContractsPresentInFileStore = totalContractsPresentInFileStore;
+
+            if (emitUnique) {
+                r = uniquifyContracts(r);
+                totalUniqueContractsPresentInFileStore = r.contracts().size();
+            }
+
+            final var formattedContracts = formatContractLines(r);
+
+            System.out.printf(
+                    "%d registered contracts, %d with bytecode (%d are 0-length)%s%n",
+                    totalContractsRegisteredWithAccounts,
+                    totalContractsPresentInFileStore + zeroLengthCount[0],
+                    zeroLengthCount[0],
+                    emitUnique ? ", %d unique (by bytecode)".formatted(totalUniqueContractsPresentInFileStore) : "");
+            for (final var s : formattedContracts) System.out.println(s);
         }
-
-        final var formattedContracts = formatContractLines(r);
-
-        System.out.printf(
-                "%d registered contracts, %d with bytecode (%d are 0-length)%s%n",
-                totalContractsRegisteredWithAccounts,
-                totalContractsPresentInFileStore + zeroLengthCount[0],
-                zeroLengthCount[0],
-                emitUnique ? ", %d unique (by bytecode)".formatted(totalUniqueContractsPresentInFileStore) : "");
-        for (final var s : formattedContracts) System.out.println(s);
 
         return 0;
     }
@@ -182,9 +184,10 @@ public class DumpRawContractsCommand implements Callable<Integer> {
      * present in the file store.
      */
     @NonNull
-    private Contracts getNonTrivialContracts(@NonNull final Path inputFile, final @NonNull int[] outZeroLengthCount) {
+    private Contracts getNonTrivialContracts(
+            @NonNull final SignedStateHolder signedState, final @NonNull int[] outZeroLengthCount) {
 
-        final var knownContracts = getContracts(inputFile);
+        final var knownContracts = signedState.getContracts();
 
         // Remove (and report) 0-length contracts (what's that about? probably some user's error?)
         knownContracts.contracts().removeIf(contract -> {
