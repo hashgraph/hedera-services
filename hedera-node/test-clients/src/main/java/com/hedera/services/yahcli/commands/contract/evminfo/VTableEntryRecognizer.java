@@ -23,7 +23,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -122,7 +121,7 @@ public class VTableEntryRecognizer extends CodeRecognizer {
 
         @NonNull
         Optional<State> next() {
-            return Optional.of(State.valueOf(nextState));
+            return nextState.isEmpty() ? Optional.empty() : Optional.of(State.valueOf(nextState));
         }
 
         int intFromBytes(@NonNull byte[] operand) {
@@ -140,10 +139,9 @@ public class VTableEntryRecognizer extends CodeRecognizer {
         record Next(@NonNull String next) {}
 
         State(Next nextState, @NonNull String... expectingMnemonic) {
-            Objects.requireNonNull(nextState);
             if (expectingMnemonic.length == 0)
                 throw new IllegalArgumentException("State must have at least one mnemonic expected");
-            this.nextState = nextState.next();
+            this.nextState = null != nextState ? nextState.next() : "";
             this.expectingMnemonic = Arrays.asList(expectingMnemonic);
         }
 
