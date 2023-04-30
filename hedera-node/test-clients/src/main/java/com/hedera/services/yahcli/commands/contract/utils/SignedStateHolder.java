@@ -346,7 +346,6 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
             ranToCompletion = false;
         }
 
-        contractStorageVMap.release();
         return ranToCompletion;
     }
 

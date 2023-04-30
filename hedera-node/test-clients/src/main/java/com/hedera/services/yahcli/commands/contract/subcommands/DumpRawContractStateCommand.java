@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
-import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -49,7 +48,7 @@ public class DumpRawContractStateCommand implements Callable<Integer> {
     @Option(
             names = {"-o", "--output"},
             arity = "1",
-            description = "Output all contracts state file")
+            description = "Output file for contracts' state")
     Path outputFile;
 
     @Option(
@@ -57,20 +56,11 @@ public class DumpRawContractStateCommand implements Callable<Integer> {
             description = "Prefix for each contract bytecode line (suitable for finding lines via grep")
     String prefix = "";
 
-    @ArgGroup(exclusive = true, multiplicity = "1")
-    Operation operation;
+    @Option(names = {"-s", "--summary"})
+    boolean doSummary;
 
-    static class Operation {
-        @Option(
-                names = {"-s", "--summary"},
-                required = true)
-        boolean doSummary;
-
-        @Option(
-                names = {"-c", "--contents"},
-                required = true)
-        boolean doDumpContents;
-    }
+    @Option(names = {"-c", "--contents"})
+    boolean doDumpContents;
 
     @Override
     public Integer call() throws Exception {
@@ -79,16 +69,12 @@ public class DumpRawContractStateCommand implements Callable<Integer> {
 
         try (final var signedState = new SignedStateHolder(inputFile)) {
 
-            // For some reason - a limitation or possibly a bug in the virtual tree code - you can't
-            // do more than one traversal of the contract storage with the same materialized signed
-            // state.  So we've made the summary and the contents dump mutually exclusive.
-
-            if (operation.doSummary) {
+            if (doSummary) {
                 final var summary = signedState.dumpContractStorage(DumpOperation.SUMMARIZE);
                 System.out.println(prefixLines(prefix, summary));
             }
 
-            if (operation.doDumpContents) {
+            if (doDumpContents) {
                 final var contents = signedState.dumpContractStorage(DumpOperation.CONTENTS);
                 if (null != outputFile)
                     FileUtils.writeStringToFile(new File(outputFile.toUri()), contents, StandardCharsets.UTF_8);
