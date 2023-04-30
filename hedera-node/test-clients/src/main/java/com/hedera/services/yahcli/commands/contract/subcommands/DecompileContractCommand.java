@@ -55,6 +55,7 @@ import picocli.CommandLine.ParentCommand;
         subcommands = {picocli.CommandLine.HelpCommand.class},
         description = "Decompiles contract bytecodes")
 public class DecompileContractCommand implements Callable<Integer> {
+
     @ParentCommand
     private ContractCommand contractCommand;
 
@@ -141,106 +142,105 @@ public class DecompileContractCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
+
+        contractCommand.setupLogging();
+
         if (null != shortFlags) for (var sf : shortFlags) flags.add(sf.flag);
         disassembleContract();
         return 0;
     }
 
-    void disassembleContract() throws Exception {
+    void disassembleContract() {
 
         withCannedSignatures = null != signaturesFile;
 
-        try {
-            var options = new ArrayList<Variant>();
-            if (withCodeOffset) options.add(Variant.DISPLAY_CODE_OFFSET);
-            if (withOpcode) options.add(Variant.DISPLAY_OPCODE_HEX);
-            if (withoutDecodeBeforeMetadata) options.add(Variant.WITHOUT_DECODE_BEFORE_METADATA);
-            if (recognizeCodeSequences) options.add(Variant.RECOGNIZE_CODE_SEQUENCES);
-            if (fetchSelectorNames) options.add(Variant.FETCH_SELECTOR_NAMES);
-            if (withCannedSignatures) options.add(Variant.WITH_CANNED_SIGNATURES);
+        var options = new ArrayList<Variant>();
+        if (withCodeOffset) options.add(Variant.DISPLAY_CODE_OFFSET);
+        if (withOpcode) options.add(Variant.DISPLAY_OPCODE_HEX);
+        if (withoutDecodeBeforeMetadata) options.add(Variant.WITHOUT_DECODE_BEFORE_METADATA);
+        if (recognizeCodeSequences) options.add(Variant.RECOGNIZE_CODE_SEQUENCES);
+        if (fetchSelectorNames) options.add(Variant.FETCH_SELECTOR_NAMES);
+        if (withCannedSignatures) options.add(Variant.WITH_CANNED_SIGNATURES);
 
-            var metrics = new HashMap</*@NonNull*/ String, /*@NonNull*/ Object>();
-            metrics.put(START_TIMESTAMP, System.nanoTime());
+        var metrics = new HashMap</*@NonNull*/ String, /*@NonNull*/ Object>();
+        metrics.put(START_TIMESTAMP, System.nanoTime());
 
-            // Do the disassembly here ...
-            final var asm = new Assembly(metrics, options.toArray(new Variant[0]));
-            final var prefixLines = getPrefixLines();
-            final var lines = asm.getInstructions(prefixLines, theContract.contents);
+        // Do the disassembly here ...
+        final var asm = new Assembly(metrics, options.toArray(new Variant[0]));
+        final var prefixLines = getPrefixLines();
+        final var lines = asm.getInstructions(prefixLines, theContract.contents);
 
-            // TODO: Should just be embedded in Assembly class (since there's an option for it)
-            final var analysisResults = Optional.ofNullable(recognizeCodeSequences ? asm.analyze(lines) : null);
+        // TODO: Should just be embedded in Assembly class (since there's an option for it)
+        final var analysisResults = Optional.ofNullable(recognizeCodeSequences ? asm.analyze(lines) : null);
 
-            metrics.put(END_TIMESTAMP, System.nanoTime());
+        metrics.put(END_TIMESTAMP, System.nanoTime());
 
-            if (withMetrics) {
-                // replace existing `END` directive with one that has the metrics as a comment
-                final var endDirective = new DirectiveLine(Kind.END, formatMetrics(metrics));
-                if (lines.get(lines.size() - 1) instanceof DirectiveLine directive
-                        && Kind.END.name().equals(directive.directive())) lines.remove(lines.size() - 1);
-                lines.add(endDirective);
-            }
+        if (withMetrics) {
+            // replace existing `END` directive with one that has the metrics as a comment
+            final var endDirective = new DirectiveLine(Kind.END, formatMetrics(metrics));
+            if (lines.get(lines.size() - 1) instanceof DirectiveLine directive
+                    && Kind.END.name().equals(directive.directive())) lines.remove(lines.size() - 1);
+            lines.add(endDirective);
+        }
 
-            analysisResults.ifPresentOrElse(
-                    results -> {
-                        // TODO: Each section needs a command line argument to enable, also raw +/-
-                        // analyzed listing.  Preferably as "POSIX clustered short options".
-                        if (results.properties().containsKey(VTableEntryRecognizer.METHODS_PROPERTY)) {
-                            if (flags.contains(Flag.TRACE)) {
-                                @SuppressWarnings("unchecked")
-                                final var traceLines =
-                                        (List<String>) results.properties().get(VTableEntryRecognizer.METHODS_TRACE);
-                                System.out.printf("Methods trace:%n");
-                                for (final var t : traceLines) {
-                                    System.out.printf("   %s%n", t);
-                                }
-                                System.out.printf("%n");
+        analysisResults.ifPresentOrElse(
+                results -> {
+                    // TODO: Each section needs a command line argument to enable, also raw +/-
+                    // analyzed listing.  Preferably as "POSIX clustered short options".
+                    if (results.properties().containsKey(VTableEntryRecognizer.METHODS_PROPERTY)) {
+                        if (flags.contains(Flag.TRACE)) {
+                            @SuppressWarnings("unchecked")
+                            final var traceLines =
+                                    (List<String>) results.properties().get(VTableEntryRecognizer.METHODS_TRACE);
+                            System.out.printf("Methods trace:%n");
+                            for (final var t : traceLines) {
+                                System.out.printf("   %s%n", t);
                             }
-
-                            if (flags.contains(Flag.SELECTORS)) {
-                                @SuppressWarnings("unchecked")
-                                final var methodsTable = (List<VTableEntryRecognizer.MethodEntry>)
-                                        results.properties().get(VTableEntryRecognizer.METHODS_PROPERTY);
-                                methodsTable.sort(Comparator.comparing(MethodEntry::methodOffset));
-                                System.out.printf("Selectors from contract vtable:%n");
-                                for (final var me : methodsTable) {
-                                    System.out.printf("%04X: %08X%n", me.methodOffset(), me.selector());
-                                }
-                                System.out.printf("%n");
-                            }
-
-                            if (flags.contains(Flag.MACROS)) {
-                                System.out.printf("Macros from VTableEntryRecognizer:%n");
-                                for (final var macro : results.codeLineReplacements()) {
-                                    if (macro instanceof MacroLine macroLine) {
-                                        System.out.printf("   %s%n", macroLine.formatLine());
-                                    }
-                                }
-                                System.out.printf("%n");
-                            }
+                            System.out.printf("%n");
                         }
 
-                        if (flags.contains(Flag.RAW_DISASSEMBLY)) {
-                            System.out.printf("Raw disassembly:%n");
-                            for (var line : lines) System.out.printf("%s%s%n", prefix, line.formatLine());
+                        if (flags.contains(Flag.SELECTORS)) {
+                            @SuppressWarnings("unchecked")
+                            final var methodsTable = (List<VTableEntryRecognizer.MethodEntry>)
+                                    results.properties().get(VTableEntryRecognizer.METHODS_PROPERTY);
+                            methodsTable.sort(Comparator.comparing(MethodEntry::methodOffset));
+                            System.out.printf("Selectors from contract vtable:%n");
+                            for (final var me : methodsTable) {
+                                System.out.printf("%04X: %08X%n", me.methodOffset(), me.selector());
+                            }
+                            System.out.printf("%n");
                         }
 
-                        {
-                            // TODO: _This_ should _really_ be moved to the Assembly class
-                            var editor = new Editor(lines);
-                            results.codeLineReplacements().forEach(editor::add);
-                            var analyzedLines = editor.merge();
-
-                            System.out.printf("Analyzed disassembly:%n");
-                            for (var line : analyzedLines) System.out.printf("%s%s%n", prefix, line.formatLine());
+                        if (flags.contains(Flag.MACROS)) {
+                            System.out.printf("Macros from VTableEntryRecognizer:%n");
+                            for (final var macro : results.codeLineReplacements()) {
+                                if (macro instanceof MacroLine macroLine) {
+                                    System.out.printf("   %s%n", macroLine.formatLine());
+                                }
+                            }
+                            System.out.printf("%n");
                         }
-                    },
-                    (/*orElse*/ ) -> {
+                    }
+
+                    if (flags.contains(Flag.RAW_DISASSEMBLY)) {
                         System.out.printf("Raw disassembly:%n");
                         for (var line : lines) System.out.printf("%s%s%n", prefix, line.formatLine());
-                    });
-        } catch (Exception ex) {
-            throw printFormattedException(theContractId, ex);
-        }
+                    }
+
+                    {
+                        // TODO: _This_ should _really_ be moved to the Assembly class
+                        var editor = new Editor(lines);
+                        results.codeLineReplacements().forEach(editor::add);
+                        var analyzedLines = editor.merge();
+
+                        System.out.printf("Analyzed disassembly:%n");
+                        for (var line : analyzedLines) System.out.printf("%s%s%n", prefix, line.formatLine());
+                    }
+                },
+                (/*orElse*/ ) -> {
+                    System.out.printf("Raw disassembly:%n");
+                    for (var line : lines) System.out.printf("%s%s%n", prefix, line.formatLine());
+                });
     }
 
     /**
@@ -300,7 +300,7 @@ public class DecompileContractCommand implements Callable<Integer> {
                 sw.toString().lines().map(s -> EXCEPTION_PREFIX + s).collect(Collectors.joining("\n"));
         System.out.printf(
                 "*** EXCEPTION CAUGHT (id %s): %s%n%s%n",
-                theContractId.map(Object::toString).orElse("NOT-GIVEN"), ex.toString(), starredExceptionDump);
+                theContractId.map(Object::toString).orElse("NOT-GIVEN"), ex, starredExceptionDump);
         return ex;
     }
 }

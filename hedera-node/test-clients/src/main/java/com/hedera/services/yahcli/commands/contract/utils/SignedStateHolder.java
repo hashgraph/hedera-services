@@ -28,9 +28,18 @@ import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.swirlds.common.AutoCloseableNonThrowing;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.DefaultPlatformContext;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -60,31 +69,49 @@ import org.apache.tuweni.units.bigints.UInt256;
  * <p>Currently implements only operations needed for looking at contract bytecodes and contract
  * state, but you can grab them in bulk.
  */
-public class SignedStateHolder {
+public class SignedStateHolder implements AutoCloseableNonThrowing {
 
     static final int ESTIMATED_NUMBER_OF_CONTRACTS = 2_000;
 
     @NonNull
     private final Path swh;
 
-    @NonNull
-    private ServicesState platformState;
+    private final ReservedSignedState reservedSignedState;
 
-    public SignedStateHolder(@NonNull final Path swhFile) throws Exception {
+    private final ServicesState platformState;
+
+    public SignedStateHolder(@NonNull final Path swhFile) {
         swh = swhFile;
-        platformState = dehydrate();
+        final var state = dehydrate();
+        reservedSignedState = state.getLeft();
+        platformState = state.getRight();
     }
 
     /** Deserialize the signed state file into an in-memory data structure. */
     @SuppressWarnings("java:S112") // "Generic exceptions should never be thrown" - LCM of fatal exceptions: don't care
     @NonNull
-    private ServicesState dehydrate() throws Exception {
-        // register all applicable classes on classpath before deserializing signed state
-        ConstructableRegistry.getInstance().registerConstructables("*");
-        platformState = (ServicesState)
-                (SignedStateFileReader.readStateFile(swh).signedState().getSwirldState());
-        assertSignedStateComponentExists(platformState, "platform state (Swirlds)");
-        return platformState;
+    private Pair<ReservedSignedState, ServicesState> dehydrate() {
+        try {
+            // register all applicable classes on classpath before deserializing signed state
+            ConstructableRegistry.getInstance().registerConstructables("*");
+
+            final PlatformContext platformContext = new DefaultPlatformContext(
+                    ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+
+            final var rss =
+                    SignedStateFileReader.readStateFile(platformContext, swh).reservedSignedState();
+            final var ps = (ServicesState) (rss.get().getSwirldState());
+
+            assertSignedStateComponentExists(ps, "platform state (Swirlds)");
+            return Pair.of(rss, ps);
+        } catch (ConstructableRegistryException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void close() {
+        reservedSignedState.close();
     }
 
     /**
@@ -136,8 +163,10 @@ public class SignedStateHolder {
      * bytecodes for all the contracts in that state.
      */
     @NonNull
-    public static Contracts getContracts(@NonNull final Path inputFile) throws Exception {
-        return new SignedStateHolder(inputFile).getContracts();
+    public static Contracts getContracts(@NonNull final Path inputFile) {
+        try (final var ssh = new SignedStateHolder(inputFile)) {
+            return ssh.getContracts();
+        }
     }
 
     @NonNull
@@ -166,9 +195,10 @@ public class SignedStateHolder {
     }
 
     @NonNull
-    public static String dumpContractStorage(@NonNull DumpOperation operation, @NonNull final Path inputFile)
-            throws Exception {
-        return new SignedStateHolder(inputFile).dumpContractStorage(operation);
+    public static String dumpContractStorage(@NonNull DumpOperation operation, @NonNull final Path inputFile) {
+        try (final var ssh = new SignedStateHolder(inputFile)) {
+            return ssh.dumpContractStorage(operation);
+        }
     }
 
     @SuppressWarnings("java:S3864") // `Stream.peek` should be used with caution - yes, and I've been careful
@@ -184,7 +214,7 @@ public class SignedStateHolder {
 
             contractKeys.add(new ContractKeyLocal(contractId, key));
 
-            contractState.computeIfAbsent(contractId, k -> new ConcurrentLinkedQueue<Pair<UInt256, UInt256>>());
+            contractState.computeIfAbsent(contractId, k -> new ConcurrentLinkedQueue<>());
             contractState.get(contractId).add(Pair.of(key, iter.asUInt256()));
         });
 

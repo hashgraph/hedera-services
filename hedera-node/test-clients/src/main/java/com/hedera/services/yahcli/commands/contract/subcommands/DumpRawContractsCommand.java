@@ -31,9 +31,6 @@ import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -69,15 +66,10 @@ public class DumpRawContractsCommand implements Callable<Integer> {
             description = "Output contract ids too")
     boolean withIds;
 
-    @Option(
-            names = {"--suppress-logs"},
-            description = "Suppress all logging")
-    boolean suppressAllLogging;
-
     @Override
     public Integer call() throws Exception {
 
-        if (suppressAllLogging) setRootLogLevel(Level.ERROR);
+        contractCommand.setupLogging();
 
         final var zeroLengthCount = new int[1];
 
@@ -190,8 +182,7 @@ public class DumpRawContractsCommand implements Callable<Integer> {
      * present in the file store.
      */
     @NonNull
-    private Contracts getNonTrivialContracts(@NonNull final Path inputFile, final @NonNull int[] outZeroLengthCount)
-            throws Exception {
+    private Contracts getNonTrivialContracts(@NonNull final Path inputFile, final @NonNull int[] outZeroLengthCount) {
 
         final var knownContracts = getContracts(inputFile);
 
@@ -208,10 +199,5 @@ public class DumpRawContractsCommand implements Callable<Integer> {
         });
 
         return knownContracts;
-    }
-
-    private void setRootLogLevel(final Level level) {
-        final var logger = LogManager.getRootLogger();
-        Configurator.setAllLevels(logger.getName(), level);
     }
 }

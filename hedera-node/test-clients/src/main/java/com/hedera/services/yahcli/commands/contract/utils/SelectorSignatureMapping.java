@@ -166,9 +166,10 @@ public class SelectorSignatureMapping {
         return Pair.of(mapping, parseErrors);
     }
 
-    @NonNull
     protected static void processSelSigBytes(
-            BiConsumer<Stream<String>, List<String>> doLine, byte[] compressedContent, List<String> errors)
+            @NonNull BiConsumer<Stream<String>, List<String>> doLine,
+            byte[] compressedContent,
+            @NonNull List<String> errors)
             throws IOException {
         try (final var inputStreamReader = new BufferedReader(
                 new InputStreamReader(new GZIPInputStream(new ByteArrayInputStream(compressedContent))))) {

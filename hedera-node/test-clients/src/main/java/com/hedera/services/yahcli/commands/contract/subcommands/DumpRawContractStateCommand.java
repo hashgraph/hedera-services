@@ -25,9 +25,6 @@ import java.nio.file.Path;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -58,27 +55,24 @@ public class DumpRawContractStateCommand implements Callable<Integer> {
             description = "Prefix for each contract bytecode line (suitable for finding lines via grep")
     String prefix = "";
 
-    @Option(
-            names = {"--suppress-logs"},
-            description = "Suppress all logging")
-    boolean suppressAllLogging;
-
     @Override
     public Integer call() throws Exception {
 
-        if (suppressAllLogging) setRootLogLevel(Level.ERROR);
+        contractCommand.setupLogging();
 
-        final var signedState = new SignedStateHolder(inputFile);
-        // Cannot summarize _and then_ fetch storage contents _during same `SignedStateHolder` due to a limitation/but
-        // in the virtual mapping.  So commenting out the summary for now.  But _not_ deleting the code, may want it
-        // soon.
-        //        final var summary = signedState.dumpContractStorage(DumpOperation.SUMMARIZE);
-        //        System.out.println(summary);
-        final var contents = signedState.dumpContractStorage(DumpOperation.CONTENTS);
-        if (null != outputFile)
-            FileUtils.writeStringToFile(new File(outputFile.toUri()), contents, StandardCharsets.UTF_8);
-        else {
-            System.out.println(contents.lines().collect(Collectors.joining("\n" + prefix, prefix, "")));
+        try (final var signedState = new SignedStateHolder(inputFile)) {
+            final var contents = signedState.dumpContractStorage(DumpOperation.CONTENTS);
+            if (null != outputFile)
+                FileUtils.writeStringToFile(new File(outputFile.toUri()), contents, StandardCharsets.UTF_8);
+            else {
+                System.out.println(contents.lines().collect(Collectors.joining("\n" + prefix, prefix, "")));
+            }
+            // Cannot summarize _and then_ fetch storage contents _during same `SignedStateHolder` due to a
+            // limitation/but
+            // in the virtual mapping.  So commenting out the summary for now.  But _not_ deleting the code, may want it
+            // soon.
+            //        final var summary = signedState.dumpContractStorage(DumpOperation.SUMMARIZE);
+            //        System.out.println(summary);
         }
 
         return 0;
@@ -87,10 +81,5 @@ public class DumpRawContractStateCommand implements Callable<Integer> {
     @Override
     public String toString() {
         return "DumpRawContractStateCommand{}";
-    }
-
-    private void setRootLogLevel(final Level level) {
-        final var logger = LogManager.getRootLogger();
-        Configurator.setAllLevels(logger.getName(), level);
     }
 }

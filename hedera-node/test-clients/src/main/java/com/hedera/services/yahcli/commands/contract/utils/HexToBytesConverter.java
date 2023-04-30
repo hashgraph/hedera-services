@@ -40,7 +40,7 @@ public class HexToBytesConverter implements ITypeConverter<HexToBytesConverter.B
     public static class Bytes {
         public final @NonNull byte[] contents;
 
-        public Bytes(@NotNull final byte[] b) {
+        public Bytes(final byte @NotNull [] b) {
             if (null == b) throw new TypeConversionException("-b bytecode missing an array value (somehow)");
             contents = b;
         }

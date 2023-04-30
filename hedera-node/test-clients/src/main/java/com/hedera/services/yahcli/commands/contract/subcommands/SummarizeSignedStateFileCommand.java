@@ -46,9 +46,7 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
 
-        //        System.out.printf(
-        //                "Assembly: %d code recognizers found.%n",
-        //                CodeRecognizerManager.recognizerClasses.size());
+        contractCommand.setupLogging();
 
         final var knownContracts = getContracts(inputFile);
 

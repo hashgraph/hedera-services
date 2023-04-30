@@ -24,6 +24,9 @@ import com.hedera.services.yahcli.commands.contract.subcommands.FungibleTokenAll
 import com.hedera.services.yahcli.commands.contract.subcommands.ResolveSelectorCommand;
 import com.hedera.services.yahcli.commands.contract.subcommands.SummarizeSignedStateFileCommand;
 import java.util.concurrent.Callable;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;
@@ -45,13 +48,27 @@ public class ContractCommand implements Callable<Integer> {
     @ParentCommand
     Yahcli yahcli;
 
+    @CommandLine.Option(
+            names = {"--do-logs"},
+            description = "Enable logging (at INFO level)")
+    boolean doLogging;
+
     @Override
     public Integer call() throws Exception {
         throw new CommandLine.ParameterException(
                 yahcli.getSpec().commandLine(), "Please specify a contract subcommand!");
     }
 
+    public void setupLogging() {
+        setRootLogLevel(doLogging ? Level.INFO : Level.ERROR);
+    }
+
     public Yahcli getYahcli() {
         return yahcli;
+    }
+
+    private void setRootLogLevel(final Level level) {
+        final var logger = LogManager.getRootLogger();
+        Configurator.setAllLevels(logger.getName(), level);
     }
 }

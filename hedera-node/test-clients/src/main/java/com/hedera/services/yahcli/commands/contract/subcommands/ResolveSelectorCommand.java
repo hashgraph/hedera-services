@@ -45,6 +45,9 @@ public class ResolveSelectorCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
+
+        contractCommand.setupLogging();
+
         final var selector = HexToBytesConverter.asUnsignedInt(selectorBytes);
         final var descriptionFetcher = new SelectorDescriptions();
 
