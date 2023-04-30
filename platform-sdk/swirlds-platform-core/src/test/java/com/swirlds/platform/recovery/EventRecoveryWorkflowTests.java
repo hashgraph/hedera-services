@@ -421,6 +421,6 @@ class EventRecoveryWorkflowTests {
         assertNull(backupFile.recovery().boostrap(), "No bootstrap information should exist in the backup");
     }
 
-    // TODO reapplyTransactions() test
-    // TODO recoverState() test
+    // FUTURE WORK reapplyTransactions() test
+    // FUTURE WORK recoverState() test
 }
