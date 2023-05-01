@@ -142,14 +142,14 @@ public class UptimeTracker {
      * @return true if this node should consider itself to be degraded
      */
     public boolean isSelfDegraded() {
-        final Instant lastEventTime = this.lastEventTime.get();
-        if (lastEventTime == null) {
+        final Instant lastSelfEventTime = lastEventTime.get();
+        if (lastSelfEventTime == null) {
             // Consider a node to be degraded until it has its first event reach consensus.
             return true;
         }
 
         final Instant now = time.now();
-        final Duration durationSinceLastEvent = Duration.between(lastEventTime, now);
+        final Duration durationSinceLastEvent = Duration.between(lastSelfEventTime, now);
         return CompareTo.isGreaterThan(durationSinceLastEvent, degradationThreshold);
     }
 

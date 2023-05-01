@@ -189,9 +189,9 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeInt(data.size());
-        for (final long id : data.keySet()) {
-            out.writeLong(id);
-            out.writeSerializable(data.get(id), false);
+        for (final Entry<Long, NodeUptimeData> entry : data.entrySet()) {
+            out.writeLong(entry.getKey());
+            out.writeSerializable(entry.getValue(), false);
         }
     }
 
