@@ -873,7 +873,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * @param value The flush threshold, in bytes
      */
     public void setFlushThreshold(long value) {
-        flushThreshold.getAndSet(value);
+        flushThreshold.set(value);
         updateShouldBeFlushed();
     }
 
