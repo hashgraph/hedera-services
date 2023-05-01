@@ -27,7 +27,6 @@ import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import com.hedera.node.app.service.util.impl.records.UtilPrngRecordBuilder;
 import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -50,7 +49,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class UtilPrngHandler implements TransactionHandler {
     private static final Logger log = LogManager.getLogger(UtilPrngHandler.class);
-    private static final byte[] MISSING_BYTES = new byte[0];
+    public static final byte[] MISSING_BYTES = new byte[0];
 
     @Inject
     public UtilPrngHandler() {
@@ -62,6 +61,7 @@ public class UtilPrngHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
+        // validate range is greater than zero
         if (context.body().utilPrngOrThrow().range() < 0) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_PRNG_RANGE);
         }
@@ -94,9 +94,9 @@ public class UtilPrngHandler implements TransactionHandler {
         // from the pseudoRandomBytes
         if (range > 0) {
             final int pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
-            recordBuilder.setGeneratedRandomNumber(pseudoRandomNumber);
+            recordBuilder.setPrngNumber(pseudoRandomNumber);
         } else {
-            recordBuilder.setGeneratedRandomBytes(Bytes.wrap(pseudoRandomBytes));
+            recordBuilder.setPrngBytes(Bytes.wrap(pseudoRandomBytes));
         }
     }
 
@@ -122,9 +122,10 @@ public class UtilPrngHandler implements TransactionHandler {
         try {
             hash = nMinus3RunningHash.getFutureHash().get();
         } catch (RuntimeException | InterruptedException | ExecutionException e) {
-            log.error("Interrupted exception while waiting for n-3 running hash");
-            throw new HandleException(ResponseCodeEnum.INVALID_PRNG_RANGE);
-            // error should be different here
+            log.error("Interrupted exception while waiting for n-3 running hash", e);
+            throw new IllegalStateException(e);
+            // TODO: Handle exception tobe thrown here. Need to decide on the status to be
+            //  thrown for any interrupted exception
         }
         // Use n-3 running hash instead of n-1 running hash for processing transactions quickly
         if (nMinus3RunningHash == null || Arrays.equals(hash.getValue(), new byte[48])) {

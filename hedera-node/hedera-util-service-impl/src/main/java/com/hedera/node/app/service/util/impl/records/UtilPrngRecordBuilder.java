@@ -47,7 +47,7 @@ public class UtilPrngRecordBuilder extends UniversalRecordBuilder<PrngRecordBuil
      */
     @NonNull
     @Override
-    public PrngRecordBuilder setGeneratedRandomNumber(int num) {
+    public PrngRecordBuilder setPrngNumber(int num) {
         this.randomNumber = num;
         return self();
     }
@@ -57,7 +57,7 @@ public class UtilPrngRecordBuilder extends UniversalRecordBuilder<PrngRecordBuil
      */
     @NonNull
     @Override
-    public PrngRecordBuilder setGeneratedRandomBytes(Bytes prngBytes) {
+    public PrngRecordBuilder setPrngBytes(Bytes prngBytes) {
         this.randomBytes = prngBytes;
         return self();
     }
@@ -66,7 +66,7 @@ public class UtilPrngRecordBuilder extends UniversalRecordBuilder<PrngRecordBuil
      * {@inheritDoc}
      */
     @Override
-    public Integer getGeneratedNumber() {
+    public Integer getPrngNumber() {
         return randomNumber;
     }
 
@@ -74,7 +74,7 @@ public class UtilPrngRecordBuilder extends UniversalRecordBuilder<PrngRecordBuil
      * {@inheritDoc}
      */
     @Override
-    public Bytes getGeneratedBytes() {
+    public Bytes getPrngBytes() {
         return randomBytes;
     }
 }

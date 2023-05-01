@@ -28,6 +28,8 @@ configurations.all {
 }
 
 dependencies {
+  testImplementation(project(mapOf("path" to ":hedera-node:hedera-app-spi")))
+  testImplementation(project(mapOf("path" to ":hedera-node:hedera-app-spi")))
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-util-service"))
   implementation(project(":hedera-node:hedera-mono-service"))

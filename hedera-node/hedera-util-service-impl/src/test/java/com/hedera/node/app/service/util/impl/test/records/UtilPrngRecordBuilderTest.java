@@ -32,7 +32,7 @@ public class UtilPrngRecordBuilderTest {
 
     @Test
     void emptyConstructor() {
-        assertNull(subject.getGeneratedBytes());
-        assertNull(subject.getGeneratedNumber());
+        assertNull(subject.getPrngBytes());
+        assertNull(subject.getPrngNumber());
     }
 }

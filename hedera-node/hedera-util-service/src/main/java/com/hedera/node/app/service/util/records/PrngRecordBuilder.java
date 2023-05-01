@@ -33,7 +33,7 @@ public interface PrngRecordBuilder extends RecordBuilder<PrngRecordBuilder> {
      * @return this builder
      */
     @NonNull
-    PrngRecordBuilder setGeneratedRandomNumber(int num);
+    PrngRecordBuilder setPrngNumber(int num);
 
     /**
      * Tracks the pseudorandom 384-bit string generated when no output range is provided or range of 0 is provided in
@@ -43,14 +43,14 @@ public interface PrngRecordBuilder extends RecordBuilder<PrngRecordBuilder> {
      * @return this builder
      */
     @NonNull
-    PrngRecordBuilder setGeneratedRandomBytes(Bytes prngBytes);
+    PrngRecordBuilder setPrngBytes(Bytes prngBytes);
 
     /**
      * Returns the number of the created topic.
      *
      * @return the number of the created topic
      */
-    Integer getGeneratedNumber();
+    Integer getPrngNumber();
 
     /**
      * Returns the generated pseudorandom bytes, when no range is provided in
@@ -58,9 +58,9 @@ public interface PrngRecordBuilder extends RecordBuilder<PrngRecordBuilder> {
      *
      * @return the generated pseudorandom bytes
      */
-    Bytes getGeneratedBytes();
+    Bytes getPrngBytes();
 
     default boolean hasPrngNumber() {
-        return getGeneratedNumber() != null;
+        return getPrngNumber() != null;
     }
 }
