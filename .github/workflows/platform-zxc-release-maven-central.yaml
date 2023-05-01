@@ -77,6 +77,11 @@ jobs:
     name: ${{ inputs.custom-job-label || 'Release' }}
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
       - name: Install Semantic Version Tools
         run: |
           echo "::group::Download SemVer Binary"
@@ -133,15 +138,10 @@ jobs:
             exit 12
           fi
 
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
       - name: Import GPG key
         id: gpg_key
         uses: crazy-max/ghaction-import-gpg@v5
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           gpg_private_key: ${{ secrets.gpg-key-contents }}
           passphrase: ${{ secrets.gpg-key-passphrase }}
@@ -153,7 +153,7 @@ jobs:
       - name: Authenticate to Google Cloud
         id: google-auth
         uses: google-github-actions/auth@v1
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           workload_identity_provider: 'projects/229164983194/locations/global/workloadIdentityPools/registry-identity-pool/providers/gh-provider'
           service_account: 'artifact-deployer@swirlds-registry.iam.gserviceaccount.com'
@@ -196,7 +196,7 @@ jobs:
 
       - name: Gradle Assemble
         uses: gradle/gradle-build-action@v2
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
@@ -205,7 +205,7 @@ jobs:
       - name: Gradle JavaDoc
         id: gradle-javadoc
         uses: gradle/gradle-build-action@v2
-        if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() && !failure() }}
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
@@ -213,7 +213,7 @@ jobs:
 
       - name: Gradle Deploy
         uses: gradle/gradle-build-action@v2
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         env:
           OSSRH_USERNAME: ${{ secrets.ossrh-user-name }}
           OSSRH_PASSWORD: ${{ secrets.ossrh-user-password }}
@@ -225,7 +225,7 @@ jobs:
       - name: Commit Version Changes
         id: commit
         uses: EndBug/add-and-commit@v9
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           author_name: ${{ secrets.git-user-name }}
           author_email: ${{ secrets.git-user-email }}
@@ -240,7 +240,7 @@ jobs:
 #          key: v1-sdk-release-v${{ inputs.new-version }}-jdk${{ inputs.java-version }}-${{ runner.os }}-${{ runner.arch }}-ri${{ github.run_id }}-rn${{ github.run_number }}-ra${{ github.run_attempt }}
 
       - name: Stage SDK Release Archives
-        if: ${{ !cancelled() && inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         run: |
           SDK_RELEASE_DIR="${HOME}/sdk-release"
           SDK_ARCHIVE_DIR="${HOME}/sdk-archives"
@@ -312,7 +312,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Upload SDK Release Archives
-        if: ${{ !cancelled() && inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         env:
           RELEASE_TAG: v${{ inputs.new-version }}
         run: |

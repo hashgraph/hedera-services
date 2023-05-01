@@ -91,6 +91,13 @@ jobs:
     name: ${{ inputs.custom-job-label || 'Release' }}
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          token: ${{ secrets.access-token }}
+          fetch-depth: 0
+
       - name: Verify Early Access Deployment
         if: ${{ inputs.version-policy == 'early-access-explicit' && !cancelled() }}
         run: |
@@ -124,17 +131,10 @@ jobs:
             fi
           fi
 
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-          token: ${{ secrets.access-token }}
-          fetch-depth: 0
-
       - name: Import GPG key
         id: gpg_key
         uses: crazy-max/ghaction-import-gpg@v5
-        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'early-access-explicit' }}
+        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'early-access-explicit' && !cancelled() && !failure() }}
         with:
           gpg_private_key: ${{ secrets.gpg-key-contents }}
           passphrase: ${{ secrets.gpg-key-passphrase }}
@@ -146,13 +146,13 @@ jobs:
       - name: Authenticate to Google Cloud
         id: google-auth
         uses: google-github-actions/auth@v1
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           workload_identity_provider: 'projects/229164983194/locations/global/workloadIdentityPools/registry-identity-pool/providers/gh-provider'
           service_account: 'artifact-deployer@swirlds-registry.iam.gserviceaccount.com'
 
       - name: Setup Google Cloud SDK
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         uses: google-github-actions/setup-gcloud@v1
 
       - name: Setup Java
@@ -187,7 +187,7 @@ jobs:
 
       - name: Verify Version Number Update (Explicit)
         id: verify-explicit-version
-        if: ${{ (inputs.version-policy == 'uniform-explicit' || inputs.version-policy == 'early-access-explicit') && !cancelled() }}
+        if: ${{ (inputs.version-policy == 'uniform-explicit' || inputs.version-policy == 'early-access-explicit') && !cancelled() && !failure() }}
         run: |
           if [[ -z "${{ inputs.new-version }}" ]]; then
             echo "::error title=Version Error::The version policy of ${{ inputs.version-policy }} requires the new-version parameter to be specified; however, no value was provided."
@@ -205,14 +205,14 @@ jobs:
 
       - name: Apply Version Number Update (Explicit)
         uses: gradle/gradle-build-action@v2
-        if: ${{ (inputs.version-policy == 'uniform-explicit' || inputs.version-policy == 'early-access-explicit') && !cancelled() }}
+        if: ${{ (inputs.version-policy == 'uniform-explicit' || inputs.version-policy == 'early-access-explicit') && !cancelled() && !failure() }}
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsSpecified --scan -PnewVersion=${{ steps.verify-explicit-version.outputs.number }}
 
       - name: Update Version Numbers (Commit Locked)
-        if: ${{ inputs.version-policy == 'commit-locked' && !cancelled() }}
+        if: ${{ inputs.version-policy == 'commit-locked' && !cancelled() && !failure() }}
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: platform-sdk
@@ -220,7 +220,7 @@ jobs:
           arguments: versionAsPrefixedCommit --scan -PcommitPrefix=${{ inputs.prerelease-prefix }}
 
       - name: Update Version Numbers (Snapshot Locked)
-        if: ${{ inputs.version-policy == 'snapshot-locked' && !cancelled() }}
+        if: ${{ inputs.version-policy == 'snapshot-locked' && !cancelled() && !failure() }}
         uses: gradle/gradle-build-action@v2
         with:
           build-root-directory: platform-sdk
@@ -236,7 +236,7 @@ jobs:
 
       - name: Gradle Assemble
         uses: gradle/gradle-build-action@v2
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
@@ -244,7 +244,7 @@ jobs:
 
       - name: Gradle Deploy
         uses: gradle/gradle-build-action@v2
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
@@ -252,7 +252,7 @@ jobs:
 
       - name: Commit Version Changes
         uses: EndBug/add-and-commit@v9
-        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'early-access-explicit' }}
+        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'early-access-explicit' && !cancelled() && !failure() }}
         with:
           author_name: ${{ secrets.git-user-name }}
           author_email: ${{ secrets.git-user-email }}
