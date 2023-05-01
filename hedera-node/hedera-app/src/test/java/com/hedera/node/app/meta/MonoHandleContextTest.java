@@ -19,9 +19,11 @@ package com.hedera.node.app.meta;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -78,5 +80,16 @@ class MonoHandleContextTest {
     @Test
     void returnsExpiryValidatorAsExpected() {
         assertSame(expiryValidator, subject.expiryValidator());
+    }
+
+    @Test
+    void returnsAttributeValidatorAsExpected() {
+        assertSame(attributeValidator, subject.attributeValidator());
+    }
+
+    @Test
+    void createsStore() {
+        subject.createStore(ReadableRunningHashLeafStore.class);
+        verify(readableStoreFactory).createStore(ReadableRunningHashLeafStore.class);
     }
 }

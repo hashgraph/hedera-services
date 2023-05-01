@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import org.junit.jupiter.api.Test;
 
-public class PrngConfigTest {
+class PrngConfigTest {
 
     @Test
     void emptyConstructor() {

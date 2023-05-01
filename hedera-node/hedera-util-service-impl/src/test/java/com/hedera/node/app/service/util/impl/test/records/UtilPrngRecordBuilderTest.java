@@ -43,17 +43,22 @@ class UtilPrngRecordBuilderTest {
     }
 
     @Test
-    void gettersAndSettersWork() {
+    void gettersAndSettersForBytesWork() {
         final var randomBytes = Utils.randomUtf8Bytes(48);
 
         subject.setPrngBytes(Bytes.wrap(randomBytes));
 
         assertEquals(Bytes.wrap(randomBytes), subject.getPrngBytes());
         assertFalse(subject.hasPrngNumber());
+        assertTrue(subject.hasPrngBytes());
+    }
 
+    @Test
+    void gettersAndSettersForNumberWork() {
         subject.setPrngNumber(123456789);
 
         assertEquals(123456789, subject.getPrngNumber());
         assertTrue(subject.hasPrngNumber());
+        assertFalse(subject.hasPrngBytes());
     }
 }
