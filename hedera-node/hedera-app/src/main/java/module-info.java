@@ -60,5 +60,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.fees to
             com.swirlds.platform;
     exports com.hedera.node.app.throttle to
-            com.swirlds.platform; exports com.hedera.node.app.workflows.dispatcher;
+            com.swirlds.platform;
+    exports com.hedera.node.app.workflows.dispatcher;
 }

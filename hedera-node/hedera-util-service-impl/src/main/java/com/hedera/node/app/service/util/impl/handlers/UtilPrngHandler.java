@@ -87,6 +87,8 @@ public class UtilPrngHandler implements TransactionHandler {
         final var runningHashStore = context.createStore(ReadableRunningHashLeafStore.class);
         final var nMinusThreeRunningHash = runningHashStore.getNMinusThreeRunningHash();
         final byte[] pseudoRandomBytes = getNMinus3RunningHashBytes(nMinusThreeRunningHash);
+
+        // If no bytes are available then return
         if (pseudoRandomBytes == null || pseudoRandomBytes.length == 0) {
             return;
         }
@@ -118,22 +120,26 @@ public class UtilPrngHandler implements TransactionHandler {
      * @return n-3 running hash bytes
      */
     private byte[] getNMinus3RunningHashBytes(@NonNull final RunningHash nMinus3RunningHash) {
-        var hash = new Hash();
+        // This can't happen because this running hash is taken from record stream.
+        // If this happens then there is a bug in the code.
+        requireNonNull(nMinus3RunningHash);
+
+        Hash nMinusThreeHash;
         try {
-            hash = nMinus3RunningHash.getFutureHash().get();
-        } catch (RuntimeException | InterruptedException | ExecutionException e) {
+            nMinusThreeHash = nMinus3RunningHash.getFutureHash().get();
+            // Use n-3 running hash instead of n-1 running hash for processing transactions quickly
+            if (nMinusThreeHash == null || Arrays.equals(nMinusThreeHash.getValue(), new byte[48])) {
+                log.info("No n-3 record running hash available to generate random number");
+                return MISSING_BYTES;
+            }
+            // generate binary string from the running hash of records
+            return nMinusThreeHash.getValue();
+        } catch (InterruptedException | ExecutionException e) {
             log.error("Interrupted exception while waiting for n-3 running hash", e);
             throw new IllegalStateException(e);
-            // TODO: Handle exception tobe thrown here. Need to decide on the status to be
+            // TODO: Handle exception to be thrown here. Need to decide on the status to be
             //  thrown for any interrupted exception
         }
-        // Use n-3 running hash instead of n-1 running hash for processing transactions quickly
-        if (nMinus3RunningHash == null || Arrays.equals(hash.getValue(), new byte[48])) {
-            log.info("No n-3 record running hash available to generate random number");
-            return MISSING_BYTES;
-        }
-        // generate binary string from the running hash of records
-        return hash.getValue();
     }
 
     /**

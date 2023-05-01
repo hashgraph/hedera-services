@@ -106,8 +106,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     @Override
     protected void finishUtilPrng(@NonNull final PrngRecordBuilder recordBuilder) {
         if (recordBuilder.hasPrngNumber()) {
-            sideEffectsTracker.trackRandomNumber(
-                    recordBuilder.getPrngNumber());
+            sideEffectsTracker.trackRandomNumber(recordBuilder.getPrngNumber());
         } else {
             sideEffectsTracker.trackRandomBytes(PbjConverter.asBytes(recordBuilder.getPrngBytes()));
         }
