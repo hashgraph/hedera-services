@@ -61,9 +61,13 @@ import java.time.Duration;
  * 		value must be positive and will typically be a fairly small number, such as 20. The first copy is not flushed,
  * 		but every Nth copy thereafter is.
  * @param copyFlushThreshold
- *      Virtual root copy flush threshold
+ *      Virtual root copy flush threshold. A copy can be flushed to disk only if it's size exceeds this
+ *      threshold. If set to zero, size-based flushes aren't used, and copies are flushed based on {@link
+ *      #flushInterval} instead.
  * @param familyThrottleThreshold
- *      Virtual root family throttle threshold
+ *      Virtual root family throttle threshold. When estimated size of all unreleased copies of the same virtual
+ *      root exceeds this threshold, virtual pipeline starts applying backpressure on creating new root copies.
+ *      If the threshold is set to zero, this backpressure mechanism is not used.
  * @param preferredFlushQueueSize
  * 		The preferred maximum number of virtual maps waiting to be flushed. If more maps than this number are awaiting
  * 		flushing then slow down fast copies of the virtual map so that flushing can catch up.
