@@ -110,10 +110,12 @@ import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.AssertingBiConsumer;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.CryptoCreateAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -135,6 +137,7 @@ import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -489,6 +492,11 @@ public class UtilVerbs {
             config.accept(assertion);
             return assertion;
         };
+    }
+
+    public static Function<HapiSpec, RecordStreamAssertion> recordedChildBodyWithId(
+            final String specTxnId, final int nonce, final AssertingBiConsumer<HapiSpec, TransactionBody> assertion) {
+        return spec -> new TransactionBodyAssertion(specTxnId, spec, txnId -> txnId.getNonce() == nonce, assertion);
     }
 
     public static RecordFileChecker verifyRecordFile(
