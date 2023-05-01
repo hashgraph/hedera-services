@@ -60,10 +60,18 @@ public interface PrngRecordBuilder extends RecordBuilder<PrngRecordBuilder> {
      */
     Bytes getPrngBytes();
 
+    /**
+     * Returns true if the pseudorandom number is set. False otherwise.
+     * @return true if the pseudorandom number is set. False otherwise.
+     */
     default boolean hasPrngNumber() {
         return getPrngNumber() != null;
     }
 
+    /**
+     * Returns true if the pseudorandom bytes are set. False otherwise.
+     * @return true if the pseudorandom bytes are set. False otherwise.
+     */
     default boolean hasPrngBytes() {
         return getPrngBytes() != null;
     }

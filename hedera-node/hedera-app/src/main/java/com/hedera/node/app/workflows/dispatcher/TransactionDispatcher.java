@@ -376,10 +376,21 @@ public class TransactionDispatcher {
         // No-op by default
     }
 
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param tokenStore the token store
+     */
     protected void finishTokenUnPause(@NonNull final WritableTokenStore tokenStore) {
         // No-op by default
     }
 
+    /**
+     * Dispatches the util prng transaction to the appropriate handler.
+     * @param utilPrng the util prng transaction body
+     */
     private void dispatchPrng(@NonNull final TransactionBody utilPrng) {
         final var handler = handlers.utilPrngHandler();
         final var recordBuilder = handler.newRecordBuilder();
@@ -391,6 +402,13 @@ public class TransactionDispatcher {
         finishUtilPrng(recordBuilder);
     }
 
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param recordBuilder the record builder
+     */
     protected void finishUtilPrng(@NonNull final PrngRecordBuilder recordBuilder) {
         // No-op by default
     }

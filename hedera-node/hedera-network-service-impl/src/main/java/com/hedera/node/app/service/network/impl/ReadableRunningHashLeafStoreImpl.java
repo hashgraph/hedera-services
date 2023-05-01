@@ -43,6 +43,9 @@ public class ReadableRunningHashLeafStoreImpl implements ReadableRunningHashLeaf
         this.runningHashState = states.getSingleton(RUNNING_HASHES_KEY);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public RunningHash getNMinusThreeRunningHash() {
         return runningHashState.get().getNMinus3RunningHash();
     }

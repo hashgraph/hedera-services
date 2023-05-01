@@ -23,7 +23,7 @@ import com.swirlds.common.crypto.RunningHash;
  */
 public interface ReadableRunningHashLeafStore {
     /**
-     * Get the n-3 record's running hash
+     * Get the n-3 record's running hash from running hash leaf.
      * @return the n-3 record's running hash
      */
     RunningHash getNMinusThreeRunningHash();
