@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -87,6 +88,13 @@ class EntityAutoExpiryTest {
                 () -> networkCtx,
                 consensusTimeTracker,
                 () -> seqNo);
+    }
+
+    @Test
+    void doesNothingIfAllEntitiesScanned() {
+        given(networkCtx.areAllPreUpgradeEntitiesScanned()).willReturn(true);
+
+        assertDoesNotThrow(() -> subject.execute(instantNow));
     }
 
     @Test
