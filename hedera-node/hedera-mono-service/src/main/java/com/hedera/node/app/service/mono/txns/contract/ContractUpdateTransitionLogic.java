@@ -95,7 +95,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
             final var id = unaliased(op.getContractID(), aliasManager);
             final var target = contracts.get().get(id);
 
-            var result = customizerFactory.customizerFor(target, validator, op);
+            var result = customizerFactory.customizerFor(target, validator, op, properties);
             var contractCustomizer = result.getLeft();
             if (contractCustomizer.isPresent()) {
                 final var customizer = contractCustomizer.get();

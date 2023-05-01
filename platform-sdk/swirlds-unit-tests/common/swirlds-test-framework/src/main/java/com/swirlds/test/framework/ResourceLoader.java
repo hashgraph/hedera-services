@@ -40,7 +40,7 @@ public abstract class ResourceLoader {
     /**
      * Read a file from disk. The path is considered to be relative to the resources directory.
      *
-     * TODO: can this method be unified with the other methods in this class?
+     * FUTURE WORK: can this method be unified with the other methods in this class?
      *
      * @param path
      * 		the path to the file relative to the resources directory

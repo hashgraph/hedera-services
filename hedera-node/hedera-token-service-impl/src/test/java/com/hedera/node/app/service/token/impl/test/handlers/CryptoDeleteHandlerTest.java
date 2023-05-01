@@ -31,10 +31,10 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
     }
 
     @Test
@@ -61,7 +61,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
         assertEquals(txn, context.body());
@@ -77,7 +77,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
         assertEquals(txn, context.body());
@@ -89,7 +89,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() throws PreCheckException {
         final var txn = deleteAccountTransaction(id, id);
 
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
         assertEquals(txn, context.body());
@@ -108,10 +108,10 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
         given(deleteAccount.key()).willReturn(accountKey);
 
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
         assertEquals(txn, context.body());
@@ -124,7 +124,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddDeleteKeyIfAccountSameAsPayerForCryptoDelete() throws PreCheckException {
         final var txn = deleteAccountTransaction(id, transferAccountId);
 
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
         assertEquals(txn, context.body());
@@ -138,10 +138,10 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         readableAccounts = emptyReadableAccountStateBuilder().build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
         given(deleteAccount.key()).willReturn(accountKey);
 
-        assertThrowsPreCheck(() -> new PreHandleContext(readableStore, txn), INVALID_PAYER_ACCOUNT_ID);
+        assertThrowsPreCheck(() -> new FakePreHandleContext(readableStore, txn), INVALID_PAYER_ACCOUNT_ID);
 
         /* ------ deleteAccount missing, so transferAccount will not be added ------ */
         readableAccounts = emptyReadableAccountStateBuilder()
@@ -149,9 +149,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
 
-        final var context2 = new PreHandleContext(readableStore, txn);
+        final var context2 = new FakePreHandleContext(readableStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context2), INVALID_ACCOUNT_ID);
 
         /* ------ transferAccount missing ------ */
@@ -160,9 +160,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStore(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
 
-        final var context3 = new PreHandleContext(readableStore, txn);
+        final var context3 = new FakePreHandleContext(readableStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context3), INVALID_TRANSFER_ACCOUNT_ID);
     }
 
@@ -172,7 +172,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, AccountID.DEFAULT);
 
-        final var context = new PreHandleContext(readableStore, txn);
+        final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
 
         assertEquals(txn, context.body());

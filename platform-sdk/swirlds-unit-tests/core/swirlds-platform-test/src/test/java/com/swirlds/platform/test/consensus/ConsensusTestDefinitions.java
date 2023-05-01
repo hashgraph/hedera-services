@@ -963,7 +963,7 @@ public final class ConsensusTestDefinitions {
         areAllEventsReturned(numberOfNodes, weightGenerator, new Random().nextLong());
     }
 
-    // TODO convert to new framework
+    // FUTURE WORK convert to new framework
     public static void areAllEventsReturned(
             final int numberOfNodes, final WeightGenerator weightGenerator, final long seed) {
         final int numEventsBeforeExclude = 50000;
@@ -1061,7 +1061,7 @@ public final class ConsensusTestDefinitions {
         }
     }
 
-    // TODO Finish and convert to new framework. As it is, this does not verify anything.
+    // FUTURE WORK Finish and convert to new framework. As it is, this does not verify anything.
     public static void staleEvent(
             final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
         if (seeds != null) {
@@ -1115,7 +1115,7 @@ public final class ConsensusTestDefinitions {
         }
     }
 
-    // TODO convert to new framework
+    // FUTURE WORK convert to new framework
     public static void reconnectSimulation(
             final Path stateDir,
             final int numberOfNodes,
