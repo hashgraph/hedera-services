@@ -31,6 +31,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
@@ -187,9 +188,11 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
         when(settingsProvider.getMaxEventQueueForCons()).thenReturn(500);
 
+        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+
         final SwirldStateManager swirldStateManager = new SwirldStateManagerImpl(
                 TestPlatformContextBuilder.create().build(),
-                mock(AddressBook.class),
+                addressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,

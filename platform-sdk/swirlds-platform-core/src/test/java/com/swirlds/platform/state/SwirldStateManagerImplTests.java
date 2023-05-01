@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SwirldsPlatform;
@@ -42,11 +43,12 @@ public class SwirldStateManagerImplTests {
     @BeforeEach
     void setup() {
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
-        when(platform.getAddressBook()).thenReturn(mock(AddressBook.class));
+        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+        when(platform.getAddressBook()).thenReturn(addressBook);
         initialState = newState();
         swirldStateManagerImpl = new SwirldStateManagerImpl(
                 TestPlatformContextBuilder.create().build(),
-                mock(AddressBook.class),
+                addressBook,
                 new NodeId(false, 0L),
                 mock(PreConsensusSystemTransactionManager.class),
                 mock(PostConsensusSystemTransactionManager.class),
