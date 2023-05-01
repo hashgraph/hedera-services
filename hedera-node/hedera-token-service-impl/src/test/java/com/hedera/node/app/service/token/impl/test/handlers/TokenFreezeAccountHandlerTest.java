@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.FREEZE_WITH_NO_KEYS;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.VALID_FREEZE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -80,6 +82,15 @@ class TokenFreezeAccountHandlerTest extends ParityTestBase {
             final var context = new FakePreHandleContext(readableAccountStore, theTxn);
             context.registerStore(ReadableTokenStore.class, readableTokenStore);
             Assertions.assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+        }
+
+        @Test
+        void tokenFreezeWithNoFreezeKey() throws PreCheckException {
+            final var theTxn = txnFrom(FREEZE_WITH_NO_KEYS);
+
+            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+            context.registerStore(ReadableTokenStore.class, readableTokenStore);
+            Assertions.assertThrowsPreCheck(() -> subject.preHandle(context), TOKEN_HAS_NO_FREEZE_KEY);
         }
     }
 }
