@@ -89,4 +89,19 @@ class RecordStreamSigningUtilsTest {
         assertTrue(RecordStreamSigningUtils.signRecordStreamFile(
                 signatureFileFullPath, fileToSign, TestUtils.loadKey(), hapiVersion));
     }
+
+    @Test
+    @DisplayName("Failed if hapi version is not correct format")
+    void throwsOnInvalidProtobufVersionException() {
+        final var signatureFileFullPath = Path.of(tmpDir.getPath() + "/2022-09-19T21_09_17.348788413Z.rcd.gz");
+        final Path fileToSign;
+        fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
+                        .getClassLoader()
+                        .getResource("com.hedera.services.cli.sign.test/2022-09-19T21_09_17.348788413Z.rcd.gz"))
+                .getPath());
+        final var hapiVersion = "0.2";
+
+        assertFalse(RecordStreamSigningUtils.signRecordStreamFile(
+                signatureFileFullPath, fileToSign, TestUtils.loadKey(), hapiVersion));
+    }
 }

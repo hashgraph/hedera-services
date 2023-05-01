@@ -17,7 +17,7 @@
 package com.hedera.services.cli.sign;
 
 /**
- * An exception that thrown if invalid protobuf version is found.
+ * An exception that is thrown if invalid protobuf version is found.
  *
  */
 public class InvalidProtobufVersionException extends Exception {
