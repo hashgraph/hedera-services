@@ -349,7 +349,7 @@ public class TransactionDispatcher {
             @NonNull final TransactionBody tokenUnpause, @NonNull final WritableTokenStore tokenStore) {
         final var handler = handlers.tokenUnpauseHandler();
         handler.handle(tokenUnpause, tokenStore);
-        tokenStore.commit();
+        finishTokenUnPause(tokenStore);
     }
 
     /**
@@ -362,7 +362,22 @@ public class TransactionDispatcher {
             @NonNull final TransactionBody tokenPause, @NonNull final WritableTokenStore tokenStore) {
         final var handler = handlers.tokenPauseHandler();
         handler.handle(tokenPause, tokenStore);
-        tokenStore.commit();
+        finishTokenPause(tokenStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param tokenStore the token store
+     */
+    protected void finishTokenPause(@NonNull final WritableTokenStore tokenStore) {
+        // No-op by default
+    }
+
+    protected void finishTokenUnPause(@NonNull final WritableTokenStore tokenStore) {
+        // No-op by default
     }
 
     private void dispatchPrng(@NonNull final TransactionBody utilPrng) {
@@ -373,6 +388,7 @@ public class TransactionDispatcher {
                 utilPrng.utilPrng(),
                 new PrngConfig(dynamicProperties.isUtilPrngEnabled()),
                 recordBuilder);
+        finishUtilPrng(recordBuilder);
     }
 
     protected void finishUtilPrng(@NonNull final PrngRecordBuilder recordBuilder) {

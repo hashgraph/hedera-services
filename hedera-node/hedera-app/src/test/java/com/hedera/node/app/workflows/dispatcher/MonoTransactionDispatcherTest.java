@@ -19,6 +19,9 @@ package com.hedera.node.app.workflows.dispatcher;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -141,12 +144,14 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.service.util.impl.records.UtilPrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -573,6 +578,32 @@ class MonoTransactionDispatcherTest {
         dispatcher.dispatchHandle(HederaFunctionality.TOKEN_UNPAUSE, transactionBody, writableStoreFactory);
 
         verify(writableTokenStore).commit();
+    }
+
+    @Test
+    void dispatchesUtilPrngAsExpectedWithPrngBytes() {
+        final var mockRecordBuilder = mock(UtilPrngRecordBuilder.class);
+        given(utilPrngHandler.newRecordBuilder()).willReturn(mockRecordBuilder);
+        given(mockRecordBuilder.hasPrngBytes()).willReturn(true);
+        given(mockRecordBuilder.getPrngBytes()).willReturn(Bytes.wrap("test".getBytes()));
+
+        dispatcher.dispatchHandle(HederaFunctionality.UTIL_PRNG, transactionBody, writableStoreFactory);
+
+        assertEquals(-1, sideEffectsTracker.getPseudorandomNumber());
+        assertArrayEquals("test".getBytes(), sideEffectsTracker.getPseudorandomBytes());
+    }
+
+    @Test
+    void dispatchesUtilPrngAsExpectedWithPrngNumber() {
+        final var mockRecordBuilder = mock(UtilPrngRecordBuilder.class);
+        given(utilPrngHandler.newRecordBuilder()).willReturn(mockRecordBuilder);
+        given(mockRecordBuilder.hasPrngNumber()).willReturn(true);
+        given(mockRecordBuilder.getPrngNumber()).willReturn(123);
+
+        dispatcher.dispatchHandle(HederaFunctionality.UTIL_PRNG, transactionBody, writableStoreFactory);
+
+        assertEquals(123, sideEffectsTracker.getPseudorandomNumber());
+        assertNull(sideEffectsTracker.getPseudorandomBytes());
     }
 
     @Test

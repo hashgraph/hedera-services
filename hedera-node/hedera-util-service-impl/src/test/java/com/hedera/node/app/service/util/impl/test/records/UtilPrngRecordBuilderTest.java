@@ -16,13 +16,18 @@
 
 package com.hedera.node.app.service.util.impl.test.records;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.util.impl.records.UtilPrngRecordBuilder;
+import com.hedera.node.app.spi.fixtures.Utils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class UtilPrngRecordBuilderTest {
+class UtilPrngRecordBuilderTest {
     private UtilPrngRecordBuilder subject;
 
     @BeforeEach
@@ -34,5 +39,21 @@ public class UtilPrngRecordBuilderTest {
     void emptyConstructor() {
         assertNull(subject.getPrngBytes());
         assertNull(subject.getPrngNumber());
+        assertFalse(subject.hasPrngNumber());
+    }
+
+    @Test
+    void gettersAndSettersWork() {
+        final var randomBytes = Utils.randomUtf8Bytes(48);
+
+        subject.setPrngBytes(Bytes.wrap(randomBytes));
+
+        assertEquals(Bytes.wrap(randomBytes), subject.getPrngBytes());
+        assertFalse(subject.hasPrngNumber());
+
+        subject.setPrngNumber(123456789);
+
+        assertEquals(123456789, subject.getPrngNumber());
+        assertTrue(subject.hasPrngNumber());
     }
 }

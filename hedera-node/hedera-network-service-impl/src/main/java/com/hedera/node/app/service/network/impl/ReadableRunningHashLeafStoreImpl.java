@@ -46,12 +46,4 @@ public class ReadableRunningHashLeafStoreImpl implements ReadableRunningHashLeaf
     public RunningHash getNMinusThreeRunningHash() {
         return runningHashState.get().getNMinus3RunningHash();
     }
-
-    public RunningHash getNMinusOneRunningHash() {
-        return runningHashState.get().getNMinus1RunningHash();
-    }
-
-    public RunningHash getNMinusTwoRunningHash() {
-        return runningHashState.get().getNMinus2RunningHash();
-    }
 }

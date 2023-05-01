@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -104,10 +105,20 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     }
 
     @Override
+    protected void finishTokenPause(@NonNull final WritableTokenStore tokenStore) {
+        tokenStore.commit();
+    }
+
+    @Override
+    protected void finishTokenUnPause(@NonNull final WritableTokenStore tokenStore) {
+        tokenStore.commit();
+    }
+
+    @Override
     protected void finishUtilPrng(@NonNull final PrngRecordBuilder recordBuilder) {
         if (recordBuilder.hasPrngNumber()) {
             sideEffectsTracker.trackRandomNumber(recordBuilder.getPrngNumber());
-        } else {
+        } else if (recordBuilder.hasPrngBytes()) {
             sideEffectsTracker.trackRandomBytes(PbjConverter.asBytes(recordBuilder.getPrngBytes()));
         }
     }

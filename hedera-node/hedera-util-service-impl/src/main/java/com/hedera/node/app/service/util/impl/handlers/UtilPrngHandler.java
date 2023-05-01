@@ -136,6 +136,7 @@ public class UtilPrngHandler implements TransactionHandler {
             return nMinusThreeHash.getValue();
         } catch (InterruptedException | ExecutionException e) {
             log.error("Interrupted exception while waiting for n-3 running hash", e);
+            Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
             // TODO: Handle exception to be thrown here. Need to decide on the status to be
             //  thrown for any interrupted exception

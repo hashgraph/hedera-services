@@ -7,6 +7,8 @@ module com.hedera.node.app.service.util.impl.test {
     requires com.hedera.pbj.runtime;
     requires com.swirlds.common;
     requires com.hedera.node.app.service.network;
+    requires com.hedera.node.app.spi.fixtures;
+    requires org.assertj.core;
 
     opens com.hedera.node.app.service.util.impl.test to
             org.junit.platform.commons,

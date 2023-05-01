@@ -63,4 +63,8 @@ public interface PrngRecordBuilder extends RecordBuilder<PrngRecordBuilder> {
     default boolean hasPrngNumber() {
         return getPrngNumber() != null;
     }
+
+    default boolean hasPrngBytes() {
+        return getPrngBytes() != null;
+    }
 }
