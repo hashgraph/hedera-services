@@ -16,30 +16,48 @@
 
 package com.swirlds.platform.state.address;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.Network;
+import java.net.InetAddress;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * {@link AddressBook AddressBook} utility methods.
  */
 public final class AddressBookUtils {
 
+    /** For logging info, warn, and error. */
+    private static final Logger logger = LogManager.getLogger(AddressBookUtils.class);
+
     private AddressBookUtils() {}
 
     /**
-     * Get the number of addresses currently in the address book that are running on this computer. When the
-     * browser is run with a config.txt file, it can launch multiple copies of the app simultaneously, each
-     * with its own TCP/IP port. This method returns how many there are.
+     * Get the number of addresses currently in the address book that are running on this computer. When the browser is
+     * run with a config.txt file, it can launch multiple copies of the app simultaneously, each with its own TCP/IP
+     * port. This method returns how many there are.
      *
-     * @param addressBook
-     * 		the address book to check
+     * @param addressBook the address book to check
      * @return the number of local addresses
      */
     public static int getOwnHostCount(final AddressBook addressBook) {
         int count = 0;
         for (final Address address : addressBook) {
-            if (address.isOwnHost()) {
-                count++;
+            try {
+                if (Network.isOwn(InetAddress.getByAddress(address.getAddressInternalIpv4()))) {
+                    count++;
+                }
+            } catch (final Exception e) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Error while checking if address {} for node {} is local",
+                        address.getAddressInternalIpv4(),
+                        address.getId(),
+                        e);
+                throw new IllegalStateException("Error while checking if ip of address was local", e);
             }
         }
         return count;
