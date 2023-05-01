@@ -89,9 +89,16 @@ public class EntityAutoExpiry {
     }
 
     public void execute(final Instant currentConsTime) {
+        final var curNetworkCtx = networkCtx.get();
+        // Because there is only one viable SystemTask (traceability export) in release 0.37,
+        // as no entity type expires in this release, we can finish immediately once we have
+        // scanned all the pre-upgrade entities.
+        if (curNetworkCtx.areAllPreUpgradeEntitiesScanned()) {
+            return;
+        }
         executeInternal(currentConsTime);
         // Ensure we capture any capacity used in the expiry throttle
-        networkCtx.get().syncExpiryThrottle(expiryThrottle);
+        curNetworkCtx.syncExpiryThrottle(expiryThrottle);
     }
 
     private void executeInternal(final Instant now) {
