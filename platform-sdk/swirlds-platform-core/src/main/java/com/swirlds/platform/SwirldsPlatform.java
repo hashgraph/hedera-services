@@ -1716,9 +1716,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             threadManager,
                                             otherId,
                                             reconnectThrottle,
-                                            () -> stateManagementComponent
-                                                    .getLatestSignedState()
-                                                    .get(),
+                                            () -> stateManagementComponent.getLatestSignedState(
+                                                    "SwirldsPlatform: ReconnectProtocol"),
                                             settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get(),
