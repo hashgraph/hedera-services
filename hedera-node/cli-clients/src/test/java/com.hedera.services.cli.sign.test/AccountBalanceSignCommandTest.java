@@ -16,7 +16,8 @@
 
 package com.hedera.services.cli.sign.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.cli.sign.AccountBalanceSignCommand;
 import com.hedera.services.cli.sign.AccountBalanceType;
@@ -25,12 +26,13 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Objects;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 
-public class AccountBalanceSignCommandTest {
+class AccountBalanceSignCommandTest {
     @Mock
     PublicKey publicKey;
 
@@ -45,15 +47,15 @@ public class AccountBalanceSignCommandTest {
     void failureGenerateSignatureFile() {
         // given:
         final var signatureFileDestination = Path.of("testPath");
-        final var fileToSign = Path.of("testPath");
+        final Path fileToSign;
+        fileToSign = signatureFileDestination;
         final var keyPair = new KeyPair(publicKey, privateKey);
 
         // when:
         final var accountBalanceSignCommand = new AccountBalanceSignCommand();
 
         // then:
-        assertEquals(
-                accountBalanceSignCommand.generateSignatureFile(signatureFileDestination, fileToSign, keyPair), false);
+        assertFalse(accountBalanceSignCommand.generateSignatureFile(signatureFileDestination, fileToSign, keyPair));
     }
 
     @Test
@@ -61,19 +63,17 @@ public class AccountBalanceSignCommandTest {
     void generateSignatureFile() {
         // given:
         final var signatureFileDestination = Path.of(tmpDir.getPath() + "/2023-03-23T14_25_29.576022Z_Balances.pb_sig");
-        final var fileToSign = Path.of(AccountBalanceSignCommandTest.class
-                .getClassLoader()
-                .getResource("com.hedera.services.cli.sign.test/2023-03-23T14_25_29.576022Z_Balances.pb")
+        final var fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
+                        .getClassLoader()
+                        .getResource("com.hedera.services.cli.sign.test/2023-03-23T14_25_29.576022Z_Balances.pb"))
                 .getPath());
 
         // when:
         final var accountBalanceSignCommand = new AccountBalanceSignCommand();
 
         // then:
-        assertEquals(
-                accountBalanceSignCommand.generateSignatureFile(
-                        signatureFileDestination, fileToSign, TestUtils.loadKey()),
-                true);
+        assertTrue(accountBalanceSignCommand.generateSignatureFile(
+                signatureFileDestination, fileToSign, TestUtils.loadKey()));
     }
 
     @Test
@@ -83,10 +83,8 @@ public class AccountBalanceSignCommandTest {
         final var signatureFileDestination = Path.of("testPath.pb");
 
         // then:
-        assertEquals(
-                AccountBalanceType.getInstance()
-                        .isCorrectFile(signatureFileDestination.toFile().getName()),
-                true);
+        assertTrue(AccountBalanceType.getInstance()
+                .isCorrectFile(signatureFileDestination.toFile().getName()));
     }
 
     @Test
@@ -96,9 +94,7 @@ public class AccountBalanceSignCommandTest {
         final var signatureFileDestination = Path.of("testPath.lv");
 
         // then:
-        assertEquals(
-                AccountBalanceType.getInstance()
-                        .isCorrectFile(signatureFileDestination.toFile().getName()),
-                false);
+        assertFalse(AccountBalanceType.getInstance()
+                .isCorrectFile(signatureFileDestination.toFile().getName()));
     }
 }

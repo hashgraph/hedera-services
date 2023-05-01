@@ -52,8 +52,8 @@ public final class RecordStreamSignCommand extends SignCommand {
      */
     @Override
     public boolean isFileSupported(@NonNull final Path path) {
-        return RecordStreamType.getInstance().isStreamFile(path.toFile());
-        //                || RecordStreamType.getInstance().isGzFile(path.toFile().getName());
+        return RecordStreamType.getInstance().isStreamFile(path.toFile())
+                || RecordStreamType.getInstance().isGzFile(path.toFile().getName());
     }
 
     public void setHapiVersion(String hapiVersion) {

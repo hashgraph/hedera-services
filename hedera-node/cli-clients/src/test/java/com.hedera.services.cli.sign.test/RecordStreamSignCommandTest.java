@@ -16,7 +16,8 @@
 
 package com.hedera.services.cli.sign.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.cli.sign.RecordStreamSignCommand;
 import com.hedera.services.cli.sign.RecordStreamType;
@@ -25,12 +26,13 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Objects;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 
-public class RecordStreamSignCommandTest {
+class RecordStreamSignCommandTest {
     @Mock
     PublicKey publicKey;
 
@@ -45,16 +47,16 @@ public class RecordStreamSignCommandTest {
     void failureGenerateSignatureFileRecordStream() {
         // given:
         final var signatureFileDestination = Path.of("testPath");
-        final var fileToSign = Path.of("testPath");
+        final Path fileToSign;
+        fileToSign = signatureFileDestination;
         final var keyPair = new KeyPair(publicKey, privateKey);
-
+        final var hapiVersion = "0.37.0-allowance-SNAPSHOT";
         // when:
         final var recordStreamSignCommand = new RecordStreamSignCommand();
-        recordStreamSignCommand.setHapiVersion("0.37.0-allowance-SNAPSHOT");
+        recordStreamSignCommand.setHapiVersion(hapiVersion);
 
         // then:
-        assertEquals(
-                recordStreamSignCommand.generateSignatureFile(signatureFileDestination, fileToSign, keyPair), false);
+        assertFalse(recordStreamSignCommand.generateSignatureFile(signatureFileDestination, fileToSign, keyPair));
     }
 
     @Test
@@ -62,9 +64,9 @@ public class RecordStreamSignCommandTest {
     void succeedToGenerateSignatureFileRecordStream() {
         // given:
         final var signatureFileDestination = Path.of(tmpDir.getPath() + "/2023-04-18T14_08_20.465612003Z.rcd_sig");
-        final var fileToSign = Path.of(AccountBalanceSignCommandTest.class
-                .getClassLoader()
-                .getResource("com.hedera.services.cli.sign.test/2023-04-18T14_08_20.465612003Z.rcd")
+        final var fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
+                        .getClassLoader()
+                        .getResource("com.hedera.services.cli.sign.test/2023-04-18T14_08_20.465612003Z.rcd"))
                 .getPath());
 
         // when:
@@ -72,23 +74,49 @@ public class RecordStreamSignCommandTest {
         recordStreamSignCommand.setHapiVersion("0.37.0-allowance-SNAPSHOT");
 
         // then:
-        assertEquals(
-                recordStreamSignCommand.generateSignatureFile(
-                        signatureFileDestination, fileToSign, TestUtils.loadKey()),
-                true);
+        assertTrue(recordStreamSignCommand.generateSignatureFile(
+                signatureFileDestination, fileToSign, TestUtils.loadKey()));
     }
 
     @Test
-    @DisplayName("File supported for account balance")
+    @DisplayName("Succeed to generate signature file for gz file record stream")
+    void succeedToGenerateSignatureFileGzipRecordStream() {
+        // given:
+        final var signatureFileDestination = Path.of(tmpDir.getPath() + "/2022-09-19T21_09_17.348788413Z.rcd.gz");
+        final var fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
+                        .getClassLoader()
+                        .getResource("com.hedera.services.cli.sign.test/2022-09-19T21_09_17.348788413Z.rcd.gz"))
+                .getPath());
+
+        // when:
+        final var recordStreamSignCommand = new RecordStreamSignCommand();
+        recordStreamSignCommand.setHapiVersion("0.37.0-allowance-SNAPSHOT");
+
+        // then:
+        assertTrue(recordStreamSignCommand.generateSignatureFile(
+                signatureFileDestination, fileToSign, TestUtils.loadKey()));
+    }
+
+    @Test
+    @DisplayName("File supported for record stream")
     void isFileSupported() {
         // given:
         final var signatureFileDestination = Path.of("testPath.rcd");
 
         // then:
-        assertEquals(
-                RecordStreamType.getInstance()
-                        .isStreamFile(signatureFileDestination.toFile().getName()),
-                true);
+        assertTrue(RecordStreamType.getInstance()
+                .isStreamFile(signatureFileDestination.toFile().getName()));
+    }
+
+    @Test
+    @DisplayName("File supported for gz record stream")
+    void isGzFileSupported() {
+        // given:
+        final var signatureFileDestination = Path.of("testPath.rcd.gz");
+
+        // then:
+        assertTrue(RecordStreamType.getInstance()
+                .isGzFile(signatureFileDestination.toFile().getName()));
     }
 
     @Test
@@ -98,9 +126,7 @@ public class RecordStreamSignCommandTest {
         final var signatureFileDestination = Path.of("testPath.lv");
 
         // then:
-        assertEquals(
-                RecordStreamType.getInstance()
-                        .isStreamFile(signatureFileDestination.toFile().getName()),
-                false);
+        assertFalse(RecordStreamType.getInstance()
+                .isStreamFile(signatureFileDestination.toFile().getName()));
     }
 }

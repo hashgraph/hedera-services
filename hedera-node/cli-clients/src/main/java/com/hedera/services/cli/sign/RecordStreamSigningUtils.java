@@ -23,6 +23,7 @@ import static com.swirlds.platform.util.FileSigningUtils.signData;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import com.hedera.node.app.hapi.utils.exports.FileCompressionUtils;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.HashObject;
 import com.hedera.services.stream.proto.RecordStreamFile;
@@ -36,6 +37,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -96,18 +98,19 @@ public class RecordStreamSigningUtils {
         Objects.requireNonNull(hapiVersion, "hapiVersion must not be null");
 
         try {
-            final int version = readFirstIntFromFile(streamFileToSign.toFile());
+            final var recordFile = streamFileToSign.toFile();
+            final int version = getRecordStreamVersion(recordFile);
             if (version != SUPPORTED_STREAM_FILE_VERSION) {
                 System.err.printf(
-                        "Failed to sign file [%s] with unsupported version [%s]%n",
+                        "signRecordStreamFile :: Failed to sign file [%s] with unsupported version [%s]%n",
                         streamFileToSign.getFileName(), version);
                 return false;
             }
 
             initRecordDigest();
             int[] fileHeader = createFileHeader(hapiVersion);
-            String recordFile = streamFileToSign.toFile().getAbsolutePath();
-            outputStreamDigest(recordFile, fileHeader);
+
+            outputStreamDigest(fileHeader, recordFile.getAbsolutePath());
             SignatureFile.Builder signatureFile = createSignatureFile(keyPair);
             generateSigRecordStreamFile(signatureFileDestination.toFile(), signatureFile);
 
@@ -115,10 +118,32 @@ public class RecordStreamSigningUtils {
 
             return true;
         } catch (final SignatureException | InvalidProtobufVersionException | IOException e) {
-            System.err.println("Failed to sign file " + streamFileToSign.getFileName() + ". Exception: " + e);
+            System.err.printf(
+                    "signRecordStreamFile :: Failed to sign file [%s] with exception : [%s]%n",
+                    streamFileToSign.getFileName(), e);
             return false;
         } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
+            System.err.printf("signRecordStreamFile :: Irrecoverable error encountered :[%s]%n", e);
             throw new RuntimeException("Irrecoverable error encountered", e);
+        }
+    }
+
+    private static int getRecordStreamVersion(File recordFile) throws IOException {
+        try {
+            final var isCompressed = RecordStreamType.getInstance().isGzFile(recordFile.getName());
+            if (isCompressed) {
+                final var uncompressedFileContents =
+                        FileCompressionUtils.readUncompressedFileBytes(recordFile.getAbsolutePath());
+                return ByteBuffer.wrap(uncompressedFileContents, 0, 4).getInt();
+            } else {
+                return readFirstIntFromFile(recordFile);
+            }
+
+        } catch (final IOException e) {
+            System.err.printf(
+                    "getRecordStreamVersion :: Failed to read record stream version from file [%s] with exception : [%s]%n",
+                    recordFile.getName(), e);
+            throw e;
         }
     }
 
@@ -140,12 +165,13 @@ public class RecordStreamSigningUtils {
                     Integer.parseInt(versions[2]),
                 };
             } catch (final NumberFormatException e) {
-                System.err.println(
-                        "Error when parsing protobuf version string " + hapiVersion + " with exception :" + e);
+                System.err.printf(
+                        "createFileHeader :: Error when parsing protobuf version string  [%s] with exception : [%s]%n",
+                        hapiVersion, e);
                 throw new InvalidProtobufVersionException("Invalid hapi version string: " + hapiVersion);
             }
         } else {
-            System.err.println("Error when parsing protobuf version string " + hapiVersion);
+            System.err.printf("createFileHeader :: Error when parsing protobuf version string [%s]%n", hapiVersion);
             throw new InvalidProtobufVersionException("Invalid hapi version string: " + hapiVersion);
         }
     }
@@ -163,17 +189,19 @@ public class RecordStreamSigningUtils {
             output.write(RecordStreamType.getInstance().getSigFileHeader()[0]);
             signatureFile.build().writeTo(output);
         } catch (final IOException e) {
-            System.err.println("generateSigRecordStreamFile :: Fail to generate signature file for " + filePath
-                    + " with exception :" + e);
+            System.err.printf(
+                    "generateSigRecordStreamFile :: Failed to generate signature file for [%s] with exception : [%s]%n",
+                    filePath.getName(), e);
             throw e;
         }
     }
 
-    private static void outputStreamDigest(String recordFile, int[] fileHeader) throws IOException {
+    private static void outputStreamDigest(int[] fileHeader, String recordFile) throws IOException {
         try (final SerializableDataOutputStream dosMeta =
                         new SerializableDataOutputStream(new HashingOutputStream(metadataStreamDigest));
                 final SerializableDataOutputStream dos = new SerializableDataOutputStream(
                         new BufferedOutputStream(new HashingOutputStream(streamDigest)))) {
+
             // parse record file
             final Pair<Integer, Optional<RecordStreamFile>> recordResult =
                     readMaybeCompressedRecordStreamFile(recordFile);
@@ -208,9 +236,9 @@ public class RecordStreamSigningUtils {
             dos.flush();
 
         } catch (final IOException e) {
-            final String message = String.format(
-                    "outputStreamDigest :: Got IOException when reading record file %s, error = %s", recordFile, e);
-            System.err.println(message);
+            System.err.printf(
+                    "outputStreamDigest :: Got IOException when output steam digest [%s] with exception : [%s]%n",
+                    recordFile, e);
             throw e;
         }
     }
@@ -220,7 +248,7 @@ public class RecordStreamSigningUtils {
             streamDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
             metadataStreamDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
         } catch (final NoSuchAlgorithmException e) {
-            System.err.println("initRecordDigest :: Failed to get message digest with exception :" + e);
+            System.err.printf("initRecordDigest :: Failed to get message digest with exception : [%s]%n", e);
             throw e;
         }
     }
