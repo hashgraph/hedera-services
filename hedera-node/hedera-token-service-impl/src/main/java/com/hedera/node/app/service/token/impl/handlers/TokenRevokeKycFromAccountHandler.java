@@ -57,7 +57,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenRevokeKycOrThrow();
-        preCheck(op);
+        pureChecks(op);
 
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
@@ -90,7 +90,10 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         tokenRelStore.put(tokenRelBuilder.build());
     }
 
-    private void preCheck(TokenRevokeKycTransactionBody op) throws PreCheckException {
+    /**
+     * Performs checks independent of state or context
+     */
+    private void pureChecks(TokenRevokeKycTransactionBody op) throws PreCheckException {
         if (!op.hasToken()) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }
