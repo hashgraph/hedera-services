@@ -20,13 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.cli.sign.RecordStreamSignCommand;
-import com.hedera.services.cli.sign.RecordStreamType;
 import java.io.File;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Objects;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -41,6 +41,14 @@ class RecordStreamSignCommandTest {
 
     @TempDir
     private File tmpDir;
+
+    @Mock
+    private RecordStreamSignCommand subject;
+
+    @BeforeEach
+    void setUp() {
+        subject = new RecordStreamSignCommand();
+    }
 
     @Test
     @DisplayName("Failure to generate signature file for file record stream")
@@ -104,8 +112,7 @@ class RecordStreamSignCommandTest {
         final var signatureFileDestination = Path.of("testPath.rcd");
 
         // then:
-        assertTrue(RecordStreamType.getInstance()
-                .isStreamFile(signatureFileDestination.toFile().getName()));
+        assertTrue(subject.isFileSupported(signatureFileDestination));
     }
 
     @Test
@@ -115,8 +122,7 @@ class RecordStreamSignCommandTest {
         final var signatureFileDestination = Path.of("testPath.rcd.gz");
 
         // then:
-        assertTrue(RecordStreamType.getInstance()
-                .isGzFile(signatureFileDestination.toFile().getName()));
+        assertTrue(subject.isFileSupported(signatureFileDestination));
     }
 
     @Test
@@ -126,7 +132,6 @@ class RecordStreamSignCommandTest {
         final var signatureFileDestination = Path.of("testPath.lv");
 
         // then:
-        assertFalse(RecordStreamType.getInstance()
-                .isStreamFile(signatureFileDestination.toFile().getName()));
+        assertFalse(subject.isFileSupported(signatureFileDestination));
     }
 }
