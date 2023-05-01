@@ -16,12 +16,16 @@
 
 package com.swirlds.common.config;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.constructable.URLClassLoaderWithLookup;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigurationBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,62 +37,74 @@ public final class ConfigUtils {
     private ConfigUtils() {}
 
     /**
-     * This method will add all config data records (see {@link ConfigData}) that are on the classpath to the given
-     * builder
+     * Scan all classes in a classpath and register all configuration data types with a configuration builder.
      *
-     * @param configurationBuilder
-     * 		the builder
-     * @return the builder (for fluent api usage)
+     * @param configurationBuilder a configuration builder
+     * @return the configuration builder that was passed as a param (for fluent api)
      */
-    public static ConfigurationBuilder addAllConfigDataOnClasspath(final ConfigurationBuilder configurationBuilder) {
-        try (ScanResult result = new ClassGraph().enableAnnotationInfo().scan()) {
-            final Set<? extends Class<? extends Record>> configDataRecordTypes =
-                    result.getClassesWithAnnotation(ConfigData.class.getName()).stream()
-                            .map(classInfo -> (Class<? extends Record>) classInfo.loadClass())
-                            .collect(Collectors.toSet());
-            configDataRecordTypes.forEach(type -> configurationBuilder.withConfigDataType(type));
-            return configurationBuilder;
-        }
+    @NonNull
+    public static ConfigurationBuilder scanAndRegisterAllConfigTypes(
+            @NonNull final ConfigurationBuilder configurationBuilder) {
+        return scanAndRegisterAllConfigTypes(configurationBuilder, Collections.emptySet(), Collections.emptyList());
     }
 
     /**
      * Scan all classes in a classpath and register all configuration data types with a configuration builder.
      *
-     * @param configurationBuilder
-     * 		a configuration builder
-     * @param packagePrefix
-     * 		the package prefix to scan
-     * @param additionalClassLoaders
-     * 		additional classloaders to scan
+     * @param configurationBuilder a configuration builder
+     * @param packagePrefixes      the package prefixes to scan
+     * @return the configuration builder that was passed as a param (for fluent api)
      */
-    @SuppressWarnings("unchecked")
-    public static void scanAndRegisterAllConfigTypes(
-            final ConfigurationBuilder configurationBuilder,
-            final String packagePrefix,
-            final URLClassLoaderWithLookup... additionalClassLoaders) {
+    @NonNull
+    public static ConfigurationBuilder scanAndRegisterAllConfigTypes(
+            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final String... packagePrefixes) {
+        ArgumentUtils.throwArgNull(packagePrefixes, "packagePrefixes");
+        return scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(packagePrefixes), Collections.emptyList());
+    }
 
-        final ClassGraph classGraph = new ClassGraph().enableAnnotationInfo().whitelistPackages(packagePrefix);
+    /**
+     * Scan all classes in a classpath and register all configuration data types with a configuration builder.
+     *
+     * @param configurationBuilder   a configuration builder
+     * @param packagePrefixes        the package prefixes to scan
+     * @param additionalClassLoaders additional classloaders to scan
+     * @return the configuration builder that was passed as a param (for fluent api)
+     */
+    @NonNull
+    public static ConfigurationBuilder scanAndRegisterAllConfigTypes(
+            @NonNull final ConfigurationBuilder configurationBuilder,
+            @NonNull final Set<String> packagePrefixes,
+            @NonNull final List<URLClassLoaderWithLookup> additionalClassLoaders) {
+        ArgumentUtils.throwArgNull(configurationBuilder, "configurationBuilder");
+        loadAllConfigDataRecords(packagePrefixes, additionalClassLoaders)
+                .forEach(configurationBuilder::withConfigDataType);
+        return configurationBuilder;
+    }
 
-        if (additionalClassLoaders != null) {
-            for (final URLClassLoaderWithLookup classloader : additionalClassLoaders) {
-                classGraph.addClassLoader(classloader);
-            }
+    @NonNull
+    private static Set<Class<? extends Record>> loadAllConfigDataRecords(
+            @NonNull final Set<String> packagePrefixes,
+            @NonNull final List<URLClassLoaderWithLookup> additionalClassLoaders) {
+        ArgumentUtils.throwArgNull(packagePrefixes, "packagePrefix");
+        ArgumentUtils.throwArgNull(additionalClassLoaders, "additionalClassLoaders");
+
+        final ClassGraph classGraph = new ClassGraph().enableAnnotationInfo();
+
+        if (!packagePrefixes.isEmpty()) {
+            classGraph.whitelistPackages(packagePrefixes.toArray(new String[0]));
+        }
+
+        for (final URLClassLoaderWithLookup classloader : additionalClassLoaders) {
+            classGraph.addClassLoader(classloader);
         }
 
         try (final ScanResult result = classGraph.scan()) {
             final ClassInfoList classInfos = result.getClassesWithAnnotation(ConfigData.class.getName());
-            classInfos.stream()
-                    .map(classInfo -> (Class<? extends Record>) classInfo.loadClass())
-                    .forEach(configurationBuilder::withConfigDataType);
+            return classInfos.stream()
+                    .map(classInfo -> classInfo.loadClass())
+                    .filter(clazz -> clazz.isRecord())
+                    .map(clazz -> (Class<? extends Record>) clazz)
+                    .collect(Collectors.toSet());
         }
-    }
-
-    /**
-     * Returns the user directory path specified by the {@code user.dir} system property.
-     *
-     * @return the user directory path
-     */
-    public static String getUserDir() {
-        return System.getProperty("user.dir");
     }
 }

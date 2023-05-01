@@ -8,6 +8,7 @@ module com.hedera.node.app.service.file.impl {
     requires com.swirlds.jasperdb;
     requires dagger;
     requires javax.inject;
+    requires com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.file.FileService with
             FileServiceImpl;

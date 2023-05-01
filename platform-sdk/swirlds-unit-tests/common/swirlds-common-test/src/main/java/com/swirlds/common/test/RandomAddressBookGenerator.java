@@ -68,51 +68,51 @@ public class RandomAddressBookGenerator {
     private boolean sequentialIds = false;
 
     /**
-     * Describes different ways that the random address book has its stake distributed if the custom strategy
+     * Describes different ways that the random address book has its weight distributed if the custom strategy
      * lambda is unset.
      */
-    public enum StakeDistributionStrategy {
+    public enum WeightDistributionStrategy {
         /**
-         * All nodes have equal stake.
+         * All nodes have equal weight.
          */
         BALANCED,
         /**
-         * Nodes are given stake with a gaussian distribution.
+         * Nodes are given weight with a gaussian distribution.
          */
         GAUSSIAN
     }
 
     /**
-     * The stake distribution strategy.
+     * The weight distribution strategy.
      */
-    private StakeDistributionStrategy stakeDistributionStrategy = StakeDistributionStrategy.GAUSSIAN;
+    private WeightDistributionStrategy weightDistributionStrategy = WeightDistributionStrategy.GAUSSIAN;
 
     /**
-     * The average stake. Used directly if using {@link StakeDistributionStrategy#BALANCED}, used as mean if
-     * using {@link StakeDistributionStrategy#GAUSSIAN}.
+     * The average weight. Used directly if using {@link WeightDistributionStrategy#BALANCED}, used as mean if
+     * using {@link WeightDistributionStrategy#GAUSSIAN}.
      */
-    private long averageStake = 1000;
+    private long averageWeight = 1000;
 
     /**
-     * The standard deviation of the stake, ignored if distribution strategy is not
-     * {@link StakeDistributionStrategy#GAUSSIAN}.
+     * The standard deviation of the weight, ignored if distribution strategy is not
+     * {@link WeightDistributionStrategy#GAUSSIAN}.
      */
-    private long stakeStandardDeviation = 100;
+    private long weightStandardDeviation = 100;
 
     /**
-     * The minimum stake to give to any particular address.
+     * The minimum weight to give to any particular address.
      */
-    private long minimumStake = 1;
+    private long minimumWeight = 1;
 
     /**
-     * The maximum stake to give to any particular address.
+     * The maximum weight to give to any particular address.
      */
-    private long maximumStake = 100_000;
+    private long maximumWeight = 100_000;
 
     /**
-     * Used to determine stake for each node. Overrides all other behaviors if set.
+     * Used to determine weight for each node. Overrides all other behaviors if set.
      */
-    private LongUnaryOperator customStakeGenerator;
+    private LongUnaryOperator customWeightGenerator;
 
     private long previousNodeId = -1;
 
@@ -150,10 +150,10 @@ public class RandomAddressBookGenerator {
      * 		a source of randomness
      * @param id
      * 		the node ID
-     * @param stake
-     * 		the stake
+     * @param weight
+     * 		the weight
      */
-    public static Address addressWithRandomData(final Random random, final long id, final long stake) {
+    public static Address addressWithRandomData(final Random random, final long id, final long weight) {
 
         final SerializablePublicKey sigPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.RSA, id);
         final SerializablePublicKey encPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id);
@@ -192,7 +192,7 @@ public class RandomAddressBookGenerator {
                 id,
                 nickname,
                 selfName,
-                stake,
+                weight,
                 ownHost,
                 addressInternalIpv4,
                 portInternalIpv4,
@@ -224,22 +224,22 @@ public class RandomAddressBookGenerator {
     }
 
     /**
-     * Generate the next stake for the next address.
+     * Generate the next weight for the next address.
      */
-    private long getNextStake(final long nodeId) {
+    private long getNextWeight(final long nodeId) {
 
-        if (customStakeGenerator != null) {
-            return customStakeGenerator.applyAsLong(nodeId);
+        if (customWeightGenerator != null) {
+            return customWeightGenerator.applyAsLong(nodeId);
         }
 
-        final long unboundedStake;
-        switch (stakeDistributionStrategy) {
-            case BALANCED -> unboundedStake = averageStake;
-            case GAUSSIAN -> unboundedStake = (long) (averageStake + random.nextGaussian() * stakeStandardDeviation);
-            default -> throw new IllegalStateException("Unexpected value: " + stakeDistributionStrategy);
+        final long unboundedWeight;
+        switch (weightDistributionStrategy) {
+            case BALANCED -> unboundedWeight = averageWeight;
+            case GAUSSIAN -> unboundedWeight = (long) (averageWeight + random.nextGaussian() * weightStandardDeviation);
+            default -> throw new IllegalStateException("Unexpected value: " + weightDistributionStrategy);
         }
 
-        return Math.min(maximumStake, Math.max(minimumStake, unboundedStake));
+        return Math.min(maximumWeight, Math.max(minimumWeight, unboundedWeight));
     }
 
     /**
@@ -304,15 +304,15 @@ public class RandomAddressBookGenerator {
      */
     public Address buildNextAddress() {
         final long nodeId = getNextNodeId();
-        return addressWithRandomData(random, nodeId, getNextStake(nodeId));
+        return addressWithRandomData(random, nodeId, getNextWeight(nodeId));
     }
 
     /**
      * Build a random address with a specific node ID and take.
      */
-    public Address buildNextAddress(final long nodeId, final long stake) {
+    public Address buildNextAddress(final long nodeId, final long weight) {
         try {
-            return addressWithRandomData(random, nodeId, stake);
+            return addressWithRandomData(random, nodeId, weight);
         } finally {
             previousNodeId = nodeId;
         }
@@ -358,65 +358,65 @@ public class RandomAddressBookGenerator {
     }
 
     /**
-     * Set the average stake for an address.
+     * Set the average weight for an address.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setAverageStake(final long averageStake) {
-        this.averageStake = averageStake;
+    public RandomAddressBookGenerator setAverageWeight(final long averageWeight) {
+        this.averageWeight = averageWeight;
         return this;
     }
 
     /**
-     * Set the standard deviation for the stake for an address.
+     * Set the standard deviation for the weight for an address.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setStakeStandardDeviation(final long stakeStandardDeviation) {
-        this.stakeStandardDeviation = stakeStandardDeviation;
+    public RandomAddressBookGenerator setWeightStandardDeviation(final long weightStandardDeviation) {
+        this.weightStandardDeviation = weightStandardDeviation;
         return this;
     }
 
     /**
-     * Set the minimum stake for an address.
+     * Set the minimum weight for an address.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setMinimumStake(final long minimumStake) {
-        this.minimumStake = minimumStake;
+    public RandomAddressBookGenerator setMinimumWeight(final long minimumWeight) {
+        this.minimumWeight = minimumWeight;
         return this;
     }
 
     /**
-     * Set the maximum stake for an address.
+     * Set the maximum weight for an address.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setMaximumStake(final long maximumStake) {
-        this.maximumStake = maximumStake;
+    public RandomAddressBookGenerator setMaximumWeight(final long maximumWeight) {
+        this.maximumWeight = maximumWeight;
         return this;
     }
 
     /**
-     * Provide a method that is used to determine the stake of each node. Overrides all other stake generation
+     * Provide a method that is used to determine the weight of each node. Overrides all other weight generation
      * settings if set.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setCustomStakeGenerator(final LongUnaryOperator customStakeGenerator) {
-        this.customStakeGenerator = customStakeGenerator;
+    public RandomAddressBookGenerator setCustomWeightGenerator(final LongUnaryOperator customWeightGenerator) {
+        this.customWeightGenerator = customWeightGenerator;
         return this;
     }
 
     /**
-     * Set the strategy used for deciding distribution of stake.
+     * Set the strategy used for deciding distribution of weight.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setStakeDistributionStrategy(
-            final StakeDistributionStrategy stakeDistributionStrategy) {
+    public RandomAddressBookGenerator setWeightDistributionStrategy(
+            final WeightDistributionStrategy weightDistributionStrategy) {
 
-        this.stakeDistributionStrategy = stakeDistributionStrategy;
+        this.weightDistributionStrategy = weightDistributionStrategy;
         return this;
     }
 

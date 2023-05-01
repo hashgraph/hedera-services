@@ -16,6 +16,8 @@
 
 package com.swirlds.config.api.source;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,14 +26,13 @@ import java.util.Set;
 
 /**
  * This interface is used to define sources of configuration properties. Implementations of the interface can be added
- * to the configuration setup by calling
- * * {@link com.swirlds.config.api.ConfigurationBuilder#withSource(ConfigSource)}
+ * to the configuration setup by calling * {@link com.swirlds.config.api.ConfigurationBuilder#withSource(ConfigSource)}
  */
 public interface ConfigSource {
 
     /**
-     * The default ordinal that is used if an implementation does not provide an ordinal by its own. See
-     * {@link ConfigSource#getOrdinal()}
+     * The default ordinal that is used if an implementation does not provide an ordinal by its own. See {@link
+     * ConfigSource#getOrdinal()}
      */
     int DEFAULT_ORDINAL = 100;
 
@@ -40,6 +41,7 @@ public interface ConfigSource {
      *
      * @return the set of property names
      */
+    @NonNull
     Set<String> getPropertyNames();
 
     /**
@@ -47,10 +49,10 @@ public interface ConfigSource {
      *
      * @param propertyName
      * @return the string value of the property
-     * @throws NoSuchElementException
-     * 		if the property with the given name is not defined in the source
+     * @throws NoSuchElementException if the property with the given name is not defined in the source
      */
-    String getValue(String propertyName) throws NoSuchElementException;
+    @Nullable
+    String getValue(@NonNull String propertyName) throws NoSuchElementException;
 
     /**
      * Returns the ordinal. The ordinal is used to define a priority order of all config sources while the config source
@@ -68,6 +70,7 @@ public interface ConfigSource {
      *
      * @return the map with all properties
      */
+    @NonNull
     default Map<String, String> getProperties() {
         final Map<String, String> props = new HashMap<>();
         getPropertyNames().forEach(prop -> props.put(prop, getValue(prop)));
@@ -79,6 +82,7 @@ public interface ConfigSource {
      *
      * @return the name
      */
+    @NonNull
     default String getName() {
         return getClass().getName();
     }

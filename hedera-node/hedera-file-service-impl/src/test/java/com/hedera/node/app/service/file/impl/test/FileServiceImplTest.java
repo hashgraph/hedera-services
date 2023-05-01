@@ -54,12 +54,12 @@ class FileServiceImplTest {
     void registersExpectedSchema() {
         final var captor = ArgumentCaptor.forClass(Schema.class);
 
-        subject().registerSchemas(registry);
+        subject().registerMonoAdapterSchemas(registry);
 
         Mockito.verify(registry).register(captor.capture());
         final var schema = captor.getValue();
 
-        assertEquals(SemVerUtils.standardSemverWith(0, 34, 0), schema.getVersion());
+        assertEquals(SemVerUtils.standardPbjSemverWith(0, 34, 0), schema.getVersion());
         assertTrue(schema.statesToRemove().isEmpty());
         final var requestedStates = schema.statesToCreate();
         assertEquals(1, requestedStates.size());

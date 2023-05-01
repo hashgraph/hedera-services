@@ -16,8 +16,8 @@
 
 package com.swirlds.common.threading.manager;
 
+import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.utility.LifecyclePhase;
 import java.util.concurrent.ThreadFactory;
 
 /**

@@ -194,11 +194,6 @@ public class EventTaskCreator {
      * 		the ID of the other-parent of the event to be created
      */
     public void createEvent(final long otherId) {
-        // If we have no stake OR the other node has no stake, no point in creating an event
-        if (addressBook.getAddress(selfId.getId()).isZeroStake()
-                || addressBook.getAddress(otherId).isZeroStake()) {
-            return;
-        }
         addEvent(new CreateEventTask(otherId));
     }
 

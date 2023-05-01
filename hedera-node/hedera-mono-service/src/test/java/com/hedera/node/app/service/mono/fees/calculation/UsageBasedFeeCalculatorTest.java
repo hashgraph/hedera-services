@@ -390,9 +390,9 @@ class UsageBasedFeeCalculatorTest {
                 subject.computePayment(query, currentPrices.get(SubType.DEFAULT), view, at, Collections.emptyMap());
 
         // then:
-        assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
-        assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
-        assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+        assertEquals(fees.nodeFee(), expectedFees.nodeFee());
+        assertEquals(fees.networkFee(), expectedFees.networkFee());
+        assertEquals(fees.serviceFee(), expectedFees.serviceFee());
     }
 
     @Test
@@ -411,9 +411,9 @@ class UsageBasedFeeCalculatorTest {
                 subject.estimatePayment(query, currentPrices.get(SubType.DEFAULT), view, at, ANSWER_ONLY);
 
         // then:
-        assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
-        assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
-        assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+        assertEquals(fees.nodeFee(), expectedFees.nodeFee());
+        assertEquals(fees.networkFee(), expectedFees.networkFee());
+        assertEquals(fees.serviceFee(), expectedFees.serviceFee());
     }
 
     @Test
@@ -439,9 +439,9 @@ class UsageBasedFeeCalculatorTest {
         final FeeObject fees = subject.computeFee(accessor, payerKey, view, consensusNow);
 
         // then:
-        assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
-        assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
-        assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+        assertEquals(fees.nodeFee(), expectedFees.nodeFee());
+        assertEquals(fees.networkFee(), expectedFees.networkFee());
+        assertEquals(fees.serviceFee(), expectedFees.serviceFee());
     }
 
     @Test
@@ -464,9 +464,9 @@ class UsageBasedFeeCalculatorTest {
         final FeeObject fees = subject.computeFee(accessor, payerKey, view, consensusNow);
 
         // then:
-        assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
-        assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
-        assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+        assertEquals(fees.nodeFee(), expectedFees.nodeFee());
+        assertEquals(fees.networkFee(), expectedFees.networkFee());
+        assertEquals(fees.serviceFee(), expectedFees.serviceFee());
     }
 
     @Test
@@ -559,9 +559,9 @@ class UsageBasedFeeCalculatorTest {
         final FeeObject fees = subject.estimateFee(accessor, payerKey, view, at);
 
         // then:
-        assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
-        assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
-        assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+        assertEquals(fees.nodeFee(), expectedFees.nodeFee());
+        assertEquals(fees.networkFee(), expectedFees.networkFee());
+        assertEquals(fees.serviceFee(), expectedFees.serviceFee());
     }
 
     @Test
@@ -587,9 +587,9 @@ class UsageBasedFeeCalculatorTest {
         final FeeObject fees = subject.estimateFee(accessor, payerKey, view, at);
 
         // then:
-        assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
-        assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
-        assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+        assertEquals(fees.nodeFee(), expectedFees.nodeFee());
+        assertEquals(fees.networkFee(), expectedFees.networkFee());
+        assertEquals(fees.serviceFee(), expectedFees.serviceFee());
     }
 
     private final Function<SigValueObj, ArgumentMatcher<SigValueObj>> factory =
@@ -667,8 +667,8 @@ class UsageBasedFeeCalculatorTest {
 
         // then:
         assertNotNull(fees);
-        assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
-        assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
-        assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+        assertEquals(fees.nodeFee(), expectedFees.nodeFee());
+        assertEquals(fees.networkFee(), expectedFees.networkFee());
+        assertEquals(fees.serviceFee(), expectedFees.serviceFee());
     }
 }

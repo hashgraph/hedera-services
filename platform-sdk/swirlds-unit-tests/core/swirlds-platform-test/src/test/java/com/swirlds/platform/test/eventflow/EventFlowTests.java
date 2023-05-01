@@ -40,9 +40,9 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
@@ -60,6 +60,7 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.SwirldStateManagerImpl;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
@@ -103,7 +104,7 @@ class EventFlowTests {
 
     private final SettingsProvider settingsProvider = mock(SettingsProvider.class);
     protected AddressBook addressBook;
-    private BlockingQueue<SignedState> signedStateTracker;
+    private BlockingQueue<ReservedSignedState> signedStateTracker;
     protected SystemTransactionTracker systemTransactionTracker;
 
     protected SwirldStateManager swirldStateManager;
@@ -137,7 +138,7 @@ class EventFlowTests {
         preConsensusEventHandler.clear();
         swirldStateManager.clear();
         while (!signedStateTracker.isEmpty()) {
-            signedStateTracker.poll().release();
+            signedStateTracker.poll().close();
         }
     }
 
@@ -312,10 +313,10 @@ class EventFlowTests {
                 Duration.ofSeconds(5),
                 "The expected number of signed states were not created");
 
-        final List<SignedState> signedStates = new ArrayList<>();
+        final List<ReservedSignedState> signedStates = new ArrayList<>();
         signedStateTracker.drainTo(signedStates);
 
-        signedStates.forEach(ss -> missingSignedStateRounds.remove(ss.getRound()));
+        signedStates.forEach(ss -> missingSignedStateRounds.remove(ss.get().getRound()));
 
         // Check that there were no failures in the state
         final TransactionTracker currSwirldState = getCurrState();
@@ -329,11 +330,11 @@ class EventFlowTests {
                 missingSignedStateRounds.size(),
                 String.format("Missing signed states for rounds %s", missingSignedStateRounds));
 
-        for (final SignedState ss : signedStates) {
+        for (final ReservedSignedState ss : signedStates) {
             final TransactionTracker ssSwirldState =
-                    (TransactionTracker) ss.getState().getSwirldState();
+                    (TransactionTracker) ss.get().getState().getSwirldState();
             verifyNoFailures(ssSwirldState);
-            ss.release();
+            ss.close();
         }
     }
 
@@ -394,23 +395,23 @@ class EventFlowTests {
         verifyNoFailures(currSwirldState);
 
         // Verify the correct number of signed states
-        final List<SignedState> signedStates = new ArrayList<>();
+        final List<ReservedSignedState> signedStates = new ArrayList<>();
         signedStateTracker.drainTo(signedStates);
         assertEquals(finalExpectedNum, signedStates.size(), "Incorrect number of signed states created.");
 
         // Verify the correct freeze round signed state
-        for (final SignedState signedState : signedStates) {
+        for (final ReservedSignedState signedState : signedStates) {
             final TransactionTracker ssSwirldState =
-                    (TransactionTracker) signedState.getState().getSwirldState();
+                    (TransactionTracker) signedState.get().getState().getSwirldState();
             verifyNoFailures(ssSwirldState);
 
-            if (signedState.getRound() == freezeRound.get()) {
+            if (signedState.get().getRound() == freezeRound.get()) {
                 assertTrue(
-                        signedState.isFreezeState(),
+                        signedState.get().isFreezeState(),
                         String.format("Signed state for round %s should be a freeze state.", freezeRound));
             }
 
-            signedState.release();
+            signedState.close();
         }
         swirldStateManager.releaseCurrentSwirldState();
     }
@@ -555,7 +556,7 @@ class EventFlowTests {
             final Random random, final int numNodes, final SwirldState swirldState, final State initialState) {
         addressBook = new RandomAddressBookGenerator(random)
                 .setSize(numNodes)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
                 .setSequentialIds(true)
                 .build();
@@ -570,9 +571,6 @@ class EventFlowTests {
         when(consStats.getNewSignedStateCycleStat()).thenReturn(mock(CycleTimingStat.class));
 
         final ConsensusMetrics consensusMetrics = new NoOpConsensusMetrics();
-
-        final SwirldsPlatform platform = mock(SwirldsPlatform.class);
-        when(platform.getSelfId()).thenReturn(selfNodeId);
 
         final EventStreamManager<EventImpl> eventStreamManager = mock(EventStreamManager.class);
         final RunningHashCalculator runningHashCalculator = new RunningHashCalculator();
@@ -628,6 +626,7 @@ class EventFlowTests {
                 consStats,
                 eventStreamManager,
                 signedStateTracker,
+                e -> {},
                 () -> {},
                 (round) -> {},
                 SoftwareVersion.NO_VERSION);

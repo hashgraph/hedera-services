@@ -30,6 +30,7 @@ import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.state.signed.SignedStateFinder;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,7 +43,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private final NodeId peerId;
     private final EmergencyRecoveryManager emergencyRecoveryManager;
     private final ReconnectThrottle teacherThrottle;
-    private final EmergencyStateFinder stateFinder;
+    private final SignedStateFinder stateFinder;
     private final int reconnectSocketTimeout;
     private final ReconnectMetrics reconnectMetrics;
     private final ReconnectController reconnectController;
@@ -74,7 +75,7 @@ public class EmergencyReconnectProtocol implements Protocol {
             final NodeId peerId,
             final EmergencyRecoveryManager emergencyRecoveryManager,
             final ReconnectThrottle teacherThrottle,
-            final EmergencyStateFinder stateFinder,
+            final SignedStateFinder stateFinder,
             final int reconnectSocketTimeout,
             final ReconnectMetrics reconnectMetrics,
             final ReconnectController reconnectController) {

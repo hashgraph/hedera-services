@@ -17,6 +17,7 @@
 plugins {
   id("com.hedera.hashgraph.conventions")
   alias(libs.plugins.pbj)
+  `java-test-fixtures`
 }
 
 description = "Hedera API"
@@ -24,12 +25,14 @@ description = "Hedera API"
 configurations.all { exclude("javax.annotation", "javax.annotation-api") }
 
 dependencies {
+  api(libs.spotbugs.annotations)
   implementation(libs.pbj.runtime)
   implementation(libs.bundles.di)
   testImplementation(testLibs.bundles.testing)
   // we depend on the protoc compiled hapi during test as we test our pbj generated code against it
   // to make sure it is compatible
   testImplementation(libs.hapi)
+  testFixturesImplementation(libs.pbj.runtime)
 }
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them

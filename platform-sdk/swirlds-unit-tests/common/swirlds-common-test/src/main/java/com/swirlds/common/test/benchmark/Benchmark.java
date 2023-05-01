@@ -185,7 +185,7 @@ public class Benchmark<S extends MerkleNode, M extends BenchmarkMetadata> {
     public Collection<BenchmarkStatistic> run() throws InterruptedException {
 
         // Build threads
-        // TODO use thread configs once they merge
+        // FUTURE WORK use thread configs once they merge
         final Thread copyThread = new Thread(this::copyThreadRunnable);
         final Thread hashingThread = new Thread(this::hashingThreadRunnable);
         hashingThread.setName("HASHING THREAD");
@@ -376,7 +376,7 @@ public class Benchmark<S extends MerkleNode, M extends BenchmarkMetadata> {
                         },
                         hashStatistics);
             }
-        } catch (InterruptedException e) { // TODO unnecessary if this is a stoppable thread
+        } catch (InterruptedException e) { // FUTURE WORK unnecessary if this is a stoppable thread
             e.printStackTrace();
             Thread.currentThread().interrupt();
         }
@@ -395,7 +395,7 @@ public class Benchmark<S extends MerkleNode, M extends BenchmarkMetadata> {
 
                 runWithStatistics(stateToDelete::release, deleteStatistics);
             }
-        } catch (InterruptedException e) { // TODO unnecessary if this is a stoppable thread
+        } catch (InterruptedException e) { // FUTURE WORK unnecessary if this is a stoppable thread
             e.printStackTrace();
             Thread.currentThread().interrupt();
         }

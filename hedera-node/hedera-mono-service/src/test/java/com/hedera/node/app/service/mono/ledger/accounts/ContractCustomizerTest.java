@@ -27,6 +27,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.STAKED_ID;
+import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -211,6 +213,21 @@ class ContractCustomizerTest {
 
         assertCustomizesWithCryptoKey(subject);
         verify(ledger).set(newContractId, AUTO_RENEW_ACCOUNT_ID, autoRenewAccount);
+    }
+
+    @Test
+    void worksWithoutAutoRenewAccount() {
+        final var op = ContractCreateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+                .setMaxAutomaticTokenAssociations(10)
+                .setMemo(memo)
+                .build();
+
+        final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op);
+
+        assertCustomizesWithCryptoKey(subject);
+        // Should not set auto-renew account to missing entity id
+        verify(ledger, never()).set(newContractId, AUTO_RENEW_ACCOUNT_ID, MISSING_ENTITY_ID);
     }
 
     @Test

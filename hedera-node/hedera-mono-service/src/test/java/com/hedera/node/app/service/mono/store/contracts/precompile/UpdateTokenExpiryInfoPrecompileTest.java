@@ -69,6 +69,7 @@ import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -334,7 +335,8 @@ class UpdateTokenExpiryInfoPrecompileTest {
     }
 
     private void givenUpdateTokenContext() {
-        given(sigsVerifier.hasActiveAdminKey(true, tokenAddress, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveAdminKey(
+                        true, tokenAddress, fungibleTokenAddr, wrappedLedgers, HederaFunctionality.TokenUpdate))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
@@ -349,7 +351,8 @@ class UpdateTokenExpiryInfoPrecompileTest {
     }
 
     private void givenUpdateTokenContextV2() {
-        given(sigsVerifier.hasActiveAdminKey(true, tokenAddress, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveAdminKey(
+                        true, tokenAddress, fungibleTokenAddr, wrappedLedgers, HederaFunctionality.TokenUpdate))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);

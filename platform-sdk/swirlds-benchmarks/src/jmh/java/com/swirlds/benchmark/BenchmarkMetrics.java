@@ -101,7 +101,7 @@ public final class BenchmarkMetrics {
 
     private static final FunctionGauge.Config<Long> DIRECT_MEM_CONFIG = new FunctionGauge.Config<>(
                     "AAD",
-                    "directMemInMB",
+                    "directMem",
                     Long.class,
                     directMemMXBean != null ? directMemMXBean::getMemoryUsed : () -> -1L)
             .withDescription("used bytes of the JVM direct memory")

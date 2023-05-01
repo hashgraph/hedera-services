@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.spi.validation;
 
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.Key;
 
 /**
  * A type that any {@link TransactionHandler} can use to validate entity
@@ -29,7 +29,7 @@ public interface AttributeValidator {
      * Validates the given key.
      *
      * @param key the key to validate
-     * @throws HandleStatusException if the key is invalid
+     * @throws HandleException if the key is invalid
      */
     void validateKey(Key key);
 
@@ -37,7 +37,23 @@ public interface AttributeValidator {
      * Validates the given memo.
      *
      * @param memo the memo to validate
-     * @throws HandleStatusException if the key is invalid
+     * @throws HandleException if the key is invalid
      */
     void validateMemo(String memo);
+
+    /**
+     * Validates the given expiry.
+     *
+     * @param expiry the expiry to validate
+     * @throws HandleException if the expiry is invalid
+     */
+    void validateExpiry(long expiry);
+
+    /**
+     * Validates the given auto-renew period.
+     *
+     * @param autoRenewPeriod the auto-renew period to validate
+     * @throws HandleException if the auto-renew period is invalid
+     */
+    void validateAutoRenewPeriod(long autoRenewPeriod);
 }

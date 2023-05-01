@@ -16,130 +16,59 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static java.util.Objects.requireNonNull;
-
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
 /**
- * Context of a single {@code preHandle()}-call. Contains all information that needs to be exchanged between the
- * pre-handle workflow and the {@code preHandle()}-method of a
- * {@link com.hedera.node.app.spi.workflows.TransactionHandler}.
+ * Represents the context of a single {@code preHandle()}-call.
+ *
+ * <p>During pre-handle, each transaction handler needs access to the transaction body data (i.e. the "operation"
+ * being performed, colloquially also called the "transaction" and "transaction body" although both are more
+ * or less technically incorrect). The actual {@link TransactionBody} can be accessed from this context. The body
+ * contains the operation, the transaction ID, the originating node, and other information.
+ *
+ * <p>The main responsibility for a transaction handler during pre-handle is to semantically validate the operation
+ * and to gather all required keys. The handler, when created, is preloaded with the correct payer key (which is
+ * almost always the same as the transaction body's {@link TransactionID}, except in the case of a scheduled
+ * transaction). {@link TransactionHandler}s must add any additional required signing keys. Several convenience
+ * methods have been created for this purpose.
+ *
+ * <p>{@link #requireKey(Key)} is used to add a required non-payer signing key (remember, the payer signing
+ * key was added when the context was created). Some basic validation is performed (the key cannot be null or empty).
  */
 @SuppressWarnings("UnusedReturnValue")
-public class PreHandleContext {
-
-    private final AccountAccess accountAccess;
-
-    private final TransactionBody txn;
-    private final AccountID payer;
-    private final List<HederaKey> requiredNonPayerKeys = new ArrayList<>();
-
-    private ResponseCodeEnum status;
-    private HederaKey payerKey;
-    private PreHandleContext innerContext;
-
-    public PreHandleContext(@NonNull final AccountAccess accountAccess, @NonNull final TransactionBody txn) {
-        this(accountAccess, txn, txn.getTransactionID().getAccountID(), OK);
-    }
-
-    public PreHandleContext(
-            @NonNull final AccountAccess accountAccess,
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer) {
-        this(accountAccess, txn, payer, OK);
-    }
-
-    public PreHandleContext(
-            @NonNull final AccountAccess accountAccess,
-            @NonNull final TransactionBody txn,
-            @NonNull final ResponseCodeEnum status) {
-        this(accountAccess, txn, txn.getTransactionID().getAccountID(), status);
-    }
-
-    public PreHandleContext(
-            @NonNull final AccountAccess accountAccess,
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final ResponseCodeEnum status) {
-        this.accountAccess = requireNonNull(accountAccess);
-        this.txn = requireNonNull(txn);
-        this.payer = requireNonNull(payer);
-        this.status = requireNonNull(status);
-
-        final var lookedUpPayerKey = accountAccess.getKey(payer);
-        addToKeysOrFail(lookedUpPayerKey, INVALID_PAYER_ACCOUNT_ID, true);
-    }
+public interface PreHandleContext {
 
     /**
-     * Getter for the {@link TransactionBody}
+     * Gets the {@link TransactionBody}
      *
      * @return the {@link TransactionBody} in this context
      */
     @NonNull
-    public TransactionBody getTxn() {
-        return txn;
-    }
+    TransactionBody body();
 
     /**
-     * Getter for the payer
+     * Gets the payer {@link AccountID}.
      *
      * @return the {@link AccountID} of the payer in this context
      */
     @NonNull
-    public AccountID getPayer() {
-        return payer;
-    }
+    AccountID payer();
 
     /**
      * Returns an immutable copy of the list of required non-payer keys.
      *
-     * @return the {@link List} with the required non-payer keys
-     */
-    public List<HederaKey> getRequiredNonPayerKeys() {
-        return List.copyOf(requiredNonPayerKeys);
-    }
-
-    /**
-     * Getter for the status
-     *
-     * @return the {@code status} that was previously set
-     */
-    public ResponseCodeEnum getStatus() {
-        return status;
-    }
-
-    /**
-     * Checks the failure by validating the status is not {@link ResponseCodeEnum OK}
-     *
-     * @return returns true if status is not OK
-     */
-    public boolean failed() {
-        return !getStatus().equals(ResponseCodeEnum.OK);
-    }
-
-    /**
-     * Sets status on {@link PreHandleContext}. It will be {@link ResponseCodeEnum#OK} if there is no failure.
-     *
-     * @param status status of the pre-handle workflow
-     * @return {@code this} object
+     * @return the {@link Set} with the required non-payer keys
      */
     @NonNull
-    public PreHandleContext status(@NonNull final ResponseCodeEnum status) {
-        this.status = requireNonNull(status);
-        return this;
-    }
+    Set<Key> requiredNonPayerKeys();
 
     /**
      * Getter for the payer key
@@ -147,216 +76,127 @@ public class PreHandleContext {
      * @return the payer key
      */
     @Nullable
-    public HederaKey getPayerKey() {
-        return payerKey;
-    }
+    Key payerKey();
 
     /**
-     * Add a keys to required keys list
+     * Create a new store given the store's interface. This gives read-only access to the store.
      *
-     * @param keys list of keys to add
-     * @return {@code this} object
+     * @param storeInterface The store interface to find and create a store for
+     * @return An implementation of store interface provided, or null if the store
+     * @param <C> Interface class for a Store
+     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
+     * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
     @NonNull
-    public PreHandleContext addAllReqKeys(@NonNull final List<HederaKey> keys) {
-        requiredNonPayerKeys.addAll(requireNonNull(keys));
-        return this;
-    }
+    <C> C createStore(@NonNull final Class<C> storeInterface);
 
     /**
-     * Adds given key to required non-payer keys in {@link PreHandleContext}. If the status is already failed, or if the
-     * payer's key is not added, given keys will not be added to requiredNonPayerKeys list. This method is used when the
-     * payer's key is already fetched, and we want to add other keys from {@link TransactionBody} to required keys to
-     * sign.
+     * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if the key has
+     * already been added, then the call is a no-op. The key must not be null.
      *
      * @param key key to be added
      * @return {@code this} object
+     * @throws NullPointerException if the key is null
      */
     @NonNull
-    public PreHandleContext addToReqNonPayerKeys(@NonNull final HederaKey key) {
-        if (status == OK && payerKey != null) {
-            requiredNonPayerKeys.add(requireNonNull(key));
-        }
-        return this;
-    }
+    PreHandleContext requireKey(@NonNull final Key key);
 
     /**
-     * Checks if the accountId is same as payer or the status of the metadata is already failed. If either of the above
-     * is true, doesn't look up the keys for given account. Else, looks up the keys for account. If the lookup fails,
-     * sets the default failureReason given in the result.
+     * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if the key has
+     * already been added, then the call is a no-op. The key must not be null and not empty, otherwise a
+     * PreCheckException is thrown with the given {@code responseCode}.
      *
-     * @param id given accountId
+     * @param key key to be added
+     * @param responseCode the response code to be used in case the key is null or empty
      * @return {@code this} object
+     * @throws PreCheckException if the key is null or empty
      */
     @NonNull
-    public PreHandleContext addNonPayerKey(@NonNull final AccountID id) {
-        return addNonPayerKey(id, null);
-    }
+    PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException;
 
     /**
-     * Checks if the accountId is same as payer or the status of the metadata is already failed. If either of the above
-     * is true, doesn't look up the keys for given account. Else, looks up the keys for account. If the lookup fails,
-     * sets the given failure reason on the metadata. If the failureReason is null, sets the default failureReason given
-     * in the result.
+     * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys. If
+     * the key is the same as the payer key, or if the key has already been added, then the call is a no-op. The
+     * {@link AccountID} must not be null, and must refer to an actual account. The admin key on that account must not
+     * be null or empty. If any of these conditions are not met, a PreCheckException is thrown with the given
+     * {@code responseCode}.
      *
-     * @param id given accountId
-     * @param failureStatusToUse failure status to be set if there is failure
+     * @param accountID The ID of the account whose key is to be added
+     * @param responseCode the response code to be used in case the key is null or empty
      * @return {@code this} object
+     * @throws PreCheckException if the key is null or empty or the account is null or the
+     * account does not exist.
      */
     @NonNull
-    public PreHandleContext addNonPayerKey(
-            @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
-        if (isNotNeeded(requireNonNull(id))) {
-            return this;
-        }
-        final var result = accountAccess.getKey(id);
-        addToKeysOrFail(result, failureStatusToUse, false);
-        return this;
-    }
-
-    @NonNull
-    public PreHandleContext addNonPayerKey(@NonNull final ContractID id) {
-        if (isNotNeeded(requireNonNull(id))) {
-            return this;
-        }
-        final var result = accountAccess.getKey(id);
-        addToKeysOrFail(result, null, false);
-        return this;
-    }
+    PreHandleContext requireKeyOrThrow(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
 
     /**
-     * Checks if the accountId is same as payer or the status of the metadata is already failed. If either of the above
-     * is true, doesn't look up the keys for given account. Else, looks up the keys for account if receiverSigRequired
-     * is true on the account. If the lookup fails, sets the given failure reason on the metadata. If the failureReason
-     * is null, sets the default failureReason given in the result.
+     * The same as {@link #requireKeyOrThrow(AccountID, ResponseCodeEnum)} but for a {@link ContractID}.
      *
-     * @param id given accountId
-     * @param failureStatusToUse failure status to be set if there is failure
+     * @param accountID The ID of the contract account whose key is to be added
+     * @param responseCode the response code to be used in case the key is null or empty
+     * @return {@code this} object
+     * @throws PreCheckException if the key is null or empty or the account is null or the
+     * contract account does not exist or the account is not a contract account.
      */
     @NonNull
-    public PreHandleContext addNonPayerKeyIfReceiverSigRequired(
-            @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
-        if (isNotNeeded(requireNonNull(id))) {
-            return this;
-        }
-        final var result = accountAccess.getKeyIfReceiverSigRequired(id);
-        addToKeysOrFail(result, failureStatusToUse, false);
-        return this;
-    }
+    PreHandleContext requireKeyOrThrow(
+            @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException;
 
+    /**
+     * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys if
+     * the {@link AccountID} is not null and if the account has `receiverSigRequired` set to true. If the account
+     * does not exist, or `receiverSigRequired` is true but the key is null or empty, then a
+     * {@link PreCheckException} will be thrown with the supplied {@code responseCode}.
+     *
+     * @param accountID The ID of the account whose key is to be added
+     * @param responseCode the response code to be used if a {@link PreCheckException} is thrown
+     * @throws PreCheckException if the account does not exist or the account has `receiverSigRequired` but a null or
+     * empty key.
+     */
     @NonNull
-    public PreHandleContext addNonPayerKeyIfReceiverSigRequired(@NonNull final ContractID id) {
-        if (isNotNeeded(requireNonNull(id))) {
-            return this;
-        }
-        final var result = accountAccess.getKeyIfReceiverSigRequired(id);
-        addToKeysOrFail(result, null, false);
-        return this;
-    }
-
-    public PreHandleContext getInnerContext() {
-        return innerContext;
-    }
-
-    public void setInnerContext(PreHandleContext innerContext) {
-        this.innerContext = innerContext;
-    }
-
-    @Override
-    public String toString() {
-        return "PreHandleContext{" + "accountAccess="
-                + accountAccess + ", txn="
-                + txn + ", payer="
-                + payer + ", requiredNonPayerKeys="
-                + requiredNonPayerKeys + ", status="
-                + status + ", payerKey="
-                + payerKey + ", innerContext="
-                + innerContext + '}';
-    }
-
-    /* ---------- Helper methods ---------- */
+    PreHandleContext requireKeyIfReceiverSigRequired(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
 
     /**
-     * Checks if the account given is same as payer or if the metadata is already failed. In either case, no need to
-     * look up that account's key. If the payer key has not been set we don't add other keys.
+     * The same as {@link #requireKeyIfReceiverSigRequired(AccountID, ResponseCodeEnum)} but for a {@link ContractID}.
      *
-     * @param id given account
-     * @return true if the lookup is not needed, false otherwise
+     * @param contractID The ID of the contract account whose key is to be added
+     * @param responseCode the response code to be used if a {@link PreCheckException} is thrown
+     * @throws PreCheckException if the account does not exist or the account has `receiverSigRequired` but a null or
+     * empty key, or the account exists but is not a contract account.
      */
-    private boolean isNotNeeded(@NonNull final AccountID id) {
-        return id.equals(payer)
-                || id.equals(AccountID.getDefaultInstance())
-                || designatesAccountRemoval(id)
-                || status != OK
-                || payerKey == null;
-    }
-
-    /**
-     * Checks if the metadata is already failed. In this case no need to look up that contract's key If the payer key
-     * has not been set we don't add other keys.
-     *
-     * @param id given contract
-     * @return true if the lookup is not needed, false otherwise
-     */
-    private boolean isNotNeeded(@NonNull final ContractID id) {
-        return id.equals(ContractID.getDefaultInstance())
-                || designatesContractRemoval(id)
-                || status != OK
-                || payerKey == null;
-    }
-
-    /**
-     * Checks if the accountId is a sentinel id 0.0.0
-     *
-     * @param id given accountId
-     * @return true if the given accountID is
-     */
-    private boolean designatesAccountRemoval(@NonNull final AccountID id) {
-        return id.getShardNum() == 0
-                && id.getRealmNum() == 0
-                && id.getAccountNum() == 0
-                && id.getAlias().isEmpty();
-    }
-
-    /**
-     * Checks if the contractId is a sentinel id <code>0.0.0</code>
-     *
-     * @param id given contractId
-     * @return true if the given contractId is
-     */
-    private boolean designatesContractRemoval(@NonNull final ContractID id) {
-        return id.getShardNum() == 0
-                && id.getRealmNum() == 0
-                && id.getContractNum() == 0
-                && id.getEvmAddress().isEmpty();
-    }
-
-    /**
-     * Given a successful key lookup, adds its key to the required signers. Given a failed key lookup, sets this
-     * {@link PreHandleContext}'s status to either the failure reason of the lookup; or (if it is non-null), the
-     * requested failureStatus parameter.
-     *
-     * @param result key lookup result
-     * @param failureStatus failure reason for the lookup
-     */
-    private void addToKeysOrFail(
-            final KeyOrLookupFailureReason result,
-            @Nullable final ResponseCodeEnum failureStatus,
-            final boolean isPayer) {
-        if (result.failed()) {
-            this.status = failureStatus != null ? failureStatus : result.failureReason();
-        } else if (result.key() != null) {
-            if (isPayer) {
-                this.payerKey = result.key();
-            } else {
-                this.requiredNonPayerKeys.add(result.key());
-            }
-        }
-    }
-
     @NonNull
-    public PreHandleContext createNestedContext(
-            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested) {
-        return new PreHandleContext(accountAccess, nestedTxn, payerForNested);
-    }
+    PreHandleContext requireKeyIfReceiverSigRequired(
+            @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException;
+
+    /**
+     * Creates a new {@link PreHandleContext} for a nested transaction. The nested transaction will be set on
+     * this context as the "inner context". There can only be one such at a time. The inner context is returned
+     * for convenience.
+     *
+     * @param nestedTxn the nested transaction
+     * @param payerForNested the payer for the nested transaction
+     * @param responseCode the response code to be used if a {@link PreCheckException} is thrown
+     * @return the inner context
+     * @throws PreCheckException If the payer is not valid
+     */
+    @NonNull
+    PreHandleContext createNestedContext(
+            @NonNull final TransactionBody nestedTxn,
+            @NonNull final AccountID payerForNested,
+            @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException;
+
+    /**
+     * Gets the inner context, if any.
+     *
+     * @return The inner context.
+     */
+    @Nullable
+    PreHandleContext innerContext();
 }

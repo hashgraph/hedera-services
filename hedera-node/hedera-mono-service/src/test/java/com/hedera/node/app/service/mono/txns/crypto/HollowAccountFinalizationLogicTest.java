@@ -159,6 +159,7 @@ class HollowAccountFinalizationLogicTest {
         given(syntheticTxnFactory.updateHollowAccount(hollowNum, asKeyUnchecked(key)))
                 .willReturn(txnBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+        given(expirableTxnRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
 
         final var result = subject.perform();
 
@@ -170,6 +171,8 @@ class HollowAccountFinalizationLogicTest {
         verify(sigImpactHistorian).markAliasChanged(ByteString.copyFrom(evmAddress));
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, txnBodyBuilder, expirableTxnRecordBuilder);
+        verify(expirableTxnRecordBuilder).getReceiptBuilder();
+        verify(txnReceiptBuilder).nonRevertable();
     }
 
     @Test
@@ -191,6 +194,7 @@ class HollowAccountFinalizationLogicTest {
         given(syntheticTxnFactory.updateHollowAccount(hollowNum, asKeyUnchecked(key)))
                 .willReturn(txnBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+        given(expirableTxnRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
 
         final var result = subject.perform();
 
@@ -200,6 +204,8 @@ class HollowAccountFinalizationLogicTest {
         verify(sigImpactHistorian).markEntityChanged(hollowNum.longValue());
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, txnBodyBuilder, expirableTxnRecordBuilder);
+        verify(expirableTxnRecordBuilder).getReceiptBuilder();
+        verify(txnReceiptBuilder).nonRevertable();
     }
 
     @Test
@@ -258,6 +264,7 @@ class HollowAccountFinalizationLogicTest {
         given(syntheticTxnFactory.updateHollowAccount(hollowNum, asKeyUnchecked(key)))
                 .willReturn(txnBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+        given(expirableTxnRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
 
         given(txnCtx.accessor()).willReturn(txnAccessor);
         given(spanMapAccessor.getEthTxExpansion(txnAccessor)).willReturn(new EthTxExpansion(null, OK));
@@ -287,6 +294,8 @@ class HollowAccountFinalizationLogicTest {
         verify(sigImpactHistorian).markEntityChanged(hollowNum2.longValue());
         verify(recordsHistorian, times(2))
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, txnBodyBuilder, expirableTxnRecordBuilder);
+        verify(expirableTxnRecordBuilder, times(2)).getReceiptBuilder();
+        verify(txnReceiptBuilder, times(2)).nonRevertable();
     }
 
     @Test

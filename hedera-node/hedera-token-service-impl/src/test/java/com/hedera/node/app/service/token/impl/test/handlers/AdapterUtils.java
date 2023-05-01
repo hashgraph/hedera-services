@@ -16,23 +16,29 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_ALIAS;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
 import com.hedera.test.utils.TestFixturesKeyLookup;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;
 import org.mockito.Mockito;
 
@@ -45,20 +51,14 @@ public class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountAccess} containing the "well-known" accounts and aliases that
+     * Returns the {@link ReadableAccountStore} containing the "well-known" accounts and aliases that
      * exist in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in
-     * unit tests that require an {@link AccountAccess}.
+     * unit tests that require a {@link ReadableAccountStore}.
      *
      * @return the well-known account store
      */
-    public static AccountAccess wellKnownKeyLookupAt() {
+    public static ReadableAccountStore wellKnownKeyLookupAt() {
         return new TestFixturesKeyLookup(mockStates(Map.of(
-                ALIASES_KEY, wellKnownAliasState(),
-                ACCOUNTS_KEY, wellKnownAccountsState())));
-    }
-
-    public static ReadableAccountStore wellKnownAccountStoreAt() {
-        return new ReadableAccountStore(mockStates(Map.of(
                 ALIASES_KEY, wellKnownAliasState(),
                 ACCOUNTS_KEY, wellKnownAccountsState())));
     }
@@ -74,7 +74,7 @@ public class AdapterUtils {
         return new StateKeyAdapter<>(wrappedState, EntityNumVirtualKey::asEntityNum);
     }
 
-    private static MapReadableKVState<String, EntityNumValue> wellKnownAliasState() {
+    public static MapReadableKVState<String, EntityNumValue> wellKnownAliasState() {
         final Map<String, EntityNumValue> wellKnownAliases = Map.ofEntries(
                 Map.entry(CURRENTLY_UNUSED_ALIAS, new EntityNumValue(MISSING_NUM.longValue())),
                 Map.entry(
@@ -91,7 +91,7 @@ public class AdapterUtils {
 
     public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
-            return scenario.platformTxn().getTxn();
+            return toPbj(scenario.platformTxn().getTxn());
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }

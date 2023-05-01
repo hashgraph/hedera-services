@@ -16,26 +16,30 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 
 public class ParityTestBase {
     protected ReadableAccountStore readableAccountStore;
     protected ReadableTokenStore readableTokenStore;
+    protected TokenID token = TokenID.newBuilder().tokenNum(1).build();
 
     @BeforeEach
     void setUp() {
-        readableAccountStore = AdapterUtils.wellKnownAccountStoreAt();
+        readableAccountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
     }
 
     protected TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
-            return scenario.platformTxn().getTxn();
+            return toPbj(scenario.platformTxn().getTxn());
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }

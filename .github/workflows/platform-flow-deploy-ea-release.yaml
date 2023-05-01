@@ -131,23 +131,23 @@ jobs:
         id: next-version
         uses: zwaldowski/semver-release-action@v3
         with:
-          dry_run: false
+          dry_run: true
           bump: ${{ github.event.inputs.version-increment }}
           preid: ${{ github.event.inputs.version-type }}
           prefix: "v"
           sha: ${{ steps.commit.outputs.id }}
           github_token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
-      - name: Publish Github Release
-        id: release
-        uses: softprops/action-gh-release@v1
-        with:
-          draft: false
-          generate_release_notes: true
-          prerelease: true
-          name: Platform SDK Release ${{ steps.next-version.outputs.version_tag }}
-          tag_name: ${{ steps.next-version.outputs.version_tag }}
-          token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+#      - name: Publish Github Release
+#        id: release
+#        uses: softprops/action-gh-release@v1
+#        with:
+#          draft: false
+#          generate_release_notes: true
+#          prerelease: true
+#          name: Platform SDK Release ${{ steps.next-version.outputs.version_tag }}
+#          tag_name: ${{ steps.next-version.outputs.version_tag }}
+#          token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
       - name: Send Slack Notification
         uses: slackapi/slack-github-action@v1

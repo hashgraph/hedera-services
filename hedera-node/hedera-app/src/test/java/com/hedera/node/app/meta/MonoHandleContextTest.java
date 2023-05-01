@@ -16,23 +16,14 @@
 
 package com.hedera.node.app.meta;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
+import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +42,7 @@ class MonoHandleContextTest {
     private ExpiryValidator expiryValidator;
 
     @Mock
-    private OptionValidator optionValidator;
+    private AttributeValidator attributeValidator;
 
     @Mock
     private TransactionContext txnCtx;
@@ -60,7 +51,7 @@ class MonoHandleContextTest {
 
     @BeforeEach
     void setup() {
-        subject = new MonoHandleContext(ids, expiryValidator, optionValidator, txnCtx);
+        subject = new MonoHandleContext(ids, expiryValidator, attributeValidator, txnCtx);
     }
 
     @Test
@@ -73,8 +64,7 @@ class MonoHandleContextTest {
     @Test
     void delegatesIdCreationToEntitySource() {
         final var nextNum = 666L;
-        given(ids.newAccountId(AccountID.getDefaultInstance()))
-                .willReturn(AccountID.newBuilder().setAccountNum(nextNum).build());
+        given(ids.newAccountNumber()).willReturn(nextNum);
 
         final var numSupplier = subject.newEntityNumSupplier();
 
@@ -82,50 +72,7 @@ class MonoHandleContextTest {
     }
 
     @Test
-    void delegatesKeyValidationToOptionValidatorAndTranslatesFailure() {
-        given(optionValidator.attemptDecodeOrThrow(any())).willThrow(new InvalidTransactionException(BAD_ENCODING));
-
-        final var attributeValidator = subject.attributeValidator();
-
-        assertFailsWith(BAD_ENCODING, () -> attributeValidator.validateKey(Key.getDefaultInstance()));
-    }
-
-    @Test
-    void delegatesKeyValidationToOptionValidatorHappyPath() {
-        final var attributeValidator = subject.attributeValidator();
-
-        attributeValidator.validateKey(Key.getDefaultInstance());
-
-        verify(optionValidator).attemptDecodeOrThrow(Key.getDefaultInstance());
-    }
-
-    @Test
-    void delegatesMemoValidationToOptionValidatorHappyPath() {
-        final var memo = "A memo";
-        final var attributeValidator = subject.attributeValidator();
-
-        given(optionValidator.memoCheck(memo)).willReturn(OK);
-
-        assertDoesNotThrow(() -> attributeValidator.validateMemo(memo));
-    }
-
-    @Test
-    void delegatesMemoValidationToOptionValidatorAndTranslatesFailure() {
-        final var memo = "A memo";
-        final var attributeValidator = subject.attributeValidator();
-
-        given(optionValidator.memoCheck(memo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
-
-        assertFailsWith(INVALID_ZERO_BYTE_IN_STRING, () -> attributeValidator.validateMemo(memo));
-    }
-
-    @Test
     void returnsExpiryValidatorAsExpected() {
         assertSame(expiryValidator, subject.expiryValidator());
-    }
-
-    private static void assertFailsWith(final ResponseCodeEnum expected, final Runnable runnable) {
-        final var e = assertThrows(HandleStatusException.class, runnable::run);
-        assertEquals(expected, e.getStatus());
     }
 }

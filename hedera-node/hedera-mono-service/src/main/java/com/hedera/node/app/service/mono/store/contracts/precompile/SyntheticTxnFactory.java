@@ -308,12 +308,12 @@ public class SyntheticTxnFactory {
             @Nullable final EntityId operatorId) {
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
         if (approveWrapper.isFungible()) {
-            builder.addTokenAllowances(TokenAllowance.newBuilder()
+            var tokenAllowance = TokenAllowance.newBuilder()
                     .setTokenId(approveWrapper.tokenId())
                     .setOwner(Objects.requireNonNull(ownerId).toGrpcAccountId())
                     .setSpender(approveWrapper.spender())
-                    .setAmount(approveWrapper.amount().longValueExact())
-                    .build());
+                    .setAmount(approveWrapper.amount().longValueExact());
+            builder.addTokenAllowances(tokenAllowance.build());
         } else {
             final var op = NftAllowance.newBuilder()
                     .setTokenId(approveWrapper.tokenId())
@@ -343,13 +343,14 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createApproveAllowanceForAllNFT(
-            final SetApprovalForAllWrapper setApprovalForAllWrapper) {
+            @NonNull final SetApprovalForAllWrapper setApprovalForAllWrapper, @NonNull EntityId ownerId) {
 
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
         builder.addNftAllowances(NftAllowance.newBuilder()
                 .setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
                 .setTokenId(setApprovalForAllWrapper.tokenId())
+                .setOwner(Objects.requireNonNull(ownerId).toGrpcAccountId())
                 .setSpender(setApprovalForAllWrapper.to())
                 .build());
 

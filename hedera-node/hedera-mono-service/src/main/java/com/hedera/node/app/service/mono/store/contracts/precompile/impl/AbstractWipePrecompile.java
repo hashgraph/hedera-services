@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -64,7 +65,7 @@ public abstract class AbstractWipePrecompile extends AbstractWritePrecompile {
         final var tokenId = Id.fromGrpcToken(wipeOp.token());
         final var accountId = Id.fromGrpcAccount(wipeOp.account());
         final var hasRequiredSigs = KeyActivationUtils.validateKey(
-                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveWipeKey, ledgers, aliases);
+                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveWipeKey, ledgers, aliases, TokenAccountWipe);
         validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */

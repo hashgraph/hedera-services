@@ -76,6 +76,7 @@ import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -301,7 +302,8 @@ class TokenUpdateKeysPrecompileTest {
     }
 
     private void givenUpdateTokenContext() {
-        given(sigsVerifier.hasActiveAdminKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveAdminKey(
+                        true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers, HederaFunctionality.TokenUpdate))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);

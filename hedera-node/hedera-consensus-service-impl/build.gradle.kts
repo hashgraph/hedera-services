@@ -31,6 +31,7 @@ dependencies {
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hapi"))
   api(project(":hedera-node:hedera-consensus-service"))
+  api(project(":hedera-node:hapi"))
   implementation(project(":hedera-node:hedera-mono-service"))
   implementation(libs.bundles.di)
   implementation(libs.pbj.runtime)
@@ -38,5 +39,6 @@ dependencies {
   testImplementation(testLibs.bundles.testing)
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  testImplementation(project(":hedera-node:hedera-token-service"))
   testImplementation(testLibs.mockito.inline)
 }

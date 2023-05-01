@@ -47,7 +47,7 @@ import java.util.stream.Stream;
  * 		The type of leaf node.
  */
 @SuppressWarnings("unused")
-public interface VirtualDataSource<K extends VirtualKey<? super K>, V extends VirtualValue> {
+public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue> {
 
     /** nominal value for a invalid path */
     int INVALID_PATH = -1;

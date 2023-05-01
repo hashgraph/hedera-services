@@ -141,13 +141,17 @@ public class DecodingFacade {
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias = Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
-        final var resolved = aliasResolver.apply(addressOrAlias);
-        if (!isMirror(resolved)) {
+        final var resolvedAddress = aliasResolver.apply(addressOrAlias);
+        // The input address was missing, so we return an AccountID with the
+        // missing address as alias; this means that any downstream code that
+        // relies on 0.0.X account numbers will get INVALID_ACCOUNT_ID, but
+        // the AccountID in any synthetic transaction body will have a valid
+        if (!isMirror(resolvedAddress)) {
             return AccountID.newBuilder()
                     .setAlias(ByteStringUtils.wrapUnsafely(addressOrAlias))
                     .build();
         }
-        return accountIdFromEvmAddress(resolved);
+        return accountIdFromEvmAddress(resolvedAddress);
     }
 
     /**

@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -34,11 +35,13 @@ import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.initialization.BackedSystemAccountsCreator;
+import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -72,6 +75,7 @@ public class MigrationRecordsManager {
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
+    private static final String BLOCKED_ACCOUNT_CREATION_MEMO = "Synthetic blocked account creation";
 
     private final EntityCreator creator;
     private final BackedSystemAccountsCreator systemAccountsCreator;
@@ -83,6 +87,7 @@ public class MigrationRecordsManager {
     private final Supplier<AccountStorageAdapter> accounts;
     private final HederaAccountNumbers accountNumbers;
     private final BootstrapProperties bootstrapProperties;
+    private final BlocklistAccountCreator blocklistAccountCreator;
     private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 
     @Inject
@@ -96,7 +101,8 @@ public class MigrationRecordsManager {
             final Supplier<AccountStorageAdapter> accounts,
             final SyntheticTxnFactory syntheticTxnFactory,
             final HederaAccountNumbers accountNumbers,
-            final BootstrapProperties bootstrapProperties) {
+            final BootstrapProperties bootstrapProperties,
+            final BlocklistAccountCreator blocklistAccountCreator) {
         this.systemAccountsCreator = systemAccountsCreator;
         this.sigImpactHistorian = sigImpactHistorian;
         this.recordsHistorian = recordsHistorian;
@@ -107,6 +113,7 @@ public class MigrationRecordsManager {
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.accountNumbers = accountNumbers;
         this.bootstrapProperties = bootstrapProperties;
+        this.blocklistAccountCreator = blocklistAccountCreator;
     }
 
     /**
@@ -139,8 +146,14 @@ public class MigrationRecordsManager {
         publishAccountsCreated(
                 systemAccountsCreator.getSystemAccountsCreated(), now, SYSTEM_ACCOUNT_CREATION_MEMO, "system creation");
 
+        if (bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED)) {
+            publishAccountsCreated(
+                    blocklistAccountCreator.getBlockedAccountsCreated(), now, BLOCKED_ACCOUNT_CREATION_MEMO, "blocked");
+        }
+
         curNetworkCtx.markMigrationRecordsStreamed();
         systemAccountsCreator.forgetCreations();
+        blocklistAccountCreator.forgetCreatedBlockedAccounts();
     }
 
     private void publishAccountsCreated(
@@ -154,7 +167,8 @@ public class MigrationRecordsManager {
                 account.getMemo(),
                 memo,
                 description,
-                account.getBalance()));
+                account.getBalance(),
+                account.getAlias()));
     }
 
     private boolean grantingFreeAutoRenewals() {
@@ -171,7 +185,8 @@ public class MigrationRecordsManager {
                 EMPTY_MEMO,
                 STAKING_MEMO,
                 "staking fund",
-                0L); // since 0.0.800 and 0.0.801 are created with zero balance
+                0L, // since 0.0.800 and 0.0.801 are created with zero balance
+                ByteString.EMPTY);
     }
 
     @SuppressWarnings("java:S107")
@@ -184,11 +199,12 @@ public class MigrationRecordsManager {
             final String accountMemo,
             final String recordMemo,
             final String description,
-            final long balance) {
+            final long balance,
+            final ByteString alias) {
         final var tracker = sideEffectsFactory.get();
         tracker.trackAutoCreation(num.toGrpcAccountId());
         final var synthBody =
-                synthCreation(autoRenewPeriod, key, accountMemo, receiverSigRequired, declineReward, balance);
+                synthCreation(autoRenewPeriod, key, accountMemo, receiverSigRequired, declineReward, balance, alias);
         final var synthRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, recordMemo);
         // show the balance of any accounts whose balance is not zero for mirror node
         // reconciliation.
@@ -208,16 +224,21 @@ public class MigrationRecordsManager {
             final String memo,
             final boolean receiverSigRequired,
             final boolean declineReward,
-            final long balance) {
+            final long balance,
+            final ByteString alias) {
         final var txnBody = CryptoCreateTransactionBody.newBuilder()
                 .setKey(key)
                 .setMemo(memo)
                 .setDeclineReward(declineReward)
                 .setReceiverSigRequired(receiverSigRequired)
                 .setInitialBalance(balance)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                .build();
-        return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod));
+
+        if (alias != null && !alias.isEmpty()) {
+            txnBody.setAlias(alias);
+        }
+
+        return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody.build());
     }
 
     private void publishContractFreeAutoRenewalRecords() {

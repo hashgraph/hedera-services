@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
@@ -26,6 +26,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedSt
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -35,11 +36,14 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
-import com.swirlds.common.utility.Startable;
+import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -100,6 +104,11 @@ public class SignedStateFileManager implements Startable {
     private long minimumGenerationNonAncientForOldestState = -1;
 
     /**
+     * This method must be called when the minimum generation non-ancient of the oldest state snapshot on disk changes.
+     */
+    private final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer;
+
+    /**
      * Creates a new instance.
      *
      * @param threadManager responsible for creating and managing threads
@@ -108,14 +117,15 @@ public class SignedStateFileManager implements Startable {
      * @param swirldName    the name of the swirld
      */
     public SignedStateFileManager(
-            final PlatformContext context,
-            final ThreadManager threadManager,
-            final SignedStateMetrics metrics,
-            final Time time,
-            final String mainClassName,
-            final NodeId selfId,
-            final String swirldName,
-            final StateToDiskAttemptConsumer stateToDiskAttemptConsumer) {
+            @NonNull final PlatformContext context,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final SignedStateMetrics metrics,
+            @NonNull final Time time,
+            @NonNull final String mainClassName,
+            @NonNull final NodeId selfId,
+            @NonNull final String swirldName,
+            @NonNull final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
+            @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
 
         this.metrics = throwArgNull(metrics, "metrics");
         this.time = time;
@@ -124,6 +134,8 @@ public class SignedStateFileManager implements Startable {
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
+        this.minimumGenerationNonAncientConsumer =
+                throwArgNull(minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer");
 
         final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
 
@@ -143,6 +155,8 @@ public class SignedStateFileManager implements Startable {
                     savedStates[savedStates.length - 1].getMetadata().minimumGenerationNonAncient();
             if (generationNonAncient != null) {
                 minimumGenerationNonAncientForOldestState = generationNonAncient;
+                minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(
+                        minimumGenerationNonAncientForOldestState);
             }
         }
     }
@@ -182,7 +196,7 @@ public class SignedStateFileManager implements Startable {
      * reservation when the state has been fully written to disk (or if state saving fails).
      * </p>
      *
-     * @param signedState      the complete signed state
+     * @param signedState      the signed state to be written
      * @param directory        the directory where the signed state will be written
      * @param taskDescription  a human-readable description of the operation being performed
      * @param finishedCallback a function that is called after state writing is complete. Is passed true if writing
@@ -190,40 +204,48 @@ public class SignedStateFileManager implements Startable {
      * @return true if it will be written to disk, false otherwise
      */
     private boolean saveSignedStateToDisk(
-            final SignedState signedState,
-            final Path directory,
-            final String taskDescription,
-            final Consumer<Boolean> finishedCallback) {
+            @NonNull SignedState signedState,
+            @NonNull final Path directory,
+            @NonNull final String taskDescription,
+            @Nullable final Consumer<Boolean> finishedCallback) {
 
-        signedState.reserve();
+        Objects.requireNonNull(directory);
+        Objects.requireNonNull(taskDescription);
+
+        final ReservedSignedState reservedSignedState =
+                signedState.reserve("SignedStateFileManager.saveSignedStateToDisk()");
 
         final boolean accepted = taskQueue.offer(() -> {
             final long start = time.nanoTime();
             boolean success = false;
-            try {
-                writeSignedStateToDisk(selfId.getId(), directory, signedState, taskDescription);
-                metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+            final long round = reservedSignedState.get().getRound();
+            try (reservedSignedState) {
+                try {
+                    writeSignedStateToDisk(selfId.getId(), directory, reservedSignedState.get(), taskDescription);
+                    metrics.getWriteStateToDiskTimeMetric()
+                            .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
-                success = true;
-            } catch (final Throwable e) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Unable to write signed state to disk for round {} to {}.",
-                        signedState.getRound(),
-                        directory,
-                        e);
-            } finally {
-                stateToDiskAttemptConsumer.stateToDiskAttempt(new SignedStateWrapper(signedState), directory, success);
-                signedState.release();
-                if (finishedCallback != null) {
-                    finishedCallback.accept(success);
+                    stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, true);
+
+                    success = true;
+                } catch (final Throwable e) {
+                    stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, false);
+                    logger.error(
+                            EXCEPTION.getMarker(),
+                            "Unable to write signed state to disk for round {} to {}.",
+                            round,
+                            directory,
+                            e);
+                } finally {
+                    if (finishedCallback != null) {
+                        finishedCallback.accept(success);
+                    }
+                    metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
                 }
-                metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
             }
         });
 
         if (!accepted) {
-            signedState.release();
             if (finishedCallback != null) {
                 finishedCallback.accept(false);
             }
@@ -231,7 +253,8 @@ public class SignedStateFileManager implements Startable {
                     STATE_TO_DISK.getMarker(),
                     "Unable to save signed state to disk for round {} due to backlog of "
                             + "operations in the SignedStateManager task queue.",
-                    signedState.getRound());
+                    reservedSignedState.get().getRound());
+            reservedSignedState.close();
         }
         return accepted;
     }
@@ -258,7 +281,8 @@ public class SignedStateFileManager implements Startable {
      *                    part of a file path, so it should not contain whitespace or special characters.
      * @param blocking    if true then block until the state has been fully written to disk
      */
-    public void dumpState(final SignedState signedState, final String reason, final boolean blocking) {
+    public void dumpState(
+            @NonNull final SignedState signedState, @NonNull final String reason, final boolean blocking) {
         final CountDownLatch latch = new CountDownLatch(1);
 
         saveSignedStateToDisk(
@@ -367,11 +391,15 @@ public class SignedStateFileManager implements Startable {
         // Keep the minimum generation non-ancient for the oldest state up to date
         if (index >= 0) {
             final SavedStateMetadata oldestStateMetadata = savedStates[index].getMetadata();
-            final long minimumGeneration = oldestStateMetadata.minimumGenerationNonAncient() == null
+
+            final long oldestStateMinimumGeneration = oldestStateMetadata.minimumGenerationNonAncient() == null
                     ? -1L
                     : oldestStateMetadata.minimumGenerationNonAncient();
-            minimumGenerationNonAncientForOldestState =
-                    Math.max(minimumGenerationNonAncientForOldestState, minimumGeneration);
+
+            if (minimumGenerationNonAncientForOldestState < oldestStateMinimumGeneration) {
+                minimumGenerationNonAncientForOldestState = oldestStateMinimumGeneration;
+                minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(oldestStateMinimumGeneration);
+            }
         }
     }
 

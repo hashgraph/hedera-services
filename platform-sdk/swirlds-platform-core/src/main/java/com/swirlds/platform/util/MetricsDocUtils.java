@@ -18,7 +18,7 @@ package com.swirlds.platform.util;
 
 import static com.swirlds.logging.LogMarker.STARTUP;
 
-import com.swirlds.common.config.ConfigUtils;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
@@ -51,9 +51,9 @@ public final class MetricsDocUtils {
     private MetricsDocUtils() {}
 
     /**
-     * Writes all metrics information to a file in the base directory.
-     * This method is to be called after the local platforms are created with the platform {@code Metrics}.
-     * Both global metrics and platform metrics will be included in the output file.
+     * Writes all metrics information to a file in the base directory. This method is to be called after the local
+     * platforms are created with the platform {@code Metrics}. Both global metrics and platform metrics will be
+     * included in the output file.
      *
      * @param globalMetrics the global {@code Metrics}
      * @param platforms     the collection of {@code SwirldsPlatform}s
@@ -74,7 +74,7 @@ public final class MetricsDocUtils {
         }
 
         final String metricsContents = generateMetricsDocContentsInTSV(combinedMetrics);
-        final String filePath = ConfigUtils.getUserDir()
+        final String filePath = FileUtils.getUserDir()
                 + File.separator
                 + configuration.getConfigData(MetricsConfig.class).metricsDocFileName();
 
@@ -86,9 +86,9 @@ public final class MetricsDocUtils {
     }
 
     /**
-     * Generates the Metrics document contents with the given collection of {@link Metric}s
-     * in the pre-defined TSV format and returns the contents as {@code String}. The metrics
-     * data will be sorted in alphabetical order of their identifiers.
+     * Generates the Metrics document contents with the given collection of {@link Metric}s in the pre-defined TSV
+     * format and returns the contents as {@code String}. The metrics data will be sorted in alphabetical order of their
+     * identifiers.
      *
      * @param metrics a collection of {@code Metric}s
      * @return the metrics document contents
