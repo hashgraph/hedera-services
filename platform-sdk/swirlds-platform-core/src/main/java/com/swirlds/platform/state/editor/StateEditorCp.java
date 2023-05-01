@@ -27,6 +27,7 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -67,7 +68,9 @@ public class StateEditorCp extends StateEditorOperation {
         MerkleCopy.copyTreeToLocation(parent.asInternal(), indexInParent, source);
 
         // Invalidate hashes in path down from root
-        new MerkleRouteIterator(getStateEditor().getState(), parent.getRoute())
-                .forEachRemaining(Hashable::invalidateHash);
+        try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorCp.run()")) {
+            new MerkleRouteIterator(reservedSignedState.get().getState(), parent.getRoute())
+                    .forEachRemaining(Hashable::invalidateHash);
+        }
     }
 }

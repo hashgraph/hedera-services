@@ -30,7 +30,7 @@ import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectUtils;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import java.io.IOException;
 import java.util.List;
@@ -321,7 +321,6 @@ class SyncCaller implements Runnable {
         final ReconnectPeerInfoPayload peerInfo = new ReconnectPeerInfoPayload();
 
         for (final Long neighborId : reconnectNeighbors) {
-            final SignedState signedState;
             // try to get the lock, it should be available if we have fallen behind
             try (final MaybeLockedResource<ConnectionManager> resource =
                     platform.getSharedConnectionLocks().tryLockConnection(NodeId.createMain(neighborId))) {
@@ -340,17 +339,19 @@ class SyncCaller implements Runnable {
                     peerInfo.addPeerInfo(neighborId, "peer declined request to reconnect");
                     continue;
                 }
-                signedState = reconnectHelper.receiveSignedState(conn, signedStateValidator);
-                if (signedState == null) {
-                    peerInfo.addPeerInfo(neighborId, "no signed state received");
-                    continue;
+                try (final ReservedSignedState reservedState =
+                        reconnectHelper.receiveSignedState(conn, signedStateValidator)) {
+
+                    if (reservedState.isNull()) {
+                        peerInfo.addPeerInfo(neighborId, "no signed state received");
+                        continue;
+                    }
+                    return reconnectHelper.loadSignedState(reservedState.get());
                 }
             } catch (final Exception e) {
                 peerInfo.addPeerInfo(neighborId, "exception occurred: " + e.getMessage());
                 // if we failed to receive a state from this node, we will try the next one
-                continue;
             }
-            return reconnectHelper.loadSignedState(signedState);
         }
 
         logger.info(

@@ -25,6 +25,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -51,14 +52,16 @@ public class StateEditorRm extends StateEditorOperation {
         final MerkleInternal parent = parentInfo.parent();
         final int indexInParent = parentInfo.indexInParent();
 
-        final MerkleNode child = getStateEditor().getState().getNodeAtRoute(destinationRoute);
+        try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorRm.run()")) {
+            final MerkleNode child = reservedSignedState.get().getState().getNodeAtRoute(destinationRoute);
 
-        System.out.println("Removing " + formatNode(child) + " from parent " + formatParent(parent, indexInParent));
+            System.out.println("Removing " + formatNode(child) + " from parent " + formatParent(parent, indexInParent));
 
-        parent.setChild(indexInParent, null);
+            parent.setChild(indexInParent, null);
 
-        // Invalidate hashes in path down from root
-        new MerkleRouteIterator(getStateEditor().getState(), parent.getRoute())
-                .forEachRemaining(Hashable::invalidateHash);
+            // Invalidate hashes in path down from root
+            new MerkleRouteIterator(reservedSignedState.get().getState(), parent.getRoute())
+                    .forEachRemaining(Hashable::invalidateHash);
+        }
     }
 }

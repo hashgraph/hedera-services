@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;

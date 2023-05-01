@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import com.hedera.node.app.service.admin.impl.components.AdminComponent;
-import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
+import com.hedera.node.app.service.admin.impl.handlers.AdminHandlers;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
-import com.hedera.node.app.service.token.impl.handlers.TokenComponent;
+import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.util.impl.components.UtilComponent;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import dagger.Module;
@@ -35,19 +35,19 @@ public interface HandlersModule {
     @Provides
     @Singleton
     static TransactionHandlers provideTransactionHandlers(
-            @NonNull final AdminComponent adminComponent,
-            @NonNull final ConsensusComponent consensusComponent,
+            @NonNull final AdminHandlers adminHandlers,
+            @NonNull final ConsensusHandlers consensusHandlers,
             @NonNull final FileComponent fileComponent,
             @NonNull final NetworkComponent networkComponent,
             @NonNull final ContractComponent contractComponent,
             @NonNull final ScheduleComponent scheduleComponent,
-            @NonNull final TokenComponent tokenComponent,
+            @NonNull final TokenHandlers tokenHandlers,
             @NonNull final UtilComponent utilComponent) {
         return new TransactionHandlers(
-                consensusComponent.consensusCreateTopicHandler(),
-                consensusComponent.consensusUpdateTopicHandler(),
-                consensusComponent.consensusDeleteTopicHandler(),
-                consensusComponent.consensusSubmitMessageHandler(),
+                consensusHandlers.consensusCreateTopicHandler(),
+                consensusHandlers.consensusUpdateTopicHandler(),
+                consensusHandlers.consensusDeleteTopicHandler(),
+                consensusHandlers.consensusSubmitMessageHandler(),
                 contractComponent.contractCreateHandler(),
                 contractComponent.contractUpdateHandler(),
                 contractComponent.contractCallHandler(),
@@ -55,40 +55,40 @@ public interface HandlersModule {
                 contractComponent.contractSystemDeleteHandler(),
                 contractComponent.contractSystemUndeleteHandler(),
                 contractComponent.etherumTransactionHandler(),
-                tokenComponent.cryptoCreateHandler(),
-                tokenComponent.cryptoUpdateHandler(),
-                tokenComponent.cryptoTransferHandler(),
-                tokenComponent.cryptoDeleteHandler(),
-                tokenComponent.cryptoApproveAllowanceHandler(),
-                tokenComponent.cryptoDeleteAllowanceHandler(),
-                tokenComponent.cryptoAddLiveHashHandler(),
-                tokenComponent.cryptoDeleteLiveHashHandler(),
+                tokenHandlers.cryptoCreateHandler(),
+                tokenHandlers.cryptoUpdateHandler(),
+                tokenHandlers.cryptoTransferHandler(),
+                tokenHandlers.cryptoDeleteHandler(),
+                tokenHandlers.cryptoApproveAllowanceHandler(),
+                tokenHandlers.cryptoDeleteAllowanceHandler(),
+                tokenHandlers.cryptoAddLiveHashHandler(),
+                tokenHandlers.cryptoDeleteLiveHashHandler(),
                 fileComponent.fileCreateHandler(),
                 fileComponent.fileUpdateHandler(),
                 fileComponent.fileDeleteHandler(),
                 fileComponent.fileAppendHandler(),
                 fileComponent.fileSystemDeleteHandler(),
                 fileComponent.fileSystemUndeleteHandler(),
-                adminComponent.freezeHandler(),
+                adminHandlers.freezeHandler(),
                 networkComponent.networkUncheckedSubmitHandler(),
                 scheduleComponent.scheduleCreateHandler(),
                 scheduleComponent.scheduleSignHandler(),
                 scheduleComponent.scheduleDeleteHandler(),
-                tokenComponent.tokenCreateHandler(),
-                tokenComponent.tokenUpdateHandler(),
-                tokenComponent.tokenMintHandler(),
-                tokenComponent.tokenBurnHandler(),
-                tokenComponent.tokenDeleteHandler(),
-                tokenComponent.tokenAccountWipeHandler(),
-                tokenComponent.tokenFreezeAccountHandler(),
-                tokenComponent.tokenUnfreezeAccountHandler(),
-                tokenComponent.tokenGrantKycToAccountHandler(),
-                tokenComponent.tokenRevokeKycFromAccountHandler(),
-                tokenComponent.tokenAssociateToAccountHandler(),
-                tokenComponent.tokenDissociateFromAccountHandler(),
-                tokenComponent.tokenFeeScheduleUpdateHandler(),
-                tokenComponent.tokenPauseHandler(),
-                tokenComponent.tokenUnpauseHandler(),
+                tokenHandlers.tokenCreateHandler(),
+                tokenHandlers.tokenUpdateHandler(),
+                tokenHandlers.tokenMintHandler(),
+                tokenHandlers.tokenBurnHandler(),
+                tokenHandlers.tokenDeleteHandler(),
+                tokenHandlers.tokenAccountWipeHandler(),
+                tokenHandlers.tokenFreezeAccountHandler(),
+                tokenHandlers.tokenUnfreezeAccountHandler(),
+                tokenHandlers.tokenGrantKycToAccountHandler(),
+                tokenHandlers.tokenRevokeKycFromAccountHandler(),
+                tokenHandlers.tokenAssociateToAccountHandler(),
+                tokenHandlers.tokenDissociateFromAccountHandler(),
+                tokenHandlers.tokenFeeScheduleUpdateHandler(),
+                tokenHandlers.tokenPauseHandler(),
+                tokenHandlers.tokenUnpauseHandler(),
                 utilComponent.prngHandler());
     }
 }
