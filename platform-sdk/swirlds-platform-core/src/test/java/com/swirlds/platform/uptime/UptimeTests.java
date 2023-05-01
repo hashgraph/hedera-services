@@ -619,7 +619,7 @@ class UptimeTests {
                 new ConsensusRound(secondRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class));
         uptimeTracker.handleRound(roundTwo, nextRoundUptimeData, addressBook);
 
-        assertTrue(uptimeTracker.isDegraded());
+        assertTrue(uptimeTracker.isSelfDegraded());
 
         // Once one of the node's events reaches consensus again, it should no longer be degraded
 
@@ -632,6 +632,6 @@ class UptimeTests {
                 new ConsensusRound(thirdRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class));
         uptimeTracker.handleRound(roundThree, finalRoundUptimeData, addressBook);
 
-        assertFalse(uptimeTracker.isDegraded());
+        assertFalse(uptimeTracker.isSelfDegraded());
     }
 }

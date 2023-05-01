@@ -43,6 +43,9 @@ class NodeUptimeData implements FastCopyable, SelfSerializable {
         public static final int ORIGINAL = 1;
     }
 
+    /**
+     * Zero-arg constructor required by SelfSerializable interface.
+     */
     public NodeUptimeData() {}
 
     /**

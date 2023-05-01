@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Monitors the uptime of nodes in the network.
  */
-public class UptimeTracker { // TODO test
+public class UptimeTracker {
 
     private final long selfId;
     private final Time time;
@@ -69,19 +69,20 @@ public class UptimeTracker { // TODO test
 
         this.selfId = selfId;
         this.time = Objects.requireNonNull(time);
-        this.addressBook = addressBook;
+        this.addressBook = Objects.requireNonNull(addressBook);
         this.degradationThreshold = platformContext
                 .getConfiguration()
                 .getConfigData(UptimeConfig.class)
                 .degradationThreshold();
-        this.uptimeMetrics = new UptimeMetrics(platformContext.getMetrics(), addressBook, this::isDegraded);
+        this.uptimeMetrics = new UptimeMetrics(platformContext.getMetrics(), addressBook, this::isSelfDegraded);
     }
 
     /**
      * Look at the events in a round to determine which nodes are up and which nodes are down.
      *
-     * @param round      the round to analyze
-     * @param uptimeData the uptime data that is in the current round's state, is modified by this method
+     * @param round       the round to analyze
+     * @param uptimeData  the uptime data that is in the current round's state, is modified by this method
+     * @param addressBook the address book for this round
      */
     public void handleRound(
             @NonNull final ConsensusRound round,
@@ -115,7 +116,8 @@ public class UptimeTracker { // TODO test
      * @param uptimeData  the uptime data
      * @param addressBook the current address book
      */
-    private void addAndRemoveNodes(MutableUptimeData uptimeData, AddressBook addressBook) {
+    private void addAndRemoveNodes(
+            @NonNull final MutableUptimeData uptimeData, @NonNull final AddressBook addressBook) {
         final Set<Long> addressBookNodes = addressBook.getNodeIdSet();
         final Set<Long> trackedNodes = uptimeData.getTrackedNodes();
         for (final long nodeId : addressBookNodes) {
@@ -139,7 +141,7 @@ public class UptimeTracker { // TODO test
      *
      * @return true if this node should consider itself to be degraded
      */
-    public boolean isDegraded() {
+    public boolean isSelfDegraded() {
         final Instant lastEventTime = this.lastEventTime.get();
         if (lastEventTime == null) {
             // Consider a node to be degraded until it has its first event reach consensus.

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.uptime;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -30,11 +32,15 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Contains the uptime data for the network.
  */
 public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUptimeData {
+
+    private static final Logger logger = LogManager.getLogger(UptimeDataImpl.class);
 
     private static final long CLASS_ID = 0x1f13fa8c89b27a8cL;
 
@@ -125,6 +131,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
         }
         return nodeData.getLastJudgeRound();
     }
+
     /**
      * {@inheritDoc}
      */
@@ -139,9 +146,14 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     public void recordLastEvent(@NonNull final EventImpl event) {
-        data.get(event.getCreatorId())
-                .setLastEventRound(event.getRoundReceived())
-                .setLastEventTime(event.getConsensusTimestamp());
+        final NodeUptimeData nodeData = data.get(event.getCreatorId());
+        if (nodeData == null) {
+            logger.warn(
+                    EXCEPTION.getMarker(), "Node {} is not being tracked by the uptime tracker.", event.getCreatorId());
+            return;
+        }
+
+        nodeData.setLastEventRound(event.getRoundReceived()).setLastEventTime(event.getConsensusTimestamp());
     }
 
     /**
@@ -149,9 +161,13 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     public void recordLastJudge(@NonNull final EventImpl event) {
-        data.get(event.getCreatorId())
-                .setLastJudgeRound(event.getRoundReceived())
-                .setLastJudgeTime(event.getConsensusTimestamp());
+        final NodeUptimeData nodeData = data.get(event.getCreatorId());
+        if (nodeData == null) {
+            logger.warn(
+                    EXCEPTION.getMarker(), "Node {} is not being tracked by the uptime tracker.", event.getCreatorId());
+            return;
+        }
+        nodeData.setLastJudgeRound(event.getRoundReceived()).setLastJudgeTime(event.getConsensusTimestamp());
     }
 
     /**

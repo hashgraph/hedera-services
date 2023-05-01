@@ -106,6 +106,9 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
         return uptimeData;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public MutableUptimeData getMutableUptimeData() {

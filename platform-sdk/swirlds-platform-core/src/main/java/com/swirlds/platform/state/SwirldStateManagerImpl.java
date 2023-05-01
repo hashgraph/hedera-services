@@ -174,7 +174,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         uptimeTracker.handleRound(
                 round,
                 state.getPlatformDualState().getMutableUptimeData(),
-                stateRef.get().getPlatformState().getAddressBook());
+                state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
         postConsensusSystemTransactionManager.handleRound(state, round);
         updateEpoch();
