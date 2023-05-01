@@ -60,11 +60,10 @@ class RecordStreamSignCommandTest {
         final var keyPair = new KeyPair(publicKey, privateKey);
         final var hapiVersion = "0.37.0-allowance-SNAPSHOT";
         // when:
-        final var recordStreamSignCommand = new RecordStreamSignCommand();
-        recordStreamSignCommand.setHapiVersion(hapiVersion);
+        subject.setHapiVersion(hapiVersion);
 
         // then:
-        assertFalse(recordStreamSignCommand.generateSignatureFile(signatureFileDestination, fileToSign, keyPair));
+        assertFalse(subject.generateSignatureFile(signatureFileDestination, fileToSign, keyPair));
     }
 
     @Test
@@ -78,12 +77,10 @@ class RecordStreamSignCommandTest {
                 .getPath());
 
         // when:
-        final var recordStreamSignCommand = new RecordStreamSignCommand();
-        recordStreamSignCommand.setHapiVersion("0.37.0-allowance-SNAPSHOT");
+        subject.setHapiVersion("0.37.0-allowance-SNAPSHOT");
 
         // then:
-        assertTrue(recordStreamSignCommand.generateSignatureFile(
-                signatureFileDestination, fileToSign, TestUtils.loadKey()));
+        assertTrue(subject.generateSignatureFile(signatureFileDestination, fileToSign, TestUtils.loadKey()));
     }
 
     @Test
@@ -97,12 +94,10 @@ class RecordStreamSignCommandTest {
                 .getPath());
 
         // when:
-        final var recordStreamSignCommand = new RecordStreamSignCommand();
-        recordStreamSignCommand.setHapiVersion("0.37.0-allowance-SNAPSHOT");
+        subject.setHapiVersion("0.37.0-allowance-SNAPSHOT");
 
         // then:
-        assertTrue(recordStreamSignCommand.generateSignatureFile(
-                signatureFileDestination, fileToSign, TestUtils.loadKey()));
+        assertTrue(subject.generateSignatureFile(signatureFileDestination, fileToSign, TestUtils.loadKey()));
     }
 
     @Test
