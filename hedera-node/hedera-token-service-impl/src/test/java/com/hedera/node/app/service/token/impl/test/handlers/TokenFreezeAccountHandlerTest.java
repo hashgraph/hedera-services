@@ -16,30 +16,70 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.VALID_FREEZE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.TokenFreezeAccountTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler;
+import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class TokenFreezeAccountHandlerTest extends ParityTestBase {
-    TokenFreezeAccountHandler subject = new TokenFreezeAccountHandler();
+    private static final AccountID ACCOUNT_13257 =
+            AccountID.newBuilder().accountNum(13257).build();
 
-    @Test
-    void tokenFreezeWithExtantTokenScenario() throws PreCheckException {
-        final var theTxn = txnFrom(VALID_FREEZE_WITH_EXTANT_TOKEN);
+    private final TokenFreezeAccountHandler subject = new TokenFreezeAccountHandler();
 
-        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-        context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        subject.preHandle(context);
+    @Nested
+    class PreHandleTests {
+        @Test
+        void tokenFreezeWithExtantTokenScenario() throws PreCheckException {
+            final var theTxn = txnFrom(VALID_FREEZE_WITH_EXTANT_TOKEN);
 
-        assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_FREEZE_KT.asPbjKey()));
+            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+            context.registerStore(ReadableTokenStore.class, readableTokenStore);
+            subject.preHandle(context);
+
+            assertEquals(1, context.requiredNonPayerKeys().size());
+            assertThat(context.requiredNonPayerKeys(), contains(TOKEN_FREEZE_KT.asPbjKey()));
+        }
+
+        @Test
+        void tokenFreezeWithNoToken() throws PreCheckException {
+            final var theTxn = TransactionBody.newBuilder()
+                    .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_13257))
+                    .tokenFreeze(TokenFreezeAccountTransactionBody.newBuilder().account(ACCOUNT_13257))
+                    .build();
+
+            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+            context.registerStore(ReadableTokenStore.class, readableTokenStore);
+            Assertions.assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
+        }
+
+        @Test
+        void tokenFreezeWithNoAccount() throws PreCheckException {
+            final var theTxn = TransactionBody.newBuilder()
+                    .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_13257))
+                    .tokenFreeze(TokenFreezeAccountTransactionBody.newBuilder()
+                            .token(TokenID.newBuilder().tokenNum(123L)))
+                    .build();
+
+            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+            context.registerStore(ReadableTokenStore.class, readableTokenStore);
+            Assertions.assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+        }
     }
 }
