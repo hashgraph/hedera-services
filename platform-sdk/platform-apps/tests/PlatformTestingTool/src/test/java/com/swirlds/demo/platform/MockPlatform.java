@@ -78,12 +78,12 @@ public class MockPlatform implements Platform {
     }
 
     @Override
-    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState() {
+    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(final String reason) {
         return new AutoCloseableWrapper<>(null, () -> {});
     }
 
     @Override
-    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState() {
+    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(final String reason) {
         return new AutoCloseableWrapper<>(null, () -> {});
     }
 

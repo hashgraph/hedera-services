@@ -63,8 +63,9 @@ public class PreconsensusEventMetrics {
     private static final RunningAverageMetric.Config PRECONSENSUS_EVENT_AVERAGE_UN_UTILIZED_FILE_SPAN_CONFIG =
             new RunningAverageMetric.Config(CATEGORY, "preconsensusEventAverageUnutilizedFileSpan")
                     .withUnit("generations")
-                    .withDescription("The average unutilized generational span of preconsensus event files. "
-                            + "Only reflects files written since the last restart. Smaller is better.");
+                    .withDescription(
+                            "The average unutilized generational span of preconsensus event files prior "
+                                    + "to span compaction. Only reflects files written since the last restart. Smaller is better.");
     private final RunningAverageMetric preconsensusEventAverageUnUtilizedFileSpan;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_GENERATION_CONFIG = new LongGauge.Config(
@@ -88,8 +89,7 @@ public class PreconsensusEventMetrics {
     /**
      * Construct preconsensus event metrics.
      *
-     * @param metrics
-     * 		the metrics manager for the platform
+     * @param metrics the metrics manager for the platform
      */
     public PreconsensusEventMetrics(final Metrics metrics) {
         preconsensusEventFileCount = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_COUNT_CONFIG);

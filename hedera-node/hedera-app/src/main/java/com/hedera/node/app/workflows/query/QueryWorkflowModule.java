@@ -57,7 +57,8 @@ public interface QueryWorkflowModule {
     static Function<ResponseType, AutoCloseableWrapper<HederaState>> provideStateAccess(
             @NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
-        return responseType -> (AutoCloseableWrapper) platform.getLatestImmutableState();
+        return responseType ->
+                (AutoCloseableWrapper) platform.getLatestImmutableState(QueryWorkflowModule.class.getName());
     }
 
     @Provides
