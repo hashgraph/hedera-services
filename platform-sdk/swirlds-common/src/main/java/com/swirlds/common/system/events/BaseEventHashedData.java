@@ -213,8 +213,10 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         deserialize(in, version, SettingsCommon.maxTransactionCountPerEvent);
     }
 
-    public void deserialize(final SerializableDataInputStream in, final int version, final int maxTransactionCount)
+    public void deserialize(
+            @NonNull final SerializableDataInputStream in, final int version, final int maxTransactionCount)
             throws IOException {
+        Objects.requireNonNull(in, "The input stream must not be null");
         if (version >= ClassVersion.SOFTWARE_VERSION) {
             softwareVersion = in.readSerializable();
         } else {
