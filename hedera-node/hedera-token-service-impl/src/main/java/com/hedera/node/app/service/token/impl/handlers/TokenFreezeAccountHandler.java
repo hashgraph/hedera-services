@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -36,11 +35,9 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -72,13 +69,29 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
+     * @param txn the {@link TokenFreezeAccountTransactionBody} of the active transaction
+     * @param accountStore the {@link ReadableAccountStore} for the active transaction
+     * @param tokenStore the {@link ReadableTokenStore} for the active transaction
+     * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle() {
-        throw new UnsupportedOperationException("Not implemented");
+    public void handle(
+            @NonNull final TransactionBody txn,
+            @NonNull ReadableAccountStore accountStore,
+            @NonNull ReadableTokenStore tokenStore,
+            @NonNull WritableTokenRelationStore tokenRelStore)
+            throws HandleException {
+        requireNonNull(txn);
+        requireNonNull(accountStore);
+        requireNonNull(tokenStore);
+        requireNonNull(tokenRelStore);
+
+        final var op = txn.tokenFreezeOrThrow();
+        final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore);
+
+        final var copyBuilder = tokenRel.copyBuilder();
+        copyBuilder.frozen(true);
+        tokenRelStore.put(copyBuilder.build());
     }
 
     /**
@@ -92,5 +105,48 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         if (!op.hasAccount()) {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
+    }
+
+    /**
+     * Performs checks that the given token and accounts from the state are valid and that the
+     * token is associated to the account
+     *
+     * @return the token relation for the given token and account
+     */
+    private TokenRelation validateSemantics(
+            TokenFreezeAccountTransactionBody op,
+            ReadableAccountStore accountStore,
+            ReadableTokenStore tokenStore,
+            WritableTokenRelationStore tokenRelStore)
+            throws HandleException {
+        // Check that the token exists
+        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
+        final ReadableTokenStore.TokenMetadata token;
+        try {
+            token = tokenStore.getTokenMeta(tokenId);
+        } catch (PreCheckException e) {
+            throw new HandleException(INVALID_TOKEN_ID);
+        }
+        if (token == null) {
+            throw new HandleException(INVALID_TOKEN_ID);
+        }
+        if (!token.hasFreezeKey()) {
+            throw new HandleException(TOKEN_HAS_NO_FREEZE_KEY);
+        }
+
+        // Check that the account exists
+        final var account = accountStore.getAccountById(op.accountOrElse(AccountID.DEFAULT));
+        if (account == null) {
+            throw new HandleException(INVALID_ACCOUNT_ID);
+        }
+
+        // Check that the token is associated to the account
+        final var tokenRel = tokenRelStore.getForModify(tokenId.tokenNum(), account.accountNumber());
+        if (tokenRel.isEmpty()) {
+            throw new HandleException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        }
+
+        // Return the token relation
+        return tokenRel.get();
     }
 }

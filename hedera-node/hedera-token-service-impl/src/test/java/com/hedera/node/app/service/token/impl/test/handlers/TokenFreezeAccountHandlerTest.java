@@ -19,34 +19,57 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.FREEZE_WITH_NO_KEYS;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.VALID_FREEZE_WITH_EXTANT_TOKEN;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
+import static org.assertj.core.api.Assertions.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenFreezeAccountTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.test.utils.IdUtils;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-class TokenFreezeAccountHandlerTest extends ParityTestBase {
+class TokenFreezeAccountHandlerTest {
     private static final AccountID ACCOUNT_13257 =
             AccountID.newBuilder().accountNum(13257).build();
 
     private final TokenFreezeAccountHandler subject = new TokenFreezeAccountHandler();
 
     @Nested
-    class PreHandleTests {
+    class PreHandleTests extends ParityTestBase {
         @Test
         void tokenFreezeWithExtantTokenScenario() throws PreCheckException {
             final var theTxn = txnFrom(VALID_FREEZE_WITH_EXTANT_TOKEN);
@@ -91,6 +114,181 @@ class TokenFreezeAccountHandlerTest extends ParityTestBase {
             final var context = new FakePreHandleContext(readableAccountStore, theTxn);
             context.registerStore(ReadableTokenStore.class, readableTokenStore);
             Assertions.assertThrowsPreCheck(() -> subject.preHandle(context), TOKEN_HAS_NO_FREEZE_KEY);
+        }
+    }
+
+    @Nested
+    @ExtendWith(MockitoExtension.class)
+    class HandleTests {
+        private static final com.hederahashgraph.api.proto.java.TokenID MISSING_TOKEN_12345 =
+                IdUtils.asToken("0.0.12345");
+
+        @Mock
+        private ReadableTokenStore readableTokenStore;
+
+        @Mock
+        private ReadableAccountStore readableAccountStore;
+
+        @Mock
+        private WritableTokenRelationStore tokenRelStore;
+
+        @SuppressWarnings("DataFlowIssue")
+        @Test
+        void nullArgThrowsException() {
+            assertThatThrownBy(() -> subject.handle(null, readableAccountStore, readableTokenStore, tokenRelStore))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(
+                            () -> subject.handle(mock(TransactionBody.class), null, readableTokenStore, tokenRelStore))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() ->
+                            subject.handle(mock(TransactionBody.class), readableAccountStore, null, tokenRelStore))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() ->
+                            subject.handle(mock(TransactionBody.class), readableAccountStore, readableTokenStore, null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void tokenNotPresentInTxnBody() {
+            final var noTokenTxn = newFreezeTxn(null, ACCOUNT_13257);
+
+            Assertions.assertThrowsHandle(
+                    () -> subject.handle(noTokenTxn, readableAccountStore, readableTokenStore, tokenRelStore),
+                    INVALID_TOKEN_ID);
+            verifyNoPut();
+        }
+
+        @Test
+        void accountNotPresentInTxnBody() throws PreCheckException {
+            final var pbjToken = toPbj(KNOWN_TOKEN_WITH_FREEZE);
+            final var noAcctTxn = newFreezeTxn(pbjToken, null);
+            given(readableTokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey());
+
+            Assertions.assertThrowsHandle(
+                    () -> subject.handle(noAcctTxn, readableAccountStore, readableTokenStore, tokenRelStore),
+                    INVALID_ACCOUNT_ID);
+            verifyNoPut();
+        }
+
+        @Test
+        void tokenLookupThrowsPreCheckException() throws PreCheckException {
+            final var token = MISSING_TOKEN_12345;
+            doThrow(new PreCheckException(INVALID_TOKEN_ID))
+                    .when(readableTokenStore)
+                    .getTokenMeta(toPbj(token));
+            final var txn = newFreezeTxn(token);
+
+            Assertions.assertThrowsHandle(
+                    () -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore),
+                    INVALID_TOKEN_ID);
+            verifyNoPut();
+        }
+
+        @Test
+        void tokenNotFound() throws PreCheckException {
+            final var token = MISSING_TOKEN_12345;
+            given(readableTokenStore.getTokenMeta(toPbj(token))).willReturn(null);
+            final var txn = newFreezeTxn(token);
+
+            Assertions.assertThrowsHandle(
+                    () -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore),
+                    INVALID_TOKEN_ID);
+            verifyNoPut();
+        }
+
+        @Test
+        void tokenHasNoFreezeKey() throws PreCheckException {
+            final var token = KNOWN_TOKEN_NO_SPECIAL_KEYS;
+            given(readableTokenStore.getTokenMeta(toPbj(token))).willReturn(tokenMetaWithFreezeKey(null));
+            final var txn = newFreezeTxn(token);
+
+            Assertions.assertThrowsHandle(
+                    () -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore),
+                    TOKEN_HAS_NO_FREEZE_KEY);
+            verifyNoPut();
+        }
+
+        @Test
+        void accountNotFound() throws PreCheckException {
+            final var token = KNOWN_TOKEN_WITH_FREEZE;
+            given(readableTokenStore.getTokenMeta(toPbj(token))).willReturn(tokenMetaWithFreezeKey());
+            given(readableAccountStore.getAccountById(ACCOUNT_13257)).willReturn(null);
+            final var txn = newFreezeTxn(token);
+
+            Assertions.assertThrowsHandle(
+                    () -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore),
+                    INVALID_ACCOUNT_ID);
+            verifyNoPut();
+        }
+
+        @Test
+        void tokenRelNotFound() throws PreCheckException, HandleException {
+            final var token = KNOWN_TOKEN_WITH_FREEZE;
+            final var accountNumber = (long) ACCOUNT_13257.accountNumOrThrow();
+            given(readableTokenStore.getTokenMeta(toPbj(token))).willReturn(tokenMetaWithFreezeKey());
+            given(readableAccountStore.getAccountById(ACCOUNT_13257))
+                    .willReturn(
+                            Account.newBuilder().accountNumber(accountNumber).build());
+            given(tokenRelStore.getForModify(token.getTokenNum(), accountNumber))
+                    .willReturn(Optional.empty());
+            final var txn = newFreezeTxn(token);
+
+            Assertions.assertThrowsHandle(
+                    () -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore),
+                    TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+            verifyNoPut();
+        }
+
+        @Test
+        void tokenRelFreezeSuccessful() throws PreCheckException {
+            final var token = KNOWN_TOKEN_WITH_FREEZE;
+            final var accountNumber = (long) ACCOUNT_13257.accountNumOrThrow();
+            given(readableTokenStore.getTokenMeta(toPbj(token))).willReturn(tokenMetaWithFreezeKey());
+            given(readableAccountStore.getAccountById(ACCOUNT_13257))
+                    .willReturn(
+                            Account.newBuilder().accountNumber(accountNumber).build());
+            given(tokenRelStore.getForModify(token.getTokenNum(), accountNumber))
+                    .willReturn(Optional.of(TokenRelation.newBuilder()
+                            .tokenNumber(token.getTokenNum())
+                            .accountNumber(accountNumber)
+                            .build()));
+            final var txn = newFreezeTxn(token);
+
+            subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore);
+            verify(tokenRelStore)
+                    .put(TokenRelation.newBuilder()
+                            .tokenNumber(token.getTokenNum())
+                            .accountNumber(accountNumber)
+                            .frozen(true)
+                            .build());
+        }
+
+        private void verifyNoPut() {
+            verify(tokenRelStore, never()).put(any());
+        }
+
+        private ReadableTokenStore.TokenMetadata tokenMetaWithFreezeKey() {
+            return tokenMetaWithFreezeKey(FIRST_TOKEN_SENDER_KT.asPbjKey());
+        }
+
+        private ReadableTokenStore.TokenMetadata tokenMetaWithFreezeKey(Key freezeKey) {
+            return new ReadableTokenStore.TokenMetadata(null, null, null, freezeKey, null, null, null, false, 25L);
+        }
+
+        private TransactionBody newFreezeTxn(com.hederahashgraph.api.proto.java.TokenID token) {
+            return newFreezeTxn(toPbj(token), ACCOUNT_13257);
+        }
+
+        private TransactionBody newFreezeTxn(TokenID token, AccountID account) {
+            TokenFreezeAccountTransactionBody.Builder freezeTxnBodyBuilder =
+                    TokenFreezeAccountTransactionBody.newBuilder();
+            if (token != null) freezeTxnBodyBuilder.token(token);
+            if (account != null) freezeTxnBodyBuilder.account(account);
+            return TransactionBody.newBuilder()
+                    .transactionID(
+                            TransactionID.newBuilder().accountID(ACCOUNT_13257).build())
+                    .tokenFreeze(freezeTxnBodyBuilder)
+                    .build();
         }
     }
 }
