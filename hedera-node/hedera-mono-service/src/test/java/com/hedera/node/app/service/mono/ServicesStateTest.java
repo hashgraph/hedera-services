@@ -143,7 +143,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     // use the ':' character; but Windows prohibits such files, so the repository
     // couldn't be cloned on that OS with the as-is saved state. The solution is to
     // store the JDB files in the repo with ':' replaced by 'cln' (plus other
-    // shortening abbreviations); and then those files to a temp directory, using
+    // shortening abbreviations); and then copy those files to a temp directory, using
     // their proper JDB names, for use in this test.
     @TempDir
     private File jdbNamedSignedStateDir;
