@@ -34,7 +34,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.config.ThreadConfig;
@@ -125,9 +124,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * The number of non-ancient rounds.
      */
     private final int roundsNonAncient;
-
-    private final PlatformContext platformContext;
-
+    
     /**
      * Instantiate, but don't start any threads yet. The Platform should first instantiate the {@link
      * ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
