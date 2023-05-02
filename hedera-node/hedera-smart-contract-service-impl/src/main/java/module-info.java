@@ -20,5 +20,4 @@ module com.hedera.node.app.service.contract.impl {
             com.hedera.node.app,
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.handlers;
-    exports com.hedera.node.app.service.contract.impl.components;
 }
