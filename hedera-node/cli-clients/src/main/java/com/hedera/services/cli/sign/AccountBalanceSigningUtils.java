@@ -74,10 +74,12 @@ public class AccountBalanceSigningUtils {
 
             return true;
         } catch (final SignatureException | IOException e) {
-            System.err.println("Failed to sign file " + streamFileToSign.getFileName() + ". Exception: " + e);
+            System.err.printf(
+                    "signAccountBalanceFile :: Failed to sign file [%s] with exception : [%s]%n",
+                    streamFileToSign.getFileName(), e);
             return false;
         } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
-            System.err.println("Irrecoverable error encountered: " + e);
+            System.err.printf("Irrecoverable error encountered: [%s]%n", e);
             throw new RuntimeException("Irrecoverable error encountered", e);
         }
     }
@@ -92,8 +94,9 @@ public class AccountBalanceSigningUtils {
             output.write(signature);
             output.flush();
         } catch (final IOException e) {
-            System.err.println("generateSigBalanceFile :: Fail to generate signature file for " + filePath
-                    + " with exception :" + e);
+            System.err.printf(
+                    "generateSigBalanceFile :: Failed to generate signature file [%s] with exception : [%s]%n",
+                    filePath.getAbsolutePath(), e);
             throw e;
         }
     }

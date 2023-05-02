@@ -17,6 +17,7 @@
 package com.hedera.services.cli.sign.test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.cli.sign.AccountBalanceSigningUtils;
@@ -42,16 +43,20 @@ class AccountBalanceSigningUtilsTest {
     private File tmpDir;
 
     @Test
-    @DisplayName("Failure to generate signature file")
-    void failureGenerateSignatureFile() {
+    @DisplayName("Failed to generate signature file with invalid KeyPair")
+    void failureGenerateSignatureFileInvalidKeyPair() {
         // given:
         final var signatureFileDestination = Path.of("testPath");
-        final Path fileToSign;
-        fileToSign = signatureFileDestination;
         final var keyPair = new KeyPair(publicKey, privateKey);
+        final var fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSigningUtilsTest.class
+                        .getClassLoader()
+                        .getResource("com.hedera.services.cli.sign.test/2023-03-23T14_25_29.576022Z_Balances.pb"))
+                .getPath());
 
         // then:
-        assertFalse(AccountBalanceSigningUtils.signAccountBalanceFile(signatureFileDestination, fileToSign, keyPair));
+        assertThrows(
+                RuntimeException.class,
+                () -> AccountBalanceSigningUtils.signAccountBalanceFile(signatureFileDestination, fileToSign, keyPair));
     }
 
     @Test
@@ -59,13 +64,40 @@ class AccountBalanceSigningUtilsTest {
     void generateSignatureFile() {
         // given:
         final var signatureFileDestination = Path.of(tmpDir.getPath() + "/2023-03-23T14_25_29.576022Z_Balances.pb_sig");
-        final var fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
+        final var fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSigningUtilsTest.class
                         .getClassLoader()
                         .getResource("com.hedera.services.cli.sign.test/2023-03-23T14_25_29.576022Z_Balances.pb"))
                 .getPath());
 
         // then:
         assertTrue(AccountBalanceSigningUtils.signAccountBalanceFile(
+                signatureFileDestination, fileToSign, TestUtils.loadKey()));
+    }
+
+    @Test
+    @DisplayName("Failed to generate signature file with invalid file")
+    void failureGenerateSignatureFileInvalidFile() {
+        // given:
+        final var signatureFileDestination = Path.of(tmpDir.getPath());
+        final var fileToSign = Path.of(tmpDir.getPath() + "/2023-03-23T14_25_29.576022Z_Balances.pb");
+
+        // then:
+        assertFalse(AccountBalanceSigningUtils.signAccountBalanceFile(
+                signatureFileDestination, fileToSign, TestUtils.loadKey()));
+    }
+
+    @Test
+    @DisplayName("Failed to generate signature file with invalid path")
+    void failureGenerateSignatureFileInvalidPath() {
+        // given:
+        final var signatureFileDestination = Path.of(tmpDir.getPath());
+        final var fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSigningUtilsTest.class
+                        .getClassLoader()
+                        .getResource("com.hedera.services.cli.sign.test/2023-03-23T14_25_29.576022Z_Balances.pb"))
+                .getPath());
+
+        // then:
+        assertFalse(AccountBalanceSigningUtils.signAccountBalanceFile(
                 signatureFileDestination, fileToSign, TestUtils.loadKey()));
     }
 }

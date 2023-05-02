@@ -26,7 +26,7 @@ public class TestUtils {
     static KeyPair loadKey() {
         try {
             return FileSigningUtils.loadPfxKey(
-                    Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
+                    Path.of(Objects.requireNonNull(TestUtils.class
                                     .getClassLoader()
                                     .getResource("com.hedera.services.cli.sign.test/private-aaaa.pfx"))
                             .toURI()),
