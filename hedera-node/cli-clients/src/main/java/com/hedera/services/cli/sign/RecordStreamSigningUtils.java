@@ -207,27 +207,34 @@ public class RecordStreamSigningUtils {
                     readMaybeCompressedRecordStreamFile(recordFile);
             final var f = recordResult.getValue();
             if (f.isPresent()) {
-                final long blockNumber = f.get().getBlockNumber();
-                final byte[] startRunningHash =
-                        f.get().getStartObjectRunningHash().getHash().toByteArray();
-                final byte[] endRunningHash =
-                        f.get().getEndObjectRunningHash().getHash().toByteArray();
-                final int version = recordResult.getKey();
-                final byte[] serializedBytes = f.get().toByteArray();
+                if (f.get().hasStartObjectRunningHash()) {
+                    final long blockNumber = f.get().getBlockNumber();
+                    final byte[] startRunningHash =
+                            f.get().getStartObjectRunningHash().getHash().toByteArray();
+                    final byte[] endRunningHash =
+                            f.get().getEndObjectRunningHash().getHash().toByteArray();
+                    final int version = recordResult.getKey();
+                    final byte[] serializedBytes = f.get().toByteArray();
 
-                // update stream digest
-                for (final int value : fileHeader) {
-                    dosMeta.writeInt(value);
+                    // update stream digest
+                    for (final int value : fileHeader) {
+                        dosMeta.writeInt(value);
+                    }
+                    dosMeta.write(startRunningHash);
+                    dosMeta.write(endRunningHash);
+                    dosMeta.writeLong(blockNumber);
+                    dosMeta.flush();
+
+                    // update meta digest
+                    dos.writeInt(version);
+                    dos.write(serializedBytes);
+                    dos.flush();
+                } else {
+                    System.err.printf(
+                            "outputStreamDigest :: Failed to parse record file [%s] with exception : [%s]%n",
+                            recordFile, "RecordStreamFile does not have startObjectRunningHash");
+                    throw new IOException("RecordStreamFile does not have startObjectRunningHash");
                 }
-                dosMeta.write(startRunningHash);
-                dosMeta.write(endRunningHash);
-                dosMeta.writeLong(blockNumber);
-                dosMeta.flush();
-
-                // update meta digest
-                dos.writeInt(version);
-                dos.write(serializedBytes);
-                dos.flush();
             } else {
                 System.err.printf(
                         "outputStreamDigest :: Failed to parse record file [%s] with exception : [%s]%n",

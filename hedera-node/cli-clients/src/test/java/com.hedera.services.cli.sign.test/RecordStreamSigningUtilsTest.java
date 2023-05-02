@@ -21,7 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.cli.sign.RecordStreamSigningUtils;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -161,10 +164,16 @@ class RecordStreamSigningUtilsTest {
     }
 
     @Test
-    @DisplayName("Failed if hapi version is number format")
+    @DisplayName("Failed to generate signature file with empty record stream file")
     void failedToSignWithEmptyRecordFile() {
         final var signedFileDestination = Path.of(tmpDir.getPath() + "/2022-09-19T21_09_17.348788413Z.rcd.gz_sig");
-        final Path fileToSign = Path.of(tmpDir.getPath());
+        final Path fileToSign = Path.of("testFile");
+        try (final var fos = new SerializableDataOutputStream(new FileOutputStream(fileToSign.toFile()))) {
+            fos.writeInt(RecordStreamSigningUtils.SUPPORTED_STREAM_FILE_VERSION);
+            fos.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         assertFalse(RecordStreamSigningUtils.signRecordStreamFile(
                 signedFileDestination, fileToSign, TestUtils.loadKey(), hapiVersion));
