@@ -262,6 +262,18 @@ public interface ContractsModule {
 
     @Provides
     @Singleton
+    @Named("HederaPrecompiledContractsDetector")
+    static Predicate<Address> provideHederaPrecompiledContractsDetector() {
+        // all addresses between 0-750 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
+        return address -> address.numberOfLeadingZeroBytes() >= 18
+                && (Integer.compareUnsigned(address.getInt(16), 359) == 0
+                        || Integer.compareUnsigned(address.getInt(16), 360) == 0
+                        || Integer.compareUnsigned(address.getInt(16), 361) == 0);
+    }
+
+    @Provides
+    @Singleton
     @Named("HederaSystemAccountDetector")
     static Predicate<Address> provideHederaSystemAccountDetector() {
         // all addresses between 0-750 (inclusive) are treated as system accounts
