@@ -124,7 +124,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * The number of non-ancient rounds.
      */
     private final int roundsNonAncient;
-    
+
     /**
      * Instantiate, but don't start any threads yet. The Platform should first instantiate the {@link
      * ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
