@@ -39,7 +39,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class TestStreamManager {
     private static final Logger logger = LogManager.getLogger(TestStreamManager.class);
-    private static final NodeId NODE_ID = new NodeId(false, 0);
+    private static final NodeId NODE_ID = new NodeId(0);
     /**
      * receives {@link ObjectForTestStream}s then passes to hashQueueThread
      */

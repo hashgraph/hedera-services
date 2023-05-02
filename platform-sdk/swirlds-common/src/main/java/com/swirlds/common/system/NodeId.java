@@ -20,21 +20,15 @@ package com.swirlds.common.system;
  * A class that is used to uniquely identify a Swirlds Node
  */
 public class NodeId {
-    /** used to distinguish between a main node and a mirror node */
-    private boolean isMirror;
     /** ID number unique within the network, unique set for main network and mirror network */
-    private long id;
+    private final long id;
 
     /**
      * Constructs a NodeId object
      *
-     * @param isMirror
-     * 		is it a mirror node or main node
-     * @param id
-     * 		the ID number
+     * @param id the ID number
      */
-    public NodeId(boolean isMirror, long id) {
-        this.isMirror = isMirror;
+    public NodeId(long id) {
         this.id = id;
     }
 
@@ -45,34 +39,8 @@ public class NodeId {
      * 		the ID number
      * @return the object created
      */
-    public static NodeId createMain(long id) {
-        return new NodeId(false, id);
-    }
-
-    /**
-     * Constructs a mirror network NodeId object
-     *
-     * @param id
-     * 		the ID number
-     * @return the object created
-     */
-    static NodeId createMirror(long id) {
-        return new NodeId(true, id);
-    }
-
-    /**
-     * Checks if two IDs belong to the same network
-     *
-     * @param nodeId
-     * 		the NodeId to compare to
-     * @return true if networks are the same, false if not
-     */
-    public boolean sameNetwork(NodeId nodeId) {
-        return this.isMirror() == nodeId.isMirror();
-    }
-
-    private boolean equals(boolean isMirror, long id) {
-        return this.isMirror() == isMirror && id == this.getId();
+    public static NodeId create(long id) {
+        return new NodeId(id);
     }
 
     /**
@@ -86,9 +54,12 @@ public class NodeId {
         return equals((NodeId) obj);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int hashCode() {
-        return Boolean.hashCode(isMirror) + Long.hashCode(id);
+        return Long.hashCode(id);
     }
 
     /**
@@ -99,7 +70,7 @@ public class NodeId {
      * @return true if equal, false if not
      */
     public boolean equals(NodeId nodeId) {
-        return equals(nodeId.isMirror(), nodeId.getId());
+        return this.id == nodeId.id;
     }
 
     /**
@@ -111,37 +82,7 @@ public class NodeId {
      * 		these conditions are not true
      */
     public boolean equalsMain(long id) {
-        return equals(false, id);
-    }
-
-    /**
-     * Checks if this NodeId is mirror network and if the ID value is equal
-     *
-     * @param id
-     * 		the ID value to compare
-     * @return true if this is a mirror network ID and its ID value is equal to the supplied value, false if either of
-     * 		these conditions are not true
-     */
-    public boolean equalsMirror(long id) {
-        return equals(true, id);
-    }
-
-    /**
-     * Check if ID is part of mirror network
-     *
-     * @return true if this ID is part of the mirror network, false if not
-     */
-    public boolean isMirror() {
-        return isMirror;
-    }
-
-    /**
-     * Check if ID is part of main network
-     *
-     * @return true if this ID is part of the main network, false if not
-     */
-    public boolean isMain() {
-        return !isMirror;
+        return this.id == id;
     }
 
     /**
@@ -167,6 +108,6 @@ public class NodeId {
      */
     @Override
     public String toString() {
-        return (isMirror ? "m" : "") + id;
+        return Long.toString(id);
     }
 }

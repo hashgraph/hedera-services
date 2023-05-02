@@ -29,7 +29,7 @@ public class FakeConnection implements Connection {
     private final NodeId peerId;
 
     public FakeConnection() {
-        this(NodeId.createMain(0), NodeId.createMain(1));
+        this(NodeId.create(0), NodeId.create(1));
     }
 
     public FakeConnection(final NodeId selfId, final NodeId peerId) {

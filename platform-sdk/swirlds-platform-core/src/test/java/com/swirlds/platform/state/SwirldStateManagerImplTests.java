@@ -44,7 +44,7 @@ public class SwirldStateManagerImplTests {
         when(platform.getAddressBook()).thenReturn(mock(AddressBook.class));
         initialState = newState();
         swirldStateManagerImpl = new SwirldStateManagerImpl(
-                new NodeId(false, 0L),
+                new NodeId(0L),
                 mock(PreConsensusSystemTransactionManager.class),
                 mock(PostConsensusSystemTransactionManager.class),
                 mock(SwirldStateMetrics.class),

@@ -54,7 +54,7 @@ public class HashLoggerTest {
     @BeforeEach
     public void setUp() {
         mockLogger = mock(Logger.class);
-        hashLogger = new HashLogger(getStaticThreadManager(), NodeId.createMain(123), mockLogger);
+        hashLogger = new HashLogger(getStaticThreadManager(), NodeId.create(123), mockLogger);
         logged = new ArrayList<>();
 
         doAnswer(invocation -> {
@@ -113,7 +113,7 @@ public class HashLoggerTest {
     public void noLoggingWhenDisabled() {
         Settings.getInstance().getState().enableHashStreamLogging = false;
 
-        hashLogger = new HashLogger(getStaticThreadManager(), NodeId.createMain(123), mockLogger);
+        hashLogger = new HashLogger(getStaticThreadManager(), NodeId.create(123), mockLogger);
         hashLogger.logHashes(createSignedState(1));
         assertThat(logged).isEmpty();
         assertThat(hashLogger.queue()).isNullOrEmpty();
@@ -124,7 +124,7 @@ public class HashLoggerTest {
     @Test
     public void loggerWithDefaultConstructorWorks() {
         assertDoesNotThrow(() -> {
-            hashLogger = new HashLogger(getStaticThreadManager(), NodeId.createMain(123));
+            hashLogger = new HashLogger(getStaticThreadManager(), NodeId.create(123));
             hashLogger.logHashes(createSignedState(1));
             flush();
         });

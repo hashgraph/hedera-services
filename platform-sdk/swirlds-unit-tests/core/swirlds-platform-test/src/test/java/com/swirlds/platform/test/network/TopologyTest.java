@@ -113,16 +113,16 @@ class TopologyTest {
     @ParameterizedTest
     @MethodSource("fullyConnected")
     void testFullyConnectedUnidirectionalTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
-        final NodeId negativeId = NodeId.createMain(-1);
-        final NodeId outOfBoundsId = NodeId.createMain(numNodes);
+        final NodeId negativeId = NodeId.create(-1);
+        final NodeId outOfBoundsId = NodeId.create(numNodes);
 
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
-            final NodeId thisNodeId = NodeId.createMain(thisNode);
+            final NodeId thisNodeId = NodeId.create(thisNode);
             final NetworkTopology topology = new StaticTopology(thisNodeId, numNodes, numNeighbors);
             final List<NodeId> neighbors = topology.getNeighbors();
             final List<NodeId> expected = IntStream.range(0, numNodes)
                     .filter(i -> i != thisNodeId.getIdAsInt())
-                    .mapToObj(NodeId::createMain)
+                    .mapToObj(NodeId::create)
                     .toList();
             assertEquals(expected, neighbors, "all should be neighbors except me");
             for (final NodeId neighbor : neighbors) {

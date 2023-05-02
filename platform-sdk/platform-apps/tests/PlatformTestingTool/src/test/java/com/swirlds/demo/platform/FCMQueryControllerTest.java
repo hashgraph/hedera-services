@@ -108,7 +108,7 @@ public class FCMQueryControllerTest {
 
         final MockPlatform platform = MockPlatform.newBuilder()
                 .setAddressBook(addressBook)
-                .setNodeId(new NodeId(false, 0))
+                .setNodeId(new NodeId(0))
                 .setLastCompleteSwirldState(wrapper)
                 .setMetrics(metrics)
                 .build();

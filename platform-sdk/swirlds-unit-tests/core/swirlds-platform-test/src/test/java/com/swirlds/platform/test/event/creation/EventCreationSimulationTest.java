@@ -108,7 +108,7 @@ public class EventCreationSimulationTest {
                     time,
                     addressBook,
                     List.of(gossip::gossipEvent, consensus::addEvent),
-                    NodeId.createMain(i),
+                    NodeId.create(i),
                     h -> consensus.getShadowGraph().getEvent(h),
                     params.superMajority() || i > params.numNodes() / 2);
             nodes.add(node);

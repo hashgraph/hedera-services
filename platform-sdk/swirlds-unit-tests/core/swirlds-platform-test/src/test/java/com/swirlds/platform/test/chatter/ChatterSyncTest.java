@@ -39,7 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 class ChatterSyncTest {
-    private static final NodeId PEER_ID = new NodeId(false, 1L);
+    private static final NodeId PEER_ID = new NodeId(1L);
     final CommunicationState state = new CommunicationState();
     final ShadowGraphSynchronizer synchronizer = Mockito.mock(ShadowGraphSynchronizer.class);
     final Connection connection = Mockito.mock(Connection.class);

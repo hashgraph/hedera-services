@@ -44,7 +44,7 @@ import java.util.LinkedList;
  * sends objects to LinkedObjectStream objects for calculating RunningHash and serializing to disk
  */
 public class StreamObjectWorker {
-    public static final NodeId NODE_ID = new NodeId(false, 0);
+    public static final NodeId NODE_ID = new NodeId(0);
     /** receives objects from runningHashCalculator, then passes to writeConsumer */
     private final QueueThreadObjectStream<ObjectForTestStream> writeQueueThread;
 

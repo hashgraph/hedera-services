@@ -56,7 +56,7 @@ public class TestUtils {
                 null);
         CryptographyHolder.get().digestSync(e.getBaseEventHashedData());
 
-        e.estimateTime(NodeId.createMain(creatorId), startTime.getEpochSecond(), 0);
+        e.estimateTime(NodeId.create(creatorId), startTime.getEpochSecond(), 0);
         return e;
     }
 }

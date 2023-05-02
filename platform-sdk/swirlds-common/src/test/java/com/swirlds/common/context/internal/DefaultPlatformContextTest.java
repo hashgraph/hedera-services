@@ -33,7 +33,7 @@ class DefaultPlatformContextTest {
     void testNoNullServices() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final NodeId nodeId = new NodeId(false, 3256733545L);
+        final NodeId nodeId = new NodeId(3256733545L);
         final MetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
         metricsProvider.createGlobalMetrics();
 

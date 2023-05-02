@@ -78,7 +78,7 @@ class ChatterNetworkTest {
         final ChatterNetworkTester peer2 = new ChatterNetworkTester(numberOfMessages, parallelExecutor, true);
 
         final Pair<Connection, Connection> connections =
-                ConnectionFactory.createLocalConnections(NodeId.createMain(0), NodeId.createMain(1));
+                ConnectionFactory.createLocalConnections(NodeId.create(0), NodeId.create(1));
 
         final Future<Void> future1 = executor.submit(peer1.getProtocolRunnable(connections.getLeft()));
         final Future<Void> future2 = executor.submit(peer2.getProtocolRunnable(connections.getRight()));

@@ -100,7 +100,7 @@ class EventFlowTests {
     protected static final long selfId = 0L;
     private static final int THROTTLE_TRANSACTION_QUEUE_SIZE = 100_000;
 
-    private final NodeId selfNodeId = new NodeId(false, selfId);
+    private final NodeId selfNodeId = new NodeId(selfId);
 
     private final SettingsProvider settingsProvider = mock(SettingsProvider.class);
     protected AddressBook addressBook;

@@ -66,7 +66,7 @@ public class EventCreatorThread implements Clearable {
         this.otherNodes = StreamSupport.stream(addressBook.spliterator(), false)
                 // don't create events with self as other parent
                 .filter(a -> !selfId.equalsMain(a.getId()))
-                .map(a -> NodeId.createMain(a.getId()))
+                .map(a -> NodeId.create(a.getId()))
                 .collect(Collectors.toList());
 
         creatorThread = new StoppableThreadConfiguration<>(threadManager)

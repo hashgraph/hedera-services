@@ -620,15 +620,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * if it is a Mirror node
-     *
-     * @return true/false based on if this is mirror node
-     */
-    public boolean isMirrorNode() {
-        return selfId.isMirror();
-    }
-
-    /**
      * returns a name for this Platform, which includes the app, the swirld, the member id, and the member name. This is
      * useful in the Browser window for showing data about each of the running Platform objects.
      *

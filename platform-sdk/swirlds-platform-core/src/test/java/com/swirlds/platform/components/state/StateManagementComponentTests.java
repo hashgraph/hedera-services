@@ -70,7 +70,7 @@ class StateManagementComponentTests {
 
     private static final String MAIN = "main";
     private static final String SWIRLD = "swirld123";
-    private static final NodeId NODE_ID = new NodeId(false, 0L);
+    private static final NodeId NODE_ID = new NodeId(0L);
     private static final int NUM_NODES = 4;
     private final int roundsToKeepForSigning = 5;
     private final TestPrioritySystemTransactionConsumer systemTransactionConsumer =

@@ -16,7 +16,16 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.metrics.FloatFormats.*;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_0;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_1;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_13_0;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_14_7;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_2_0;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_3_0;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_0;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
@@ -232,18 +241,12 @@ public class PlatformMetrics {
     }
 
     private String getMemberName() {
-        if (platform.isMirrorNode()) {
-            return "Mirror-" + platform.getSelfId().getId();
-        }
         return platform.getAddressBook()
                 .getAddress(platform.getSelfId().getId())
                 .getSelfName();
     }
 
     private long getLastEventGenerationNumber() {
-        if (platform.isMirrorNode()) {
-            return -1L;
-        }
         return platform.getLastGen(platform.getSelfId().getId());
     }
 
@@ -264,9 +267,6 @@ public class PlatformMetrics {
     }
 
     private Boolean isStrongMinorityInMaxRound() {
-        if (platform.isMirrorNode()) {
-            return false;
-        }
         return platform.getCriticalQuorum()
                 .isInCriticalQuorum(platform.getSelfId().getId());
     }

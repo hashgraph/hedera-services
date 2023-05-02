@@ -69,7 +69,7 @@ import org.mockito.Mockito;
 
 @DisplayName("Event Creator Tests")
 class EventCreatorTests {
-    private static final NodeId selfId = new NodeId(false, 1234);
+    private static final NodeId selfId = new NodeId(1234);
     private static final Signer noOpSigner =
             (bytes) -> new Signature(SignatureType.RSA, new byte[SignatureType.RSA.signatureLength()]);
     private static final GraphGenerations defaultGenerations = new Generations(

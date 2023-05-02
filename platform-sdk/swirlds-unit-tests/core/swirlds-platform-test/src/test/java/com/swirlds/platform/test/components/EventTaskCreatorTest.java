@@ -72,7 +72,7 @@ class EventTaskCreatorTest {
         address = mock(Address.class);
         when(addressBook.getAddress(Mockito.anyLong())).thenReturn(address);
         when(addressBook.copy()).thenReturn(addressBook);
-        selfId = NodeId.createMain(1);
+        selfId = NodeId.create(1);
         eventIntakeMetrics = mock(EventIntakeMetrics.class);
         eventQueueThread = mock(BlockingQueue.class);
         setting = mock(SettingsProvider.class);

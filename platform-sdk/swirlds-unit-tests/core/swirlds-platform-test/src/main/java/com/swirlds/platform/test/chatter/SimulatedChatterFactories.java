@@ -64,7 +64,7 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
                 new ChatterSubSetting(),
                 (nodeId, ping) -> {},
                 new DefaultMetrics(
-                        NodeId.createMain(selfId),
+                        NodeId.create(selfId),
                         registry,
                         Executors.newSingleThreadScheduledExecutor(),
                         new DefaultMetricsFactory(),

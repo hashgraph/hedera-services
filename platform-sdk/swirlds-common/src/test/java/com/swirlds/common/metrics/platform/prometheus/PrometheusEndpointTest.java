@@ -79,9 +79,9 @@ class PrometheusEndpointTest {
 
     private static final String CATEGORY = "CaTeGoRy";
     private static final String NAME = "NaMe";
-    private static final NodeId NODE_ID_1 = NodeId.createMain(1L);
+    private static final NodeId NODE_ID_1 = NodeId.create(1L);
     private static final String LABEL_1 = String.valueOf(NODE_ID_1.getId());
-    private static final NodeId NODE_ID_2 = NodeId.createMain(2L);
+    private static final NodeId NODE_ID_2 = NodeId.create(2L);
     private static final String LABEL_2 = String.valueOf(NODE_ID_2.getId());
 
     private static final InetSocketAddress ADDRESS = new InetSocketAddress(0);

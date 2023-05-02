@@ -61,7 +61,7 @@ public class StaticTopology implements NetworkTopology {
     public List<NodeId> getNeighbors(final Predicate<NodeId> filter) {
         return Arrays.stream(connectionGraph.getNeighbors(selfId.getIdAsInt()))
                 .mapToLong(i -> (long) i)
-                .mapToObj(NodeId::createMain)
+                .mapToObj(NodeId::create)
                 .filter(filter)
                 .collect(Collectors.toList());
     }
@@ -82,8 +82,7 @@ public class StaticTopology implements NetworkTopology {
      * @return true if this node is my neighbor, false if not
      */
     private boolean isNeighbor(final NodeId nodeId) {
-        return selfId.sameNetwork(nodeId)
-                && nodeId.getId() >= 0
+        return nodeId.getId() >= 0
                 && nodeId.getId() < networkSize
                 && connectionGraph.isAdjacent(selfId.getIdAsInt(), nodeId.getIdAsInt());
     }

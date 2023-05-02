@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 class OutboundConnectionManagerTest {
     @Test
     void createConnectionTest() {
-        final NodeId nodeId = NodeId.createMain(0);
+        final NodeId nodeId = NodeId.create(0);
         final Connection connection1 = new FakeConnection();
         final Connection connection2 = new FakeConnection();
         final OutboundConnectionCreator creator = mock(OutboundConnectionCreator.class);
@@ -73,7 +73,7 @@ class OutboundConnectionManagerTest {
     @Test
     void concurrencyTest() throws InterruptedException {
         final int numThreads = 10;
-        final NodeId nodeId = NodeId.createMain(0);
+        final NodeId nodeId = NodeId.create(0);
         final OutboundConnectionCreator creator = mock(OutboundConnectionCreator.class);
         final Connection connection = new FakeConnection();
         final CountDownLatch waitingForConnection = new CountDownLatch(1);
