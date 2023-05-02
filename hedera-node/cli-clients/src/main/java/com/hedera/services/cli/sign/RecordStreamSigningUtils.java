@@ -205,35 +205,35 @@ public class RecordStreamSigningUtils {
             // parse record file
             final Pair<Integer, Optional<RecordStreamFile>> recordResult =
                     readMaybeCompressedRecordStreamFile(recordFile);
-            final long blockNumber = recordResult.getValue().get().getBlockNumber();
-            final byte[] startRunningHash = recordResult
-                    .getValue()
-                    .get()
-                    .getStartObjectRunningHash()
-                    .getHash()
-                    .toByteArray();
-            final byte[] endRunningHash = recordResult
-                    .getValue()
-                    .get()
-                    .getEndObjectRunningHash()
-                    .getHash()
-                    .toByteArray();
-            final int version = recordResult.getKey();
-            final byte[] serializedBytes = recordResult.getValue().get().toByteArray();
+            final var f = recordResult.getValue();
+            if (f.isPresent()) {
+                final long blockNumber = f.get().getBlockNumber();
+                final byte[] startRunningHash =
+                        f.get().getStartObjectRunningHash().getHash().toByteArray();
+                final byte[] endRunningHash =
+                        f.get().getEndObjectRunningHash().getHash().toByteArray();
+                final int version = recordResult.getKey();
+                final byte[] serializedBytes = f.get().toByteArray();
 
-            // update meta digest
-            for (final int value : fileHeader) {
-                dosMeta.writeInt(value);
+                // update stream digest
+                for (final int value : fileHeader) {
+                    dosMeta.writeInt(value);
+                }
+                dosMeta.write(startRunningHash);
+                dosMeta.write(endRunningHash);
+                dosMeta.writeLong(blockNumber);
+                dosMeta.flush();
+
+                // update meta digest
+                dos.writeInt(version);
+                dos.write(serializedBytes);
+                dos.flush();
+            } else {
+                System.err.printf(
+                        "outputStreamDigest :: Failed to parse record file [%s] with exception : [%s]%n",
+                        recordFile, "RecordStreamFile is empty");
+                throw new IOException("RecordStreamFile is empty");
             }
-            dosMeta.write(startRunningHash);
-            dosMeta.write(endRunningHash);
-            dosMeta.writeLong(blockNumber);
-            dosMeta.flush();
-
-            // update stream digest
-            dos.writeInt(version);
-            dos.write(serializedBytes);
-            dos.flush();
 
         } catch (final IOException e) {
             System.err.printf(

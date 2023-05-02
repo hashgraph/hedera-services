@@ -17,6 +17,7 @@
 package com.hedera.services.cli.sign.test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.cli.sign.RecordStreamSigningUtils;
@@ -41,59 +42,62 @@ class RecordStreamSigningUtilsTest {
     @TempDir
     private File tmpDir;
 
+    private final String hapiVersion = "0.37.0-allowance-SNAPSHOT";
+
     @Test
-    @DisplayName("Failure to generate signature file")
-    void failureGenerateSignatureFile() {
+    @DisplayName("Failed to generate signature file with invalid KeyPair")
+    void failureGenerateSignatureFileInvalidKeyPair() {
         // given:
         final var signatureFileDestination = Path.of("testPath");
-        final Path fileToSign;
-        fileToSign = signatureFileDestination;
         final var keyPair = new KeyPair(publicKey, privateKey);
-        final var hapiVersion = "0.37.0-allowance-SNAPSHOT";
+        final var fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSigningUtilsTest.class
+                        .getClassLoader()
+                        .getResource("com.hedera.services.cli.sign.test/2023-04-18T14_08_20.465612003Z.rcd"))
+                .getPath());
 
         // then:
-        assertFalse(RecordStreamSigningUtils.signRecordStreamFile(
-                signatureFileDestination, fileToSign, keyPair, hapiVersion));
+        assertThrows(
+                RuntimeException.class,
+                () -> RecordStreamSigningUtils.signRecordStreamFile(
+                        signatureFileDestination, fileToSign, keyPair, hapiVersion));
     }
 
     @Test
     @DisplayName("Succeed to generate signature file")
     void generateSignatureFile() {
         // given:
-        final var signatureFileFullPath = Path.of(tmpDir.getPath() + "/2023-04-18T14_08_20.465612003Z.rcd_sig");
+        final var signedFileDestination = Path.of(tmpDir.getPath() + "/2023-04-18T14_08_20.465612003Z.rcd_sig");
         final Path fileToSign;
         fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
                         .getClassLoader()
                         .getResource("com.hedera.services.cli.sign.test/2023-04-18T14_08_20.465612003Z.rcd"))
                 .getPath());
-        final var hapiVersion = "0.37.0-allowance-SNAPSHOT";
 
         // then:
         assertTrue(RecordStreamSigningUtils.signRecordStreamFile(
-                signatureFileFullPath, fileToSign, TestUtils.loadKey(), hapiVersion));
+                signedFileDestination, fileToSign, TestUtils.loadKey(), hapiVersion));
     }
 
     @Test
     @DisplayName("Succeed to generate signature file for gzipped file")
     void generateSignatureFileForGzip() {
         // given:
-        final var signatureFileFullPath = Path.of(tmpDir.getPath() + "/2022-09-19T21_09_17.348788413Z.rcd.gz");
+        final var signedFileDestination = Path.of(tmpDir.getPath() + "/2022-09-19T21_09_17.348788413Z.rcd.gz_sig");
         final Path fileToSign;
         fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
                         .getClassLoader()
                         .getResource("com.hedera.services.cli.sign.test/2022-09-19T21_09_17.348788413Z.rcd.gz"))
                 .getPath());
-        final var hapiVersion = "0.37.0-allowance-SNAPSHOT";
 
         // then:
         assertTrue(RecordStreamSigningUtils.signRecordStreamFile(
-                signatureFileFullPath, fileToSign, TestUtils.loadKey(), hapiVersion));
+                signedFileDestination, fileToSign, TestUtils.loadKey(), hapiVersion));
     }
 
     @Test
     @DisplayName("Failed if hapi version is not correct format")
     void throwsOnInvalidProtobufVersionException() {
-        final var signatureFileFullPath = Path.of(tmpDir.getPath() + "/2022-09-19T21_09_17.348788413Z.rcd.gz");
+        final var signedFileDestination = Path.of(tmpDir.getPath() + "/2022-09-19T21_09_17.348788413Z.rcd.gz_sig");
         final Path fileToSign;
         fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
                         .getClassLoader()
@@ -102,6 +106,20 @@ class RecordStreamSigningUtilsTest {
         final var hapiVersion = "0.2";
 
         assertFalse(RecordStreamSigningUtils.signRecordStreamFile(
-                signatureFileFullPath, fileToSign, TestUtils.loadKey(), hapiVersion));
+                signedFileDestination, fileToSign, TestUtils.loadKey(), hapiVersion));
+    }
+
+    @Test
+    @DisplayName("Failed if record stream file is not version 6")
+    void cannotSignVersion5RecordStreamFile() {
+        final var signedFileDestination = Path.of(tmpDir.getPath() + "/2021-01-12T19_44_28.960705001Z.rcd_sig");
+        final Path fileToSign;
+        fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
+                        .getClassLoader()
+                        .getResource("com.hedera.services.cli.sign.test/2021-01-12T19_44_28.960705001Z.rcd"))
+                .getPath());
+
+        assertFalse(RecordStreamSigningUtils.signRecordStreamFile(
+                signedFileDestination, fileToSign, TestUtils.loadKey(), hapiVersion));
     }
 }
