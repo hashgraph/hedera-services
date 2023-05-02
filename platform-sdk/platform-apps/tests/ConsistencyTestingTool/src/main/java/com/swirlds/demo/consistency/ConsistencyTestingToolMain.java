@@ -49,14 +49,24 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     private Platform platform;
 
     /**
+     * Whether to permit gaps in round history
+     */
+    private final boolean permitRoundGaps;
+
+    /**
      * The number of transactions to generate per second.
      */
     private static final int TRANSACTIONS_PER_SECOND = 100;
 
     /**
      * Constructor
+     *
+     * @param permitRoundGaps whether or not gaps in the round history will be permitted in the test. if false, an error
+     *                        will be logged if a gap is found
      */
-    public ConsistencyTestingToolMain() {
+    public ConsistencyTestingToolMain(final boolean permitRoundGaps) {
+        this.permitRoundGaps = permitRoundGaps;
+
         logger.info(STARTUP.getMarker(), "constructor called in Main.");
     }
 
@@ -103,7 +113,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
      */
     @Override
     public SwirldState newState() {
-        return new ConsistencyTestingToolState();
+        return new ConsistencyTestingToolState(permitRoundGaps);
     }
 
     /**
