@@ -278,6 +278,9 @@ public class EventStreamBound {
          * @return the event stream bound
          */
         public EventStreamBound build() {
+            if (round < NO_ROUND || round == 0L) {
+                throw new IllegalStateException("Invalid round bound");
+            }
             return new EventStreamBound(round, timestamp);
         }
     }
