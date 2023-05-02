@@ -22,6 +22,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.time.Time;
+import com.swirlds.common.utility.ByteUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -57,7 +58,7 @@ public class BusyTime {
      */
     public BusyTime(@NonNull final Time time) {
         this.time = new IntegerEpochTime(time);
-        this.accumulator = new AtomicLong(IntPairUtils.combine(this.time.getMicroTime(), INITIAL_STATUS));
+        this.accumulator = new AtomicLong(ByteUtils.combineInts(this.time.getMicroTime(), INITIAL_STATUS));
     }
 
     /**
@@ -97,7 +98,7 @@ public class BusyTime {
      */
     public double getBusyFraction() {
         final long pair = accumulator.get();
-        return busyFraction(IntPairUtils.extractLeft(pair), IntPairUtils.extractRight(pair));
+        return busyFraction(ByteUtils.extractLeftInt(pair), ByteUtils.extractRightInt(pair));
     }
 
     /**
@@ -109,7 +110,7 @@ public class BusyTime {
      */
     public double getAndReset() {
         final long pair = accumulator.getAndUpdate(this::reset);
-        return busyFraction(IntPairUtils.extractLeft(pair), IntPairUtils.extractRight(pair));
+        return busyFraction(ByteUtils.extractLeftInt(pair), ByteUtils.extractRightInt(pair));
     }
 
     /**
@@ -143,12 +144,12 @@ public class BusyTime {
 
     private long statusUpdate(final long previousPair, final long statusChange) {
         // the epoch time when the last reset occurred
-        final int measurementStart = IntPairUtils.extractLeft(previousPair);
+        final int measurementStart = ByteUtils.extractLeftInt(previousPair);
         // the current thread status is represented by the (+ -) sign. the number represents the time spent in the
         // opposite status. this is that its time spent being busy/idle can be deduced whenever the sample is taken. if
         // the time spend busy is X, and the measurement time is Y, then idle time is Y-X. since zero is neither
         // positive nor negative, the values are offset by 1
-        final int currentStatus = IntPairUtils.extractRight(previousPair);
+        final int currentStatus = ByteUtils.extractRightInt(previousPair);
         // the current micro epoch time
         final int currentTime = time.getMicroTime();
 
@@ -165,18 +166,18 @@ public class BusyTime {
             final int busyTime = Math.abs(currentStatus) - 1;
             // the time spent idle is all the elapsed time minus the time spent busy
             final int idleTime = elapsedTime - busyTime;
-            return IntPairUtils.combine(measurementStart, idleTime + 1);
+            return ByteUtils.combineInts(measurementStart, idleTime + 1);
         }
         // this means the thread was previously busy and now stopped working
         // the time spent being idle beforehand
         final int idleTime = currentStatus - 1;
         // the time spent busy is all the elapsed time minus the time spent idle
         final int busyTime = elapsedTime - idleTime;
-        return IntPairUtils.combine(measurementStart, -busyTime - 1);
+        return ByteUtils.combineInts(measurementStart, -busyTime - 1);
     }
 
     private long reset(final long currentPair) {
-        return IntPairUtils.combine(time.getMicroTime(), resetStatus(IntPairUtils.extractRight(currentPair)));
+        return ByteUtils.combineInts(time.getMicroTime(), resetStatus(ByteUtils.extractRightInt(currentPair)));
     }
 
     private int resetStatus(final int status) {

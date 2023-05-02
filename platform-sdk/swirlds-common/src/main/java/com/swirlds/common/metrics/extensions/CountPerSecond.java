@@ -67,10 +67,17 @@ public class CountPerSecond {
                 .withDescription(config.getDescription())
                 .withUnit(config.getUnit())
                 .withFormat(config.getFormat())
-                .withLeftAccumulator(IntPairUtils::noChangeAccumulator)
+                .withLeftAccumulator(CountPerSecond::noChangeAccumulator)
                 .withRightAccumulator(Integer::sum)
                 .withLeftInitializer(this.time::getMilliTime)
                 .withRightInitialValue(0));
+    }
+
+    /**
+     * An implementation of a {@link com.swirlds.common.metrics.IntegerAccumulator} that does not change the value
+     */
+    public static int noChangeAccumulator(final int currentValue, final int ignored) {
+        return currentValue;
     }
 
     /**

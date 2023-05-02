@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics.atomic;
 
-import static com.swirlds.common.metrics.extensions.IntPairUtils.*;
+import com.swirlds.common.utility.ByteUtils;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
@@ -28,7 +28,6 @@ import java.util.function.ToDoubleBiFunction;
  * Holds two integers that can be updated atomically
  */
 public class AtomicIntPair {
-    public static final int INT_BITS = 32;
     private static final int RESET_VALUE = 0;
     private final AtomicLong container;
     private final LongBinaryOperator operator;
@@ -48,9 +47,9 @@ public class AtomicIntPair {
      */
     public AtomicIntPair(final IntBinaryOperator leftAccumulator, final IntBinaryOperator rightAccumulator) {
         operator = (current, supplied) -> {
-            final int left = leftAccumulator.applyAsInt(extractLeft(current), extractLeft(supplied));
-            final int right = rightAccumulator.applyAsInt(extractRight(current), extractRight(supplied));
-            return combine(left, right);
+            final int left = leftAccumulator.applyAsInt(ByteUtils.extractLeftInt(current), ByteUtils.extractLeftInt(supplied));
+            final int right = rightAccumulator.applyAsInt(ByteUtils.extractRightInt(current), ByteUtils.extractRightInt(supplied));
+            return ByteUtils.combineInts(left, right);
         };
         this.container = new AtomicLong(RESET_VALUE);
     }
@@ -63,21 +62,21 @@ public class AtomicIntPair {
      * @param rightValue the value provided to the left integer
      */
     public void accumulate(final int leftValue, final int rightValue) {
-        container.accumulateAndGet(combine(leftValue, rightValue), operator);
+        container.accumulateAndGet(ByteUtils.combineInts(leftValue, rightValue), operator);
     }
 
     /**
      * @return the current value of the left integer
      */
     public int getLeft() {
-        return extractLeft(container.get());
+        return ByteUtils.extractLeftInt(container.get());
     }
 
     /**
      * @return the current value of the right integer
      */
     public int getRight() {
-        return extractRight(container.get());
+        return ByteUtils.extractRightInt(container.get());
     }
 
     /**
@@ -88,7 +87,7 @@ public class AtomicIntPair {
      */
     public double computeDouble(final ToDoubleBiFunction<Integer, Integer> compute) {
         final long twoInts = container.get();
-        return compute.applyAsDouble(extractLeft(twoInts), extractRight(twoInts));
+        return compute.applyAsDouble(ByteUtils.extractLeftInt(twoInts), ByteUtils.extractRightInt(twoInts));
     }
 
     /**
@@ -108,8 +107,8 @@ public class AtomicIntPair {
      */
     public double computeDoubleAndSet(
             final ToDoubleBiFunction<Integer, Integer> compute, final int left, final int right) {
-        final long twoInts = container.getAndSet(combine(left, right));
-        return compute.applyAsDouble(extractLeft(twoInts), extractRight(twoInts));
+        final long twoInts = container.getAndSet(ByteUtils.combineInts(left, right));
+        return compute.applyAsDouble(ByteUtils.extractLeftInt(twoInts), ByteUtils.extractRightInt(twoInts));
     }
 
     /**
@@ -119,7 +118,7 @@ public class AtomicIntPair {
      * @param right the right value to set
      */
     public void set(final int left, final int right) {
-        container.set(combine(left, right));
+        container.set(ByteUtils.combineInts(left, right));
     }
 
     /**
@@ -131,7 +130,7 @@ public class AtomicIntPair {
      */
     public <T> T compute(final BiFunction<Integer, Integer, T> compute) {
         final long twoInts = container.get();
-        return compute.apply(extractLeft(twoInts), extractRight(twoInts));
+        return compute.apply(ByteUtils.extractLeftInt(twoInts), ByteUtils.extractRightInt(twoInts));
     }
 
     /**
@@ -139,15 +138,15 @@ public class AtomicIntPair {
      */
     public <T> T computeAndReset(final BiFunction<Integer, Integer, T> compute) {
         final long twoInts = container.getAndSet(RESET_VALUE);
-        return compute.apply(extractLeft(twoInts), extractRight(twoInts));
+        return compute.apply(ByteUtils.extractLeftInt(twoInts), ByteUtils.extractRightInt(twoInts));
     }
 
     /**
      * Same as {@link #compute(BiFunction)} but also atomically sets the integers to the provided values.
      */
     public <T> T computeAndSet(final BiFunction<Integer, Integer, T> compute, final int left, final int right) {
-        final long twoInts = container.getAndSet(combine(left, right));
-        return compute.apply(extractLeft(twoInts), extractRight(twoInts));
+        final long twoInts = container.getAndSet(ByteUtils.combineInts(left, right));
+        return compute.apply(ByteUtils.extractLeftInt(twoInts), ByteUtils.extractRightInt(twoInts));
     }
 
     /**
