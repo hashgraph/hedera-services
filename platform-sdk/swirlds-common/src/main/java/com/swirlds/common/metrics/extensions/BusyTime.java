@@ -26,8 +26,6 @@ import com.swirlds.common.utility.ByteUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
-
 /**
  * A metric that measures the fraction of time that a thread is busy. This metric could be used to track the overall busy
  * time of a thread, or the busy time of a specific subtask. The granularity of this metric is in microseconds. A
@@ -77,15 +75,10 @@ public class BusyTime {
             @NonNull final String category,
             @NonNull final String name,
             @NonNull final String description) {
-        metrics.getOrCreate(
-                new FunctionGauge.Config<>(
-                        category,
-                        name,
-                        Double.class,
-                        this::getAndReset)
-                        .withDescription(description)
-                        .withUnit("fraction")
-                        .withFormat(FloatFormats.FORMAT_1_3));
+        metrics.getOrCreate(new FunctionGauge.Config<>(category, name, Double.class, this::getAndReset)
+                .withDescription(description)
+                .withUnit("fraction")
+                .withFormat(FloatFormats.FORMAT_1_3));
     }
 
     /**

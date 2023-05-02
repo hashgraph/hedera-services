@@ -17,7 +17,6 @@
 package com.swirlds.common.metrics.atomic;
 
 import com.swirlds.common.utility.ByteUtils;
-
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.IntBinaryOperator;
@@ -47,8 +46,10 @@ public class AtomicIntPair {
      */
     public AtomicIntPair(final IntBinaryOperator leftAccumulator, final IntBinaryOperator rightAccumulator) {
         operator = (current, supplied) -> {
-            final int left = leftAccumulator.applyAsInt(ByteUtils.extractLeftInt(current), ByteUtils.extractLeftInt(supplied));
-            final int right = rightAccumulator.applyAsInt(ByteUtils.extractRightInt(current), ByteUtils.extractRightInt(supplied));
+            final int left =
+                    leftAccumulator.applyAsInt(ByteUtils.extractLeftInt(current), ByteUtils.extractLeftInt(supplied));
+            final int right = rightAccumulator.applyAsInt(
+                    ByteUtils.extractRightInt(current), ByteUtils.extractRightInt(supplied));
             return ByteUtils.combineInts(left, right);
         };
         this.container = new AtomicLong(RESET_VALUE);
