@@ -1310,7 +1310,7 @@ public final class PbjConverter {
         }
     }
 
-    public static @NonNull Optional<SchedulableTransactionBody> fromPbj(
+    public static @NonNull Optional<SchedulableTransactionBody> toPbj(
             @Nullable final com.hederahashgraph.api.proto.java.SchedulableTransactionBody schedulableTransactionBody) {
         if (schedulableTransactionBody == null) {
             return Optional.empty();

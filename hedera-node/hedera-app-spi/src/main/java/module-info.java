@@ -9,6 +9,7 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.api;
     exports com.hedera.node.app.spi.info;
     exports com.hedera.node.app.spi.state;
+    exports com.hedera.node.app.spi.state.codec;
     exports com.hedera.node.app.spi.key;
     exports com.hedera.node.app.spi.numbers;
     exports com.hedera.node.app.spi.workflows;
@@ -16,5 +17,4 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.signatures;
     exports com.hedera.node.app.spi.validation;
     exports com.hedera.node.app.spi.workflows.record;
-    exports com.hedera.node.app.spi.state.codec;
 }
