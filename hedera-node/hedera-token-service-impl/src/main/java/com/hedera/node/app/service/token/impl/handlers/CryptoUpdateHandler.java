@@ -37,15 +37,7 @@ public class CryptoUpdateHandler implements TransactionHandler {
 
     private final CryptoSignatureWaivers waivers;
 
-    /**
-     * @deprecated Exists until I figured out how to configure Dagger to inject the waivers
-     */
     @Inject
-    @Deprecated(forRemoval = true)
-    public CryptoUpdateHandler() {
-        this.waivers = null;
-    }
-
     public CryptoUpdateHandler(@NonNull final CryptoSignatureWaivers waivers) {
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
     }

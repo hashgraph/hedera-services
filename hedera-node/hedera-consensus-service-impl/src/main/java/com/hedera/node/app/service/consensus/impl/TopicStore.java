@@ -21,6 +21,8 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.TopicMetadata;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -44,32 +46,4 @@ public class TopicStore {
                 topic.topicNumber(),
                 topic.deleted());
     }
-
-    // TODO : Remove use of TopicMetadata and change to use Topic instead
-
-    /**
-     * Topic metadata
-     *
-     * @param memo                     topic's memo
-     * @param adminKey                 topic's admin key
-     * @param submitKey                topic's submit key
-     * @param autoRenewDurationSeconds topic's auto-renew duration in seconds
-     * @param autoRenewAccountId       topic's auto-renew account id
-     * @param expirationTimestamp      topic's expiration timestamp
-     * @param sequenceNumber           topic's sequence number
-     * @param runningHash              topic's running hash
-     * @param key                      topic's key
-     * @param isDeleted                topic's deleted flag
-     */
-    public record TopicMetadata(
-            Optional<String> memo,
-            Key adminKey,
-            Key submitKey,
-            long autoRenewDurationSeconds,
-            OptionalLong autoRenewAccountId,
-            Timestamp expirationTimestamp,
-            long sequenceNumber,
-            byte[] runningHash,
-            long key,
-            boolean isDeleted) {}
 }

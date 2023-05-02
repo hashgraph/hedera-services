@@ -30,6 +30,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABL
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
@@ -91,6 +92,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
@@ -112,6 +114,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.STAKING_NODE_MAX_TO_M
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
 import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_AUTO_CREATIONS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_AGGREGATE_RELS;
 import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_CUSTOM_FEES_ALLOWED;
@@ -278,6 +281,8 @@ class GlobalDynamicPropertiesTest {
         assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
         assertEquals(78, subject.recordFileVersion());
         assertEquals(79, subject.recordSignatureFileVersion());
+        assertEquals(98, subject.sumOfConsensusWeights());
+        assertEquals(99, subject.cacheCryptoTransferWarmThreads());
     }
 
     @Test
@@ -307,6 +312,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(55, subject.maxNumQueryableRecords());
         assertEquals(86, subject.maxNumTokenRels());
         assertEquals(89, subject.getSidecarMaxSizeMb());
+        assertEquals(97, subject.maxAllowedAutoAssociations());
     }
 
     @Test
@@ -452,6 +458,8 @@ class GlobalDynamicPropertiesTest {
         assertEquals(79, subject.recordFileVersion());
         assertEquals(80, subject.recordSignatureFileVersion());
         assertEquals(90, subject.getSidecarMaxSizeMb());
+        assertEquals(99, subject.sumOfConsensusWeights());
+        assertEquals(100, subject.cacheCryptoTransferWarmThreads());
     }
 
     @Test
@@ -484,6 +492,28 @@ class GlobalDynamicPropertiesTest {
         assertEquals(84L, subject.maxNumTokens());
         assertEquals(85L, subject.maxNumTopics());
         assertEquals(86L, subject.maxNumSchedules());
+    }
+
+    @Test
+    void usesThreeMonthsForAutoAssocSlotLifetimeIfNotAutoRenewingAccounts() {
+        givenPropsWithSeed(3);
+
+        // when:
+        subject = new GlobalDynamicProperties(numbers, properties);
+
+        // then:
+        assertEquals(7776000L, subject.explicitAutoAssocSlotLifetime());
+    }
+
+    @Test
+    void usesZeroForAutoAssocSlotLifetimeIfAutoRenewingAccounts() {
+        givenPropsWithSeed(2);
+
+        // when:
+        subject = new GlobalDynamicProperties(numbers, properties);
+
+        // then:
+        assertEquals(0L, subject.explicitAutoAssocSlotLifetime());
     }
 
     @Test
@@ -664,6 +694,9 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(i + 93L);
         given(properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED))
                 .willReturn((i + 95) % 2 == 0);
+        given(properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS)).willReturn(i + 96);
+        given(properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS)).willReturn(i + 97);
+        given(properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS)).willReturn(i + 98);
     }
 
     private Set<EntityType> typesFor(final int i) {

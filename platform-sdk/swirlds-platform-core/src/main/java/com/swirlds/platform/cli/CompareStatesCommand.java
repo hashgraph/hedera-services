@@ -19,14 +19,21 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.DefaultPlatformContext;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateComparison;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.util.BootstrapUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -113,18 +120,22 @@ public final class CompareStatesCommand extends AbstractCommand {
     /**
      * Load a state from disk and hash it.
      *
-     * @param statePath
-     * 		the location of the state to load
+     * @param statePath the location of the state to load
      * @return the loaded state
      */
-    private static SignedState loadAndHashState(final Path statePath) throws IOException {
+    private static ReservedSignedState loadAndHashState(
+            @NonNull final PlatformContext platformContext, @NonNull final Path statePath) throws IOException {
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(statePath);
+
         System.out.println("Loading state from " + statePath);
-        final SignedState signedState =
-                SignedStateFileReader.readStateFile(statePath).signedState();
+
+        final ReservedSignedState signedState =
+                SignedStateFileReader.readStateFile(platformContext, statePath).reservedSignedState();
         System.out.println("Hashing state");
         try {
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(signedState.getState())
+                    .digestTreeAsync(signedState.get().getState())
                     .get();
         } catch (final InterruptedException | ExecutionException e) {
             throw new RuntimeException("unable to hash state", e);
@@ -143,12 +154,17 @@ public final class CompareStatesCommand extends AbstractCommand {
         BootstrapUtils.loadConfiguration(configurationPaths);
         BootstrapUtils.setupConstructableRegistry();
 
-        final SignedState stateA = loadAndHashState(stateAPath);
-        final SignedState stateB = loadAndHashState(stateBPath);
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
 
-        SignedStateComparison.printMismatchedNodes(
-                SignedStateComparison.mismatchedNodeIterator(stateA.getState(), stateB.getState(), deepComparison),
-                nodeLimit);
+        try (final ReservedSignedState stateA = loadAndHashState(platformContext, stateAPath)) {
+            try (final ReservedSignedState stateB = loadAndHashState(platformContext, stateBPath)) {
+                SignedStateComparison.printMismatchedNodes(
+                        SignedStateComparison.mismatchedNodeIterator(
+                                stateA.get().getState(), stateB.get().getState(), deepComparison),
+                        nodeLimit);
+            }
+        }
 
         return 0;
     }

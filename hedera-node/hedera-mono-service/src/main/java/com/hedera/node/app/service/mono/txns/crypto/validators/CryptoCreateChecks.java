@@ -52,7 +52,6 @@ import javax.inject.Singleton;
 
 @Singleton
 public class CryptoCreateChecks {
-    public static final int MAX_CHARGEABLE_AUTO_ASSOCIATIONS = 5000;
     private final GlobalDynamicProperties dynamicProperties;
     private final OptionValidator validator;
     private final Supplier<AccountStorageAdapter> accounts;
@@ -132,7 +131,7 @@ public class CryptoCreateChecks {
     }
 
     private boolean tooManyAutoAssociations(final int n) {
-        return n > MAX_CHARGEABLE_AUTO_ASSOCIATIONS
+        return n > dynamicProperties.maxAllowedAutoAssociations()
                 || (dynamicProperties.areTokenAssociationsLimited() && n > dynamicProperties.maxTokensPerAccount());
     }
 

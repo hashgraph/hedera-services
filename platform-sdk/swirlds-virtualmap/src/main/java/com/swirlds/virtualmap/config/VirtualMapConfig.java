@@ -72,10 +72,10 @@ import java.time.Duration;
 @ConfigData("virtualMap")
 public record VirtualMapConfig(
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "50.0")
-                double percentHashThreads, // TODO: We need to add min/max support for double values
+                double percentHashThreads, // FUTURE WORK: We need to add min/max support for double values
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numHashThreads,
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "25.0")
-                double percentCleanerThreads, // TODO: We need to add min/max support for double values
+                double percentCleanerThreads, // FUTURE WORK: We need to add min/max support for double values
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numCleanerThreads,
         @Min(2) @Max(Integer.MAX_VALUE) @ConfigProperty(defaultValue = "2147483647") long maximumVirtualMapSize,
         @ConstraintMethod("virtualMapWarningThresholdValidation") @Min(1) @ConfigProperty(defaultValue = "5000000")

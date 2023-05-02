@@ -19,6 +19,7 @@ package com.swirlds.common.config;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.nio.file.Path;
+import java.time.Duration;
 
 /**
  * Config that control the SignedStateManager and SignedStateFileManager behaviors.
@@ -81,10 +82,12 @@ import java.nio.file.Path;
  *                                              after a newer state has become fully signed. If set to 0 then each state
  *                                              becomes garbage collection eligible as soon as it is not the most
  *                                              recently signed state.
- * @param signedStateSentinelEnabled            If true, then enable extra debug code that tracks signed states. Very
- *                                              useful for debugging state leaks. This debug code is relatively
- *                                              expensive (it takes and stores stack traces when operations are
- *                                              performed on signed state objects).
+ * @param suspiciousSignedStateAge              The age of a signed state which is considered to be suspicious.
+ *                                              Suspicious states cause a large amount of data to be logged that helps
+ *                                              to debug the potential state leak.
+ * @param debugStackTracesEnabled               if true, then stack traces are captured each time a signed state
+ *                                              reference count is changed, and logged if a signed state reference count
+ *                                              bug is detected.
  */
 @ConfigData("state")
 public record StateConfig(
@@ -107,7 +110,8 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures,
         @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning,
         @ConfigProperty(defaultValue = "0") int roundsToKeepAfterSigning,
-        @ConfigProperty(defaultValue = "false") boolean signedStateSentinelEnabled) {
+        @ConfigProperty(defaultValue = "5m") Duration suspiciousSignedStateAge,
+        @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled) {
 
     /**
      * Get the main class name that should be used for signed states.
