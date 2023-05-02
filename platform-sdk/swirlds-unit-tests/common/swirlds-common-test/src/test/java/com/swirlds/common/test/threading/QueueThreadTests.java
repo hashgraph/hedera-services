@@ -45,7 +45,6 @@ import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -505,29 +504,6 @@ class QueueThreadTests {
         assertFalse(qt.isAlive(), "The queue thread should not be alive after being stopped.");
     }
 
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.THREADING)
-    @DisplayName("WaitForItemRunnableTest")
-    void waitForItemRunnableTest() throws InterruptedException {
-        final AtomicInteger waitForItemCount = new AtomicInteger(0);
-
-        final QueueThread<Integer> qt = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
-                .setThreadName(THREAD_NAME)
-                .setUnlimitedCapacity()
-                .setHandler((value) -> {})
-                .setWaitForItemRunnable(waitForItemCount::incrementAndGet)
-                .build();
-
-        qt.start();
-
-        MILLISECONDS.sleep(100);
-
-        qt.stop();
-
-        assertTrue(waitForItemCount.get() > 0, "The waitForItemRunnable should have been invoked at least once.");
-    }
-
     @ParameterizedTest
     @MethodSource("queueTypes")
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -638,10 +614,6 @@ class QueueThreadTests {
         assertThrows(
                 MutabilityException.class, () -> configuration.setHandler(null), "configuration should be immutable");
         assertThrows(
-                MutabilityException.class,
-                () -> configuration.setWaitForItemRunnable(null),
-                "configuration should be immutable");
-        assertThrows(
                 MutabilityException.class, () -> configuration.setQueue(null), "configuration should be immutable");
     }
 
@@ -687,15 +659,12 @@ class QueueThreadTests {
     void copyTest() {
         final InterruptableConsumer<Integer> handler = (final Integer x) -> {};
 
-        final InterruptableRunnable waitForItem = () -> {};
-
         final QueueThreadConfiguration<?> configuration = new QueueThreadConfiguration<Integer>(
                         getStaticThreadManager())
                 .setThreadName(THREAD_NAME)
                 .setCapacity(1234)
                 .setMaxBufferSize(1234)
                 .setHandler(handler)
-                .setWaitForItemRunnable(waitForItem)
                 .setQueue(new LinkedBlockingDeque<>());
 
         final QueueThreadConfiguration<?> copy1 = configuration.copy();
@@ -703,10 +672,6 @@ class QueueThreadTests {
         assertEquals(configuration.getCapacity(), copy1.getCapacity(), "copy configuration should match");
         assertEquals(configuration.getMaxBufferSize(), copy1.getMaxBufferSize(), "copy configuration should match");
         assertSame(configuration.getHandler(), copy1.getHandler(), "copy configuration should match");
-        assertSame(
-                configuration.getWaitForItemRunnable(),
-                copy1.getWaitForItemRunnable(),
-                "copy configuration should match");
         assertSame(configuration.getQueue(), copy1.getQueue(), "copy configuration should match");
 
         // It shouldn't matter if the original is immutable.
@@ -718,10 +683,6 @@ class QueueThreadTests {
         assertEquals(configuration.getCapacity(), copy2.getCapacity(), "copy configuration should match");
         assertEquals(configuration.getMaxBufferSize(), copy2.getMaxBufferSize(), "copy configuration should match");
         assertSame(configuration.getHandler(), copy2.getHandler(), "copy configuration should match");
-        assertSame(
-                configuration.getWaitForItemRunnable(),
-                copy2.getWaitForItemRunnable(),
-                "copy configuration should match");
         assertSame(configuration.getQueue(), copy2.getQueue(), "copy configuration should match");
     }
 
