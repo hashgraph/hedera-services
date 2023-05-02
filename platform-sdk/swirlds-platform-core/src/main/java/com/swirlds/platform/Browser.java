@@ -100,6 +100,7 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
+import com.swirlds.platform.sync.config.SyncConfig;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
@@ -216,7 +217,8 @@ public class Browser {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(WiringConfig.class)
-                .withConfigDataType(PreConsensusEventStreamConfig.class);
+                .withConfigDataType(PreConsensusEventStreamConfig.class)
+                .withConfigDataType(SyncConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {

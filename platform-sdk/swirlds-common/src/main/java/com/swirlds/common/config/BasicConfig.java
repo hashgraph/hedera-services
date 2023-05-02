@@ -183,14 +183,6 @@ import java.time.Duration;
  * 		maximum number of simultaneous outgoing syncs initiated by me
  * @param logPath
  * 		path to log4j2.xml (which might not exist)
- * @param syncAsProtocolEnabled
- *      if true, perform the sync gossip algorithm as a negotiated protocol using bidirectional connections.
- * @param syncSleepAfterFailedNegotiation
- *      the number of milliseconds to sleep after a failed negotiation when running the sync-as-a-protocol algorithm
- * @param syncProtocolPermitCount
- *      the number of permits to use when running the sync-as-a-protocol algorithm
- * @param syncProtocolHeartbeatPeriod
- *      the period at which the heartbeat protocol runs when the sync-as-a-protocol algorithm is active (milliseconds)
  * @param hangingThreadDuration
  *      the length of time a gossip thread is allowed to wait when it is asked to shutdown.
  *      If a gossip thread takes longer than this period to shut down, then an error message is written to the log.
@@ -264,9 +256,4 @@ public record BasicConfig(
         @ConfigProperty(value = "maxIncomingSyncsInc", defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(value = "maxOutgoingSyncs", defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath,
-        @ConfigProperty(value = "syncAsProtocolEnabled", defaultValue = "false") boolean syncAsProtocolEnabled,
-        @ConfigProperty(value = "syncSleepAfterFailedNegotiation", defaultValue = "25")
-                int syncSleepAfterFailedNegotiation,
-        @ConfigProperty(value = "syncProtocolPermitCount", defaultValue = "17") int syncProtocolPermitCount,
-        @ConfigProperty(value = "syncProtocolHeartbeatPeriod", defaultValue = "1000") int syncProtocolHeartbeatPeriod,
         @ConfigProperty(value = "hangingThreadDuration", defaultValue = "60s") Duration hangingThreadDuration) {}

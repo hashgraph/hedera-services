@@ -203,6 +203,7 @@ import com.swirlds.platform.sync.ShadowGraphSynchronizer;
 import com.swirlds.platform.sync.SimultaneousSyncThrottle;
 import com.swirlds.platform.sync.SingleNodeNetworkSync;
 import com.swirlds.platform.sync.SyncProtocolResponder;
+import com.swirlds.platform.sync.config.SyncConfig;
 import com.swirlds.platform.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.sync.protocol.SyncProtocol;
 import com.swirlds.platform.system.Shutdown;
@@ -581,14 +582,14 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         reconnectThrottle = new ReconnectThrottle(settings.getReconnect());
 
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         topology = new StaticTopology(
                 selfId,
                 initialAddressBook.getSize(),
                 settings.getNumConnections(),
                 // unidirectional connections are ONLY used for old-style syncs, that don't run as a protocol
-                !settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled());
+                !settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled());
 
         fallenBehindManager = new FallenBehindManagerImpl(
                 selfId,
@@ -596,7 +597,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this::checkPlatformStatus,
                 () -> {
                     // if we are using old-style syncs, don't start the reconnect controller
-                    if (!settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled()) {
+                    if (!settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled()) {
                         return;
                     }
                     reconnectController.get().start();
@@ -1008,8 +1009,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             thread.stop();
         }
 
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        if (basicConfig.syncAsProtocolEnabled()) {
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        if (syncConfig.syncAsProtocolEnabled()) {
             gossipHalted.set(true);
         }
 
@@ -1282,7 +1283,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // a genesis event could be created here, but it isn't needed. This member will naturally create an
         // event after their first sync, where the first sync will involve sending no events.
 
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         shadowgraphExecutor.start();
@@ -1296,15 +1297,15 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 syncManager,
                 shadowgraphExecutor,
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
-                !basicConfig.syncAsProtocolEnabled(),
+                !syncConfig.syncAsProtocolEnabled(),
                 () -> {});
 
-        syncPermitProvider = new SyncPermitProvider(basicConfig.syncProtocolPermitCount());
+        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
 
         final Runnable stopGossip;
         if (settings.getChatter().isChatterUsed()) {
             stopGossip = chatterCore::stopChatter;
-        } else if (basicConfig.syncAsProtocolEnabled()) {
+        } else if (syncConfig.syncAsProtocolEnabled()) {
             stopGossip = () -> {
                 gossipHalted.set(true);
                 // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
@@ -1372,7 +1373,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @return an instance that maintains connection managers for all connections to neighbors
      */
     public StaticConnectionManagers startCommonNetwork() {
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final SocketFactory socketFactory = PlatformConstructor.socketFactory(
                 crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));
@@ -1384,7 +1385,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 socketFactory,
                 initialAddressBook,
                 // only do a version check for old-style sync
-                !settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled(),
+                !settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled(),
                 appVersion);
         final StaticConnectionManagers connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
@@ -1394,7 +1395,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 connectionManagers::newConnection,
                 StaticSettingsProvider.getSingleton(),
                 // only do a version check for old-style sync
-                !settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled(),
+                !settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled(),
                 appVersion);
         // allow other members to create connections to me
         final Address address = getSelfAddress();
@@ -1574,11 +1575,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * Constructs and starts all networking components needed for a sync network to run: heartbeats, callers, listeners
      */
     public void startSyncNetwork() {
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
-        if (basicConfig.syncAsProtocolEnabled()) {
+        if (syncConfig.syncAsProtocolEnabled()) {
             reconnectController.set(
                     new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false)));
             startSyncAsProtocolNetwork(connectionManagers);
@@ -1648,6 +1649,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     private void startSyncAsProtocolNetwork(@NonNull final StaticConnectionManagers connectionManagers) {
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
@@ -1690,7 +1692,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
-                            basicConfig.syncSleepAfterFailedNegotiation(),
+                            syncConfig.syncSleepAfterFailedNegotiation(),
                             List.of(
                                     new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
                                     new VersionCompareHandshake(
@@ -1699,7 +1701,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                             new NegotiationProtocols(List.of(
                                     new HeartbeatProtocol(
                                             otherId,
-                                            Duration.ofMillis(basicConfig.syncProtocolHeartbeatPeriod()),
+                                            Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()),
                                             networkMetrics,
                                             time),
                                     new EmergencyReconnectProtocol(
