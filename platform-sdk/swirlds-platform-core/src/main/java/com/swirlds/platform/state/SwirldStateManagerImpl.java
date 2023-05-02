@@ -34,7 +34,9 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.uptime.UptimeTracker;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -108,19 +110,26 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      * @param state                                 the genesis state
      */
     public SwirldStateManagerImpl(
-            final PlatformContext platformContext,
-            final AddressBook addressBook,
-            final NodeId selfId,
-            final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
-            final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
-            final SwirldStateMetrics swirldStateMetrics,
-            final SettingsProvider settings,
-            final BooleanSupplier inFreeze,
-            final State state) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
+            @NonNull final SwirldStateMetrics swirldStateMetrics,
+            @NonNull final SettingsProvider settings,
+            @NonNull final BooleanSupplier inFreeze,
+            @NonNull final State state) {
 
-        this.preConsensusSystemTransactionManager = preConsensusSystemTransactionManager;
-        this.postConsensusSystemTransactionManager = postConsensusSystemTransactionManager;
-        this.stats = swirldStateMetrics;
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(selfId);
+        this.preConsensusSystemTransactionManager = Objects.requireNonNull(preConsensusSystemTransactionManager);
+        this.postConsensusSystemTransactionManager = Objects.requireNonNull(postConsensusSystemTransactionManager);
+        this.stats = Objects.requireNonNull(swirldStateMetrics);
+        Objects.requireNonNull(settings);
+        Objects.requireNonNull(inFreeze);
+        Objects.requireNonNull(state);
+
         this.transactionPool = new EventTransactionPool(settings, inFreeze);
         this.transactionHandler = new TransactionHandler(selfId, stats);
         this.uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId.getId(), OSTime.getInstance());

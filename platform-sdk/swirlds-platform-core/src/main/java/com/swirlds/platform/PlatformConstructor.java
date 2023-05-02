@@ -60,6 +60,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.BooleanSupplier;
 
@@ -149,15 +150,25 @@ final class PlatformConstructor {
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
-            final PlatformContext platformContext,
-            final AddressBook addressBook,
-            final NodeId selfId,
-            final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
-            final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
-            final Metrics metrics,
-            final SettingsProvider settings,
-            final BooleanSupplier inFreezeChecker,
-            final State initialState) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
+            @NonNull final Metrics metrics,
+            @NonNull final SettingsProvider settings,
+            @NonNull final BooleanSupplier inFreezeChecker,
+            @NonNull final State initialState) {
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(preConsensusSystemTransactionManager);
+        Objects.requireNonNull(postConsensusSystemTransactionManager);
+        Objects.requireNonNull(metrics);
+        Objects.requireNonNull(settings);
+        Objects.requireNonNull(inFreezeChecker);
+        Objects.requireNonNull(initialState);
 
         return new SwirldStateManagerImpl(
                 platformContext,
