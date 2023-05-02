@@ -30,6 +30,7 @@ import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -84,7 +85,7 @@ public abstract class EventUtils {
         originalState.setPlatformState(platformState);
         platformState.setPlatformData(platformData);
 
-        return new SignedState(originalState, false);
+        return new SignedState(TestPlatformContextBuilder.create().build(), originalState, "test", false);
     }
 
     /**
@@ -100,7 +101,8 @@ public abstract class EventUtils {
         registry.registerConstructables("com.swirlds.platform.state");
         registry.registerConstructables("com.swirlds.common.*");
         final State stateCopy = MerkleSerializeUtils.serializeDeserialize(dir, signedState.getState());
-        final SignedState signedStateCopy = new SignedState(stateCopy);
+        final SignedState signedStateCopy =
+                new SignedState(TestPlatformContextBuilder.create().build(), stateCopy, "test");
         signedStateCopy.setSigSet(signedState.getSigSet());
         return signedStateCopy;
     }
@@ -175,7 +177,7 @@ public abstract class EventUtils {
             throw new IllegalArgumentException("Total weight must be greater than 0.0.");
         }
 
-        // TODO this can be done in logn time with a binary search
+        // FUTURE WORK this can be done in logn time with a binary search
 
         final double randomValue = random.nextDouble() * totalWeight;
         double sum = 0.0;

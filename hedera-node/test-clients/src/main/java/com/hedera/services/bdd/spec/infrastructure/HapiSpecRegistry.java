@@ -556,6 +556,10 @@ public class HapiSpecRegistry {
         return get(name, TransactionID.class);
     }
 
+    public Optional<TransactionID> getMaybeTxnId(String name) {
+        return Optional.ofNullable(getOrElse(name, TransactionID.class, null));
+    }
+
     public void saveAccountId(String name, AccountID id) {
         put(name, id);
         put(asAccountString(id), name);
