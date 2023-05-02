@@ -51,7 +51,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
     /**
      * {@inheritDoc}
      *
-     * If the {@code signedState} is matches the request round and hash exactly, this method updates the next epoch hash
+     * If the {@code reservedSignedState} is matches the request round and hash exactly, this method updates the next epoch hash
      * via {@link com.swirlds.platform.state.PlatformData#setNextEpochHash(Hash)}. Doing so does not modify the hash,
      * but will trigger the epoch hash to update when the next round reaches consensus.
      * Note: the previous state is ignored by this validator.  Emergency round, emergency state hash, and epoch hash

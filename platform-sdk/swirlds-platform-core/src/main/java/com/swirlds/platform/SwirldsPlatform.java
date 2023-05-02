@@ -24,6 +24,7 @@ import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.config.ConsensusConfig;
@@ -189,6 +190,7 @@ import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
@@ -437,7 +439,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final Supplier<SwirldState> genesisStateBuilder,
-            @Nullable final SignedState loadedSignedState,
+            @NonNull final ReservedSignedState loadedSignedState,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
@@ -576,7 +578,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         components.add(new Shutdown());
 
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
-        init(loadedState, genesisStateBuilder);
+        try (loadedState.signedStateFromDisk) {
+            init(loadedState.signedStateFromDisk.getNullable(), loadedState.initialState, genesisStateBuilder);
+        }
     }
 
     /**
@@ -671,7 +675,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(SignedState signedStateFromDisk, State initialState) {}
+    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -705,14 +709,17 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param signedStateFromDisk the SignedState loaded from disk.
      * @return the LoadedState
      */
-    private LoadedState initializeLoadedStateFromSignedState(@Nullable final SignedState signedStateFromDisk) {
-        try {
-            if (signedStateFromDisk != null) {
-                updateLoadedStateAddressBook(signedStateFromDisk, initialAddressBook);
-                diskStateHash = signedStateFromDisk.getState().getHash();
-                diskStateRound = signedStateFromDisk.getRound();
-                final State initialState = loadSavedState(signedStateFromDisk);
-                return new LoadedState(signedStateFromDisk, initialState);
+    @NonNull
+    private LoadedState initializeLoadedStateFromSignedState(@NonNull final ReservedSignedState signedStateFromDisk) {
+        try (signedStateFromDisk) {
+            if (signedStateFromDisk.isNotNull()) {
+                updateLoadedStateAddressBook(signedStateFromDisk.get(), initialAddressBook);
+                diskStateHash = signedStateFromDisk.get().getState().getHash();
+                diskStateRound = signedStateFromDisk.get().getRound();
+                final State initialState = loadSavedState(signedStateFromDisk.get());
+                return new LoadedState(
+                        signedStateFromDisk.getAndReserve("SwirldsPlatform.initializeLoadedStateFromSignedState()"),
+                        initialState);
             } else {
                 startedFromGenesis = true;
             }
@@ -723,7 +730,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
             }
         }
-        return new LoadedState(null, null);
+        return new LoadedState(createNullReservation(), null);
     }
 
     private State loadSavedState(final SignedState signedStateFromDisk) {
@@ -773,11 +780,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     "interrupted while attempting to hash the state");
         }
 
-        // Intentionally reserve & release state. If the signed state manager rejects this signed state, we
-        // want the release of an explicit reference to cause the state to be cleaned up.
-        signedStateFromDisk.reserve();
         stateManagementComponent.stateToLoad(signedStateFromDisk, SourceOfSignedState.DISK);
-        signedStateFromDisk.release();
 
         return initialState;
     }
@@ -860,11 +863,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
             swirldStateManager.loadFromSignedState(signedState);
 
-            // Intentionally reserve & release state. If the signed state manager rejects this signed state, we
-            // want the release of an explicit reference to cause the state to be cleaned up.
-            signedState.reserve();
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
-            signedState.release();
 
             loadIntoConsensusAndEventMapper(signedState);
             // eventLinker is not thread safe, which is not a problem regularly because it is only used by a single
@@ -876,17 +875,12 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             getConsensusHandler().loadDataFromSignedState(signedState, true);
 
             // Notify any listeners that the reconnect has been completed
-            try {
-                signedState.reserve();
-                notificationEngine.dispatch(
-                        ReconnectCompleteListener.class,
-                        new ReconnectCompleteNotification(
-                                signedState.getRound(),
-                                signedState.getConsensusTimestamp(),
-                                signedState.getState().getSwirldState()));
-            } finally {
-                signedState.release();
-            }
+            notificationEngine.dispatch(
+                    ReconnectCompleteListener.class,
+                    new ReconnectCompleteNotification(
+                            signedState.getRound(),
+                            signedState.getConsensusTimestamp(),
+                            signedState.getState().getSwirldState()));
         } catch (final RuntimeException e) {
             logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : FAILED, reason: {}", e.getMessage());
             // if the loading fails for whatever reason, we clear all data again in case some of it has been loaded
@@ -907,7 +901,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * First part of initialization. This was split up so that appMain.init() could be called before {@link
      * StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete parts.
      */
-    private void init(final LoadedState loadedState, final Supplier<SwirldState> genesisStateBuilder) {
+    private void init(
+            @Nullable final SignedState signedStateFromDisk,
+            @Nullable final State initialState,
+            @NonNull final Supplier<SwirldState> genesisStateBuilder) {
 
         // if this setting is 0 or less, there is no startup freeze
         if (settings.getFreezeSecondsAfterStartup() > 0) {
@@ -925,7 +922,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             initEventStreamManager(String.valueOf(selfId));
         }
 
-        buildEventHandlers(loadedState, genesisStateBuilder);
+        buildEventHandlers(signedStateFromDisk, initialState, genesisStateBuilder);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 currentPlatformStatus::get,
@@ -933,8 +930,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
 
-        if (loadedState.signedStateFromDisk != null) {
-            loadIntoConsensusAndEventMapper(loadedState.signedStateFromDisk);
+        if (signedStateFromDisk != null) {
+            loadIntoConsensusAndEventMapper(signedStateFromDisk);
         } else {
             consensusRef.set(new ConsensusImpl(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
@@ -952,8 +949,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         // build the event intake classes
         buildEventIntake();
-        if (loadedState.signedStateFromDisk != null) {
-            eventLinker.loadFromSignedState(loadedState.signedStateFromDisk);
+        if (signedStateFromDisk != null) {
+            eventLinker.loadFromSignedState(signedStateFromDisk);
         }
 
         clearAllPipelines = new LoggingClearables(
@@ -1140,23 +1137,26 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * Build all the classes required for events and transactions to flow through the system
      */
-    private void buildEventHandlers(final LoadedState loadedState, final Supplier<SwirldState> genesisStateBuilder) {
+    private void buildEventHandlers(
+            @Nullable final SignedState signedStateFromDisk,
+            @Nullable final State initialState,
+            @NonNull final Supplier<SwirldState> genesisStateBuilder) {
 
         // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
-        final QueueThread<SignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
+        final QueueThread<ReservedSignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
                 threadManager, selfId.getId(), stateManagementComponent::newSignedStateFromTransactions);
         stateHashSignQueueThread.start();
 
-        if (loadedState.signedStateFromDisk != null) {
+        if (signedStateFromDisk != null) {
             logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                            loadedState.signedStateFromDisk.getRound(),
-                            loadedState.signedStateFromDisk.getConsensusTimestamp(),
+                            signedStateFromDisk.getRound(),
+                            signedStateFromDisk.getConsensusTimestamp(),
                             startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
 
-            buildEventHandlersFromState(loadedState.initialState, stateHashSignQueueThread);
+            buildEventHandlersFromState(initialState, stateHashSignQueueThread);
 
-            consensusRoundHandler.loadDataFromSignedState(loadedState.signedStateFromDisk, false);
+            consensusRoundHandler.loadDataFromSignedState(signedStateFromDisk, false);
         } else {
             final State state = buildGenesisState(this, initialAddressBook, appVersion, genesisStateBuilder);
             buildEventHandlersFromState(state, stateHashSignQueueThread);
@@ -1167,7 +1167,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     private void buildEventHandlersFromState(
-            final State state, final QueueThread<SignedState> stateHashSignQueueThread) {
+            final State state, final QueueThread<ReservedSignedState> stateHashSignQueueThread) {
 
         swirldStateManager = PlatformConstructor.swirldStateManager(
                 selfId,
@@ -1274,7 +1274,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 new ReconnectLearnerThrottle(selfId, settings.getReconnect()),
                 this::loadReconnectState,
                 new ReconnectLearnerFactory(
-                        threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
+                        platformContext, threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
         if (settings.getChatter().isChatterUsed()) {
             reconnectController.set(new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter));
             startChatterNetwork();
@@ -1435,9 +1435,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             threadManager,
                                             otherId,
                                             reconnectThrottle,
-                                            () -> stateManagementComponent
-                                                    .getLatestSignedState()
-                                                    .get(),
+                                            () -> stateManagementComponent.getLatestSignedState(
+                                                    "SwirldsPlatform: ReconnectProtocol"),
                                             settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get(),
@@ -1878,9 +1877,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * {@inheritDoc}
      */
     @Override
+    @Nullable
     public Instant getLastSignedStateTimestamp() {
-        try (final AutoCloseableWrapper<SignedState> wrapper = stateManagementComponent.getLatestImmutableState()) {
-            if (wrapper.get() != null) {
+        try (final ReservedSignedState wrapper =
+                stateManagementComponent.getLatestImmutableState("SwirldsPlatform.getLastSignedStateTimestamp()")) {
+            if (wrapper.isNotNull()) {
                 return wrapper.get().getConsensusTimestamp();
             }
         }
@@ -1908,12 +1909,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState() {
-        final AutoCloseableWrapper<SignedState> wrapper = stateManagementComponent.getLatestImmutableState();
-        final SignedState state = wrapper.get();
-
+    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason) {
+        final ReservedSignedState wrapper = stateManagementComponent.getLatestImmutableState(reason);
         return new AutoCloseableWrapper<>(
-                state == null ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
+                wrapper.isNull() ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
     }
 
     /**
@@ -1921,12 +1920,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState() {
-        final AutoCloseableWrapper<SignedState> wrapper = stateManagementComponent.getLatestSignedState();
-        final SignedState state = wrapper.get();
-
+    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(@NonNull final String reason) {
+        final ReservedSignedState wrapper = stateManagementComponent.getLatestSignedState(reason);
         return new AutoCloseableWrapper<>(
-                state == null ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
+                wrapper.isNull() ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
     }
 
     /**

@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -45,6 +46,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -58,6 +60,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
@@ -79,12 +82,15 @@ import com.hedera.test.utils.CryptoConfigUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.ResponsibleVMapUser;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.base.state.MutabilityException;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -97,19 +103,17 @@ import com.swirlds.common.system.events.Event;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -361,10 +365,13 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setMetadata(metadata);
 
         given(metadata.app()).willReturn(app);
+        final var mapWarmer = mock(EntityMapWarmer.class);
+        given(app.mapWarmer()).willReturn(mapWarmer);
         given(app.logic()).willReturn(logic);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 
         subject.handleConsensusRound(round, dualState);
+        verify(mapWarmer).warmCache(round);
         verify(dualStateAccessor).setDualState(dualState);
         verify(logic).incorporateConsensus(round);
     }
@@ -829,12 +836,15 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Test
     void testLoading0305State() {
         ClassLoaderHelper.loadClassPathDependencies();
-        final AtomicReference<SignedState> ref = new AtomicReference<>();
-        assertDoesNotThrow(() -> ref.set(loadSignedState(signedStateDir + "v0.30.5/SignedState.swh")));
-        final var mockPlatform = createMockPlatformWithCrypto();
-        given(mockPlatform.getAddressBook()).willReturn(addressBook);
-        ServicesState swirldState = (ServicesState) ref.get().getSwirldState();
-        tracked(swirldState).init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));
+        // This signed state should be auto-closed by the try block
+        try (ReservedSignedState state = loadSignedState(signedStateDir + "v0.30.5/SignedState.swh")) {
+            final var mockPlatform = createMockPlatformWithCrypto();
+            given(mockPlatform.getAddressBook()).willReturn(addressBook);
+            ServicesState swirldState = (ServicesState) state.get().getSwirldState();
+            swirldState.init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));
+        } catch (IOException e) {
+            fail("State file should be loaded correctly!");
+        }
     }
 
     @Test
@@ -868,6 +878,33 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertSame(mmap, subject.uniqueTokens().merkleMap());
     }
 
+    @Test
+    void updatesAddressBookWithZeroWeightOnGenesisStart() {
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
+        assertEquals(1, stakingMap.size());
+        assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
+
+        subject.updateWeight(addressBook, platform.getContext());
+        verify(addressBook).updateWeight(0, 0);
+    }
+
+    @Test
+    void updatesAddressBookWithNonZeroWeightsOnGenesisStart() {
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
+        assertEquals(1, stakingMap.size());
+        assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
+
+        stakingMap.forEach((k, v) -> {
+            v.setStake(1000L);
+            v.setWeight(500);
+        });
+        assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
+        subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
+
+        subject.updateWeight(addressBook, platform.getContext());
+        verify(addressBook).updateWeight(0, 500);
+    }
+
     private static ServicesApp createApp(final Platform platform) {
         return DaggerServicesApp.builder()
                 .initTrigger(InitTrigger.GENESIS)
@@ -891,11 +928,18 @@ class ServicesStateTest extends ResponsibleVMapUser {
         return platform;
     }
 
-    private static SignedState loadSignedState(final String path) throws IOException {
-        final var signedPair = SignedStateFileReader.readStateFile(Paths.get(path));
+    /**
+     * Because this method returns a {@code ReservedSignedState}, <b>make sure to close it when done!</b>
+     *
+     * @param path the path to the signed state file
+     * @throws IOException if the file cannot be read
+     */
+    private static ReservedSignedState loadSignedState(final String path) throws IOException {
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+        final var signedPair = SignedStateFileReader.readStateFile(platformContext, Paths.get(path));
         // Because it's possible we are loading old data, we cannot check equivalence of the hash.
-        Assertions.assertNotNull(signedPair.signedState());
-        return signedPair.signedState();
+        return signedPair.reservedSignedState();
     }
 
     private void mockAllMaps(final MerkleMap<?, ?> mockMm, final VirtualMap<?, ?> mockVm) {

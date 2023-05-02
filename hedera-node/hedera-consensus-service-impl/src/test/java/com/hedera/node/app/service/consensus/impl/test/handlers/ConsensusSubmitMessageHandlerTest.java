@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.AdapterUt
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusCreateTopicHandlerTest.ACCOUNT_ID_3;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.newTopicMeta;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
@@ -50,17 +49,19 @@ import com.hedera.hapi.node.consensus.ConsensusMessageChunkInfo;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.TopicMetadata;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TxnUtils;
 import java.time.Instant;
@@ -77,7 +78,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     @Mock
-    private AccountAccess keyLookup;
+    private ReadableAccountStore accountStore;
 
     @Mock
     private HandleContext handleContext;
@@ -95,7 +96,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         writableTopicState = writableTopicStateWithOneKey();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
-        readableStore = new ReadableTopicStore(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates);
         writableStore = new WritableTopicStore(writableStates);
     }
 
@@ -106,10 +107,11 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         // given:
         final var payerKey = mockPayerLookup();
         mockTopicLookup(SIMPLE_KEY_A);
-        final var context = new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
+        final var context = new FakePreHandleContext(accountStore, newDefaultSubmitMessageTxn(topicEntityNum));
+        context.registerStore(ReadableTopicStore.class, readableStore);
 
         // when:
-        subject.preHandle(context, readableStore);
+        subject.preHandle(context);
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
@@ -123,10 +125,11 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         mockPayerLookup();
         readableTopicState = emptyReadableTopicState();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
-        readableStore = new ReadableTopicStore(readableStates);
-        final var context = new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
+        readableStore = new ReadableTopicStoreImpl(readableStates);
+        final var context = new FakePreHandleContext(accountStore, newDefaultSubmitMessageTxn(topicEntityNum));
+        context.registerStore(ReadableTopicStore.class, readableStore);
 
-        assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
     }
 
     @Test
@@ -135,10 +138,11 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         readableStore = mock(ReadableTopicStore.class);
         mockPayerLookup();
         mockTopicLookup(null);
-        final var context = new PreHandleContext(keyLookup, newDefaultSubmitMessageTxn(topicEntityNum));
+        final var context = new FakePreHandleContext(accountStore, newDefaultSubmitMessageTxn(topicEntityNum));
+        context.registerStore(ReadableTopicStore.class, readableStore);
 
         // when:
-        assertDoesNotThrow(() -> subject.preHandle(context, readableStore));
+        assertDoesNotThrow(() -> subject.preHandle(context));
     }
 
     @Nested
@@ -146,7 +150,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         @BeforeEach
         void setUp() {
             readableStore = mock(ReadableTopicStore.class);
-            keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+            accountStore = AdapterUtils.wellKnownKeyLookupAt();
         }
 
         @Test
@@ -155,10 +159,11 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
             var topicMeta = newTopicMeta(null);
             given(readableStore.getTopicMetadata(notNull())).willReturn(topicMeta);
-            final var context = new PreHandleContext(keyLookup, txn);
+            final var context = new FakePreHandleContext(accountStore, txn);
+            context.registerStore(ReadableTopicStore.class, readableStore);
 
             // when:
-            subject.preHandle(context, readableStore);
+            subject.preHandle(context);
 
             // then:
             assertDefaultPayer(context);
@@ -172,10 +177,11 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
             var topicMeta = newTopicMeta(key);
             given(readableStore.getTopicMetadata(notNull())).willReturn(topicMeta);
-            final var context = new PreHandleContext(keyLookup, txn);
+            final var context = new FakePreHandleContext(accountStore, txn);
+            context.registerStore(ReadableTopicStore.class, readableStore);
 
             // when:
-            subject.preHandle(context, readableStore);
+            subject.preHandle(context);
 
             // then:
             ConsensusTestUtils.assertDefaultPayer(context);
@@ -188,10 +194,11 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
             final var txn = CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO.pbjTxnBody();
 
             given(readableStore.getTopicMetadata(notNull())).willReturn(null);
-            final var context = new PreHandleContext(keyLookup, txn);
+            final var context = new FakePreHandleContext(accountStore, txn);
+            context.registerStore(ReadableTopicStore.class, readableStore);
 
             // when:
-            assertThrowsPreCheck(() -> subject.preHandle(context, readableStore), INVALID_TOPIC_ID);
+            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
         }
     }
 
@@ -350,14 +357,14 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     /* ----------------- Helper Methods ------------------- */
 
     private Key mockPayerLookup() throws PreCheckException {
-        return ConsensusTestUtils.mockPayerLookup(A_COMPLEX_KEY, PARITY_DEFAULT_PAYER, keyLookup);
+        return ConsensusTestUtils.mockPayerLookup(A_COMPLEX_KEY, PARITY_DEFAULT_PAYER, accountStore);
     }
 
     private void mockTopicLookup(Key submitKey) throws PreCheckException {
         ConsensusTestUtils.mockTopicLookup(null, submitKey, readableStore);
     }
 
-    private static ReadableTopicStore.TopicMetadata newTopicMeta(Key submit) {
+    private static TopicMetadata newTopicMeta(Key submit) {
         return ConsensusTestUtils.newTopicMeta(null, submit);
     }
 

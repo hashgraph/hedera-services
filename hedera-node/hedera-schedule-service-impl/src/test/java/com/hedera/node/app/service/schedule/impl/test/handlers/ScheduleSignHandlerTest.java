@@ -35,8 +35,10 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -48,7 +50,7 @@ import org.mockito.Mock;
 class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     private final ScheduleID scheduleID =
             ScheduleID.newBuilder().scheduleNum(100L).build();
-    private final ScheduleSignHandler subject = new ScheduleSignHandler();
+    private ScheduleSignHandler subject;
 
     @Mock
     protected JKey adminJKey;
@@ -65,7 +67,9 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     @BeforeEach
     void setUp() {
         given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
-        scheduleStore = new ReadableScheduleStore(states);
+        scheduleStore = new ReadableScheduleStoreImpl(states);
+
+        subject = new ScheduleSignHandler(dispatcher);
     }
 
     @Test
@@ -73,8 +77,10 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleSignTransaction();
         scheduledTxn = givenSetupForScheduleSign();
 
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, scheduleStore, dispatcher);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        subject.preHandle(context);
         assertEquals(scheduler, context.payer());
         assertEquals(schedulerKey, context.payerKey());
         assertEquals(Collections.EMPTY_SET, context.requiredNonPayerKeys());
@@ -88,11 +94,13 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     @Test
     void scheduleSignFailsIfScheduleMissing() throws PreCheckException {
         final var txn = scheduleSignTransaction();
-        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(null);
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore, dispatcher), INVALID_SCHEDULE_ID);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_SCHEDULE_ID);
 
         verify(dispatcher, never()).dispatch(any());
     }
@@ -105,11 +113,13 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(schedule.hasExplicitPayer()).willReturn(true);
         // @migration this use of PbjConverter is temporary until services complete PBJ migration
         given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(PbjConverter.fromPbj(payer)));
-        given(keyLookup.getAccountById(payer)).willReturn(payerAccount);
+        given(accountStore.getAccountById(payer)).willReturn(payerAccount);
         given(payerAccount.key()).willReturn(adminKey);
 
-        final var context = new PreHandleContext(keyLookup, txn);
-        subject.preHandle(context, scheduleStore, dispatcher);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        subject.preHandle(context);
 
         assertEquals(scheduler, context.payer());
         assertEquals(schedulerKey, context.payerKey());
@@ -132,14 +142,15 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
                 .build();
 
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
-        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(scheduledTxn));
         given(schedule.hasExplicitPayer()).willReturn(false);
 
-        final var context = new PreHandleContext(keyLookup, txn);
-        assertThrowsPreCheck(
-                () -> subject.preHandle(context, scheduleStore, dispatcher), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
     }
 
     // @todo Need to create a valid test for "schedule sign with key not in whitelist"
@@ -151,7 +162,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
                 .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
                 .build();
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
-        given(keyLookup.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
         given(schedulerAccount.key()).willReturn(schedulerKey);
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(scheduledTxn));
         return scheduledTxn;
