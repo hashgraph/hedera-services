@@ -208,6 +208,6 @@ public class EmergencyReconnectProtocolTests {
                 () -> protocol.runProtocol(throwingConnection),
                 "expected an exception to be thrown");
 
-        assertTrue(teacherThrottle.initiateReconnect(PEER_ID.getId()), "Teacher throttle should be released");
+        assertTrue(teacherThrottle.initiateReconnect(PEER_ID.id()), "Teacher throttle should be released");
     }
 }

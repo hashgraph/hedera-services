@@ -985,7 +985,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final PreConsensusEventFileManager fileManager;
         try {
-            fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.getId());
+            fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.id());
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
@@ -1111,7 +1111,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
 
         intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
-                .setNodeId(selfId.getId())
+                .setNodeId(selfId.id())
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("event-intake")
                 .setHandler(intakeHandler)
@@ -1134,7 +1134,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
         final QueueThread<ReservedSignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
-                threadManager, selfId.getId(), stateManagementComponent::newSignedStateFromTransactions);
+                threadManager, selfId.id(), stateManagementComponent::newSignedStateFromTransactions);
         stateHashSignQueueThread.start();
 
         if (signedStateFromDisk != null) {
@@ -1176,7 +1176,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                 platformContext,
                 threadManager,
-                selfId.getId(),
+                selfId.id(),
                 PlatformConstructor.settingsProvider(),
                 swirldStateManager,
                 new ConsensusHandlingMetrics(metrics, time),
@@ -1340,7 +1340,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 inboundConnectionHandler::handle);
         new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(settings.getThreadPrioritySync())
-                .setNodeId(selfId.getId())
+                .setNodeId(selfId.id())
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("connectionServer")
                 .setWork(connectionServer)
@@ -1359,7 +1359,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         // first create all instances because of thread safety
         for (final NodeId otherId : topology.getNeighbors()) {
-            chatterCore.newPeerInstance(otherId.getId(), eventTaskCreator::addEvent);
+            chatterCore.newPeerInstance(otherId.id(), eventTaskCreator::addEvent);
         }
 
         // If we still need an emergency recovery state, we need it via emergency reconnect.
@@ -1373,7 +1373,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final ParallelExecutor parallelExecutor = new CachedPoolParallelExecutor(threadManager, "chatter");
         parallelExecutor.start();
         for (final NodeId otherId : topology.getNeighbors()) {
-            final PeerInstance chatterPeer = chatterCore.getPeerInstance(otherId.getId());
+            final PeerInstance chatterPeer = chatterCore.getPeerInstance(otherId.id());
             final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
             shadowgraphExecutor.start();
             final ShadowGraphSynchronizer chatterSynchronizer = new ShadowGraphSynchronizer(
@@ -1398,9 +1398,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
-                    .setNodeId(selfId.getId())
+                    .setNodeId(selfId.id())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
-                    .setOtherNodeId(otherId.getId())
+                    .setOtherNodeId(otherId.id())
                     .setThreadName("ChatterReader")
                     .setHangingThreadPeriod(chatterConfig.hangingThreadDuration())
                     .setWork(new NegotiatorThread(
@@ -1534,9 +1534,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             // create and start new threads to listen for incoming sync requests
             new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
-                    .setNodeId(selfId.getId())
+                    .setNodeId(selfId.id())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
-                    .setOtherNodeId(otherId.getId())
+                    .setOtherNodeId(otherId.id())
                     .setThreadName("listener")
                     .setWork(new Listener(protocolHandlers, connectionManagers.getManager(otherId, false)))
                     .build()
@@ -1545,10 +1545,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             // create and start new thread to send heartbeats on the SyncCaller channels
             new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(settings.getThreadPrioritySync())
-                    .setNodeId(selfId.getId())
+                    .setNodeId(selfId.id())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setThreadName("heartbeat")
-                    .setOtherNodeId(otherId.getId())
+                    .setOtherNodeId(otherId.id())
                     .setWork(new HeartbeatSender(
                             otherId, sharedConnectionLocks, networkMetrics, PlatformConstructor.settingsProvider()))
                     .build()
@@ -1580,7 +1580,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         /* the thread that repeatedly initiates syncs with other members */
         final Thread syncCallerThread = new ThreadConfiguration(threadManager)
                 .setPriority(settings.getThreadPrioritySync())
-                .setNodeId(selfId.getId())
+                .setNodeId(selfId.id())
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("syncCaller-" + callerNumber)
                 .setRunnable(syncCaller)

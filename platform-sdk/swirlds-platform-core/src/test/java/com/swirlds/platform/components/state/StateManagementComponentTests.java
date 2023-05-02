@@ -439,7 +439,7 @@ class StateManagementComponentTests {
                 null, 3L, issStateSignatureTransaction(signedState, 3L, otherHash));
 
         assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
-        assertEquals(NODE_ID.getId(), issConsumer.getIssNodeId(), "ISS should have been reported as self ISS");
+        assertEquals(NODE_ID.id(), issConsumer.getIssNodeId(), "ISS should have been reported as self ISS");
         assertEquals(
                 IssNotification.IssType.SELF_ISS,
                 issConsumer.getIssType(),

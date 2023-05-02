@@ -259,7 +259,7 @@ public class EventImpl extends AbstractSerializableHashable
         /* number of seconds to add to the base time */
         double sec;
 
-        if (selfId.equalsMain(getCreatorId())) {
+        if (selfId.equals(getCreatorId())) {
             // event by self
             t = getTimeCreated();
             // seconds from self creating an event to the consensus timestamp that event receives
@@ -589,7 +589,7 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     public boolean isCreatedBy(final NodeId id) {
-        return getCreatorId() == id.getId();
+        return getCreatorId() == id.id();
     }
 
     public boolean isCreatedBy(final long id) {

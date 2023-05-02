@@ -121,7 +121,7 @@ public class ReconnectProtocolTests {
         when(reconnectController.acquireLearnerPermit()).thenReturn(params.getsPermit);
 
         final List<Long> neighborsForReconnect = LongStream.range(0L, 10L)
-                .filter(id -> id != PEER_ID.getId() || params.isReconnectNeighbor)
+                .filter(id -> id != PEER_ID.id() || params.isReconnectNeighbor)
                 .boxed()
                 .toList();
 

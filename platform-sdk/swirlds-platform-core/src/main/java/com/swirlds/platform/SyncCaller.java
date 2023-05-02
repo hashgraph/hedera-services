@@ -176,8 +176,7 @@ class SyncCaller implements Runnable {
                 // self is the only member, so create an event for just this one transaction,
                 // and immediately put it into the hashgraph. No syncing is needed.
                 platform.getEventTaskCreator()
-                        .createEvent(
-                                selfId.getId() /*selfId assumed to be main*/); // otherID (so self will count as the
+                        .createEvent(selfId.id() /*selfId assumed to be main*/); // otherID (so self will count as the
                 // "other")
                 Thread.sleep(50);
                 // selfId assumed to be main

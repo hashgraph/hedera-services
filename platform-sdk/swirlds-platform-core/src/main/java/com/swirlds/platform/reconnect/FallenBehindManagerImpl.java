@@ -76,14 +76,14 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     @Override
     public synchronized void reportFallenBehind(final NodeId id) {
         final boolean previouslyFallenBehind = hasFallenBehind();
-        if (reportFallenBehind.add(id.getId())) {
+        if (reportFallenBehind.add(id.id())) {
             if (numReportFallenBehind == 0) {
                 // we have received the first indication that we have fallen behind, so we need to check with other
                 // nodes to confirm
                 notYetReportFallenBehind.addAll(allNeighbors);
             }
             // we don't need to check with this node
-            notYetReportFallenBehind.remove(id.getId());
+            notYetReportFallenBehind.remove(id.id());
             numReportFallenBehind++;
             if (!previouslyFallenBehind && hasFallenBehind()) {
                 notifyPlatform.run();

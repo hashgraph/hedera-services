@@ -271,16 +271,16 @@ public class SyncManagerTest {
                 "if neither node is part of the superMinority in the latest round, don't create an event");
 
         // If the other node is in the critical quorum then an event should be created.
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.getId(), true);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), true);
         assertTrue(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.getId(), false);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), false);
         assertFalse(
                 test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0),
                 "if neither node is part of the superMinority in the latest round, don't create an event");
 
         // If both are in the critical quorum then an event should be created.
         test.hashgraph.isInCriticalQuorum.put(ID, true);
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.getId(), true);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), true);
         assertTrue(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
     }
 

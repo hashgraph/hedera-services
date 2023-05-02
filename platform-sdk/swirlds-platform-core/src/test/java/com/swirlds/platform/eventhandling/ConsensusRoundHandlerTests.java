@@ -113,7 +113,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),
-                selfId.getId(),
+                selfId.id(),
                 settingsProvider,
                 swirldStateManager,
                 consensusHandlingMetrics,
@@ -201,7 +201,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),
-                selfId.getId(),
+                selfId.id(),
                 settingsProvider,
                 swirldStateManager,
                 consensusHandlingMetrics,

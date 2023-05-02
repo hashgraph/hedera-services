@@ -63,7 +63,7 @@ public class SyncProtocolResponder implements NetworkProtocolResponder {
             rejectSync(connection);
         } else {
             try (final MaybeLocked lock =
-                    syncThrottle.trySync(connection.getOtherId().getId(), false)) {
+                    syncThrottle.trySync(connection.getOtherId().id(), false)) {
                 if (!lock.isLockAcquired()) {
                     // we should not be syncing, so reply NACK
                     rejectSync(connection);

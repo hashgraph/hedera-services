@@ -70,7 +70,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
             final long selfId,
             final boolean loadSigningKeys) {
 
-        this.selfId = new NodeId(selfId);
+        this.selfId = NodeId.create(selfId);
 
         this.addressBook = initialState.getAddressBook();
 

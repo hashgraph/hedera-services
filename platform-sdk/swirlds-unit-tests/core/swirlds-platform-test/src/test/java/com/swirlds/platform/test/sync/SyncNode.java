@@ -94,7 +94,7 @@ public class SyncNode {
         }
 
         this.numNodes = numNodes;
-        this.nodeId = new NodeId(nodeId);
+        this.nodeId = NodeId.create(nodeId);
         this.eventEmitter = eventEmitter;
 
         syncManager = new TestingSyncManager();

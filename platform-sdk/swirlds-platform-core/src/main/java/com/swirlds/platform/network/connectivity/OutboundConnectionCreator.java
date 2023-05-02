@@ -82,8 +82,8 @@ public class OutboundConnectionCreator {
      * @return the new connection, or a connection that is not connected if it couldn't connect on the first try
      */
     public Connection createConnection(final NodeId otherId) {
-        final Address other = addressBook.getAddress(otherId.getId());
-        final Address ownAddress = addressBook.getAddress(selfId.getId());
+        final Address other = addressBook.getAddress(otherId.id());
+        final Address ownAddress = addressBook.getAddress(selfId.id());
         final int port = other.getConnectPortIpv4(ownAddress);
         final byte[] ip = getConnectAddressIpv4(ownAddress, other);
         final String ipAddress = Address.ipString(ip);
@@ -113,7 +113,7 @@ public class OutboundConnectionCreator {
                 }
             }
 
-            dos.writeUTF(addressBook.getAddress(selfId.getId()).getNickname());
+            dos.writeUTF(addressBook.getAddress(selfId.id()).getNickname());
             dos.flush();
 
             final int ack = dis.readInt(); // read the ACK for creating the connection

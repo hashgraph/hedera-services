@@ -97,7 +97,7 @@ public class ChatterEventCreator {
         if (basicRulesResponse == EventCreationRuleResponse.DONT_CREATE) {
             return false;
         }
-        final GossipEvent selfParent = mostRecentEventById.apply(selfId.getId());
+        final GossipEvent selfParent = mostRecentEventById.apply(selfId.id());
         final GossipEvent otherParent = mostRecentEventById.apply(otherId);
         // if the basic rules returned a CREATE, this overrides all subsequent rules, so we don't check the parent based
         // rules
@@ -122,7 +122,7 @@ public class ChatterEventCreator {
     private GossipEvent buildEvent(final BaseEvent selfParent, final BaseEvent otherParent) {
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
-                selfId.getId(),
+                selfId.id(),
                 EventUtils.getEventGeneration(selfParent),
                 EventUtils.getEventGeneration(otherParent),
                 EventUtils.getEventHash(selfParent),

@@ -687,7 +687,7 @@ public class Browser {
                 appMain.init(platform, nodeId);
 
                 final Thread appThread = new ThreadConfiguration(getStaticThreadManager())
-                        .setNodeId(nodeId.getId())
+                        .setNodeId(nodeId.id())
                         .setComponent("app")
                         .setThreadName("appMain")
                         .setRunnable(appMain)

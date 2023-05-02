@@ -125,7 +125,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
                     EventStreamType.getInstance());
 
             writeQueueThread = new QueueThreadObjectStreamConfiguration<T>(threadManager)
-                    .setNodeId(selfId.getId())
+                    .setNodeId(selfId.id())
                     .setComponent("event-stream")
                     .setThreadName("write-queue")
                     .setForwardTo(streamFileWriter)
@@ -137,7 +137,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
         final RunningHashCalculatorForStream<T> runningHashCalculator = new RunningHashCalculatorForStream<>();
         hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
         hashQueueThread = new QueueThreadObjectStreamConfiguration<T>(threadManager)
-                .setNodeId(selfId.getId())
+                .setNodeId(selfId.id())
                 .setComponent("event-stream")
                 .setThreadName("hash-queue")
                 .setForwardTo(hashCalculator)

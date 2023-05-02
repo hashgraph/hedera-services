@@ -89,7 +89,7 @@ class ChatterSyncTest {
         Assertions.assertTrue(
                 chatterSync.shouldAccept(), "if the peer has not reported us as fallen behind, we should sync");
 
-        when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(0L, PEER_ID.getId()));
+        when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(0L, PEER_ID.id()));
         Assertions.assertTrue(
                 chatterSync.shouldInitiate(), "if the peer has not reported us as fallen behind, we should sync");
         Assertions.assertTrue(

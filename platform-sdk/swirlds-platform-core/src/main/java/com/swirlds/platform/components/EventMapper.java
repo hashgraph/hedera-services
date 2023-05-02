@@ -107,7 +107,7 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
      */
     @Override
     public synchronized EventImpl getMostRecentSelfEvent() {
-        return getMostRecentEvent(selfId.getId());
+        return getMostRecentEvent(selfId.id());
     }
 
     /**

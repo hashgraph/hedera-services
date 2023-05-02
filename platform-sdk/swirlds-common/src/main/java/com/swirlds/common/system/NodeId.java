@@ -16,89 +16,57 @@
 
 package com.swirlds.common.system;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * A class that is used to uniquely identify a Swirlds Node
+ *
+ * @param id ID number unique within the network
  */
-public class NodeId {
-    /** ID number unique within the network, unique set for main network and mirror network */
-    private final long id;
+public record NodeId(long id) {
+
+    private static final ConcurrentHashMap<Long, NodeId> nodeIds = new ConcurrentHashMap<>();
 
     /**
      * Constructs a NodeId object
      *
      * @param id the ID number
      */
-    public NodeId(long id) {
-        this.id = id;
+    public NodeId {
+        if (id < 0) {
+            throw new IllegalArgumentException("id must be non-negative");
+        }
     }
 
     /**
      * Constructs a main network NodeId object
      *
-     * @param id
-     * 		the ID number
+     * @param id the ID number
      * @return the object created
      */
     public static NodeId create(long id) {
-        return new NodeId(id);
+        return nodeIds.computeIfAbsent(id, NodeId::new);
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof NodeId)) {
-            throw new IllegalArgumentException("obj must be a NodeId object");
-        }
-        return equals((NodeId) obj);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        return Long.hashCode(id);
-    }
-
-    /**
-     * Checks if IDs are equal
+     * Checks if this NodeId is equal to the given ID value
      *
-     * @param nodeId
-     * 		the NodeId to compare
-     * @return true if equal, false if not
+     * @param id the ID value to compare
+     * @return true if this ID value is equal to the supplied value, false otherwise
+     * @deprecated use {@link #equals(Object)} instead.
      */
-    public boolean equals(NodeId nodeId) {
-        return this.id == nodeId.id;
-    }
-
-    /**
-     * Checks if this NodeId is main network and if the ID value is equal
-     *
-     * @param id
-     * 		the ID value to compare
-     * @return true if this is a main network ID and its ID value is equal to the supplied value, false if either of
-     * 		these conditions are not true
-     */
-    public boolean equalsMain(long id) {
+    @Deprecated(since = "0.39.0", forRemoval = true)
+    public boolean equals(long id) {
         return this.id == id;
-    }
-
-    /**
-     * Check if numeric part of this ID
-     *
-     * @return the numeric part of this ID
-     */
-    public long getId() {
-        return id;
     }
 
     /**
      * get numeric part of ID and cast to an Integer
      *
      * @return the numeric part of this ID, cast to an integer
+     * @deprecated use {@link #id()} instead.
      */
+    @Deprecated(since = "0.39.0", forRemoval = true)
     public int getIdAsInt() {
         return (int) id;
     }

@@ -39,7 +39,7 @@ class PingChecker {
 
     public void checkPing(final NodeId nodeId, final long pingNanos) {
         numUpdates++;
-        Assertions.assertTrue(nodeId.equalsMain(expectedPeerId));
+        Assertions.assertTrue(nodeId.equals(expectedPeerId));
         Assertions.assertEquals(expectedPing.toNanos(), pingNanos);
     }
 

@@ -241,13 +241,11 @@ public class PlatformMetrics {
     }
 
     private String getMemberName() {
-        return platform.getAddressBook()
-                .getAddress(platform.getSelfId().getId())
-                .getSelfName();
+        return platform.getAddressBook().getAddress(platform.getSelfId().id()).getSelfName();
     }
 
     private long getLastEventGenerationNumber() {
-        return platform.getLastGen(platform.getSelfId().getId());
+        return platform.getLastGen(platform.getSelfId().id());
     }
 
     private int getTransEventSize() {
@@ -268,14 +266,14 @@ public class PlatformMetrics {
 
     private Boolean isStrongMinorityInMaxRound() {
         return platform.getCriticalQuorum()
-                .isInCriticalQuorum(platform.getSelfId().getId());
+                .isInCriticalQuorum(platform.getSelfId().id());
     }
 
     void update() {
         interruptedCallSyncsPerSecond.update(0);
         interruptedRecSyncsPerSecond.update(0);
         sleep1perSecond.update(0);
-        avgSelfId.update(platform.getSelfId().getId());
+        avgSelfId.update(platform.getSelfId().id());
         avgNumMembers.update(platform.getAddressBook().getSize());
         avgWrite.update(Settings.getInstance().getCsvWriteFrequency());
         avgSimCallSyncsMax.update(Settings.getInstance().getMaxOutgoingSyncs());

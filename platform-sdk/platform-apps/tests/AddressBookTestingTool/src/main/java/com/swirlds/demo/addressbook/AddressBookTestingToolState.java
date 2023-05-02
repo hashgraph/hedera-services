@@ -159,7 +159,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             parseArguments(((PlatformWithDeprecatedMethods) platform).getParameters());
         }
 
-        this.selfId = platform.getSelfId().getId();
+        this.selfId = platform.getSelfId().id();
     }
 
     /**
