@@ -140,10 +140,6 @@ module com.swirlds.common {
 
     opens com.swirlds.common.merkle.crypto to
             com.fasterxml.jackson.databind;
-
-    exports com.swirlds.common.context.internal to
-            com.swirlds.platform;
-
     opens com.swirlds.common.formatting to
             com.fasterxml.jackson.databind;
     opens com.swirlds.common.units to

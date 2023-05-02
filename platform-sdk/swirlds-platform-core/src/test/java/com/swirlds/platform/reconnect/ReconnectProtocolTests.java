@@ -17,6 +17,7 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -31,7 +33,9 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.metrics.ReconnectMetrics;
+import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.sync.FallenBehindManager;
@@ -154,20 +158,23 @@ public class ReconnectProtocolTests {
 
         final SignedState signedState;
         if (params.teacherHasValidState) {
-            signedState = mock(SignedState.class);
+            signedState = spy(new RandomSignedStateGenerator().build());
             when(signedState.isComplete()).thenReturn(true);
-            final State state = mock(State.class);
-            when(signedState.getState()).thenReturn(state);
-            when(state.isInitialized()).thenReturn(params.stateIsInitialized);
+            if (params.stateIsInitialized) {
+                signedState.getState().markAsInitialized();
+            }
         } else {
             signedState = null;
         }
+
+        final ReservedSignedState reservedSignedState =
+                signedState == null ? createNullReservation() : signedState.reserve("test");
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
                 PEER_ID,
                 teacherThrottle,
-                () -> signedState,
+                () -> reservedSignedState,
                 100,
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
@@ -241,17 +248,19 @@ public class ReconnectProtocolTests {
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
                 fallenBehindManager);
-        final SignedState signedState = mock(SignedState.class);
+        final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
         final State state = mock(State.class);
         when(signedState.getState()).thenReturn(state);
         when(state.isInitialized()).thenReturn(true);
 
+        final ReservedSignedState reservedSignedState = signedState.reserve("test");
+
         final ReconnectProtocol peer2 = new ReconnectProtocol(
                 getStaticThreadManager(),
                 node2,
                 reconnectThrottle,
-                () -> signedState,
+                () -> reservedSignedState,
                 100,
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
@@ -320,25 +329,17 @@ public class ReconnectProtocolTests {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
-        final SignedState signedState = mock(SignedState.class);
+        final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
-        final ValueReference<Boolean> stateReleased = new ValueReference<>(false);
-        doAnswer(invocation -> {
-                    assertFalse(stateReleased.getValue(), "state should not be released twice");
-                    stateReleased.setValue(true);
-                    return null;
-                })
-                .when(signedState)
-                .release();
-        final State state = mock(State.class);
-        when(signedState.getState()).thenReturn(state);
-        when(state.isInitialized()).thenReturn(true);
+        signedState.getState().markAsInitialized();
+
+        final ReservedSignedState reservedSignedState = signedState.reserve("test");
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
                 new NodeId(false, 0),
                 reconnectThrottle,
-                () -> signedState,
+                () -> reservedSignedState,
                 100,
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
@@ -349,7 +350,7 @@ public class ReconnectProtocolTests {
         protocol.acceptFailed();
 
         assertTrue(throttleReleased.getValue(), "throttle should be released");
-        assertTrue(stateReleased.getValue(), "throttle should be released");
+        assertEquals(-1, signedState.getReservationCount(), "state should be released");
     }
 
     @Test
@@ -370,7 +371,7 @@ public class ReconnectProtocolTests {
                 getStaticThreadManager(),
                 new NodeId(false, 0),
                 reconnectThrottle,
-                () -> null,
+                ReservedSignedState::createNullReservation,
                 100,
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
