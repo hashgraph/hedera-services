@@ -26,13 +26,16 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.units.TimeUnit;
+import com.swirlds.platform.recovery.internal.EventStreamBound;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;
 import com.swirlds.platform.recovery.internal.MultiFileRunningHashIterator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Scans an event stream and generates a report.
@@ -66,16 +69,17 @@ public class EventStreamScanner {
     private final IOIterator<DetailedConsensusEvent> eventIterator;
 
     public EventStreamScanner(
-            final Path eventStreamDirectory,
-            final long startingRound,
-            final Duration reportPeriod,
+            @NonNull final Path eventStreamDirectory,
+            @NonNull final EventStreamBound lowerBound,
+            @NonNull final Duration reportPeriod,
             final boolean enableProgressReport)
             throws IOException {
-
-        this.reportPeriod = reportPeriod;
+        Objects.requireNonNull(eventStreamDirectory, "the event stream directory must not be null");
+        Objects.requireNonNull(lowerBound, "the lower bound must not be null");
+        this.reportPeriod = Objects.requireNonNull(reportPeriod, "the report period must not be null");
         this.enableProgressReport = enableProgressReport;
 
-        fileIterator = new EventStreamMultiFileIterator(eventStreamDirectory, startingRound);
+        fileIterator = new EventStreamMultiFileIterator(eventStreamDirectory, lowerBound);
         eventIterator = new MultiFileRunningHashIterator(fileIterator);
     }
 

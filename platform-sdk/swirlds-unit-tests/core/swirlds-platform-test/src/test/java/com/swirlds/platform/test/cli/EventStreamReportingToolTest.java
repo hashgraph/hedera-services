@@ -23,6 +23,7 @@ import com.swirlds.platform.event.report.EventStreamReport;
 import com.swirlds.platform.event.report.EventStreamScanner;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.recovery.internal.EventStreamBound;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
 import com.swirlds.platform.test.simulated.RandomSigner;
 import com.swirlds.platform.test.stream.StreamUtils;
@@ -77,8 +78,12 @@ class EventStreamReportingToolTest {
         StreamUtils.writeRoundsToStream(tmpDir, new RandomSigner(random), eventStreamWindowSize, rounds);
 
         // get report
-        final EventStreamReport report =
-                new EventStreamScanner(tmpDir, roundToReportFrom, Duration.ofSeconds(1), false).createReport();
+        final EventStreamReport report = new EventStreamScanner(
+                        tmpDir,
+                        EventStreamBound.create().setRound(roundToReportFrom).build(),
+                        Duration.ofSeconds(1),
+                        false)
+                .createReport();
 
         // assert report has same info as expected
         Assertions.assertEquals(numConsensusEvents, report.summary().eventCount());

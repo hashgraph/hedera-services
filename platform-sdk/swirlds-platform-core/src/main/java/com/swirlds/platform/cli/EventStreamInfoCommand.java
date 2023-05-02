@@ -22,8 +22,13 @@ import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.platform.event.report.EventStreamScanner;
+import com.swirlds.platform.recovery.internal.EventStreamBound;
+import com.swirlds.platform.recovery.internal.EventStreamBound.BoundBuilder;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -33,9 +38,11 @@ import picocli.CommandLine;
 @SubcommandOf(EventStreamCommand.class)
 public final class EventStreamInfoCommand extends AbstractCommand {
 
+    private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     private Path eventStreamDirectory;
 
-    private long firstRound = -1;
+    private BoundBuilder boundBuilder = EventStreamBound.create();
 
     private long granularityInSeconds = 10;
 
@@ -48,7 +55,20 @@ public final class EventStreamInfoCommand extends AbstractCommand {
             names = {"-f", "--first-round"},
             description = "The first to be considered.")
     private void setFirstRound(final long firstRound) {
-        this.firstRound = firstRound;
+        boundBuilder.setRound(firstRound);
+    }
+
+    @CommandLine.Option(
+            names = {"-t", "--timestamp"},
+            description = "The the timestamp to be considered.")
+    private void setTimestamp(final String timestamp) {
+        try {
+            // the format used by log4j2
+            boundBuilder.setTimestamp(formatter.parse(timestamp, Instant::from));
+        } catch (DateTimeParseException e) {
+            // the format used by Instant.toString()
+            boundBuilder.setTimestamp(Instant.parse(timestamp));
+        }
     }
 
     @CommandLine.Option(
@@ -66,9 +86,9 @@ public final class EventStreamInfoCommand extends AbstractCommand {
     @Override
     public Integer call() throws Exception {
         setupConstructableRegistry();
-        System.out.println(
-                new EventStreamScanner(eventStreamDirectory, firstRound, Duration.ofSeconds(granularityInSeconds), true)
-                        .createReport());
+        System.out.println(new EventStreamScanner(
+                        eventStreamDirectory, boundBuilder.build(), Duration.ofSeconds(granularityInSeconds), true)
+                .createReport());
         return 0;
     }
 }

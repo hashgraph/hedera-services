@@ -19,12 +19,15 @@ package com.swirlds.platform.recovery.internal;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.recovery.internal.EventStreamBound.BoundType;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * <p>
@@ -32,15 +35,14 @@ import java.util.NoSuchElementException;
  * </p>
  *
  * <p>
- * This iterator validates the hashes of the events as it goes. It there is a gap in event stream
- * files, or if an event stream file contains corrupted data, this object will throw an IO exception
- * when that data is reached.
+ * This iterator validates the hashes of the events as it goes. It there is a gap in event stream files, or if an event
+ * stream file contains corrupted data, this object will throw an IO exception when that data is reached.
  * </p>
  *
  * <p>
- * The exception to this rule is the final event stream file. The final file is permitted to abruptly terminate
- * very end (if, for example, a node crashed while writing it). All complete events at the beginning of the
- * file are returned by this iterator.
+ * The exception to this rule is the final event stream file. The final file is permitted to abruptly terminate very end
+ * (if, for example, a node crashed while writing it). All complete events at the beginning of the file are returned by
+ * this iterator.
  * </p>
  */
 public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensusEvent> {
@@ -54,46 +56,38 @@ public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensu
     private long damagedFileCount = 0;
 
     /**
-     * Create an iterator that walks over events in an event stream spanning multiple files.
+     * Create an iterator that walks over events in an event stream spanning multiple files, starting from the indicated
+     * event stream bound.  The bound must occur in the event stream otherwise a NoSuchElementException will be thrown.
      *
-     * @param fileIterator
-     * 		an iterator that returns ordered event stream files
-     * @param startingRound
-     * 		do not return events prior to this round, or {@link EventStreamPathIterator#FIRST_ROUND_AVAILABLE}
-     * 		if all events should be walked by this iterator
-     * @throws IOException
-     * 		if there is a problem reading the event stream
-     * @throws NoSuchElementException
-     * 		if the starting round can't be found
+     * @param fileIterator an iterator that returns ordered event stream files
+     * @param bound        the lower bound of the events in the event stream to be walked by this iterator.
+     * @throws IOException            if there is a problem reading the event stream
+     * @throws NoSuchElementException if an event prior to or matching the bound can't be found
      */
-    public EventStreamMultiFileIterator(final Iterator<Path> fileIterator, final long startingRound)
-            throws IOException {
-
-        this.fileIterator = fileIterator;
+    public EventStreamMultiFileIterator(
+            @NonNull final Iterator<Path> fileIterator, @NonNull final EventStreamBound bound) throws IOException {
+        Objects.requireNonNull(bound, "the lower bound must not be null");
+        this.fileIterator = Objects.requireNonNull(fileIterator, "the file iterator must not be null");
         this.startHash = null;
         this.skippedEvents = new ArrayList<>();
 
-        // Remove events from before the requested round
-        while (hasNext() && peek().getConsensusData().getRoundReceived() < startingRound) {
+        // Remove events from before the requested bound
+        while (hasNext() && bound.compareTo(peek(), BoundType.LOWER) < 0) {
             skippedEvents.add(next());
         }
     }
 
     /**
-     * Create an iterator that walks over all events in a given directory starting with a given round.
+     * Create an iterator that walks over all events in a given directory starting from a given event stream bound. The bound must occur in the event stream otherwise a NoSuchElementException will be thrown.
      *
-     * @param eventStreamDirectory
-     * 		the directory in question
-     * @param startingRound
-     * 		the round to start with, or {@link EventStreamPathIterator#FIRST_ROUND_AVAILABLE}
-     * 		if all events should be walked by this iterator
-     * @throws IOException
-     * 		if there is a problem reading the event stream
-     * @throws NoSuchElementException
-     * 		if the starting round can't be found
+     * @param eventStreamDirectory the directory in question
+     * @param bound                the  bound for the events in the event stream to be walked by this iterator
+     * @throws IOException            if there is a problem reading the event stream
+     * @throws NoSuchElementException if an event prior to or matching the bound can't be found
      */
-    public EventStreamMultiFileIterator(final Path eventStreamDirectory, final long startingRound) throws IOException {
-        this(new EventStreamPathIterator(eventStreamDirectory, startingRound), startingRound);
+    public EventStreamMultiFileIterator(@NonNull final Path eventStreamDirectory, @NonNull final EventStreamBound bound)
+            throws IOException {
+        this(new EventStreamPathIterator(eventStreamDirectory, bound), bound);
     }
 
     /**
@@ -174,8 +168,8 @@ public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensu
     }
 
     /**
-     * @return events that have been read from a file but are not returned by {@link #next()} because they have an
-     * 		earlier round then the one requested
+     * @return events that have been read from a file but are not returned by {@link #next()} because they are prior to
+     * the event stream bound.
      */
     public List<DetailedConsensusEvent> getSkippedEvents() {
         return skippedEvents;
