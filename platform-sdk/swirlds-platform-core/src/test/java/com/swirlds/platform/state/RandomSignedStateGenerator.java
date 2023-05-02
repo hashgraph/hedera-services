@@ -31,6 +31,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
@@ -108,7 +109,7 @@ public class RandomSignedStateGenerator {
             stateInstance = new State();
             final DummySwirldState swirldState = new DummySwirldState(addressBookInstance);
             stateInstance.setSwirldState(swirldState);
-            PlatformState platformState = new PlatformState();
+            final PlatformState platformState = new PlatformState();
             final PlatformData platformData = new PlatformData();
             platformData.setEvents(new EventImpl[0]);
             platformData.setMinGenInfo(List.of());
@@ -197,7 +198,11 @@ public class RandomSignedStateGenerator {
                 .setCreationSoftwareVersion(softwareVersionInstance)
                 .setRoundsNonAncient(roundsNonAncientInstance);
 
-        final SignedState signedState = new SignedState(stateInstance, freezeStateInstance);
+        final SignedState signedState = new SignedState(
+                TestPlatformContextBuilder.create().build(),
+                stateInstance,
+                "RandomSignedStateGenerator.build()",
+                freezeStateInstance);
 
         MerkleCryptoFactory.getInstance().digestTreeSync(stateInstance);
         if (stateHash != null) {

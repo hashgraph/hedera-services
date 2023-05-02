@@ -105,7 +105,7 @@ public class NftQueryController {
             }
 
             try (final AutoCloseableWrapper<PlatformTestingToolState> stateWrapper =
-                    platform.getLatestImmutableState()) {
+                    platform.getLatestImmutableState("NFTQueryController.execute()")) {
                 final PlatformTestingToolState state = stateWrapper.get();
                 if (state == null) {
                     continue;

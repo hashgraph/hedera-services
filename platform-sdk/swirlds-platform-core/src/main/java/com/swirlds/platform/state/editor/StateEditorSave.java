@@ -23,6 +23,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSigne
 
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -46,10 +47,11 @@ public class StateEditorSave extends StateEditorOperation {
      */
     @Override
     public void run() {
-        try {
+        try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorSave.run()")) {
+
             System.out.println("Hashing state");
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(getStateEditor().getState())
+                    .digestTreeAsync(reservedSignedState.get().getState())
                     .get();
 
             System.out.println("Writing signed state file to " + formatFile(directory));
@@ -58,8 +60,9 @@ public class StateEditorSave extends StateEditorOperation {
                 Files.createDirectories(directory);
             }
 
-            writeSignedStateFilesToDirectory(
-                    NO_NODE_ID, directory, getStateEditor().getSignedStateCopy());
+            try (final ReservedSignedState signedState = getStateEditor().getSignedStateCopy()) {
+                writeSignedStateFilesToDirectory(NO_NODE_ID, directory, signedState.get());
+            }
 
         } catch (final IOException e) {
             throw new UncheckedIOException(e);

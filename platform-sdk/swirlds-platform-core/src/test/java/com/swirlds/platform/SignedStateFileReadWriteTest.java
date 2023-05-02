@@ -129,17 +129,19 @@ class SignedStateFileReadWriteTest {
         writeStateFile(testDirectory, signedState);
         assertTrue(exists(stateFile), "signed state file should be present");
 
-        final DeserializedSignedState deserializedSignedState = readStateFile(stateFile);
+        final DeserializedSignedState deserializedSignedState =
+                readStateFile(TestPlatformContextBuilder.create().build(), stateFile);
         MerkleCryptoFactory.getInstance()
-                .digestTreeSync(deserializedSignedState.signedState().getState());
+                .digestTreeSync(
+                        deserializedSignedState.reservedSignedState().get().getState());
 
         assertNotNull(deserializedSignedState.originalHash(), "hash should not be null");
         assertEquals(signedState.getState().getHash(), deserializedSignedState.originalHash(), "hash should match");
         assertEquals(
                 signedState.getState().getHash(),
-                deserializedSignedState.signedState().getState().getHash(),
+                deserializedSignedState.reservedSignedState().get().getState().getHash(),
                 "hash should match");
-        assertNotSame(signedState, deserializedSignedState.signedState(), "state should be a different object");
+        assertNotSame(signedState, deserializedSignedState.reservedSignedState(), "state should be a different object");
     }
 
     @Test
@@ -269,7 +271,7 @@ class SignedStateFileReadWriteTest {
                         "state.savedStateDirectory",
                         testDirectory.resolve("data/saved").toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final SignedStateMetrics signedStateMetrics = mock(SignedStateMetrics.class);

@@ -31,12 +31,14 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.test.merkle.util.PairedStreams;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.SocketConnection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -56,10 +58,10 @@ import org.junit.jupiter.api.Test;
  * Originally this class used {@link java.io.PipedInputStream} and {@link java.io.PipedOutputStream}, but the reconnect
  * methods use two threads to write data, and {@link java.io.PipedOutputStream} keeps a reference to the original thread
  * that started writing data (which is in the reconnect-phase). Then, we send signatures through the current thread
- * (which is different from the first thread that started sending data). At this point,
- * {@link java.io.PipedOutputStream} checks if the first thread is alive, and if not, it will throw an
- * {@link IOException} with the message {@code write end dead}. This is a non-deterministic behavior, but usually
- * running the test 15 times would make the test fail.
+ * (which is different from the first thread that started sending data). At this point, {@link
+ * java.io.PipedOutputStream} checks if the first thread is alive, and if not, it will throw an {@link IOException} with
+ * the message {@code write end dead}. This is a non-deterministic behavior, but usually running the test 15 times would
+ * make the test fail.
  */
 final class ReconnectTest {
 
@@ -112,7 +114,6 @@ final class ReconnectTest {
                     .setSigningNodeIds(nodeIds)
                     .build();
 
-            signedState.reserve();
             final MerkleCryptography cryptography = MerkleCryptoFactory.getInstance();
             cryptography.digestSync(signedState.getState().getPlatformState());
             cryptography.digestSync(signedState.getState());
@@ -124,12 +125,11 @@ final class ReconnectTest {
 
             final Thread thread = new Thread(() -> {
                 try {
-                    signedState.reserve();
                     final ReconnectTeacher sender = buildSender(
-                            signedState,
+                            signedState.reserve("test"),
                             new DummyConnection(pairedStreams.getTeacherInput(), pairedStreams.getTeacherOutput()),
                             reconnectMetrics);
-                    sender.execute();
+                    sender.execute(signedState);
                 } catch (final IOException ex) {
                     ex.printStackTrace();
                 }
@@ -138,7 +138,6 @@ final class ReconnectTest {
             thread.start();
             receiver.execute(mock(SignedStateValidator.class));
             thread.join();
-            signedState.release();
         }
     }
 
@@ -155,7 +154,9 @@ final class ReconnectTest {
     }
 
     private ReconnectTeacher buildSender(
-            final SignedState signedState, final SocketConnection connection, final ReconnectMetrics reconnectMetrics)
+            final ReservedSignedState signedState,
+            final SocketConnection connection,
+            final ReconnectMetrics reconnectMetrics)
             throws IOException {
 
         final long selfId = 0;
@@ -164,7 +165,6 @@ final class ReconnectTest {
         return new ReconnectTeacher(
                 getStaticThreadManager(),
                 connection,
-                signedState,
                 RECONNECT_SOCKET_TIMEOUT,
                 selfId,
                 otherId,
@@ -177,6 +177,12 @@ final class ReconnectTest {
         final AddressBook addressBook = buildAddressBook(5);
 
         return new ReconnectLearner(
-                getStaticThreadManager(), connection, addressBook, state, RECONNECT_SOCKET_TIMEOUT, reconnectMetrics);
+                TestPlatformContextBuilder.create().build(),
+                getStaticThreadManager(),
+                connection,
+                addressBook,
+                state,
+                RECONNECT_SOCKET_TIMEOUT,
+                reconnectMetrics);
     }
 }

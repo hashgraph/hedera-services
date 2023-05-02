@@ -20,6 +20,7 @@ import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
@@ -27,17 +28,18 @@ import java.util.Random;
 
 public class SignedStateUtils {
 
-    public static SignedState randomSignedState(long seed) {
+    public static SignedState randomSignedState(final long seed) {
         return randomSignedState(new Random(seed));
     }
 
-    public static SignedState randomSignedState(Random random) {
-        SwirldState state = new DummySwirldState();
-        State root = new State();
+    public static SignedState randomSignedState(final Random random) {
+        final SwirldState state = new DummySwirldState();
+        final State root = new State();
         root.setSwirldState(state);
         root.setPlatformState(randomPlatformState(random, false));
-        boolean shouldSaveToDisk = random.nextBoolean();
-        SignedState signedState = new SignedState(root, shouldSaveToDisk);
+        final boolean shouldSaveToDisk = random.nextBoolean();
+        final SignedState signedState =
+                new SignedState(TestPlatformContextBuilder.create().build(), root, "test", shouldSaveToDisk);
         signedState.getState().setHash(RandomUtils.randomHash(random));
         return signedState;
     }

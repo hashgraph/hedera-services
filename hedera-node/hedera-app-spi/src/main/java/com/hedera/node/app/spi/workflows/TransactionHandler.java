@@ -31,9 +31,7 @@ public interface TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if the transaction is invalid
      */
-    default void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
-        // TODO: remove default implementation once all handlers were updated
-    }
+    void preHandle(@NonNull final PreHandleContext context) throws PreCheckException;
 
     /**
      * Returns an instance of the transaction-specific {@link RecordBuilder}.

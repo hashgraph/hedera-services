@@ -41,6 +41,8 @@ dependencies {
   implementation(libs.bundles.logging.impl)
   compileOnly(libs.spotbugs.annotations)
 
+  testFixturesCompileOnly(libs.spotbugs.annotations)
+
   // Test Dependencies
   testImplementation(testLibs.bundles.junit)
   testImplementation(testLibs.bundles.mocking)

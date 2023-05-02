@@ -493,10 +493,11 @@ class AddressBookInitializerTest {
      */
     private PlatformContext getPlatformContext(final boolean forceUseOfConfigAddressBook) {
         return TestPlatformContextBuilder.create()
-                .withConfigBuilder(new TestConfigBuilder()
+                .withConfiguration(new TestConfigBuilder()
                         .withValue("addressBook.forceUseOfConfigAddressBook", forceUseOfConfigAddressBook)
                         .withValue("addressBook.addressBookDirectory", testDirectory.toString())
-                        .withValue("addressBook.maxRecordedAddressBookFiles", 50))
+                        .withValue("addressBook.maxRecordedAddressBookFiles", 50)
+                        .getOrCreateConfig())
                 .build();
     }
 }

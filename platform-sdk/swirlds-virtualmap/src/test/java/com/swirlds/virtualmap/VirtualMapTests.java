@@ -547,8 +547,8 @@ class VirtualMapTests extends VirtualTestBase {
         fcm.release();
     }
 
-    // TODO test deleting the same key two times in a row.
-    // TODO Test that a deleted node's value cannot be subsequently read.
+    // FUTURE WORK test deleting the same key two times in a row.
+    // FUTURE WORK Test that a deleted node's value cannot be subsequently read.
 
     //    @Test
     //    @Tag(TestTypeTags.FUNCTIONAL)
@@ -583,7 +583,7 @@ class VirtualMapTests extends VirtualTestBase {
     //        assertLeafOrder(fcm, E_KEY);
     //        assertEquals(EGGPLANT, fcm.remove(E_KEY));
     //
-    //        // TODO validate hashing works as expected
+    //        // FUTURE WORK validate hashing works as expected
     //
     //    }
 
@@ -614,7 +614,7 @@ class VirtualMapTests extends VirtualTestBase {
     //        assertEquals(CHERRY, fcm.remove(C_KEY));
     //        assertEquals(GRAPE, fcm.remove(G_KEY));
     //
-    //        // TODO validate hashing works as expected
+    //        // FUTURE WORK validate hashing works as expected
     //
     //    }
 
@@ -638,7 +638,7 @@ class VirtualMapTests extends VirtualTestBase {
         assertEquals(FIG, fcm.remove(F_KEY), "Wrong value");
         assertEquals(GRAPE, fcm.remove(G_KEY), "Wrong value");
 
-        // TODO validate hashing works as expected
+        // FUTURE WORK validate hashing works as expected
 
         fcm.release();
     }
@@ -664,7 +664,7 @@ class VirtualMapTests extends VirtualTestBase {
         assertEquals(GRAPE, fcm.remove(G_KEY), "Wrong value");
 
         fcm.put(D_KEY, DATE);
-        // TODO validate hashing works as expected
+        // FUTURE WORK validate hashing works as expected
 
         fcm.release();
     }
@@ -739,7 +739,7 @@ class VirtualMapTests extends VirtualTestBase {
     //        fcm.put(F_KEY, FIG);
     //        fcm.put(G_KEY, GRAPE);
     //
-    // TODO Cannot iterate until after hashing, which invalidates the test
+    // FUTURE WORK Cannot iterate until after hashing, which invalidates the test
     //        var completed = fcm;
     //        fcm = fcm.copy();
     //        completed.hash().get();
@@ -846,7 +846,7 @@ class VirtualMapTests extends VirtualTestBase {
         fcm.put(B_KEY, BEAR);
 
         // This hash iterator should visit MapState, B, <internal>, D, <internal>, <internal (root)>, fcm
-        // TODO gotta figure out how to test
+        // FUTURE WORK gotta figure out how to test
         //        final var hashItr = new MerkleHashIterator(fcm);
         //        hashItr.next();
         //        assertEquals(new VFCLeafNode<>(B_KEY, BEAR), getRecordFromNode((MerkleLeaf) hashItr.next()));

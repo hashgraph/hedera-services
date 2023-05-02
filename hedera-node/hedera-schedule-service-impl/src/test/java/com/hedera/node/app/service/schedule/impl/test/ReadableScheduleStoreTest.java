@@ -29,7 +29,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -59,12 +60,12 @@ class ReadableScheduleStoreTest {
     @BeforeEach
     void setUp() {
         given(states.get("SCHEDULES_BY_ID")).willReturn(state);
-        subject = new ReadableScheduleStore(states);
+        subject = new ReadableScheduleStoreImpl(states);
     }
 
     @Test
     void constructorThrowsIfStatesIsNull() {
-        assertThrows(NullPointerException.class, () -> new ReadableScheduleStore(null));
+        assertThrows(NullPointerException.class, () -> new ReadableScheduleStoreImpl(null));
     }
 
     @Test

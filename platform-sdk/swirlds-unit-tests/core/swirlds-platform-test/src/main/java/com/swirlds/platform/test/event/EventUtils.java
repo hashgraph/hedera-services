@@ -22,6 +22,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.test.merkle.util.MerkleSerializeUtils;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
@@ -50,12 +51,9 @@ public abstract class EventUtils {
     /**
      * Create a signed state based on the consensus events supplied
      *
-     * @param events
-     * 		a list of consensus events
-     * @param eventsAndGenerations
-     * 		holds consensus events and round generation information
-     * @param addressBook
-     * 		the address book used
+     * @param events               a list of consensus events
+     * @param eventsAndGenerations holds consensus events and round generation information
+     * @param addressBook          the address book used
      */
     @SuppressWarnings("unchecked")
     public static SignedState createSignedState(
@@ -84,14 +82,13 @@ public abstract class EventUtils {
         originalState.setPlatformState(platformState);
         platformState.setPlatformData(platformData);
 
-        return new SignedState(originalState, false);
+        return new SignedState(TestPlatformContextBuilder.create().build(), originalState, "test", false);
     }
 
     /**
      * Creates a copy of the supplies SignedState to simulate a restart or reconnect
      *
-     * @param signedState
-     * 		the state to copy
+     * @param signedState the state to copy
      * @return a copy of the state
      */
     public static SignedState serializeDeserialize(final Path dir, final SignedState signedState)
@@ -100,7 +97,8 @@ public abstract class EventUtils {
         registry.registerConstructables("com.swirlds.platform.state");
         registry.registerConstructables("com.swirlds.common.*");
         final State stateCopy = MerkleSerializeUtils.serializeDeserialize(dir, signedState.getState());
-        final SignedState signedStateCopy = new SignedState(stateCopy);
+        final SignedState signedStateCopy =
+                new SignedState(TestPlatformContextBuilder.create().build(), stateCopy, "test");
         signedStateCopy.setSigSet(signedState.getSigSet());
         return signedStateCopy;
     }
@@ -108,8 +106,7 @@ public abstract class EventUtils {
     /**
      * Converts events in the SignedState to IndexedEvent
      *
-     * @param signedState
-     * 		the state where events are stored
+     * @param signedState the state where events are stored
      * @return events converted to IndexedEvent
      */
     public static IndexedEvent[] convertEvents(final SignedState signedState) {
@@ -128,8 +125,7 @@ public abstract class EventUtils {
     /**
      * Get a map from creator sequence pairs to the corresponding event.
      *
-     * @param events
-     * 		an array of events
+     * @param events an array of events
      */
     public static Map<Hash, EventImpl> getEventMap(final EventImpl[] events) {
         final Map<Hash, EventImpl> map = new HashMap<>();
@@ -143,10 +139,8 @@ public abstract class EventUtils {
      * Find the max generation number for each node in a sequence of events. Assumes events are sorted and that there
      * are no forks.
      *
-     * @param events
-     * 		a list of events
-     * @param numberOfNodes
-     * 		ahe total number of nodes
+     * @param events        a list of events
+     * @param numberOfNodes ahe total number of nodes
      * @return an array containing the max generation number for each node
      */
     public static long[] getLastGenerationInState(final EventImpl[] events, final int numberOfNodes) {
@@ -160,8 +154,7 @@ public abstract class EventUtils {
     /**
      * Choose a random integer given a list of probabilistic weights.
      *
-     * @param weights
-     * 		a list of weights. Each weight must be positive. Sum of all weights must be greater than 0.
+     * @param weights a list of weights. Each weight must be positive. Sum of all weights must be greater than 0.
      * @return an integer between 0 (inclusive) and weights.size() (exclusive)
      */
     public static int weightedChoice(final Random random, final List<Double> weights) {
@@ -175,7 +168,7 @@ public abstract class EventUtils {
             throw new IllegalArgumentException("Total weight must be greater than 0.0.");
         }
 
-        // TODO this can be done in logn time with a binary search
+        // FUTURE WORK this can be done in logn time with a binary search
 
         final double randomValue = random.nextDouble() * totalWeight;
         double sum = 0.0;
@@ -253,8 +246,7 @@ public abstract class EventUtils {
     /**
      * Sort a list of events on generator ID.
      *
-     * @param events
-     * 		An unsorted list of events.
+     * @param events An unsorted list of events.
      * @return A sorted list of events.
      */
     public static List<IndexedEvent> sortEventList(final List<IndexedEvent> events) {
@@ -388,25 +380,17 @@ public abstract class EventUtils {
 
     /**
      * This is debugging utility. Given two lists, sort and compare each event.
-     *
+     * <p>
      * If one list of events is longer than the other, comparison ends when when the shorter list ends.
+     * <p>
+     * For each event, compares the following: - generation - isWitness - roundCreated
+     * <p>
+     * For each event that has consensus, compares the following: - consensusTimestamp - roundReceived - consensusOrder
      *
-     * For each event, compares the following:
-     * - generation
-     * - isWitness
-     * - roundCreated
-     *
-     * For each event that has consensus, compares the following:
-     * - consensusTimestamp
-     * - roundReceived
-     * - consensusOrder
-     *
-     * @param events1
-     * 		the first list of events. This list should contain ALL events in their original order,
-     * 		even if they were not emitted (this can happen if a generator is wrapped in a shuffled generator).
-     * @param events2
-     * 		the second list of events. This list should contain ALL events in their original order,
-     * 		even if they were not emitted (this can happen if a generator is wrapped in a shuffled generator).
+     * @param events1 the first list of events. This list should contain ALL events in their original order, even if
+     *                they were not emitted (this can happen if a generator is wrapped in a shuffled generator).
+     * @param events2 the second list of events. This list should contain ALL events in their original order, even if
+     *                they were not emitted (this can happen if a generator is wrapped in a shuffled generator).
      */
     public static void printGranularEventListComparison(List<IndexedEvent> events1, List<IndexedEvent> events2) {
 
@@ -463,8 +447,7 @@ public abstract class EventUtils {
     /**
      * A "dynamic" value that actually returns a static constant.
      *
-     * @param staticValue
-     * 		the value to always return
+     * @param staticValue the value to always return
      */
     public static <T> DynamicValue<T> staticDynamicValue(final T staticValue) {
         return (Random random, long eventIndex, T previousValue) -> staticValue;
@@ -472,13 +455,9 @@ public abstract class EventUtils {
 
     /**
      * A dynamic integer that follows a power distribution.
-     *
-     * P(0) = alpha
-     * P(1) = (1 - alpha) * alpha
-     * P(2) = (1 - alpha)^2 * alpha
-     * P(3) = (1 - alpha)^3 * alpha
-     * ...
-     * P(n) = (1 - alpha)^n * alpha
+     * <p>
+     * P(0) = alpha P(1) = (1 - alpha) * alpha P(2) = (1 - alpha)^2 * alpha P(3) = (1 - alpha)^3 * alpha ... P(n) = (1 -
+     * alpha)^n * alpha
      */
     public static DynamicValue<Integer> integerPowerDistribution(final double alpha) {
         return (Random random, long eventIndex, Integer previousValue) -> {
@@ -506,10 +485,8 @@ public abstract class EventUtils {
     /**
      * Calculate the age of an event's other parent. Helper method for gatherOtherParentAges.
      *
-     * @param events
-     * 		a list of events
-     * @param eventIndex
-     * 		the index of the event to be considered. The age of the event's other parent is returned.
+     * @param events     a list of events
+     * @param eventIndex the index of the event to be considered. The age of the event's other parent is returned.
      */
     private static int calculateOtherParentAge(final List<IndexedEvent> events, final int eventIndex) {
 
@@ -536,19 +513,16 @@ public abstract class EventUtils {
 
     /**
      * For each event, check the "age" of the other parent. Compile age data into a map.
+     * <p>
+     * The age of an other parent event is defined as follows: 0 = the other parent is the most recent event from it's
+     * parent node 1 = the other parent is the second most recent event from its other parent etc.
+     * <p>
+     * This method will not work correctly in the presence of forking. Age may not be constant after shuffling node
+     * order.
      *
-     * The age of an other parent event is defined as follows:
-     * 0 = the other parent is the most recent event from it's parent node
-     * 1 = the other parent is the second most recent event from its other parent
-     * etc.
-     *
-     * This method will not work correctly in the presence of forking. Age may not be constant after shuffling
-     * node order.
-     *
-     * @param events
-     * 		a list of events
-     * @param excludedNodes
-     * 		if not null, do not include data about the other parents of events created by the node IDs in this set
+     * @param events        a list of events
+     * @param excludedNodes if not null, do not include data about the other parents of events created by the node IDs
+     *                      in this set
      * @return A map: {age : number of events with that age}
      */
     public static Map<Integer, Integer> gatherOtherParentAges(
@@ -574,8 +548,8 @@ public abstract class EventUtils {
     /**
      * Count the number of consensus events in a list of events.
      *
-     * @return pair of counts where the left value is the number of consensus events and the right value is the
-     * 		number of stale events
+     * @return pair of counts where the left value is the number of consensus events and the right value is the number
+     * of stale events
      */
     public static Pair<Integer, Integer> countConsensusAndStaleEvents(final Iterable<IndexedEvent> events) {
         int numCons = 0;
@@ -591,15 +565,12 @@ public abstract class EventUtils {
     }
 
     /**
-     * Assert that two events are equal. If they are not equal then cause the test to fail and
-     * print a meaningful error message.
+     * Assert that two events are equal. If they are not equal then cause the test to fail and print a meaningful error
+     * message.
      *
-     * @param description
-     * 		a string that is printed if the events are unequal
-     * @param e1
-     * 		the first event
-     * @param e2
-     * 		the second event
+     * @param description a string that is printed if the events are unequal
+     * @param e1          the first event
+     * @param e2          the second event
      */
     public static void assertEventsAreEqual(final String description, final IndexedEvent e1, final IndexedEvent e2) {
         if (!Objects.equals(e1, e2)) {
@@ -614,15 +585,12 @@ public abstract class EventUtils {
     }
 
     /**
-     * Assert that two lists of events are equal. If they are not equal then cause the test to fail and
-     * print a meaningful error message.
+     * Assert that two lists of events are equal. If they are not equal then cause the test to fail and print a
+     * meaningful error message.
      *
-     * @param description
-     * 		a string that is printed if the events are unequal
-     * @param l1
-     * 		the first list of events
-     * @param l2
-     * 		the second list of events
+     * @param description a string that is printed if the events are unequal
+     * @param l1          the first list of events
+     * @param l2          the second list of events
      */
     public static void assertEventListsAreEqual(
             final String description, final List<IndexedEvent> l1, final List<IndexedEvent> l2) {
@@ -644,12 +612,9 @@ public abstract class EventUtils {
      * Assert that base events are equal. This does not check any consensus data, only pre-consensus. If they are not
      * equal then cause the test to fail and print a meaningful error message.
      *
-     * @param description
-     * 		a string that is printed if the events are unequal
-     * @param l1
-     * 		the first list of events
-     * @param l2
-     * 		the second list of events
+     * @param description a string that is printed if the events are unequal
+     * @param l1          the first list of events
+     * @param l2          the second list of events
      */
     public static void assertBaseEventLists(
             final String description, final List<IndexedEvent> l1, final List<IndexedEvent> l2) {
@@ -667,12 +632,9 @@ public abstract class EventUtils {
      * Assert that base events are equal. This does not check any consensus data, only pre-consensus. If they are not
      * equal then cause the test to fail and print a meaningful error message.
      *
-     * @param description
-     * 		a string that is printed if the events are unequal
-     * @param e1
-     * 		the first event
-     * @param e2
-     * 		the second event
+     * @param description a string that is printed if the events are unequal
+     * @param e1          the first event
+     * @param e2          the second event
      */
     public static void assertBaseEvents(final String description, final IndexedEvent e1, final IndexedEvent e2) {
         if (!Objects.equals(e1.getBaseEvent(), e2.getBaseEvent())) {

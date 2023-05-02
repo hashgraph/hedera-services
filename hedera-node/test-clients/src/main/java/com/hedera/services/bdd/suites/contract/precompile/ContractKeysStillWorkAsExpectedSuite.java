@@ -55,7 +55,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordedChildBodyWithId;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustInclude;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
@@ -64,6 +66,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
@@ -384,7 +388,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                 .then(
                         sourcing(() -> contractCall(
                                         WELL_KNOWN_TREASURY_CONTRACT,
-                                        "transferTokenUnitFromToOthers",
+                                        TOKEN_UNIT_FROM_TO_OTHERS_TXN,
                                         fungibleTokenMirrorAddr.get(),
                                         treasuryContractAddr.get(),
                                         aReceiverAddr.get())
@@ -464,6 +468,17 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         return propertyPreservingHapiSpec("ApprovalFallbacksRequiredWithoutTopLevelSigAccess")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        streamMustInclude(recordedChildBodyWithId(TOKEN_UNIT_FROM_TO_OTHERS_TXN, 1, (spec, txn) -> {
+                            final var tokenTransfers = txn.getCryptoTransfer().getTokenTransfersList();
+                            assertEquals(1, tokenTransfers.size());
+                            final var tokenTransfer = tokenTransfers.get(0);
+                            for (final var adjust : tokenTransfer.getTransfersList()) {
+                                if (adjust.getAmount() < 0) {
+                                    // The debit should have been automatically converted to an approval
+                                    assertTrue(adjust.getIsApproval());
+                                }
+                            }
+                        })),
                         // No top-level signatures are available to any contract
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "0"),
                         someWellKnownTokensAndAccounts(
@@ -608,6 +623,8 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                 contractUpdate(WELL_KNOWN_TREASURY_CONTRACT).properlyEmptyingAdminKey());
     }
 
+    private static final String TOKEN_UNIT_FROM_TO_OTHERS_TXN = "transferTokenUnitFromToOthers";
+
     /**
      * Returns a multi-step operation that does one of each of the {@code transferToken}, {@code
      * transferTokens}, {@code transferNFT}, {@code transferNFTs} with the given expected status.
@@ -624,12 +641,13 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         return blockingOrder(
                 sourcing(() -> contractCall(
                                 WELL_KNOWN_TREASURY_CONTRACT,
-                                "transferTokenUnitFromToOthers",
+                                TOKEN_UNIT_FROM_TO_OTHERS_TXN,
                                 fungibleTokenMirrorAddr.get(),
                                 aSenderAddr.get(),
                                 aReceiverAddr.get())
                         .gas(2_000_000)
                         .alsoSigningWithFullPrefix(A_WELL_KNOWN_SENDER, B_WELL_KNOWN_SENDER)
+                        .via(TOKEN_UNIT_FROM_TO_OTHERS_TXN)
                         .hasKnownStatus(expectedStatus)),
                 sourcing(() -> contractCall(
                                 WELL_KNOWN_TREASURY_CONTRACT,

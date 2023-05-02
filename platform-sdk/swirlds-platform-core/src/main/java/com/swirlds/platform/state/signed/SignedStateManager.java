@@ -17,13 +17,12 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
-import static com.swirlds.platform.state.signed.SignedStateUtilities.newSignedStateWrapper;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
@@ -36,6 +35,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -78,7 +78,7 @@ public class SignedStateManager implements SignedStateFinder {
     /**
      * A signature that was received when there was no state with a matching round.
      */
-    private record SavedSignature(long round, long memberId, Signature signature) {}
+    private record SavedSignature(long round, long memberId, @NonNull Signature signature) {}
 
     /**
      * Signatures for rounds in the future.
@@ -138,22 +138,26 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
-     * Get a wrapper containing the last complete signed state.
+     * Get the last complete signed state
      *
-     * @return a wrapper with the latest complete signed state, or null if no recent states that are complete
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
+     * @return the latest complete signed state, or a null reservation if no recent states that are complete
      */
-    public @NonNull AutoCloseableWrapper<SignedState> getLatestSignedState() {
-        return completeStates.getLatest();
+    public @NonNull ReservedSignedState getLatestSignedState(@NonNull final String reason) {
+        return completeStates.getLatestAndReserve(reason);
     }
 
     /**
-     * Get a wrapper containing the latest immutable signed state. May be unhashed, may or may not have all required
+     * Get the latest immutable signed state. May be unhashed, may or may not have all required
      * signatures. State is returned with a reservation.
      *
-     * @return a wrapper with the latest signed state, or null if none are complete
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
+     * @return the latest signed state, or a null reservation if none are complete
      */
-    public @NonNull AutoCloseableWrapper<SignedState> getLatestImmutableState() {
-        return lastState.get();
+    public @NonNull ReservedSignedState getLatestImmutableState(@NonNull final String reason) {
+        return lastState.getAndReserve(reason);
     }
 
     /**
@@ -205,7 +209,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the signed state to add
      */
     public synchronized void addState(@NonNull final SignedState signedState) {
-        throwArgNull(signedState, "signedState");
+        throwArgNull(signedState, "reservedSignedState");
 
         if (signedState.getState().getHash() == null) {
             throw new IllegalArgumentException(
@@ -217,12 +221,12 @@ public class SignedStateManager implements SignedStateFinder {
         signedState.pruneInvalidSignatures();
 
         if (signedState.isComplete()) {
-            completeStates.put(signedState);
+            completeStates.put(signedState, "SignedStateManager.addState(complete)");
             if (completeStates.getLatestRound() == signedState.getRound()) {
                 notifyNewLatestCompleteState(signedState);
             }
         } else {
-            incompleteStates.put(signedState);
+            incompleteStates.put(signedState, "SignedStateManager.addState(incomplete)");
             gatherSavedSignatures(signedState);
         }
 
@@ -238,7 +242,7 @@ public class SignedStateManager implements SignedStateFinder {
      */
     private void setLastStateIfNewer(@NonNull final SignedState signedState) {
         if (signedState.getRound() > lastState.getRound()) {
-            lastState.set(signedState);
+            lastState.set(signedState, "SignedStateManager.setLastStateIfNewer()");
         }
     }
 
@@ -264,30 +268,26 @@ public class SignedStateManager implements SignedStateFinder {
             signedStateMetrics.getStateSignatureAge().update(signatureAge);
         }
 
-        try (final AutoCloseableWrapper<SignedState> wrapper = getIncompleteState(round)) {
-
-            final SignedState signedState = wrapper.get();
-            if (signedState == null) {
+        try (final ReservedSignedState reservedState = getIncompleteState(round)) {
+            if (reservedState.isNull()) {
                 // This round has already been completed, or it is really old or in the future
                 savedSignatures.add(new SavedSignature(round, signerId, signature));
                 return;
             }
 
-            addSignature(signedState, signerId, signature);
+            addSignature(reservedState.get(), signerId, signature);
         }
     }
 
     /**
-     * Find the latest state that matches a predicate. States are scanned starting with the latest round, and the first
-     * state encountered that matches the criteria is returned.
-     *
-     * @param criteria a predicate, the first encountered state that causes this to return true is returned
-     * @return a wrapper around the first state encountered that causes the criteria to pass, or a wrapper around null
-     * if no state causes the criteria to pass.
+     * {@inheritDoc}
      */
     @Override
-    public synchronized @NonNull AutoCloseableWrapper<SignedState> find(
-            @NonNull final Predicate<SignedState> criteria) {
+    public synchronized @NonNull ReservedSignedState find(
+            @NonNull final Predicate<SignedState> criteria, @NonNull final String reason) {
+
+        Objects.requireNonNull(criteria);
+        Objects.requireNonNull(reason);
 
         final List<SignedState> allStates = new ArrayList<>();
 
@@ -299,11 +299,11 @@ public class SignedStateManager implements SignedStateFinder {
 
         for (final SignedState signedState : allStates) {
             if (criteria.test(signedState)) {
-                return newSignedStateWrapper(signedState);
+                return signedState.reserve(reason);
             }
         }
 
-        return newSignedStateWrapper(null);
+        return createNullReservation();
     }
 
     /**
@@ -383,11 +383,11 @@ public class SignedStateManager implements SignedStateFinder {
      * Get an unsigned state for a particular round, if it exists.
      *
      * @param round the round in question
-     * @return a wrapper around a signed state for a round, or a wrapper around null if a signed state for that round is
+     * @return a signed state for a round, or a null reservation if a signed state for that round is
      * not present
      */
-    private @NonNull AutoCloseableWrapper<SignedState> getIncompleteState(final long round) {
-        return incompleteStates.get(round);
+    private @NonNull ReservedSignedState getIncompleteState(final long round) {
+        return incompleteStates.getAndReserve(round, "SignedStateManager.getIncompleteState()");
     }
 
     /**
@@ -430,7 +430,7 @@ public class SignedStateManager implements SignedStateFinder {
             notifyNewLatestCompleteState(signedState);
         }
 
-        completeStates.put(signedState);
+        completeStates.put(signedState, "SignedStateManager.signedStateNewlyComplete()");
         incompleteStates.remove(signedState.getRound());
 
         purgeOldStates();
@@ -457,7 +457,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the new most recently and complete signed state
      */
     private void notifyNewLatestCompleteState(@NonNull final SignedState signedState) {
-        newLatestCompleteStateConsumer.newLatestCompleteStateEvent(new SignedStateWrapper(signedState));
+        newLatestCompleteStateConsumer.newLatestCompleteStateEvent(signedState);
     }
 
     /**
@@ -466,7 +466,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that was unable to be complete signed
      */
     private void notifyStateLacksSignatures(@NonNull final SignedState signedState) {
-        stateLacksSignaturesConsumer.stateLacksSignatures(new SignedStateWrapper(signedState));
+        stateLacksSignaturesConsumer.stateLacksSignatures(signedState);
     }
 
     /**
@@ -475,6 +475,6 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that now has enough signatures
      */
     private void notifyStateHasEnoughSignatures(@NonNull final SignedState signedState) {
-        stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(new SignedStateWrapper(signedState));
+        stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(signedState);
     }
 }

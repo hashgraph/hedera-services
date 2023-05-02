@@ -34,33 +34,33 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContractDeleteHandlerParityTest {
-    private AccountAccess keyLookup;
+    private ReadableAccountStore accountStore;
     private final ContractDeleteHandler subject = new ContractDeleteHandler();
 
     @BeforeEach
     void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 
     @Test
     void getsContractDeleteImmutable() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_IMMUTABLE_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         assertThrowsPreCheck(() -> subject.preHandle(context), MODIFYING_IMMUTABLE_CONTRACT);
     }
 
     @Test
     void getsContractDelete() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -71,21 +71,21 @@ class ContractDeleteHandlerParityTest {
     @Test
     void getsContractDeleteMissingAccountBeneficiary() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TRANSFER_ACCOUNT_ID);
     }
 
     @Test
     void getsContractDeleteMissingContractBeneficiary() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_CONTRACT_ID);
     }
 
     @Test
     void getsContractDeleteContractXfer() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_DELETE_XFER_CONTRACT_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
