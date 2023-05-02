@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.system;
+package com.swirlds.platform.uptime;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
+import java.time.Duration;
 
 /**
- * Contains any data that is either read or written by the platform and the application,
- * and contains methods available to the application
+ * Configuration for the uptime detector.
+ *
+ * @param degradationThreshold if none of a node's events reach consensus in this amount of time then we consider that
+ *                             node to be degraded.
  */
-public interface SwirldDualState extends DualState {
-
-    /**
-     * Get the node uptime data.
-     */
-    @NonNull
-    UptimeData getUptimeData();
-}
+@ConfigData("uptime")
+public record UptimeConfig(@ConfigProperty(defaultValue = "10s") Duration degradationThreshold) {}

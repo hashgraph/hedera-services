@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -550,7 +549,7 @@ public class TokenUpdateSpecs extends HapiSuite {
         final var token = "token";
         final var multiKey = "multiKey";
         final var memoToBeErased = "memoToBeErased";
-        return onlyDefaultHapiSpec("TokenUpdateCanClearMemo")
+        return defaultHapiSpec("TokenUpdateCanClearMemo")
                 .given(
                         newKeyNamed(multiKey),
                         tokenCreate(token).entityMemo(memoToBeErased).adminKey(multiKey),
