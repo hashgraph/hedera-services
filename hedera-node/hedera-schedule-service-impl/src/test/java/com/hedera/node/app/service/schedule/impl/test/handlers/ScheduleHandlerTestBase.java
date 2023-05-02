@@ -16,66 +16,147 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.util.UtilPrngTransactionBody;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.InvalidKeyException;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@SuppressWarnings("NewClassNamingConvention")
 @ExtendWith(MockitoExtension.class)
 class ScheduleHandlerTestBase {
-    protected static final Key TEST_KEY = Key.newBuilder()
-            .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-            .build();
-    protected Key adminKey = TEST_KEY;
+    // spotless mangles this section randomly, due to incorrect wrapping rules
+    // spotless:off
+    // A few random values for fake ed25519 test keys
+    protected static final String PAYER_KEY_HEX =
+            "badcadfaddad2bedfedbeef959feedbeadcafecadecedebeed4acedecada5ada";
+    protected static final String SCHEDULER_KEY_HEX =
+            "feedbeadcafe8675309bafedfacecaeddeedcedebede4adaacecab2badcadfad";
+    // This one is a perfect 10.
+    protected static final String ADMIN_KEY_HEX =
+            "0000000000191561942608236107294793378084303638130997321548169216";
+    protected final ScheduleID testScheduleID = ScheduleID.newBuilder().scheduleNum(100L).build();
+    protected AccountID adminAccount = AccountID.newBuilder().accountNum(626068L).build();
+    protected Key adminKey = Key.newBuilder().ed25519(Bytes.fromHex(ADMIN_KEY_HEX)).build();
     protected AccountID scheduler = AccountID.newBuilder().accountNum(1001L).build();
+    protected Key schedulerKey = Key.newBuilder().ed25519(Bytes.fromHex(SCHEDULER_KEY_HEX)).build();
     protected AccountID payer = AccountID.newBuilder().accountNum(2001L).build();
+    protected Key payerKey = Key.newBuilder().ed25519(Bytes.fromHex(PAYER_KEY_HEX)).build();
+    protected Timestamp testValidStart = Timestamp.newBuilder().seconds(2281580449L).nanos(0).build();
+    // spotless:on
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     protected Account schedulerAccount;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     protected Account payerAccount;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     protected ReadableAccountStore accountStore;
 
-    @Mock
-    protected Key payerKey;
-
-    @Mock
-    protected Key schedulerKey;
-
-    @Mock
-    protected PreHandleDispatcher dispatcher;
-
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     protected ReadableStates states;
 
-    protected void basicContextAssertions(final PreHandleContext context, final int nonPayerKeysSize) {
-        assertEquals(nonPayerKeysSize, context.requiredNonPayerKeys().size());
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected ReadableKVStateBase<ScheduleID, Schedule> schedulesById;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected Schedule scheduleInState;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected ReadableStoreFactory mockStoreFactory;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected TransactionDispatcher mockDispatcher;
+
+    // Non-Mock objects, but may contain or reference mock objects.
+    protected ReadableScheduleStore scheduleStore;
+    protected Configuration testConfig;
+    protected SchedulableTransactionBody scheduled;
+    protected TransactionBody originalCreateTransaction;
+
+    protected void setUpBase() throws PreCheckException, InvalidKeyException {
+        testConfig = HederaTestConfigBuilder.create().getOrCreateConfig();
+        scheduled = createSampleScheduled();
+        originalCreateTransaction = originalCreateTransaction(scheduled, scheduler, adminKey);
+        BDDMockito.given(states.<ScheduleID, Schedule>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
+        BDDMockito.given(schedulerAccount.key()).willReturn(schedulerKey);
+        BDDMockito.given(payerAccount.key()).willReturn(payerKey);
+
+        scheduleStore = new ReadableScheduleStoreImpl(states);
+
+        BDDMockito.given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
+        BDDMockito.given(accountStore.getAccountById(payer)).willReturn(payerAccount);
+
+        // @migration this use of PbjConverter is temporary until services complete PBJ migration
+        BDDMockito.given(scheduleInState.hasPayerAccount()).willReturn(Boolean.TRUE);
+        BDDMockito.given(scheduleInState.payerAccount()).willReturn(payer);
+        BDDMockito.given(scheduleInState.payerAccountOrThrow()).willReturn(payer);
+        BDDMockito.given(scheduleInState.schedulerAccount()).willReturn(scheduler);
+        BDDMockito.given(scheduleInState.schedulerAccountOrThrow()).willReturn(scheduler);
+        BDDMockito.given(scheduleInState.hasAdminKey()).willReturn(true);
+        BDDMockito.given(scheduleInState.adminKey()).willReturn(adminKey);
+        BDDMockito.given(scheduleInState.adminKeyOrThrow()).willReturn(adminKey);
+        BDDMockito.given(scheduleInState.scheduledTransaction()).willReturn(scheduled);
+        BDDMockito.given(scheduleInState.scheduledTransactionOrThrow()).willReturn(scheduled);
+        BDDMockito.given(scheduleInState.originalCreateTransaction()).willReturn(originalCreateTransaction);
+        BDDMockito.given(scheduleInState.originalCreateTransactionOrThrow()).willReturn(originalCreateTransaction);
+        BDDMockito.given(schedulesById.get(testScheduleID)).willReturn(scheduleInState);
+
+        BDDMockito.given(mockStoreFactory.getStore(ReadableScheduleStore.class)).willReturn(scheduleStore);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
     }
 
-    protected TransactionBody scheduleTxnNotRecognized() {
+    private static SchedulableTransactionBody createSampleScheduled() {
+        final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+                .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
+                .build();
+        return scheduledTxn;
+    }
+
+    protected TransactionBody originalCreateTransaction(
+            @NonNull final SchedulableTransactionBody childTransaction,
+            @Nullable final AccountID explicitPayer,
+            @Nullable final Key adminKey) {
+        final TransactionID createdTransactionId = TransactionID.newBuilder()
+                .accountID(scheduler)
+                .transactionValidStart(testValidStart)
+                .nonce(4444)
+                .scheduled(false)
+                .build();
+        final ScheduleCreateTransactionBody.Builder builder = ScheduleCreateTransactionBody.newBuilder()
+                .scheduledTransactionBody(childTransaction)
+                .payerAccountID(scheduler);
+        if (explicitPayer != null) builder.payerAccountID(explicitPayer);
+        if (adminKey != null) builder.adminKey(adminKey);
+        final ScheduleCreateTransactionBody scheduleCreate = builder.build();
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(scheduler))
-                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-                        .scheduledTransactionBody(SchedulableTransactionBody.newBuilder()
-                                .utilPrng(UtilPrngTransactionBody.DEFAULT)
-                                .build()))
+                .transactionID(createdTransactionId)
+                .scheduleCreate(scheduleCreate)
                 .build();
     }
 }

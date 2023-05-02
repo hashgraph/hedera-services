@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
@@ -28,6 +26,7 @@ import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -43,27 +42,27 @@ public class ScheduleGetInfoHandler extends PaidQueryHandler {
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
-        requireNonNull(query);
+        Objects.requireNonNull(query);
         return query.scheduleGetInfoOrThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        requireNonNull(header);
+        Objects.requireNonNull(header);
         final var response = ScheduleGetInfoResponse.newBuilder().header(header);
         return Response.newBuilder().scheduleGetInfo(response).build();
     }
 
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
-        requireNonNull(context);
+        Objects.requireNonNull(context);
         throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
-        requireNonNull(context);
-        requireNonNull(header);
+        Objects.requireNonNull(context);
+        Objects.requireNonNull(header);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

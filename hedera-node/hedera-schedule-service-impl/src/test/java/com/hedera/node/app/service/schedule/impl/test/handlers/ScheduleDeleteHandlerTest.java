@@ -16,115 +16,73 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
-import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.state.ReadableKVStateBase;
+import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.security.InvalidKeyException;
-import java.util.Optional;
 import java.util.Set;
+import org.assertj.core.api.BDDAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
-import org.mockito.Mock;
 
 class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
-    private final ScheduleID scheduleID =
-            ScheduleID.newBuilder().scheduleNum(100L).build();
     private final AccountID scheduleDeleter =
             AccountID.newBuilder().accountNum(3001L).build();
-    private final ScheduleDeleteHandler subject = new ScheduleDeleteHandler();
-    protected TransactionBody scheduledTxn;
 
-    @Mock
-    private ScheduleVirtualValue schedule;
-
-    @Mock
-    private ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
-
-    private ReadableScheduleStore scheduleStore;
+    private ScheduleDeleteHandler subject;
+    private PreHandleContext realPreContext;
 
     @BeforeEach
-    void setUp() {
-        BDDMockito.given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID"))
-                .willReturn(schedulesById);
-        scheduleStore = new ReadableScheduleStoreImpl(states);
+    void setUp() throws Exception {
+        setUpBase();
+        subject = new ScheduleDeleteHandler();
+        BDDMockito.given(accountStore.getAccountById(scheduleDeleter)).willReturn(payerAccount);
     }
 
     @Test
-    void scheduleDeleteHappyPath() throws InvalidKeyException, PreCheckException, InvalidKeyException {
-        final var txn = scheduleDeleteTransaction();
-        scheduledTxn = givenSetupForScheduleDelete(txn);
-        BDDMockito.given(schedule.hasAdminKey()).willReturn(true);
-        BDDMockito.given(schedule.adminKey()).willReturn(Optional.of(JKey.mapKey(TEST_KEY)));
-        BDDMockito.given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
+    void scheduleDeleteHappyPath() throws InvalidKeyException, PreCheckException {
+        realPreContext =
+                new PreHandleContextImpl(mockStoreFactory, scheduleDeleteTransaction(), testConfig, mockDispatcher);
 
-        final var context = new FakePreHandleContext(accountStore, txn);
-        context.registerStore(ReadableScheduleStore.class, scheduleStore);
-
-        subject.preHandle(context);
-        assertEquals(scheduleDeleter, context.payer());
-        assertEquals(Set.of(), context.requiredNonPayerKeys());
+        subject.preHandle(realPreContext);
+        BDDAssertions.assertThat(scheduleDeleter).isEqualTo(realPreContext.payer());
+        BDDAssertions.assertThat(Set.of()).isNotEqualTo(realPreContext.requiredNonPayerKeys());
     }
 
     @Test
     // when schedule id to delete is not found, fail with INVALID_SCHEDULE_ID
     void scheduleDeleteFailsIfScheduleMissing() throws PreCheckException {
-        final var txn = scheduleDeleteTransaction();
-        scheduledTxn = givenSetupForScheduleDelete(txn);
+        final TransactionBody schedule = scheduleDeleteTransaction();
+        realPreContext = new PreHandleContextImpl(mockStoreFactory, schedule, testConfig, mockDispatcher);
+        BDDMockito.given(schedulesById.get(testScheduleID)).willReturn(null);
 
-        final var context = new FakePreHandleContext(accountStore, txn);
-        context.registerStore(ReadableScheduleStore.class, scheduleStore);
-
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_SCHEDULE_ID);
+        Assertions.assertThrowsPreCheck(() -> subject.preHandle(realPreContext), ResponseCodeEnum.INVALID_SCHEDULE_ID);
     }
 
     @Test
     // when admin key not set in scheduled tx, fail with SCHEDULE_IS_IMMUTABLE
     void scheduleDeleteScheduleIsImmutable() throws PreCheckException {
-        final var txn = scheduleDeleteTransaction();
-        scheduledTxn = givenSetupForScheduleDelete(txn);
-        BDDMockito.given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
+        final TransactionBody schedule = scheduleDeleteTransaction();
+        realPreContext = new PreHandleContextImpl(mockStoreFactory, schedule, testConfig, mockDispatcher);
+        BDDMockito.given(scheduleInState.hasAdminKey()).willReturn(false);
+        BDDMockito.given(scheduleInState.adminKey()).willReturn(null);
 
-        final var context = new FakePreHandleContext(accountStore, txn);
-        context.registerStore(ReadableScheduleStore.class, scheduleStore);
-
-        assertThrowsPreCheck(() -> subject.preHandle(context), SCHEDULE_IS_IMMUTABLE);
-    }
-
-    private TransactionBody givenSetupForScheduleDelete(TransactionBody txn) throws PreCheckException {
-        final TransactionBody scheduledTxn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
-                .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
-                .build();
-        // must be lenient here, because Mockito is a bit too sensitive, and not setting this causes NPE's
-        BDDMockito.lenient().when(schedule.ordinaryViewOfScheduledTxn()).thenReturn(PbjConverter.fromPbj(scheduledTxn));
-        given(accountStore.getAccountById(scheduleDeleter)).willReturn(payerAccount);
-        given(payerAccount.key()).willReturn(adminKey);
-        return scheduledTxn;
+        Assertions.assertThrowsPreCheck(
+                () -> subject.preHandle(realPreContext), ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE);
     }
 
     private TransactionBody scheduleDeleteTransaction() {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(scheduleDeleter))
-                .scheduleDelete(ScheduleDeleteTransactionBody.newBuilder().scheduleID(scheduleID))
+                .scheduleDelete(ScheduleDeleteTransactionBody.newBuilder().scheduleID(testScheduleID))
                 .build();
     }
 }

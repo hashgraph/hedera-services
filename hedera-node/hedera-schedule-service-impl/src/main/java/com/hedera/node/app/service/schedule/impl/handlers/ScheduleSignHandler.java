@@ -16,21 +16,29 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
+import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.SchedulingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -38,36 +46,142 @@ import javax.inject.Singleton;
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_SIGN}.
  */
 @Singleton
+@SuppressWarnings("OverlyCoupledClass")
 public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
 
     @Inject
-    public ScheduleSignHandler(@NonNull final PreHandleDispatcher dispatcher) {
-        super(dispatcher);
+    public ScheduleSignHandler() {
+        super();
     }
 
+    @Override
+    public void pureChecks(@Nullable final TransactionBody currentTransaction) throws PreCheckException {
+        if (currentTransaction != null) {
+            checkValidTransactionId(currentTransaction.transactionID());
+            getValidScheduleSignBody(currentTransaction);
+        } else {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
+    }
+
+    /**
+     * Pre-handles a {@link HederaFunctionality#SCHEDULE_SIGN} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
+     *
+     * @param context the {@link PreHandleContext} which collects all information
+     * @throws PreCheckException if the transaction cannot be handled successfully.
+     *     The response code appropriate to the failure reason will be provided via this exception.
+     */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
-        requireNonNull(context);
-        final var txn = context.body();
-        final var op = txn.scheduleSignOrThrow();
-        final var id = op.scheduleIDOrElse(ScheduleID.DEFAULT);
-        final var scheduleStore = context.createStore(ReadableScheduleStore.class);
-
-        final var scheduleLookupResult = scheduleStore.get(id);
-        if (scheduleLookupResult.isEmpty()) {
-            throw new PreCheckException(INVALID_SCHEDULE_ID);
+        final ReadableScheduleStore scheduleStore = context.createStore(ReadableScheduleStore.class);
+        final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
+        final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
+        final TransactionBody currentTransaction = context.body();
+        final ScheduleSignTransactionBody scheduleSignTransaction = getValidScheduleSignBody(currentTransaction);
+        if (scheduleSignTransaction != null && scheduleSignTransaction.scheduleID() != null) {
+            final Schedule scheduleData =
+                    preValidate(scheduleStore, isLongTermEnabled, scheduleSignTransaction.scheduleID());
+            final AccountID payerAccount = scheduleData.payerAccount();
+            // Note, payer should never be null, but we have to check anyway, because Sonar doesn't know better.
+            if (payerAccount != null) {
+                final ReadableAccountStore accountStore = context.createStore(ReadableAccountStore.class);
+                final Account payer = accountStore.getAccountById(payerAccount);
+                if (payer != null) {
+                    final Key payerKey = payer.key();
+                    if (payerKey != null) context.optionalKey(payerKey);
+                }
+            }
+            try {
+                final Set<Key> allKeysNeeded = allKeysForTransaction(scheduleData, context);
+                context.optionalKeys(allKeysNeeded);
+            } catch (HandleException translated) {
+                throw new PreCheckException(translated.getStatus());
+            }
+        } else {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
-
-        final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
-        final var optionalPayer = scheduleLookupResult.get().designatedPayer();
-        final var payerForNested = optionalPayer.orElse(
-                scheduledTxn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
-
-        preHandleScheduledTxn(context, scheduledTxn, payerForNested);
+        // context now has all of the keys required by the scheduled transaction in optional keys
     }
 
+    /**
+     * This method is called during the handle workflow. It executes the actual transaction.
+     *
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
+     * @throws HandleException if the transaction is not handled successfully.
+     *     The response code appropriate to the failure reason will be provided via this exception.
+     */
+    @SuppressWarnings({"FeatureEnvy", "OverlyCoupledMethod"})
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
+        final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
+        final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
+        final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
+        final TransactionBody currentTransaction = context.body();
+        if (currentTransaction.hasScheduleSign()) {
+            final ScheduleSignTransactionBody signTransaction = currentTransaction.scheduleSignOrThrow();
+            final ScheduleID idToSign = signTransaction.scheduleID();
+            final Schedule scheduleData = scheduleStore.get(idToSign);
+            final ResponseCodeEnum validationResult = validate(scheduleData, context.consensusNow(), isLongTermEnabled);
+            if (validationOk(validationResult)) {
+                final Schedule scheduleToSign = scheduleStore.getForModify(idToSign);
+                if (scheduleToSign != null) {
+                    final SchedulableTransactionBody schedulableTransaction = scheduleToSign.scheduledTransaction();
+                    if (schedulableTransaction != null) {
+                        final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(scheduleToSign, context);
+                        final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
+                        final Set<Key> updatedSignatories = requiredKeysResult.updatedSignatories();
+                        final ScheduleRecordBuilder recordBuilder = context.recordBuilder(ScheduleRecordBuilder.class);
+                        if (tryToExecuteSchedule(
+                                context,
+                                scheduleToSign,
+                                allRequiredKeys,
+                                updatedSignatories,
+                                validationResult,
+                                recordBuilder,
+                                isLongTermEnabled)) {
+                            scheduleStore.put(ScheduleUtility.replaceSignatoriesAndMarkExecuted(
+                                    scheduleToSign, updatedSignatories, context.consensusNow()));
+                        } else {
+                            scheduleStore.put(ScheduleUtility.replaceSignatories(scheduleToSign, updatedSignatories));
+                        }
+                        // set the schedule ID for THIS transaction
+                        recordBuilder.scheduleID(scheduleToSign.id());
+                        // set the child transaction ID for THIS transaction
+                        recordBuilder.scheduledTransactionID(ScheduleUtility.transactionIdForScheduled(scheduleToSign));
+                    } else {
+                        // Note, this will never happen, but Sonar static analysis can't figure that out.
+                        throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+                    }
+                } else {
+                    throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+                }
+            } else {
+                throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+            }
+        } else {
+            throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+        }
+    }
+
+    @NonNull
+    private ScheduleSignTransactionBody getValidScheduleSignBody(@Nullable final TransactionBody currentTransaction)
+            throws PreCheckException {
+        if (currentTransaction != null) {
+            final ScheduleSignTransactionBody scheduleSignTransaction = currentTransaction.scheduleSign();
+            if (scheduleSignTransaction != null) {
+                if (scheduleSignTransaction.scheduleID() != null) {
+                    return scheduleSignTransaction;
+                } else {
+                    throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+                }
+            } else {
+                throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+            }
+        } else {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION);
+        }
     }
 }

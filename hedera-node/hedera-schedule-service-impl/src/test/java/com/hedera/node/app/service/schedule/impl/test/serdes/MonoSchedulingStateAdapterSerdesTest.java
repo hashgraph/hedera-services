@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.schedule.impl.test.serdes;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.node.app.service.schedule.impl.serdes.MonoSchedulingStateAdapterCodec;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
@@ -27,6 +24,7 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -41,9 +39,14 @@ class MonoSchedulingStateAdapterSerdesTest {
 
     @Test
     void doesNotSupportUnnecessary() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_SCHEDULING_STATE));
-        assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
-        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_SCHEDULING_STATE, input));
+        // spotless:off
+        Assertions.assertThrows(UnsupportedOperationException.class,
+                () -> subject.measureRecord(SOME_SCHEDULING_STATE));
+        Assertions.assertThrows(UnsupportedOperationException.class,
+                () -> subject.measure(input));
+        Assertions.assertThrows(UnsupportedOperationException.class,
+                () -> subject.fastEquals(SOME_SCHEDULING_STATE, input));
+        // spotless:on
     }
 
     @Test
@@ -55,6 +58,6 @@ class MonoSchedulingStateAdapterSerdesTest {
         final ReadableStreamingData actualIn =
                 new ReadableStreamingData(new ByteArrayInputStream(byteStream.toByteArray()));
         final MerkleScheduledTransactionsState parsed = subject.parse(actualIn);
-        assertEquals(SOME_SCHEDULING_STATE.getHash(), parsed.getHash());
+        Assertions.assertEquals(SOME_SCHEDULING_STATE.getHash(), parsed.getHash());
     }
 }

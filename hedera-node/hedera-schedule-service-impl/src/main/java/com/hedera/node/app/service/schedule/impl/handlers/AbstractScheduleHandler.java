@@ -16,75 +16,349 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static com.hedera.node.app.spi.HapiUtils.QUERY_FUNCTIONS;
-import static com.hedera.node.app.spi.HapiUtils.functionOf;
-
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.spi.records.TransactionRecordBuilder;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
+import com.hedera.node.app.spi.workflows.TransactionKeys;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
-    private static final Logger logger = LogManager.getLogger(AbstractScheduleHandler.class);
-    public static final String IGNORED_EXCEPTION_MESSAGE =
-            "Ignored inner context pre check exception and replaced with UNRESOLVABLE_REQUIRED_SIGNERS.";
+    protected static final String NULL_CONTEXT_MESSAGE =
+            "Dispatcher called the schedule delete handler with a null context; probable internal data corruption.";
 
-    private final PreHandleDispatcher dispatcher;
+    /**
+     * A simple record to return both "deemed valid" signatories and remaining primitive keys that must sign.
+     * @param updatedSignatories
+     * @param remainingRequiredKeys
+     */
+    public static record ScheduleKeysResult(Set<Key> updatedSignatories, Set<Key> remainingRequiredKeys) {}
 
-    AbstractScheduleHandler(PreHandleDispatcher dispatcher) {
-        this.dispatcher = Objects.requireNonNull(dispatcher, "The supplied argument 'dispatcher' must not be null.");
+    @NonNull
+    protected Set<Key> allKeysForTransaction(
+            @NonNull final Schedule scheduleInState, @NonNull final PreHandleContext context) throws PreCheckException {
+        final TransactionBody scheduledAsOrdinary = ScheduleUtility.asOrdinary(scheduleInState);
+        // note, payerAccount should never be null, but we're dealing with Sonar here.
+        final AccountID payerForNested = scheduleInState.payerAccountOrElse(scheduleInState.schedulerAccountOrThrow());
+        final TransactionKeys keyStructure = context.allKeysForTransaction(scheduledAsOrdinary, payerForNested);
+        return getKeySetFromTransactionKeys(keyStructure);
     }
 
-    protected void preHandleScheduledTxn(
-            final PreHandleContext context, final TransactionBody scheduledTxn, final AccountID payerForNested)
-            throws PreCheckException {
-        final HederaFunctionality scheduledFunction;
-        try {
-            scheduledFunction = functionOf(scheduledTxn);
-        } catch (UnknownHederaFunctionality ex) {
-            throw new PreCheckException(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-        }
+    @NonNull
+    private Set<Key> getKeySetFromTransactionKeys(final TransactionKeys requiredKeys) {
+        final Set<Key> scheduledRequiredKeys = new HashSet<>(requiredKeys.requiredNonPayerKeys());
+        scheduledRequiredKeys.add(requiredKeys.payerKey());
+        return scheduledRequiredKeys;
+    }
 
-        if (!isSchedulable(scheduledFunction)) {
-            throw new PreCheckException(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-        }
-
+    @NonNull
+    protected ScheduleKeysResult allKeysForTransaction(
+            @NonNull final Schedule scheduleInState, @NonNull final HandleContext context) throws HandleException {
+        // @todo('merge') Remove the try/catch after the handleContext method is changed to throw HandleException
         try {
-            final PreHandleContext innerContext = context.createNestedContext(scheduledTxn, payerForNested);
-            dispatcher.dispatch(innerContext);
-        } catch (final PreCheckException ignored) {
-            logger.debug(IGNORED_EXCEPTION_MESSAGE, ignored);
-            throw new PreCheckException(UNRESOLVABLE_REQUIRED_SIGNERS);
+            // note, payerAccount should never be null, but we're playing it safe here.
+            final AccountID payer = scheduleInState.payerAccountOrElse(context.payer());
+            final TransactionBody scheduledAsOrdinary = ScheduleUtility.asOrdinary(scheduleInState);
+            final TransactionKeys keyStructure = context.allKeysForTransaction(scheduledAsOrdinary, payer);
+            final Set<Key> scheduledRequiredKeys = getKeySetFromTransactionKeys(keyStructure);
+            final Set<Key> currentSignatories = setOfKeys(scheduleInState.signatories());
+            scheduledRequiredKeys.removeAll(currentSignatories);
+            final Set<Key> remainingRequiredKeys = scheduledRequiredKeys.parallelStream()
+                    .map(new ValidatedKeysMapping(context, currentSignatories))
+                    .flatMap(Set::stream)
+                    .collect(Collectors.toSet());
+            // This works ONLY because ValidatedKeysMapping observes the validation process and
+            // modifies currentSignatories to add any newly validated primitive keys.
+            return new ScheduleKeysResult(currentSignatories, remainingRequiredKeys);
+        } catch (final PreCheckException translated) {
+            throw new HandleException(translated.responseCode());
         }
     }
 
     /**
-     * @param functionality any {@link HederaFunctionality}
-     * @return true if the functionality could possibly be allowed to be scheduled. Some
-     *     functionally may not be in {@link SchedulableTransactionBody} yet but could be in the
-     *     future. The scheduling.whitelist configuration property is separate from this and
-     *     provides the final list of functionality that can be scheduled.
+     * Given an arbitrary {@link Iterable<Key>}, return a <strong>modifiable</strong> {@link Set<Key>} containing
+     * the same objects as the input.
+     * If there are any duplicates in the input, only one of each will be in the result.
+     * If there are any null values in the input, those values will be excluded from the result.
+     * Note: The return value of this method is always safe to be read and written by multiple threads
+     *     concurrently, and operates as close to lock-free as possible.
+     * Implementation Note: we use ConcurrentSkipListSet that orders the entries by hash code.  This means that
+     *   object order will be very different from a reasonable natural ordering, but it should (if hashCode is defined
+     *   properly) be consistent with equals, and have sufficient diffusion to work well with the random
+     *   functions inherent in the Skip List data structure.
+     * @param keyCollection an Iterable of Key values.
+     * @return a {@link Set<Key>} containing the same contents as the input.  Duplicates and null values are excluded
+     * from this Set.  This Set is always a modifiable set..
      */
-    public static boolean isSchedulable(final HederaFunctionality functionality) {
-        if (functionality == null) {
+    @NonNull
+    private Set<Key> setOfKeys(@Nullable final Iterable<Key> keyCollection) {
+        // We only permit Concurrent sets for this method.
+        if (keyCollection instanceof CopyOnWriteArraySet<Key>) {
+            return (Set<Key>) keyCollection;
+        } else if (keyCollection instanceof ConcurrentSkipListSet<Key>) {
+            return (Set<Key>) keyCollection;
+        } else if (keyCollection != null) {
+            final Set<Key> results = new ConcurrentSkipListSet<>(new RecordIdentityComparator());
+            for (final Key next : keyCollection) {
+                if (next != null) results.add(next);
+            }
+            return results;
+        } else {
+            // cannot use Set.of() or Collections.emptySet() here because those are unmodifiable.
+            return new ConcurrentSkipListSet<>(new RecordIdentityComparator());
+        }
+    }
+
+    /**
+     * Given a transaction body and schedule store, validate the transaction meets minimum requirements to
+     * be completed.
+     * <p>This method checks that  the Schedule ID is not null, references a schedule in readable state,
+     * and the referenced schedule has a child transaction.
+     * The full set of checks in the {@link #validate(Schedule, Instant, boolean)} method must also
+     * pass.
+     * If all validation checks pass, the schedule metadata is returned.
+     * If any checks fail, then a {@link PreCheckException} is thrown.</p>
+     * @param idToValidate the ID of the schedule to validate
+     * @param scheduleStore data from readable state which contains, at least, a metadata entry for the schedule
+     *     that the current transaction will sign.
+     * @throws PreCheckException if the ScheduleSign transaction provided fails any of the required validation
+     *     checks.
+     */
+    @NonNull
+    protected Schedule preValidate(
+            @NonNull final ReadableScheduleStore scheduleStore,
+            final boolean isLongTermEnabled,
+            @Nullable final ScheduleID idToValidate)
+            throws PreCheckException {
+        if (idToValidate != null) {
+            final Schedule scheduleData = scheduleStore.get(idToValidate);
+            if (scheduleData != null) {
+                if (scheduleData.scheduledTransaction() != null) {
+                    final ResponseCodeEnum validationResult = validate(scheduleData, null, isLongTermEnabled);
+                    if (validationResult == ResponseCodeEnum.OK) {
+                        return scheduleData;
+                    } else {
+                        throw new PreCheckException(validationResult);
+                    }
+                } else {
+                    throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+                }
+            } else {
+                throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+            }
+        } else {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+        }
+    }
+
+    /**
+     * Given a schedule, consensus time, and long term scheduling enabled flag, validate the transaction
+     * meets minimum requirements to be handled.
+     * <p>
+     *     This method checks that the schedule is not null, has not been executed, is not deleted, and is not
+     *     expired as of the current consensus time.
+     * </p>
+     *
+     * @param scheduleToValidate the schedule to validate.  If this is null then
+     *     {@link ResponseCodeEnum#INVALID_SCHEDULE_ID} is returned.
+     * @param consensusTime the consensus time applicable to this transaction.  If this is null then we assume this is
+     *     a pre-check and do not validate expiration.
+     * @param isLongTermEnabled a flag indicating if long term scheduling is currently enabled. This modifies
+     *     which response code is sent when a schedule is expired.
+     * @return a response code representing the result of the validation.  This is {@link ResponseCodeEnum#OK}
+     *     if all checks pass, or an appropriate failure code if any checks fail.
+     */
+    @NonNull
+    protected ResponseCodeEnum validate(
+            @Nullable final Schedule scheduleToValidate,
+            @Nullable final Instant consensusTime,
+            final boolean isLongTermEnabled) {
+        final ResponseCodeEnum result;
+        final Instant effectiveConsensusTime = Objects.requireNonNullElse(consensusTime, Instant.MIN);
+        if (scheduleToValidate != null) {
+            if (!scheduleToValidate.executed()) {
+                if (!scheduleToValidate.deleted()) {
+                    final Instant calculatedExpiration =
+                            instantFromTimestamp(scheduleToValidate.calculatedExpirationTime(), Instant.MAX);
+                    if (effectiveConsensusTime.isBefore(calculatedExpiration)) {
+                        result = ResponseCodeEnum.OK;
+                    } else {
+                        // We are past expiration time
+                        if (!isLongTermEnabled) {
+                            result = ResponseCodeEnum.INVALID_SCHEDULE_ID;
+                        } else {
+                            // This is not failure, it indicates the schedule should execute if it can,
+                            // or be removed if it is not executable (i.e. it lacks required signatures)
+                            result = ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
+                        }
+                    }
+                } else {
+                    result = ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+                }
+            } else {
+                result = ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
+            }
+        } else {
+            result = ResponseCodeEnum.INVALID_SCHEDULE_ID;
+        }
+        return result;
+    }
+
+    /**
+     * Very basic transaction ID validation.
+     * This just checks that the transaction is not scheduled (you cannot schedule a schedule),
+     * that the account ID is not null (so we can fill in scheduler account),
+     * and that the start timestamp is not null (so we can fill in schedule valid start time)
+     * @param currentId a TransactionID to validate
+     * @throws PreCheckException if the transaction is scheduled, the account ID is null, or the start time is null.
+     */
+    protected void checkValidTransactionId(@Nullable final TransactionID currentId) throws PreCheckException {
+        if (currentId == null) throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_ID);
+        final AccountID payer = currentId.accountID();
+        final Timestamp validStart = currentId.transactionValidStart();
+        final boolean isScheduled = currentId.scheduled();
+        if (isScheduled) throw new PreCheckException(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        if (payer == null) throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID);
+        if (validStart == null) throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_START);
+    }
+
+    protected boolean tryToExecuteSchedule(
+            @NonNull final HandleContext context,
+            @NonNull final Schedule scheduleToExecute,
+            @NonNull final Set<Key> remainingSignatories,
+            @NonNull final Set<Key> validSignatories,
+            @NonNull final ResponseCodeEnum validationResult,
+            @NonNull final ScheduleRecordBuilder parentRecordBuilder,
+            final boolean isLongTermEnabled) {
+        if (canExecute(remainingSignatories, isLongTermEnabled, validationResult, scheduleToExecute)) {
+            // @todo('question') The child transaction, once executed, must have a scheduleRef field.
+            //                   How do we ensure the record builder produces BOTH records?
+            // @note we don't care about the "remaining" keys in this case, just need to set signatories
+            //     so that the child transaction has those as "valid" keys.
+            final var assistant = new ScheduleVerificationAssistant(validSignatories, new HashSet<>());
+            final TransactionBody childTransaction = ScheduleUtility.asOrdinary(scheduleToExecute);
+            // @todo('7509') uncomment "assistant" to Add ScheduleVerificationAssistant with validSignatories to this call.
+            final ScheduleRecordBuilder recordBuilder =
+                    context.dispatchChildTransaction(childTransaction, ScheduleRecordBuilder.class /*, assistant*/);
+            // set the schedule ref for the child transaction
+            recordBuilder.scheduleRef(scheduleToExecute.id());
+            // @todo('7509') uncomment and correct this block
+            // If the child failed, we fail with the same result.
+//            if(recordBuilder instanceof RecordBuilder base) {
+//                if(!validationOk(base.status()) throw new HandleException(base.status());
+//            }
+            return true;
+        } else {
             return false;
         }
-        return switch (functionality) {
-            case SCHEDULE_CREATE, SCHEDULE_SIGN -> false;
-            default -> !QUERY_FUNCTIONS.contains(functionality);
-        };
+    }
+
+    private boolean canExecute(
+            final Set<Key> remainingSignatories,
+            final boolean isLongTermEnabled,
+            final ResponseCodeEnum validationResult,
+            final Schedule scheduleToExecute) {
+        return (remainingSignatories == null || remainingSignatories.isEmpty())
+                && (!isLongTermEnabled
+                        || (scheduleToExecute.waitForExpiry()
+                                && validationResult == ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION));
+    }
+
+    protected boolean validationOk(final ResponseCodeEnum validationResult) {
+        return validationResult == ResponseCodeEnum.OK
+                || validationResult == ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
+    }
+
+    @NonNull
+    private Instant instantFromTimestamp(@Nullable final Timestamp timestampValue, Instant defaultValue) {
+        return timestampValue != null
+                ? Instant.ofEpochSecond(timestampValue.seconds(), timestampValue.nanos())
+                : defaultValue;
+    }
+
+    /**
+     * A mapping function implementation that validates a single account key and maps that to a
+     * set of "primitive" keys that are needed (in whole or in part) to meet the full signature
+     * requirements of that key.  This function, as a side effect, adds additional "primitive"
+     * keys to the existing signatories set for each such key that has a valid signature for the
+     * current transaction.
+     */
+    private static class ValidatedKeysMapping implements Function<Key, Set<Key>> {
+        private final HandleContext context;
+        private final Set<Key> signatories;
+
+        /**
+         * Create a mapping function with a given context and set of signatories.
+         *
+         * @param context a HandleContext for a particular ScheduleCreate or ScheduleSign transaction.
+         * @param signatories a Set of "primitive" keys that were previously validated, and therefore
+         *     are "deemed" to have signed the child transaction.  <strong>This set is modified by the
+         *     apply method</strong> of the object created, so it must not be an unmodifiable set.
+         */
+        public ValidatedKeysMapping(@NonNull final HandleContext context, @NonNull final Set<Key> signatories) {
+            this.context = context;
+            this.signatories = signatories;
+        }
+
+        /**
+         * Apply the mapping function to a particular Account key.
+         * The function here checks if the key is valid while providing a verification assistant that
+         * considers all keys in "signatories" to be valid.  The mapping, as a side effect, also
+         * records all newly validated "primitive" keys and adds those to "signatories".  If the
+         * Account key is still not validated, then all remaining required "primitive" keys are
+         * returned.
+         *
+         * Note, it is possible that not all values in the returned key set are required, particularly
+         * in the case of threshold keys, it may be that only some of the keys are required, but all
+         * of the keys returned <strong>can</strong> be used to meet the signature requirements for
+         * the Account key.
+         *
+         * @param key a single Account key to validate against the signatures on the current transaction
+         *     as well as the "signatories" set of previously validated signatures.
+         * @return a {@link Set<Key>} of "primitive" keys that still must be validated
+         *     (in whole or in part) to consider the Account key fully validated.
+         */
+        @Override
+        public Set<Key> apply(final Key key) {
+            final Set<Key> remainingUnverifiedKeys = new HashSet<>();
+            final var assistant = new ScheduleVerificationAssistant(signatories, remainingUnverifiedKeys);
+            final SignatureVerification isVerified = context.verificationFor(key, assistant);
+            // unverified primitive keys only count if the top-level key failed verification.
+            return isVerified.passed() ? Collections.emptySet() : remainingUnverifiedKeys;
+        }
+    }
+
+    private static class RecordIdentityComparator implements Comparator<Record> {
+        @Override
+        public int compare(final Record left, final Record right) {
+            return Objects.hashCode(left) - Objects.hashCode(right);
+        }
     }
 }

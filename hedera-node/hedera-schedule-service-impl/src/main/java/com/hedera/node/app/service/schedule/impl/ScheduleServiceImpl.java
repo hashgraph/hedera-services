@@ -34,6 +34,7 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.pbj.runtime.Codec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -50,7 +51,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
     public static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(scheduleSchema());
     }
 
@@ -77,29 +78,29 @@ public final class ScheduleServiceImpl implements ScheduleService {
     }
 
     private StateDefinition<EntityNumVirtualKey, ScheduleVirtualValue> schedulesByIdDef() {
-        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
+        final Codec<EntityNumVirtualKey> keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
-        final var valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
+        final Codec<ScheduleVirtualValue> valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
                 ScheduleVirtualValue.CURRENT_VERSION, ScheduleVirtualValue::new);
         return StateDefinition.inMemory(SCHEDULES_BY_ID_KEY, keySerdes, valueSerdes);
     }
 
     private StateDefinition<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> schedulesByExpirySec() {
-        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
+        final Codec<SecondSinceEpocVirtualKey> keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 SecondSinceEpocVirtualKey.CURRENT_VERSION,
                 SecondSinceEpocVirtualKey::new,
                 new SecondSinceEpocVirtualKeySerializer());
-        final var valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
+        final Codec<ScheduleSecondVirtualValue> valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
                 ScheduleVirtualValue.CURRENT_VERSION, ScheduleSecondVirtualValue::new);
         return StateDefinition.inMemory(SCHEDULES_BY_EXPIRY_SEC_KEY, keySerdes, valueSerdes);
     }
 
     private StateDefinition<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> schedulesByEquality() {
-        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
+        final Codec<ScheduleEqualityVirtualKey> keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 ScheduleEqualityVirtualKey.CURRENT_VERSION,
                 ScheduleEqualityVirtualKey::new,
                 new ScheduleEqualityVirtualKeySerializer());
-        final var valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
+        final Codec<ScheduleEqualityVirtualValue> valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
                 ScheduleEqualityVirtualValue.CURRENT_VERSION, ScheduleEqualityVirtualValue::new);
         return StateDefinition.inMemory(SCHEDULES_BY_EQUALITY_KEY, keySerdes, valueSerdes);
     }

@@ -16,98 +16,127 @@
 
 package com.hedera.node.app.service.schedule.impl.test;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
-
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
-import java.util.Optional;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@SuppressWarnings({"unchecked", "rawtypes"})
 @ExtendWith(MockitoExtension.class)
 class ReadableScheduleStoreTest {
-    @Mock
-    ReadableStates states;
+    // spotless mangles this section randomly, due to incorrect wrapping rules
+    // spotless:off
+    // A few random values for fake ed25519 test keys
+    private static final String PAYER_KEY_HEX =
+            "badcadfaddad2bedfedbeef959feedbeadcafecadecedebeed4acedecada5ada";
+    private static final String SCHEDULER_KEY_HEX =
+            "feedbeadcafe8675309bafedfacecaeddeedcedebede4adaacecab2badcadfad";
+    // This one is a perfect 10.
+    private static final String ADMIN_KEY_HEX =
+            "0000000000191561942608236107294793378084303638130997321548169216";
+    private final ScheduleID testScheduleID = ScheduleID.newBuilder().scheduleNum(100L).build();
+    private AccountID adminAccount = AccountID.newBuilder().accountNum(626068L).build();
+    private Key adminKey = Key.newBuilder().ed25519(Bytes.fromHex(ADMIN_KEY_HEX)).build();
+    private AccountID scheduler = AccountID.newBuilder().accountNum(1001L).build();
+    private Key schedulerKey = Key.newBuilder().ed25519(Bytes.fromHex(SCHEDULER_KEY_HEX)).build();
+    private AccountID payer = AccountID.newBuilder().accountNum(2001L).build();
+    private Key payerKey = Key.newBuilder().ed25519(Bytes.fromHex(PAYER_KEY_HEX)).build();
+    // spotless:on
 
-    @Mock
-    ReadableKVState state;
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private Account schedulerAccount;
 
-    @Mock
-    ScheduleVirtualValue schedule;
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private Account payerAccount;
 
-    private ReadableScheduleStore subject;
-    private Key adminKey = A_COMPLEX_KEY;
-    private HederaKey adminHederaKey = asHederaKey(adminKey).get();
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ReadableAccountStore accountStore;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ReadableStates states;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ReadableKVStateBase<ScheduleID, Schedule> schedulesById;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private Schedule scheduleInState;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ReadableStoreFactory mockStoreFactory;
+
+    // Non-Mock objects, but may contain or reference mock objects.
+    private ReadableScheduleStore scheduleStore;
+    private SchedulableTransactionBody scheduled;
 
     @BeforeEach
-    void setUp() {
-        given(states.get("SCHEDULES_BY_ID")).willReturn(state);
-        subject = new ReadableScheduleStoreImpl(states);
+    void setUp() throws PreCheckException {
+        BDDMockito.given(states.<ScheduleID, Schedule>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
+        BDDMockito.given(schedulerAccount.key()).willReturn(schedulerKey);
+        BDDMockito.given(payerAccount.key()).willReturn(payerKey);
+
+        scheduleStore = new ReadableScheduleStoreImpl(states);
+
+        BDDMockito.given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
+        BDDMockito.given(accountStore.getAccountById(payer)).willReturn(payerAccount);
+
+        BDDMockito.given(scheduleInState.hasPayerAccount()).willReturn(Boolean.TRUE);
+        BDDMockito.given(scheduleInState.payerAccount()).willReturn(payer);
+        BDDMockito.given(scheduleInState.schedulerAccount()).willReturn(adminAccount);
+        BDDMockito.given(scheduleInState.hasAdminKey()).willReturn(true);
+        BDDMockito.given(scheduleInState.adminKey()).willReturn(adminKey);
+        BDDMockito.given(scheduleInState.scheduledTransaction()).willReturn(scheduled);
+
+        BDDMockito.given(schedulesById.get(testScheduleID)).willReturn(scheduleInState);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableScheduleStore.class)).willReturn(scheduleStore);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
     }
 
     @Test
+    @SuppressWarnings("DataFlowIssue")
     void constructorThrowsIfStatesIsNull() {
-        assertThrows(NullPointerException.class, () -> new ReadableScheduleStoreImpl(null));
+        Assertions.assertThrows(NullPointerException.class, () -> new ReadableScheduleStoreImpl(null));
     }
 
     @Test
     void returnsEmptyIfMissingSchedule() {
-        given(state.get(1L)).willReturn(null);
-
-        assertEquals(
-                Optional.empty(),
-                subject.get(ScheduleID.newBuilder().scheduleNum(1L).build()));
+        BDDMockito.given(schedulesById.get(testScheduleID)).willReturn(null);
+        Assertions.assertNull(scheduleStore.get(testScheduleID));
     }
 
     @Test
     void getsScheduleMetaFromFetchedSchedule() {
-        given(state.get(1L)).willReturn(schedule);
-        given(schedule.ordinaryViewOfScheduledTxn())
-                .willReturn(PbjConverter.fromPbj(TransactionBody.newBuilder().build()));
-        given(schedule.hasAdminKey()).willReturn(true);
-        given(schedule.adminKey()).willReturn(Optional.of((JKey) adminHederaKey));
-        given(schedule.hasExplicitPayer()).willReturn(true);
-        given(schedule.payer()).willReturn(EntityId.fromNum(2L));
-
-        final var meta = subject.get(ScheduleID.newBuilder().scheduleNum(1L).build());
-
-        assertEquals(adminKey, meta.get().adminKey());
-        assertEquals(TransactionBody.newBuilder().build(), meta.get().scheduledTxn());
-        assertEquals(
-                Optional.of(EntityId.fromNum(2L).toPbjAccountId()), meta.get().designatedPayer());
+        final Schedule meta = scheduleStore.get(testScheduleID);
+        Assertions.assertNotNull(meta);
+        Assertions.assertEquals(adminKey, meta.adminKey());
+        Assertions.assertEquals(scheduled, meta.scheduledTransaction());
+        Assertions.assertEquals(payer, meta.payerAccount());
     }
 
     @Test
     void getsScheduleMetaFromFetchedScheduleNoExplicitPayer() {
-        given(state.get(1L)).willReturn(schedule);
-        given(schedule.ordinaryViewOfScheduledTxn())
-                .willReturn(PbjConverter.fromPbj(TransactionBody.newBuilder().build()));
-        given(schedule.adminKey()).willReturn(Optional.of((JKey) adminHederaKey));
-        given(schedule.hasAdminKey()).willReturn(true);
-        given(schedule.hasExplicitPayer()).willReturn(false);
+        BDDMockito.given(scheduleInState.hasPayerAccount()).willReturn(false);
+        BDDMockito.given(scheduleInState.payerAccount()).willReturn(null);
 
-        final var meta = subject.get(ScheduleID.newBuilder().scheduleNum(1L).build());
-
-        assertEquals(adminKey, meta.get().adminKey());
-        assertEquals(TransactionBody.newBuilder().build(), meta.get().scheduledTxn());
-        assertEquals(Optional.empty(), meta.get().designatedPayer());
+        final Schedule meta = scheduleStore.get(testScheduleID);
+        Assertions.assertNotNull(meta);
+        Assertions.assertEquals(adminKey, meta.adminKey());
+        Assertions.assertEquals(scheduled, meta.scheduledTransaction());
+        Assertions.assertNull(meta.payerAccount());
     }
 }

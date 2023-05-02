@@ -16,144 +16,81 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static com.hedera.node.app.service.schedule.impl.test.ScheduledTxnFactory.scheduleCreateTxnWith;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
-import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.service.schedule.impl.test.ScheduledTxnFactory;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import java.util.Collections;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.util.Set;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.BDDMockito;
 
 class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
+    private ScheduleCreateHandler subject;
+    private PreHandleContext realPreContext;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        subject = new ScheduleCreateHandler();
+        setUpBase();
+    }
 
     @Test
     void preHandleScheduleCreateVanilla() throws PreCheckException {
-        final var subject = new ScheduleCreateHandler(dispatcher);
-        final var txn = scheduleCreateTransaction(payer);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, scheduleCreateTransaction(payer), testConfig, mockDispatcher);
+        subject.preHandle(realPreContext);
 
-        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.key()).willReturn(schedulerKey);
-        given(accountStore.getAccountById(payer)).willReturn(payerAccount);
-        given(payerAccount.key()).willReturn(payerKey);
-
-        final var context = new FakePreHandleContext(accountStore, txn);
-
-        subject.preHandle(context);
-
-        basicContextAssertions(context, 1);
-        assertEquals(schedulerKey, context.payerKey());
-        assertEquals(Set.of(adminKey), context.requiredNonPayerKeys());
-
-        final var innerContext = context.innerContext();
-        basicContextAssertions(innerContext, 0);
-        assertEquals(payer, innerContext.payer());
-        assertEquals(payerKey, innerContext.payerKey());
-
-        verify(dispatcher).dispatch(innerContext);
+        Assertions.assertEquals(1, realPreContext.requiredNonPayerKeys().size());
+        Assertions.assertEquals(1, realPreContext.optionalNonPayerKeys().size());
+        Assertions.assertEquals(schedulerKey, realPreContext.payerKey());
+        Assertions.assertEquals(Set.of(adminKey), realPreContext.requiredNonPayerKeys());
+        Assertions.assertEquals(Set.of(payerKey), realPreContext.optionalNonPayerKeys());
     }
 
     @Test
     void preHandleScheduleCreateVanillaNoAdmin() throws PreCheckException {
-        final var subject = new ScheduleCreateHandler(dispatcher);
-        final var txn = scheduleCreateTxnWith(
+        final TransactionBody transactionToTest = ScheduledTxnFactory.scheduleCreateTxnWith(
                 null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
+        realPreContext = new PreHandleContextImpl(mockStoreFactory, transactionToTest, testConfig, mockDispatcher);
+        subject.preHandle(realPreContext);
 
-        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.key()).willReturn(schedulerKey);
-        given(accountStore.getAccountById(payer)).willReturn(payerAccount);
-        given(payerAccount.key()).willReturn(payerKey);
-
-        final var context = new FakePreHandleContext(accountStore, txn);
-
-        subject.preHandle(context);
-
-        basicContextAssertions(context, 0);
-        assertEquals(schedulerKey, context.payerKey());
-        assertEquals(Set.of(), context.requiredNonPayerKeys());
-
-        final var innerContext = context.innerContext();
-        basicContextAssertions(innerContext, 0);
-        assertEquals(payer, innerContext.payer());
-        assertEquals(payerKey, innerContext.payerKey());
-
-        verify(dispatcher).dispatch(innerContext);
+        Assertions.assertEquals(0, realPreContext.requiredNonPayerKeys().size());
+        Assertions.assertEquals(1, realPreContext.optionalNonPayerKeys().size());
+        Assertions.assertEquals(schedulerKey, realPreContext.payerKey());
+        Assertions.assertEquals(Set.of(payerKey), realPreContext.optionalNonPayerKeys());
     }
 
     @Test
     void preHandleScheduleCreateUsesSamePayerIfScheduledPayerNotSet() throws PreCheckException {
-        final var subject = new ScheduleCreateHandler(dispatcher);
-        final var txn = scheduleCreateTransaction(null);
-        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.key()).willReturn(schedulerKey);
+        realPreContext =
+                new PreHandleContextImpl(mockStoreFactory, scheduleCreateTransaction(null), testConfig, mockDispatcher);
+        subject.preHandle(realPreContext);
 
-        final var context = new FakePreHandleContext(accountStore, txn);
-
-        subject.preHandle(context);
-
-        basicContextAssertions(context, 1);
-        assertEquals(schedulerKey, context.payerKey());
-        assertEquals(Set.of(adminKey), context.requiredNonPayerKeys());
-
-        final var innerContext = context.innerContext();
-        basicContextAssertions(innerContext, 0);
-        assertEquals(scheduler, innerContext.payer());
-        assertEquals(schedulerKey, innerContext.payerKey());
-
-        verify(dispatcher).dispatch(innerContext);
-    }
-
-    @Test
-    void failsWithScheduleTransactionNotInWhitelist() throws PreCheckException {
-        final var subject = new ScheduleCreateHandler(dispatcher);
-        final var txn = scheduleTxnNotRecognized();
-        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.key()).willReturn(schedulerKey);
-
-        final var context = new FakePreHandleContext(accountStore, txn);
-
-        subject.preHandle(context);
-
-        basicContextAssertions(context, 0);
-        assertEquals(schedulerKey, context.payerKey());
-        assertEquals(Collections.EMPTY_SET, context.requiredNonPayerKeys());
-
-        // @todo whitelist tests don't work; it appears they never actually tested a
-        //       non-whitelist situation so much as a missing key.  This requires careful
-        //       thought and rework.
-        //        final var innerContext = context.innerContext();
-        //        basicContextAssertions(innerContext, 0, true,
-        // SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-        //        assertEquals(scheduler, innerContext.payer());
-        //        assertEquals(schedulerKey, innerContext.payerKey());
-        //        verify(dispatcher, never()).dispatch(any());
+        Assertions.assertEquals(1, realPreContext.requiredNonPayerKeys().size());
+        Assertions.assertEquals(schedulerKey, realPreContext.payerKey());
+        Assertions.assertEquals(Set.of(adminKey), realPreContext.requiredNonPayerKeys());
     }
 
     @Test
     void innerTxnFailsSetsStatus() throws PreCheckException {
-        final var subject = new ScheduleCreateHandler(dispatcher);
-        final var txn = scheduleCreateTransaction(payer);
+        BDDMockito.given(accountStore.getAccountById(payer)).willReturn(null);
 
-        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
-        given(schedulerAccount.key()).willReturn(schedulerKey);
-        given(accountStore.getAccountById(payer)).willReturn(null);
-
-        final var context = new FakePreHandleContext(accountStore, txn);
-
-        assertThrowsPreCheck(() -> subject.preHandle(context), UNRESOLVABLE_REQUIRED_SIGNERS);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, scheduleCreateTransaction(payer), testConfig, mockDispatcher);
+        com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck(
+                () -> subject.preHandle(realPreContext), ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {
         final Timestamp timestampValue =
                 Timestamp.newBuilder().seconds(1_234_567L).build();
-        return scheduleCreateTxnWith(TEST_KEY, "test", payer, scheduler, timestampValue);
+        return ScheduledTxnFactory.scheduleCreateTxnWith(adminKey, "test", payer, scheduler, timestampValue);
     }
 }

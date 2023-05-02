@@ -100,9 +100,7 @@ message ScheduleCreateTransactionBody {
 
 The new `SchedulableTransactionBody` message is a strict subset of the `TransactionBody` message which omits the
 top-level `TransactionID`, `nodeAccountID`, and `transactionValidDuration` fields; and does not allow the 
-`ScheduleCreateTransactionBody` and `ScheduleSignTransactionBody` messages in its `data` element. Any 
-unknown fields in the submitted `SchedulableTransactionBody` will be ignored, although they _will_ affect
-the "identity" of the schedule (see [below](#receipts-and-duplicate-creations)).
+`ScheduleCreateTransactionBody` and `ScheduleSignTransactionBody` messages in its `data` element.
 
 As with all other entity types, a schedule remains in network state until it expires, even if its scheduled 
 transaction has already been executed or it has been marked deleted.
@@ -134,10 +132,7 @@ can then submit a `ScheduleSign` (see below) with the given `ScheduleID`, signin
 the same Ed25519 keys it used for its own create attempt. 
 
 Two <tt>ScheduleCreate</tt> transactions are <i>identical</i> if they are equal in all their fields 
-other than, possibly, <tt>payerAccountID</tt>. (Here "equal" should be understood in the sense of 
-gRPC object equality in the network software runtime. In particular, a gRPC object with 
-[unknown fields](https://developers.google.com/protocol-buffers/docs/proto3#unknowns)
-is not equal to a gRPC object without unknown fields, even if they agree on all known fields.)
+other than, possibly, <tt>payerAccountID</tt>.
   
 ### Enforced checks and the scheduling whitelist
 
