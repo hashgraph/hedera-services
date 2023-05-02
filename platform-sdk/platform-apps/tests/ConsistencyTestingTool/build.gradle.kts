@@ -24,4 +24,6 @@ dependencies {
   implementation(project(":swirlds-platform-core"))
   implementation(libs.bundles.logging.impl)
   compileOnly(libs.spotbugs.annotations)
+
+  testImplementation(testLibs.bundles.mocking)
 }

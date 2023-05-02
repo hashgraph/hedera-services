@@ -24,6 +24,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents a round in the ConsistencyTestingTool
@@ -48,7 +49,9 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, L
      * @param currentState the long state value of the application after the round has been applied
      * @return the input round, converted to a {@link ConsistencyTestingToolRound}
      */
-    public static ConsistencyTestingToolRound fromRound(final Round round, final long currentState) {
+    public static ConsistencyTestingToolRound fromRound(final @NonNull Round round, final long currentState) {
+        Objects.requireNonNull(round);
+
         final List<Long> transactionContents = new ArrayList<>();
 
         round.forEachTransaction(transaction -> transactionContents.add(byteArrayToLong(transaction.getContents(), 0)));
@@ -62,22 +65,25 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, L
      * @param roundString the string representation of the round
      * @return the new {@link ConsistencyTestingToolRound}
      */
-    public static ConsistencyTestingToolRound fromString(final String roundString) {
+    public static ConsistencyTestingToolRound fromString(final @NonNull String roundString) {
+        Objects.requireNonNull(roundString);
+
         final List<String> fields =
                 Arrays.stream(roundString.split(FIELD_SEPARATOR)).toList();
 
         if (fields.size() != 3) {
-            throw new IllegalArgumentException("Invalid round string: " + roundString);
+            throw new IllegalStateException("Invalid round string: " + roundString);
         }
 
-        final long roundNumber = Long.parseLong(
-                fields.get(0).substring(roundString.indexOf(ROUND_NUMBER_STRING) + ROUND_NUMBER_STRING.length() + 1));
-        final long currentState = Long.parseLong(
-                fields.get(1).substring(roundString.indexOf(CURRENT_STATE_STRING) + CURRENT_STATE_STRING.length() + 1));
+        String field = fields.get(0);
+        final long roundNumber = Long.parseLong(field.substring(ROUND_NUMBER_STRING.length()));
 
-        final String transactionsString =
-                roundString.substring(fields.get(2).indexOf("[") + 1, roundString.indexOf("]"));
-        final List<Long> transactionsContents = Arrays.stream(transactionsString.split("\\s*,\\s*"))
+        field = fields.get(1);
+        final long currentState = Long.parseLong(field.substring(CURRENT_STATE_STRING.length()));
+
+        field = fields.get(2);
+        final String transactionsString = field.substring(field.indexOf("[") + 1, field.indexOf("]"));
+        final List<Long> transactionsContents = Arrays.stream(transactionsString.split(LIST_ELEMENT_SEPARATOR))
                 .map(Long::parseLong)
                 .toList();
 
@@ -104,6 +110,7 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, L
 
         if (other instanceof ConsistencyTestingToolRound otherRound) {
             return roundNumber == otherRound.roundNumber
+                    && currentState == otherRound.currentState
                     && transactionsContents.equals(otherRound.transactionsContents);
         }
 
@@ -128,6 +135,7 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, L
             builder.append(transaction);
             builder.append(LIST_ELEMENT_SEPARATOR);
         });
+        builder.delete(builder.length() - LIST_ELEMENT_SEPARATOR.length(), builder.length());
         builder.append("]\n");
 
         return builder.toString();
