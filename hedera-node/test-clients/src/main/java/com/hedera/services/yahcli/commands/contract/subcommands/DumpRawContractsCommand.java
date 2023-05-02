@@ -88,11 +88,12 @@ public class DumpRawContractsCommand implements Callable<Integer> {
             final var formattedContracts = formatContractLines(r);
 
             System.out.printf(
-                    "%d registered contracts, %d with bytecode (%d are 0-length)%s%n",
+                    "%d registered contracts, %d with bytecode (%d are 0-length)%s, %d deleted contracts%n",
                     totalContractsRegisteredWithAccounts,
                     totalContractsPresentInFileStore + zeroLengthCount[0],
                     zeroLengthCount[0],
-                    emitUnique ? ", %d unique (by bytecode)".formatted(totalUniqueContractsPresentInFileStore) : "");
+                    emitUnique ? ", %d unique (by bytecode)".formatted(totalUniqueContractsPresentInFileStore) : "",
+                    r.deletedContracts().size());
             for (final var s : formattedContracts) System.out.println(s);
         }
 
@@ -147,6 +148,7 @@ public class DumpRawContractsCommand implements Callable<Integer> {
      * the signed state file. The latter number may be larger than the number of
      * contracts-with-bytecodes returned because some contracts known to accounts are not present in
      * the file store.
+     * <p>Deleted contracts are _omitted_.
      */
     @NonNull
     private Contracts uniquifyContracts(@NonNull final Contracts contracts) {
@@ -155,6 +157,7 @@ public class DumpRawContractsCommand implements Callable<Integer> {
         // the value is a set of all contract ids associated with that bytecode.
         final var contractsByBytecode = new HashMap<ByteArrayAsKey, Set<Integer>>(ESTIMATED_NUMBER_OF_CONTRACTS);
         for (var contract : contracts.contracts()) {
+            if (contract.validity() == SignedStateHolder.Validity.DELETED) continue;
             final var bytecode = contract.bytecode();
             final var cids = contract.ids();
             contractsByBytecode.compute(new ByteArrayAsKey(bytecode), (k, v) -> {
@@ -169,10 +172,10 @@ public class DumpRawContractsCommand implements Callable<Integer> {
         // Second, flatten that map into a collection.
         final var uniqueContracts = new ArrayList<Contract>(contractsByBytecode.size());
         for (final var kv : contractsByBytecode.entrySet()) {
-            uniqueContracts.add(new Contract(kv.getValue(), kv.getKey().array()));
+            uniqueContracts.add(new Contract(kv.getValue(), kv.getKey().array(), SignedStateHolder.Validity.ACTIVE));
         }
 
-        return new Contracts(uniqueContracts, contracts.registeredContractsCount());
+        return new Contracts(uniqueContracts, contracts.deletedContracts(), contracts.registeredContractsCount());
     }
 
     /**

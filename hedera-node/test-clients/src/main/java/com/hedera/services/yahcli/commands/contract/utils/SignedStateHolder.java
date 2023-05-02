@@ -114,6 +114,11 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         reservedSignedState.close();
     }
 
+    public enum Validity {
+        ACTIVE,
+        DELETED
+    };
+
     /**
      * A contract - some bytecode associated with its contract id(s)
      *
@@ -122,11 +127,15 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
      *     contract
      * @param bytecode - bytecode of the contract
      */
-    public record Contract(@NonNull Set</*@NonNull*/ Integer> ids, @NonNull byte[] bytecode) {
+    public record Contract(
+            @NonNull Set</*@NonNull*/ Integer> ids, @NonNull byte[] bytecode, @NonNull Validity validity) {
 
         @Override
         public boolean equals(final Object obj) {
-            return obj instanceof Contract other && ids.equals(other.ids) && Arrays.equals(bytecode, other.bytecode);
+            return obj instanceof Contract other
+                    && ids.equals(other.ids)
+                    && Arrays.equals(bytecode, other.bytecode)
+                    && validity.equals(other.validity);
         }
 
         @Override
@@ -144,7 +153,8 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
             }
             csvIds.setLength(csvIds.length() - 1);
 
-            return "Contract{ids=(%s), bytecode=%s}".formatted(csvIds.toString(), Arrays.toString(bytecode));
+            return "Contract{ids=(%s), %s, bytecode=%s}"
+                    .formatted(csvIds.toString(), validity, Arrays.toString(bytecode));
         }
     }
 
@@ -156,13 +166,17 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
      *     state file (not all actually have bytecodes in the file store, and of those, some have
      *     0-length bytecode files)
      */
-    public record Contracts(@NonNull Collection</*@NonNull*/ Contract> contracts, int registeredContractsCount) {}
+    public record Contracts(
+            @NonNull Collection</*@NonNull*/ Contract> contracts,
+            Collection<Integer> deletedContracts,
+            int registeredContractsCount) {}
 
     @NonNull
     public Contracts getContracts() {
         final var contractIds = getAllKnownContracts();
-        final var contractContents = getAllContractContents(contractIds);
-        return new Contracts(contractContents, contractIds.size());
+        final var deletedContractIds = getAllDeletedContracts();
+        final var contractContents = getAllContractContents(contractIds, deletedContractIds);
+        return new Contracts(contractContents, deletedContractIds, contractIds.size());
     }
 
     public record ContractKeyLocal(long contractId, UInt256 key) {
@@ -391,10 +405,20 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         return ids;
     }
 
+    @NonNull
+    public Set</*@NonNull*/ Integer> getAllDeletedContracts() {
+        var ids = new HashSet<Integer>(ESTIMATED_NUMBER_OF_CONTRACTS);
+        getAccounts().forEach((k, v) -> {
+            if (null != k && null != v && v.isSmartContract() && v.isDeleted()) ids.add(k.intValue());
+        });
+        return ids;
+    }
+
     /** Returns the bytecodes for all the requested contracts */
     @NonNull
     public Collection</*@NonNull*/ Contract> getAllContractContents(
-            @NonNull final Collection</*@NonNull*/ Integer> contractIds) {
+            @NonNull final Collection</*@NonNull*/ Integer> contractIds,
+            @NonNull final Collection</*@NonNull*/ Integer> deletedContractIds) {
 
         final var fileStore = getFileStore();
         var codes = new ArrayList<Contract>(ESTIMATED_NUMBER_OF_CONTRACTS);
@@ -403,7 +427,10 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
             if (fileStore.containsKey(vbk)) {
                 final var blob = fileStore.get(vbk);
                 if (null != blob) {
-                    final var c = new Contract(Set.of(cid), blob.getData());
+                    final var c = new Contract(
+                            Set.of(cid),
+                            blob.getData(),
+                            deletedContractIds.contains(cid) ? Validity.DELETED : Validity.ACTIVE);
                     codes.add(c);
                 }
             }
