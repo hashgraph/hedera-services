@@ -86,6 +86,12 @@ public final class EventStreamInfoCommand extends AbstractCommand {
     @Override
     public Integer call() throws Exception {
         setupConstructableRegistry();
+        EventStreamBound bound = boundBuilder.build();
+        // Implementation and unit tests will work with both timestamp and round set.
+        // Current thoughts is that both should not be used at the same time.
+        if (bound.hasRound() && bound.hasTimestamp()) {
+            throw buildParameterException("Cannot set both round and timestamp");
+        }
         System.out.println(new EventStreamScanner(
                         eventStreamDirectory, boundBuilder.build(), Duration.ofSeconds(granularityInSeconds), true)
                 .createReport());
