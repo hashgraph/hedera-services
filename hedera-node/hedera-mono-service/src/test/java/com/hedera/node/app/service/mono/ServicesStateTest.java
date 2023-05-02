@@ -121,6 +121,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
@@ -848,6 +850,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
+    // Since 0.30 JDB files include the ':' character which is forbidden by Windows (and may
+    // exceed the maximum path length besides), only run this test on Linux, Mac, or UNIX
+    @EnabledOnOs({OS.LINUX, OS.MAC, OS.AIX, OS.SOLARIS})
     void testLoading0305State() throws IOException {
         ClassLoaderHelper.loadClassPathDependencies();
 
