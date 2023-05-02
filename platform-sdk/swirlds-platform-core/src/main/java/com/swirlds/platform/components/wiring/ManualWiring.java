@@ -41,6 +41,7 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -142,37 +143,32 @@ public class ManualWiring {
                 new DefaultStateManagementComponentFactory(
                         platformContext, threadManager, addressBook, platformSigner, mainClassName, selfId, swirldName);
 
-        stateManagementComponentFactory.newLatestCompleteStateConsumer(ssw -> {
+        stateManagementComponentFactory.newLatestCompleteStateConsumer(ss -> {
+            final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");
+
             boolean success = asyncLatestCompleteStateQueue.offer(() -> {
-                appCommunicationComponent.newLatestCompleteStateEvent(ssw);
-                ssw.release();
+                try (reservedSignedState) {
+                    appCommunicationComponent.newLatestCompleteStateEvent(reservedSignedState.get());
+                }
             });
             if (!success) {
                 logger.error(
                         EXCEPTION.getMarker(),
                         "Unable to add new latest complete state task " + "(state round = {}) to {} because it is full",
-                        ssw.get().getRound(),
+                        ss.getRound(),
                         asyncLatestCompleteStateQueue.getName());
-                ssw.release();
+                reservedSignedState.close();
             }
         });
 
         // FUTURE WORK: make the call to the app communication component asynchronous
-        stateManagementComponentFactory.stateToDiskConsumer((ssw, path, success) -> {
-            freezeManager.stateToDisk(ssw.get(), path, success);
-            appCommunicationComponent.stateToDiskAttempt(ssw, path, success);
-            ssw.release();
+        stateManagementComponentFactory.stateToDiskConsumer((ss, path, success) -> {
+            freezeManager.stateToDisk(ss, path, success);
+            appCommunicationComponent.stateToDiskAttempt(ss, path, success);
         });
 
-        stateManagementComponentFactory.stateLacksSignaturesConsumer(ssw -> {
-            freezeManager.stateLacksSignatures(ssw.get());
-            ssw.release();
-        });
-
-        stateManagementComponentFactory.newCompleteStateConsumer(ssw -> {
-            freezeManager.stateHasEnoughSignatures(ssw.get());
-            ssw.release();
-        });
+        stateManagementComponentFactory.stateLacksSignaturesConsumer(freezeManager::stateLacksSignatures);
+        stateManagementComponentFactory.newCompleteStateConsumer(freezeManager::stateHasEnoughSignatures);
 
         stateManagementComponentFactory.prioritySystemTransactionConsumer(prioritySystemTransactionSubmitter);
         stateManagementComponentFactory.haltRequestedConsumer(haltRequestedConsumer);

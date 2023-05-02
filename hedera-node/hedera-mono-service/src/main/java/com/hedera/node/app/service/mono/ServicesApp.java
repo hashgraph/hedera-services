@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono;
 
+import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
@@ -211,6 +212,8 @@ public interface ServicesApp {
 
     @BootstrapProps
     PropertySource bootstrapProps();
+
+    EntityMapWarmer mapWarmer();
 
     @Component.Builder
     interface Builder {

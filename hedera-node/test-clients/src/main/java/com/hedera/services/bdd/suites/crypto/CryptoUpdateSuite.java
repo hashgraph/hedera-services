@@ -187,6 +187,7 @@ public class CryptoUpdateSuite extends HapiSuite {
         final var baseTxn = "baseTxn";
         final var plusOneTxn = "plusOneTxn";
         final var plusTenTxn = "plusTenTxn";
+        final var allowedPercentDiff = 1.0;
 
         AtomicLong expiration = new AtomicLong();
         return defaultHapiSpec("UsdFeeAsExpectedCryptoUpdate")
@@ -223,9 +224,12 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .maxAutomaticAssociations(11)
                                 .via(plusTenTxn))
                 .then(
-                        validateChargedUsd(baseTxn, baseFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(plusOneTxn, plusOneSlotFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(plusTenTxn, plusTenSlotsFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)));
+                        validateChargedUsd(baseTxn, baseFee, allowedPercentDiff)
+                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(plusOneTxn, plusOneSlotFee, allowedPercentDiff)
+                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(plusTenTxn, plusTenSlotsFee, allowedPercentDiff)
+                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)));
     }
 
     private HapiSpec updateFailsWithOverlyLongLifetime() {

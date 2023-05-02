@@ -51,6 +51,8 @@ public interface VirtualMapLike<K extends VirtualKey, V extends VirtualValue> {
     @SuppressWarnings("rawtypes")
     VirtualDataSource getDataSource();
 
+    void warm(K key);
+
     void extractVirtualMapData(ThreadManager threadManager, InterruptableConsumer<Pair<K, V>> handler, int threadCount)
             throws InterruptedException;
 
@@ -118,6 +120,11 @@ public interface VirtualMapLike<K extends VirtualKey, V extends VirtualValue> {
             @Override
             public Hash getHash() {
                 return real.getHash();
+            }
+
+            @Override
+            public void warm(K key) {
+                real.warm(key);
             }
         };
     }
