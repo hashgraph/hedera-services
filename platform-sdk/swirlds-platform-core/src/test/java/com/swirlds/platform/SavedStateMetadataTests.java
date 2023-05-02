@@ -86,8 +86,8 @@ class SavedStateMetadataTests {
         for (int i = 0; i < random.nextInt(1, 10); i++) {
             signingNodes.add(random.nextLong());
         }
-        final long signingStakeSum = random.nextLong();
-        final long totalStake = random.nextLong();
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
@@ -99,8 +99,8 @@ class SavedStateMetadataTests {
                 wallClockTime,
                 nodeId,
                 signingNodes,
-                signingStakeSum,
-                totalStake);
+                signingWeightSum,
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -113,8 +113,53 @@ class SavedStateMetadataTests {
         assertEquals(wallClockTime, deserialized.wallClockTime());
         assertEquals(nodeId, deserialized.nodeId());
         assertEquals(signingNodes, deserialized.signingNodes());
-        assertEquals(signingStakeSum, deserialized.signingStakeSum());
-        assertEquals(totalStake, deserialized.totalStake());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
+    }
+
+    @Test
+    @DisplayName("Random Data Empty ListTest")
+    void randomDataEmptyListTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final long round = random.nextLong();
+        final long numberOfConsensusEvents = random.nextLong();
+        final Instant timestamp = RandomUtils.randomInstant(random);
+        final Hash runningEventHash = RandomUtils.randomHash(random);
+        final long minimumGenerationNonAncient = random.nextLong();
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
+        final Instant wallClockTime = RandomUtils.randomInstant(random);
+        final long nodeId = random.nextLong();
+        final List<Long> signingNodes = new ArrayList<>();
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
+
+        final SavedStateMetadata metadata = new SavedStateMetadata(
+                round,
+                numberOfConsensusEvents,
+                timestamp,
+                runningEventHash,
+                minimumGenerationNonAncient,
+                softwareVersion.toString(),
+                wallClockTime,
+                nodeId,
+                signingNodes,
+                signingWeightSum,
+                totalWeight);
+
+        final SavedStateMetadata deserialized = serializeDeserialize(metadata);
+
+        assertEquals(round, deserialized.round());
+        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
+        assertEquals(timestamp, deserialized.consensusTimestamp());
+        assertEquals(runningEventHash, deserialized.runningEventHash());
+        assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
+        assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
+        assertEquals(wallClockTime, deserialized.wallClockTime());
+        assertEquals(nodeId, deserialized.nodeId());
+        assertEquals(signingNodes, deserialized.signingNodes());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
     }
 
     @Test
@@ -188,18 +233,18 @@ class SavedStateMetadataTests {
             signingNodes = null;
         }
 
-        final Long signingStakeSum;
+        final Long signingWeightSum;
         if (random.nextBoolean()) {
-            signingStakeSum = random.nextLong();
+            signingWeightSum = random.nextLong();
         } else {
-            signingStakeSum = null;
+            signingWeightSum = null;
         }
 
-        final Long totalStake;
+        final Long totalWeight;
         if (random.nextBoolean()) {
-            totalStake = random.nextLong();
+            totalWeight = random.nextLong();
         } else {
-            totalStake = null;
+            totalWeight = null;
         }
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
@@ -212,8 +257,8 @@ class SavedStateMetadataTests {
                 wallClockTime,
                 nodeId,
                 signingNodes,
-                signingStakeSum,
-                totalStake);
+                signingWeightSum,
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -230,8 +275,8 @@ class SavedStateMetadataTests {
         assertEquals(wallClockTime, deserialized.wallClockTime());
         assertEquals(nodeId, deserialized.nodeId());
         assertEquals(signingNodes, deserialized.signingNodes());
-        assertEquals(signingStakeSum, deserialized.signingStakeSum());
-        assertEquals(totalStake, deserialized.totalStake());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
     }
 
     @Test
@@ -272,8 +317,8 @@ class SavedStateMetadataTests {
         for (int i = 0; i < random.nextInt(1, 10); i++) {
             signingNodes.add(random.nextLong());
         }
-        final long signingStakeSum = random.nextLong();
-        final long totalStake = random.nextLong();
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
@@ -285,8 +330,8 @@ class SavedStateMetadataTests {
                 wallClockTime,
                 nodeId,
                 signingNodes,
-                signingStakeSum,
-                totalStake);
+                signingWeightSum,
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -299,8 +344,8 @@ class SavedStateMetadataTests {
         assertEquals(wallClockTime, deserialized.wallClockTime());
         assertEquals(nodeId, deserialized.nodeId());
         assertEquals(signingNodes, deserialized.signingNodes());
-        assertEquals(signingStakeSum, deserialized.signingStakeSum());
-        assertEquals(totalStake, deserialized.totalStake());
+        assertEquals(signingWeightSum, deserialized.signingWeightSum());
+        assertEquals(totalWeight, deserialized.totalWeight());
     }
 
     private interface FileUpdater {
@@ -309,8 +354,9 @@ class SavedStateMetadataTests {
 
     /**
      * Test the parsing of a mal-formatted file
-     * @param random a source of randomness
-     * @param fileUpdater updates a file in some way
+     *
+     * @param random        a source of randomness
+     * @param fileUpdater   updates a file in some way
      * @param invalidFields the fields expected to be invalid in the mal-formatted file
      */
     private void testMalFormedFile(
@@ -329,8 +375,8 @@ class SavedStateMetadataTests {
         for (int i = 0; i < random.nextInt(1, 10); i++) {
             signingNodes.add(random.nextLong());
         }
-        final long signingStakeSum = random.nextLong();
-        final long totalStake = random.nextLong();
+        final long signingWeightSum = random.nextLong();
+        final long totalWeight = random.nextLong();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
@@ -342,8 +388,8 @@ class SavedStateMetadataTests {
                 wallClockTime,
                 nodeId,
                 signingNodes,
-                signingStakeSum,
-                totalStake);
+                signingWeightSum,
+                totalWeight);
 
         final Path path = testDirectory.resolve("metadata.txt");
         metadata.write(path);
@@ -415,16 +461,16 @@ class SavedStateMetadataTests {
             assertEquals(signingNodes, deserialized.signingNodes());
         }
 
-        if (invalidFields.contains(SavedStateMetadataField.SIGNING_STAKE_SUM)) {
-            assertNull(deserialized.signingStakeSum());
+        if (invalidFields.contains(SavedStateMetadataField.SIGNING_WEIGHT_SUM)) {
+            assertNull(deserialized.signingWeightSum());
         } else {
-            assertEquals(signingStakeSum, deserialized.signingStakeSum());
+            assertEquals(signingWeightSum, deserialized.signingWeightSum());
         }
 
-        if (invalidFields.contains(SavedStateMetadataField.TOTAL_STAKE)) {
-            assertNull(deserialized.totalStake());
+        if (invalidFields.contains(SavedStateMetadataField.TOTAL_WEIGHT)) {
+            assertNull(deserialized.totalWeight());
         } else {
-            assertEquals(totalStake, deserialized.totalStake());
+            assertEquals(totalWeight, deserialized.totalWeight());
         }
     }
 
@@ -509,23 +555,6 @@ class SavedStateMetadataTests {
                     for (final String line : s.split("\n")) {
                         if (line.contains(SavedStateMetadataField.SIGNING_NODES.toString())) {
                             sb.append(SavedStateMetadataField.SIGNING_NODES + ": 1,2,3,4,,6,7,8\n");
-                        } else {
-                            sb.append(line).append("\n");
-                        }
-                    }
-
-                    return sb.toString();
-                },
-                Set.of(SavedStateMetadataField.SIGNING_NODES));
-
-        testMalFormedFile(
-                random,
-                (s, m) -> {
-                    final StringBuilder sb = new StringBuilder();
-
-                    for (final String line : s.split("\n")) {
-                        if (line.contains(SavedStateMetadataField.SIGNING_NODES.toString())) {
-                            sb.append(SavedStateMetadataField.SIGNING_NODES + ": \n");
                         } else {
                             sb.append(line).append("\n");
                         }

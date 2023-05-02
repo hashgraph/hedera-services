@@ -279,7 +279,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                     cb -> cb.accept(infoResponse.getAccountInfo().getContractAccountID()));
         }
         if (verboseLoggingOn) {
-            log.info("Info for '" + repr() + "': " + response.getCryptoGetInfo().getAccountInfo());
+            String message = String.format(
+                    "Info for '%s': %s", repr(), response.getCryptoGetInfo().getAccountInfo());
+            log.info(message);
         }
         if (customLog.isPresent()) {
             customLog.get().accept(response.getCryptoGetInfo().getAccountInfo(), log);

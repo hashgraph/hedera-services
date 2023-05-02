@@ -287,7 +287,12 @@ class WipeFungiblePrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveWipeKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveWipeKey(
+                        true,
+                        fungibleTokenAddr,
+                        fungibleTokenAddr,
+                        wrappedLedgers,
+                        HederaFunctionality.TokenAccountWipe))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -299,7 +304,7 @@ class WipeFungiblePrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(expirableTxnRecordBuilder);
         given(wipeLogic.validateSyntax(any())).willReturn(OK);
@@ -381,7 +386,12 @@ class WipeFungiblePrecompileTest {
                 .when(() -> decodeWipe(eq(pretendArguments), any()))
                 .thenReturn(fungibleWipeMaxAmount);
         given(syntheticTxnFactory.createWipe(fungibleWipeMaxAmount)).willReturn(mockSynthBodyBuilder);
-        given(sigsVerifier.hasActiveWipeKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveWipeKey(
+                        true,
+                        fungibleTokenAddr,
+                        fungibleTokenAddr,
+                        wrappedLedgers,
+                        HederaFunctionality.TokenAccountWipe))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -393,7 +403,7 @@ class WipeFungiblePrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(expirableTxnRecordBuilder);
         given(wipeLogic.validateSyntax(any())).willReturn(OK);

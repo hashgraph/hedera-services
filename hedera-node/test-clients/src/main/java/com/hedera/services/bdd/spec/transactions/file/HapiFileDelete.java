@@ -86,7 +86,7 @@ public class HapiFileDelete extends HapiTxnOp<HapiFileDelete> {
     @Override
     protected void updateStateOf(HapiSpec spec) throws Throwable {
         if (verboseLoggingOn) {
-            log.info("Actual status was " + actualStatus);
+            log.info("Actual status was {}", actualStatus);
             log.info("Deleted file {} with ID {} ", file, spec.registry().getFileId(file));
         }
         if (actualStatus != ResponseCodeEnum.SUCCESS) {

@@ -66,7 +66,8 @@ public class InMemoryBuilder implements VirtualDataSourceBuilder<TestKey, TestVa
      * {@inheritDoc}
      */
     @Override
-    public InMemoryDataSource<TestKey, TestValue> copy(final VirtualDataSource<TestKey, TestValue> snapshotMe) {
+    public InMemoryDataSource<TestKey, TestValue> copy(
+            final VirtualDataSource<TestKey, TestValue> snapshotMe, final boolean makeCopyActive) {
         final InMemoryDataSource<TestKey, TestValue> source = (InMemoryDataSource<TestKey, TestValue>) snapshotMe;
         final InMemoryDataSource<TestKey, TestValue> snapshot = new InMemoryDataSource<>(source);
         databases.put(createUniqueDataSourceName(source.getName()), snapshot);

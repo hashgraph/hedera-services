@@ -20,18 +20,26 @@ import static com.swirlds.platform.state.editor.StateEditorUtils.formatNodeType;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatRoute;
 
 import com.swirlds.cli.utility.CommandBuilder;
+import com.swirlds.common.context.DefaultPlatformContext;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.route.MerkleRouteUtils;
-import com.swirlds.platform.state.State;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
+import com.swirlds.platform.state.signed.SignedStateReference;
+import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
@@ -42,29 +50,38 @@ import picocli.CommandLine;
  */
 public class StateEditor {
 
-    private SignedState signedState;
+    private final SignedStateReference signedState = new SignedStateReference();
     private MerkleRoute currentWorkingRoute = MerkleRouteFactory.getEmptyRoute();
     private boolean alive = true;
+    private final PlatformContext platformContext;
 
     /**
      * Create a new state editor.
      *
-     * @param statePath
-     * 		the path where the signed state can be found
+     * @param statePath the path where the signed state can be found
      */
     public StateEditor(final Path statePath) throws IOException {
-        final DeserializedSignedState deserializedSignedState = SignedStateFileReader.readStateFile(statePath);
-        System.out.println("\nLoading state from " + statePath);
-        signedState = deserializedSignedState.signedState();
-        System.out.println("Hashing state");
-        try {
-            MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(signedState.getState())
-                    .get();
-        } catch (final InterruptedException | ExecutionException e) {
-            throw new RuntimeException("problem encountered while hashing state", e);
+
+        final Configuration configuration = BootstrapUtils.loadConfiguration(List.of());
+
+        platformContext = new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
+
+        final DeserializedSignedState deserializedSignedState =
+                SignedStateFileReader.readStateFile(platformContext, statePath);
+
+        try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
+            System.out.println("\nLoading state from " + statePath);
+            signedState.set(reservedSignedState.get(), "StateEditor constructor");
+            System.out.println("Hashing state");
+            try {
+                MerkleCryptoFactory.getInstance()
+                        .digestTreeAsync(reservedSignedState.get().getState())
+                        .get();
+            } catch (final InterruptedException | ExecutionException e) {
+                throw new RuntimeException("problem encountered while hashing state", e);
+            }
+            System.out.println("Hash = " + reservedSignedState.get().getState().getHash());
         }
-        System.out.println("Hash = " + signedState.getState().getHash());
     }
 
     /**
@@ -103,8 +120,8 @@ public class StateEditor {
 
             MerkleNode target = null;
             while (true) {
-                try {
-                    target = getState().getNodeAtRoute(currentWorkingRoute);
+                try (final ReservedSignedState reservedSignedState = getState("StateEditor.start()")) {
+                    target = reservedSignedState.get().getState().getNodeAtRoute(currentWorkingRoute);
                     break;
                 } catch (final NoSuchElementException e) {
                     // This is possible of the current location gets deleted
@@ -143,34 +160,36 @@ public class StateEditor {
     }
 
     /**
-     * Get the current working route, equivalent to the
-     * "current working directory" but relative to the root of the state.
+     * Get the current working route, equivalent to the "current working directory" but relative to the root of the
+     * state.
      */
     public MerkleRoute getCurrentWorkingRoute() {
         return currentWorkingRoute;
     }
 
     /**
-     * Set the current working route, equivalent to the
-     * "current working directory" but relative to the root of the state.
+     * Set the current working route, equivalent to the "current working directory" but relative to the root of the
+     * state.
      */
     public void setCurrentWorkingRoute(final MerkleRoute currentWorkingRoute) {
-        getState().getNodeAtRoute(currentWorkingRoute); // throws if invalid
-        this.currentWorkingRoute = currentWorkingRoute;
+        try (final ReservedSignedState reservedSignedState = getState("StateEditor.setCurrentWorkingRoute()")) {
+            reservedSignedState.get().getState().getNodeAtRoute(currentWorkingRoute); // throws if invalid
+            this.currentWorkingRoute = currentWorkingRoute;
+        }
     }
 
     /**
      * Get the state.
      */
-    public State getState() {
-        return signedState.getState();
+    public ReservedSignedState getState(final String reason) {
+        return signedState.getAndReserve(reason);
     }
 
     /**
      * Get the signed state.
      */
-    public SignedState getSignedState() {
-        return signedState;
+    public ReservedSignedState getSignedState() {
+        return signedState.getAndReserve("StateEditor.getSignedState()");
     }
 
     /**
@@ -178,13 +197,18 @@ public class StateEditor {
      *
      * @return the immutable copy
      */
-    public SignedState getSignedStateCopy() {
-        final SignedState newSignedState =
-                new SignedState(signedState.getState().copy(), signedState.isFreezeState());
-        try {
-            return signedState;
-        } finally {
-            signedState = newSignedState;
+    public ReservedSignedState getSignedStateCopy() {
+        try (final ReservedSignedState reservedSignedState =
+                signedState.getAndReserve("StateEditor.getSignedStateCopy() 1")) {
+            final SignedState newSignedState = new SignedState(
+                    platformContext,
+                    reservedSignedState.get().getState().copy(),
+                    "StateEditor.getSignedStateCopy()",
+                    reservedSignedState.get().isFreezeState());
+
+            signedState.set(newSignedState, "StateEditor.getSignedStateCopy() 2");
+
+            return signedState.getAndReserve("StateEditor.getSignedStateCopy() return value");
         }
     }
 
@@ -192,14 +216,15 @@ public class StateEditor {
      * Parse a relative merkle route string and return the merkle node at that position.
      */
     public MerkleNode getRelativeNode(final String path) {
-        return getState().getNodeAtRoute(getRelativeRoute(path));
+        try (final ReservedSignedState reservedSignedState = getState("StateEditor.getRelativeNode()")) {
+            return reservedSignedState.get().getState().getNodeAtRoute(getRelativeRoute(path));
+        }
     }
 
     /**
      * Parse a route string relative to the current working route.
      *
-     * @param path
-     * 		a path string
+     * @param path a path string
      * @return the route described by that path string
      */
     public MerkleRoute getRelativeRoute(final String path) {
@@ -217,15 +242,17 @@ public class StateEditor {
         final MerkleRoute parentPath = route.getParent();
         final int indexInParent = route.getStep(-1);
 
-        final MerkleNode parent = getState().getNodeAtRoute(parentPath);
-        if (parent == null) {
-            throw new IllegalArgumentException("The node at " + formatRoute(parentPath) + " is null.");
-        }
-        if (!(parent instanceof MerkleInternal)) {
-            throw new IllegalArgumentException("The node at " + formatRoute(parentPath) + " is of type "
-                    + parent.getClass().getSimpleName() + " and is not an internal node.");
-        }
+        try (final ReservedSignedState reservedSignedState = signedState.getAndReserve("StateEditor.getParentInfo()")) {
+            final MerkleNode parent = reservedSignedState.get().getState().getNodeAtRoute(parentPath);
+            if (parent == null) {
+                throw new IllegalArgumentException("The node at " + formatRoute(parentPath) + " is null.");
+            }
+            if (!(parent instanceof MerkleInternal)) {
+                throw new IllegalArgumentException("The node at " + formatRoute(parentPath) + " is of type "
+                        + parent.getClass().getSimpleName() + " and is not an internal node.");
+            }
 
-        return new ParentInfo(route, parent.asInternal(), indexInParent);
+            return new ParentInfo(route, parent.asInternal(), indexInParent);
+        }
     }
 }

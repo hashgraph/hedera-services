@@ -57,7 +57,7 @@ public class CustomSpecAssert extends UtilOp {
     private static void handleExec(final HapiSpec spec, final HapiSpecOperation op) {
         Optional<Throwable> error = op.execFor(spec);
         if (error.isPresent()) {
-            log.error("Operation '" + op + "' :: " + error.get().getMessage());
+            log.error("Operation '{}' :: {}", op, error.get().getMessage());
             throw new IllegalStateException(error.get());
         }
     }

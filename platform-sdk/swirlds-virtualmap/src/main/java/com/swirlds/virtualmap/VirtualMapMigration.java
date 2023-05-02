@@ -53,7 +53,7 @@ public final class VirtualMapMigration {
      * @param <V>
      * 		the type of the value
      */
-    public static <K extends VirtualKey<? super K>, V extends VirtualValue> void extractVirtualMapData(
+    public static <K extends VirtualKey, V extends VirtualValue> void extractVirtualMapData(
             final ThreadManager threadManager,
             final VirtualMap<K, V> source,
             final InterruptableConsumer<Pair<K, V>> handler,

@@ -181,7 +181,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
                 configList
                         .getNameValueList()
                         .forEach(setting ->
-                                entries.add(String.format("\n  %s=%s", setting.getName(), setting.getValue())));
+                                entries.add(String.format("%n  %s=%s", setting.getName(), setting.getValue())));
                 Collections.sort(entries);
                 entries.forEach(msg::append);
                 log.info(msg.toString());
@@ -212,23 +212,18 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
                             int numToWrite = Math.min(bytes.length - i, MAX_LEN);
                             byteSink.write(Arrays.copyOfRange(bytes, i, i + numToWrite));
                             i += numToWrite;
-                            log.info("Saved next "
-                                    + numToWrite
-                                    + " bytes of '"
-                                    + fileName
-                                    + "' to "
-                                    + snapshotFile.getAbsolutePath());
+                            String message = String.format(
+                                    "Saved next %d bytes of '%s' to %s",
+                                    numToWrite, fileName, snapshotFile.getAbsolutePath());
+                            log.info(message);
                         }
                     } else {
                         File snapshotFile = new File(snapshotPath.get());
                         ByteSink byteSink = Files.asByteSink(snapshotFile);
                         byteSink.write(bytes);
-                        log.info("Saved "
-                                + bytes.length
-                                + " bytes of '"
-                                + fileName
-                                + "' to "
-                                + snapshotFile.getAbsolutePath());
+                        String message = String.format(
+                                "Saved %d bytes of '%s' to %s", bytes.length, fileName, snapshotFile.getAbsolutePath());
+                        log.info(message);
                     }
                 }
                 if (readablePath.isPresent()) {
@@ -236,10 +231,13 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
                     File readableFile = new File(readablePath.get());
                     CharSink charSink = Files.asCharSink(readableFile, Charset.forName("UTF-8"));
                     charSink.write(contents);
-                    log.info("Saved parsed contents of '" + fileName + "' to " + readableFile.getAbsolutePath());
+                    String message = String.format(
+                            "Saved parsed contents of '%s' to %s", fileName, readableFile.getAbsolutePath());
+                    log.info(message);
                 }
             } catch (Exception e) {
-                log.error("Couldn't save '" + fileName + "' snapshot!", e);
+                String message = String.format("Couldn't save '%s' snapshot!", fileName);
+                log.error(message, e);
             }
         }
         if (registryEntry.isPresent()) {

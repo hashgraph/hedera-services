@@ -330,7 +330,7 @@ public class HederaLedger {
         final long newSponsorBalance = computeNewBalance(sponsor, -1 * balance);
         setBalance(sponsor, newSponsorBalance);
 
-        final var id = ids.newAccountId(sponsor);
+        final var id = ids.newAccountId();
         spawn(id, balance, customizer);
 
         return id;

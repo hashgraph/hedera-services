@@ -73,6 +73,13 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Validates the {@code TokenCreate} transaction, including its:
+ * <ul>
+ *     <li>Auto-association behavior.</li>
+ *     <li>Default values.</li>
+ * </ul>
+ */
 public class TokenCreateSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
     private static final String NON_FUNGIBLE_UNIQUE_FINITE = "non-fungible-unique-finite";
@@ -137,6 +144,17 @@ public class TokenCreateSpecs extends HapiSuite {
                 validateNewTokenAssociations());
     }
 
+    /**
+     * Validates that a {@code TokenCreate} auto-associates the following types of
+     * accounts:
+     * <ul>
+     *     <li>Its treasury.</li>
+     *     <li>Any fractional fee collector.</li>
+     *     <li>Any self-denominated fixed fee collector.</li>
+     * </ul>
+     * It also verifies that these auto-associations don't "count" against the max
+     * automatic associations limit defined by https://hips.hedera.com/hip/hip-23.
+     */
     private HapiSpec validateNewTokenAssociations() {
         final String notToBeToken = "notToBeToken";
         final String hbarCollector = "hbarCollector";
@@ -217,6 +235,9 @@ public class TokenCreateSpecs extends HapiSuite {
                                                 List.of(relationshipWith(A_TOKEN)))));
     }
 
+    /**
+     * Validates the default values for a {@code TokenCreate}'s token type (fungible) and supply type (infinite).
+     */
     private HapiSpec createsFungibleInfiniteByDefault() {
         return defaultHapiSpec("CreatesFungibleInfiniteByDefault")
                 .given()

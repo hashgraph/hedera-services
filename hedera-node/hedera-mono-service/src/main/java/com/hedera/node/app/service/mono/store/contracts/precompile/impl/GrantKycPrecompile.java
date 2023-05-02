@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.GRANT_KYC;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -67,6 +68,7 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
 
     @Override
     public void run(final MessageFrame frame) {
+        this.function = TokenGrantKycToAccount;
         initialise(frame);
 
         final var grantKycLogic = infrastructureFactory.newGrantKycLogic(accountStore, tokenStore);

@@ -18,9 +18,16 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
+import com.google.common.primitives.Longs;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
@@ -68,8 +75,9 @@ public final class KeyActivationUtils {
             final Address target,
             final KeyActivationTest activationTest,
             final WorldLedgers ledgers,
-            final ContractAliases aliases) {
-        return internalValidateKey(frame, target, activationTest, null, ledgers, aliases);
+            final ContractAliases aliases,
+            @NonNull final HederaFunctionality function) {
+        return internalValidateKey(frame, target, activationTest, null, ledgers, aliases, function);
     }
 
     public static boolean validateLegacyKey(
@@ -77,8 +85,9 @@ public final class KeyActivationUtils {
             final Address target,
             final LegacyKeyActivationTest legacyActivationTest,
             final WorldLedgers ledgers,
-            final ContractAliases aliases) {
-        return internalValidateKey(frame, target, null, legacyActivationTest, ledgers, aliases);
+            final ContractAliases aliases,
+            @NonNull final HederaFunctionality function) {
+        return internalValidateKey(frame, target, null, legacyActivationTest, ledgers, aliases, function);
     }
 
     private static boolean internalValidateKey(
@@ -87,26 +96,27 @@ public final class KeyActivationUtils {
             @Nullable final KeyActivationTest activationTest,
             @Nullable final LegacyKeyActivationTest legacyActivationTest,
             final WorldLedgers ledgers,
-            final ContractAliases aliases) {
+            final ContractAliases aliases,
+            @NonNull final HederaFunctionality function) {
         final var recipient = aliases.resolveForEvm(frame.getRecipientAddress());
         final var sender = aliases.resolveForEvm(frame.getSenderAddress());
 
         if (isDelegateCall(frame) && !isToken(frame, recipient)) {
             if (activationTest != null) {
-                return activationTest.apply(true, target, recipient, ledgers);
+                return activationTest.apply(true, target, recipient, ledgers, function);
             } else {
                 return Objects.requireNonNull(legacyActivationTest)
-                        .apply(true, target, recipient, ledgers, legacyActivationTestFor(frame));
+                        .apply(true, target, recipient, ledgers, legacyActivationTestFor(frame), function);
             }
         } else {
             final var parentFrame = getParentOf(frame);
             final boolean delegated =
                     parentFrame.map(KeyActivationUtils::isDelegateCall).orElse(false);
             if (activationTest != null) {
-                return activationTest.apply(delegated, target, sender, ledgers);
+                return activationTest.apply(delegated, target, sender, ledgers, function);
             } else {
                 return Objects.requireNonNull(legacyActivationTest)
-                        .apply(delegated, target, sender, ledgers, legacyActivationTestFor(frame));
+                        .apply(delegated, target, sender, ledgers, legacyActivationTestFor(frame), function);
             }
         }
     }
@@ -115,9 +125,8 @@ public final class KeyActivationUtils {
      * Returns a predicate that checks whether any frame in the EVM stack <i>below the top</i> has a
      * recipient address of interest.
      *
-     * <p>Only used when validating certain signatures in the {@link
-     * com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile} and {@link
-     * com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile}.
+     * <p>Only used when validating certain signatures in the {@link TokenCreatePrecompile} and
+     * {@link TokenUpdatePrecompile}.
      *
      * @param frame the current frame
      * @return a predicate that tests if an address appears as recipient below this frame
@@ -143,6 +152,34 @@ public final class KeyActivationUtils {
             return account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
         }
         return false;
+    }
+
+    /**
+     * Given the current dynamic properties, the sender address from a frame executing a system
+     * contract, and the logical function being executed in the system contract, returns if the
+     * top-level HAPI sigs are available.
+     *
+     * @param senderAddress the sender address from the frame executing the system contract
+     * @param function the logical function being executed in the system contract
+     * @param dynamicProperties the current dynamic properties
+     * @return if the top-level HAPI sigs are available
+     */
+    public static boolean areTopLevelSigsAvailable(
+            @NonNull final Address senderAddress,
+            @NonNull final HederaFunctionality function,
+            @NonNull final GlobalDynamicProperties dynamicProperties) {
+        Objects.requireNonNull(function);
+        Objects.requireNonNull(senderAddress);
+        Objects.requireNonNull(dynamicProperties);
+        final var topLevelSigsAvailable =
+                (dynamicProperties.contractsWithSpecialHapiSigsAccess().contains(senderAddress)
+                        || numOf(senderAddress) <= dynamicProperties.maxNumWithHapiSigsAccess());
+        return topLevelSigsAvailable
+                && dynamicProperties.systemContractsWithTopLevelSigsAccess().contains(function);
+    }
+
+    private static long numOf(@NonNull final Address mirrorAddress) {
+        return Longs.fromByteArray(Arrays.copyOfRange(mirrorAddress.toArrayUnsafe(), 12, 20));
     }
 
     private static Optional<MessageFrame> getParentOf(final MessageFrame frame) {

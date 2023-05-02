@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import gradle.kotlin.dsl.accessors._de3ff27eccbd9efdc5c099f60a1d8f4c.check
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -64,6 +63,11 @@ repositories {
     }
     maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven")
+        content { includeGroupByRegex("org\\.hyperledger\\..*") }
+    }
+    maven {
+        url = uri("https://artifacts.consensys.net/public/maven/maven/")
+        content { includeGroupByRegex("tech\\.pegasys(\\..*)?") }
     }
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1502")
@@ -71,6 +75,7 @@ repositories {
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1531")
     }
+    mavenLocal()
 }
 
 // Make sure we use UTF-8 encoding when compiling
@@ -103,7 +108,7 @@ testing {
         val itest by registering(JvmTestSuite::class) {
             testType.set(TestSuiteType.INTEGRATION_TEST)
             dependencies {
-                implementation(project)
+                implementation(project())
             }
 
             // "shouldRunAfter" will only make sure if both test and itest are run concurrently,
@@ -122,7 +127,7 @@ testing {
         val hammer by registering(JvmTestSuite::class) {
             testType.set("hammer-test")
             dependencies {
-                implementation(project)
+                implementation(project())
             }
 
             targets {
@@ -141,7 +146,7 @@ testing {
                 val eet by registering(JvmTestSuite::class) {
                     testType.set("end-to-end-test")
                     dependencies {
-                        implementation(project)
+                        implementation(project())
                     }
 
                     // "shouldRunAfter" will only make sure if both test and eet are run concurrently,
@@ -161,7 +166,7 @@ testing {
 
 // Increase the heap size for the unit tests
 tasks.test {
-    maxHeapSize = "2048m"
+    maxHeapSize = "4096m"
     // Can be useful to set in some cases
     // testLogging.showStandardStreams = true
 }

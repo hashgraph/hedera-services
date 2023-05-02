@@ -38,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 
 public class Issue305Spec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue305Spec.class);
+    private static final String KEY = "tbdKey";
 
     public static void main(String... args) {
         new Issue305Spec().runSuiteSync();
@@ -54,7 +55,7 @@ public class Issue305Spec extends HapiSuite {
         AtomicReference<String> nextFileId = new AtomicReference<>();
         return defaultHapiSpec("CreateDeleteInSameRoundWorks")
                 .given(
-                        newKeyNamed("tbdKey").type(KeyFactory.KeyType.LIST),
+                        newKeyNamed(KEY).type(KeyFactory.KeyType.LIST),
                         fileCreate("marker").via("markerTxn"))
                 .when(withOpContext((spec, opLog) -> {
                     var lookup = getTxnRecord("markerTxn");
@@ -64,11 +65,11 @@ public class Issue305Spec extends HapiSuite {
                             .setFileNum(markerFid.getFileNum() + 1)
                             .build();
                     nextFileId.set(HapiPropertySource.asFileString(nextFid));
-                    opLog.info("Next file will be " + nextFileId.get());
+                    opLog.info("Next file will be {}", nextFileId.get());
                 }))
                 .then(
-                        fileCreate("tbd").key("tbdKey").deferStatusResolution(),
-                        fileDelete(nextFileId::get).signedBy(GENESIS, "tbdKey").logged(),
+                        fileCreate("tbd").key(KEY).deferStatusResolution(),
+                        fileDelete(nextFileId::get).signedBy(GENESIS, KEY).logged(),
                         getFileInfo(nextFileId::get).logged());
     }
 

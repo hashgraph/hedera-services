@@ -149,7 +149,9 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
                 .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())
                 .getTopicInfo(query);
         if (verboseLoggingOn) {
-            log.info("Info: " + response.getConsensusGetTopicInfo().getTopicInfo());
+            String message = String.format(
+                    "Info: %s", response.getConsensusGetTopicInfo().getTopicInfo());
+            log.info(message);
         }
         if (saveRunningHash) {
             spec.registry()

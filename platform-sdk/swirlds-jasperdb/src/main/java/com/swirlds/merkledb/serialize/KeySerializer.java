@@ -37,7 +37,7 @@ import java.nio.ByteBuffer;
  *
  * @param <K> Virtual key type
  */
-public interface KeySerializer<K extends VirtualKey<?>> extends BaseSerializer<K>, SelfSerializable {
+public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, SelfSerializable {
 
     /**
      * Get the current key serialization version. Key serializers can only use the lower 32 bits of

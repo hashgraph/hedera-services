@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.state;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.pbj.runtime.Codec;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -26,44 +27,43 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class StateDefinitionTest {
     @Mock
-    private Serdes<String> mockSerdes;
+    private Codec<String> mockCodec;
 
     @Test
     void singletonsCannotBeOnDisk() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new StateDefinition<>("KEY", mockSerdes, mockSerdes, 123, true, true));
+                () -> new StateDefinition<>("KEY", mockCodec, mockCodec, 123, true, true));
     }
 
     @Test
     void onDiskMustHintPositiveNumKeys() {
         assertThrows(
-                IllegalArgumentException.class,
-                () -> new StateDefinition("KEY", mockSerdes, mockSerdes, 0, true, false));
+                IllegalArgumentException.class, () -> new StateDefinition("KEY", mockCodec, mockCodec, 0, true, false));
     }
 
     @Test
     void nonSingletonRequiresKeySerdes() {
-        assertThrows(NullPointerException.class, () -> new StateDefinition("KEY", null, mockSerdes, 1, true, false));
+        assertThrows(NullPointerException.class, () -> new StateDefinition("KEY", null, mockCodec, 1, true, false));
     }
 
     @Test
     void inMemoryFactoryWorks() {
-        assertDoesNotThrow(() -> StateDefinition.inMemory("KEY", mockSerdes, mockSerdes));
+        assertDoesNotThrow(() -> StateDefinition.inMemory("KEY", mockCodec, mockCodec));
     }
 
     @Test
     void onDiskFactoryWorks() {
-        assertDoesNotThrow(() -> StateDefinition.onDisk("KEY", mockSerdes, mockSerdes, 123));
+        assertDoesNotThrow(() -> StateDefinition.onDisk("KEY", mockCodec, mockCodec, 123));
     }
 
     @Test
     void singletonFactoryWorks() {
-        assertDoesNotThrow(() -> StateDefinition.singleton("KEY", mockSerdes));
+        assertDoesNotThrow(() -> StateDefinition.singleton("KEY", mockCodec));
     }
 
     @Test
     void constructorWorks() {
-        assertDoesNotThrow(() -> new StateDefinition("KEY", mockSerdes, mockSerdes, 123, true, false));
+        assertDoesNotThrow(() -> new StateDefinition("KEY", mockCodec, mockCodec, 123, true, false));
     }
 }

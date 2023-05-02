@@ -86,12 +86,6 @@ public class TokenRelStorageAdapter {
         return relsOnDisk ? onDiskRels.containsKey(EntityNumVirtualKey.fromPair(num)) : inMemoryRels.containsKey(num);
     }
 
-    public void archive() {
-        if (!relsOnDisk) {
-            inMemoryRels.archive();
-        }
-    }
-
     public Hash getHash() {
         return relsOnDisk ? onDiskRels.getHash() : inMemoryRels.getHash();
     }

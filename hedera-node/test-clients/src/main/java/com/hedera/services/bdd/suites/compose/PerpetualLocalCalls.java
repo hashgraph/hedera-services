@@ -88,7 +88,7 @@ public class PerpetualLocalCalls extends HapiSuite {
                                         isLiteralResult(new Object[] {BigInteger.valueOf(73)})));
                 var soFar = totalBeforeFailure.getAndIncrement();
                 if (soFar % 1000 == 0) {
-                    log.info("--- " + soFar);
+                    log.info("--- {}", soFar);
                 }
                 return Optional.of(op);
             }

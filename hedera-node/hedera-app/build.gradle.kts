@@ -50,8 +50,12 @@ dependencies {
   implementation(libs.bundles.swirlds)
   implementation(libs.bundles.helidon)
   implementation(libs.helidon.grpc.server)
+  implementation(libs.pbj.runtime)
 
-  itestImplementation(libs.hapi)
+  itestImplementation(project(":hedera-node:hapi"))
+  itestImplementation(testFixtures(project(":hedera-node:hapi")))
+  itestImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  itestImplementation(libs.pbj.runtime)
   itestImplementation(libs.bundles.helidon)
   itestImplementation(libs.bundles.swirlds)
   itestImplementation(testLibs.helidon.grpc.client)
@@ -105,6 +109,10 @@ tasks.assemble {
   dependsOn(copyLib)
   dependsOn(copyApp)
 }
+
+val generatedSources = file("build/generated/sources/annotationProcessor/java/main")
+
+java.sourceSets["main"].java.srcDir(generatedSources)
 
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {

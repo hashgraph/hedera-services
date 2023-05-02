@@ -317,8 +317,8 @@ class GetTokenExpiryInfoPrecompileTest {
         given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockFeeObject.getNodeFee()).willReturn(1L);
-        given(mockFeeObject.getNetworkFee()).willReturn(1L);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.nodeFee()).willReturn(1L);
+        given(mockFeeObject.networkFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
     }
 }

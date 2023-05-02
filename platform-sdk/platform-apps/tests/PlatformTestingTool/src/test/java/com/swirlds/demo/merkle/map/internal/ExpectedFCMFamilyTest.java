@@ -88,7 +88,7 @@ class ExpectedFCMFamilyTest {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    private static int stakedNodesNum = 4;
+    private static int weightedNodesNum = 4;
     // ExpectedFCMFamily with default PayloadCfgSimple setting,
     // in which performOnDeleted, createOnExistingEntities, and performOnNonExistingEntities are false
 
@@ -96,14 +96,14 @@ class ExpectedFCMFamilyTest {
     private static ExpectedFCMFamilyImpl expectedFCMFamily0 = new ExpectedFCMFamilyImpl();
 
     static {
-        expectedFCMFamily0.setStakedNodeNum(stakedNodesNum);
+        expectedFCMFamily0.setWeightedNodeNum(weightedNodesNum);
     }
 
     // ExpectedFCMFamily of node1, entities (1, 1, accountId) would be in its selfEntityLists
     private static ExpectedFCMFamilyImpl expectedFCMFamily1 = new ExpectedFCMFamilyImpl();
 
     static {
-        expectedFCMFamily1.setStakedNodeNum(stakedNodesNum);
+        expectedFCMFamily1.setWeightedNodeNum(weightedNodesNum);
     }
 
     private static final long NODE_ID_ZERO = 0;
@@ -189,10 +189,10 @@ class ExpectedFCMFamilyTest {
     void putEntitiesForGetListTesting() {
         // add entities to expectedFCMFamilies
         expectedFCMFamily0 = new ExpectedFCMFamilyImpl();
-        expectedFCMFamily0.setStakedNodeNum(stakedNodesNum);
+        expectedFCMFamily0.setWeightedNodeNum(weightedNodesNum);
         expectedFCMFamily1 = new ExpectedFCMFamilyImpl();
         expectedFCMFamily1.setNodeId(1);
-        expectedFCMFamily1.setStakedNodeNum(stakedNodesNum);
+        expectedFCMFamily1.setWeightedNodeNum(weightedNodesNum);
 
         for (int i = 0; i < fcqNum1; i++) {
             EntityType type;
@@ -374,7 +374,7 @@ class ExpectedFCMFamilyTest {
 
     private void initForGetMapKeyForFCMTxTest() {
         expectedFCMFamily0 = new ExpectedFCMFamilyImpl();
-        expectedFCMFamily0.setStakedNodeNum(stakedNodesNum);
+        expectedFCMFamily0.setWeightedNodeNum(weightedNodesNum);
 
         deletedCrypto = new MapKey(0, 0, 1);
         ExpectedValue deletedCryptoValue = new ExpectedValue(Crypto, null);
@@ -794,19 +794,19 @@ class ExpectedFCMFamilyTest {
     public void calculateSelfListCapacityTest() {
         final ExpectedFCMFamilyImpl expectedFCMFamily = new ExpectedFCMFamilyImpl();
         expectedFCMFamily.setNodeId(NODE_ID_ZERO);
-        expectedFCMFamily.setStakedNodeNum(stakedNodesNum);
+        expectedFCMFamily.setWeightedNodeNum(weightedNodesNum);
 
-        assertEquals(1000, expectedFCMFamily.calculateSelfListCapacity(1000 * stakedNodesNum));
-        assertEquals(1001, expectedFCMFamily.calculateSelfListCapacity(1000 * stakedNodesNum + 1));
-        assertEquals(1001, expectedFCMFamily.calculateSelfListCapacity(1000 * stakedNodesNum + 2));
-        assertEquals(1001, expectedFCMFamily.calculateSelfListCapacity(1000 * stakedNodesNum + 3));
+        assertEquals(1000, expectedFCMFamily.calculateSelfListCapacity(1000 * weightedNodesNum));
+        assertEquals(1001, expectedFCMFamily.calculateSelfListCapacity(1000 * weightedNodesNum + 1));
+        assertEquals(1001, expectedFCMFamily.calculateSelfListCapacity(1000 * weightedNodesNum + 2));
+        assertEquals(1001, expectedFCMFamily.calculateSelfListCapacity(1000 * weightedNodesNum + 3));
     }
 
     @Test
     public void setLatestHandledStatusForKeyWithNullValue() {
         final ExpectedFCMFamilyImpl expectedFCMFamily = new ExpectedFCMFamilyImpl();
         expectedFCMFamily.setNodeId(NODE_ID_ZERO);
-        expectedFCMFamily.setStakedNodeNum(stakedNodesNum);
+        expectedFCMFamily.setWeightedNodeNum(weightedNodesNum);
 
         final MapKey key = new MapKey(0, 0, 0);
         expectedFCMFamily.setLatestHandledStatusForKey(key, FCQ, null, HANDLED, Create, 0, 0, false);

@@ -92,7 +92,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final String MULTI_KEY = "multiKey";
     private static final String UPDATE_KEY_FUNC = "tokenUpdateKeys";
     private static final String GET_KEY_FUNC = "getKeyFromToken";
-    private static final String TOKEN_UPDATE_CONTRACT = "UpdateTokenInfoContract";
+    public static final String TOKEN_UPDATE_CONTRACT = "UpdateTokenInfoContract";
     private static final String UPDATE_TXN = "updateTxn";
     private static final String GET_KYC_KEY_TXN = "getKycTokenKeyTxn";
     private static final String GET_ADMIN_KEY_TXN = "getAdminTokenKeyTxn";
@@ -105,13 +105,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
     private static final String ED25519KEY = "ed25519key";
     private static final String ECDSA_KEY = "ecdsa";
-    private static final String TOKEN_UPDATE_AS_KEY = "tokenCreateContractAsKey";
+    public static final String TOKEN_UPDATE_AS_KEY = "tokenCreateContractAsKey";
     private static final String DELEGATE_KEY = "tokenUpdateAsKeyDelegate";
     private static final String ACCOUNT_TO_ASSOCIATE = "account3";
     private static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
-    private static final String CUSTOM_NAME = "customName";
-    private static final String CUSTOM_SYMBOL = "Ω";
-    private static final String CUSTOM_MEMO = "Omega";
+    public static final String CUSTOM_NAME = "customName";
+    public static final String CUSTOM_SYMBOL = "Ω";
+    public static final String CUSTOM_MEMO = "Omega";
     private static final long ADMIN_KEY_TYPE = 1L;
     private static final long KYC_KEY_TYPE = 2L;
     private static final long FREEZE_KEY_TYPE = 4L;
@@ -144,7 +144,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                 updateTokenWithKeysHappyPath(),
                 updateNftTreasuryWithAndWithoutAdminKey(),
                 updateOnlyTokenKeysAndGetTheUpdatedValues(),
-                updateOnlyKeysForNonFungibleToken());
+                updateOnlyKeysForNonFungibleToken(),
+                updateTokenWithoutNameSymbolMemo());
     }
 
     List<HapiSpec> negativeCases() {
@@ -168,7 +169,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -280,7 +281,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(NO_ADMIN_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -352,7 +353,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -427,7 +428,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .maxAutomaticTokenAssociations(100),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -652,7 +653,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -700,7 +701,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -891,7 +892,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(NFT_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -958,7 +959,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(NFT_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -1032,7 +1033,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(NFT_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -1079,5 +1080,114 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 NO_ADMIN_KEY,
                                 CONTRACT_REVERT_EXECUTED,
                                 TransactionRecordAsserts.recordWith().status(KEY_NOT_PROVIDED)))));
+    }
+
+    private HapiSpec updateTokenWithoutNameSymbolMemo() {
+        final var updateTokenWithoutNameSymbolMemoFunc = "updateTokenWithoutNameSymbolMemo";
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        return defaultHapiSpec(updateTokenWithoutNameSymbolMemoFunc)
+                .given(
+                        newKeyNamed(ED25519KEY).shape(ED25519),
+                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
+                        newKeyNamed(MULTI_KEY).shape(ED25519_ON),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
+                        cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
+                        uploadInitCode(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(GAS_TO_OFFER),
+                        tokenCreate(VANILLA_TOKEN)
+                                .symbol(CUSTOM_SYMBOL)
+                                .entityMemo(CUSTOM_MEMO)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .feeScheduleKey(MULTI_KEY)
+                                .pauseKey(MULTI_KEY)
+                                .wipeKey(MULTI_KEY)
+                                .freezeKey(MULTI_KEY)
+                                .kycKey(MULTI_KEY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                        grantTokenKyc(VANILLA_TOKEN, ACCOUNT),
+                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_UPDATE_CONTRACT,
+                                        updateTokenWithoutNameSymbolMemoFunc,
+                                        HapiParserUtil.asHeadlongAddress(new byte[20]),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray(),
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        AUTO_RENEW_PERIOD)
+                                .via(UPDATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        TOKEN_UPDATE_CONTRACT,
+                                        "updateTokenWithoutNameSymbolMemo",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray(),
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        AUTO_RENEW_PERIOD)
+                                .gas(GAS_TO_OFFER)
+                                .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT),
+                        newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)),
+                        newKeyNamed(TOKEN_UPDATE_AS_KEY).shape(CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)))))
+                .then(
+                        childRecordsCheck(
+                                UPDATE_TXN,
+                                CONTRACT_REVERT_EXECUTED,
+                                TransactionRecordAsserts.recordWith().status(INVALID_TOKEN_ID)),
+                        sourcing(() -> getTokenInfo(VANILLA_TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol(CUSTOM_SYMBOL)
+                                .hasName(VANILLA_TOKEN)
+                                .hasEntityMemo(CUSTOM_MEMO)
+                                .hasTreasury(ACCOUNT)
+                                .hasAutoRenewAccount(ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(ED25519KEY)
+                                .hasPauseKey(MULTI_KEY)
+                                .hasKycKey(ED25519KEY)
+                                .hasFreezeKey(ECDSA_KEY)
+                                .hasWipeKey(ECDSA_KEY)
+                                .hasFeeScheduleKey(DELEGATE_KEY)
+                                .hasSupplyKey(TOKEN_UPDATE_AS_KEY)
+                                .hasPauseKey(TOKEN_UPDATE_AS_KEY)));
     }
 }

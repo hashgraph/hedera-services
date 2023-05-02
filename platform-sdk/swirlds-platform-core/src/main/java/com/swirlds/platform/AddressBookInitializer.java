@@ -19,10 +19,11 @@ package com.swirlds.platform;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookValidator;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -34,8 +35,9 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,8 +58,6 @@ public class AddressBookInitializer {
     public static final String STATE_ADDRESS_BOOK_USED = "The State Saved Address Book Was Used.";
     /** The text indicating the state address book was null in the usedAddressBook file. */
     public static final String STATE_ADDRESS_BOOK_NULL = "The State Saved Address Book Was NULL.";
-    /** The name of the address book directory to write address books to. */
-    private static final String ADDRESS_BOOK_DIRECTORY_NAME = "address_book";
     /** The file name prefix to use when creating address book files. */
     private static final String ADDRESS_BOOK_FILE_PREFIX = "usedAddressBook";
     /** The format of date and time to use when creating address book files. */
@@ -65,12 +65,14 @@ public class AddressBookInitializer {
             DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-m-ss").withZone(ZoneId.systemDefault());
     /** For logging info, warn, and error. */
     private static final Logger logger = LogManager.getLogger(AddressBookInitializer.class);
+    /** The context for the platform */
+    @NonNull
+    private final PlatformContext platformContext;
     /** The current version of the application from config.txt. */
     @NonNull
     private final SoftwareVersion currentVersion;
-    /** The SwirldState to use at genesis. */
-    @NonNull
-    private final Supplier<SwirldState> genesisSupplier;
+    /** Indicate that the software version has upgraded. */
+    private final boolean softwareUpgrade;
     /** The SignedState loaded from disk. May be null. */
     @Nullable
     private final SignedState loadedSignedState;
@@ -86,42 +88,44 @@ public class AddressBookInitializer {
     /** The path to the directory for writing address books. */
     @NonNull
     private final Path pathToAddressBookDirectory;
+    /** The maximum number of address book files to keep in the address book directory. */
+    private final int maxNumFiles;
     /** Indicate that the unmodified config address book must be used. */
     private final boolean useConfigAddressBook;
 
     /**
-     * Constructs an AddressBookInitializer to initialize an address book from the swirld application state, config.txt,
-     * and the saved state from disk.
+     * Constructs an AddressBookInitializer to initialize an address book from config.txt, the saved state from disk, or
+     * the SwirldState on upgrade.
      *
-     * @param currentVersion       The current version of the application. Must not be null.
-     * @param signedState          The signed state loaded from disk.  May be null.
-     * @param genesisSupplier      The swirld application state in genesis start. Must not be null.
-     * @param configAddressBook    The address book derived from config.txt. Must not be null.
-     * @param parentDirectory      The parent directory of the address book directory. Must not be null.
-     * @param useConfigAddressBook Indicates if the unmodified config address book should be used.
+     * @param currentVersion    The current version of the application.
+     * @param softwareUpgrade   Indicate that the software version has upgraded.
+     * @param signedState       The signed state loaded from disk.
+     * @param configAddressBook The address book derived from config.txt.
+     * @param platformContext   The context for the platform.
      */
     public AddressBookInitializer(
             @NonNull final SoftwareVersion currentVersion,
+            final boolean softwareUpgrade,
             @Nullable final SignedState signedState,
-            @NonNull final Supplier<SwirldState> genesisSupplier,
             @NonNull final AddressBook configAddressBook,
-            @NonNull final String parentDirectory,
-            final boolean useConfigAddressBook) {
+            @NonNull final PlatformContext platformContext) {
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
-        this.genesisSupplier =
-                Objects.requireNonNull(genesisSupplier, "The genesis swirldState supplier must not be null.");
+        this.softwareUpgrade = softwareUpgrade;
         this.configAddressBook = Objects.requireNonNull(configAddressBook, "The configAddressBook must not be null.");
-        Objects.requireNonNull(parentDirectory, "The parentDirectory must not be null.");
-        this.pathToAddressBookDirectory = Path.of(parentDirectory, ADDRESS_BOOK_DIRECTORY_NAME);
+        this.platformContext = Objects.requireNonNull(platformContext, "The platformContext must not be null.");
+        final AddressBookConfig addressBookConfig =
+                platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
+        this.loadedSignedState = signedState;
+        this.loadedAddressBook = loadedSignedState == null ? null : loadedSignedState.getAddressBook();
+        this.pathToAddressBookDirectory = Path.of(addressBookConfig.addressBookDirectory());
         try {
             Files.createDirectories(pathToAddressBookDirectory);
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "Not able to create directory: {}", pathToAddressBookDirectory, e);
             throw new IllegalStateException("Not able to create directory: " + pathToAddressBookDirectory, e);
         }
-        this.loadedSignedState = signedState;
-        this.loadedAddressBook = loadedSignedState == null ? null : loadedSignedState.getAddressBook();
-        this.useConfigAddressBook = useConfigAddressBook;
+        this.useConfigAddressBook = addressBookConfig.forceUseOfConfigAddressBook();
+        this.maxNumFiles = addressBookConfig.maxRecordedAddressBookFiles();
 
         initialAddressBook = initialize();
     }
@@ -137,13 +141,11 @@ public class AddressBookInitializer {
     }
 
     /**
-     * Determines the address book to use.  If there is no saved platform state, the config address book stake is
-     * updated by the swirld application state.  If the configured current version of the application is higher than the
-     * save state version, the swirld state is given both the config and previously saved address book to determine
-     * stake weights.  If the address book returned by the swirld application is valid, it is the initial address book
-     * to use, otherwise the configuration address book is the one to use.  All three address books, the configuration
-     * address book, the save state address book, and the new address book to use are recorded in the used address book
-     * file.
+     * Determines the address book to use.  If the configured current version of the application is higher than the save
+     * state version, the swirld state is given the config address book to determine weights.  If the address book
+     * returned by the swirld application is valid, it is the initial address book to use, otherwise the configuration
+     * address book is the one to use.  All three address books, the configuration address book, the save state address
+     * book, and the new address book to use are recorded in the address book directory.
      *
      * @return the address book to use in the platform.
      */
@@ -151,46 +153,29 @@ public class AddressBookInitializer {
     private AddressBook initialize() {
         AddressBook candidateAddressBook;
         if (useConfigAddressBook) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Overriding the address book in the state with the address book from config.txt");
             // configuration is overriding to force use of configuration address book.
             candidateAddressBook = configAddressBook;
         } else if (loadedSignedState == null || loadedAddressBook == null) {
             logger.info(
                     STARTUP.getMarker(),
                     "The loaded signed state is null. The candidateAddressBook is set to "
-                            + "genesisSwirldState.updateStake(configAddressBook, null).");
-            final SwirldState genesisState = genesisSupplier.get();
-            candidateAddressBook =
-                    genesisState.updateStake(configAddressBook.copy()).copy();
-            genesisState.release();
+                            + "the address book from config.txt.");
+            candidateAddressBook = configAddressBook;
+        } else if (!softwareUpgrade) {
+            logger.info(STARTUP.getMarker(), "Using the loaded signed state's address book and weight values.");
+            candidateAddressBook = loadedAddressBook;
         } else {
-            final SoftwareVersion loadedSoftwareVersion = loadedSignedState
-                    .getState()
-                    .getPlatformState()
-                    .getPlatformData()
-                    .getCreationSoftwareVersion();
-            final int versionComparison = currentVersion.compareTo(loadedSoftwareVersion);
-            if (versionComparison < 0) {
-                throw new IllegalStateException("The currentVersion `" + currentVersion
-                        + "` is prior to the stateVersion `" + loadedSoftwareVersion + "`");
-            } else if (versionComparison == 0) {
-                logger.info(
-                        STARTUP.getMarker(),
-                        "No Software Upgrade. Continuing with software version {} and "
-                                + "using the loaded signed state's address book and stake values.",
-                        loadedSoftwareVersion);
-                candidateAddressBook = loadedAddressBook;
-            } else {
-                logger.info(
-                        STARTUP.getMarker(),
-                        "Software Upgrade from version {} to {}. "
-                                + "The address book stake will be updated by the saved state's SwirldState.",
-                        loadedSoftwareVersion,
-                        currentVersion);
-                candidateAddressBook = loadedSignedState
-                        .getSwirldState()
-                        .updateStake(configAddressBook.copy())
-                        .copy();
-            }
+            // There is a software upgrade
+            logger.info(
+                    STARTUP.getMarker(),
+                    "The address book weight may be updated by the application using data from the state snapshot.");
+            candidateAddressBook = loadedSignedState
+                    .getSwirldState()
+                    .updateWeight(configAddressBook.copy(), platformContext)
+                    .copy();
         }
         candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
         recordAddressBooks(candidateAddressBook);
@@ -199,8 +184,8 @@ public class AddressBookInitializer {
 
     /**
      * Checks if the candidateAddressBook is valid and returns it, otherwise returns the configAddressBook if it has
-     * non-zero stake.   If the candidateAddressBook's addresses are out of sync with the configAddressBook or both
-     * address books have 0 stake, an IllegalStateException is thrown.
+     * non-zero weight.   If the candidateAddressBook's addresses are out of sync with the configAddressBook or both
+     * address books have 0 weight, an IllegalStateException is thrown.
      *
      * @return the valid address book to use.
      */
@@ -209,12 +194,12 @@ public class AddressBookInitializer {
         if (candidateAddressBook == null) {
             logger.warn(STARTUP.getMarker(), "The candidateAddressBook is null, using configAddressBook instead.");
             return configAddressBook;
-        } else if (!AddressBookValidator.hasNonZeroStake(candidateAddressBook)
-                || !AddressBookValidator.sameExceptForStake(configAddressBook, candidateAddressBook)) {
+        } else if (!AddressBookValidator.hasNonZeroWeight(candidateAddressBook)
+                || !AddressBookValidator.sameExceptForWeight(configAddressBook, candidateAddressBook)) {
             // an error was recorded by the address book validator.  Check the configuration address book for usability.
-            if (!AddressBookValidator.hasNonZeroStake(configAddressBook)) {
+            if (!AddressBookValidator.hasNonZeroWeight(configAddressBook)) {
                 throw new IllegalStateException(
-                        "The candidateAddressBook is not valid and the configAddressBook has 0 total stake.");
+                        "The candidateAddressBook is not valid and the configAddressBook has 0 total weight.");
             } else {
                 logger.warn(
                         STARTUP.getMarker(), "The candidateAddressBook is not valid, using configAddressBook instead.");
@@ -231,7 +216,7 @@ public class AddressBookInitializer {
      *
      * @param usedAddressBook the address book to be returned from the AddressBookInitializer.
      */
-    private void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
+    private synchronized void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
         final String date = DATE_TIME_FORMAT.format(Instant.now());
         final String addressBookFileName = ADDRESS_BOOK_FILE_PREFIX + "_v" + currentVersion + "_" + date + ".txt";
         final String addressBookDebugFileName = addressBookFileName + ".debug";
@@ -262,6 +247,23 @@ public class AddressBookInitializer {
             }
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "Not able to write address book to file. ", e);
+        }
+        cleanAddressBookDirectory();
+    }
+
+    /**
+     * Deletes the oldest address book files if there are more than the maximum number of address book files.
+     */
+    private synchronized void cleanAddressBookDirectory() {
+        try (final Stream<Path> filesStream = Files.list(pathToAddressBookDirectory)) {
+            final List<Path> files = filesStream.sorted().toList();
+            if (files.size() > maxNumFiles) {
+                for (int i = 0; i < files.size() - maxNumFiles; i++) {
+                    Files.delete(files.get(i));
+                }
+            }
+        } catch (final IOException e) {
+            logger.info(EXCEPTION.getMarker(), "Unable to list files in address book directory. ", e);
         }
     }
 

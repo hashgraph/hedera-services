@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
+import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.Hash;
@@ -87,8 +88,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements VirtualDataSource<K, V> {
+public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
 
     private static final Logger logger = LogManager.getLogger(MerkleDbDataSource.class);
 
@@ -98,9 +98,6 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * holder will have been configured by the time this static initializer runs.
      */
     private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
-
-    /** Label for database component used in logging, stats, etc. */
-    private static final String MERKLEDB_COMPONENT = "merkledb";
 
     /** Count of open database instances */
     private static final LongAdder COUNT_OF_OPEN_DATABASES = new LongAdder();
@@ -301,7 +298,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                         (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during snapshots", ex))
                 .buildFactory());
 
-        final Path storageDir = database.getTableDir(tableName);
+        final Path storageDir = database.getTableDir(tableName, tableId);
         dbPaths = new MerkleDbPaths(storageDir);
 
         // check if we are loading an existing database or creating a new one
@@ -824,7 +821,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         try {
             close();
         } finally {
-            database.removeDataSource(tableName);
+            database.removeTable(tableId);
         }
     }
 
@@ -1473,5 +1470,24 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      */
     boolean isLongKeyMode() {
         return isLongKeyMode;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(database, tableId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof MerkleDbDataSource<?, ?> other)) {
+            return false;
+        }
+        return Objects.equals(database, other.database) && Objects.equals(tableId, other.tableId);
     }
 }

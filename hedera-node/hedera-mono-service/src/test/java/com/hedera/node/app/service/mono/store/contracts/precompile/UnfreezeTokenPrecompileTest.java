@@ -310,7 +310,12 @@ class UnfreezeTokenPrecompileTest {
                 .willReturn(TransactionBody.newBuilder()
                         .setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()));
 
-        given(sigsVerifier.hasActiveFreezeKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveFreezeKey(
+                        true,
+                        fungibleTokenAddr,
+                        fungibleTokenAddr,
+                        wrappedLedgers,
+                        HederaFunctionality.TokenUnfreezeAccount))
                 .willReturn(true);
     }
 

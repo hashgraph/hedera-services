@@ -38,11 +38,14 @@ package com.hedera.node.app.service.mono.contracts.operation;
  *
  */
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
@@ -105,7 +108,28 @@ public final class HederaOperationUtil {
         if (supplierIsChildStatic.getAsBoolean()) {
             return supplierExecution.get();
         }
+        // non-static frame, sig check required
+        final var isSigReqMet = isSigReqMetFor(address, frame, sigsVerifier);
+        if (!isSigReqMet) {
+            return new Operation.OperationResult(
+                    supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SIGNATURE);
+        }
+        return supplierExecution.get();
+    }
 
+    /**
+     * Checks whether the {@code address} passed as an argument has an active signature in the context of the
+     * given {@code frame} and {@code sigsVerifier}
+     *
+     * @param address the {@link Address} to be checked for active signature
+     * @param frame the {@link MessageFrame} associated with the EVM execution
+     * @param sigsVerifier an instance of {@link EvmSigsVerifier} which can verify account signatures
+     * @return {@code true} if the account has an active signature, {@code false} otherwise
+     */
+    public static boolean isSigReqMetFor(
+            @NonNull final Address address,
+            @NonNull final MessageFrame frame,
+            @NonNull final EvmSigsVerifier sigsVerifier) {
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var account = updater.get(address);
         final var isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());
@@ -114,17 +138,12 @@ public final class HederaOperationUtil {
         // otherwise it should be the contract address
         if (isDelegateCall) {
             sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                    true, account.getAddress(), frame.getRecipientAddress(), updater.trackingLedgers());
+                    true, account.getAddress(), frame.getRecipientAddress(), updater.trackingLedgers(), ContractCall);
         } else {
             sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                    false, account.getAddress(), frame.getContractAddress(), updater.trackingLedgers());
+                    false, account.getAddress(), frame.getContractAddress(), updater.trackingLedgers(), ContractCall);
         }
-        if (!sigReqIsMet) {
-            return new Operation.OperationResult(
-                    supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SIGNATURE);
-        }
-
-        return supplierExecution.get();
+        return sigReqIsMet;
     }
 
     public static void cacheExistingValue(

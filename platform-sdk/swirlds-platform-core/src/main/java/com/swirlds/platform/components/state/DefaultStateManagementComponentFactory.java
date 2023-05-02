@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components.state;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 
 import com.swirlds.common.context.PlatformContext;
@@ -31,6 +32,8 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Creates instances of {@link DefaultStateManagementComponent}
@@ -52,6 +55,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     private IssConsumer issConsumer;
     private HaltRequestedConsumer haltRequestedConsumer;
     private FatalErrorConsumer fatalErrorConsumer;
+    private PreConsensusEventWriter preConsensusEventWriter;
 
     public DefaultStateManagementComponentFactory(
             final PlatformContext context,
@@ -122,6 +126,13 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     }
 
     @Override
+    public @NonNull StateManagementComponentFactory setPreConsensusEventWriter(
+            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+        this.preConsensusEventWriter = throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
+        return this;
+    }
+
+    @Override
     public StateManagementComponent build() {
         verifyInputs();
         return new DefaultStateManagementComponent(
@@ -139,7 +150,8 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
                 stateHasEnoughSignaturesConsumer,
                 issConsumer,
                 haltRequestedConsumer,
-                fatalErrorConsumer);
+                fatalErrorConsumer,
+                preConsensusEventWriter);
     }
 
     private void verifyInputs() {
@@ -167,6 +179,9 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         }
         if (fatalErrorConsumer == null) {
             addLine(errors, "fatalErrorConsumer must not be null");
+        }
+        if (preConsensusEventWriter == null) {
+            addLine(errors, "preConsensusEventWriter must not be null");
         }
         if (!errors.isEmpty()) {
             throw new IllegalStateException("Unable to build StateManagementComponent:\n" + errors);

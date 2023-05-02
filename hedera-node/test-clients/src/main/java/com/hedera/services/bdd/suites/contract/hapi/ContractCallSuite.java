@@ -182,7 +182,7 @@ public class ContractCallSuite extends HapiSuite {
     private static final String NESTED_TRANSFERRING_CONTRACT = "NestedTransferringContract";
     private static final String ACC_INFO = "accInfo";
     private static final String RECEIVER_1 = "receiver1";
-    private static final String RECEIVER_2 = "receiver2";
+    public static final String RECEIVER_2 = "receiver2";
     private static final String RECEIVER_3 = "receiver3";
     private static final String RECEIVER_1_INFO = "receiver1Info";
     private static final String RECEIVER_2_INFO = "receiver2Info";

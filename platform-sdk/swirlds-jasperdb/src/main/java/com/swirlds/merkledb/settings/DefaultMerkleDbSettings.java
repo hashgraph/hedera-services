@@ -57,6 +57,7 @@ public class DefaultMerkleDbSettings implements MerkleDbSettings {
     public static final boolean DEFAULT_RECONNECT_KEY_LEAK_MITIGATION_ENABLED = false;
     public static final boolean DEFAULT_INDEX_REBUILDING_ENFORCED = false;
     public static final int DEFAULT_LEAF_RECORD_CACHE_SIZE = 1 << 20;
+    public static final double DEFAULT_PERCENT_HALFDISKHASHMAP_FLUSH_THREADS = 50.0;
 
     // These default parameters result in a bloom filter false positive rate of less than 1/1000
     // when 1 billion
@@ -199,8 +200,32 @@ public class DefaultMerkleDbSettings implements MerkleDbSettings {
         return DEFAULT_LEAF_RECORD_CACHE_SIZE;
     }
 
+    /** {@inheritDoc} */
     @Override
     public int getReservedBufferLengthForLeafList() {
         return DEFAULT_RESERVED_BUFFER_LENGTH;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public double getPercentHalfDiskHashMapFlushThreads() {
+        return DEFAULT_PERCENT_HALFDISKHASHMAP_FLUSH_THREADS;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int getNumHalfDiskHashMapFlushThreads() {
+        return getNumHalfDiskHashMapFlushThreads(getPercentHalfDiskHashMapFlushThreads());
+    }
+
+    public static int getNumHalfDiskHashMapFlushThreads(final double percentHalfDiskHashMapFlushThreads) {
+        final int debugValue = Integer.getInteger("halfDiskHashMapFlushThreadCount", -1);
+        if (debugValue > 0) {
+            return debugValue;
+        }
+        final int availableCPUs = Runtime.getRuntime().availableProcessors();
+        final int numThreads = (int) (availableCPUs * percentHalfDiskHashMapFlushThreads / 100.0);
+        // 4 threads minimum
+        return Math.max(4, numThreads);
     }
 }

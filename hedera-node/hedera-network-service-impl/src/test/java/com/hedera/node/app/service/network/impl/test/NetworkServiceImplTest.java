@@ -18,6 +18,7 @@ package com.hedera.node.app.service.network.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
@@ -50,23 +51,31 @@ class NetworkServiceImplTest {
     }
 
     @Test
-    void registersExpectedSchema() {
+    void doesNotYetHaveModularizedSchema() {
+        final NetworkService subject = NetworkService.getInstance();
+
+        subject.registerSchemas(registry);
+
+        verifyNoInteractions(registry);
+    }
+
+    @Test
+    void registersExpectedSchemaForMonoAdapter() {
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
         final var subject = NetworkService.getInstance();
 
-        subject.registerSchemas(registry);
+        subject.registerMonoAdapterSchemas(registry);
         verify(registry).register(schemaCaptor.capture());
 
         final var schema = schemaCaptor.getValue();
 
         final var statesToCreate = schema.statesToCreate();
-        assertEquals(4, statesToCreate.size());
+        assertEquals(3, statesToCreate.size());
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
         assertEquals(NetworkServiceImpl.CONTEXT_KEY, iter.next());
         assertEquals(NetworkServiceImpl.RUNNING_HASHES_KEY, iter.next());
-        assertEquals(NetworkServiceImpl.SPECIAL_FILES_KEY, iter.next());
         assertEquals(NetworkServiceImpl.STAKING_KEY, iter.next());
     }
 }

@@ -4,6 +4,7 @@ module com.hedera.node.app.service.util.impl.test {
     requires org.junit.jupiter.api;
     requires org.mockito;
     requires org.mockito.junit.jupiter;
+    requires com.hedera.pbj.runtime;
 
     opens com.hedera.node.app.service.util.impl.test to
             org.junit.platform.commons,

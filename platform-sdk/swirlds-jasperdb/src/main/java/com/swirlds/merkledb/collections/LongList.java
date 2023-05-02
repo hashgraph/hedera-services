@@ -28,7 +28,7 @@ import java.util.stream.LongStream;
  * Integer.MAX_VALUE}.
  *
  * <p>Zero is treated as a sentinel value, marking indexes that have never been used with a {@code
- * put()} call.
+ * put()} call or indexes that no longer contain valid values after a call to {@link #remove}.
  *
  * <p>Implementations should support both concurrent reads and writes. Writing to an index beyond
  * the current capacity of the list (but less than the max capacity) should <b>not</b> fail, but
@@ -60,6 +60,13 @@ public interface LongList extends CASableLongIndex, Closeable {
      * @throws IllegalArgumentException  if the value is zero
      */
     void put(long index, long value);
+
+    /**
+     * Marks the index as not containing a valid long value.
+     *
+     * @param index the index to clear
+     */
+    void remove(long index);
 
     /**
      * Stores a long at the given index, on the condition that the current long therein has a given

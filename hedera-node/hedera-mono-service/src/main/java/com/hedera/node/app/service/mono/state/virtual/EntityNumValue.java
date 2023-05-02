@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -28,6 +28,8 @@ public class EntityNumValue implements VirtualValue {
     public static final long RUNTIME_CONSTRUCTABLE_ID = 0x2e5eb64ad7cbcfeaL;
     public static final String CANNOT_DESERIALIZE_INTO_AN_IMMUTABLE_ENTITY_NUM_VALUE =
             "Cannot deserialize into an immutable EntityNumValue";
+
+    public static final EntityNumValue DEFAULT = new EntityNumValue(0);
 
     private long num;
 

@@ -51,8 +51,6 @@ public class CryptoBenchJPDB extends CryptoBench {
                 .keySerializer(new BenchmarkKeySerializer())
                 .storageDir(getTestDir().resolve("jasperdb"))
                 .preferDiskBasedIndexes(false);
-        final VirtualMap<BenchmarkKey, BenchmarkValue> createdMap = new VirtualMap<>(LABEL, diskDbBuilder);
-        BenchmarkMetrics.register(createdMap::registerMetrics);
-        return createdMap;
+        return new VirtualMap<>(LABEL, diskDbBuilder);
     }
 }

@@ -271,6 +271,14 @@ public class EntityId implements SelfSerializable {
                 .build();
     }
 
+    public com.hedera.hapi.node.base.AccountID toPbjAccountId() {
+        return com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .accountNum(num)
+                .build();
+    }
+
     public EntityNum asNum() {
         return EntityNum.fromLong(num);
     }

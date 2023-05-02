@@ -68,7 +68,7 @@ public class WalletTestSetup extends HapiSuite {
                 .when()
                 .then(withOpContext((spec, opLog) -> {
                     KeyFactory.PEM_PASSPHRASE = "guessAgain";
-                    spec.keys().exportSimpleKey(String.format("pretend-genesis.pem"), "fm");
+                    spec.keys().exportSimpleKey("pretend-genesis.pem", "fm");
                 }));
     }
 

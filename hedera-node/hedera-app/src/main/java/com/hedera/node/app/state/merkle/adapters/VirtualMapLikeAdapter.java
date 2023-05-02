@@ -42,12 +42,12 @@ import org.apache.commons.lang3.tuple.Pair;
  * within a {@link com.hedera.node.app.HederaApp} instance, which is important while we are relying
  * heavily on adapters around {@code mono-service} components.
  */
-public class VirtualMapLikeAdapter {
+public final class VirtualMapLikeAdapter {
     private VirtualMapLikeAdapter() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static <K extends VirtualKey<? super K>, V extends VirtualValue> VirtualMapLike<K, V> unwrapping(
+    public static <K extends VirtualKey, V extends VirtualValue> VirtualMapLike<K, V> unwrapping(
             final StateMetadata<K, V> md, final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> real) {
         return new VirtualMapLike<>() {
             @Override
@@ -125,6 +125,11 @@ public class VirtualMapLikeAdapter {
             public V remove(final K key) {
                 final var removed = real.remove(new OnDiskKey<>(md, key));
                 return removed != null ? removed.getValue() : null;
+            }
+
+            @Override
+            public void warm(final K key) {
+                real.warm(new OnDiskKey<>(md, key));
             }
         };
     }

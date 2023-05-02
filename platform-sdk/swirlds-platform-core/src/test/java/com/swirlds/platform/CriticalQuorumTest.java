@@ -25,7 +25,7 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.StakeGenerators;
+import com.swirlds.common.test.WeightGenerators;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.internal.EventImpl;
@@ -94,16 +94,16 @@ class CriticalQuorumTest {
     }
 
     /**
-     * Add up all the stake in the critical quorum.
+     * Add up all the weight in the critical quorum.
      */
-    private static long stakeInCriticalQuorum(final AddressBook addressBook, final CriticalQuorum criticalQuorum) {
-        long stake = 0;
+    private static long weightInCriticalQuorum(final AddressBook addressBook, final CriticalQuorum criticalQuorum) {
+        long weight = 0;
         for (int nodeId = 0; nodeId < addressBook.getSize(); nodeId++) {
             if (criticalQuorum.isInCriticalQuorum(nodeId)) {
-                stake += addressBook.getAddress(nodeId).getStake();
+                weight += addressBook.getAddress(nodeId).getWeight();
             }
         }
-        return stake;
+        return weight;
     }
 
     /**
@@ -127,20 +127,20 @@ class CriticalQuorumTest {
     }
 
     /**
-     * Get the stake of all nodes which do not exceed a given event threshold.
+     * Get the weight of all nodes which do not exceed a given event threshold.
      */
-    private static long stakeNotExceedingThreshold(
+    private static long weightNotExceedingThreshold(
             final int threshold, final AddressBook addressBook, final Map<Integer, Integer> eventCounts) {
 
-        long stake = 0;
+        long weight = 0;
 
         for (int nodeId = 0; nodeId < addressBook.getSize(); nodeId++) {
             if (eventCounts.get(nodeId) <= threshold) {
-                stake += addressBook.getAddress(nodeId).getStake();
+                weight += addressBook.getAddress(nodeId).getWeight();
             }
         }
 
-        return stake;
+        return weight;
     }
 
     /**
@@ -176,33 +176,33 @@ class CriticalQuorumTest {
             final CriticalQuorum criticalQuorum,
             final Map<Integer, Integer> eventCounts) {
 
-        final long totalStake = addressBook.getTotalStake();
-        final long stakeInCriticalQuorum = stakeInCriticalQuorum(addressBook, criticalQuorum);
+        final long totalWeight = addressBook.getTotalWeight();
+        final long weightInCriticalQuorum = weightInCriticalQuorum(addressBook, criticalQuorum);
 
         final long criticalQuorumThreshold = thresholdToBeInCriticalQuorum(addressBook, criticalQuorum, eventCounts);
 
         assertTrue(
-                Utilities.isStrongMinority(stakeInCriticalQuorum, totalStake),
-                () -> "critical quorum must contain stake equal to or exceeding 1/3 of the total stake."
+                Utilities.isStrongMinority(weightInCriticalQuorum, totalWeight),
+                () -> "critical quorum must contain weight equal to or exceeding 1/3 of the total weight."
                         + "\nWith a threshold of "
                         + criticalQuorumThreshold + " the current critical quorum only "
-                        + "contains stake representing "
-                        + (((float) stakeInCriticalQuorum) / totalStake) + " of the whole.\n"
+                        + "contains weight representing "
+                        + (((float) weightInCriticalQuorum) / totalWeight) + " of the whole.\n"
                         + criticalQuorumDebugInfo(addressBook, criticalQuorum, eventCounts));
 
         if (criticalQuorumThreshold > 0) {
             // Threshold for the critical quorum should be the smallest possible. If a threshold 1 smaller also forms
             // a critical quorum then it should have been used instead.
-            final long stakeAtLowerThreshold =
-                    stakeNotExceedingThreshold((int) (criticalQuorumThreshold - 1), addressBook, eventCounts);
+            final long weightAtLowerThreshold =
+                    weightNotExceedingThreshold((int) (criticalQuorumThreshold - 1), addressBook, eventCounts);
 
             assertFalse(
-                    Utilities.isStrongMinority(stakeAtLowerThreshold, totalStake),
-                    () -> "critical quorum is expected to contain the minimum amount of stake possible."
+                    Utilities.isStrongMinority(weightAtLowerThreshold, totalWeight),
+                    () -> "critical quorum is expected to contain the minimum amount of weight possible."
                             + "\nCurrent threshold is "
                             + criticalQuorumThreshold + ", but with a threshold of " + (criticalQuorumThreshold - 1)
-                            + " the critical quorum contains stake representing "
-                            + (((float) stakeAtLowerThreshold) / totalStake)
+                            + " the critical quorum contains weight representing "
+                            + (((float) weightAtLowerThreshold) / totalWeight)
                             + " of the whole.\n"
                             + criticalQuorumDebugInfo(addressBook, criticalQuorum, eventCounts));
         }
@@ -229,45 +229,45 @@ class CriticalQuorumTest {
     protected static Stream<Arguments> buildArguments() {
         final List<Arguments> arguments = new ArrayList<>();
 
-        // CriticalQuorumStake with a various number of nodes, balanced
-        arguments.addAll(balancedStakeArgs());
+        // CriticalQuorumWeight with a various number of nodes, balanced
+        arguments.addAll(balancedWeightArgs());
 
-        // CriticalQuorumStake with a various number of nodes, unbalanced.
-        // One node always has 0 stake (if more than 1 node).
-        arguments.addAll(unbalancedStakeWithOneZeroStake());
+        // CriticalQuorumWeight with a various number of nodes, unbalanced.
+        // One node always has 0 weight (if more than 1 node).
+        arguments.addAll(unbalancedWeightWithOneZeroWeight());
 
-        // CriticalQuorumStake with evenly split stake except for a single
-        // node that has a strong minority of stake.
+        // CriticalQuorumWeight with evenly split weight except for a single
+        // node that has a strong minority of weight.
         arguments.addAll(singleNodeWithStrongMinority());
 
-        // CriticalQuorumStake with evenly split stake except for three
-        // nodes that has a strong minority of stake. Other nodes each have less stake
+        // CriticalQuorumWeight with evenly split weight except for three
+        // nodes that has a strong minority of weight. Other nodes each have less weight
         // than the three that make up the strong minority.
         arguments.addAll(threeNodesWithStrongMinority());
 
-        // CriticalQuorumStake with 1/3 of the nodes having zero stake and the
-        // remaining nodes assigned a random amount of stake from 1 to 100.
-        arguments.addAll(oneThirdNodesZeroStake());
+        // CriticalQuorumWeight with 1/3 of the nodes having zero weight and the
+        // remaining nodes assigned a random amount of weight from 1 to 100.
+        arguments.addAll(oneThirdNodesZeroWeight());
 
         return arguments.stream();
     }
 
     /**
-     * Creates arguments with network sizes from 3 nodes to 20 where one third of the nodes are zero-stake and the
-     * remaining nodes are assigned a random stake value between 1 and 100, inclusive.
+     * Creates arguments with network sizes from 3 nodes to 20 where one third of the nodes are zero-weight and the
+     * remaining nodes are assigned a random weight value between 1 and 100, inclusive.
      *
      * @return test arguments
      */
-    private static Collection<Arguments> oneThirdNodesZeroStake() {
+    private static Collection<Arguments> oneThirdNodesZeroWeight() {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 3; numNodes <= 20; numNodes++) {
-            final List<Long> stakes = StakeGenerators.oneThirdNodesZeroStake(null, numNodes);
+            final List<Long> weights = WeightGenerators.oneThirdNodesZeroWeight(null, numNodes);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
                     .setSequentialIds(true)
-                    .setCustomStakeGenerator(id -> stakes.get((int) id))
+                    .setCustomWeightGenerator(id -> weights.get((int) id))
                     .build();
-            final String name = numNodes + " nodes, one third of nodes are zero-stake, remaining have random stake "
+            final String name = numNodes + " nodes, one third of nodes are zero-weight, remaining have random weight "
                     + "between [1, 90]";
             arguments.add(Arguments.of(new CriticalQuorumBuilder(name, addressBook)));
         }
@@ -275,62 +275,62 @@ class CriticalQuorumTest {
     }
 
     /**
-     * Creates arguments with network sizes from 11 nodes to 20 where three nodes have a strong minority of stake
-     * (evenly distributed) and the remaining stake is split evenly among the remaining nodes.
+     * Creates arguments with network sizes from 11 nodes to 20 where three nodes have a strong minority of weight
+     * (evenly distributed) and the remaining weight is split evenly among the remaining nodes.
      *
      * @return test arguments
      */
     private static Collection<Arguments> threeNodesWithStrongMinority() {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 11; numNodes <= 20; numNodes++) {
-            final List<Long> stakes = StakeGenerators.threeNodesWithStrongMinority(numNodes);
+            final List<Long> weights = WeightGenerators.threeNodesWithStrongMinority(numNodes);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
                     .setSequentialIds(true)
-                    .setCustomStakeGenerator(id -> stakes.get((int) id))
+                    .setCustomWeightGenerator(id -> weights.get((int) id))
                     .build();
             final String name =
-                    numNodes + " nodes, three nodes have a strong minority, remaining stake evenly " + "distributed";
+                    numNodes + " nodes, three nodes have a strong minority, remaining weight evenly " + "distributed";
             arguments.add(Arguments.of(new CriticalQuorumBuilder(name, addressBook)));
         }
         return arguments;
     }
 
     /**
-     * Creates arguments with network sizes from 3 nodes to 20 where a single node has a strong minority of stake and
-     * the remaining stake is evenly distributed among the remaining nodes.
+     * Creates arguments with network sizes from 3 nodes to 20 where a single node has a strong minority of weight and
+     * the remaining weight is evenly distributed among the remaining nodes.
      *
      * @return test arguments
      */
     private static Collection<Arguments> singleNodeWithStrongMinority() {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 3; numNodes <= 9; numNodes++) {
-            final List<Long> stakes = StakeGenerators.singleNodeWithStrongMinority(numNodes);
+            final List<Long> weights = WeightGenerators.singleNodeWithStrongMinority(numNodes);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
                     .setSequentialIds(true)
-                    .setCustomStakeGenerator(id -> stakes.get((int) id))
+                    .setCustomWeightGenerator(id -> weights.get((int) id))
                     .build();
-            final String name = numNodes + " nodes, one node has strong minority, remaining stake evenly distributed";
+            final String name = numNodes + " nodes, one node has strong minority, remaining weight evenly distributed";
             arguments.add(Arguments.of(new CriticalQuorumBuilder(name, addressBook)));
         }
         return arguments;
     }
 
     /**
-     * Creates arguments with network sizes from 1 nodes to 9 where a single node has zero stake and the remaining
-     * nodes are assigned an incrementing amount of stake.
+     * Creates arguments with network sizes from 1 nodes to 9 where a single node has zero weight and the remaining
+     * nodes are assigned an incrementing amount of weight.
      *
      * @return test arguments
      */
-    private static Collection<Arguments> unbalancedStakeWithOneZeroStake() {
+    private static Collection<Arguments> unbalancedWeightWithOneZeroWeight() {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 1; numNodes <= 9; numNodes++) {
-            final List<Long> stakes = StakeGenerators.incrementingStakeWithOneZeroStake(numNodes);
+            final List<Long> weights = WeightGenerators.incrementingWeightWithOneZeroWeight(numNodes);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
                     .setSequentialIds(true)
-                    .setCustomStakeGenerator(id -> stakes.get((int) id))
+                    .setCustomWeightGenerator(id -> weights.get((int) id))
                     .build();
             final String name = numNodes + " node" + (numNodes == 1 ? "" : "s") + " unbalanced";
             arguments.add(Arguments.of(new CriticalQuorumBuilder(name, addressBook)));
@@ -339,18 +339,18 @@ class CriticalQuorumTest {
     }
 
     /**
-     * Creates arguments with network sizes from 1 nodes to 9 where each node has a stake of 1.
+     * Creates arguments with network sizes from 1 nodes to 9 where each node has a weight of 1.
      *
      * @return test arguments
      */
-    private static Collection<Arguments> balancedStakeArgs() {
+    private static Collection<Arguments> balancedWeightArgs() {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 1; numNodes <= 9; numNodes++) {
-            final List<Long> stakes = Collections.nCopies(numNodes, 1L);
+            final List<Long> weights = Collections.nCopies(numNodes, 1L);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
                     .setSequentialIds(true)
-                    .setCustomStakeGenerator(id -> stakes.get((int) id))
+                    .setCustomWeightGenerator(id -> weights.get((int) id))
                     .build();
             final String name = numNodes + " node" + (numNodes == 1 ? "" : "s") + " balanced";
             arguments.add(Arguments.of(new CriticalQuorumBuilder(name, addressBook)));

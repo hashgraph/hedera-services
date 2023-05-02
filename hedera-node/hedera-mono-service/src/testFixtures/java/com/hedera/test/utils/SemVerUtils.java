@@ -16,15 +16,24 @@
 
 package com.hedera.test.utils;
 
-import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hedera.hapi.node.base.SemanticVersion;
 
 public class SemVerUtils {
     private SemVerUtils() {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static SemanticVersion standardSemverWith(final int major, final int minor, final int patch) {
+    public static SemanticVersion standardPbjSemverWith(final int major, final int minor, final int patch) {
         return SemanticVersion.newBuilder()
+                .major(major)
+                .minor(minor)
+                .patch(patch)
+                .build();
+    }
+
+    public static com.hederahashgraph.api.proto.java.SemanticVersion standardSemverWith(
+            final int major, final int minor, final int patch) {
+        return com.hederahashgraph.api.proto.java.SemanticVersion.newBuilder()
                 .setMajor(major)
                 .setMinor(minor)
                 .setPatch(patch)

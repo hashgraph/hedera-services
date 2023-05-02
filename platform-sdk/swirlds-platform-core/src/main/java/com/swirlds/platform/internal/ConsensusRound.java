@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.internal;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.system.Round;
@@ -23,6 +24,7 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -51,13 +53,28 @@ public class ConsensusRound implements Round {
     private int numAppTransactions = 0;
 
     /**
+     * The event that, when added to the hashgraph, caused this round to reach consensus.
+     */
+    private final EventImpl keystoneEvent;
+
+    /**
      * Create a new instance with the provided consensus events.
      *
-     * @param consensusEvents             the events in the round, in consensus order
-     * @param generations                 the consensus generations for this round
+     * @param consensusEvents the events in the round, in consensus order
+     * @param keystoneEvent   the event that, when added to the hashgraph, caused this round to reach consensus
+     * @param generations     the consensus generations for this round
      */
-    public ConsensusRound(final List<EventImpl> consensusEvents, final GraphGenerations generations) {
+    public ConsensusRound(
+            @NonNull final List<EventImpl> consensusEvents,
+            @NonNull final EventImpl keystoneEvent,
+            @NonNull final GraphGenerations generations) {
+
+        throwArgNull(consensusEvents, "consensusEvents");
+        throwArgNull(keystoneEvent, "keystoneEvent");
+        throwArgNull(generations, "generations");
+
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
+        this.keystoneEvent = keystoneEvent;
         this.generations = generations;
 
         for (final EventImpl e : consensusEvents) {
@@ -158,6 +175,13 @@ public class ConsensusRound implements Round {
         return new EqualsBuilder()
                 .append(consensusEvents, round.consensusEvents)
                 .isEquals();
+    }
+
+    /**
+     * @return the event that, when added to the hashgraph, caused this round to reach consensus
+     */
+    public @NonNull EventImpl getKeystoneEvent() {
+        return keystoneEvent;
     }
 
     @Override

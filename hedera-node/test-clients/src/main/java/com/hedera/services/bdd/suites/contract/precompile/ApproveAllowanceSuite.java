@@ -100,6 +100,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         return List.of(
                 tokenAllowance(),
                 tokenApprove(),
+                tokenApproveToInnerContract(),
                 nftIsApprovedForAll(),
                 nftGetApproved(),
                 nftSetApprovalForAll(),
@@ -117,6 +118,72 @@ public class ApproveAllowanceSuite extends HapiSuite {
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    private HapiSpec tokenApproveToInnerContract() {
+        final var approveTxn = "NestedChildren";
+        final var nestedContract = DIRECT_ERC_CALLEE;
+        final var theSpender = SPENDER;
+
+        return defaultHapiSpec("HTS_TOKEN_APPROVE")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(theSpender),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(10L)
+                                .maxSupply(1000L)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        uploadInitCode(nestedContract),
+                        contractCreate(nestedContract).adminKey(MULTI_KEY),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                        tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, FUNGIBLE_TOKEN),
+                        tokenAssociate(nestedContract, FUNGIBLE_TOKEN))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        HTS_APPROVE_ALLOWANCE_CONTRACT,
+                                        "htsApprove",
+                                        asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(nestedContract))),
+                                        BigInteger.valueOf(10))
+                                .payingWith(OWNER)
+                                .gas(4_000_000L)
+                                .via(approveTxn)
+                                .hasKnownStatus(SUCCESS))))
+                .then(
+                        childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
+                        getTxnRecord(approveTxn).andAllChildRecords().logged(),
+                        withOpContext((spec, opLog) -> {
+                            final var sender = spec.registry().getContractId(HTS_APPROVE_ALLOWANCE_CONTRACT);
+                            final var receiver = spec.registry().getContractId(nestedContract);
+                            final var idOfToken = "0.0."
+                                    + (spec.registry()
+                                            .getTokenID(FUNGIBLE_TOKEN)
+                                            .getTokenNum());
+                            var txnRecord = getTxnRecord(approveTxn)
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith()
+                                                    .logs(inOrder(logWith()
+                                                            .contract(idOfToken)
+                                                            .withTopicsInOrder(List.of(
+                                                                    eventSignatureOf(APPROVE_SIGNATURE),
+                                                                    parsedToByteString(sender.getContractNum()),
+                                                                    parsedToByteString(receiver.getContractNum())))
+                                                            .longValue(10)))))
+                                    .andAllChildRecords()
+                                    .logged();
+                            allRunFor(spec, txnRecord);
+                        }));
     }
 
     private HapiSpec tokenAllowance() {

@@ -16,6 +16,7 @@
 
 package com.hedera.test.utils;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -42,8 +43,10 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoTransferFactory;
 import com.hedera.test.factories.txns.TinyBarsFromTo;
 import com.hederahashgraph.api.proto.java.*;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 
@@ -265,6 +268,24 @@ public class TxnUtils {
                 .payerKt(payerKey)
                 .transfers(TinyBarsFromTo.tinyBarsFromTo(payer, beneficiary, amount))
                 .get();
+    }
+
+    public static com.hedera.hapi.node.base.Transaction payerSponsoredPbjTransfer(
+            @NonNull final String payer,
+            @NonNull final KeyTree payerKey,
+            @NonNull final String beneficiary,
+            final long amount) {
+        try {
+            final var monoTransfer = payerSponsoredTransfer(
+                    Objects.requireNonNull(payer),
+                    Objects.requireNonNull(payerKey),
+                    Objects.requireNonNull(beneficiary),
+                    amount);
+            return toPbj(monoTransfer);
+        } catch (final Throwable e) {
+            // Should be impossible, just propagate
+            throw new RuntimeException("Failed converting to PBJ transfer", e);
+        }
     }
 
     public static byte[] randomUtf8Bytes(int n) {

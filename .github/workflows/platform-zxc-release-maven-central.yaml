@@ -77,6 +77,11 @@ jobs:
     name: ${{ inputs.custom-job-label || 'Release' }}
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
       - name: Install Semantic Version Tools
         run: |
           echo "::group::Download SemVer Binary"
@@ -106,8 +111,8 @@ jobs:
           BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
           BRANCH_NAME="${BRANCH_NAME##origin/}"
 
-          if [[ ! "${BRANCH_NAME}" =~ ^main$|^master$|^release-[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-           printf "::error title=Branch Error::The version policy of %s only allows this workflow to be executed on branches matching the pattern: %s" "${POLICY}" '^main$|^master$|^release-[0-9]+\.[0-9]+\.[0-9]+$'
+          if [[ ! "${BRANCH_NAME}" =~ ^main$|^master$|^release\/[0-9]+\.[0-9]+$ ]]; then
+            printf "::error title=Branch Error::The version policy of %s only allows this workflow to be executed on branches matching the pattern: %s" "${POLICY}" '^main$|^master$|^release\/[0-9]+\.[0-9]+$'
             exit 32
           fi
 
@@ -133,15 +138,10 @@ jobs:
             exit 12
           fi
 
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
       - name: Import GPG key
         id: gpg_key
         uses: crazy-max/ghaction-import-gpg@v5
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           gpg_private_key: ${{ secrets.gpg-key-contents }}
           passphrase: ${{ secrets.gpg-key-passphrase }}
@@ -149,6 +149,18 @@ jobs:
           git_user_signingkey: true
           git_commit_gpgsign: true
           git_tag_gpgsign: true
+
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@v1
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+        with:
+          workload_identity_provider: 'projects/229164983194/locations/global/workloadIdentityPools/registry-identity-pool/providers/gh-provider'
+          service_account: 'artifact-deployer@swirlds-registry.iam.gserviceaccount.com'
+
+      - name: Setup Google Cloud SDK
+        if: ${{ inputs.dry-run-enabled != true }}
+        uses: google-github-actions/setup-gcloud@v1
 
       - name: Setup Java
         uses: actions/setup-java@v3
@@ -184,7 +196,7 @@ jobs:
 
       - name: Gradle Assemble
         uses: gradle/gradle-build-action@v2
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
@@ -193,7 +205,7 @@ jobs:
       - name: Gradle JavaDoc
         id: gradle-javadoc
         uses: gradle/gradle-build-action@v2
-        if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() && !failure() }}
         with:
           build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
@@ -201,7 +213,7 @@ jobs:
 
       - name: Gradle Deploy
         uses: gradle/gradle-build-action@v2
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         env:
           OSSRH_USERNAME: ${{ secrets.ossrh-user-name }}
           OSSRH_PASSWORD: ${{ secrets.ossrh-user-password }}
@@ -213,32 +225,32 @@ jobs:
       - name: Commit Version Changes
         id: commit
         uses: EndBug/add-and-commit@v9
-        if: ${{ inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
           author_name: ${{ secrets.git-user-name }}
           author_email: ${{ secrets.git-user-email }}
           commit: --signoff --gpg-sign
           message: "[Automated Maven Central Release] Platform SDK v${{ inputs.new-version }}"
 
-      - name: Cache SDK Release Archives
-        id: archive-cache
-        uses: actions/cache@v3
-        with:
-          path: ~/sdk-archives
-          key: v1-sdk-release-v${{ inputs.new-version }}-jdk${{ inputs.java-version }}-${{ runner.os }}-${{ runner.arch }}-ri${{ github.run_id }}-rn${{ github.run_number }}-ra${{ github.run_attempt }}
+#      - name: Cache SDK Release Archives
+#        id: archive-cache
+#        uses: actions/cache@v3
+#        with:
+#          path: ~/sdk-archives
+#          key: v1-sdk-release-v${{ inputs.new-version }}-jdk${{ inputs.java-version }}-${{ runner.os }}-${{ runner.arch }}-ri${{ github.run_id }}-rn${{ github.run_number }}-ra${{ github.run_attempt }}
 
       - name: Stage SDK Release Archives
-        if: ${{ !cancelled() && inputs.dry-run-enabled != true }}
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         run: |
           SDK_RELEASE_DIR="${HOME}/sdk-release"
           SDK_ARCHIVE_DIR="${HOME}/sdk-archives"
           COMMIT_SHA="$(echo "${{ steps.commit.outputs.commit_long_sha }}" | cut -c1-8)"
 
-          if [[ "${{ steps.archive-cache.outputs.cache-hit }}" == true ]]; then
-            echo "::group::Removing Existing Archive Cache Items"
-            rm -rvf "${SDK_ARCHIVE_DIR}"/*
-            echo "::endgroup::"
-          fi
+          #if [[ "${{ steps.archive-cache.outputs.cache-hit }}" == true ]]; then
+          #  echo "::group::Removing Existing Archive Cache Items"
+          #  rm -rvf "${SDK_ARCHIVE_DIR}"/*
+          #  echo "::endgroup::"
+          #fi
 
           echo "::group::Creating Release Directories"
             [[ -f "${SDK_RELEASE_DIR}" ]] || mkdir -p "${SDK_RELEASE_DIR}"
@@ -298,3 +310,11 @@ jobs:
             gpg --output "${APPS_ARCHIVE_FILE}.sha256.asc" --detach-sig "${APPS_ARCHIVE_FILE}.sha256"
             gpg --output "${PUBLIC_ARCHIVE_FILE}.sha256.asc" --detach-sig "${PUBLIC_ARCHIVE_FILE}.sha256"
           echo "::endgroup::"
+
+      - name: Upload SDK Release Archives
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+        env:
+          RELEASE_TAG: v${{ inputs.new-version }}
+        run: |
+          SDK_ARCHIVE_DIR="${HOME}/sdk-archives"
+          gsutil -m cp -r "${SDK_ARCHIVE_DIR}"/* gs://platform-sdk-ci-release-artifacts/${RELEASE_TAG}/

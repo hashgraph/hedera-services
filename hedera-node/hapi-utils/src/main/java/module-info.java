@@ -16,6 +16,7 @@ module com.hedera.node.app.hapi.utils {
     exports com.hedera.node.app.hapi.utils.sysfiles.validation;
 
     requires transitive com.hedera.node.app.service.evm;
+    requires com.github.spotbugs.annotations;
     requires com.fasterxml.jackson.databind;
     requires com.google.protobuf;
     requires org.apache.logging.log4j;
@@ -28,4 +29,5 @@ module com.hedera.node.app.hapi.utils {
     requires org.apache.commons.lang3;
     requires net.i2p.crypto.eddsa;
     requires javax.inject;
+    requires com.hedera.hashgraph.protobuf.java.api;
 }

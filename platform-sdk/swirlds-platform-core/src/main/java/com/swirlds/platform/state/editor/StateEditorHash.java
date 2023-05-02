@@ -18,6 +18,7 @@ package com.swirlds.platform.state.editor;
 
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.util.concurrent.ExecutionException;
 import picocli.CommandLine;
 
@@ -30,9 +31,9 @@ public class StateEditorHash extends StateEditorOperation {
      */
     @Override
     public void run() {
-        try {
+        try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorHash.run()")) {
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(getStateEditor().getState())
+                    .digestTreeAsync(reservedSignedState.get().getState())
                     .get();
         } catch (final InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);

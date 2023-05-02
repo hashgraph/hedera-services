@@ -60,7 +60,7 @@ import org.apache.logging.log4j.Logger;
 
 public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PauseUnpauseTokenAccountPrecompileSuite.class);
-    private static final String PAUSE_UNPAUSE_CONTRACT = "PauseUnpauseTokenAccount";
+    public static final String PAUSE_UNPAUSE_CONTRACT = "PauseUnpauseTokenAccount";
 
     private static final String UNPAUSE_KEY = "UNPAUSE_KEY";
 
@@ -70,8 +70,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
 
     public static final long INITIAL_BALANCE = 1_000_000_000L;
     private static final long GAS_TO_OFFER = 4_000_000L;
-    private static final String PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "pauseTokenAccount";
-    private static final String UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "unpauseTokenAccount";
+    public static final String PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "pauseTokenAccount";
+    public static final String UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "unpauseTokenAccount";
     private static final String PAUSE_FUNGIBLE_TXN = "pauseFungibleTxn";
     private static final String UNPAUSE_FUNGIBLE_TXN = "unpauseFungibleTxn";
     private static final String PAUSE_NONFUNGIBLE_TXN = "pauseNonFungibleTxn";
