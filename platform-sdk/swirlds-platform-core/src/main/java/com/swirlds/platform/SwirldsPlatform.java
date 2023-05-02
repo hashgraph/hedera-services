@@ -898,8 +898,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * First part of initialization. This was split up so that appMain.init() could be called before {@link
-     * StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete parts.
+     * First part of initialization. This was split up so that appMain.init() could be called before
+     * {@link StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete
+     * parts.
      */
     private void init(
             @Nullable final SignedState signedStateFromDisk,
@@ -1205,8 +1206,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 intakeQueue,
                 topology.getConnectionGraph(),
                 selfId,
-                new EventCreationRules(List.of(
-                        selfId, swirldStateManager.getTransactionPool(), startUpEventFrozenManager, freezeManager)),
+                new EventCreationRules(
+                        List.of(swirldStateManager.getTransactionPool(), startUpEventFrozenManager, freezeManager)),
                 criticalQuorum,
                 initialAddressBook,
                 fallenBehindManager));

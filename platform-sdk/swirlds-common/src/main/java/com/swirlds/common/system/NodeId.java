@@ -19,7 +19,7 @@ package com.swirlds.common.system;
 /**
  * A class that is used to uniquely identify a Swirlds Node
  */
-public class NodeId implements EventCreationRule {
+public class NodeId {
     /** used to distinguish between a main node and a mirror node */
     private boolean isMirror;
     /** ID number unique within the network, unique set for main network and mirror network */
@@ -168,18 +168,5 @@ public class NodeId implements EventCreationRule {
     @Override
     public String toString() {
         return (isMirror ? "m" : "") + id;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public EventCreationRuleResponse shouldCreateEvent() {
-        // Only main nodes should create events
-        if (isMain()) {
-            return EventCreationRuleResponse.PASS;
-        } else {
-            return EventCreationRuleResponse.DONT_CREATE;
-        }
     }
 }

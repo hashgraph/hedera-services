@@ -115,7 +115,7 @@ public class SyncManagerTest {
                     eventQueue,
                     connectionGraph,
                     nodeId,
-                    new EventCreationRules(List.of(nodeId, startUpEventFrozenManager, freezeManager)),
+                    new EventCreationRules(List.of(startUpEventFrozenManager, freezeManager)),
                     criticalQuorum,
                     hashgraph.getAddressBook(),
                     new FallenBehindManagerImpl(
