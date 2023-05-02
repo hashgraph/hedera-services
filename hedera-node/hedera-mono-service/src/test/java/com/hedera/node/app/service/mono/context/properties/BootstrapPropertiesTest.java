@@ -62,6 +62,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
@@ -537,7 +538,8 @@ class BootstrapPropertiesTest {
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, true),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, true),
             entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"),
-            entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500));
+            entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
+            entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30));
 
     @Test
     void containsProperty() {

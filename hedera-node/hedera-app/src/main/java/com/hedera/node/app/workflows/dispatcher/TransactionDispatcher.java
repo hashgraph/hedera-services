@@ -99,6 +99,8 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTopicStore());
             case TOKEN_GRANT_KYC_TO_ACCOUNT -> dispatchTokenGrantKycToAccount(
                     txn, writableStoreFactory.createTokenRelStore());
+            case TOKEN_REVOKE_KYC_FROM_ACCOUNT -> dispatchTokenRevokeKycFromAccount(
+                    txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
@@ -293,10 +295,45 @@ public class TransactionDispatcher {
      * @param tokenRelStore the token relation store
      */
     private void dispatchTokenGrantKycToAccount(
-            TransactionBody tokenGrantKyc, WritableTokenRelationStore tokenRelStore) {
+            @NonNull final TransactionBody tokenGrantKyc, @NonNull final WritableTokenRelationStore tokenRelStore) {
         final var handler = handlers.tokenGrantKycToAccountHandler();
         handler.handle(tokenGrantKyc, tokenRelStore);
-        tokenRelStore.commit();
+        finishTokenGrantKycToAccount(tokenRelStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param tokenRelStore the token rel store used for the message submission
+     */
+    protected void finishTokenGrantKycToAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
+        // No-op by default
+    }
+
+    /**
+     * Dispatches the token revoke KYC transaction to the appropriate handler.
+     *
+     * @param tokenRevokeKyc the token revoke KYC transaction
+     * @param tokenRelStore the token relation store
+     */
+    private void dispatchTokenRevokeKycFromAccount(
+            @NonNull TransactionBody tokenRevokeKyc, @NonNull WritableTokenRelationStore tokenRelStore) {
+        final var handler = handlers.tokenRevokeKycFromAccountHandler();
+        handler.handle(tokenRevokeKyc, tokenRelStore);
+        finishTokenRevokeKycFromAccount(tokenRelStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param tokenRelStore the token rel store used for the message submission
+     */
+    protected void finishTokenRevokeKycFromAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
+        // No-op by default
     }
 
     /**
