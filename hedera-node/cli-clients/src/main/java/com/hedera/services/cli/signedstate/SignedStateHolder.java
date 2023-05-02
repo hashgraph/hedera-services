@@ -22,7 +22,12 @@ import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.context.DefaultPlatformContext;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -65,8 +70,17 @@ public class SignedStateHolder {
     private ServicesState dehydrate() throws Exception {
         // register all applicable classes on classpath before deserializing signed state
         ConstructableRegistry.getInstance().registerConstructables("*");
-        platformState = (ServicesState)
-                (SignedStateFileReader.readStateFile(swh).signedState().getSwirldState());
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+
+        // note: reservedSignedState.get() is unsafe because it leaks a reference count
+        // Normally we would hold this with a try-with-resources block
+        // but this is a temporary ok-workaround because we're calling this from within a command-line utility
+        // that will go away immediately after the call
+        platformState = (ServicesState) (SignedStateFileReader.readStateFile(platformContext, swh)
+                .reservedSignedState()
+                .get()
+                .getSwirldState());
         assertSignedStateComponentExists(platformState, "platform state (Swirlds)");
         return platformState;
     }

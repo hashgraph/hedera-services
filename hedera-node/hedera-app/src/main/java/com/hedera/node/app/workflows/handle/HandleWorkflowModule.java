@@ -77,7 +77,7 @@ public interface HandleWorkflowModule {
     @SuppressWarnings({"unchecked", "rawtypes"})
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
-        return () -> (AutoCloseableWrapper) platform.getLatestImmutableState();
+        return () -> (AutoCloseableWrapper) platform.getLatestImmutableState(HandleWorkflowModule.class.getName());
     }
 
     @Provides
