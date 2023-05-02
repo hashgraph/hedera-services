@@ -189,8 +189,9 @@ public interface ContractsModule {
             final @V_0_30 EVM evm,
             final @V_0_30 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
-        final @Named("HederaPrecompiledContractsDetector") Predicate<Address> hederaPrecompiledContractsDetector) {
-        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList, hederaPrecompiledContractsDetector);
+            final @Named("HederaPrecompiledContractsDetector") Predicate<Address> hederaPrecompiledContractsDetector) {
+        return new HederaMessageCallProcessor(
+                evm, precompiles, hederaPrecompileList, hederaPrecompiledContractsDetector);
     }
 
     @Provides
@@ -211,7 +212,7 @@ public interface ContractsModule {
             final @V_0_34 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory,
-        final @Named("HederaPrecompiledContractsDetector") Predicate<Address> hederaPrecompiledContractsDetector) {
+            final @Named("HederaPrecompiledContractsDetector") Predicate<Address> hederaPrecompiledContractsDetector) {
         return new HederaMessageCallProcessor(
                 evm, precompiles, hederaPrecompileList, infrastructureFactory, hederaPrecompiledContractsDetector);
     }
