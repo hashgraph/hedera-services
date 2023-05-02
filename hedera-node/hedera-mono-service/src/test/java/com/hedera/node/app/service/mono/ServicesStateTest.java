@@ -868,7 +868,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
             ServicesState swirldState = (ServicesState) state.get().getSwirldState();
             swirldState.init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));
         } catch (IOException e) {
-            fail("State file should be loaded correctly!");
+            fail("State file should be loaded correctly, but failed with exception: " + e.getMessage());
         }
     }
 
