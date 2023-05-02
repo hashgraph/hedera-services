@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.network;
 
 import com.swirlds.common.crypto.RunningHash;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Provides access to the underlying running hash leaf in state.
@@ -26,5 +27,6 @@ public interface ReadableRunningHashLeafStore {
      * Get the n-3 record's running hash from running hash leaf.
      * @return the n-3 record's running hash
      */
+    @NonNull
     RunningHash getNMinusThreeRunningHash();
 }

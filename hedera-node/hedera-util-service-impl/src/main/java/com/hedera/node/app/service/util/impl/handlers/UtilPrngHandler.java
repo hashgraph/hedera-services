@@ -59,6 +59,7 @@ public class UtilPrngHandler implements TransactionHandler {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         // validate range is greater than zero
@@ -79,12 +80,12 @@ public class UtilPrngHandler implements TransactionHandler {
         final var range = op.range();
 
         // TODO: This check should probably be moved into app
-        if (!prngConfig.isPrngEnabled()) {
+        if (!prngConfig.prngEnabled()) {
             return;
         }
         // get the n-3 running hash. If the running hash is not available, will throw a
         // HandleException
-        final var runningHashStore = context.createStore(ReadableRunningHashLeafStore.class);
+        final var runningHashStore = context.createReadableStore(ReadableRunningHashLeafStore.class);
         final var nMinusThreeRunningHash = runningHashStore.getNMinusThreeRunningHash();
         final byte[] pseudoRandomBytes = getNMinus3RunningHashBytes(nMinusThreeRunningHash);
 

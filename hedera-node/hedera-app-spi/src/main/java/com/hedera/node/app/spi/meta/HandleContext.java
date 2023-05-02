@@ -70,5 +70,5 @@ public interface HandleContext {
      * @throws NullPointerException if {@code clazz} is {@code null}
      */
     @NonNull
-    <C> C createStore(@NonNull Class<C> storeInterface);
+    <C> C createReadableStore(@NonNull Class<C> storeInterface);
 }

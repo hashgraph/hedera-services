@@ -16,19 +16,18 @@
 
 package com.hedera.node.app.service.util.impl.test.records;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.node.app.service.util.impl.records.UtilPrngRecordBuilder;
-import com.hedera.node.app.spi.fixtures.Utils;
+import com.hedera.node.app.spi.fixtures.TestBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class UtilPrngRecordBuilderTest {
     private UtilPrngRecordBuilder subject;
+    private static final Random random = new Random(92399921);
 
     @BeforeEach
     void setUp() {
@@ -37,28 +36,29 @@ class UtilPrngRecordBuilderTest {
 
     @Test
     void emptyConstructor() {
-        assertNull(subject.getPrngBytes());
-        assertNull(subject.getPrngNumber());
-        assertFalse(subject.hasPrngNumber());
+        assertThat(subject.getPrngBytes()).isNull();
+        assertThat(subject.getPrngNumber()).isNull();
+        assertThat(subject.hasPrngNumber()).isFalse();
     }
 
     @Test
     void gettersAndSettersForBytesWork() {
-        final var randomBytes = Utils.randomUtf8Bytes(48);
+        final var randomByteArray = TestBase.randomBytes(random, 48);
+        final var randomBytes = Bytes.wrap(randomByteArray);
 
-        subject.setPrngBytes(Bytes.wrap(randomBytes));
+        subject.setPrngBytes(randomBytes);
 
-        assertEquals(Bytes.wrap(randomBytes), subject.getPrngBytes());
-        assertFalse(subject.hasPrngNumber());
-        assertTrue(subject.hasPrngBytes());
+        assertThat(subject.getPrngBytes()).isEqualTo(randomBytes);
+        assertThat(subject.hasPrngNumber()).isFalse();
+        assertThat(subject.hasPrngBytes()).isTrue();
     }
 
     @Test
     void gettersAndSettersForNumberWork() {
         subject.setPrngNumber(123456789);
 
-        assertEquals(123456789, subject.getPrngNumber());
-        assertTrue(subject.hasPrngNumber());
-        assertFalse(subject.hasPrngBytes());
+        assertThat(subject.getPrngNumber()).isEqualTo(123456789);
+        assertThat(subject.hasPrngNumber()).isTrue();
+        assertThat(subject.hasPrngBytes()).isFalse();
     }
 }

@@ -26,7 +26,7 @@ class PrngConfigTest {
 
     @Test
     void emptyConstructor() {
-        assertFalse(new PrngConfig(false).isPrngEnabled());
-        assertTrue(new PrngConfig(true).isPrngEnabled());
+        assertFalse(new PrngConfig(false).prngEnabled());
+        assertTrue(new PrngConfig(true).prngEnabled());
     }
 }

@@ -18,6 +18,6 @@ package com.hedera.node.app.service.util.impl.config;
 
 /**
  * Configuration for the PRNG to check if it is enabled or not.
- * @param isPrngEnabled true if the PRNG is enabled, false otherwise
+ * @param prngEnabled true if the PRNG is enabled, false otherwise
  */
-public record PrngConfig(boolean isPrngEnabled) {}
+public record PrngConfig(boolean prngEnabled) {}

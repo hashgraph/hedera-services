@@ -93,7 +93,7 @@ public class MonoHandleContext implements HandleContext {
      */
     @Override
     @NonNull
-    public <C> C createStore(@NonNull Class<C> storeInterface) {
+    public <C> C createReadableStore(@NonNull Class<C> storeInterface) {
         return readableStoreFactory.createStore(storeInterface);
     }
 }

@@ -89,7 +89,7 @@ class MonoHandleContextTest {
 
     @Test
     void createsStore() {
-        subject.createStore(ReadableRunningHashLeafStore.class);
+        subject.createReadableStore(ReadableRunningHashLeafStore.class);
         verify(readableStoreFactory).createStore(ReadableRunningHashLeafStore.class);
     }
 }

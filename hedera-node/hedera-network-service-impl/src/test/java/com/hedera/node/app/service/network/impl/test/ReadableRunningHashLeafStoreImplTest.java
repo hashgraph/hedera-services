@@ -17,17 +17,18 @@
 package com.hedera.node.app.service.network.impl.test;
 
 import static com.hedera.node.app.service.network.impl.NetworkServiceImpl.RUNNING_HASHES_KEY;
-import static com.hedera.node.app.spi.fixtures.Utils.randomUtf8Bytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.network.impl.ReadableRunningHashLeafStoreImpl;
+import com.hedera.node.app.spi.fixtures.TestBase;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +36,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ReadableRunningHashLeafStoreImplTest {
+class ReadableRunningHashLeafStoreImplTest extends TestBase {
     @Mock
     private ReadableStates states;
 
@@ -46,6 +47,7 @@ class ReadableRunningHashLeafStoreImplTest {
     private RecordsRunningHashLeaf recordsRunningHashLeaf;
 
     private ReadableRunningHashLeafStoreImpl subject;
+    private static final Random random = new Random(92399921);
 
     @BeforeEach
     void setup() {
@@ -62,7 +64,7 @@ class ReadableRunningHashLeafStoreImplTest {
 
     @Test
     void getsHashesAsExpected() {
-        final var hash = new RunningHash(new Hash(randomUtf8Bytes(48)));
+        final var hash = new RunningHash(new Hash(randomBytes(random, 48)));
 
         given(runningHashState.get()).willReturn(recordsRunningHashLeaf);
         given(recordsRunningHashLeaf.getNMinus3RunningHash()).willReturn(hash);

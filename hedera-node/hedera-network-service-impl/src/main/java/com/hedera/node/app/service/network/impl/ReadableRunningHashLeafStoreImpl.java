@@ -46,7 +46,8 @@ public class ReadableRunningHashLeafStoreImpl implements ReadableRunningHashLeaf
     /**
      * {@inheritDoc}
      */
+    @Override
     public RunningHash getNMinusThreeRunningHash() {
-        return runningHashState.get().getNMinus3RunningHash();
+        return requireNonNull(runningHashState.get()).getNMinus3RunningHash();
     }
 }
