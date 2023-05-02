@@ -46,9 +46,7 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.inject.Named;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -164,8 +162,7 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindDelegateCallOperation(
-            GasCalculator gasCalculator,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator, @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaDelegateCallOperation(gasCalculator, addressValidator, __ -> false);
     }
 
@@ -174,8 +171,7 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindStaticCallOperation(
-            final GasCalculator gasCalculator,
-            @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator) {
+            final GasCalculator gasCalculator, @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaStaticCallOperation(gasCalculator, addressValidator, __ -> false);
     }
 
@@ -184,8 +180,7 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindBalanceOperation(
-            GasCalculator gasCalculator,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator, @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaBalanceOperation(gasCalculator, addressValidator, __ -> false);
     }
 
@@ -194,8 +189,7 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindExtCodeCopyOperation(
-            GasCalculator gasCalculator,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator, @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaExtCodeCopyOperation(gasCalculator, addressValidator, __ -> false);
     }
 
@@ -204,8 +198,7 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindExtCodeHashOperation(
-            GasCalculator gasCalculator,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator, @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaExtCodeHashOperation(gasCalculator, addressValidator, __ -> false);
     }
 
@@ -214,8 +207,7 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindExtCodeSizeOperation(
-            GasCalculator gasCalculator,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator, @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaExtCodeSizeOperation(gasCalculator, addressValidator, __ -> false);
     }
 
@@ -228,8 +220,7 @@ public interface ContractsV_0_30Module {
             final TransactionContext txnCtx,
             @V_0_30 BiPredicate<Address, MessageFrame> addressValidator,
             final EvmSigsVerifier evmSigsVerifier) {
-        return new HederaSelfDestructOperation(
-                gasCalculator, txnCtx, addressValidator, evmSigsVerifier, __ -> false);
+        return new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator, evmSigsVerifier, __ -> false);
     }
 
     @Provides
