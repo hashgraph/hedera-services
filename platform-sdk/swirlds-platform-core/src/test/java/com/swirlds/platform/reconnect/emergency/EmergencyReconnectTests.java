@@ -230,6 +230,7 @@ public class EmergencyReconnectTests {
                 receivedStateConsumer,
                 new ReconnectLearnerFactory(
                         TestPlatformContextBuilder.create().build(),
+                        getStaticThreadManager(),
                         addressBook,
                         100_000,
                         mock(ReconnectMetrics.class)));
