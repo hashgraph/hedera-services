@@ -25,15 +25,15 @@ import com.hedera.node.app.service.token.impl.TokenServiceModule;
 import com.hedera.node.app.service.util.impl.UtilServiceModule;
 import dagger.Module;
 
-@Module(includes = {
-        AdminServiceModule.class,
-        ConsensusServiceModule.class,
-        FileServiceModule.class,
-        NetworkServiceModule.class,
-        ScheduleServiceModule.class,
-        ConsensusServiceModule.class,
-        TokenServiceModule.class,
-        UtilServiceModule.class})
-public interface ServicesModule {
-
-}
+@Module(
+        includes = {
+            AdminServiceModule.class,
+            ConsensusServiceModule.class,
+            FileServiceModule.class,
+            NetworkServiceModule.class,
+            ScheduleServiceModule.class,
+            ConsensusServiceModule.class,
+            TokenServiceModule.class,
+            UtilServiceModule.class
+        })
+public interface ServicesModule {}

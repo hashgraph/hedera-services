@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.service.contract.impl.handlers;
@@ -51,7 +50,8 @@ public class ContractHandlers {
     private final EtherumTransactionHandler etherumTransactionHandler;
 
     @Inject
-    public ContractHandlers(@NonNull final ContractCallHandler contractCallHandler,
+    public ContractHandlers(
+            @NonNull final ContractCallHandler contractCallHandler,
             @NonNull final ContractCallLocalHandler contractCallLocalHandler,
             @NonNull final ContractCreateHandler contractCreateHandler,
             @NonNull final ContractDeleteHandler contractDeleteHandler,
@@ -64,24 +64,24 @@ public class ContractHandlers {
             @NonNull final ContractUpdateHandler contractUpdateHandler,
             @NonNull final EtherumTransactionHandler etherumTransactionHandler) {
         this.contractCallHandler = requireNonNull(contractCallHandler, "contractCallHandler must not be null");
-        this.contractCallLocalHandler = requireNonNull(contractCallLocalHandler,
-                "contractCallLocalHandler must not be null");
+        this.contractCallLocalHandler =
+                requireNonNull(contractCallLocalHandler, "contractCallLocalHandler must not be null");
         this.contractCreateHandler = requireNonNull(contractCreateHandler, "contractCreateHandler must not be null");
         this.contractDeleteHandler = requireNonNull(contractDeleteHandler, "contractDeleteHandler must not be null");
-        this.contractGetBySolidityIDHandler = requireNonNull(contractGetBySolidityIDHandler,
-                "contractGetBySolidityIDHandler must not be null");
-        this.contractGetBytecodeHandler = requireNonNull(contractGetBytecodeHandler,
-                "contractGetBytecodeHandler must not be null");
+        this.contractGetBySolidityIDHandler =
+                requireNonNull(contractGetBySolidityIDHandler, "contractGetBySolidityIDHandler must not be null");
+        this.contractGetBytecodeHandler =
+                requireNonNull(contractGetBytecodeHandler, "contractGetBytecodeHandler must not be null");
         this.contractGetInfoHandler = requireNonNull(contractGetInfoHandler, "contractGetInfoHandler must not be null");
-        this.contractGetRecordsHandler = requireNonNull(contractGetRecordsHandler,
-                "contractGetRecordsHandler must not be null");
-        this.contractSystemDeleteHandler = requireNonNull(contractSystemDeleteHandler,
-                "contractSystemDeleteHandler must not be null");
-        this.contractSystemUndeleteHandler = requireNonNull(contractSystemUndeleteHandler,
-                "contractSystemUndeleteHandler must not be null");
+        this.contractGetRecordsHandler =
+                requireNonNull(contractGetRecordsHandler, "contractGetRecordsHandler must not be null");
+        this.contractSystemDeleteHandler =
+                requireNonNull(contractSystemDeleteHandler, "contractSystemDeleteHandler must not be null");
+        this.contractSystemUndeleteHandler =
+                requireNonNull(contractSystemUndeleteHandler, "contractSystemUndeleteHandler must not be null");
         this.contractUpdateHandler = requireNonNull(contractUpdateHandler, "contractUpdateHandler must not be null");
-        this.etherumTransactionHandler = requireNonNull(etherumTransactionHandler,
-                "etherumTransactionHandler must not be null");
+        this.etherumTransactionHandler =
+                requireNonNull(etherumTransactionHandler, "etherumTransactionHandler must not be null");
     }
 
     public ContractCallHandler contractCallHandler() {
