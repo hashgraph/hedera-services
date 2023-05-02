@@ -5,16 +5,17 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.hedera.node.app.service.network.impl.components;
+package com.hedera.node.app.service.network.impl;
 
 import com.hedera.node.app.service.network.impl.handlers.NetworkGetAccountDetailsHandler;
 import com.hedera.node.app.service.network.impl.handlers.NetworkGetByKeyHandler;
@@ -23,16 +24,10 @@ import com.hedera.node.app.service.network.impl.handlers.NetworkGetVersionInfoHa
 import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetReceiptHandler;
 import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetRecordHandler;
 import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
-import dagger.Component;
-import javax.inject.Singleton;
+import dagger.Module;
 
-@Singleton
-@Component
-public interface NetworkComponent {
-    @Component.Factory
-    interface Factory {
-        NetworkComponent create();
-    }
+@Module
+public interface NetworkServiceModule {
 
     NetworkGetAccountDetailsHandler networkGetAccountDetailsHandler();
 

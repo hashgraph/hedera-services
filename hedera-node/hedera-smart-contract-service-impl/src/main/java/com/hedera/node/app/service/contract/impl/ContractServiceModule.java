@@ -5,16 +5,17 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.hedera.node.app.service.contract.impl.components;
+package com.hedera.node.app.service.contract.impl;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
@@ -24,20 +25,15 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractGetBySolidityI
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBytecodeHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetInfoHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetRecordsHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.ContractSystemDeleteHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractSystemUndeleteHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.EtherumTransactionHandler;
-import dagger.Component;
-import javax.inject.Singleton;
+import dagger.Module;
 
-@Singleton
-@Component
-public interface ContractComponent {
-    @Component.Factory
-    interface Factory {
-        ContractComponent create();
-    }
+@Module
+public interface ContractServiceModule {
 
     ContractCallHandler contractCallHandler();
 
@@ -62,4 +58,6 @@ public interface ContractComponent {
     ContractUpdateHandler contractUpdateHandler();
 
     EtherumTransactionHandler etherumTransactionHandler();
+
+    ContractHandlers contractHandlers();
 }

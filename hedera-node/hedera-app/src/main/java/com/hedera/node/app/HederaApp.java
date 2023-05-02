@@ -25,8 +25,6 @@ import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.fees.FeesModule;
 import com.hedera.node.app.info.InfoDaggerModule;
 import com.hedera.node.app.metrics.MetricsDaggerModule;
-import com.hedera.node.app.service.admin.impl.AdminServiceModule;
-import com.hedera.node.app.service.consensus.impl.ConsensusServiceModule;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
@@ -50,8 +48,7 @@ import com.hedera.node.app.service.mono.store.StoresModule;
 import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
-import com.hedera.node.app.service.token.impl.TokenServiceModule;
-import com.hedera.node.app.services.ServiceModule;
+import com.hedera.node.app.services.ServicesModule;
 import com.hedera.node.app.solvency.SolvencyModule;
 import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -79,42 +76,39 @@ import javax.inject.Singleton;
 @Singleton
 @Component(
         modules = {
-            TaskModule.class,
-            com.hedera.node.app.service.mono.fees.FeesModule.class,
-            KeysModule.class,
-            SigsModule.class,
-            GrpcModule.class,
-            ConfigModule.class,
-            StatsModule.class,
-            StateModule.class,
-            FilesModule.class,
-            LedgerModule.class,
-            StoresModule.class,
-            ContextModule.class,
-            RecordsModule.class,
-            QueriesModule.class,
-            ContractsModule.class,
-            PropertiesModule.class,
-            ThrottlingModule.class,
-            SubmissionModule.class,
-            TransactionsModule.class,
-            ExpiryModule.class,
-            ServiceModule.class,
-            IngestModule.class,
-            QueryWorkflowModule.class,
-            HandleWorkflowModule.class,
-            PreHandleWorkflowModule.class,
-            HederaStateModule.class,
-            FeesModule.class,
-            HederaStateModule.class,
-            MetricsDaggerModule.class,
-            AuthorizerDaggerModule.class,
-            InfoDaggerModule.class,
-            ThrottleModule.class,
-            SolvencyModule.class,
-            TokenServiceModule.class,
-            AdminServiceModule.class,
-            ConsensusServiceModule.class
+                TaskModule.class,
+                com.hedera.node.app.service.mono.fees.FeesModule.class,
+                KeysModule.class,
+                SigsModule.class,
+                GrpcModule.class,
+                ConfigModule.class,
+                StatsModule.class,
+                StateModule.class,
+                FilesModule.class,
+                LedgerModule.class,
+                StoresModule.class,
+                ContextModule.class,
+                RecordsModule.class,
+                QueriesModule.class,
+                ContractsModule.class,
+                PropertiesModule.class,
+                ThrottlingModule.class,
+                SubmissionModule.class,
+                TransactionsModule.class,
+                ExpiryModule.class,
+                ServicesModule.class,
+                IngestModule.class,
+                QueryWorkflowModule.class,
+                HandleWorkflowModule.class,
+                PreHandleWorkflowModule.class,
+                HederaStateModule.class,
+                FeesModule.class,
+                HederaStateModule.class,
+                MetricsDaggerModule.class,
+                AuthorizerDaggerModule.class,
+                InfoDaggerModule.class,
+                ThrottleModule.class,
+                SolvencyModule.class,
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
