@@ -124,7 +124,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -138,15 +137,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private final SoftwareVersion futureVersion = forHapiAndHedera("1.0.0", "1.0.0");
     private final NodeId selfId = new NodeId(false, 1L);
     private static final String bookMemo = "0.0.4";
-
-    // The saved state used for this test is from 0.30.5, meaning the JDB file names
-    // use the ':' character; but Windows prohibits such files, so the repository
-    // couldn't be cloned on that OS with the as-is saved state. The solution is to
-    // store the JDB files in the repo with ':' replaced by 'cln' (plus other
-    // shortening abbreviations); and then copy those files to a temp directory, using
-    // their proper JDB names, for use in this test.
-    @TempDir
-    private File jdbNamedSignedStateDir;
 
     @Mock
     private StakeStartupHelper stakeStartupHelper;
@@ -854,6 +844,16 @@ class ServicesStateTest extends ResponsibleVMapUser {
     // exceed the maximum path length besides), only run this test on Linux, Mac, or UNIX
     @EnabledOnOs({OS.LINUX, OS.MAC, OS.AIX, OS.SOLARIS})
     void testLoading0305State() throws IOException {
+        // The saved state used for this test is from 0.30.5, meaning the JDB file names
+        // use the ':' character; but Windows prohibits such files, so the repository
+        // couldn't be cloned on that OS with the as-is saved state. The solution is to
+        // store the JDB files in the repo with ':' replaced by 'cln' (plus other
+        // shortening abbreviations); and then copy those files to a temp directory, using
+        // their proper JDB names, for use in this test. We can't use @TempDir here because
+        // JDB uses symlinks and we'll get "Invalid cross-device link" errors if we let
+        // JUnit create the temp directory under /tmp
+        final var jdbNamedSignedStateDir = new File("swirlds-sst-tmp");
+
         ClassLoaderHelper.loadClassPathDependencies();
 
         cpWithDirTransform(
@@ -870,6 +870,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
         } catch (IOException e) {
             fail("State file should be loaded correctly, but failed with exception: " + e.getMessage());
         }
+
+        FileUtils.deleteDirectory(jdbNamedSignedStateDir);
     }
 
     @Test
