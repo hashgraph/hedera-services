@@ -33,6 +33,7 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,9 +64,10 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      *
      * @param permitRoundGaps whether or not gaps in the round history will be permitted in the test. if false, an error
      *                        will be logged if a gap is found
+     * @param logFilePath     the path of the log file where the round history will be written
      */
-    public ConsistencyTestingToolState(final boolean permitRoundGaps) {
-        transactionHandlingHistory = new TransactionHandlingHistory(permitRoundGaps);
+    public ConsistencyTestingToolState(final boolean permitRoundGaps, final @NonNull Path logFilePath) {
+        transactionHandlingHistory = new TransactionHandlingHistory(permitRoundGaps, logFilePath);
 
         logger.info(STARTUP.getMarker(), "New State Constructed.");
     }

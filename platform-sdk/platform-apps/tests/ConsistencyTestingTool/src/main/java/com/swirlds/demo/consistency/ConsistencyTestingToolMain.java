@@ -26,6 +26,8 @@ import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.File;
+import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -57,6 +59,11 @@ public class ConsistencyTestingToolMain implements SwirldMain {
      * The number of transactions to generate per second.
      */
     private static final int TRANSACTIONS_PER_SECOND = 100;
+
+    /**
+     * The name of the log file being written to / read from
+     */
+    private static final String LOG_FILE_NAME = "ConsistencyTestLog";
 
     /**
      * Constructor
@@ -113,7 +120,8 @@ public class ConsistencyTestingToolMain implements SwirldMain {
      */
     @Override
     public SwirldState newState() {
-        return new ConsistencyTestingToolState(permitRoundGaps);
+        return new ConsistencyTestingToolState(
+                permitRoundGaps, Path.of(System.getProperty("user.dir") + File.separator + LOG_FILE_NAME + ".csv"));
     }
 
     /**

@@ -22,7 +22,6 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -44,11 +43,6 @@ public class TransactionHandlingHistory {
     private static final Logger logger = LogManager.getLogger(TransactionHandlingHistory.class);
 
     /**
-     * The name of the log file being written to / read from
-     */
-    public static final String LOG_FILE_NAME = "ConsistencyTestLog";
-
-    /**
      * Whether gaps in the round history are permitted. If false, an error will be logged if a gap is found
      */
     private final boolean permitRoundGaps;
@@ -64,14 +58,21 @@ public class TransactionHandlingHistory {
     private final Set<Long> seenTransactions;
 
     /**
+     * The location of the log file
+     */
+    private final Path logFilePath;
+
+    /**
      * Constructor
      *
      * @param permitRoundGaps whether gaps in the round history are permitted
+     * @param logFilePath     the location of the log file
      */
-    public TransactionHandlingHistory(final boolean permitRoundGaps) {
+    public TransactionHandlingHistory(final boolean permitRoundGaps, final @NonNull Path logFilePath) {
         this.permitRoundGaps = permitRoundGaps;
         this.roundHistory = new ArrayList<>();
         this.seenTransactions = new HashSet<>();
+        this.logFilePath = logFilePath;
     }
 
     /**
@@ -83,6 +84,7 @@ public class TransactionHandlingHistory {
         this.permitRoundGaps = that.permitRoundGaps;
         this.roundHistory = new ArrayList<>(that.roundHistory);
         this.seenTransactions = new HashSet<>(that.seenTransactions);
+        this.logFilePath = that.logFilePath;
     }
 
     /**
@@ -175,10 +177,8 @@ public class TransactionHandlingHistory {
      *
      * @param round the round to write to the log file
      */
-    private static void writeRoundStateToLog(final @NonNull ConsistencyTestingToolRound round) {
-        final Path path = Path.of(getLogFileName());
-
-        try (BufferedWriter file = new BufferedWriter(new FileWriter(path.toFile(), true))) {
+    private void writeRoundStateToLog(final @NonNull ConsistencyTestingToolRound round) {
+        try (BufferedWriter file = new BufferedWriter(new FileWriter(logFilePath.toFile(), true))) {
             file.write(round.toString());
         } catch (final IOException e) {
             e.printStackTrace();
@@ -209,28 +209,17 @@ public class TransactionHandlingHistory {
     }
 
     /**
-     * Get the name of the log file being written to / read from during execution of the testing app
-     *
-     * @return the name of the log file
-     */
-    public static String getLogFileName() {
-        return System.getProperty("user.dir") + File.separator + LOG_FILE_NAME + ".csv";
-    }
-
-    /**
      * If a log file exists, parses the log file and adds all rounds to the {@link #roundHistory}
      */
     public void tryParseLog() {
-        final Path filePath = Path.of(getLogFileName());
-
-        if (!Files.exists(filePath)) {
+        if (!Files.exists(logFilePath)) {
             logger.info(STARTUP.getMarker(), "No log file found. Starting without any previous history");
             return;
         }
 
         logger.info(STARTUP.getMarker(), "Log file found. Parsing previous history");
 
-        try (final BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()))) {
+        try (final BufferedReader reader = new BufferedReader(new FileReader(logFilePath.toFile()))) {
             processRound(ConsistencyTestingToolRound.fromString(reader.readLine()));
         } catch (final IOException e) {
             e.printStackTrace();
