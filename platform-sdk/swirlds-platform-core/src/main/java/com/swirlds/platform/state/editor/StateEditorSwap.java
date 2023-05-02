@@ -23,6 +23,7 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "swap", mixinStandardHelpOptions = true, description = "Swap two nodes.")
@@ -44,33 +45,37 @@ public class StateEditorSwap extends StateEditorOperation {
 
     @Override
     public void run() {
-        final StateEditor.ParentInfo parentInfoA = getStateEditor().getParentInfo(pathA);
-        final StateEditor.ParentInfo parentInfoB = getStateEditor().getParentInfo(pathB);
+        try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorLoad.swap()")) {
+            final StateEditor.ParentInfo parentInfoA = getStateEditor().getParentInfo(pathA);
+            final StateEditor.ParentInfo parentInfoB = getStateEditor().getParentInfo(pathB);
 
-        final MerkleNode nodeA = getStateEditor().getState().getNodeAtRoute(parentInfoA.target());
-        final MerkleNode nodeB = getStateEditor().getState().getNodeAtRoute(parentInfoB.target());
+            final MerkleNode nodeA = reservedSignedState.get().getState().getNodeAtRoute(parentInfoA.target());
+            final MerkleNode nodeB = reservedSignedState.get().getState().getNodeAtRoute(parentInfoB.target());
 
-        System.out.println("Swapping " + formatNode(nodeA) + " and " + formatNode(nodeB));
+            System.out.println("Swapping " + formatNode(nodeA) + " and " + formatNode(nodeB));
 
-        // Take a reservation on B so it doesn't get prematurely deleted
-        if (nodeB != null) {
-            nodeB.reserve();
+            // Take a reservation on B so it doesn't get prematurely deleted
+            if (nodeB != null) {
+                nodeB.reserve();
+            }
+
+            copyTreeToLocation(parentInfoB.parent(), parentInfoB.indexInParent(), nodeA);
+            copyTreeToLocation(parentInfoA.parent(), parentInfoA.indexInParent(), nodeB);
+
+            // Release the artificial reservation
+            if (nodeB != null) {
+                nodeB.release();
+            }
+
+            // Invalidate hashes in path down from root
+            new MerkleRouteIterator(
+                            reservedSignedState.get().getState(),
+                            parentInfoA.parent().getRoute())
+                    .forEachRemaining(Hashable::invalidateHash);
+            new MerkleRouteIterator(
+                            reservedSignedState.get().getState(),
+                            parentInfoB.parent().getRoute())
+                    .forEachRemaining(Hashable::invalidateHash);
         }
-
-        copyTreeToLocation(parentInfoB.parent(), parentInfoB.indexInParent(), nodeA);
-        copyTreeToLocation(parentInfoA.parent(), parentInfoA.indexInParent(), nodeB);
-
-        // Release the artificial reservation
-        if (nodeB != null) {
-            nodeB.release();
-        }
-
-        // Invalidate hashes in path down from root
-        new MerkleRouteIterator(
-                        getStateEditor().getState(), parentInfoA.parent().getRoute())
-                .forEachRemaining(Hashable::invalidateHash);
-        new MerkleRouteIterator(
-                        getStateEditor().getState(), parentInfoB.parent().getRoute())
-                .forEachRemaining(Hashable::invalidateHash);
     }
 }
