@@ -158,6 +158,6 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     public void handleConsensusRound(final @NonNull Round round, final @NonNull SwirldDualState swirldDualState) {
         round.forEachTransaction(this::applyTransactionToState);
 
-        transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round));
+        transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round, stateLong));
     }
 }

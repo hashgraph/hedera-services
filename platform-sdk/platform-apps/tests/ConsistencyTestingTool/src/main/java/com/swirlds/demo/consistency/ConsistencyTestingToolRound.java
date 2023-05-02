@@ -29,23 +29,31 @@ import java.util.List;
  * Represents a round in the ConsistencyTestingTool
  *
  * @param roundNumber          The number of the round
+ * @param currentState         The app state after handling the round
  * @param transactionsContents A list of transactions which were included in the round
  */
-public record ConsistencyTestingToolRound(long roundNumber, List<Long> transactionsContents)
+public record ConsistencyTestingToolRound(long roundNumber, long currentState, List<Long> transactionsContents)
         implements Comparable<ConsistencyTestingToolRound> {
+
+    private static final String ROUND_NUMBER_STRING = "Round Number: ";
+    private static final String CURRENT_STATE_STRING = "Current State: ";
+    private static final String TRANSACTIONS_STRING = "Transactions: ";
+    private static final String FIELD_SEPARATOR = "; ";
+    private static final String LIST_ELEMENT_SEPARATOR = ", ";
 
     /**
      * Construct a {@link ConsistencyTestingToolRound} from a {@link Round}
      *
-     * @param round the round to convert
+     * @param round        the round to convert
+     * @param currentState the long state value of the application after the round has been applied
      * @return the input round, converted to a {@link ConsistencyTestingToolRound}
      */
-    public static ConsistencyTestingToolRound fromRound(final Round round) {
+    public static ConsistencyTestingToolRound fromRound(final Round round, final long currentState) {
         final List<Long> transactionContents = new ArrayList<>();
 
         round.forEachTransaction(transaction -> transactionContents.add(byteArrayToLong(transaction.getContents(), 0)));
 
-        return new ConsistencyTestingToolRound(round.getRoundNum(), transactionContents);
+        return new ConsistencyTestingToolRound(round.getRoundNum(), currentState, transactionContents);
     }
 
     /**
@@ -55,14 +63,25 @@ public record ConsistencyTestingToolRound(long roundNumber, List<Long> transacti
      * @return the new {@link ConsistencyTestingToolRound}
      */
     public static ConsistencyTestingToolRound fromString(final String roundString) {
-        final long roundNumber = Long.parseLong(roundString.substring(0, roundString.indexOf(':')));
+        final List<String> fields =
+                Arrays.stream(roundString.split(FIELD_SEPARATOR)).toList();
 
-        final String transactionsString = roundString.substring(roundString.indexOf("[") + 1, roundString.indexOf("]"));
+        if (fields.size() != 3) {
+            throw new IllegalArgumentException("Invalid round string: " + roundString);
+        }
+
+        final long roundNumber = Long.parseLong(
+                fields.get(0).substring(roundString.indexOf(ROUND_NUMBER_STRING) + ROUND_NUMBER_STRING.length() + 1));
+        final long currentState = Long.parseLong(
+                fields.get(1).substring(roundString.indexOf(CURRENT_STATE_STRING) + CURRENT_STATE_STRING.length() + 1));
+
+        final String transactionsString =
+                roundString.substring(fields.get(2).indexOf("[") + 1, roundString.indexOf("]"));
         final List<Long> transactionsContents = Arrays.stream(transactionsString.split("\\s*,\\s*"))
                 .map(Long::parseLong)
                 .toList();
 
-        return new ConsistencyTestingToolRound(roundNumber, transactionsContents);
+        return new ConsistencyTestingToolRound(roundNumber, currentState, transactionsContents);
     }
 
     /**
@@ -95,15 +114,20 @@ public record ConsistencyTestingToolRound(long roundNumber, List<Long> transacti
     public String toString() {
         final StringBuilder builder = new StringBuilder();
 
-        builder.append("Round Number: ");
+        builder.append(ROUND_NUMBER_STRING);
         builder.append(roundNumber);
-        builder.append("; Transactions: [");
+        builder.append(FIELD_SEPARATOR);
 
+        builder.append(CURRENT_STATE_STRING);
+        builder.append(currentState);
+        builder.append(FIELD_SEPARATOR);
+
+        builder.append(TRANSACTIONS_STRING);
+        builder.append("[");
         transactionsContents.forEach(transaction -> {
             builder.append(transaction);
-            builder.append(", ");
+            builder.append(LIST_ELEMENT_SEPARATOR);
         });
-
         builder.append("]\n");
 
         return builder.toString();
