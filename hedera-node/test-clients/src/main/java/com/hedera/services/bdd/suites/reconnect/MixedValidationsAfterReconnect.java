@@ -48,7 +48,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
         // to protect developers from accidentally sending hbar to those addresses
         String sender = "0.0.1301";
         String receiver = "0.0.1302";
-        String lastlyCreatedAccount = "0.0.21362";
+        String lastlyCreatedAccount = "0.0.21412";
         return defaultHapiSpec("GetAccountBalanceFromAllNodes")
                 .given()
                 .when()
@@ -87,10 +87,10 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
     }
 
     private HapiSpec validateTopicInfo() {
-        String firstlyCreatedTopic = "0.0.21363";
-        String lastlyCreatedTopic = "0.0.41362";
-        String invalidTopicId = "0.0.41363";
-        String topicIdWithMessagesSubmittedTo = "0.0.30349";
+        String firstlyCreatedTopic = "0.0.21413";
+        String lastlyCreatedTopic = "0.0.41412";
+        String invalidTopicId = "0.0.41413";
+        String topicIdWithMessagesSubmittedTo = "0.0.30399";
         byte[] emptyRunningHash = new byte[48];
         return defaultHapiSpec("ValidateTopicInfo")
                 .given(getTopicInfo(topicIdWithMessagesSubmittedTo).logged().saveRunningHash())
@@ -112,9 +112,9 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
     }
 
     private HapiSpec validateFileInfo() {
-        String firstlyCreatedFile = "0.0.41363";
-        String lastlyCreatedFile = "0.0.42362";
-        String invalidFileId = "0.0.42363";
+        String firstlyCreatedFile = "0.0.41413";
+        String lastlyCreatedFile = "0.0.42412";
+        String invalidFileId = "0.0.42413";
         return defaultHapiSpec("ValidateFileInfo")
                 .given()
                 .when()
