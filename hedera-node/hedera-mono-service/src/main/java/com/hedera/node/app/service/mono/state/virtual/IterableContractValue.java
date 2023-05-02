@@ -111,6 +111,11 @@ public class IterableContractValue implements VirtualValue {
         setExplicitNextKey(nextUint256Key);
     }
 
+    // Keep it in sync with getSerializedSize() and serializeTo()
+    static int getTypicalSerializedSize() {
+        return 128; // guesstimate
+    }
+
     /**
      * Directly gets the value of this ContractValue to the given byte array by reference. A copy is
      * not made! It is assumed you will not mutate the byte[] after you call this method.

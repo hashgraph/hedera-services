@@ -60,6 +60,10 @@ public class VirtualBlobValue implements VirtualValue {
         return copy();
     }
 
+    static int getTypicalSerializedSize() {
+        return 1024; // guesstimate
+    }
+
     @Override
     public void deserialize(SerializableDataInputStream in, int version) throws IOException {
         data = in.readByteArray(Integer.MAX_VALUE);
