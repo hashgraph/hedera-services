@@ -26,6 +26,8 @@ import com.swirlds.common.utility.ByteUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
+
 /**
  * A metric that measures the fraction of time that a thread is busy. This metric could be used to track the overall busy
  * time of a thread, or the busy time of a specific subtask. The granularity of this metric is in microseconds. A
@@ -66,13 +68,22 @@ public class BusyTime {
      *
      * @param metrics
      * 		the metrics instance to add the metric to
-     * @param config
-     * 		the configuration for this metric
+     * @param category the kind of {@code Metric} (metrics are grouped or filtered by this)
+     * @param name a short name for the {@code Metric}
+     * @param description a one-sentence description of the {@code Metric}
      */
-    public void addMetric(@NonNull final Metrics metrics, @NonNull final DefaultMetricConfig config) {
+    public void addMetric(
+            @NonNull final Metrics metrics,
+            @NonNull final String category,
+            @NonNull final String name,
+            @NonNull final String description) {
         metrics.getOrCreate(
-                new FunctionGauge.Config<>(config.getCategory(), config.getName(), Double.class, this::getAndReset)
-                        .withDescription(config.getDescription())
+                new FunctionGauge.Config<>(
+                        category,
+                        name,
+                        Double.class,
+                        this::getAndReset)
+                        .withDescription(description)
                         .withUnit("fraction")
                         .withFormat(FloatFormats.FORMAT_1_3));
     }
@@ -93,8 +104,7 @@ public class BusyTime {
 
     /**
      * @return the fraction of time that the thread has been busy, where 0.0 means the thread is not at all busy, and
-     * 1.0
-     * 		means that the thread is 100% busy
+     * 1.0 means that the thread is 100% busy
      */
     public double getBusyFraction() {
         final long pair = accumulator.get();
