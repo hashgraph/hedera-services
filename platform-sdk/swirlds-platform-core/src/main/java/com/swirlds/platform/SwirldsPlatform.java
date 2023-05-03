@@ -1207,6 +1207,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final State state, final QueueThread<ReservedSignedState> stateHashSignQueueThread) {
 
         swirldStateManager = PlatformConstructor.swirldStateManager(
+                platformContext,
+                initialAddressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,

@@ -156,7 +156,7 @@ class AbstractTokenUpdatePrecompileTest {
                         eq(ledgers),
                         eq(aliases),
                         eq(TokenUpdate));
-        verify(updateLogic).updateToken(any(), anyLong());
+        verify(updateLogic).updateToken(any(), anyLong(), eq(true));
         // and when:
         final var tests = captor.getAllValues();
         final var legacyTests = legacyCaptor.getAllValues();
@@ -260,7 +260,7 @@ class AbstractTokenUpdatePrecompileTest {
                 .validateKey(
                         eq(frame), eq(tokenMirrorAddress), captor.capture(), eq(ledgers), eq(aliases), eq(TokenUpdate));
         verifyNoMoreInteractions(keyValidator);
-        verify(updateLogic).updateToken(any(), anyLong());
+        verify(updateLogic).updateToken(any(), anyLong(), eq(true));
         // and when:
         final var tests = captor.getAllValues();
         tests.get(0).apply(false, tokenMirrorAddress, pretendActiveContract, ledgers, CryptoTransfer);
