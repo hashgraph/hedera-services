@@ -27,6 +27,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -47,6 +48,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.InternalEventData;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import com.swirlds.platform.util.iterator.TypedIterator;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -995,6 +997,15 @@ public class EventImpl extends AbstractSerializableHashable
         final long otherParentRound =
                 this.getOtherParent() == null ? 0 : this.getOtherParent().getRoundCreated();
         return Math.max(selfParentRound, otherParentRound);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Nullable
+    public SoftwareVersion getSoftwareVersion() {
+        return baseEvent.getHashedData().getSoftwareVersion();
     }
 
     /**

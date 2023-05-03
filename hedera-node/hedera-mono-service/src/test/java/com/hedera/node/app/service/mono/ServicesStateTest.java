@@ -53,6 +53,7 @@ import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.exports.ExportingRecoveredStateListener;
 import com.hedera.node.app.service.mono.state.forensics.HashLogger;
 import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreator;
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
@@ -91,6 +92,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -100,6 +102,7 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
@@ -110,6 +113,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -194,6 +198,12 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Mock
     private VirtualMapFactory virtualMapFactory;
+
+    @Mock
+    private ExportingRecoveredStateListener recoveredStateListener;
+
+    @Mock
+    private NotificationEngine notificationEngine;
 
     @Mock
     private ServicesState.StakingInfoBuilder stakingInfoBuilder;
@@ -531,6 +541,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(platform.getAddressBook()).willReturn(addressBook);
+        given(app.maybeNewRecoveredStateListener()).willReturn(Optional.of(recoveredStateListener));
+        given(platform.getNotificationEngine()).willReturn(notificationEngine);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -543,6 +555,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         // and:
         verify(initFlow).runWith(eq(subject), any());
         verify(hashLogger).logHashesFor(subject);
+        verify(notificationEngine).register(NewRecoveredStateListener.class, recoveredStateListener);
     }
 
     @Test

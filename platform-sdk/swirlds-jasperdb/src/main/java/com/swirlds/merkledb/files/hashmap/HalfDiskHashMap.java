@@ -202,7 +202,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             } else {
                 logger.error(
                         EXCEPTION.getMarker(),
-                        "Loading existing set of data files but now metadata file was found in [{}]",
+                        "Loading existing set of data files but no metadata file was found in [{}]",
                         storeDir.toAbsolutePath());
                 throw new IOException("Can not load an existing HalfDiskHashMap from ["
                         + storeDir.toAbsolutePath()

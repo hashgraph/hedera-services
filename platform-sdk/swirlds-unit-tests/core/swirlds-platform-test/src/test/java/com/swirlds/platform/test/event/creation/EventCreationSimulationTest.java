@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.event.creation;
 
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -104,6 +105,7 @@ public class EventCreationSimulationTest {
         final List<SimulatedEventCreationNode> nodes = new ArrayList<>();
         for (int i = 0; i < params.numNodes(); i++) {
             final SimulatedEventCreationNode node = new SimulatedEventCreationNode(
+                    new BasicSoftwareVersion(1),
                     random,
                     time,
                     addressBook,

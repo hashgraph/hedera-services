@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
@@ -77,6 +78,7 @@ class TransactionHandlerTest {
     private static EventImpl newEvent(final ConsensusTransactionImpl[] transactions) {
         return new EventImpl(
                 new BaseEventHashedData(
+                        new BasicSoftwareVersion(1),
                         0L,
                         0L,
                         0L,

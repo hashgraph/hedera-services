@@ -30,6 +30,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.stream.EventStreamManager;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -85,6 +86,7 @@ public final class RecoveryTestUtils {
         }
 
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
+                new BasicSoftwareVersion(1),
                 random.nextInt(),
                 random.nextLong(),
                 random.nextLong(),
