@@ -56,6 +56,11 @@ public final class SmartContractByteCodeMapValueSerializerMerkleDb
     }
 
     @Override
+    public int getTypicalSerializedSize() {
+        return 1024; // guesstimation
+    }
+
+    @Override
     public int serialize(final SmartContractByteCodeMapValue data, final ByteBuffer buffer) throws IOException {
         final int size = data.getSize();
         buffer.putInt(size);

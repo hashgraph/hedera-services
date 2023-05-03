@@ -1075,6 +1075,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             eventCreator = null;
         } else {
             eventCreator = new EventCreator(
+                    this.appVersion,
                     selfId,
                     PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
                     consensusRef::get,
@@ -1168,6 +1169,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final State state, final QueueThread<ReservedSignedState> stateHashSignQueueThread) {
 
         swirldStateManager = PlatformConstructor.swirldStateManager(
+                platformContext,
+                initialAddressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
@@ -1469,6 +1472,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         new AncientParentsRule(consensusRef::get),
                         criticalQuorum));
         final ChatterEventCreator chatterEventCreator = new ChatterEventCreator(
+                appVersion,
                 selfId,
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
                 swirldStateManager.getTransactionPool(),
