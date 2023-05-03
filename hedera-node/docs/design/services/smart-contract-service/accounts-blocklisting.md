@@ -68,8 +68,8 @@ All created blocked accounts will be externalized as synthetic account creations
 `BlocklistAccountCreator` class will encapsulate the logic for reading blocked accounts from file and creating them in state.
 
 ## Acceptance Tests
-
 * Verify that blocked accounts are created in state and that synthetic records are externalized for them when the node starts after the first transaction is handled.
+* Verify that the externalization of synthetic records is done only _once_ per blocked account.
 * Verify that funds cannot be transferred to blocked accounts unless the transaction is initiated by `GENESIS` account.
 
 ## Alternative Approaches Considered
