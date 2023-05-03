@@ -251,9 +251,12 @@ public class ContractCallSuite extends HapiSuite {
                 workingHoursDemo(),
                 lpFarmSimulation(),
                 nestedContractCannotOverSendValue(),
-                depositMoreThanBalanceFailsGracefully(),
-                lowLevelEcrecCallBehavior(),
-                callsToSystemEntityNumsAreTreatedAsPrecompileCalls());
+                depositMoreThanBalanceFailsGracefully()
+                /* EVM v0.38 tests below:
+                   lowLevelEcrecCallBehavior(),
+                   callsToSystemEntityNumsAreTreatedAsPrecompileCalls()
+                */
+                );
     }
 
     private HapiSpec lowLevelEcrecCallBehavior() {
