@@ -186,7 +186,7 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
                                     + "Reservation ID = {}, reservation reason ={}\n{},",
                             reservationId,
                             reason,
-                            signedState.getHistory());
+                            history);
                 }
             }
             throw new ReferenceCountException("This ReservedSignedState has been closed.");
