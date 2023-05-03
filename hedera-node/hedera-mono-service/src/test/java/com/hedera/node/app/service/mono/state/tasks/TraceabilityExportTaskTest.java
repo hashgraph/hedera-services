@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
@@ -67,6 +68,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TraceabilityExportTaskTest {
     private static final long ENTITY_NUM = 1234L;
     private static final Instant NOW = Instant.ofEpochSecond(1_234_567, 890);
+    private static final Instant OFFSET_NOW = NOW.plusNanos(3L);
     private static final MerkleAccount AN_ACCOUNT =
             MerkleAccountFactory.newAccount().get();
 
@@ -151,12 +153,18 @@ class TraceabilityExportTaskTest {
 
     @Test
     void needsDifferentContextIfFreeToUsedRatioNotEnough() {
+        givenWellKnownUsageSnapshot();
         given(recordsHelper.canExportNow()).willReturn(true);
         given(dynamicProperties.traceabilityMinFreeToUsedGasThrottleRatio()).willReturn(5L);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
-        given(gasThrottle.freeToUsedRatio(NOW)).willReturn(4L);
+        given(gasThrottle.freeToUsedRatio(OFFSET_NOW)).willReturn(4L);
 
         assertEquals(SystemTaskResult.NEEDS_DIFFERENT_CONTEXT, subject.process(ENTITY_NUM, NOW, networkCtx));
+    }
+
+    private void givenWellKnownUsageSnapshot() {
+        final var usageSnapshot = new DeterministicThrottle.UsageSnapshot(1L, OFFSET_NOW);
+        given(gasThrottle.usageSnapshot()).willReturn(usageSnapshot);
     }
 
     @Test
@@ -164,9 +172,10 @@ class TraceabilityExportTaskTest {
         given(recordsHelper.canExportNow()).willReturn(true);
         given(dynamicProperties.traceabilityMinFreeToUsedGasThrottleRatio()).willReturn(5L);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
-        given(gasThrottle.freeToUsedRatio(NOW)).willReturn(6L);
+        given(gasThrottle.freeToUsedRatio(OFFSET_NOW)).willReturn(6L);
         given(networkCtx.getEntitiesTouchedThisSecond()).willReturn(21L);
         given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(20L);
+        givenWellKnownUsageSnapshot();
 
         assertEquals(SystemTaskResult.NEEDS_DIFFERENT_CONTEXT, subject.process(ENTITY_NUM, NOW, networkCtx));
     }
@@ -176,6 +185,7 @@ class TraceabilityExportTaskTest {
         given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(1L);
         given(recordsHelper.canExportNow()).willReturn(true);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
+        givenWellKnownUsageSnapshot();
 
         assertEquals(SystemTaskResult.NOTHING_TO_DO, subject.process(ENTITY_NUM, NOW, networkCtx));
 
@@ -186,6 +196,7 @@ class TraceabilityExportTaskTest {
     void nothingToDoIfNotAContract() {
         given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(1L);
         given(recordsHelper.canExportNow()).willReturn(true);
+        givenWellKnownUsageSnapshot();
 
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
         given(accounts.get(EntityNum.fromLong(ENTITY_NUM))).willReturn(AN_ACCOUNT);
@@ -238,6 +249,7 @@ class TraceabilityExportTaskTest {
         given(entityAccess.fetchCodeIfPresent(entityNum1.toEvmAddress())).willReturn(Bytes.of(runtimeBytes));
         given(accounts.get(entityNum1)).willReturn(contract1);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
+        givenWellKnownUsageSnapshot();
         subject.setExportsCompleted(999);
 
         // when:
@@ -314,6 +326,7 @@ class TraceabilityExportTaskTest {
         given(entityAccess.fetchCodeIfPresent(entityNum2.toEvmAddress())).willReturn(Bytes.of(runtimeBytes2));
         given(accounts.get(entityNum2)).willReturn(contract2);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
+        givenWellKnownUsageSnapshot();
 
         // when:
         final var result = subject.process(entityNum2.longValue(), NOW, networkCtx);
@@ -370,6 +383,7 @@ class TraceabilityExportTaskTest {
         given(entityAccess.fetchCodeIfPresent(entityNum1.toEvmAddress())).willReturn(Bytes.of(runtimeBytes));
         given(accounts.get(entityNum1)).willReturn(contract1);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
+        givenWellKnownUsageSnapshot();
 
         // when:
         final var result = subject.process(entityNum1.longValue(), NOW, networkCtx);
@@ -417,6 +431,7 @@ class TraceabilityExportTaskTest {
         final var runtimeBytes = "runtime".getBytes();
         given(entityAccess.fetchCodeIfPresent(entityNum.toEvmAddress())).willReturn(Bytes.of(runtimeBytes));
         given(accounts.get(entityNum)).willReturn(contract);
+        givenWellKnownUsageSnapshot();
 
         // when:
         final var result = subject.process(entityNum.longValue(), NOW, networkCtx);
@@ -443,6 +458,7 @@ class TraceabilityExportTaskTest {
         final var contractNum = 1L;
         final var contractEntityNum = EntityNum.fromLong(contractNum);
         given(accounts.get(contractEntityNum)).willReturn(contract);
+        givenWellKnownUsageSnapshot();
 
         // when:
         final var result = subject.process(contractEntityNum.longValue(), NOW, networkCtx);
