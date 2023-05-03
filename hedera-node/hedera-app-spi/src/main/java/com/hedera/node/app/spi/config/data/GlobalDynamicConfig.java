@@ -24,6 +24,7 @@ import com.swirlds.config.api.ConfigProperty;
  * This class contains the properties that are part of the {@code GlobalDynamicProperties} class in the mono-service
  * module.
  */
+@Deprecated
 @ConfigData
 public record GlobalDynamicConfig(
         @ConfigProperty int maxNftMetadataBytes,
@@ -153,4 +154,5 @@ public record GlobalDynamicConfig(
         // LegacyContractIdActivations legacyContractIdActivations, <- we currently do not support the data type (will
         // be added by another PR)
         // @ConfigProperty Set<Address> contractsWithSpecialHapiSigsAccess
-        ) {}
+) {
+}

@@ -25,6 +25,7 @@ import java.util.List;
  * This class contains the properties that are part of the {@code NodeLocalProperties} class in the mono-service
  * module.
  */
+@Deprecated
 @ConfigData
 public record NodeConfig(
         @ConfigProperty int port,
@@ -66,4 +67,5 @@ public record NodeConfig(
         @ConfigProperty List<String> hapiThrottlesToSample,
         @ConfigProperty String sidecarDir,
         @ConfigProperty int workflowsPort,
-        @ConfigProperty int workflowsTlsPort) {}
+        @ConfigProperty int workflowsTlsPort) {
+}
