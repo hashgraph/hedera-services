@@ -18,7 +18,7 @@ package com.hedera.node.app.service.util.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.math.LongMath;
+import com.google.common.math.IntMath;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
@@ -151,7 +151,7 @@ public class UtilPrngHandler implements TransactionHandler {
      * @return random number
      */
     private int randomNumFromBytes(@NonNull final byte[] pseudoRandomBytes, final int range) {
-        final var initialBitsValue = ByteBuffer.wrap(pseudoRandomBytes, 0, 4).getInt();
-        return LongMath.mod(initialBitsValue, range);
+        final int initialBitsValue = ByteBuffer.wrap(pseudoRandomBytes, 0, 4).getInt();
+        return IntMath.mod(initialBitsValue, range);
     }
 }

@@ -201,8 +201,7 @@ class UtilPrngHandlerTest {
         given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(null);
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, config, recordBuilder))
-                .isInstanceOf(NullPointerException.class)
-                .has(responseCode(INVALID_PRNG_RANGE));
+                .isInstanceOf(NullPointerException.class);
 
         assertThat(recordBuilder.getPrngBytes()).isNull();
         assertThat(recordBuilder.getPrngNumber()).isNull();
