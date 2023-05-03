@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.token.TokenUnfreezeAccountTransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -46,6 +47,8 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenUnfreezeOrThrow();
+        pureChecks(op);
+
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
@@ -66,5 +69,15 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
      */
     public void handle() {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    private void pureChecks(TokenUnfreezeAccountTransactionBody op) throws PreCheckException {
+        if (!op.hasToken()) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
+        }
+
+        if (!op.hasAccount()) {
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
+        }
     }
 }

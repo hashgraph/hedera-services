@@ -26,6 +26,7 @@ public enum TokenUnfreezeScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(newSignedTokenUnfreeze()
                     .unfreezing(KNOWN_TOKEN_WITH_FREEZE)
+                    .withAccount(OWNER_ACCOUNT)
                     .nonPayerKts(TOKEN_FREEZE_KT)
                     .get());
         }
@@ -33,14 +34,19 @@ public enum TokenUnfreezeScenarios implements TxnHandlingScenario {
     UNFREEZE_WITH_MISSING_FREEZE_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUnfreeze().unfreezing(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
+            return PlatformTxnAccessor.from(newSignedTokenUnfreeze()
+                    .withAccount(OWNER_ACCOUNT)
+                    .unfreezing(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                    .get());
         }
     },
     UNFREEZE_WITH_INVALID_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenUnfreeze().unfreezing(MISSING_TOKEN).get());
+            return PlatformTxnAccessor.from(newSignedTokenUnfreeze()
+                    .unfreezing(MISSING_TOKEN)
+                    .withAccount(OWNER_ACCOUNT)
+                    .get());
         }
     },
 }
