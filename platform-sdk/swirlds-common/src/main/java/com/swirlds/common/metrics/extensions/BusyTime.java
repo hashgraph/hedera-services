@@ -27,11 +27,10 @@ import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A metric that measures the fraction of time that a thread is busy. This metric could be used to track the overall busy
@@ -173,10 +172,13 @@ public class BusyTime {
                 || (statusChange == WORK_END && isIdle(currentStatus))) {
             // this means that the metric has not been updated correctly, we will not change the value
             if (logLimiter.request()) {
-                log.error(LogMarker.EXCEPTION.getMarker(),
-                        "BusyTime metric has been updated incorrectly. " +
-                        "Current status: {}, status change: {}, stack trace: \n{}",
-                        currentStatus, statusChange, StackTrace.getStackTrace().toString());
+                log.error(
+                        LogMarker.EXCEPTION.getMarker(),
+                        "BusyTime metric has been updated incorrectly. "
+                                + "Current status: {}, status change: {}, stack trace: \n{}",
+                        currentStatus,
+                        statusChange,
+                        StackTrace.getStackTrace().toString());
             }
             return previousPair;
         }
