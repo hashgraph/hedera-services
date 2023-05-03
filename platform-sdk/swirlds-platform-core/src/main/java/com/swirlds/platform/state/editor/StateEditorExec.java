@@ -24,6 +24,7 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import picocli.CommandLine;
@@ -76,9 +77,13 @@ public class StateEditorExec extends StateEditorOperation {
                 parentInfo.parent().setChild(parentInfo.indexInParent(), result);
 
                 // Invalidate hashes in path down from root
-                new MerkleRouteIterator(
-                                getStateEditor().getState(), parentInfo.parent().getRoute())
-                        .forEachRemaining(Hashable::invalidateHash);
+                try (final ReservedSignedState reservedSignedState =
+                        getStateEditor().getState("StateEditorExec.run()")) {
+                    new MerkleRouteIterator(
+                                    reservedSignedState.get().getState(),
+                                    parentInfo.parent().getRoute())
+                            .forEachRemaining(Hashable::invalidateHash);
+                }
             }
         } catch (ClassNotFoundException
                 | NoSuchMethodException

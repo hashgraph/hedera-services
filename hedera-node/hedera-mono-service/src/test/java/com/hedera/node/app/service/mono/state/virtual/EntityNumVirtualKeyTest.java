@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
@@ -211,5 +212,13 @@ class EntityNumVirtualKeyTest {
     @Test
     void canGetEntityNumUsingLongValue() {
         assertEquals(subject, fromLong(longKey));
+    }
+
+    @Test
+    void canGetEntityNumUsingAccountId() {
+        assertEquals(
+                subject,
+                EntityNumVirtualKey.fromAccountId(
+                        AccountID.newBuilder().setAccountNum(longKey).build()));
     }
 }

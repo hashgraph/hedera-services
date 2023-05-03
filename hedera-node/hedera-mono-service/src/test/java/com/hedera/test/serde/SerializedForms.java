@@ -135,7 +135,7 @@ public class SerializedForms {
     }
 
     private static void generateSerializedData() {
-        GENERATOR_MAPPING.get(MerkleNetworkContext.class).run();
+        GENERATOR_MAPPING.get(MerkleStakingInfo.class).run();
         //        for (var entry : GENERATOR_MAPPING.entrySet()) {
         //            entry.getValue().run();
         //        }
@@ -207,7 +207,7 @@ public class SerializedForms {
             entry(VirtualBlobValue.class, SeededPropertySource::nextVirtualBlobValue, MIN_TEST_CASES_PER_VERSION),
             entry(
                     MerkleStakingInfo.class,
-                    SeededPropertySource::nextStakingInfo,
+                    SeededPropertySource::next0371StakingInfo,
                     MerkleStakingInfoSerdeTest.NUM_TEST_CASES),
             entry(
                     SerializableSemVers.class,

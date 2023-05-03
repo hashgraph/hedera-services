@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono;
 
+import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
@@ -85,6 +86,7 @@ import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssListener;
+import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
@@ -205,12 +207,16 @@ public interface ServicesApp {
 
     NewSignedStateListener newSignedStateListener();
 
+    Optional<NewRecoveredStateListener> maybeNewRecoveredStateListener();
+
     Supplier<NotificationEngine> notificationEngine();
 
     BackingStore<AccountID, HederaAccount> backingAccounts();
 
     @BootstrapProps
     PropertySource bootstrapProps();
+
+    EntityMapWarmer mapWarmer();
 
     @Component.Builder
     interface Builder {
