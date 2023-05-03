@@ -223,7 +223,7 @@ public final class Uninterruptable {
      * @param object       the object to pass to the consumer
      * @param errorMessage the error message to write to the log if this thread is inerrupted
      */
-    public static <T> void abortAndThrowIfInterrupted( // TODO test
+    public static <T> void abortAndThrowIfInterrupted(
             @NonNull final CheckedConsumer<T, InterruptedException> consumer,
             @Nullable final T object,
             @NonNull final String errorMessage) {

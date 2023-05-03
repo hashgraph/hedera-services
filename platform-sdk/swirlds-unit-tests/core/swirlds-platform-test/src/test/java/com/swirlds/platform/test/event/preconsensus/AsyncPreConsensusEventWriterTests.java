@@ -434,7 +434,6 @@ class AsyncPreConsensusEventWriterTests {
         assertTrue(foundNonZeroMinimumGeneration);
     }
 
-    // TODO this should probably use the new method beginStreamingNewEvents()
     /**
      * Simulate a node restarting.
      */
