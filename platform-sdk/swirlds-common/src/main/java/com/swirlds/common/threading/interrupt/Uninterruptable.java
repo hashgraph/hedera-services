@@ -210,6 +210,37 @@ public final class Uninterruptable {
     }
 
     /**
+     * <p>
+     * Pass an object to a consumer that may throw an {@link InterruptedException}. If the thread is interrupted, the
+     * action will be aborted and the thread's interrupt flag will be set. Also writes an error message to the log.
+     * </p>
+     *
+     * <p>
+     * This method is useful for situations where interrupts are only expected if there has been an error condition.
+     * </p>
+     *
+     * @param consumer     an object that consumes something and may throw an {@link InterruptedException}
+     * @param object       the object to pass to the consumer
+     * @param errorMessage the error message to write to the log if this thread is inerrupted
+     */
+    public static <T> void abortAndThrowIfInterrupted( // TODO test
+            @NonNull final CheckedConsumer<T, InterruptedException> consumer,
+            @Nullable final T object,
+            @NonNull final String errorMessage) {
+
+        throwArgNull(consumer, "consumer");
+        throwArgNull(errorMessage, "errorMessage");
+
+        try {
+            consumer.accept(object);
+        } catch (final InterruptedException e) {
+            logger.error(EXCEPTION.getMarker(), errorMessage);
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(errorMessage);
+        }
+    }
+
+    /**
      * Attempt to sleep for a period of time. If interrupted, the sleep may finish early.
      *
      * @param duration the amount of time to sleep

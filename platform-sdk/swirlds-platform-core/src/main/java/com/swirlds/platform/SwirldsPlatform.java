@@ -16,7 +16,6 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CommonUtils.combineConsumers;
@@ -1020,13 +1019,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 eventIntakeMetrics,
                 (PreConsensusEventObserver) event -> {
                     sequencer.assignStreamSequenceNumber(event);
-                    abortAndLogIfInterrupted( // TODO throw
+                    abortAndThrowIfInterrupted(
                             preConsensusEventWriter::writeEvent,
                             event,
                             "Interrupted while attempting to enqueue preconsensus event for writing");
                 },
                 (ConsensusRoundObserver) round -> {
-                    abortAndLogIfInterrupted( // TODO throw
+                    abortAndThrowIfInterrupted(
                             preConsensusEventWriter::setMinimumGenerationNonAncient,
                             round.getGenerations().getMinGenerationNonAncient(),
                             "Interrupted while attempting to enqueue change in minimum generation non-ancient");

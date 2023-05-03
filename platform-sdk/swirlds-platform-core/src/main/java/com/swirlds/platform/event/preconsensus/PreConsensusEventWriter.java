@@ -32,7 +32,7 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
      * read from the preconsensus event stream on disk. The events from the stream on disk are not re-written to the
      * disk, and are considered to be durable immediately upon ingest.
      */
-    void beginStreamingNewEvents() throws InterruptedException; // TODO test this
+    void beginStreamingNewEvents() throws InterruptedException;
 
     /**
      * Write an event to the stream.
@@ -82,10 +82,10 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
      */
     void waitUntilDurable(@NonNull EventImpl event) throws InterruptedException;
 
-    // TODO javadoc
-
     /**
-     * Wait until an event is guaranteed to be durable, i.e. flushed to disk.
+     * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method,
+     * the event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()}
+     * should have been called. Otherwise, this method may block until the end of its timeout and return false.
      *
      * @param event      the event in question
      * @param timeToWait the maximum time to wait
