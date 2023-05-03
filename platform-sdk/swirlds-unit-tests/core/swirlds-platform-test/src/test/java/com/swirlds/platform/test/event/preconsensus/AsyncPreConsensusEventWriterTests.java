@@ -395,7 +395,7 @@ class AsyncPreConsensusEventWriterTests {
         events.removeIf(rejectedEvents::contains);
 
         // Events should become durable as they are written to disk
-        writer.requestFlush(events.get(events.size() - 1));
+        writer.requestFlush();
         for (final EventImpl event : events) {
             assertTrue(writer.waitUntilDurable(event, Duration.ofSeconds(1)));
         }
@@ -462,14 +462,14 @@ class AsyncPreConsensusEventWriterTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final PreConsensusEventFileManager fileManager =
+        final PreConsensusEventFileManager fileManager1 =
                 new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         final PreconsensusEventStreamSequencer sequencer1 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer1 = new AsyncPreConsensusEventWriter(
                 platformContext,
                 getStaticThreadManager(),
-                new SyncPreConsensusEventWriter(platformContext, fileManager));
+                new SyncPreConsensusEventWriter(platformContext, fileManager1));
 
         writer1.start();
         writer1.beginStreamingNewEvents();
@@ -499,7 +499,7 @@ class AsyncPreConsensusEventWriterTests {
 
         if (truncateLastFile) {
             // Remove a single byte from the last file. This will corrupt the last event that was written.
-            final Iterator<PreConsensusEventFile> it = fileManager.getFileIterator(NO_MINIMUM_GENERATION);
+            final Iterator<PreConsensusEventFile> it = fileManager1.getFileIterator(NO_MINIMUM_GENERATION);
             while (it.hasNext()) {
                 final PreConsensusEventFile file = it.next();
                 if (!it.hasNext()) {
@@ -510,12 +510,28 @@ class AsyncPreConsensusEventWriterTests {
             events1.remove(events1.size() - 1);
         }
 
+        final PreConsensusEventFileManager fileManager2 =
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
         final PreconsensusEventStreamSequencer sequencer2 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer2 = new AsyncPreConsensusEventWriter(
                 platformContext,
                 getStaticThreadManager(),
-                new SyncPreConsensusEventWriter(platformContext, fileManager));
+                new SyncPreConsensusEventWriter(platformContext, fileManager2));
         writer2.start();
+
+        // Write all events currently in the stream, we expect these to be ignored and not written to the stream twice.
+        final IOIterator<EventImpl> iterator = fileManager1.getEventIterator(NO_MINIMUM_GENERATION);
+        while (iterator.hasNext()) {
+            final EventImpl next = iterator.next();
+            sequencer2.assignStreamSequenceNumber(next);
+            writer2.writeEvent(next);
+
+            if (random.nextDouble() < 0.1) {
+                writer2.requestFlush();
+                assertTrue(writer2.waitUntilDurable(next, Duration.ofSeconds(1)));
+            }
+        }
+
         writer2.beginStreamingNewEvents();
 
         final Set<EventImpl> rejectedEvents2 = new HashSet<>();
@@ -538,7 +554,7 @@ class AsyncPreConsensusEventWriterTests {
         events2.removeIf(rejectedEvents2::contains);
 
         // Events should become durable as they are written to disk
-        writer2.requestFlush(events2.get(events2.size() - 1));
+        writer2.requestFlush();
         for (final EventImpl event : events2) {
             assertTrue(writer2.waitUntilDurable(event, Duration.ofSeconds(1)));
         }

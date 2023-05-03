@@ -1020,19 +1020,20 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 eventIntakeMetrics,
                 (PreConsensusEventObserver) event -> {
                     sequencer.assignStreamSequenceNumber(event);
-                    abortAndLogIfInterrupted(
+                    abortAndLogIfInterrupted( // TODO throw
                             preConsensusEventWriter::writeEvent,
                             event,
                             "Interrupted while attempting to enqueue preconsensus event for writing");
                 },
                 (ConsensusRoundObserver) round -> {
-                    abortAndLogIfInterrupted(
+                    abortAndLogIfInterrupted( // TODO throw
                             preConsensusEventWriter::setMinimumGenerationNonAncient,
                             round.getGenerations().getMinGenerationNonAncient(),
                             "Interrupted while attempting to enqueue change in minimum generation non-ancient");
 
-                    final EventImpl keystoneEvent = round.getKeystoneEvent();
-                    preConsensusEventWriter.requestFlush(keystoneEvent);
+                    abortAndThrowIfInterrupted(
+                            preConsensusEventWriter::requestFlush,
+                            "Interrupted while requesting preconsensus event flush");
                 });
         if (settings.getChatter().isChatterUsed()) {
             dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));

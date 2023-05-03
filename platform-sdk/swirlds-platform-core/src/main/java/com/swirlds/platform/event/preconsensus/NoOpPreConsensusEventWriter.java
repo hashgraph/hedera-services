@@ -106,7 +106,7 @@ public class NoOpPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void requestFlush(final EventImpl event) {
+    public void requestFlush() {
         // no-op
     }
 }

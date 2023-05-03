@@ -58,6 +58,13 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
     void setMinimumGenerationToStore(long minimumGenerationToStore);
 
     /**
+     * Request that the event writer perform a flush as soon as all events currently added have been written.
+     *
+     * @throws InterruptedException if interrupted while waiting
+     */
+    void requestFlush() throws InterruptedException;
+
+    /**
      * Check if an event is guaranteed to be durable, i.e. flushed to disk.
      *
      * @param event the event in question
@@ -66,12 +73,16 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
     boolean isEventDurable(@NonNull EventImpl event);
 
     /**
-     * Wait until an event is guaranteed to be durable, i.e. flushed to disk.
+     * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method,
+     * the event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()}
+     * should have been called. Otherwise, this method may block indefinitely.
      *
      * @param event the event in question
      * @throws InterruptedException if interrupted while waiting
      */
     void waitUntilDurable(@NonNull EventImpl event) throws InterruptedException;
+
+    // TODO javadoc
 
     /**
      * Wait until an event is guaranteed to be durable, i.e. flushed to disk.
@@ -82,11 +93,4 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
      * @throws InterruptedException if interrupted while waiting
      */
     boolean waitUntilDurable(@NonNull EventImpl event, @NonNull final Duration timeToWait) throws InterruptedException;
-
-    /**
-     * Request that the event writer flushes an event to disk as soon as possible.
-     *
-     * @param event the event that should be flushed as soon as possible
-     */
-    void requestFlush(@NonNull EventImpl event);
 }
