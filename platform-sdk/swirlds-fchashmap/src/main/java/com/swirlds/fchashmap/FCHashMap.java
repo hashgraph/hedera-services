@@ -62,6 +62,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 		the type of the value
  */
 public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
+    public static String REBUILD_THREAD_COUNT =
+            String.valueOf(Runtime.getRuntime().availableProcessors());
 
     /**
      * When a copy of an FCHashMap is made, that copy is in the same family as the original. A sequence of copies
