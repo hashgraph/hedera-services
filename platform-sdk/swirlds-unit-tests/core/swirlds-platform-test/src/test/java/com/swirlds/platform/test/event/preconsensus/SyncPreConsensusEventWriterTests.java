@@ -19,6 +19,7 @@ package com.swirlds.platform.test.event.preconsensus;
 import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEventWriterTests.buildGraphGenerator;
 import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEventWriterTests.verifyStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -324,5 +325,57 @@ class SyncPreConsensusEventWriterTests {
             final PreConsensusEventFile file = it.next();
             assertEquals(0, file.minimumGeneration());
         }
+    }
+
+    @Test
+    @DisplayName("beginStreamingEvents() Test")
+    void beginStreamingEventsTest() throws IOException, InterruptedException {
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final int numEvents = 1_000;
+        final int generationsUntilAncient = random.nextInt(50, 100);
+
+        final StandardGraphGenerator generator = buildGraphGenerator(random);
+
+        final List<EventImpl> events = new LinkedList<>();
+        for (int i = 0; i < numEvents; i++) {
+            events.add(generator.generateEvent().convertToEventImpl());
+        }
+
+        final PlatformContext platformContext = buildContext();
+
+        final PreConsensusEventFileManager fileManager =
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+
+        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
+
+        writer.start();
+
+        // We intentionally do not call writer.beginStreamingNewEvents(). This should cause all events
+        // passed into the writer to be more or less ignored.
+
+        long minimumGenerationNonAncient = 0;
+        for (EventImpl event : events) {
+            sequencer.assignStreamSequenceNumber(event);
+
+            minimumGenerationNonAncient =
+                    Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
+            writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+
+            writer.writeEvent(event);
+        }
+
+        writer.requestFlush();
+
+        assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
+        assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
+
+        // We shouldn't find any events in the stream.
+        assertFalse(() -> fileManager
+                .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
+                .hasNext());
+
+        writer.stop();
     }
 }
