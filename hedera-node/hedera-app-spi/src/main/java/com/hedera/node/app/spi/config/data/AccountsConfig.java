@@ -32,6 +32,7 @@ public record AccountsConfig(@ConfigProperty long addressBookAdmin,
                              @ConfigProperty long systemDeleteAdmin,
                              @ConfigProperty long systemUndeleteAdmin,
                              @ConfigProperty long treasury,
-                             @ConfigProperty boolean storeOnDisk) {
+                             @ConfigProperty boolean storeOnDisk,
+                             @ConfigProperty long maxNumber) {
 
 }
