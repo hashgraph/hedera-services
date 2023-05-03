@@ -30,13 +30,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class SyncPermitProviderTest {
-    /**
-     * Verify that permits are acquired and release properly.
-     */
     @Test
+    @DisplayName("Permits are acquired and released properly")
     void testPermitRelease() {
         final int numPermits = 3;
         final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits);
@@ -57,10 +56,8 @@ class SyncPermitProviderTest {
                 "all permits should be available after the acquired permit is released");
     }
 
-    /**
-     * Verify that once all permits are acquired, further attempts to acquire fail.
-     */
     @Test
+    @DisplayName("Once all permits are acquired, further attempts to acquire fail")
     void testAllPermitsAcquired() {
         final int numPermits = 9;
         final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits);
@@ -96,6 +93,7 @@ class SyncPermitProviderTest {
     }
 
     @Test
+    @DisplayName("waitForAllSyncsToFinish blocks until all permits are released")
     void testWaitForAllSyncsToFinish() {
         final int numPermits = 3;
         final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(numPermits);

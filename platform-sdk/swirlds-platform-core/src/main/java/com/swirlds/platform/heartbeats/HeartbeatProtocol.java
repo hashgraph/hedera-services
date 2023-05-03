@@ -69,10 +69,10 @@ public class HeartbeatProtocol implements Protocol {
      * @param time            Source of time
      */
     public HeartbeatProtocol(
-            final @NonNull NodeId peerId,
-            final @NonNull Duration heartbeatPeriod,
-            final @NonNull NetworkMetrics networkMetrics,
-            final @NonNull Time time) {
+            @NonNull final NodeId peerId,
+            @NonNull final Duration heartbeatPeriod,
+            @NonNull final NetworkMetrics networkMetrics,
+            @NonNull final Time time) {
 
         this.peerId = Objects.requireNonNull(peerId);
         this.heartbeatPeriod = Objects.requireNonNull(heartbeatPeriod);

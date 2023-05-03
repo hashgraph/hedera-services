@@ -1648,6 +1648,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param connectionManagers the constructed connection managers
      */
     private void startSyncAsProtocolNetwork(@NonNull final StaticConnectionManagers connectionManagers) {
+        Objects.requireNonNull(connectionManagers);
+
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
