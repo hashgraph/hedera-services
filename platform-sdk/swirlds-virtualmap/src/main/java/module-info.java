@@ -4,7 +4,7 @@
 open module com.swirlds.virtualmap {
     exports com.swirlds.virtualmap;
     exports com.swirlds.virtualmap.datasource;
-    // is it really "internal"?
+    // Currently, exported only for tests.
     exports com.swirlds.virtualmap.internal.merkle;
     exports com.swirlds.virtualmap.config;
 
