@@ -87,6 +87,7 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
@@ -353,6 +354,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                     .build();
             APPS.save(selfId, app);
         }
+        app.maybeNewRecoveredStateListener().ifPresent(listener -> platform.getNotificationEngine()
+                .register(NewRecoveredStateListener.class, listener));
 
         if (dualState == null) {
             dualState = new DualStateImpl();
