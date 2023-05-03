@@ -16,7 +16,6 @@
 
 package com.swirlds.demo.consistency;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.ByteUtils.longToByteArray;
 
@@ -25,6 +24,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -58,8 +58,8 @@ public class TransactionGenerator implements Startable {
             @NonNull final Platform platform,
             final int networkWideTransactionsPerSecond) {
 
-        this.random = throwArgNull(random, "random");
-        this.platform = throwArgNull(platform, "platform");
+        this.random = Objects.requireNonNull(random);
+        this.platform = Objects.requireNonNull(platform);
 
         // Each node in an N node network should create 1/N transactions per second.
         final int tps =

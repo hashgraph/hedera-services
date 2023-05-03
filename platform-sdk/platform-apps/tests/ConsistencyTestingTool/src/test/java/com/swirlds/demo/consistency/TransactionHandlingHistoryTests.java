@@ -33,12 +33,11 @@ class TransactionHandlingHistoryTests {
     @TempDir
     private static Path tempDir;
 
-    private static final String logFileName = "logFile";
     private Path logFilePath;
 
     @BeforeEach
     void setUp() {
-        logFilePath = tempDir.resolve(logFileName);
+        logFilePath = tempDir.resolve("logFile");
 
         try {
             // delete the log file if it exists
@@ -48,6 +47,11 @@ class TransactionHandlingHistoryTests {
         }
     }
 
+    /**
+     * Get the contents of the log file as a string
+     *
+     * @return the contents of the log file as a string
+     */
     private String getLogFileContents() {
         try {
             return Files.readString(logFilePath);
@@ -64,10 +68,10 @@ class TransactionHandlingHistoryTests {
         final ConsistencyTestingToolRound round1 = new ConsistencyTestingToolRound(1, 1, List.of(1L, 2L, 3L));
         final ConsistencyTestingToolRound round2 = new ConsistencyTestingToolRound(2, 22, List.of(6L, 5L, 4L));
 
-        assertFalse(tempDir.resolve(logFileName).toFile().exists(), "Log file shouldn't exist yet");
+        assertFalse(Files.exists(logFilePath), "Log file shouldn't exist yet");
 
         assertTrue(history.processRound(round1).isEmpty(), "No errors should have occurred");
-        assertTrue(tempDir.resolve(logFileName).toFile().exists(), "Log file should exist");
+        assertTrue(Files.exists(logFilePath), "Log file should exist");
         assertEquals(1, getLogFileContents().lines().count(), "Log file should have 1 round recorded");
 
         assertTrue(history.processRound(round2).isEmpty(), "No errors should have occurred");
@@ -205,7 +209,8 @@ class TransactionHandlingHistoryTests {
         assertEquals(3, getLogFileContents().lines().count(), "Log file should have 3 rounds recorded");
 
         // rounds that don't match historical rounds are handled correctly
-        final ConsistencyTestingToolRound incorrectRound1Duplicate = new ConsistencyTestingToolRound(1, 65, List.of(1L, 2L, 3L));
+        final ConsistencyTestingToolRound incorrectRound1Duplicate =
+                new ConsistencyTestingToolRound(1, 65, List.of(1L, 2L, 3L));
         assertEquals(1, parsedHistory.processRound(incorrectRound1Duplicate).size(), "An error should have occurred");
         assertEquals(3, getLogFileContents().lines().count(), "Log file should have 3 rounds recorded");
     }

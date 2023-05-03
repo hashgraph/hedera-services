@@ -49,6 +49,7 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, L
      * @param currentState the long state value of the application after the round has been applied
      * @return the input round, converted to a {@link ConsistencyTestingToolRound}
      */
+    @NonNull
     public static ConsistencyTestingToolRound fromRound(final @NonNull Round round, final long currentState) {
         Objects.requireNonNull(round);
 
@@ -65,6 +66,7 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, L
      * @param roundString the string representation of the round
      * @return the new {@link ConsistencyTestingToolRound}
      */
+    @NonNull
     public static ConsistencyTestingToolRound fromString(final @NonNull String roundString) {
         Objects.requireNonNull(roundString);
 
@@ -95,6 +97,8 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, L
      */
     @Override
     public int compareTo(@NonNull ConsistencyTestingToolRound other) {
+        Objects.requireNonNull(other);
+
         return Long.compare(this.roundNumber, other.roundNumber);
     }
 
@@ -118,6 +122,7 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, L
     }
 
     @Override
+    @NonNull
     public String toString() {
         final StringBuilder builder = new StringBuilder();
 

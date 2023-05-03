@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,7 +76,7 @@ public class TransactionHandlingHistory {
         this.permitRoundGaps = permitRoundGaps;
         this.roundHistory = new ArrayList<>();
         this.seenTransactions = new HashSet<>();
-        this.logFilePath = logFilePath;
+        this.logFilePath = Objects.requireNonNull(logFilePath);
 
         tryReadLog();
     }
@@ -86,6 +87,8 @@ public class TransactionHandlingHistory {
      * @param that the object to copy
      */
     public TransactionHandlingHistory(@NonNull final TransactionHandlingHistory that) {
+        Objects.requireNonNull(that);
+
         this.permitRoundGaps = that.permitRoundGaps;
         this.roundHistory = new ArrayList<>(that.roundHistory);
         this.seenTransactions = new HashSet<>(that.seenTransactions);
@@ -136,6 +139,8 @@ public class TransactionHandlingHistory {
      */
     @Nullable
     private ConsistencyTestingToolRound findHistoricalRound(final @NonNull ConsistencyTestingToolRound newRound) {
+        Objects.requireNonNull(newRound);
+
         return roundHistory.stream()
                 .filter(oldRound -> newRound.compareTo(oldRound) == 0)
                 .findFirst()
@@ -154,6 +159,9 @@ public class TransactionHandlingHistory {
     private String compareWithHistoricalRound(
             final @NonNull ConsistencyTestingToolRound newRound,
             final @NonNull ConsistencyTestingToolRound historicalRound) {
+
+        Objects.requireNonNull(newRound);
+        Objects.requireNonNull(historicalRound);
 
         if (!newRound.equals(historicalRound)) {
             final String error =
@@ -176,6 +184,8 @@ public class TransactionHandlingHistory {
      */
     @NonNull
     private List<String> addRoundToHistory(final @NonNull ConsistencyTestingToolRound newRound) {
+        Objects.requireNonNull(newRound);
+
         final List<String> errors = new ArrayList<>();
 
         roundHistory.add(newRound);
@@ -206,9 +216,8 @@ public class TransactionHandlingHistory {
         }
         // if gaps in round history aren't permitted, check that the round numbers are consecutive
         else if (!permitRoundGaps && newRoundNumber != previousRoundNumber + 1) {
-            final String error =
-                    "Gap in round history found. Round " + newRoundNumber + " was added, but previous round was "
-                            + previousRoundNumber;
+            final String error = "Gap in round history found. Round " + newRoundNumber
+                    + " was added, but previous round was " + previousRoundNumber;
 
             logger.error(EXCEPTION.getMarker(), error);
 
@@ -224,6 +233,8 @@ public class TransactionHandlingHistory {
      * @param round the round to write to the log file
      */
     private void writeRoundToLog(final @NonNull ConsistencyTestingToolRound round) {
+        Objects.requireNonNull(round);
+
         try (BufferedWriter file = new BufferedWriter(new FileWriter(logFilePath.toFile(), true))) {
             file.write(round.toString());
         } catch (final IOException e) {
@@ -244,6 +255,8 @@ public class TransactionHandlingHistory {
      */
     @NonNull
     public List<String> processRound(final @NonNull ConsistencyTestingToolRound round) {
+        Objects.requireNonNull(round);
+
         final ConsistencyTestingToolRound historicalRound = findHistoricalRound(round);
 
         final List<String> errors = new ArrayList<>();

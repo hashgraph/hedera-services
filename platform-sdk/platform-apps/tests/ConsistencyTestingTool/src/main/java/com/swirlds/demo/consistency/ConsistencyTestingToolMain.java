@@ -16,7 +16,6 @@
 
 package com.swirlds.demo.consistency;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.system.BasicSoftwareVersion;
@@ -82,8 +81,8 @@ public class ConsistencyTestingToolMain implements SwirldMain {
      */
     @Override
     public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
-        throwArgNull(platform, "platform");
-        throwArgNull(nodeId, "nodeId");
+        Objects.requireNonNull(platform);
+        Objects.requireNonNull(nodeId);
 
         logger.info(STARTUP.getMarker(), "init called in Main for node {}.", nodeId);
         this.platform = platform;
@@ -119,6 +118,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public SwirldState newState() {
         return new ConsistencyTestingToolState(
                 permitRoundGaps, Path.of(System.getProperty("user.dir") + File.separator + LOG_FILE_NAME + ".csv"));
@@ -128,6 +128,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public BasicSoftwareVersion getSoftwareVersion() {
         logger.info(STARTUP.getMarker(), "returning software version {}", softwareVersion);
         return softwareVersion;

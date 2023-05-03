@@ -23,10 +23,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
@@ -60,17 +57,6 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     private long stateLong = 0;
 
     /**
-     * Whether gaps in the round history will be permitted in the test. if false, an error will be logged if a gap is
-     * found
-     */
-    private final boolean permitRoundGaps;
-
-    /**
-     * The path of the log file where the round history will be written
-     */
-    private final Path logFilePath;
-
-    /**
      * Constructor
      *
      * @param permitRoundGaps whether or not gaps in the round history will be permitted in the test. if false, an error
@@ -78,9 +64,9 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      * @param logFilePath     the path of the log file where the round history will be written
      */
     public ConsistencyTestingToolState(final boolean permitRoundGaps, final @NonNull Path logFilePath) {
+        Objects.requireNonNull(logFilePath);
+
         this.transactionHandlingHistory = new TransactionHandlingHistory(permitRoundGaps, logFilePath);
-        this.permitRoundGaps = permitRoundGaps;
-        this.logFilePath = logFilePath;
 
         logger.info(STARTUP.getMarker(), "New State Constructed.");
     }
@@ -95,8 +81,6 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
 
         this.transactionHandlingHistory = new TransactionHandlingHistory(that.transactionHandlingHistory);
         this.stateLong = that.stateLong;
-        this.permitRoundGaps = that.permitRoundGaps;
-        this.logFilePath = that.logFilePath;
     }
 
     /**
@@ -135,6 +119,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public synchronized ConsistencyTestingToolState copy() {
         throwIfImmutable();
         return new ConsistencyTestingToolState(this);
@@ -160,7 +145,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @Override
     public void handleConsensusRound(final @NonNull Round round, final @NonNull SwirldDualState swirldDualState) {
-        round.forEachTransaction(this::applyTransactionToState);
+        Objects.requireNonNull(round).forEachTransaction(this::applyTransactionToState);
+        Objects.requireNonNull(swirldDualState);
 
         transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round, stateLong));
     }
