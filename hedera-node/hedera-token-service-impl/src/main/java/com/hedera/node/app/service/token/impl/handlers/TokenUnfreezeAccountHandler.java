@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -49,6 +51,8 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
         if (tokenMeta.hasFreezeKey()) {
             context.requireKey(tokenMeta.freezeKey());
+        } else {
+            throw new PreCheckException(TOKEN_HAS_NO_FREEZE_KEY);
         }
     }
 
