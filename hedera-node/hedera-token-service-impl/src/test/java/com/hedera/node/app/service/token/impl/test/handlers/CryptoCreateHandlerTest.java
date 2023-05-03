@@ -56,10 +56,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Unit tests for {@link CryptoCreateHandler}.
- * Tests the following:
- * <ul>
- *     <li>preHandle works when there is a receiverSigRequired</li>
- * </ul>
  */
 @ExtendWith(MockitoExtension.class)
 class CryptoCreateHandlerTest extends CryptoHandlerTestBase {

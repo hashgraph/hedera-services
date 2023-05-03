@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -74,15 +75,15 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @param alias - the alias to be added to modifications in state.
      * @param accountNum - the account number to be added to modifications in state.
      */
-    public void putAlias(@NonNull final String alias, @NonNull final long accountNum) {
+    public void putAlias(@NonNull final String alias, final long accountNum) {
         Objects.requireNonNull(alias);
         aliases.put(alias, new EntityNumValue(accountNum));
     }
 
     /** Commits the changes to the underlying data storage. */
     public void commit() {
-        ((WritableKVStateBase) accountState).commit();
-        ((WritableKVStateBase) aliases).commit();
+        ((WritableKVStateBase<?, ?>) accountState).commit();
+        ((WritableKVStateBase<?, ?>) aliases).commit();
     }
 
     /**
@@ -99,7 +100,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Returns the {@link Account} with the given number using {@link
+     * Returns the {@link Account} with the given {@link AccountID using {@link
      * WritableKVState#getForModify(Object K)}}. If no such account exists, returns {@code
      * Optional.empty()}
      *
@@ -117,7 +118,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                         if (alias.length() == EVM_ADDRESS_LEN && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            final var entityNum = aliases.getForModify(alias.asUtf8String());
+                            final var entityNum = aliases.get(alias.asUtf8String());
                             yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
                         }
                     }

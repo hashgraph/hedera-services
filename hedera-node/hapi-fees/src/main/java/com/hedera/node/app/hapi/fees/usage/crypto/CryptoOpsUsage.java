@@ -58,8 +58,6 @@ public class CryptoOpsUsage {
     static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
     static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
-    private static final Logger log = LogManager.getLogger(CryptoOpsUsage.class);
-
     @Inject
     public CryptoOpsUsage() {
         // Default constructor

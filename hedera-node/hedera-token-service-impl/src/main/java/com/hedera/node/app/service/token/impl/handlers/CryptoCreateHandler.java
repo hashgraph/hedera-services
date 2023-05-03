@@ -157,10 +157,10 @@ public class CryptoCreateHandler implements TransactionHandler {
             return INVALID_RENEWAL_PERIOD;
         }
         if (op.sendRecordThreshold() < 0L) {
-            return INVALID_SEND_RECORD_THRESHOLD; // should this return SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
+            return INVALID_SEND_RECORD_THRESHOLD; //FUTURE: should this return SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
         }
         if (op.receiveRecordThreshold() < 0L) {
-            return INVALID_RECEIVE_RECORD_THRESHOLD; // should this return RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
+            return INVALID_RECEIVE_RECORD_THRESHOLD; //FUTURE: should this return RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
         }
         if (op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT)) {
             return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
