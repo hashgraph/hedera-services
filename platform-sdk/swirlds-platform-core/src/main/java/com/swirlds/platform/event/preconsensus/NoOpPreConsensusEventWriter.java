@@ -48,6 +48,14 @@ public class NoOpPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
+    public void beginStreamingNewEvents() throws InterruptedException {
+        // no-op
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void writeEvent(final EventImpl event) {
         // no-op
     }

@@ -125,6 +125,7 @@ class SyncPreConsensusEventWriterTests {
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
         final Iterator<EventImpl> iterator = events.iterator();
@@ -192,6 +193,7 @@ class SyncPreConsensusEventWriterTests {
         }
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
         final Iterator<EventImpl> iterator = events.iterator();
@@ -259,6 +261,7 @@ class SyncPreConsensusEventWriterTests {
         }
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
         final Iterator<EventImpl> iterator = events.iterator();
@@ -312,6 +315,7 @@ class SyncPreConsensusEventWriterTests {
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
         final Iterator<EventImpl> iterator = events.iterator();
@@ -367,6 +371,7 @@ class SyncPreConsensusEventWriterTests {
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
         final Iterator<EventImpl> iterator = events.iterator();
@@ -439,6 +444,7 @@ class SyncPreConsensusEventWriterTests {
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         for (final EventImpl event : events) {
             sequencer.assignStreamSequenceNumber(event);

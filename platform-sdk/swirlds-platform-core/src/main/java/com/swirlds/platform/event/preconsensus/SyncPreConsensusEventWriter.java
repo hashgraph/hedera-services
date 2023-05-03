@@ -19,6 +19,7 @@ package com.swirlds.platform.event.preconsensus;
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
@@ -31,11 +32,17 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.PriorityQueue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+// TODO revisit use of the Synchronized keyword
 
 /**
  * This object is responsible for writing events to the database.
  */
 public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Startable, Stoppable {
+
+    private static final Logger logger = LogManager.getLogger(SyncPreConsensusEventWriter.class);
 
     /**
      * Keeps track of the event stream files on disk.
@@ -124,6 +131,12 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     private final PriorityQueue<Long> flushableEvents = new PriorityQueue<>();
 
     /**
+     * If true then all added events are new and need to be written to the stream. If false then all added events
+     * are already durable and do not need to be written to the stream.
+     */
+    private boolean streamingNewEvents = false;
+
+    /**
      * Create a new PreConsensusEventWriter.
      *
      * @param platformContext the platform context
@@ -154,8 +167,24 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
+    public void beginStreamingNewEvents() {
+        if (streamingNewEvents) {
+            logger.warn(EXCEPTION.getMarker(), "beginStreamingNewEvents() called while already streaming new events");
+        }
+        streamingNewEvents = true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public synchronized void writeEvent(@NonNull final EventImpl event) {
         validateSequenceNumber(event);
+
+        if (!streamingNewEvents) {
+            return;
+        }
+
         if (event.getGeneration() >= minimumGenerationNonAncient) {
             writeEventToStream(event);
             flushIfNeeded();

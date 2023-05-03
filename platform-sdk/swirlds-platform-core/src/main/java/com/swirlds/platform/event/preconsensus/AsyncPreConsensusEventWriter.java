@@ -58,6 +58,14 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
     private final BlockingQueueInserter<EventImpl> eventInserter;
 
     /**
+     * This class is used as a flag to indicate where in the queue events start being new (as opposed to being
+     * events from the preconsensus event stream on disk).
+     */
+    private static class BeginStreamingNewEvents {}
+
+    private final BlockingQueueInserter<BeginStreamingNewEvents> beginStreamingNewEventsInserter;
+
+    /**
      * Create a new AsyncPreConsensusEventWriter.
      *
      * @param platformContext the platform context
@@ -82,10 +90,12 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
                 .setCapacity(config.writeQueueCapacity())
                 .addHandler(Long.class, this::setMinimumGenerationNonAncientHandler)
                 .addHandler(EventImpl.class, this::addEventHandler)
+                .addHandler(BeginStreamingNewEvents.class, this::beginStreamingNewEventsHandler)
                 .build();
 
         minimumGenerationNonAncientInserter = handleThread.getInserter(Long.class);
         eventInserter = handleThread.getInserter(EventImpl.class);
+        beginStreamingNewEventsInserter = handleThread.getInserter(BeginStreamingNewEvents.class);
     }
 
     /**
@@ -104,6 +114,14 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
     public void stop() {
         handleThread.stop();
         writer.stop();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void beginStreamingNewEvents() throws InterruptedException {
+        beginStreamingNewEventsInserter.put(new BeginStreamingNewEvents());
     }
 
     /**
@@ -194,6 +212,21 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
             // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
             // this should never throw an InterruptedException.
             logger.error(EXCEPTION.getMarker(), "interrupted while attempting to call addEvent on writer", e);
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Notify the wrapped writer that we are now streaming new events.
+     */
+    private void beginStreamingNewEventsHandler(@NonNull final BeginStreamingNewEvents beginStreamingNewEvents) {
+        try {
+            writer.beginStreamingNewEvents();
+        } catch (final InterruptedException e) {
+            // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
+            // this should never throw an InterruptedException.
+            logger.error(
+                    EXCEPTION.getMarker(), "interrupted while attempting to call beginStreamingNewEvents on writer", e);
             Thread.currentThread().interrupt();
         }
     }

@@ -278,6 +278,7 @@ class AsyncPreConsensusEventWriterTests {
                 new SyncPreConsensusEventWriter(platformContext, fileManager));
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         for (final EventImpl event : events) {
             sequencer.assignStreamSequenceNumber(event);
@@ -360,6 +361,7 @@ class AsyncPreConsensusEventWriterTests {
                 new SyncPreConsensusEventWriter(platformContext, fileManager));
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         final Set<EventImpl> rejectedEvents = new HashSet<>();
 
@@ -432,6 +434,7 @@ class AsyncPreConsensusEventWriterTests {
         assertTrue(foundNonZeroMinimumGeneration);
     }
 
+    // TODO this should probably use the new method beginStreamingNewEvents()
     /**
      * Simulate a node restarting.
      */
@@ -469,6 +472,7 @@ class AsyncPreConsensusEventWriterTests {
                 new SyncPreConsensusEventWriter(platformContext, fileManager));
 
         writer1.start();
+        writer1.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
         final Set<EventImpl> rejectedEvents1 = new HashSet<>();
@@ -512,6 +516,7 @@ class AsyncPreConsensusEventWriterTests {
                 getStaticThreadManager(),
                 new SyncPreConsensusEventWriter(platformContext, fileManager));
         writer2.start();
+        writer2.beginStreamingNewEvents();
 
         final Set<EventImpl> rejectedEvents2 = new HashSet<>();
         for (final EventImpl event : events2) {
