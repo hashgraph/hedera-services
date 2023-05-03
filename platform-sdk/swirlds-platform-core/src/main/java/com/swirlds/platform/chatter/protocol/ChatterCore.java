@@ -144,10 +144,10 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
         final MessageProvider hashPeerInstance = hashOutput.createPeerInstance(
                 communicationState, d -> SendAction.SEND // always send hashes
-        );
+                );
         final MessageProvider selfEventPeerInstance = selfEventOutput.createPeerInstance(
                 communicationState, d -> SendAction.SEND // always send self events
-        );
+                );
         final MessageProvider otherEventPeerInstance = otherEventOutput.createPeerInstance(
                 communicationState,
                 new VariableTimeDelay<>(

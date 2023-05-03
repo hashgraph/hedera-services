@@ -558,10 +558,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         reconnectThrottle = new ReconnectThrottle(settings.getReconnect());
 
         topology = new StaticTopology(
-                selfId,
-                initialAddressBook.getSize(),
-                settings.getNumConnections(),
-                !chatterConfig.useChatter());
+                selfId, initialAddressBook.getSize(), settings.getNumConnections(), !chatterConfig.useChatter());
 
         fallenBehindManager = new FallenBehindManagerImpl(
                 selfId,
@@ -676,8 +673,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {
-    }
+    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -944,8 +940,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         if (chatterConfig.useChatter()) {
-            criticalQuorum =
-                    new CriticalQuorumImpl(initialAddressBook, false, chatterConfig.criticalQuorumSoftening());
+            criticalQuorum = new CriticalQuorumImpl(initialAddressBook, false, chatterConfig.criticalQuorumSoftening());
         } else {
             criticalQuorum = new CriticalQuorumImpl(initialAddressBook);
         }
@@ -1151,9 +1146,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         if (signedStateFromDisk != null) {
             logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                    signedStateFromDisk.getRound(),
-                    signedStateFromDisk.getConsensusTimestamp(),
-                    startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                            signedStateFromDisk.getRound(),
+                            signedStateFromDisk.getConsensusTimestamp(),
+                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
 
             buildEventHandlersFromState(initialState, stateHashSignQueueThread);
@@ -1262,8 +1257,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 syncManager,
                 shadowgraphExecutor,
                 true,
-                () -> {
-                });
+                () -> {});
 
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         final Runnable stopGossip = chatterConfig.useChatter()
@@ -1399,8 +1393,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     getAddressBook().getSize(),
                     syncMetrics,
                     consensusRef::get,
-                    sr -> {
-                    },
+                    sr -> {},
                     eventTaskCreator::addEvent,
                     syncManager,
                     shadowgraphExecutor,
@@ -1473,8 +1466,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                         .map(PeerInstance::communicationState)
                                         .toList()),
                         swirldStateManager.getTransactionPool(),
-                        new BelowIntCreationRule(
-                                intakeQueue::size, chatterConfig.chatterIntakeThrottle())),
+                        new BelowIntCreationRule(intakeQueue::size, chatterConfig.chatterIntakeThrottle())),
                 List.of(
                         StaticCreationRules::nullOtherParent,
                         otherParentTracker,
@@ -1705,7 +1697,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             if (oldStatus != newStatus) {
                 final PlatformStatus ns = newStatus;
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
+                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
                         .toString());
 
                 logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());

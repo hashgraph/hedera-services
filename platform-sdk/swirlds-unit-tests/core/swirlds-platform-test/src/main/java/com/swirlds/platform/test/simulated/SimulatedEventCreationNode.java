@@ -87,12 +87,11 @@ public class SimulatedEventCreationNode {
             final NodeId nodeId,
             final Function<Hash, EventImpl> eventByHash,
             final boolean shouldCreateEvents) {
-        final ChatterConfig chatterConfig = new TestConfigBuilder().getOrCreateConfig()
-                .getConfigData(ChatterConfig.class);
+        final ChatterConfig chatterConfig =
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(ChatterConfig.class);
         this.nodeId = nodeId;
         this.eventByHash = eventByHash;
-        criticalQuorum =
-                new CriticalQuorumImpl(addressBook, false, chatterConfig.criticalQuorumSoftening());
+        criticalQuorum = new CriticalQuorumImpl(addressBook, false, chatterConfig.criticalQuorumSoftening());
         final OtherParentTracker otherParentTracker = new OtherParentTracker();
         final LoggingEventCreationRules eventCreationRules = LoggingEventCreationRules.create(
                 List.of(() ->

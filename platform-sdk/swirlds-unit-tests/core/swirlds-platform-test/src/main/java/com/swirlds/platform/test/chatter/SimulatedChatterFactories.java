@@ -68,11 +68,9 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
         final ChatterCore<ChatterEvent> core = new ChatterCore<>(
                 OSTime.getInstance(),
                 ChatterEvent.class,
-                e -> {
-                },
+                e -> {},
                 chatterConfig,
-                (nodeId, ping) -> {
-                },
+                (nodeId, ping) -> {},
                 new DefaultMetrics(
                         NodeId.createMain(selfId),
                         registry,
