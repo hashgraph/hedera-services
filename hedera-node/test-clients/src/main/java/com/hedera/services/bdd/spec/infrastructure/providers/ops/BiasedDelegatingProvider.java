@@ -128,7 +128,8 @@ public class BiasedDelegatingProvider implements OpProvider {
             ((HapiTxnOp) op).deferStatusResolution();
         }
 
-        // if we have not set the payer when we created the operation e.g. `RandomAccountDeletion`, we should default to `UNIQUE_PAYER_ACCOUNT`
+        // if we have not set the payer when we created the operation e.g. `RandomAccountDeletion`, we should default to
+        // `UNIQUE_PAYER_ACCOUNT`
         // for the cases when we have set the payer e.g. `RandomOperationSignedBy`, do not overwrite it
         if (op.getPayer().isEmpty()) {
             if (isTxnOp) {

@@ -35,6 +35,7 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RandomHollowAccount implements OpProvider {
     // Added to hollow account names to differentiate them from the keys created for them
@@ -42,11 +43,14 @@ public class RandomHollowAccount implements OpProvider {
     public static final String KEY_PREFIX = "Fuzz#";
     public static final int DEFAULT_CEILING_NUM = 100;
     public static final long INITIAL_BALANCE = 1_000_000_000L;
+    public static final String LAZY_CREATE = "LAZY_CREATE";
     private int ceilingNum = DEFAULT_CEILING_NUM;
     private final HapiSpecRegistry registry;
 
     private final RegistrySourcedNameProvider<Key> keys;
     private final RegistrySourcedNameProvider<AccountID> accounts;
+
+    private final AtomicLong lazyCreateNum = new AtomicLong(0L);
 
     public RandomHollowAccount(
             HapiSpecRegistry registry,
@@ -82,12 +86,14 @@ public class RandomHollowAccount implements OpProvider {
     private HapiSpecOperation generateHollowAccount(String keyName) {
         return withOpContext((spec, opLog) -> {
             final var evmAddress = getEvmAddress(keyName);
+            final var currentLazyCreateNum = lazyCreateNum.getAndIncrement();
+            final var txnName = LAZY_CREATE + currentLazyCreateNum;
             final var op = cryptoTransfer(tinyBarsFromTo(GENESIS, evmAddress, ONE_HUNDRED_HBARS))
                     .hasKnownStatusFrom(standardOutcomesAnd(ACCOUNT_DELETED))
-                    .via("LAZY_CREATE");
+                    .via(txnName);
 
             final HapiGetTxnRecord hapiGetTxnRecord =
-                    getTxnRecord("LAZY_CREATE").andAllChildRecords().assertingNothingAboutHashes();
+                    getTxnRecord(txnName).andAllChildRecords().assertingNothingAboutHashes();
 
             allRunFor(spec, op, hapiGetTxnRecord);
 
