@@ -23,7 +23,14 @@ import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.ByteUtils;
+import com.swirlds.common.utility.StackTrace;
+import com.swirlds.common.utility.throttle.RateLimiter;
+import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -32,16 +39,21 @@ import java.util.concurrent.atomic.AtomicLong;
  * snapshot of this metric must be taken at least once every 34 minutes in order to get accurate data.
  */
 public class BusyTime {
+    private static final Logger log = LogManager.getLogger(BusyTime.class);
     /** passed to the accumulator method to indicate that work has started */
     private static final long WORK_START = 0;
     /** passed to the accumulator method to indicate that work has ended */
     private static final long WORK_END = 1;
     /** the initial value of status when the instance is created */
     private static final int INITIAL_STATUS = -1;
+    /** if an error occurs, do not write a log statement more often than this */
+    private static final Duration LOG_PERIOD = Duration.ofSeconds(5);
     /** An instance that provides the current time */
     private final IntegerEpochTime time;
     /** Used to atomically update and reset the time and status */
     private final AtomicLong accumulator;
+    /** limits the frequency of log statements */
+    private final RateLimiter logLimiter;
 
     /**
      * The default constructor, uses the {@link OSTime} instance to get the current time
@@ -59,6 +71,7 @@ public class BusyTime {
     public BusyTime(@NonNull final Time time) {
         this.time = new IntegerEpochTime(time);
         this.accumulator = new AtomicLong(ByteUtils.combineInts(this.time.getMicroTime(), INITIAL_STATUS));
+        this.logLimiter = new RateLimiter(time, LOG_PERIOD);
     }
 
     /**
@@ -159,6 +172,12 @@ public class BusyTime {
         if ((statusChange == WORK_START && !isIdle(currentStatus))
                 || (statusChange == WORK_END && isIdle(currentStatus))) {
             // this means that the metric has not been updated correctly, we will not change the value
+            if (logLimiter.request()) {
+                log.error(LogMarker.EXCEPTION.getMarker(),
+                        "BusyTime metric has been updated incorrectly. " +
+                        "Current status: {}, status change: {}, stack trace: \n{}",
+                        currentStatus, statusChange, StackTrace.getStackTrace().toString());
+            }
             return previousPair;
         }
         // the time elapsed since the last reset
