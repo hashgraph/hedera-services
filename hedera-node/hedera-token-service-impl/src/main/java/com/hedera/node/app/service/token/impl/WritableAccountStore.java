@@ -100,9 +100,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Returns the {@link Account} with the given {@link AccountID using {@link
-     * WritableKVState#getForModify(Object K)}}. If no such account exists, returns {@code
-     * Optional.empty()}
+     * Returns the {@link Account} with the given {@link AccountID}.
+     * If no such account exists, returns {@code Optional.empty()}
      *
      * @param id - the number of the account to be retrieved.
      */

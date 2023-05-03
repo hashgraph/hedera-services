@@ -103,8 +103,8 @@ public class CryptoCreateHandler implements TransactionHandler {
             throw new HandleException(validationResult);
         }
 
-        // TODO: Use the config and check if accounts can be created.
-        //  Currently this check is being done in `finishCryptoCreate` before `commit`
+        // FUTURE: Use the config and check if accounts can be created.
+        //  Currently, this check is being done in `finishCryptoCreate` before `commit`
 
         // validate payer account exists and has enough balance
         final var optionalPayer = accountStore.getForModify(
@@ -157,10 +157,12 @@ public class CryptoCreateHandler implements TransactionHandler {
             return INVALID_RENEWAL_PERIOD;
         }
         if (op.sendRecordThreshold() < 0L) {
-            return INVALID_SEND_RECORD_THRESHOLD; //FUTURE: should this return SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
+            return INVALID_SEND_RECORD_THRESHOLD; // FUTURE: should this return
+            // SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
         }
         if (op.receiveRecordThreshold() < 0L) {
-            return INVALID_RECEIVE_RECORD_THRESHOLD; //FUTURE: should this return RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
+            return INVALID_RECEIVE_RECORD_THRESHOLD; // FUTURE: should this return
+            // RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
         }
         if (op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT)) {
             return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
@@ -174,7 +176,7 @@ public class CryptoCreateHandler implements TransactionHandler {
      * @return OK if the transaction body is valid, otherwise return the appropriate error code
      */
     private ResponseCodeEnum validateSemantics() {
-        // TODO : Need to add validations that involve dynamic properties or state
+        // FUTURE : Need to add validations that involve dynamic properties or state
         return OK;
     }
 
@@ -193,7 +195,7 @@ public class CryptoCreateHandler implements TransactionHandler {
         if (newPayerBalance < 0) {
             throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
         }
-        // TODO: check if payer account is detached when we have started expiring accounts ?
+        // FUTURE: check if payer account is detached when we have started expiring accounts ?
     }
 
     /**

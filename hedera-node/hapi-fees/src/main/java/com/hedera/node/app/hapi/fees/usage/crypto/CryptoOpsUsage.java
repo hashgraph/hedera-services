@@ -44,8 +44,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class CryptoOpsUsage {
