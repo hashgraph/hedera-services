@@ -24,5 +24,16 @@ import com.swirlds.config.api.ConfigProperty;
 public record LedgerConfig(@ConfigProperty int maxAutoAssociations,
                            @ConfigProperty int numSystemAccounts,
                            @ConfigProperty long totalTinyBarFloat,
-                           @ConfigProperty String id) {
+                           @ConfigProperty String id,
+                           @ConfigProperty("changeHistorian.memorySecs") int changeHistorianMemorySecs,
+                           @ConfigProperty("autoRenewPeriod.maxDuration") long autoRenewPeriodMaxDuration,
+                           @ConfigProperty("autoRenewPeriod.minDuration") long autoRenewPeriodMinDuration,
+                           @ConfigProperty("xferBalanceChanges.maxLen") int xferBalanceChangesMaxLen,
+                           @ConfigProperty long fundingAccount,
+                           @ConfigProperty("transfers.maxLen") int transfersMaxLen,
+                           @ConfigProperty("tokenTransfers.maxLen") int tokenTransfersMaxLen,
+                           @ConfigProperty("nftTransfers.maxLen") int nftTransfersMaxLen,
+                           @ConfigProperty("records.maxQueryableByAccount") int recordsMaxQueryableByAccount,
+                           @ConfigProperty("schedule.txExpiryTimeSecs") int scheduleTxExpiryTimeSecs) {
+
 }

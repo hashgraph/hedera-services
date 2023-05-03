@@ -137,8 +137,6 @@ public class PropertyNames {
     public static final String HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS = "hedera.transaction.minValidityBufferSecs";
     public static final String HEDERA_RECORD_STREAM_RECORD_FILE_VERSION = "hedera.recordStream.recordFileVersion";
     public static final String HEDERA_RECORD_STREAM_SIG_FILE_VERSION = "hedera.recordStream.signatureFileVersion";
-
-    
     public static final String AUTO_RENEW_TARGET_TYPES = "autoRenew.targetTypes";
     public static final String AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN = "autorenew.numberOfEntitiesToScan";
     public static final String AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE =
@@ -164,6 +162,8 @@ public class PropertyNames {
     public static final String SCHEDULING_MAX_NUM = "scheduling.maxNumber";
     public static final String SCHEDULING_MAX_EXPIRATION_FUTURE_SECS = "scheduling.maxExpirationFutureSeconds";
     public static final String SCHEDULING_WHITE_LIST = "scheduling.whitelist";
+
+
     public static final String SIGS_EXPAND_FROM_IMMUTABLE_STATE = "sigs.expandFromImmutableState";
     public static final String STAKING_FEES_NODE_REWARD_PERCENT = "staking.fees.nodeRewardPercentage";
     public static final String STAKING_FEES_STAKING_REWARD_PERCENT = "staking.fees.stakingRewardPercentage";
