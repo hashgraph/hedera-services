@@ -27,6 +27,7 @@ import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import com.hedera.node.app.service.util.impl.records.UtilPrngRecordBuilder;
 import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -135,12 +136,15 @@ public class UtilPrngHandler implements TransactionHandler {
             }
             // generate binary string from the running hash of records
             return nMinusThreeHash.getValue();
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException e) {
             log.error("Interrupted exception while waiting for n-3 running hash", e);
             Thread.currentThread().interrupt();
-            throw new IllegalStateException(e);
-            // TODO: Handle exception to be thrown here. Need to decide on the status to be
-            //  thrown for any interrupted exception
+            throw new HandleException(ResponseCodeEnum.UNKNOWN);
+            // FUTURE : Need to decide on the response code for this case
+        } catch (ExecutionException e) {
+            log.error("Unable to get current n-3 running hash", e);
+            throw new HandleException(ResponseCodeEnum.UNKNOWN);
+            // FUTURE : Need to decide on the response code for this case
         }
     }
 
