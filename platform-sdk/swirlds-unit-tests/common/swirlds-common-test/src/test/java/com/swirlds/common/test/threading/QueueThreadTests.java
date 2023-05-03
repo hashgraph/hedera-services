@@ -19,6 +19,7 @@ package com.swirlds.common.test.threading;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -874,5 +875,55 @@ class QueueThreadTests {
         assertThat(queueThread).isEmpty();
         assertThat(maxSizeMetric.get()).isEqualTo(70);
         assertThat(minSizeMetric.get()).isZero();
+    }
+
+    @Test
+    @DisplayName("waitUntilNotBusy() Test")
+    void waitUntilNotBusyTest() throws InterruptedException {
+
+        final QueueThread<Runnable> queue = new QueueThreadConfiguration<Runnable>(getStaticThreadManager())
+                .setThreadName("test")
+                .setHandler(Runnable::run)
+                .build(true);
+
+        // waiting on an empty queue should not block
+        completeBeforeTimeout(
+                queue::waitUntilNotBusy,
+                Duration.ofSeconds(1),
+                "waitUntilNotBusy() should not block on an empty queue");
+
+        final CountDownLatch queueBlockingLatch = new CountDownLatch(1);
+        queue.add(() -> {
+            try {
+                queueBlockingLatch.await();
+            } catch (final InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        for (int i = 0; i < 100; i++) {
+            queue.add(() -> {});
+        }
+
+        // Waiting on the queue should block until we release the latch
+        final CountDownLatch finishedWaitingLatch = new CountDownLatch(1);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    try {
+                        queue.waitUntilNotBusy();
+                        finishedWaitingLatch.countDown();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build(true);
+
+        assertFalse(finishedWaitingLatch.await(100, MILLISECONDS));
+
+        // Once we unblock the queue, we should expect the waitUntilNotBusy() call to return
+        queueBlockingLatch.countDown();
+        assertTrue(finishedWaitingLatch.await(100, MILLISECONDS));
+
+        queue.stop();
     }
 }
