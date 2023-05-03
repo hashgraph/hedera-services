@@ -33,6 +33,7 @@ import com.hedera.node.app.service.util.impl.records.UtilPrngRecordBuilder;
 import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.fixtures.TestBase;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -256,7 +257,7 @@ class UtilPrngHandlerTest {
         given(future.get()).willThrow(new InterruptedException());
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, config, recordBuilder))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(HandleException.class);
         assertThat(recordBuilder.getPrngBytes()).isNull();
         assertThat(recordBuilder.getPrngNumber()).isNull();
     }
