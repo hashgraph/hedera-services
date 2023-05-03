@@ -48,7 +48,7 @@ AddressBookInitializer: Overriding the address book in the state with the addres
 ```
 and
 ```
-AddressBookTestingToolState: Validating test scenario 1.
+AddressBookTestingToolState: Validating test scenario GENESIS_FORCE_CONFIG_AB.
 ```
 
 * check that there are no errors or exceptions in the swirlds.log
@@ -60,8 +60,8 @@ Errors are logged if any of the following conditions are violated.
     * matches the addresses in the config.txt, including weight value.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
-    * the state saved address book was null
-    * the used address book text says `The Configuration Address Book Was Used.`
+    * The state saved address book was null
+    * The used address book text says `The Configuration Address Book Was Used.`
 
 ### Test Scenario 2: Unforced use of Config Address Book on Genesis
 #### Instructions
@@ -81,11 +81,11 @@ addressBookTestingTool.weightingBehavior, 1
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: The loaded signed state is null. The candidateAddressBook is set to genesisSwirldState.updateWeight(configAddressBook, null).
+AddressBookInitializer: The loaded signed state is null. The candidateAddressBook is set to the address book from config.txt.
 ```
 and
 ```
-AddressBookTestingToolState: Validating test scenario 2.
+AddressBookTestingToolState: Validating test scenario GENESIS_NORMAL.
 ```
 
 * check that there are no errors or exceptions in the swirlds.log
@@ -97,8 +97,8 @@ Errors are logged if any of the following conditions are violated.
     * contains the addresses in the config.txt with identical weight
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
-    * the state saved address book was null
-    * the used address book text says `The Configuration Address Book Was Used.`
+    * The state saved address book was null
+    * The used address book text says `The Configuration Address Book Was Used.`
 
 ## Testing Non-Genesis Behavior, No Software Upgrade
 
@@ -130,11 +130,12 @@ addressBookTestingTool.weightingBehavior, 1
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: No Software Upgrade. Continuing with software version 1 and using the loaded signed state's address book and weight values.
+BootstrapUtils: Not upgrading software, current software is version 1.
+AddressBookInitializer: Using the loaded signed state's address book and weight values.
 ```
 and
 ```
-AddressBookTestingToolState: Validating test scenario 3.
+AddressBookTestingToolState: Validating test scenario NO_UPGRADE_USE_SAVED_STATE.
 ```
 
 * check that there are no errors or exceptions in the swirlds.log
@@ -146,8 +147,8 @@ Errors are logged if any of the following conditions are violated.
     * matches the addresses in the config.txt, including weight value.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
-    * the state saved address book matches the content of the non-debug .txt file.
-    * the used address book has the text `The State Saved Address Book Was Used.`
+    * The state saved address book matches the content of the non-debug .txt file.
+    * The used address book text says `The State Saved Address Book Was Used.`
 
 ### Test Scenario 4: No Software Upgrade, Force Use of Config Address Book
 #### Instructions
@@ -182,7 +183,7 @@ AddressBookInitializer: Overriding the address book in the state with the addres
 ```
 and
 ```
-AddressBookTestingToolState: Validating test scenario 4.
+AddressBookTestingToolState: Validating test scenario NO_UPGRADE_FORCE_CONFIG_AB.
 ```
 
 * check that there are no errors or exceptions in the swirlds.log
@@ -194,8 +195,8 @@ Errors are logged if any of the following conditions are violated.
     * matches the addresses in the config.txt, including weight value.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
-    * the state saved address book is the same as what is in config.txt
-    * the used address book has the text `The Configuration Address Book Was Used.`
+    * The state saved address book is the same as what is in config.txt
+    * The used address book text says `The Configuration Address Book Was Used.`
 
 ### Test Scenario 5: Software Upgrade, Weighting Behavior 2
 #### Instructions
@@ -226,11 +227,12 @@ addressBookTestingTool.weightingBehavior, 2
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: Software Upgrade from version 1 to 2. The address book weight will be updated by the saved state's SwirldState.
+BootstrapUtils: Software upgrade in progress. Previous software version was 1, current version is 2.
+AddressBookInitializer: The address book weight may be updated by the application using data from the state snapshot.
 ```
 and
 ```
-AddressBookTestingToolState: Validating test scenario 5.
+AddressBookTestingToolState: Validating test scenario UPGRADE_WEIGHT_BEHAVIOR_2.
 ```
 
 * check that there are no errors or exceptions in the swirlds.log
@@ -243,7 +245,7 @@ Errors are logged if any of the following conditions are violated.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * The state saved address book is the same as what is in config.txt
-    * the used address book matches the content of the non-debug .txt file.
+    * The used address book matches the content of the non-debug .txt file.
 
 ### Test Scenario 6: Software Upgrade, Force Use Of Config Address Book
 #### Instructions
@@ -274,11 +276,12 @@ addressBookTestingTool.weightingBehavior, 2
 * check the swirlds.log for the text
 
 ```
+BootstrapUtils: Software upgrade in progress. Previous software version was 1, current version is 2.
 AddressBookInitializer: Overriding the address book in the state with the address book from config.txt
 ```
 and
 ```
-AddressBookTestingToolState: Validating test scenario 5.
+AddressBookTestingToolState: Validating test scenario UPGRADE_FORCE_CONFIG_AB.
 ```
 
 * check that there are no errors or exceptions in the swirlds.log
@@ -291,4 +294,4 @@ Errors are logged if any of the following conditions are violated.
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * The state saved address book is the same as what is in config.txt
-    * the used address book matches the content of the non-debug .txt file.
+    * The used address book text says `The Configuration Address Book Was Used.`

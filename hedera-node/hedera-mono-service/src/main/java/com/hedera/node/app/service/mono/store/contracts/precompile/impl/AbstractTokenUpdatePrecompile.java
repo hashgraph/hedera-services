@@ -100,8 +100,13 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
         validateTrue(validity == OK, validity);
         /* --- Execute the transaction and capture its results --- */
         switch (type) {
+                // We pass true as the last argument to indicate that even if the contract left the
+                // memo field unset in its call to this precompile, we want to leave the memo as-is
+                // instead of erasing it (with a protobuf message through HAPI we can distinguish
+                // between an unset memo and an empty/erased memo; but we cannot with an ABI-encoded
+                // call, so the more reasonable default here is to leave the memo as-is
             case UPDATE_TOKEN_INFO -> updateLogic.updateToken(
-                    updateOp, frame.getBlockValues().getTimestamp());
+                    updateOp, frame.getBlockValues().getTimestamp(), true);
             case UPDATE_TOKEN_KEYS -> updateLogic.updateTokenKeys(
                     updateOp, frame.getBlockValues().getTimestamp());
             case UPDATE_TOKEN_EXPIRY -> updateLogic.updateTokenExpiryInfo(updateOp);
