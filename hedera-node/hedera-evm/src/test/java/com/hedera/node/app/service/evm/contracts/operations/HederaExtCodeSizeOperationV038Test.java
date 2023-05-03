@@ -21,8 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import java.util.function.BiPredicate;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -39,7 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaExtCodeSizeOperationTest {
+class HederaExtCodeSizeOperationV038Test {
     private final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
     private final Address ethAddressInstance = Address.fromHexString(ethAddress);
     private final Account account = new SimpleAccount(ethAddressInstance, 0, Wei.ONE);
@@ -59,14 +61,14 @@ class HederaExtCodeSizeOperationTest {
     @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
-    HederaExtCodeSizeOperation subject;
+    HederaExtCodeSizeOperationV038 subject;
 
     @BeforeEach
     void setUp() {
         given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(10L);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(2L);
 
-        subject = new HederaExtCodeSizeOperation(gasCalculator, addressValidator);
+        subject = new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, a -> false);
     }
 
     @Test
@@ -109,5 +111,19 @@ class HederaExtCodeSizeOperationTest {
         // then:
         assertNull(opResult.getHaltReason());
         assertEquals(12L, opResult.getGasCost());
+    }
+
+    @Test
+    void successfulExecutionPrecompileAddress() {
+        // given:
+        subject = new HederaExtCodeSizeOperationV038(gasCalculator, addressValidator, a -> true);
+        given(mf.getStackItem(0)).willReturn(ethAddressInstance);
+        // when:
+        var opResult = subject.execute(mf, evm);
+        // then:
+        assertNull(opResult.getHaltReason());
+        assertEquals(12L, opResult.getGasCost());
+        verify(mf).pushStackItem(UInt256.ZERO);
+        verify(mf).popStackItems(1);
     }
 }

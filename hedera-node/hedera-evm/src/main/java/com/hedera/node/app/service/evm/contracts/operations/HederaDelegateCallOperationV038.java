@@ -14,48 +14,46 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.contracts.operation;
+package com.hedera.node.app.service.evm.contracts.operations;
 
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
-import java.util.Map;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.operation.StaticCallOperation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.operation.DelegateCallOperation;
 
 /**
- * Hedera adapted version of the {@link StaticCallOperation}.
+ * Hedera adapted version of the {@link DelegateCallOperation}.
  *
  * <p>Performs an existence check on the {@link Address} to be called Halts the execution of the EVM
  * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
  * not exist or it is deleted.
  */
-public class HederaStaticCallOperation extends StaticCallOperation {
-    private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Map<String, PrecompiledContract> precompiledContractMap;
+public class HederaDelegateCallOperationV038 extends DelegateCallOperation {
 
-    public HederaStaticCallOperation(
-            final GasCalculator gasCalculator,
-            final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
+    private final BiPredicate<Address, MessageFrame> addressValidator;
+    private final Predicate<Address> systemAccountDetector;
+
+    public HederaDelegateCallOperationV038(
+            GasCalculator gasCalculator,
+            BiPredicate<Address, MessageFrame> addressValidator,
+            Predicate<Address> systemAccountDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
-        this.precompiledContractMap = precompiledContractMap;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
-    public OperationResult execute(final MessageFrame frame, final EVM evm) {
-        return HederaOperationUtil.addressSignatureCheckExecution(
-                null,
+    public OperationResult execute(MessageFrame frame, EVM evm) {
+        return HederaEvmOperationsUtilV038.addressCheckExecution(
                 frame,
-                to(frame),
+                () -> to(frame),
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompiledContractMap,
-                () -> isStatic(frame));
+                systemAccountDetector,
+                () -> super.execute(frame, evm));
     }
 }

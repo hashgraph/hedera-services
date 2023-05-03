@@ -44,7 +44,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaSelfDestructOperationTest {
+class HederaSelfDestructOperationV038Test {
     private static final EntityNum beneficiary = EntityNum.fromLong(2_345);
     private static final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
     private static final Address eip1014Address = Address.fromHexString(ethAddress);
@@ -73,11 +73,12 @@ class HederaSelfDestructOperationTest {
     @Mock
     private EvmSigsVerifier evmSigsVerifier;
 
-    private HederaSelfDestructOperation subject;
+    private HederaSelfDestructOperationV038 subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator, evmSigsVerifier);
+        subject = new HederaSelfDestructOperationV038(
+                gasCalculator, txnCtx, addressValidator, evmSigsVerifier, a -> false);
 
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(gasCalculator.selfDestructOperationGasCost(any(), eq(Wei.ONE))).willReturn(2L);
@@ -226,6 +227,21 @@ class HederaSelfDestructOperationTest {
 
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
         assertEquals(2L, opResult.getGasCost());
+    }
+
+    @Test
+    void haltsWhenBeneficiaryIsSystemAccount() {
+        // given
+        subject = new HederaSelfDestructOperationV038(
+                gasCalculator, txnCtx, addressValidator, evmSigsVerifier, a -> true);
+        final var beneficiaryMirror = beneficiary.toEvmAddress();
+        given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
+        given(frame.getRecipientAddress()).willReturn(eip1014Address);
+        // when
+        final var result = subject.execute(frame, evm);
+        // then
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
+        assertEquals(2L, result.getGasCost());
     }
 
     private void givenRubberstampValidator() {

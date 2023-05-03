@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.contracts.operation;
+package com.hedera.node.app.service.evm.contracts.operations;
 
-import static com.hedera.node.app.service.mono.contracts.operation.CommonCallSetup.commonSetup;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.lenient;
 
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
-import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import java.util.Map;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -39,16 +32,16 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaCallOperationTest {
+class HederaDelegateCallOperationV038Test {
+
     @Mock
     private GasCalculator calc;
 
@@ -59,31 +52,27 @@ class HederaCallOperationTest {
     private EVM evm;
 
     @Mock
-    private HederaStackedWorldStateUpdater worldUpdater;
+    private WorldUpdater worldUpdater;
 
     @Mock
     private Account acc;
 
     @Mock
-    private EvmSigsVerifier sigsVerifier;
-
-    @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
-    @Mock
-    private Map<String, PrecompiledContract> precompiledContractMap;
-
     private final long cost = 100L;
-    private HederaCallOperation subject;
+
+    private HederaDelegateCallOperationV038 subject;
 
     @BeforeEach
     void setup() {
-        subject = new HederaCallOperation(sigsVerifier, calc, addressValidator, precompiledContractMap);
+        subject = new HederaDelegateCallOperationV038(calc, addressValidator, a -> false);
+        given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(any())).willReturn(acc);
     }
 
     @Test
     void haltWithInvalidAddr() {
-        commonSetup(evmMsgFrame, worldUpdater, acc);
         given(worldUpdater.get(any())).willReturn(null);
         given(calc.callOperationGasCost(
                         any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
@@ -94,7 +83,6 @@ class HederaCallOperationTest {
         given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
         given(addressValidator.test(any(), any())).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
@@ -105,73 +93,44 @@ class HederaCallOperationTest {
 
     @Test
     void executesAsExpected() {
-        commonSetup(evmMsgFrame, worldUpdater, acc);
         given(calc.callOperationGasCost(
                         any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
-        // and:
-        given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
-        // and:
+        for (int i = 0; i < 10; i++) {
+            lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));
+        }
         given(evmMsgFrame.stackSize()).willReturn(20);
         given(evmMsgFrame.getRemainingGas()).willReturn(cost);
         given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
-
-        given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
-        given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
-
         given(worldUpdater.get(any())).willReturn(acc);
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
-        given(acc.getAddress()).willReturn(Address.ZERO);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
-                .willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertNull(opRes.getHaltReason());
         assertEquals(opRes.getGasCost(), cost);
-
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
-                .willReturn(false);
-        var invalidSignaturesRes = subject.execute(evmMsgFrame, evm);
-        assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, invalidSignaturesRes.getHaltReason());
     }
 
     @Test
-    void staticCallsDoNotCheckSignatures() {
-        commonSetup(evmMsgFrame, worldUpdater, acc);
+    void executesPrecompileAsExpected() {
+        subject = new HederaDelegateCallOperationV038(calc, addressValidator, a -> true);
         given(calc.callOperationGasCost(
                         any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
-        // and:
-        given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
-        // and:
+        for (int i = 0; i < 10; i++) {
+            lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));
+        }
         given(evmMsgFrame.stackSize()).willReturn(20);
         given(evmMsgFrame.getRemainingGas()).willReturn(cost);
         given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
-
         given(worldUpdater.get(any())).willReturn(acc);
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
-        given(addressValidator.test(any(), any())).willReturn(true);
-        given(evmMsgFrame.isStatic()).willReturn(true);
 
         var opRes = subject.execute(evmMsgFrame, evm);
+
         assertNull(opRes.getHaltReason());
         assertEquals(opRes.getGasCost(), cost);
-        // and:
-        verifyNoInteractions(sigsVerifier);
     }
 }

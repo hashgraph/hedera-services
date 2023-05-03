@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
@@ -39,7 +40,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaExtCodeCopyOperationTest {
+class HederaExtCodeCopyOperationV038Test {
 
     @Mock
     private WorldUpdater worldUpdater;
@@ -56,7 +57,7 @@ class HederaExtCodeCopyOperationTest {
     @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
-    private HederaExtCodeCopyOperation subject;
+    private HederaExtCodeCopyOperationV038 subject;
 
     private final String ETH_ADDRESS = "0xc257274276a4e539741ca11b590b9447b26a8051";
     private final Address ETH_ADDRESS_INSTANCE = Address.fromHexString(ETH_ADDRESS);
@@ -69,7 +70,7 @@ class HederaExtCodeCopyOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HederaExtCodeCopyOperation(gasCalculator, addressValidator);
+        subject = new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, a -> false);
     }
 
     @Test
@@ -124,5 +125,33 @@ class HederaExtCodeCopyOperationTest {
         // then:
         assertNull(opResult.getHaltReason());
         assertEquals(ACTUAL_COST, opResult.getGasCost());
+    }
+
+    @Test
+    void successfulExecutionPrecompileAddress() {
+        // given:
+        subject = new HederaExtCodeCopyOperationV038(gasCalculator, addressValidator, a -> true);
+        given(mf.getStackItem(0)).willReturn(ETH_ADDRESS_INSTANCE);
+        given(mf.getStackItem(1)).willReturn(MEM_OFFSET);
+        given(mf.getStackItem(2)).willReturn(MEM_OFFSET);
+        given(mf.getStackItem(3)).willReturn(NUM_BYTES);
+        given(gasCalculator.extCodeCopyOperationGasCost(mf, clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES)))
+                .willReturn(OPERATION_COST);
+        given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
+        // and:
+        given(gasCalculator.extCodeCopyOperationGasCost(mf, clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES)))
+                .willReturn(OPERATION_COST);
+        given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
+
+        // when:
+        var opResult = subject.execute(mf, evm);
+
+        // then:
+        assertNull(opResult.getHaltReason());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
+        verify(mf)
+                .writeMemory(
+                        clampedToLong(MEM_OFFSET), clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES), Bytes.EMPTY);
+        verify(mf).popStackItems(4);
     }
 }

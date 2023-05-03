@@ -16,33 +16,15 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
@@ -57,6 +39,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -66,14 +49,14 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaOperationUtilTest {
+class HederaOperationUtilV038Test {
     private static final Address PRETEND_RECIPIENT_ADDR = Address.ALTBN128_ADD;
     private static final Address PRETEND_CONTRACT_ADDR = Address.ALTBN128_MUL;
 
@@ -99,7 +82,7 @@ class HederaOperationUtilTest {
     private Supplier<Operation.OperationResult> executionSupplier;
 
     @Mock
-    private Map<String, PrecompiledContract> precompiledContractMap;
+    private Predicate<Address> systemAccountDetector;
 
     @Mock
     private WorldLedgers ledgers;
@@ -107,27 +90,10 @@ class HederaOperationUtilTest {
     @Mock
     private BooleanSupplier isChildStatic;
 
+    @Mock
+    private PrecompileContractRegistry precompileContractRegistry;
+
     private final long expectedHaltGas = 10L;
-
-    @Test
-    void shortCircuitsForPrecompileSigCheck() {
-        final var degenerateResult = new Operation.OperationResult(0, null);
-        given(precompiledContractMap.containsKey(PRETEND_RECIPIENT_ADDR.toShortHexString()))
-                .willReturn(true);
-        given(executionSupplier.get()).willReturn(degenerateResult);
-
-        final var result = HederaOperationUtil.addressSignatureCheckExecution(
-                sigsVerifier,
-                messageFrame,
-                PRETEND_RECIPIENT_ADDR,
-                gasSupplier,
-                executionSupplier,
-                (a, b) -> false,
-                precompiledContractMap,
-                isChildStatic);
-
-        assertSame(degenerateResult, result);
-    }
 
     @Test
     void shortCircuitsForStaticChild() {
@@ -135,14 +101,14 @@ class HederaOperationUtilTest {
         given(executionSupplier.get()).willReturn(degenerateResult);
         given(isChildStatic.getAsBoolean()).willReturn(true);
 
-        final var result = HederaOperationUtil.addressSignatureCheckExecution(
+        final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
                 sigsVerifier,
                 messageFrame,
                 PRETEND_RECIPIENT_ADDR,
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompiledContractMap,
+                systemAccountDetector,
                 isChildStatic);
 
         assertSame(degenerateResult, result);
@@ -155,14 +121,14 @@ class HederaOperationUtilTest {
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
 
         // when:
-        final var result = HederaOperationUtil.addressSignatureCheckExecution(
+        final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
                 sigsVerifier,
                 messageFrame,
                 Address.ZERO,
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> false,
-                precompiledContractMap,
+                systemAccountDetector,
                 isChildStatic);
 
         // then:
@@ -189,14 +155,14 @@ class HederaOperationUtilTest {
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
 
         // when:
-        final var result = HederaOperationUtil.addressSignatureCheckExecution(
+        final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
                 sigsVerifier,
                 messageFrame,
                 Address.ZERO,
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompiledContractMap,
+                systemAccountDetector,
                 isChildStatic);
 
         // then:
@@ -210,6 +176,27 @@ class HederaOperationUtilTest {
                 .hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers, ContractCall);
         verify(gasSupplier).getAsLong();
         verify(executionSupplier, never()).get();
+    }
+
+    @Test
+    void shortCircuitsPrecompileAddressCall() {
+        // given:
+        given(systemAccountDetector.test(Address.ECREC)).willReturn(true);
+        final var operationResult = mock(Operation.OperationResult.class);
+        given(executionSupplier.get()).willReturn(operationResult);
+        // when:
+        final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
+                sigsVerifier,
+                messageFrame,
+                Address.ECREC,
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> true,
+                systemAccountDetector,
+                isChildStatic);
+        // then:
+        assertEquals(operationResult, result);
+        verify(executionSupplier).get();
     }
 
     @Test
@@ -228,14 +215,14 @@ class HederaOperationUtilTest {
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
 
         // when:
-        final var result = HederaOperationUtil.addressSignatureCheckExecution(
+        final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
                 sigsVerifier,
                 messageFrame,
                 Address.ZERO,
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompiledContractMap,
+                systemAccountDetector,
                 isChildStatic);
 
         // then:
@@ -267,14 +254,14 @@ class HederaOperationUtilTest {
         given(executionSupplier.get()).willReturn(new Operation.OperationResult(expectedSuccessfulGas, null));
 
         // when:
-        final var result = HederaOperationUtil.addressSignatureCheckExecution(
+        final var result = HederaOperationUtilV038.addressSignatureCheckExecution(
                 sigsVerifier,
                 messageFrame,
                 Address.ZERO,
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompiledContractMap,
+                systemAccountDetector,
                 isChildStatic);
 
         // then:

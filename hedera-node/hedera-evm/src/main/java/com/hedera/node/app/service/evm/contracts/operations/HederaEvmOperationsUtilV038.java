@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiPredicate;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -27,28 +29,35 @@ import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 
-public interface HederaEvmOperationsUtil {
+public interface HederaEvmOperationsUtilV038 {
 
     /**
      * An extracted address check and execution of extended Hedera Operations. Halts the execution
      * of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
      * the account does not exist, or it is deleted.
      *
-     * @param frame The current message frame
-     * @param supplierAddressBytes Supplier for the address bytes
-     * @param supplierHaltGasCost Supplier for the gas cost
-     * @param supplierExecution Supplier with the execution
-     * @param addressValidator Address validator predicate
+     * @param frame                        The current message frame
+     * @param supplierAddressBytes         Supplier for the address bytes
+     * @param supplierHaltGasCost          Supplier for the gas cost
+     * @param supplierExecution            Supplier with the execution
+     * @param addressValidator             Address validator predicate
+     * @param systemAccountDetector  Hedera system account detector
+     * @param systemAccountExecutionSupplier  Supplier for system account execution
      * @return The operation result of the execution
      */
     static Operation.OperationResult addressCheckExecution(
-            MessageFrame frame,
-            Supplier<Bytes> supplierAddressBytes,
-            LongSupplier supplierHaltGasCost,
-            Supplier<Operation.OperationResult> supplierExecution,
-            BiPredicate<Address, MessageFrame> addressValidator) {
+            @NonNull final MessageFrame frame,
+            @NonNull final Supplier<Bytes> supplierAddressBytes,
+            @NonNull final LongSupplier supplierHaltGasCost,
+            @NonNull final Supplier<Operation.OperationResult> supplierExecution,
+            @NonNull final BiPredicate<Address, MessageFrame> addressValidator,
+            @NonNull final Predicate<Address> systemAccountDetector,
+            @NonNull final Supplier<Operation.OperationResult> systemAccountExecutionSupplier) {
         try {
             final var address = Words.toAddress(supplierAddressBytes.get());
+            if (systemAccountDetector.test(address)) {
+                return systemAccountExecutionSupplier.get();
+            }
             if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
                 return new Operation.OperationResult(
                         supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
@@ -58,6 +67,9 @@ public interface HederaEvmOperationsUtil {
         } catch (final FixedStack.UnderflowException ufe) {
             return new Operation.OperationResult(
                     supplierHaltGasCost.getAsLong(), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
+        } catch (final FixedStack.OverflowException ofe) {
+            return new Operation.OperationResult(
+                    supplierHaltGasCost.getAsLong(), ExceptionalHaltReason.TOO_MANY_STACK_ITEMS);
         }
     }
 }

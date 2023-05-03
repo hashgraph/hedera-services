@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.evm.contracts.operations;
+package com.hedera.node.app.service.mono.contracts.operation;
 
 /*
  * -
@@ -38,42 +38,54 @@ package com.hedera.node.app.service.evm.contracts.operations;
  *
  */
 
-import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
-
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.operation.ExtCodeCopyOperation;
+import org.hyperledger.besu.evm.operation.CallCodeOperation;
 
 /**
- * Hedera adapted version of the {@link ExtCodeCopyOperation}.
+ * Hedera adapted version of the {@link CallCodeOperation}.
  *
- * <p>Performs an existence check on the requested {@link Address} Halts the execution of the EVM
+ * <p>Performs an existence check on the {@link Address} to be called Halts the execution of the EVM
  * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
  * not exist or it is deleted.
+ *
+ * <p>If the target {@link Address} has {@link MerkleAccount#isReceiverSigRequired()} set to true,
+ * verification of the provided signature is performed. If the signature is not active, the
+ * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
-public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
-
+public class HederaCallCodeOperationV038 extends CallCodeOperation {
+    private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
+    private final Predicate<Address> systemAccountDetector;
 
-    public HederaExtCodeCopyOperation(
-            GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
+    public HederaCallCodeOperationV038(
+            final EvmSigsVerifier sigsVerifier,
+            final GasCalculator gasCalculator,
+            final BiPredicate<Address, MessageFrame> addressValidator,
+            final Predicate<Address> systemAccountDetector) {
         super(gasCalculator);
+        this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
-    public OperationResult execute(MessageFrame frame, EVM evm) {
-        final long memOffset = clampedToLong(frame.getStackItem(1));
-        final long numBytes = clampedToLong(frame.getStackItem(3));
-
-        return HederaEvmOperationsUtil.addressCheckExecution(
+    public OperationResult execute(final MessageFrame frame, final EVM evm) {
+        return HederaOperationUtilV038.addressSignatureCheckExecution(
+                sigsVerifier,
                 frame,
-                () -> frame.getStackItem(0),
-                () -> cost(frame, memOffset, numBytes, true),
+                to(frame),
+                () -> cost(frame),
                 () -> super.execute(frame, evm),
-                addressValidator);
+                addressValidator,
+                systemAccountDetector,
+                () -> isStatic(frame));
     }
 }

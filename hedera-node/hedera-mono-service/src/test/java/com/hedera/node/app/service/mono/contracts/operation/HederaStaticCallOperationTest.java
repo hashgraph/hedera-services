@@ -45,9 +45,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import java.util.Map;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -55,6 +56,7 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,17 +81,20 @@ class HederaStaticCallOperationTest {
     private Account acc;
 
     @Mock
+    private EvmSigsVerifier sigsVerifier;
+
+    @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     @Mock
-    private Predicate<Address> systemAccountDetector;
+    private Map<String, PrecompiledContract> precompiledContractMap;
 
     private final long cost = 100L;
     private HederaStaticCallOperation subject;
 
     @BeforeEach
     void setup() {
-        subject = new HederaStaticCallOperation(calc, addressValidator, systemAccountDetector);
+        subject = new HederaStaticCallOperation(calc, addressValidator, precompiledContractMap);
     }
 
     @Test

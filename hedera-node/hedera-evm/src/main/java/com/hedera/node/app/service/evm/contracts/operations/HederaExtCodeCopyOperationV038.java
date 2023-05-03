@@ -41,6 +41,9 @@ package com.hedera.node.app.service.evm.contracts.operations;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -54,26 +57,37 @@ import org.hyperledger.besu.evm.operation.ExtCodeCopyOperation;
  * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
  * not exist or it is deleted.
  */
-public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
+public class HederaExtCodeCopyOperationV038 extends ExtCodeCopyOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
+    private final Predicate<Address> systemAccountDetector;
 
-    public HederaExtCodeCopyOperation(
-            GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
+    public HederaExtCodeCopyOperationV038(
+            GasCalculator gasCalculator,
+            BiPredicate<Address, MessageFrame> addressValidator,
+            Predicate<Address> systemAccountDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
         final long memOffset = clampedToLong(frame.getStackItem(1));
         final long numBytes = clampedToLong(frame.getStackItem(3));
-
-        return HederaEvmOperationsUtil.addressCheckExecution(
+        final Supplier<OperationResult> systemAccountExecutionSupplier = () -> {
+            final var sourceOffset = clampedToLong(frame.getStackItem(2));
+            frame.writeMemory(memOffset, sourceOffset, numBytes, Bytes.EMPTY);
+            frame.popStackItems(4); // clear all the input arguments from the stack
+            return new OperationResult(cost(frame, memOffset, numBytes, true), null);
+        };
+        return HederaEvmOperationsUtilV038.addressCheckExecution(
                 frame,
                 () -> frame.getStackItem(0),
                 () -> cost(frame, memOffset, numBytes, true),
                 () -> super.execute(frame, evm),
-                addressValidator);
+                addressValidator,
+                systemAccountDetector,
+                systemAccountExecutionSupplier);
     }
 }

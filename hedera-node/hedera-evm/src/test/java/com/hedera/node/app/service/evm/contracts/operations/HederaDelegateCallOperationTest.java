@@ -16,6 +16,28 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+/*
+ * -
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ *
+ */
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -66,7 +88,7 @@ class HederaDelegateCallOperationTest {
 
     @BeforeEach
     void setup() {
-        subject = new HederaDelegateCallOperation(calc, addressValidator, a -> false);
+        subject = new HederaDelegateCallOperation(calc, addressValidator);
         given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.get(any())).willReturn(acc);
     }
@@ -108,28 +130,6 @@ class HederaDelegateCallOperationTest {
         given(addressValidator.test(any(), any())).willReturn(true);
 
         var opRes = subject.execute(evmMsgFrame, evm);
-        assertNull(opRes.getHaltReason());
-        assertEquals(opRes.getGasCost(), cost);
-    }
-
-    @Test
-    void executesPrecompileAsExpected() {
-        subject = new HederaDelegateCallOperation(calc, addressValidator, a -> true);
-        given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
-                .willReturn(cost);
-        for (int i = 0; i < 10; i++) {
-            lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));
-        }
-        given(evmMsgFrame.stackSize()).willReturn(20);
-        given(evmMsgFrame.getRemainingGas()).willReturn(cost);
-        given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
-        given(worldUpdater.get(any())).willReturn(acc);
-        given(acc.getBalance()).willReturn(Wei.of(100));
-        given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
-
-        var opRes = subject.execute(evmMsgFrame, evm);
-
         assertNull(opRes.getHaltReason());
         assertEquals(opRes.getGasCost(), cost);
     }

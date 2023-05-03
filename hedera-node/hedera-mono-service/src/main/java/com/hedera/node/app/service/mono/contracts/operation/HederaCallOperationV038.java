@@ -21,15 +21,14 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import java.util.Map;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallOperation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
  * Hedera adapted version of the {@link CallOperation} for version EVM v0.34
@@ -43,22 +42,22 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * to true, verification of the provided signature is performed. If the signature is not active, the
  * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
-public class HederaCallOperationV034 extends CallOperation {
+public class HederaCallOperationV038 extends CallOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Map<String, PrecompiledContract> precompiledContractMap;
+    private final Predicate<Address> systemAccountDetector;
     private final GlobalDynamicProperties globalDynamicProperties;
 
-    public HederaCallOperationV034(
+    public HederaCallOperationV038(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap,
+            final Predicate<Address> systemAccountDetector,
             final GlobalDynamicProperties globalDynamicProperties) {
         super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
-        this.precompiledContractMap = precompiledContractMap;
+        this.systemAccountDetector = systemAccountDetector;
         this.globalDynamicProperties = globalDynamicProperties;
     }
 
@@ -67,14 +66,14 @@ public class HederaCallOperationV034 extends CallOperation {
         if (globalDynamicProperties.isImplicitCreationEnabled() && isLazyCreateAttempt(frame)) {
             return super.execute(frame, evm);
         } else {
-            return HederaOperationUtil.addressSignatureCheckExecution(
+            return HederaOperationUtilV038.addressSignatureCheckExecution(
                     sigsVerifier,
                     frame,
                     to(frame),
                     () -> cost(frame),
                     () -> super.execute(frame, evm),
                     addressValidator,
-                    precompiledContractMap,
+                    systemAccountDetector,
                     () -> isStatic(frame));
         }
     }

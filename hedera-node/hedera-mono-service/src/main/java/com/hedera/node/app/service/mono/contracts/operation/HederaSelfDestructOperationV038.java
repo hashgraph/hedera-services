@@ -24,6 +24,7 @@ import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -45,20 +46,23 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
  * HederaExceptionalHaltReason#SELF_DESTRUCT_TO_SELF} if the beneficiary address is the same as the
  * address being destructed
  */
-public class HederaSelfDestructOperation extends SelfDestructOperation {
+public class HederaSelfDestructOperationV038 extends SelfDestructOperation {
     private final TransactionContext txnCtx;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final EvmSigsVerifier sigsVerifier;
+    private final Predicate<Address> systemAccountDetector;
 
-    public HederaSelfDestructOperation(
+    public HederaSelfDestructOperationV038(
             final GasCalculator gasCalculator,
             final TransactionContext txnCtx,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final EvmSigsVerifier sigsVerifier) {
+            final EvmSigsVerifier sigsVerifier,
+            final Predicate<Address> systemAccountDetector) {
         super(gasCalculator);
         this.txnCtx = txnCtx;
         this.addressValidator = addressValidator;
         this.sigsVerifier = sigsVerifier;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
@@ -66,7 +70,7 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var beneficiaryAddress = Words.toAddress(frame.getStackItem(0));
         final var toBeDeleted = frame.getRecipientAddress();
-        if (!addressValidator.test(beneficiaryAddress, frame)) {
+        if (systemAccountDetector.test(beneficiaryAddress) || !addressValidator.test(beneficiaryAddress, frame)) {
             return reversionWith(null, HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
         }
         final var beneficiary = updater.get(beneficiaryAddress);

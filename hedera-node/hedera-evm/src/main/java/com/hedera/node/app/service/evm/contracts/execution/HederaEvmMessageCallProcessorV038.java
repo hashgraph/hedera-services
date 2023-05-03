@@ -21,38 +21,46 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCES
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /** Overrides Besu precompiler handling, so we can break model layers in Precompile execution */
-public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
+public class HederaEvmMessageCallProcessorV038 extends MessageCallProcessor {
     private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE =
             Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
 
     protected final Map<Address, PrecompiledContract> hederaPrecompiles;
     protected long gasRequirement;
     protected Bytes output;
+    private final Predicate<Address> ethNativePrecompileDetector;
+    private final Predicate<Address> systemAccountDetector;
 
-    public HederaEvmMessageCallProcessor(
+    public HederaEvmMessageCallProcessorV038(
             final EVM evm,
             final PrecompileContractRegistry precompiles,
-            final Map<String, PrecompiledContract> hederaPrecompileList) {
+            final Map<String, PrecompiledContract> hederaPrecompileList,
+            final Predicate<Address> systemAccountDetector) {
         super(evm, precompiles);
         hederaPrecompiles = new HashMap<>();
         hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
+        this.ethNativePrecompileDetector = addr -> precompiles.get(addr) != null;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
@@ -61,12 +69,39 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
         if (hederaPrecompile != null) {
             executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
         } else {
-            // Non-precompile execution flow
-            if (frame.getValue().greaterThan(Wei.ZERO)) {
+            // Non-system-precompile execution flow
+            final var frameHasValue = frame.getValue().greaterThan(Wei.ZERO);
+            if (systemAccountDetector.test(frame.getContractAddress())) {
+                // we have a non-system-contract call to a system address
+                if (!ethNativePrecompileDetector.test(frame.getContractAddress())) {
+                    // a call to a system address, on which a native precompile does not exist, should always fail
+                    frame.setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
+                    frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+                    operationTracer.tracePostExecution(
+                            frame,
+                            new Operation.OperationResult(
+                                    frame.getRemainingGas(), ExceptionalHaltReason.PRECOMPILE_ERROR));
+                    return;
+                } else if (frameHasValue) {
+                    // cannot send value to native precompile calls, since there are collisions with system account
+                    // and value will be transferred to the system account, which is undesired
+                    frame.setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_FEE_SUBMITTED));
+                    frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+                    operationTracer.tracePostExecution(
+                            frame,
+                            new Operation.OperationResult(
+                                    frame.getRemainingGas(), HederaExceptionalHaltReason.INVALID_FEE_SUBMITTED));
+                    return;
+                }
+            } else if (frameHasValue) {
                 final var updater = (AbstractLedgerEvmWorldUpdater) frame.getWorldUpdater();
                 if (updater.isTokenAddress(frame.getRecipientAddress())) {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+                    operationTracer.tracePostExecution(
+                            frame,
+                            new Operation.OperationResult(
+                                    frame.getRemainingGas(), ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
                     return;
                 } else if (updater.get(frame.getRecipientAddress()) == null) {
                     executeLazyCreate(frame, operationTracer);

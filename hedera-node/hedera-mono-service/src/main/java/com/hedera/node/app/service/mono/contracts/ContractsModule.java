@@ -27,6 +27,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessorV038;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperationExternalizer;
@@ -188,19 +189,8 @@ public interface ContractsModule {
     static MessageCallProcessor provideV_0_30MessageCallProcessor(
             final @V_0_30 EVM evm,
             final @V_0_30 PrecompileContractRegistry precompiles,
-            final Map<String, PrecompiledContract> hederaPrecompileList,
-            final @Named("HederaPrecompiledContractsDetector") Predicate<Address> hederaPrecompiledContractsDetector) {
-        return new HederaMessageCallProcessor(
-                evm, precompiles, hederaPrecompileList, hederaPrecompiledContractsDetector);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
-    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
-    static ContractCreationProcessor provideV_0_30ContractCreateProcessor(
-            final GasCalculator gasCalculator, final @V_0_30 EVM evm, Set<ContractValidationRule> validationRules) {
-        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
+            final Map<String, PrecompiledContract> hederaPrecompileList) {
+        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList);
     }
 
     @Provides
@@ -211,10 +201,8 @@ public interface ContractsModule {
             final @V_0_34 EVM evm,
             final @V_0_34 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
-            final InfrastructureFactory infrastructureFactory,
-            final @Named("HederaPrecompiledContractsDetector") Predicate<Address> hederaPrecompiledContractsDetector) {
-        return new HederaMessageCallProcessor(
-                evm, precompiles, hederaPrecompileList, infrastructureFactory, hederaPrecompiledContractsDetector);
+            final InfrastructureFactory infrastructureFactory) {
+        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList, infrastructureFactory);
     }
 
     @Provides
@@ -227,8 +215,17 @@ public interface ContractsModule {
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory,
             final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
-        return new HederaMessageCallProcessor(
+        return new HederaMessageCallProcessorV038(
                 evm, precompiles, hederaPrecompileList, infrastructureFactory, hederaSystemAccountDetector);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
+    static ContractCreationProcessor provideV_0_30ContractCreateProcessor(
+            final GasCalculator gasCalculator, final @V_0_30 EVM evm, Set<ContractValidationRule> validationRules) {
+        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
     }
 
     @Provides

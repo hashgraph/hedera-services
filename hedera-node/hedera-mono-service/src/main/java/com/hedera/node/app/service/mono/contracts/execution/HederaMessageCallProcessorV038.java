@@ -21,7 +21,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessorV038;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
@@ -47,27 +47,29 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
+public class HederaMessageCallProcessorV038 extends HederaEvmMessageCallProcessorV038 {
     private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
     public static final Bytes INVALID_TRANSFER = Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
     private final Predicate<Address> isNativePrecompileCheck;
     private InfrastructureFactory infrastructureFactory;
 
-    public HederaMessageCallProcessor(
-            final EVM evm,
-            final PrecompileContractRegistry precompiles,
-            final Map<String, PrecompiledContract> hederaPrecompileList) {
-        super(evm, precompiles, hederaPrecompileList);
-        isNativePrecompileCheck = addr -> precompiles.get(addr) != null;
-    }
-
-    public HederaMessageCallProcessor(
+    public HederaMessageCallProcessorV038(
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
-            final InfrastructureFactory infrastructureFactory) {
-        this(evm, precompiles, hederaPrecompileList);
+            Predicate<Address> systemAccountDetector) {
+        super(evm, precompiles, hederaPrecompileList, systemAccountDetector);
+        isNativePrecompileCheck = addr -> precompiles.get(addr) != null;
+    }
+
+    public HederaMessageCallProcessorV038(
+            final EVM evm,
+            final PrecompileContractRegistry precompiles,
+            final Map<String, PrecompiledContract> hederaPrecompileList,
+            final InfrastructureFactory infrastructureFactory,
+            final Predicate<Address> systemAccountDetector) {
+        this(evm, precompiles, hederaPrecompileList, systemAccountDetector);
         this.infrastructureFactory = infrastructureFactory;
     }
 
