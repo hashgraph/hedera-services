@@ -23,5 +23,14 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("hedera")
 public record HederaConfig(@ConfigProperty long firstUserEntity,
                            @ConfigProperty long realm,
-                           @ConfigProperty long shard) {
+                           @ConfigProperty long shard,
+                           @ConfigProperty("recordStream.sidecarMaxSizeMb") int recordStreamSidecarMaxSizeMb,
+                           @ConfigProperty("transaction.maxMemoUtf8Bytes") int transactionMaxMemoUtf8Bytes,
+                           @ConfigProperty("transaction.maxValidDuration") long transactionMaxValidDuration,
+                           @ConfigProperty("transaction.minValidDuration") long transactionMinValidDuration,
+                           @ConfigProperty("transaction.minValidityBufferSecs") int transactionMinValidityBufferSecs,
+                           @ConfigProperty("recordStream.recordFileVersion") int recordStreamRecordFileVersion,
+                           @ConfigProperty("recordStream.signatureFileVersion") int recordStreamSignatureFileVersion) {
+
+
 }

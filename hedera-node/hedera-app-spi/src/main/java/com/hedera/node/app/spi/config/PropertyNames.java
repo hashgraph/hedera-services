@@ -92,12 +92,10 @@ public class PropertyNames {
     public static final String CONTRACTS_STORAGE_SLOT_PRICE_TIERS = "contract.storageSlotPriceTiers";
     public static final String CONTRACTS_DEFAULT_LIFETIME = "contracts.defaultLifetime";
     public static final String CONTRACTS_KNOWN_BLOCK_HASH = "contracts.knownBlockHash";
-
     public static final String CONTRACTS_KEYS_LEGACY_ACTIVATIONS = "contracts.keys.legacyActivations";
     public static final String CONTRACTS_LOCAL_CALL_EST_RET_BYTES = "contracts.localCall.estRetBytes";
     public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";
     public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS = "contracts.allowAutoAssociations";
-
     public static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
     public static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
     public static final String CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS = "contracts.withSpecialHapiSigsAccess";
@@ -139,6 +137,8 @@ public class PropertyNames {
     public static final String HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS = "hedera.transaction.minValidityBufferSecs";
     public static final String HEDERA_RECORD_STREAM_RECORD_FILE_VERSION = "hedera.recordStream.recordFileVersion";
     public static final String HEDERA_RECORD_STREAM_SIG_FILE_VERSION = "hedera.recordStream.signatureFileVersion";
+
+    
     public static final String AUTO_RENEW_TARGET_TYPES = "autoRenew.targetTypes";
     public static final String AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN = "autorenew.numberOfEntitiesToScan";
     public static final String AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE =

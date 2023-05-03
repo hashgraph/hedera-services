@@ -28,6 +28,9 @@ public record FilesConfig(@ConfigProperty long addressBook,
                           @ConfigProperty long hapiPermissions,
                           @ConfigProperty long nodeDetails,
                           //@ConfigProperty Pair<Long, Long> softwareUpdateRange,
-                          @ConfigProperty long throttleDefinitions) {
+                          @ConfigProperty long throttleDefinitions,
+                          @ConfigProperty long maxNumber,
+                          @ConfigProperty int maxSizeKb) {
+
 
 }

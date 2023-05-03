@@ -20,11 +20,10 @@ package com.hedera.node.app.spi.config.data;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
-@ConfigData("staking")
-public record StakingConfig(@ConfigProperty long periodMins,
-                            @ConfigProperty("rewardHistory.numStoredPeriods") int rewardHistoryNumStoredPeriods
-                            //ConfigProperty("startupHelper.recompute") Set<StakeStartupHelper.RecomputeType> startupHelperRecompute
-) {
-
+@ConfigData("fees")
+public record FeesConfig(@ConfigProperty int minCongestionPeriod,
+                         // CongestionMultipliers percentCongestionMultipliers,
+                         // EntityScaleFactors percentUtilizationScaleFactors,
+                         @ConfigProperty int tokenTransferUsageMultiplier) {
 
 }
