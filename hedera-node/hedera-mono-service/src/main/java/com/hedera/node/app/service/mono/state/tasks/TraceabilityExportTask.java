@@ -164,11 +164,19 @@ public class TraceabilityExportTask implements SystemTask {
     }
 
     private boolean needsBackPressure(final Instant now, final MerkleNetworkContext curNetworkCtx) {
-        return inHighGasRegime(now)
+        final var throttleCheckTime =
+                handleThrottling.gasLimitThrottle().usageSnapshot().lastDecisionTime();
+        /**
+         * Uncomment L170 below to reproduce the IllegalStateException by running
+         * MixedSmartContractOpsLoadTest. Leave as-is when running to verify fix.
+         */
+//        return inHighGasRegime(now)
+        return inHighGasRegime(throttleCheckTime)
                 || curNetworkCtx.getEntitiesTouchedThisSecond() >= dynamicProperties.traceabilityMaxExportsPerConsSec();
     }
 
     private boolean inHighGasRegime(final Instant now) {
+        System.out.println("  And now checking free to used ratio " + now);
         return handleThrottling.gasLimitThrottle().freeToUsedRatio(now)
                 < dynamicProperties.traceabilityMinFreeToUsedGasThrottleRatio();
     }

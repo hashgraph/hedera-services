@@ -446,6 +446,9 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
     }
 
     private boolean isGasExhausted(final HederaFunctionality function, final Instant now, TransactionDetails details) {
+        if (dynamicProperties.shouldThrottleByGas() && isGasThrottled(function)) {
+            System.out.println("  💡Throttling by gas @ " + now);
+        }
         return dynamicProperties.shouldThrottleByGas()
                 && isGasThrottled(function)
                 && (gasThrottle == null || !gasThrottle.allow(now, details.getGasLimitForContractTx()));

@@ -116,6 +116,10 @@ public class StandardProcessLogic implements ProcessLogic {
         sigImpactHistorian.purge();
         recordStreaming.resetBlockNo();
 
+        System.out.println("😈Beginning a "
+                + accessor.getFunction()
+                + " transaction at consensus time "
+                + consensusTime);
         doProcess(
                 submittingMember,
                 consensusTimeTracker.isFirstUsed()

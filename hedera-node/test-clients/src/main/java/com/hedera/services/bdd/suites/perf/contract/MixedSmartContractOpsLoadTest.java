@@ -71,10 +71,12 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
         final String LOOKUP_CONTRACT = "BalanceLookup";
         final String CIVILIAN_ACCOUNT = "civilian";
         final BigInteger depositAmount = BigInteger.ONE;
+        final String PAYER_ACCOUNT = "payer";
 
         Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
             /* create a contract */
             contractCreate(CONTRACT_NAME_PREFIX + createdSoFar.getAndIncrement())
+                    .payingWith(PAYER_ACCOUNT)
                     .bytecode(SOME_BYTE_CODE)
                     .hasAnyPrecheck()
                     .deferStatusResolution(),
@@ -92,6 +94,7 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
                     })
                     .payingWith(GENESIS),
             contractCall(PAYABLE_CONTRACT, "deposit", depositAmount)
+                    .payingWith(PAYER_ACCOUNT)
                     .sending(depositAmount.longValueExact())
                     .suppressStats(true)
                     .deferStatusResolution()
@@ -102,23 +105,30 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
                         logIt(ignore -> settings.toString()))
                 .when(
+                        cryptoCreate(PAYER_ACCOUNT).balance(ONE_MILLION_HBARS * 1000),
                         /* create an account */
-                        cryptoCreate(CIVILIAN_ACCOUNT).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(CIVILIAN_ACCOUNT)
+                                .payingWith(PAYER_ACCOUNT)
+                                .balance(ONE_HUNDRED_HBARS),
 
                         /* create a file with some contents and contract with it */
                         fileCreate(SOME_BYTE_CODE)
                                 .path(HapiSpecSetup.getDefaultInstance().defaultContractPath()),
                         contractCreate(UPDATABLE_CONTRACT)
+                                .payingWith(PAYER_ACCOUNT)
                                 .bytecode(SOME_BYTE_CODE)
                                 .adminKey(THRESHOLD),
 
                         /* create a contract which does a query to look up balance of the civilan account */
                         uploadInitCode(LOOKUP_CONTRACT),
-                        contractCreate(LOOKUP_CONTRACT).adminKey(THRESHOLD),
+                        contractCreate(LOOKUP_CONTRACT).adminKey(THRESHOLD)
+                        .payingWith(PAYER_ACCOUNT),
 
                         /* create a contract that does a transaction to deposit funds */
                         uploadInitCode(PAYABLE_CONTRACT),
-                        contractCreate(PAYABLE_CONTRACT).adminKey(THRESHOLD),
+                        contractCreate(PAYABLE_CONTRACT)
+                                .payingWith(PAYER_ACCOUNT)
+                                .adminKey(THRESHOLD),
 
                         /* get contract info on all contracts created */
                         getContractInfo(LOOKUP_CONTRACT).hasExpectedInfo().logged(),
