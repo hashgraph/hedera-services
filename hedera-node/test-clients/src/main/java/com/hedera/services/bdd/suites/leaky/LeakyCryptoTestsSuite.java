@@ -155,9 +155,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
     private static final String DEFAULT_ASSOCIATIONS_LIMIT =
             HapiSpecSetup.getDefaultNodeProps().get(ASSOCIATIONS_LIMIT_PROPERTY);
-    private static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
-
     private static final String FACTORY_MIRROR_CONTRACT = "FactoryMirror";
+    public static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
     public static final String CONTRACTS_EVM_VERSION_PROP = "contracts.evm.version";
     public static final String AUTO_ACCOUNT = "autoAccount";
     public static final String LAZY_ACCOUNT_RECIPIENT = "lazyAccountRecipient";

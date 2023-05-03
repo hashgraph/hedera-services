@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static java.util.Objects.requireNonNull;
 
@@ -27,7 +28,6 @@ import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -57,9 +57,11 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenRevokeKycOrThrow();
+        pureChecks(op);
+
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
-        if (tokenMeta == null) throw new PreCheckException(ResponseCodeEnum.INVALID_TOKEN_ID);
+        if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
         if (tokenMeta.hasKycKey()) {
             context.requireKey(tokenMeta.kycKey());
         } else {
@@ -79,8 +81,6 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         requireNonNull(tokenRelStore);
 
         final var op = txn.tokenRevokeKycOrThrow();
-        pureChecks(op);
-
         final var tokenId = op.tokenOrThrow().tokenNum();
         final var accountId = op.accountOrElse(AccountID.DEFAULT).accountNumOrThrow();
         final var tokenRel = tokenRelStore.getForModify(tokenId, accountId);
@@ -90,13 +90,16 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         tokenRelStore.put(tokenRelBuilder.build());
     }
 
-    private void pureChecks(TokenRevokeKycTransactionBody op) {
+    /**
+     * Performs checks independent of state or context
+     */
+    private void pureChecks(TokenRevokeKycTransactionBody op) throws PreCheckException {
         if (!op.hasToken()) {
-            throw new HandleException(ResponseCodeEnum.INVALID_TOKEN_ID);
+            throw new PreCheckException(INVALID_TOKEN_ID);
         }
 
         if (!op.hasAccount()) {
-            throw new HandleException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+            throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
         }
     }
 }

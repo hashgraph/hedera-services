@@ -41,7 +41,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -49,50 +48,33 @@ import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("ALL")
 class VirtualRootNodeTest extends VirtualTestBase {
-    @Test
-    void testVirtualMapFlushFrequencySettings() throws ExecutionException, InterruptedException {
-        // Save the previous settings
-        final VirtualMapSettings originalSettings = VirtualMapSettingsFactory.get();
 
-        // Reconfigure the settings
-        final VirtualMapSettings settings = new TestVirtualMapSettings(originalSettings) {
-            @Override
-            public int getFlushInterval() {
-                return 3;
-            }
-        };
+    void testEnableVirtualRootFlush() throws ExecutionException, InterruptedException {
+        VirtualRootNode<TestKey, TestValue> fcm0 = createRoot();
+        fcm0.postInit(new DummyVirtualStateAccessor());
+        assertFalse(fcm0.shouldBeFlushed(), "map should not yet be flushed");
 
-        try {
-            VirtualMapSettingsFactory.configure(settings);
-            VirtualRootNode<TestKey, TestValue> fcm0 = createRoot();
-            fcm0.postInit(new DummyVirtualStateAccessor());
-            assertFalse(fcm0.shouldBeFlushed(), "map should not yet be flushed");
+        VirtualRootNode<TestKey, TestValue> fcm1 = fcm0.copy();
+        fcm1.postInit(new DummyVirtualStateAccessor());
+        assertFalse(fcm1.shouldBeFlushed(), "map should not yet be flushed");
 
-            VirtualRootNode<TestKey, TestValue> fcm1 = fcm0.copy();
-            fcm1.postInit(new DummyVirtualStateAccessor());
-            assertFalse(fcm1.shouldBeFlushed(), "map should not yet be flushed");
+        VirtualRootNode<TestKey, TestValue> fcm2 = fcm1.copy();
+        fcm2.postInit(new DummyVirtualStateAccessor());
+        assertFalse(fcm1.shouldBeFlushed(), "map should not yet be flushed");
 
-            VirtualRootNode<TestKey, TestValue> fcm2 = fcm1.copy();
-            fcm2.postInit(new DummyVirtualStateAccessor());
-            assertFalse(fcm1.shouldBeFlushed(), "map should not yet be flushed");
+        VirtualRootNode<TestKey, TestValue> fcm3 = fcm2.copy();
+        fcm3.postInit(new DummyVirtualStateAccessor());
+        fcm3.enableFlush();
+        assertTrue(fcm3.shouldBeFlushed(), "map should now be flushed");
 
-            VirtualRootNode<TestKey, TestValue> fcm3 = fcm2.copy();
-            fcm3.postInit(new DummyVirtualStateAccessor());
-            assertTrue(fcm3.shouldBeFlushed(), "map should now be flushed");
-
-            fcm0.release();
-            fcm1.release();
-            fcm2.release();
-            fcm3.release();
-        } finally {
-            // Revert to original settings
-            VirtualMapSettingsFactory.configure(originalSettings);
-        }
+        fcm0.release();
+        fcm1.release();
+        fcm2.release();
+        fcm3.release();
     }
 
     @Test
     @DisplayName("A new map with a datasource with a root hash reveals it")
-    @Disabled("This test needs some rework due to the complicated VirtualRootNode lifecycle.")
     void mapWithExistingHashedDataHasNonNullRootHash() throws ExecutionException, InterruptedException {
         // The builder I will use with this map is unique in that each call to "build" returns THE SAME DATASOURCE.
         final InMemoryDataSource<TestKey, TestValue> ds = new InMemoryDataSource<>(
@@ -108,15 +90,15 @@ class VirtualRootNodeTest extends VirtualTestBase {
         copy.postInit(fcm.getState());
 
         fcm.getHash();
-        final Hash expectedHash = fcm.getChild(1).getHash();
+        final Hash expectedHash = fcm.getChild(0).getHash();
+        fcm.release();
         fcm.waitUntilFlushed();
 
         final VirtualRootNode<TestKey, TestValue> fcm2 = new VirtualRootNode<>(builder);
-        fcm2.postInit(new DummyVirtualStateAccessor());
-        assertNotNull(fcm2.getChild(1), "child should not be null");
-        assertEquals(expectedHash, fcm2.getChild(1).getHash(), "hash should match expected");
+        fcm2.postInit(copy.getState());
+        assertNotNull(fcm2.getChild(0), "child should not be null");
+        assertEquals(expectedHash, fcm2.getChild(0).getHash(), "hash should match expected");
 
-        fcm.release();
         copy.release();
         fcm2.release();
     }
@@ -266,5 +248,84 @@ class VirtualRootNodeTest extends VirtualTestBase {
             original.release();
             copy.release();
         }
+    }
+
+    @Test
+    @DisplayName("Default flush threshold not zero")
+    void defaultFlushThresholdTest() {
+        final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
+        VirtualRootNode<TestKey, TestValue> root = createRoot();
+        assertEquals(settings.getCopyFlushThreshold(), root.getFlushThreshold());
+        root.release();
+    }
+
+    @Test
+    @DisplayName("Flush interval is inherited by copies")
+    void flushIntervalInheritedTest() {
+        final long threshold = 12345678L;
+        final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
+        final int flushInterval = settings.getFlushInterval();
+        VirtualRootNode<TestKey, TestValue> root = createRoot();
+        root.setFlushThreshold(threshold);
+        for (int i = 0; i <= flushInterval; i++) {
+            assertEquals(threshold, root.getFlushThreshold());
+            VirtualRootNode<TestKey, TestValue> copy = root.copy();
+            copy.postInit(root.getState());
+            root.release();
+            root = copy;
+        }
+        root.release();
+    }
+
+    @Test
+    @DisplayName("Zero flush threshold enables round based flushes")
+    void zeroFlushThresholdTest() {
+        final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
+        final int flushInterval = settings.getFlushInterval();
+        VirtualRootNode<TestKey, TestValue> root = createRoot();
+        root.setFlushThreshold(0);
+        assertFalse(root.shouldBeFlushed()); // the very first copy is never flushed
+        for (int i = 0; i < flushInterval; i++) {
+            VirtualRootNode<TestKey, TestValue> copy = root.copy();
+            copy.postInit(root.getState());
+            root.release();
+            root = copy;
+        }
+        assertTrue(root.shouldBeFlushed());
+        root.release();
+    }
+
+    @Test
+    @DisplayName("Default zero flush threshold")
+    void defaultZeroFlushThresholdTest() {
+        final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
+        final VirtualMapSettings testSettings = new TestVirtualMapSettings(settings) {
+            @Override
+            public long getCopyFlushThreshold() {
+                return 0;
+            }
+        };
+        VirtualMapSettingsFactory.configure(testSettings);
+        VirtualRootNode<TestKey, TestValue> root = createRoot();
+        assertEquals(0, root.getFlushThreshold());
+        final int flushInterval = settings.getFlushInterval();
+        for (int i = 0; i < flushInterval; i++) {
+            VirtualRootNode<TestKey, TestValue> copy = root.copy();
+            copy.postInit(root.getState());
+            root.release();
+            root = copy;
+        }
+        assertTrue(root.shouldBeFlushed());
+        root.setFlushThreshold(12345678L);
+        assertTrue(root.shouldBeFlushed());
+        for (int i = 0; i < flushInterval; i++) {
+            VirtualRootNode<TestKey, TestValue> copy = root.copy();
+            copy.postInit(root.getState());
+            root.release();
+            root = copy;
+        }
+        assertFalse(root.shouldBeFlushed()); // should still have a custom flush threshold
+        root.release();
+        VirtualMapSettingsFactory.configure(settings);
     }
 }
