@@ -22,6 +22,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -31,6 +32,8 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.LongFunction;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +45,8 @@ import org.apache.logging.log4j.Logger;
 public class ChatterEventCreator {
     private static final Logger logger = LogManager.getLogger(ChatterEventCreator.class);
 
+    /** The software version of the node. */
+    private final SoftwareVersion softwareVersion;
     /** This node's address book ID */
     private final NodeId selfId;
     /** An implementor of {@link Signer} */
@@ -60,22 +65,24 @@ public class ChatterEventCreator {
     private final Time time;
 
     public ChatterEventCreator(
-            final NodeId selfId,
-            final Signer signer,
-            final TransactionSupplier transactionSupplier,
-            final Consumer<GossipEvent> newEventHandler,
-            final LongFunction<GossipEvent> mostRecentEventById,
-            final EventCreationRules eventCreationRules,
-            final Cryptography hasher,
-            final Time time) {
-        this.selfId = selfId;
-        this.signer = signer;
-        this.transactionSupplier = transactionSupplier;
-        this.newEventHandler = newEventHandler;
-        this.mostRecentEventById = mostRecentEventById;
-        this.eventCreationRules = eventCreationRules;
-        this.hasher = hasher;
-        this.time = time;
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final NodeId selfId,
+            @NonNull final Signer signer,
+            @NonNull final TransactionSupplier transactionSupplier,
+            @NonNull final Consumer<GossipEvent> newEventHandler,
+            @NonNull final LongFunction<GossipEvent> mostRecentEventById,
+            @NonNull final EventCreationRules eventCreationRules,
+            @NonNull final Cryptography hasher,
+            @NonNull final Time time) {
+        this.softwareVersion = Objects.requireNonNull(softwareVersion, "the softwareVersion is null");
+        this.selfId = Objects.requireNonNull(selfId, "the selfId is null");
+        this.signer = Objects.requireNonNull(signer, "the signer is null");
+        this.transactionSupplier = Objects.requireNonNull(transactionSupplier, "the transactionSupplier is null");
+        this.newEventHandler = Objects.requireNonNull(newEventHandler, "the newEventHandler is null");
+        this.mostRecentEventById = Objects.requireNonNull(mostRecentEventById, "the mostRecentEventById is null");
+        this.eventCreationRules = Objects.requireNonNull(eventCreationRules, "the eventCreationRules is null");
+        this.hasher = Objects.requireNonNull(hasher, "the hasher is null");
+        this.time = Objects.requireNonNull(time, "the time is null");
     }
 
     /**
@@ -122,6 +129,7 @@ public class ChatterEventCreator {
     private GossipEvent buildEvent(final BaseEvent selfParent, final BaseEvent otherParent) {
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
+                softwareVersion,
                 selfId.getId(),
                 EventUtils.getEventGeneration(selfParent),
                 EventUtils.getEventGeneration(otherParent),
