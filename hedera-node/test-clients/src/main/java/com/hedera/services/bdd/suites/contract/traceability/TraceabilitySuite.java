@@ -40,7 +40,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.hyperledger.besu.crypto.Hash.keccak256;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExceptionalHaltReason.PRECOMPILE_ERROR;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -4450,6 +4449,7 @@ public class TraceabilitySuite extends HapiSuite {
                         spec,
                         contractCall(REVERTING_CONTRACT, "callingWrongAddress")
                                 .gas(1_000_000)
+                                .hasKnownStatusFrom(SUCCESS, INVALID_SOLIDITY_ADDRESS)
                                 .via(TRACEABILITY_TXN))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
@@ -4461,8 +4461,13 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
                                                 .setGas(979000)
-                                                .setGasUsed(963811)
-                                                .setOutput(EMPTY)
+                                                .setGasUsed(979000)
+                                                .setError(ByteString.copyFromUtf8(INVALID_SOLIDITY_ADDRESS.name()))
+                                                /*
+                                                   For EVM v0.38 use this code block instead:
+                                                   .setGasUsed(963811)
+                                                   .setOutput(EMPTY)
+                                                */
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
                                                 .setInput(encodeFunctionCall(REVERTING_CONTRACT, "callingWrongAddress"))
@@ -4473,13 +4478,18 @@ public class TraceabilitySuite extends HapiSuite {
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
                                                 .setCallDepth(1)
-                                                .setGas(960639)
-                                                .setInput(ByteStringUtils.wrapUnsafely(
-                                                        Function.parse("boo" + "(uint256)")
-                                                                .encodeCallWithArgs(BigInteger.valueOf(234))
-                                                                .array()))
-                                                .setGasUsed(960639)
-                                                .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                                .setGas(978487)
+                                                .setError(ByteString.copyFromUtf8(INVALID_SOLIDITY_ADDRESS.name()))
+                                                /*
+                                                   For EVM v0.38 use this code block instead:
+                                                   .setGas(960639)
+                                                   .setInput(ByteStringUtils.wrapUnsafely(
+                                                           Function.parse("boo" + "(uint256)")
+                                                                   .encodeCallWithArgs(BigInteger.valueOf(234))
+                                                                   .array()))
+                                                   .setGasUsed(960639)
+                                                   .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                                */
                                                 .setTargetedAddress(ByteString.copyFrom(asSolidityAddress(0, 0, 0)))
                                                 .build())))));
     }
