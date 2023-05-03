@@ -28,7 +28,7 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.chatter.ChatterSubSetting;
+import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.event.EventCreatorThread;
@@ -40,6 +40,7 @@ import com.swirlds.platform.event.creation.ParentBasedCreationRule;
 import com.swirlds.platform.event.creation.StaticCreationRules;
 import com.swirlds.platform.event.intake.ChatterEventMapper;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -86,10 +87,12 @@ public class SimulatedEventCreationNode {
             final NodeId nodeId,
             final Function<Hash, EventImpl> eventByHash,
             final boolean shouldCreateEvents) {
+        final ChatterConfig chatterConfig = new TestConfigBuilder().getOrCreateConfig()
+                .getConfigData(ChatterConfig.class);
         this.nodeId = nodeId;
         this.eventByHash = eventByHash;
         criticalQuorum =
-                new CriticalQuorumImpl(addressBook, false, new ChatterSubSetting().getCriticalQuorumSoftening());
+                new CriticalQuorumImpl(addressBook, false, chatterConfig.criticalQuorumSoftening());
         final OtherParentTracker otherParentTracker = new OtherParentTracker();
         final LoggingEventCreationRules eventCreationRules = LoggingEventCreationRules.create(
                 List.of(() ->

@@ -500,12 +500,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         this.reconnectMetrics = new ReconnectMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        if (settings.getChatter().isChatterUsed()) {
+        ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+        if (chatterConfig.useChatter()) {
             chatterCore = new ChatterCore<>(
                     time,
                     GossipEvent.class,
                     new PrepareChatterEvent(CryptographyHolder.get()),
-                    settings.getChatter(),
+                    chatterConfig,
                     networkMetrics::recordPingTime,
                     metrics);
         } else {
@@ -560,14 +561,14 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 selfId,
                 initialAddressBook.getSize(),
                 settings.getNumConnections(),
-                !settings.getChatter().isChatterUsed());
+                !chatterConfig.useChatter());
 
         fallenBehindManager = new FallenBehindManagerImpl(
                 selfId,
                 topology.getConnectionGraph(),
                 this::checkPlatformStatus,
                 () -> {
-                    if (!settings.getChatter().isChatterUsed()) {
+                    if (!chatterConfig.useChatter()) {
                         return;
                     }
                     reconnectController.get().start();
@@ -675,7 +676,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
+    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {
+    }
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -811,7 +813,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             eventMapper.eventAdded(e);
         }
 
-        if (settings.getChatter().isChatterUsed()) {
+        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+        if (chatterConfig.useChatter()) {
             chatterEventMapper.loadFromSignedState(signedState);
             chatterCore.loadFromSignedState(signedState);
         }
@@ -939,10 +942,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     consensusRoundHandler::addMinGenInfo,
                     getAddressBook()));
         }
-
-        if (settings.getChatter().isChatterUsed()) {
+        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+        if (chatterConfig.useChatter()) {
             criticalQuorum =
-                    new CriticalQuorumImpl(initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
+                    new CriticalQuorumImpl(initialAddressBook, false, chatterConfig.criticalQuorumSoftening());
         } else {
             criticalQuorum = new CriticalQuorumImpl(initialAddressBook);
         }
@@ -1034,7 +1037,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     final EventImpl keystoneEvent = round.getKeystoneEvent();
                     preConsensusEventWriter.requestFlush(keystoneEvent);
                 });
-        if (settings.getChatter().isChatterUsed()) {
+        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+        if (chatterConfig.useChatter()) {
             dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
             dispatcher.addObserver(chatterEventMapper);
         }
@@ -1043,11 +1047,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
-        if (settings.getChatter().isChatterUsed()) {
+        if (chatterConfig.useChatter()) {
             final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
-                    settings.getChatter().getFutureGenerationLimit());
+                    chatterConfig.futureGenerationLimit());
             metrics.getOrCreate(
                     new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
                             .withDescription("the number of events without parents buffered")
@@ -1069,7 +1073,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 selfId, eventLinker, consensusRef::get, initialAddressBook, dispatcher, intakeCycleStats, shadowGraph);
 
         final EventCreator eventCreator;
-        if (settings.getChatter().isChatterUsed()) {
+        if (chatterConfig.useChatter()) {
             // chatter has a separate event creator in a different thread. having 2 event creators creates the risk
             // of forking, so a NPE is preferable to a fork
             eventCreator = null;
@@ -1111,7 +1115,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 intakeCycleStats);
 
         final InterruptableConsumer<EventIntakeTask> intakeHandler;
-        if (settings.getChatter().isChatterUsed()) {
+        if (chatterConfig.useChatter()) {
             intakeCycle = new SequenceCycle<>(taskDispatcher::dispatchTask);
             intakeHandler = intakeCycle;
         } else {
@@ -1147,9 +1151,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         if (signedStateFromDisk != null) {
             logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                            signedStateFromDisk.getRound(),
-                            signedStateFromDisk.getConsensusTimestamp(),
-                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                    signedStateFromDisk.getRound(),
+                    signedStateFromDisk.getConsensusTimestamp(),
+                    startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
 
             buildEventHandlersFromState(initialState, stateHashSignQueueThread);
@@ -1258,9 +1262,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 syncManager,
                 shadowgraphExecutor,
                 true,
-                () -> {});
+                () -> {
+                });
 
-        final Runnable stopGossip = settings.getChatter().isChatterUsed()
+        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+        final Runnable stopGossip = chatterConfig.useChatter()
                 ? chatterCore::stopChatter
                 // wait and acquire all sync ongoing locks and release them immediately
                 // this will ensure any ongoing sync are finished before we start reconnect
@@ -1275,7 +1281,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this::loadReconnectState,
                 new ReconnectLearnerFactory(
                         platformContext, threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
-        if (settings.getChatter().isChatterUsed()) {
+        if (chatterConfig.useChatter()) {
             reconnectController.set(new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter));
             startChatterNetwork();
         } else {
@@ -1322,6 +1328,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     public StaticConnectionManagers startCommonNetwork() {
         final SocketFactory socketFactory = PlatformConstructor.socketFactory(
                 crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));
+        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 selfId,
@@ -1329,7 +1337,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this,
                 socketFactory,
                 initialAddressBook,
-                !settings.getChatter().isChatterUsed(),
+                !chatterConfig.useChatter(),
                 appVersion);
         final StaticConnectionManagers connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
@@ -1338,7 +1346,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 initialAddressBook,
                 connectionManagers::newConnection,
                 StaticSettingsProvider.getSingleton(),
-                !settings.getChatter().isChatterUsed(),
+                !chatterConfig.useChatter(),
                 appVersion);
         // allow other members to create connections to me
         final Address address = getSelfAddress();
@@ -1391,7 +1399,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     getAddressBook().getSize(),
                     syncMetrics,
                     consensusRef::get,
-                    sr -> {},
+                    sr -> {
+                    },
                     eventTaskCreator::addEvent,
                     syncManager,
                     shadowgraphExecutor,
@@ -1452,19 +1461,20 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .build(true));
         }
         final OtherParentTracker otherParentTracker = new OtherParentTracker();
+        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         final EventCreationRules eventCreationRules = LoggingEventCreationRules.create(
                 List.of(
                         startUpEventFrozenManager,
                         freezeManager,
                         fallenBehindManager,
                         new ChatteringRule(
-                                settings.getChatter().getChatteringCreationThreshold(),
+                                chatterConfig.chatteringCreationThreshold(),
                                 chatterCore.getPeerInstances().stream()
                                         .map(PeerInstance::communicationState)
                                         .toList()),
                         swirldStateManager.getTransactionPool(),
                         new BelowIntCreationRule(
-                                intakeQueue::size, settings.getChatter().getChatterIntakeThrottle())),
+                                intakeQueue::size, chatterConfig.chatterIntakeThrottle())),
                 List.of(
                         StaticCreationRules::nullOtherParent,
                         otherParentTracker,
@@ -1489,7 +1499,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final EventCreatorThread eventCreatorThread = new EventCreatorThread(
                 threadManager,
                 selfId,
-                settings.getChatter().getAttemptedChatterEventPerSecond(),
+                chatterConfig.attemptedChatterEventPerSecond(),
                 initialAddressBook,
                 chatterEventCreator::createEvent,
                 CryptoStatic.getNonDetRandom());
@@ -1695,7 +1705,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             if (oldStatus != newStatus) {
                 final PlatformStatus ns = newStatus;
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
+                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
                         .toString());
 
                 logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());
