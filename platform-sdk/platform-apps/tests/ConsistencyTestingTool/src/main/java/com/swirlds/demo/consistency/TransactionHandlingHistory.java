@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -64,6 +65,8 @@ public class TransactionHandlingHistory {
 
     /**
      * Constructor
+     * <p>
+     * Reads the contents of the log file if it exists, and adds the included rounds to the history
      *
      * @param permitRoundGaps whether gaps in the round history are permitted
      * @param logFilePath     the location of the log file
@@ -73,6 +76,8 @@ public class TransactionHandlingHistory {
         this.roundHistory = new ArrayList<>();
         this.seenTransactions = new HashSet<>();
         this.logFilePath = logFilePath;
+
+        tryReadLog();
     }
 
     /**
@@ -88,17 +93,39 @@ public class TransactionHandlingHistory {
     }
 
     /**
+     * Reads the contents of the log file if it exists, and adds the included rounds to the history
+     */
+    private void tryReadLog() {
+        if (!Files.exists(logFilePath)) {
+            logger.info(STARTUP.getMarker(), "No log file found. Starting without any previous history");
+        }
+
+        logger.info(STARTUP.getMarker(), "Log file found. Parsing previous history");
+
+        try (final BufferedReader reader = new BufferedReader(new FileReader(logFilePath.toFile()))) {
+            reader.lines().forEach(line -> addRoundToHistory(ConsistencyTestingToolRound.fromString(line)));
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * Add a transaction to the list of seen transactions
      *
      * @param transaction the transaction to add
+     * @return an error message if the transaction has already been seen, otherwise null
      */
-    private void addTransaction(final long transaction) {
+    @Nullable
+    private String addTransaction(final long transaction) {
         if (!seenTransactions.add(transaction)) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Transaction with contents `{}` has already been applied to the state",
-                    transaction);
+            final String error =
+                    "Transaction with contents `" + transaction + "` has already been applied to the state";
+
+            logger.error(EXCEPTION.getMarker(), error);
+            return error;
         }
+
+        return null;
     }
 
     /**
@@ -107,6 +134,7 @@ public class TransactionHandlingHistory {
      * @param newRound the round to search for a historical counterpart of
      * @return the historical counterpart of the new round, or null if no such round exists
      */
+    @Nullable
     private ConsistencyTestingToolRound findHistoricalRound(final @NonNull ConsistencyTestingToolRound newRound) {
         return roundHistory.stream()
                 .filter(oldRound -> newRound.compareTo(oldRound) == 0)
@@ -120,34 +148,49 @@ public class TransactionHandlingHistory {
      *
      * @param newRound        the round that is being newly processed
      * @param historicalRound the historical round that the new round is being compared to
+     * @return an error message if the new round doesn't match the historical round, otherwise null
      */
-    private void compareWithHistoricalRound(
+    @Nullable
+    private String compareWithHistoricalRound(
             final @NonNull ConsistencyTestingToolRound newRound,
             final @NonNull ConsistencyTestingToolRound historicalRound) {
 
         if (!newRound.equals(historicalRound)) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Round {} with transactions {} doesn't match historical counterpart with transactions {}",
-                    newRound.roundNumber(),
-                    newRound.transactionsContents(),
-                    historicalRound.transactionsContents());
+            final String error =
+                    "Round " + newRound.roundNumber() + " with transactions " + newRound.transactionsContents()
+                            + " doesn't match historical counterpart with transactions "
+                            + historicalRound.transactionsContents();
+
+            logger.error(EXCEPTION.getMarker(), error);
+            return error;
         }
+
+        return null;
     }
 
     /**
-     * Add a round to the history
+     * Add a round to the history. Errors are logged.
      *
      * @param newRound the round to add
+     * @return a list of errors that occurred while adding the round
      */
-    private void addRoundToHistory(final @NonNull ConsistencyTestingToolRound newRound) {
+    @NonNull
+    private List<String> addRoundToHistory(final @NonNull ConsistencyTestingToolRound newRound) {
+        final List<String> errors = new ArrayList<>();
+
         roundHistory.add(newRound);
 
-        newRound.transactionsContents().forEach(this::addTransaction);
+        newRound.transactionsContents().forEach(transaction -> {
+            final String error = addTransaction(transaction);
+
+            if (error != null) {
+                errors.add(error);
+            }
+        });
 
         if (roundHistory.size() <= 1) {
             // only 1 round is in the history, so no additional checks are necessary
-            return;
+            return errors;
         }
 
         final long newRoundNumber = newRound.roundNumber();
@@ -156,20 +199,23 @@ public class TransactionHandlingHistory {
 
         // make sure round numbers always increase
         if (newRoundNumber <= previousRoundNumber) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Round {} is not greater than round {}",
-                    newRoundNumber,
-                    previousRoundNumber);
+            final String error = "Round " + newRoundNumber + " is not greater than round " + previousRoundNumber;
+            logger.error(EXCEPTION.getMarker(), error);
+
+            errors.add(error);
         }
         // if gaps in round history aren't permitted, check that the round numbers are consecutive
         else if (!permitRoundGaps && newRoundNumber != previousRoundNumber + 1) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Gap in round history found. Round {} was added, but previous round was {}",
-                    newRoundNumber,
-                    previousRoundNumber);
+            final String error =
+                    "Gap in round history found. Round " + newRoundNumber + " was added, but previous round was "
+                            + previousRoundNumber;
+
+            logger.error(EXCEPTION.getMarker(), error);
+
+            errors.add(error);
         }
+
+        return errors;
     }
 
     /**
@@ -177,7 +223,7 @@ public class TransactionHandlingHistory {
      *
      * @param round the round to write to the log file
      */
-    private void writeRoundStateToLog(final @NonNull ConsistencyTestingToolRound round) {
+    private void writeRoundToLog(final @NonNull ConsistencyTestingToolRound round) {
         try (BufferedWriter file = new BufferedWriter(new FileWriter(logFilePath.toFile(), true))) {
             file.write(round.toString());
         } catch (final IOException e) {
@@ -194,35 +240,26 @@ public class TransactionHandlingHistory {
      * If the input round doesn't already exist in the history, this method adds it to the history
      *
      * @param round the round to process
+     * @return a list of errors that occurred while processing the round
      */
-    public void processRound(final @NonNull ConsistencyTestingToolRound round) {
+    @NonNull
+    public List<String> processRound(final @NonNull ConsistencyTestingToolRound round) {
         final ConsistencyTestingToolRound historicalRound = findHistoricalRound(round);
 
+        final List<String> errors = new ArrayList<>();
         if (historicalRound == null) {
             // round doesn't already appear in the history, so record it
-            addRoundToHistory(round);
-            writeRoundStateToLog(round);
+            errors.addAll(addRoundToHistory(round));
+            writeRoundToLog(round);
         } else {
             // if we found a round with the same round number in the round history, make sure the rounds are identical
-            compareWithHistoricalRound(round, historicalRound);
-        }
-    }
+            final String error = compareWithHistoricalRound(round, historicalRound);
 
-    /**
-     * If a log file exists, parses the log file and adds all rounds to the {@link #roundHistory}
-     */
-    public void tryParseLog() {
-        if (!Files.exists(logFilePath)) {
-            logger.info(STARTUP.getMarker(), "No log file found. Starting without any previous history");
-            return;
+            if (error != null) {
+                errors.add(error);
+            }
         }
 
-        logger.info(STARTUP.getMarker(), "Log file found. Parsing previous history");
-
-        try (final BufferedReader reader = new BufferedReader(new FileReader(logFilePath.toFile()))) {
-            processRound(ConsistencyTestingToolRound.fromString(reader.readLine()));
-        } catch (final IOException e) {
-            e.printStackTrace();
-        }
+        return errors;
     }
 }

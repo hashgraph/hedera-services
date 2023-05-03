@@ -60,6 +60,17 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     private long stateLong = 0;
 
     /**
+     * Whether gaps in the round history will be permitted in the test. if false, an error will be logged if a gap is
+     * found
+     */
+    private final boolean permitRoundGaps;
+
+    /**
+     * The path of the log file where the round history will be written
+     */
+    private final Path logFilePath;
+
+    /**
      * Constructor
      *
      * @param permitRoundGaps whether or not gaps in the round history will be permitted in the test. if false, an error
@@ -67,7 +78,9 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      * @param logFilePath     the path of the log file where the round history will be written
      */
     public ConsistencyTestingToolState(final boolean permitRoundGaps, final @NonNull Path logFilePath) {
-        transactionHandlingHistory = new TransactionHandlingHistory(permitRoundGaps, logFilePath);
+        this.transactionHandlingHistory = new TransactionHandlingHistory(permitRoundGaps, logFilePath);
+        this.permitRoundGaps = permitRoundGaps;
+        this.logFilePath = logFilePath;
 
         logger.info(STARTUP.getMarker(), "New State Constructed.");
     }
@@ -82,19 +95,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
 
         this.transactionHandlingHistory = new TransactionHandlingHistory(that.transactionHandlingHistory);
         this.stateLong = that.stateLong;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void init(
-            final Platform platform,
-            final SwirldDualState swirldDualState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
-
-        transactionHandlingHistory.tryParseLog();
+        this.permitRoundGaps = that.permitRoundGaps;
+        this.logFilePath = that.logFilePath;
     }
 
     /**
