@@ -48,7 +48,7 @@ public class HederaEvmMessageCallProcessorV038 extends MessageCallProcessor {
     protected final Map<Address, PrecompiledContract> hederaPrecompiles;
     protected long gasRequirement;
     protected Bytes output;
-    private final Predicate<Address> ethNativePrecompileDetector;
+    private final Predicate<Address> evmNativePrecompileDetector;
     private final Predicate<Address> systemAccountDetector;
 
     public HederaEvmMessageCallProcessorV038(
@@ -59,7 +59,7 @@ public class HederaEvmMessageCallProcessorV038 extends MessageCallProcessor {
         super(evm, precompiles);
         hederaPrecompiles = new HashMap<>();
         hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
-        this.ethNativePrecompileDetector = addr -> precompiles.get(addr) != null;
+        this.evmNativePrecompileDetector = addr -> precompiles.get(addr) != null;
         this.systemAccountDetector = systemAccountDetector;
     }
 
@@ -73,7 +73,7 @@ public class HederaEvmMessageCallProcessorV038 extends MessageCallProcessor {
             final var frameHasValue = frame.getValue().greaterThan(Wei.ZERO);
             if (systemAccountDetector.test(frame.getContractAddress())) {
                 // we have a non-system-contract call to a system address
-                if (!ethNativePrecompileDetector.test(frame.getContractAddress())) {
+                if (!evmNativePrecompileDetector.test(frame.getContractAddress())) {
                     // a call to a system address, on which a native precompile does not exist, should always fail
                     frame.setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
