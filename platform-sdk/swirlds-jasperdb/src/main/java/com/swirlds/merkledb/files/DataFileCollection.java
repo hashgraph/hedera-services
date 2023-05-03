@@ -434,48 +434,52 @@ public class DataFileCollection<D> implements Snapshotable {
             readers[r.getIndex() - firstIndexInc] = r;
         }
 
-        final KeyRange keyRange = validKeyRange;
-        index.forEach((path, dataLocation) -> {
-            if (!keyRange.withinRange(path)) {
-                return;
-            }
-            final int fileIndex = DataFileCommon.fileIndexFromDataLocation(dataLocation);
-            if ((fileIndex < firstIndexInc) || (fileIndex >= lastIndexExc)) {
-                return;
-            }
-            final DataFileReader<D> reader = readers[fileIndex - firstIndexInc];
-            if (reader == null) {
-                return;
-            }
-            final long fileOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
-            snapshotCompactionLock.acquire();
-            try {
+        try {
+            final KeyRange keyRange = validKeyRange;
+            index.forEach((path, dataLocation) -> {
+                if (!keyRange.withinRange(path)) {
+                    return;
+                }
+                final int fileIndex = DataFileCommon.fileIndexFromDataLocation(dataLocation);
+                if ((fileIndex < firstIndexInc) || (fileIndex >= lastIndexExc)) {
+                    return;
+                }
+                final DataFileReader<D> reader = readers[fileIndex - firstIndexInc];
+                if (reader == null) {
+                    return;
+                }
+                final long fileOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
                 // Take the lock. If a snapshot is started in a different thread, this call
                 // will block until the snapshot is done. The current file will be flushed,
                 // and current data file writer and reader will point to a new file
-                final DataFileWriter<D> newFileWriter = currentCompactionWriter.get();
-                final long newLocation = newFileWriter.writeCopiedDataItem(
-                        reader.getMetadata().getSerializationVersion(), reader.readDataItemBytes(fileOffset));
-                // update the index
-                index.putIfEqual(path, dataLocation, newLocation);
-            } catch (final IOException z) {
-                logger.error(EXCEPTION.getMarker(), "Failed to copy data item {} / {}", fileIndex, fileOffset, z);
-                throw z;
+                snapshotCompactionLock.acquire();
+                try {
+                    final DataFileWriter<D> newFileWriter = currentCompactionWriter.get();
+                    final long newLocation = newFileWriter.writeCopiedDataItem(
+                            reader.getMetadata().getSerializationVersion(), reader.readDataItemBytes(fileOffset));
+                    // update the index
+                    index.putIfEqual(path, dataLocation, newLocation);
+                } catch (final IOException z) {
+                    logger.error(EXCEPTION.getMarker(), "Failed to copy data item {} / {}", fileIndex, fileOffset, z);
+                    throw z;
+                } finally {
+                    snapshotCompactionLock.release();
+                }
+            });
+        } finally {
+            // Even if the thread is interrupted, make sure the new compacted file is properly closed
+            // and is included to future compactions
+            snapshotCompactionLock.acquire();
+            try {
+                // Finish writing the last file. In rare cases, it may be an empty file
+                finishCurrentCompactionFile();
+                // Clear compaction start time
+                currentCompactionStartTime.set(null);
+                // Close the readers and delete compacted files
+                deleteFiles(new HashSet<>(filesToMerge));
             } finally {
                 snapshotCompactionLock.release();
             }
-        });
-
-        snapshotCompactionLock.acquire();
-        try {
-            // Finish writing the last file. In rare cases, it may be an empty file
-            finishCurrentCompactionFile();
-            // Clear compaction start time
-            currentCompactionStartTime.set(null);
-            // Close the readers and delete compacted files
-            deleteFiles(new HashSet<>(filesToMerge));
-        } finally {
-            snapshotCompactionLock.release();
         }
 
         return newCompactedFiles;
