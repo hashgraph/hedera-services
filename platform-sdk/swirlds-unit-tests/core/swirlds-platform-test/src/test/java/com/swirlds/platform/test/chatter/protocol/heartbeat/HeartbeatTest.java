@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.chatter.protocol.heartbeat;
 
 import com.swirlds.common.test.fixtures.FakeTime;
-import com.swirlds.platform.chatter.protocol.heartbeat.HeartbeatMessage;
-import com.swirlds.platform.chatter.protocol.heartbeat.HeartbeatSendReceive;
-import com.swirlds.platform.chatter.protocol.heartbeat.HeartbeatSender;
+import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatMessage;
+import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatSendReceive;
+import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatSender;
 import java.time.Duration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

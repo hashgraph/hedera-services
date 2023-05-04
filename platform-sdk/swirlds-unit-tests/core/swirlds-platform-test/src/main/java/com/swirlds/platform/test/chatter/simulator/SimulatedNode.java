@@ -18,7 +18,7 @@ package com.swirlds.platform.test.chatter.simulator;
 
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 
-import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.chatter.GossipPayload;
 import com.swirlds.platform.test.chatter.SimulatedChatter;
 import java.time.Duration;
