@@ -19,7 +19,7 @@ module com.hedera.node.app.service.token.impl.test {
     requires com.hedera.node.app.spi.fixtures;
     requires static com.github.spotbugs.annotations;
     requires com.swirlds.merkle;
-    requires com.hedera.hashgraph.protobuf.java.api;
+    requires com.hedera.node.app;
 
     opens com.hedera.node.app.service.token.impl.test.util to
             org.junit.platform.commons;
@@ -29,6 +29,9 @@ module com.hedera.node.app.service.token.impl.test {
             org.junit.platform.commons,
             org.mockito;
     opens com.hedera.node.app.service.token.impl.test.handlers to
+            org.junit.platform.commons,
+            org.mockito;
+    opens com.hedera.node.app.service.token.impl.test.records to
             org.junit.platform.commons,
             org.mockito;
 }
