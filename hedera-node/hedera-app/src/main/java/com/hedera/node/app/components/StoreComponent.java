@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.components;
 
+import com.hedera.node.app.meta.HandleScope;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import dagger.BindsInstance;
@@ -25,6 +26,7 @@ import dagger.Subcomponent;
  * A Dagger subcomponent that provides the readable store factory.
  */
 @Subcomponent
+@HandleScope
 public interface StoreComponent {
     ReadableStoreFactory storeFactory();
 

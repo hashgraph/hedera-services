@@ -16,17 +16,19 @@
 
 package com.hedera.node.app.meta;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.components.StoreComponent.Factory;
+import com.hedera.node.app.components.StoreComponent;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
+import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import java.time.Instant;
 import javax.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +57,19 @@ class MonoHandleContextTest {
     private NonAtomicReference<HederaState> mutableState;
 
     @Mock
-    private Provider<Factory> storeFactory;
+    private Provider<StoreComponent.Factory> storeFactory;
+
+    @Mock
+    private StoreComponent.Factory storeComponentFactory;
+
+    @Mock
+    private HederaState state;
+
+    @Mock
+    private StoreComponent storeComponent;
+
+    @Mock
+    private ReadableStoreFactory readableStoreFactory;
 
     private MonoHandleContext subject;
 
@@ -68,7 +82,7 @@ class MonoHandleContextTest {
     void getsNowFromCtx() {
         given(txnCtx.consensusTime()).willReturn(NOW);
 
-        assertEquals(NOW, subject.consensusNow());
+        assertThat(subject.consensusNow()).isEqualTo(NOW);
     }
 
     @Test
@@ -78,22 +92,28 @@ class MonoHandleContextTest {
 
         final var numSupplier = subject.newEntityNumSupplier();
 
-        assertEquals(nextNum, numSupplier.getAsLong());
+        assertThat(numSupplier.getAsLong()).isEqualTo(nextNum);
     }
 
     @Test
     void returnsExpiryValidatorAsExpected() {
-        assertSame(expiryValidator, subject.expiryValidator());
+        assertThat(subject.expiryValidator()).isSameAs(expiryValidator);
     }
 
     @Test
     void returnsAttributeValidatorAsExpected() {
-        assertSame(attributeValidator, subject.attributeValidator());
+        assertThat(subject.attributeValidator()).isSameAs(attributeValidator);
     }
 
     @Test
     void createsStore() {
-        //        subject.createReadableStore(ReadableRunningHashLeafStore.class);
-        //        verify(readableStoreFactory).createStore(ReadableRunningHashLeafStore.class);
+        given(storeFactory.get()).willReturn(storeComponentFactory);
+        given(mutableState.get()).willReturn(state);
+        given(storeComponentFactory.create(state)).willReturn(storeComponent);
+        given(storeComponent.storeFactory()).willReturn(readableStoreFactory);
+
+        subject.createReadableStore(ReadableRunningHashLeafStore.class);
+
+        verify(storeComponentFactory).create(state);
     }
 }
