@@ -33,6 +33,7 @@ public record AccountsConfig(@ConfigProperty(defaultValue = "55") long addressBo
                              @ConfigProperty(defaultValue = "60") long systemUndeleteAdmin,
                              @ConfigProperty(defaultValue = "2") long treasury,
                              @ConfigProperty(defaultValue = "false") boolean storeOnDisk,
-                             @ConfigProperty(defaultValue = "5000000") long maxNumber) {
-
+                             @ConfigProperty(defaultValue = "5000000") long maxNumber,
+                             @ConfigProperty("blocklist.enabled") Object blocklistEnabled,
+                             @ConfigProperty("blocklist.resource") Object blocklistResource) {
 }

@@ -247,8 +247,6 @@ public class PropertyNames {
     public static final String NETTY_START_RETRY_INTERVAL_MS = "netty.startRetryIntervalMs";
     public static final String NETTY_TLS_CERT_PATH = "netty.tlsCrt.path";
     public static final String NETTY_TLS_KEY_PATH = "netty.tlsKey.path";
-
-
     public static final String QUERIES_BLOB_LOOK_UP_RETRIES = "queries.blob.lookupRetries";
     public static final String STATS_CONS_THROTTLES_TO_SAMPLE = "stats.consThrottlesToSample";
     public static final String STATS_HAPI_THROTTLES_TO_SAMPLE = "stats.hapiThrottlesToSample";

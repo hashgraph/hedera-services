@@ -48,6 +48,8 @@ public record HederaConfig(@ConfigProperty(defaultValue = "1001") long firstUser
                            @ConfigProperty("recordStream.sidecarDir") String recordStreamSideCarDir,
                            @ConfigProperty("recordStream.logPeriod") long recordStreamLogPeriod,
                            @ConfigProperty("recordStream.queueCapacity") int recordStreamQueueCapacity,
-                           @ConfigProperty("recordStream.logEveryTransaction") boolean recordStreamLogEveryTransaction) {
+                           @ConfigProperty("recordStream.logEveryTransaction") boolean recordStreamLogEveryTransaction,
+                           @ConfigProperty("workflows.enabled") Object workflowsEnabled) {
+
 
 }
