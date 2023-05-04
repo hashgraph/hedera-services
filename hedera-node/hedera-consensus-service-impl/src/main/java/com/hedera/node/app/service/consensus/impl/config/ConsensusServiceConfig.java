@@ -21,5 +21,4 @@ import com.swirlds.config.api.ConfigProperty;
 
 public record ConsensusServiceConfig(
         @ConfigProperty(PropertyNames.TOPICS_MAX_NUM) long maxTopics,
-        @ConfigProperty(PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED) int maxMessageSize) {
-}
+        @ConfigProperty(PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED) int maxMessageSize) {}

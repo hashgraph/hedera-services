@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.config.data;
@@ -52,19 +51,18 @@ public record ContractsConfig(
         @ConfigProperty(defaultValue = "5000000") long scheduleThrottleMaxGasLimit,
         @ConfigProperty(defaultValue = "true") boolean redirectTokenCalls,
         @ConfigProperty(value = "precompile.exchangeRateGasCost", defaultValue = "100")
-        long precompileExchangeRateGasCost,
+                long precompileExchangeRateGasCost,
         @ConfigProperty(value = "precompile.htsDefaultGasCost", defaultValue = "10000")
-        long precompileHtsDefaultGasCost,
+                long precompileHtsDefaultGasCost,
         @ConfigProperty(value = "precompile.exportRecordResults", defaultValue = "true")
-        boolean precompileExportRecordResults,
+                boolean precompileExportRecordResults,
         @ConfigProperty(value = "precompile.htsEnableTokenCreate", defaultValue = "true")
-        boolean precompileHtsEnableTokenCreate,
+                boolean precompileHtsEnableTokenCreate,
         // @ConfigProperty(value = "precompile.unsupportedCustomFeeReceiverDebits", defaultValue = "")
         // Set<CustomFeeType> precompileUnsupportedCustomFeeReceiverDebits,
         @ConfigProperty(value = "precompile.atomicCryptoTransfer.enabled", defaultValue = "false")
-        boolean precompileAtomicCryptoTransferEnabled,
+                boolean precompileAtomicCryptoTransferEnabled,
         @ConfigProperty(value = "precompile.hrcFacade.associate.enabled", defaultValue = "true")
-        boolean precompileHrcFacadeAssociateEnabled,
+                boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") boolean evmVersionDynamic,
-        @ConfigProperty(value = "evm.version", defaultValue = "v0.34") String evmVersion) {
-}
+        @ConfigProperty(value = "evm.version", defaultValue = "v0.34") String evmVersion) {}

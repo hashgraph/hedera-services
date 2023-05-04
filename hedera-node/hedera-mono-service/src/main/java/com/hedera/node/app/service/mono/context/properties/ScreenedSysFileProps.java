@@ -140,10 +140,10 @@ public final class ScreenedSysFileProps implements PropertySource {
 
         final var msg = "Global/dynamic properties overridden in system file are:\n  "
                 + GLOBAL_DYNAMIC_PROPS.stream()
-                .filter(from121::containsKey)
-                .sorted()
-                .map(name -> String.format("%s=%s", name, from121.get(name)))
-                .collect(Collectors.joining("\n  "));
+                        .filter(from121::containsKey)
+                        .sorted()
+                        .map(name -> String.format("%s=%s", name, from121.get(name)))
+                        .collect(Collectors.joining("\n  "));
         log.info(msg);
     }
 

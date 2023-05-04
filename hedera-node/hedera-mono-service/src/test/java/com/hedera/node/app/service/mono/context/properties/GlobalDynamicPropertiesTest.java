@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertySource.AS_EVM_ADDRESSES;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_CREATION_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_RENEW_GRACE_PERIOD;
@@ -137,6 +135,8 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UPGRADE_ARTIFACTS_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UTIL_PRNG_IS_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertySource.AS_EVM_ADDRESSES;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

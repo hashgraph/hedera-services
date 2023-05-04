@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.state.initialization;
 
 import static com.google.protobuf.TextFormat.escapeBytes;
 import static com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
@@ -30,6 +29,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.address.Address.ipString;
 
 import com.google.protobuf.ByteString;

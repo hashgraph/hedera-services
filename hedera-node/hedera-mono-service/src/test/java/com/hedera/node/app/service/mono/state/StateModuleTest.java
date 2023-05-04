@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.mono.state;
 
-import static com.hedera.node.app.service.mono.state.StateModule.provideStateViews;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
+import static com.hedera.node.app.service.mono.state.StateModule.provideStateViews;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;

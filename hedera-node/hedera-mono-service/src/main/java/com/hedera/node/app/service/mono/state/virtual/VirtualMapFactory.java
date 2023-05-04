@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccountSupplier;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
@@ -33,7 +34,6 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKeySupplier;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;

@@ -16,15 +16,15 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
 import static com.hedera.node.app.service.mono.context.properties.ScreenedSysFileProps.DEPRECATED_PROP_TPL;
 import static com.hedera.node.app.service.mono.context.properties.ScreenedSysFileProps.MISPLACED_PROP_TPL;
 import static com.hedera.node.app.service.mono.context.properties.ScreenedSysFileProps.UNPARSEABLE_PROP_TPL;
 import static com.hedera.node.app.service.mono.context.properties.ScreenedSysFileProps.UNTRANSFORMABLE_PROP_TPL;
 import static com.hedera.node.app.service.mono.context.properties.ScreenedSysFileProps.UNUSABLE_PROP_TPL;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_FUNDING_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;

@@ -19,10 +19,10 @@ plugins { id("com.hedera.hashgraph.conventions") }
 description = "Hedera Configuration"
 
 dependencies {
-    implementation(project(":hedera-node:hedera-mono-service"))
-    implementation(project(":hedera-node:hapi-utils"))
-    implementation(libs.swirlds.config)
-    compileOnlyApi(libs.spotbugs.annotations)
+  implementation(project(":hedera-node:hedera-mono-service"))
+  implementation(project(":hedera-node:hapi-utils"))
+  implementation(libs.swirlds.config)
+  compileOnlyApi(libs.spotbugs.annotations)
 
-    testImplementation(testLibs.bundles.testing)
+  testImplementation(testLibs.bundles.testing)
 }
