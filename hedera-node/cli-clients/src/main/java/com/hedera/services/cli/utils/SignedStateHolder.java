@@ -14,28 +14,38 @@
  * limitations under the License.
  */
 
-package com.hedera.services.cli.signedstate;
+package com.hedera.services.cli.utils;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 
 /**
  * Navigates a signed state "file" and returns information from it
@@ -48,41 +58,58 @@ import java.util.Set;
  * indexes of the virtual maps ("vmap"s) - ~1Gb serialized (2022-11). Then you can traverse the
  * rematerialized hashgraph state.
  *
- * <p>Currently implements only operations needed for looking at contracts: - {@link
- * #getAllKnownContracts()} looks in all the accounts to get all the contract ids present, - {@link
- * #getAllContractContents(Collection)} returns a map, indexed by contract id, of the contract
- * bytecodes.
+ * <p>Currently implements only operations needed for looking at contract bytecodes and contract
+ * state, but you can grab them in bulk.
  */
-public class SignedStateHolder {
+public class SignedStateHolder implements AutoCloseableNonThrowing {
+
+    static final int ESTIMATED_NUMBER_OF_CONTRACTS = 100_000;
 
     @NonNull
     private final Path swh;
+
+    private final ReservedSignedState reservedSignedState;
 
     @NonNull
     private ServicesState platformState;
 
     public SignedStateHolder(@NonNull final Path swhFile) throws Exception {
         swh = swhFile;
-        platformState = dehydrate();
+        final var state = dehydrate();
+        reservedSignedState = state.getLeft();
+        platformState = state.getRight();
     }
 
     /** Deserialize the signed state file into an in-memory data structure. */
-    private ServicesState dehydrate() throws Exception {
-        // register all applicable classes on classpath before deserializing signed state
-        ConstructableRegistry.getInstance().registerConstructables("*");
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+    @SuppressWarnings("java:S112") // "Generic exceptions should never be thrown" - LCM of fatal exceptions: don't care
+    @NonNull
+    private Pair<ReservedSignedState, ServicesState> dehydrate() {
+        try {
+            // register all applicable classes on classpath before deserializing signed state
+            ConstructableRegistry.getInstance().registerConstructables("*");
 
-        // note: reservedSignedState.get() is unsafe because it leaks a reference count
-        // Normally we would hold this with a try-with-resources block
-        // but this is a temporary ok-workaround because we're calling this from within a command-line utility
-        // that will go away immediately after the call
-        platformState = (ServicesState) (SignedStateFileReader.readStateFile(platformContext, swh)
-                .reservedSignedState()
-                .get()
-                .getSwirldState());
-        assertSignedStateComponentExists(platformState, "platform state (Swirlds)");
-        return platformState;
+            final PlatformContext platformContext = new DefaultPlatformContext(
+                    ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+
+            final var rss =
+                    SignedStateFileReader.readStateFile(platformContext, swh).reservedSignedState();
+            final var ps = (ServicesState) (rss.get().getSwirldState());
+
+            assertSignedStateComponentExists(ps, "platform state (Swirlds)");
+            return Pair.of(rss, ps);
+        } catch (ConstructableRegistryException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void close() {
+        reservedSignedState.close();
+    }
+
+    public enum Validity {
+        ACTIVE,
+        DELETED
     }
 
     /**
@@ -91,53 +118,82 @@ public class SignedStateHolder {
      * @param ids - direct from the signed state file there's one contract id for each bytecode, but
      *     there are duplicates which can be coalesced and then there's a set of ids for the single
      *     contract
-     * @param bytecode - bytecode of the contractd
+     * @param bytecode - bytecode of the contract
+     * @param validity - whether the contract is valid or not - aka active or deleted
      */
-    public record Contract(@NonNull Set</*@NonNull*/ Integer> ids, @NonNull byte[] bytecode) {
+    public record Contract(
+            @NonNull Set</*@NonNull*/ Integer> ids, @NonNull byte[] bytecode, @NonNull Validity validity) {
 
         @Override
-        public boolean equals(Object o) {
-            return o instanceof Contract other && ids.equals(other.ids) && Arrays.equals(bytecode, other.bytecode);
+        public boolean equals(final Object obj) {
+            return obj instanceof Contract other
+                    && ids.equals(other.ids)
+                    && Arrays.equals(bytecode, other.bytecode)
+                    && validity.equals(other.validity);
         }
 
         @Override
         public int hashCode() {
-            return ids.hashCode() * 31 + Arrays.hashCode(bytecode);
+            return ids.hashCode() * 31 + Arrays.hashCode(bytecode) + validity.hashCode();
         }
 
         @Override
         public String toString() {
 
-            var csvIds = new StringBuilder(250);
+            var csvIds = new StringBuilder(100);
             for (var id : ids()) {
                 csvIds.append(id); // hides a `toString` which is why `String::join` isn't enough
                 csvIds.append(',');
             }
             csvIds.setLength(csvIds.length() - 1);
 
-            return "Contract{ids=(%s), bytecode=%s}".formatted(csvIds.toString(), Arrays.toString(bytecode));
+            return "Contract{ids=(%s), %s, bytecode=%s}"
+                    .formatted(csvIds.toString(), validity, Arrays.toString(bytecode));
         }
     }
 
     /**
      * All contracts extracted from a signed state file
      *
-     * @param contracts - dictionary of contract bytecodes indexed by their contract id (as a Long)
+     * @param contracts - collection of all contracts (with bytecode)
+     * @param deletedContracts - collection of ids of deleted contracts
      * @param registeredContractsCount - total #contracts known to the _accounts_ in the signed
      *     state file (not all actually have bytecodes in the file store, and of those, some have
      *     0-length bytecode files)
      */
-    public record Contracts(@NonNull Collection</*@NonNull*/ Contract> contracts, int registeredContractsCount) {}
+    public record Contracts(
+            @NonNull Collection</*@NonNull*/ Contract> contracts,
+            Collection<Integer> deletedContracts,
+            int registeredContractsCount) {}
 
     /**
      * Convenience method: Given the signed state file's name (the `.swh` file) return all the
      * bytecodes for all the contracts in that state.
      */
-    public static @NonNull Contracts getContracts(@NonNull final Path inputFile) throws Exception {
-        final var signedState = new SignedStateHolder(inputFile);
-        final var contractIds = signedState.getAllKnownContracts();
-        final var contractContents = signedState.getAllContractContents(contractIds);
-        return new Contracts(contractContents, contractIds.size());
+    @NonNull
+    public Contracts getContracts() throws Exception {
+        final var contractIds = getAllKnownContracts();
+        final var deletedContractIds = getAllDeletedContracts();
+        final var contractContents = getAllContractContents(contractIds, deletedContractIds);
+        return new Contracts(contractContents, deletedContractIds, contractIds.size());
+    }
+
+    public record ContractKeyLocal(long contractId, UInt256 key) {
+        public static ContractKeyLocal from(final ContractKey ckey) {
+            return new ContractKeyLocal(ckey.getContractId(), toUInt256FromPackedIntArray(ckey.getKey()));
+        }
+    }
+
+    @NonNull
+    public static UInt256 toUInt256FromPackedIntArray(final int[] packed) {
+        final var buf = ByteBuffer.allocate(32);
+        buf.asIntBuffer().put(packed);
+        return UInt256.fromBytes(Bytes.wrap(buf.array()));
+    }
+
+    @NonNull
+    public VirtualMapLike<ContractKey, IterableContractValue> getRawContractStorage() {
+        return getPlatformState().contractStorage();
     }
 
     public @NonNull ServicesState getPlatformState() {
@@ -165,7 +221,8 @@ public class SignedStateHolder {
     /**
      * Returns all contracts known via Hedera accounts, by their contract id (lowered to an Integer)
      */
-    public @NonNull Set</*@NonNull*/ Integer> getAllKnownContracts() {
+    @NonNull
+    public Set</*@NonNull*/ Integer> getAllKnownContracts() {
         var ids = new HashSet<Integer>();
         getAccounts().forEach((k, v) -> {
             if (null != k && null != v && v.isSmartContract()) ids.add(k.intValue());
@@ -173,9 +230,21 @@ public class SignedStateHolder {
         return ids;
     }
 
+    /** Returns the ids of all deleted contracts ("self-destructed") */
+    @NonNull
+    public Set</*@NonNull*/ Integer> getAllDeletedContracts() {
+        var ids = new HashSet<Integer>(ESTIMATED_NUMBER_OF_CONTRACTS);
+        getAccounts().forEach((k, v) -> {
+            if (null != k && null != v && v.isSmartContract() && v.isDeleted()) ids.add(k.intValue());
+        });
+        return ids;
+    }
+
     /** Returns the bytecodes for all the requested contracts */
-    public @NonNull Collection</*@NonNull*/ Contract> getAllContractContents(
-            @NonNull final Collection</*@NonNull*/ Integer> contractIds) {
+    @NonNull
+    public Collection</*@NonNull*/ Contract> getAllContractContents(
+            @NonNull final Collection</*@NonNull*/ Integer> contractIds,
+            @NonNull final Collection</*@NonNull*/ Integer> deletedContractIds) {
 
         final var fileStore = getFileStore();
         var codes = new ArrayList<Contract>();
@@ -184,7 +253,10 @@ public class SignedStateHolder {
             if (fileStore.containsKey(vbk)) {
                 final var blob = fileStore.get(vbk);
                 if (null != blob) {
-                    final var c = new Contract(Set.of(cid), blob.getData());
+                    final var c = new Contract(
+                            Set.of(cid),
+                            blob.getData(),
+                            deletedContractIds.contains(cid) ? Validity.DELETED : Validity.ACTIVE);
                     codes.add(c);
                 }
             }

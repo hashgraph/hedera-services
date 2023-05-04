@@ -14,32 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.services.cli;
+package com.hedera.services.cli.signedstate;
 
-import com.hedera.services.cli.signedstate.SummarizeSignedStateFileCommand;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import picocli.CommandLine;
-import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.ParameterException;
-import picocli.CommandLine.Spec;
+import picocli.CommandLine.Command;
 
-@CommandLine.Command(
-        name = "example",
-        mixinStandardHelpOptions = true,
-        description = "Example Pcli Plugin for Services",
-        subcommands = {SummarizeSignedStateFileCommand.class})
+@Command(
+        name = "signedstate",
+        subcommands = {SummarizeSignedStateFileCommand.class},
+        description = "Dealing with signed state files")
 @SubcommandOf(PlatformCli.class)
-public final class ExamplePcliPlugin extends AbstractCommand {
-
-    @Spec
-    CommandSpec spec;
-
-    private ExamplePcliPlugin() {}
-
-    @Override
-    public Integer call() {
-        throw new ParameterException(spec.commandLine(), "Please specify a subcommand!");
-    }
-}
+public class SignedStateCommand extends AbstractCommand {}
