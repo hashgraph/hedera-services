@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.hapi.utils.throttles;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * A throttle that enforces a transaction rate with resolution of 1/1000th of a transaction.

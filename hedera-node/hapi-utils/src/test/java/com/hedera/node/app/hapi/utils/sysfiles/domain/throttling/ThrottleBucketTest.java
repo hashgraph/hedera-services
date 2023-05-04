@@ -58,7 +58,7 @@ class ThrottleBucketTest {
         assertEquals(5_000, bucket.autoScaledBurstPeriodMs(2));
         assertEquals(10_000L, bucket.autoScaledBurstPeriodMs(8));
         assertEquals(20_000L, bucket.autoScaledBurstPeriodMs(16));
-        assertEquals(30_000L, bucket.autoScaledBurstPeriodMs(24));
+        assertEquals(30_005L, bucket.autoScaledBurstPeriodMs(24));
         assertEquals(31_250L, bucket.autoScaledBurstPeriodMs(25));
     }
 

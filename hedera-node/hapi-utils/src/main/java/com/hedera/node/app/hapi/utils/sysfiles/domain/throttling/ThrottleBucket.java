@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hapi.utils.sysfiles.domain.throttling;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
 import static com.hedera.node.app.hapi.utils.sysfiles.validation.ErrorCodeUtils.exceptionMsgFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_CAPACITY_OVERFLOW;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_HAS_NO_THROTTLE_GROUPS;
@@ -108,12 +109,12 @@ public final class ThrottleBucket<E extends Enum<E>> {
     }
 
     private long logicalMtps() {
-        final var ans = requiredLogicalMilliTpsToAccommodateAllGroups();
-        if (ans < 0) {
+        try {
+            return requiredLogicalMilliTpsToAccommodateAllGroups();
+        } catch (ArithmeticException overflow) {
             throw new IllegalStateException(exceptionMsgFor(
                     BUCKET_CAPACITY_OVERFLOW, BUCKET_PREFIX + name + " overflows with given throttle groups!"));
         }
-        return ans;
     }
 
     private Pair<DeterministicThrottle, List<Pair<E, Integer>>> mappingWith(final long mtps, final long capacitySplit) {
@@ -232,7 +233,18 @@ public final class ThrottleBucket<E extends Enum<E>> {
         return burstPeriodMs > 0 ? burstPeriodMs : 1_000L * burstPeriod;
     }
 
+    /**
+     * Computes the least common multiple of the given two numbers.
+     *
+     * @param a the first number
+     * @param b the second number
+     * @return the least common multiple of the given two numbers
+     * @throws ArithmeticException if the result overflows a {@code long}
+     */
     private long lcm(final long a, final long b) {
+        if (productWouldOverflow(a, b)) {
+            throw new ArithmeticException();
+        }
         return (a * b) / gcd(Math.min(a, b), Math.max(a, b));
     }
 
