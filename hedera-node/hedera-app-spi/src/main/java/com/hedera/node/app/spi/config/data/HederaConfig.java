@@ -21,16 +21,16 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("hedera")
-public record HederaConfig(@ConfigProperty long firstUserEntity,
-                           @ConfigProperty long realm,
-                           @ConfigProperty long shard,
-                           @ConfigProperty("recordStream.sidecarMaxSizeMb") int recordStreamSidecarMaxSizeMb,
-                           @ConfigProperty("transaction.maxMemoUtf8Bytes") int transactionMaxMemoUtf8Bytes,
-                           @ConfigProperty("transaction.maxValidDuration") long transactionMaxValidDuration,
-                           @ConfigProperty("transaction.minValidDuration") long transactionMinValidDuration,
-                           @ConfigProperty("transaction.minValidityBufferSecs") int transactionMinValidityBufferSecs,
-                           @ConfigProperty("recordStream.recordFileVersion") int recordStreamRecordFileVersion,
-                           @ConfigProperty("recordStream.signatureFileVersion") int recordStreamSignatureFileVersion) {
+public record HederaConfig(@ConfigProperty(defaultValue = "1001") long firstUserEntity,
+                           @ConfigProperty(defaultValue = "0") long realm,
+                           @ConfigProperty(defaultValue = "0") long shard,
+                           @ConfigProperty(value = "recordStream.sidecarMaxSizeMb", defaultValue = "256") int recordStreamSidecarMaxSizeMb,
+                           @ConfigProperty(value = "transaction.maxMemoUtf8Bytes", defaultValue = "100") int transactionMaxMemoUtf8Bytes,
+                           @ConfigProperty(value = "transaction.maxValidDuration", defaultValue = "180") long transactionMaxValidDuration,
+                           @ConfigProperty(value = "transaction.minValidDuration", defaultValue = "15") long transactionMinValidDuration,
+                           @ConfigProperty(value = "transaction.minValidityBufferSecs", defaultValue = "10") int transactionMinValidityBufferSecs,
+                           @ConfigProperty(value = "recordStream.recordFileVersion", defaultValue = "6") int recordStreamRecordFileVersion,
+                           @ConfigProperty(value = "recordStream.signatureFileVersion", defaultValue = "6") int recordStreamSignatureFileVersion) {
 
 
 }

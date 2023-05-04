@@ -21,6 +21,6 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("autoCreation")
-public record AutoCreationConfig(@ConfigProperty boolean enabled) {
+public record AutoCreationConfig(@ConfigProperty(defaultValue = "true") boolean enabled) {
 
 }

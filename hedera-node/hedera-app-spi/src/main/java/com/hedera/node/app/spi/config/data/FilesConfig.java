@@ -21,16 +21,16 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("files")
-public record FilesConfig(@ConfigProperty long addressBook,
-                          @ConfigProperty long networkProperties,
-                          @ConfigProperty long exchangeRates,
-                          @ConfigProperty long feeSchedules,
-                          @ConfigProperty long hapiPermissions,
-                          @ConfigProperty long nodeDetails,
+public record FilesConfig(@ConfigProperty(defaultValue = "101") long addressBook,
+                          @ConfigProperty(defaultValue = "121") long networkProperties,
+                          @ConfigProperty(defaultValue = "112") long exchangeRates,
+                          @ConfigProperty(defaultValue = "111") long feeSchedules,
+                          @ConfigProperty(defaultValue = "122") long hapiPermissions,
+                          @ConfigProperty(defaultValue = "102") long nodeDetails,
                           //@ConfigProperty Pair<Long, Long> softwareUpdateRange,
-                          @ConfigProperty long throttleDefinitions,
-                          @ConfigProperty long maxNumber,
-                          @ConfigProperty int maxSizeKb) {
+                          @ConfigProperty(defaultValue = "123") long throttleDefinitions,
+                          @ConfigProperty(defaultValue = "1000000") long maxNumber,
+                          @ConfigProperty(defaultValue = "1024") int maxSizeKb) {
 
 
 }

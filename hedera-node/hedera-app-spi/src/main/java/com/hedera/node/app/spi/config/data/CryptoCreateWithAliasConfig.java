@@ -21,5 +21,5 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("cryptoCreateWithAlias")
-public record CryptoCreateWithAliasConfig(@ConfigProperty boolean enabled) {
+public record CryptoCreateWithAliasConfig(@ConfigProperty(defaultValue = "true") boolean enabled) {
 }

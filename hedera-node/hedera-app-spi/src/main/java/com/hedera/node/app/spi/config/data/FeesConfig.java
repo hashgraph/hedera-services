@@ -21,9 +21,9 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("fees")
-public record FeesConfig(@ConfigProperty int minCongestionPeriod,
+public record FeesConfig(@ConfigProperty(defaultValue = "60") int minCongestionPeriod,
                          // CongestionMultipliers percentCongestionMultipliers,
                          // EntityScaleFactors percentUtilizationScaleFactors,
-                         @ConfigProperty int tokenTransferUsageMultiplier) {
+                         @ConfigProperty(defaultValue = "380") int tokenTransferUsageMultiplier) {
 
 }

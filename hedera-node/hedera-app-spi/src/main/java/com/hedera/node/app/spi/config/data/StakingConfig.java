@@ -19,11 +19,21 @@ package com.hedera.node.app.spi.config.data;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.util.Map;
 
 @ConfigData("staking")
 public record StakingConfig(@ConfigProperty long periodMins,
-                            @ConfigProperty("rewardHistory.numStoredPeriods") int rewardHistoryNumStoredPeriods
+                            @ConfigProperty("rewardHistory.numStoredPeriods") int rewardHistoryNumStoredPeriods,
                             //ConfigProperty("startupHelper.recompute") Set<StakeStartupHelper.RecomputeType> startupHelperRecompute
+                            @ConfigProperty("fees.nodeRewardPercentage") int feesNodeRewardPercentage,
+                            @ConfigProperty("fees.stakingRewardPercentage") int feesStakingRewardPercentage,
+                            @ConfigProperty Map<Long, Long> nodeMaxToMinStakeRatios,
+                            @ConfigProperty(defaultValue = "true") boolean isEnabled,
+                            @ConfigProperty long maxDailyStakeRewardThPerH,
+                            @ConfigProperty(defaultValue = "false") boolean requireMinStakeToReward,
+                            @ConfigProperty(defaultValue = "0") long rewardRate,
+                            @ConfigProperty(defaultValue = "25000000000000000") long startThreshold,
+                            @ConfigProperty int sumOfConsensusWeights
 ) {
 
 

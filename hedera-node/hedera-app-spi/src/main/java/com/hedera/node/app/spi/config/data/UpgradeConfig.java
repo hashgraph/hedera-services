@@ -20,12 +20,7 @@ package com.hedera.node.app.spi.config.data;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
-@ConfigData("balances")
-public record BalancesConfig(
-        @ConfigProperty(value = "exportDir.path", defaultValue = "/opt/hgcapp/accountBalances/") String exportDirPath,
-        @ConfigProperty(defaultValue = "true") boolean exportEnabled,
-        @ConfigProperty(defaultValue = "900") int exportPeriodSecs,
-        @ConfigProperty(defaultValue = "true") boolean exportTokenBalances,
-        @ConfigProperty(defaultValue = "0") long nodeBalanceWarningThreshold,
-        @ConfigProperty(defaultValue = "true") boolean compressOnCreation) {
+@ConfigData("upgrade")
+public record UpgradeConfig(
+        @ConfigProperty(value = "artifacts.path", defaultValue = "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current") String artifactsPath) {
 }

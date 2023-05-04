@@ -21,7 +21,7 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("expiry")
-public record ExpiryConfig(@ConfigProperty String throttleResource
+public record ExpiryConfig(@ConfigProperty(defaultValue = "expiry-throttle.json") String throttleResource
                            //@ConfigProperty List<MapAccessType> minCycleEntryCapacity
 ) {
 

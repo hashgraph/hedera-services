@@ -21,19 +21,19 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("ledger")
-public record LedgerConfig(@ConfigProperty int maxAutoAssociations,
+public record LedgerConfig(@ConfigProperty(defaultValue = "5000") int maxAutoAssociations,
                            @ConfigProperty int numSystemAccounts,
                            @ConfigProperty long totalTinyBarFloat,
                            @ConfigProperty String id,
-                           @ConfigProperty("changeHistorian.memorySecs") int changeHistorianMemorySecs,
-                           @ConfigProperty("autoRenewPeriod.maxDuration") long autoRenewPeriodMaxDuration,
-                           @ConfigProperty("autoRenewPeriod.minDuration") long autoRenewPeriodMinDuration,
-                           @ConfigProperty("xferBalanceChanges.maxLen") int xferBalanceChangesMaxLen,
-                           @ConfigProperty long fundingAccount,
-                           @ConfigProperty("transfers.maxLen") int transfersMaxLen,
-                           @ConfigProperty("tokenTransfers.maxLen") int tokenTransfersMaxLen,
-                           @ConfigProperty("nftTransfers.maxLen") int nftTransfersMaxLen,
-                           @ConfigProperty("records.maxQueryableByAccount") int recordsMaxQueryableByAccount,
-                           @ConfigProperty("schedule.txExpiryTimeSecs") int scheduleTxExpiryTimeSecs) {
+                           @ConfigProperty(value = "changeHistorian.memorySecs", defaultValue = "20") int changeHistorianMemorySecs,
+                           @ConfigProperty(value = "autoRenewPeriod.maxDuration", defaultValue = "8000001") long autoRenewPeriodMaxDuration,
+                           @ConfigProperty(value = "autoRenewPeriod.minDuration", defaultValue = "2592000") long autoRenewPeriodMinDuration,
+                           @ConfigProperty(value = "xferBalanceChanges.maxLen", defaultValue = "20") int xferBalanceChangesMaxLen,
+                           @ConfigProperty(defaultValue = "98") long fundingAccount,
+                           @ConfigProperty(value = "transfers.maxLen", defaultValue = "10") int transfersMaxLen,
+                           @ConfigProperty(value = "tokenTransfers.maxLen", defaultValue = "10") int tokenTransfersMaxLen,
+                           @ConfigProperty(value = "nftTransfers.maxLen", defaultValue = "10") int nftTransfersMaxLen,
+                           @ConfigProperty(value = "records.maxQueryableByAccount", defaultValue = "180") int recordsMaxQueryableByAccount,
+                           @ConfigProperty(value = "schedule.txExpiryTimeSecs", defaultValue = "1800") int scheduleTxExpiryTimeSecs) {
 
 }

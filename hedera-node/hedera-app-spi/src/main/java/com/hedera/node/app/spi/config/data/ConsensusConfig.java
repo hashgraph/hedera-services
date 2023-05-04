@@ -20,12 +20,9 @@ package com.hedera.node.app.spi.config.data;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
-@ConfigData("balances")
-public record BalancesConfig(
-        @ConfigProperty(value = "exportDir.path", defaultValue = "/opt/hgcapp/accountBalances/") String exportDirPath,
-        @ConfigProperty(defaultValue = "true") boolean exportEnabled,
-        @ConfigProperty(defaultValue = "900") int exportPeriodSecs,
-        @ConfigProperty(defaultValue = "true") boolean exportTokenBalances,
-        @ConfigProperty(defaultValue = "0") long nodeBalanceWarningThreshold,
-        @ConfigProperty(defaultValue = "true") boolean compressOnCreation) {
+@ConfigData("consensus")
+public record ConsensusConfig(
+        @ConfigProperty(value = "message.maxBytesAllowed", defaultValue = "1024") int messageMaxBytesAllowed,
+        @ConfigProperty(value = "message.maxPrecedingRecords", defaultValue = "3") long handleMaxPrecedingRecords,
+        @ConfigProperty(value = "message.maxFollowingRecords", defaultValue = "50") long handleMaxFollowingRecords) {
 }

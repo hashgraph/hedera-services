@@ -21,18 +21,18 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("accounts")
-public record AccountsConfig(@ConfigProperty long addressBookAdmin,
-                             @ConfigProperty long exchangeRatesAdmin,
-                             @ConfigProperty long feeSchedulesAdmin,
-                             @ConfigProperty long freezeAdmin,
-                             @ConfigProperty long lastThrottleExempt,
-                             @ConfigProperty long nodeRewardAccount,
-                             @ConfigProperty long stakingRewardAccount,
-                             @ConfigProperty long systemAdmin,
-                             @ConfigProperty long systemDeleteAdmin,
-                             @ConfigProperty long systemUndeleteAdmin,
-                             @ConfigProperty long treasury,
-                             @ConfigProperty boolean storeOnDisk,
-                             @ConfigProperty long maxNumber) {
+public record AccountsConfig(@ConfigProperty(defaultValue = "55") long addressBookAdmin,
+                             @ConfigProperty(defaultValue = "57") long exchangeRatesAdmin,
+                             @ConfigProperty(defaultValue = "56") long feeSchedulesAdmin,
+                             @ConfigProperty(defaultValue = "58") long freezeAdmin,
+                             @ConfigProperty(defaultValue = "100") long lastThrottleExempt,
+                             @ConfigProperty(defaultValue = "801") long nodeRewardAccount,
+                             @ConfigProperty(defaultValue = "800") long stakingRewardAccount,
+                             @ConfigProperty(defaultValue = "50") long systemAdmin,
+                             @ConfigProperty(defaultValue = "59") long systemDeleteAdmin,
+                             @ConfigProperty(defaultValue = "60") long systemUndeleteAdmin,
+                             @ConfigProperty(defaultValue = "2") long treasury,
+                             @ConfigProperty(defaultValue = "false") boolean storeOnDisk,
+                             @ConfigProperty(defaultValue = "5000000") long maxNumber) {
 
 }

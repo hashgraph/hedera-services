@@ -21,7 +21,7 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("entities")
-public record EntitiesConfig(@ConfigProperty long maxLifetime
+public record EntitiesConfig(@ConfigProperty(defaultValue = "3153600000") long maxLifetime
                              //@ConfigProperty Set<EntityType> systemDeletable
 ) {
 

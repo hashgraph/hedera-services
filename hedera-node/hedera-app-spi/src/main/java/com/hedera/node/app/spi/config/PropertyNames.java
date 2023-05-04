@@ -162,8 +162,6 @@ public class PropertyNames {
     public static final String SCHEDULING_MAX_NUM = "scheduling.maxNumber";
     public static final String SCHEDULING_MAX_EXPIRATION_FUTURE_SECS = "scheduling.maxExpirationFutureSeconds";
     public static final String SCHEDULING_WHITE_LIST = "scheduling.whitelist";
-
-
     public static final String SIGS_EXPAND_FROM_IMMUTABLE_STATE = "sigs.expandFromImmutableState";
     public static final String STAKING_FEES_NODE_REWARD_PERCENT = "staking.fees.nodeRewardPercentage";
     public static final String STAKING_FEES_STAKING_REWARD_PERCENT = "staking.fees.stakingRewardPercentage";
@@ -174,6 +172,8 @@ public class PropertyNames {
     public static final String STAKING_REWARD_RATE = "staking.rewardRate";
     public static final String STAKING_START_THRESH = "staking.startThreshold";
     public static final String STAKING_SUM_OF_CONSENSUS_WEIGHTS = "staking.sumOfConsensusWeights";
+
+
     public static final String TOKENS_MAX_AGGREGATE_RELS = "tokens.maxAggregateRels";
     public static final String TOKENS_STORE_RELS_ON_DISK = "tokens.storeRelsOnDisk";
     public static final String TOKENS_MAX_NUM = "tokens.maxNumber";
@@ -199,6 +199,8 @@ public class PropertyNames {
     public static final String CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS = "consensus.handle.maxPrecedingRecords";
     public static final String CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS = "consensus.handle.maxFollowingRecords";
     public static final String UPGRADE_ARTIFACTS_PATH = "upgrade.artifacts.path";
+
+
     public static final String HEDERA_ALLOWANCES_MAX_TXN_LIMIT = "hedera.allowances.maxTransactionLimit";
     public static final String HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT = "hedera.allowances.maxAccountLimit";
     public static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
