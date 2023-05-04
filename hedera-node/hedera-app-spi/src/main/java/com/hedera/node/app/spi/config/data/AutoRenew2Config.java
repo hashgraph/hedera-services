@@ -18,9 +18,12 @@
 package com.hedera.node.app.spi.config.data;
 
 import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
 
-@ConfigData("autoRenew")
-public record AutoRenewConfig(//@ConfigProperty(defaultValue = "") Set<EntityType> targetTypes
-) {
+@ConfigData("autorenew")
+public record AutoRenew2Config(@ConfigProperty(defaultValue = "100") int numberOfEntitiesToScan,
+                               @ConfigProperty(defaultValue = "2") int maxNumberOfEntitiesToRenewOrDelete,
+                               @ConfigProperty(defaultValue = "604800") long gracePeriod,
+                               @ConfigProperty(defaultValue = "false") boolean grantFreeRenewals) {
 
 }

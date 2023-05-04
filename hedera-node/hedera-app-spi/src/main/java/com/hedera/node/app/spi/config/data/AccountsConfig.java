@@ -34,6 +34,6 @@ public record AccountsConfig(@ConfigProperty(defaultValue = "55") long addressBo
                              @ConfigProperty(defaultValue = "2") long treasury,
                              @ConfigProperty(defaultValue = "false") boolean storeOnDisk,
                              @ConfigProperty(defaultValue = "5000000") long maxNumber,
-                             @ConfigProperty("blocklist.enabled") Object blocklistEnabled,
-                             @ConfigProperty("blocklist.resource") Object blocklistResource) {
+                             @ConfigProperty(value = "blocklist.enabled", defaultValue = "false") boolean blocklistEnabled,
+                             @ConfigProperty(value = "blocklist.resource", defaultValue = "") String blocklistResource) {
 }

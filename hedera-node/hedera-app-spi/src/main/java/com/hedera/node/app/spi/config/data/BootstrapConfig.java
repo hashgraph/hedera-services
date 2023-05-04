@@ -21,17 +21,18 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("bootstrap")
-public record BootstrapConfig(@ConfigProperty("feeSchedulesJson.resource") String feeSchedulesJsonResource,
-                              @ConfigProperty("genesisPublicKey") String genesisPublicKey,
-                              @ConfigProperty("hapiPermissions.path") String hapiPermissionsPath,
-                              @ConfigProperty("networkProperties.path") String networkPropertiesPath,
-                              @ConfigProperty("rates.currentHbarEquiv") int ratesCurrentHbarEquiv,
-                              @ConfigProperty("rates.currentCentEquiv") int ratesCurrentCentEquiv,
-                              @ConfigProperty("rates.currentExpiry") int ratesCurrentExpiry,
-                              @ConfigProperty("rates.nextHbarEquiv") int ratesNextHbarEquiv,
-                              @ConfigProperty("rates.nextCentEquiv") int ratesNextCentEquiv,
-                              @ConfigProperty("rates.nextExpiry") long ratesNextExpiry,
-                              @ConfigProperty("system.entityExpiry") long systemEntityExpiry,
-                              @ConfigProperty("throttleDefsJson.resource") String throttleDefsJsonResource) {
+public record BootstrapConfig(
+        @ConfigProperty(value = "feeSchedulesJson.resource", defaultValue = "feeSchedules.json") String feeSchedulesJsonResource,
+        @ConfigProperty(value = "genesisPublicKey", defaultValue = "0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92") String genesisPublicKey,
+        @ConfigProperty(value = "hapiPermissions.path", defaultValue = "data/config/api-permission.properties") String hapiPermissionsPath,
+        @ConfigProperty(value = "networkProperties.path", defaultValue = "data/config/application.properties") String networkPropertiesPath,
+        @ConfigProperty(value = "rates.currentHbarEquiv", defaultValue = "1") int ratesCurrentHbarEquiv,
+        @ConfigProperty(value = "rates.currentCentEquiv", defaultValue = "12") int ratesCurrentCentEquiv,
+        @ConfigProperty(value = "rates.currentExpiry", defaultValue = "4102444800") int ratesCurrentExpiry,
+        @ConfigProperty(value = "rates.nextHbarEquiv", defaultValue = "1") int ratesNextHbarEquiv,
+        @ConfigProperty(value = "rates.nextCentEquiv", defaultValue = "15") int ratesNextCentEquiv,
+        @ConfigProperty(value = "rates.nextExpiry", defaultValue = "4102444800") long ratesNextExpiry,
+        @ConfigProperty(value = "system.entityExpiry", defaultValue = "1812637686") long systemEntityExpiry,
+        @ConfigProperty(value = "throttleDefsJson.resource", defaultValue = "throttles.json") String throttleDefsJsonResource) {
 
 }
