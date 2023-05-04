@@ -41,6 +41,6 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("addressBook")
 public record AddressBookConfig(
         @ConfigProperty(defaultValue = "true") boolean updateAddressBookOnlyAtUpgrade,
-        @ConfigProperty(defaultValue = "true") boolean forceUseOfConfigAddressBook,
+        @ConfigProperty(defaultValue = "false") boolean forceUseOfConfigAddressBook,
         @ConfigProperty(defaultValue = "data/saved/address_book") String addressBookDirectory,
         @ConfigProperty(defaultValue = "50") int maxRecordedAddressBookFiles) {}

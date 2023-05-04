@@ -64,6 +64,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -116,7 +117,7 @@ public final class EventRecoveryWorkflow {
         }
 
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, "com.swirlds");
+        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
 
         for (final Path configurationFile : configurationFiles) {
             logger.info(STARTUP.getMarker(), "Loading configuration from {}", configurationFile);

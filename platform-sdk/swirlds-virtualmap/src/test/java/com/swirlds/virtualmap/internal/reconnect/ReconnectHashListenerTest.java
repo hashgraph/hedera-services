@@ -246,5 +246,13 @@ class ReconnectHashListenerTest {
         public VirtualKeySet<TestKey> buildKeySet() {
             return new InMemoryKeySet<>();
         }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+            return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
+        }
     }
 }

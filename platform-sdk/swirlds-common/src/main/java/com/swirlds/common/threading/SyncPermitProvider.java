@@ -25,17 +25,29 @@ import java.util.concurrent.Semaphore;
  * Manages the permits that allow syncs to occur in the protocol paradigm. Syncs should only proceed once a permit is
  * acquired. This class is thread safe.
  */
-public class SyncPermit {
-
+public class SyncPermitProvider {
+    /**
+     * A semaphore that is used to manage the number of concurrent syncs
+     */
     private final Semaphore syncPermits;
+
+    /**
+     * The object returned when a permit is successfully obtained
+     */
     private final AcquiredOnTry acquired;
+
+    /**
+     * The number of permits this provider has available to distribute
+     */
+    private final int numPermits;
 
     /**
      * Creates a new instance with a maximum number of permits
      *
-     * @param numPermits the number of concurrent outgoing syncs to allow
+     * @param numPermits the number of concurrent syncs this provider will allow
      */
-    public SyncPermit(final int numPermits) {
+    public SyncPermitProvider(final int numPermits) {
+        this.numPermits = numPermits;
         this.syncPermits = new Semaphore(numPermits);
         this.acquired = new AcquiredOnTry(syncPermits::release);
     }
@@ -48,7 +60,8 @@ public class SyncPermit {
     }
 
     /**
-     * Attempts to acquire a sync permit. This method returns immediately if no permit is not available.
+     * Attempts to acquire a sync permit. This method returns immediately and never blocks, even if no permit is
+     * available.
      *
      * @return an autocloseable instance that tells the caller if the permit has been acquired and will automatically
      * release the permit when used in a try-with-resources block
@@ -58,5 +71,14 @@ public class SyncPermit {
             return acquired;
         }
         return MaybeLocked.NOT_ACQUIRED;
+    }
+
+    /**
+     * First acquires all permits uninterruptibly, then releases them again. The effect of this is the caller waiting
+     * for all permits to be returned before proceeding
+     */
+    public void waitForAllSyncsToFinish() {
+        syncPermits.acquireUninterruptibly(numPermits);
+        syncPermits.release(numPermits);
     }
 }
