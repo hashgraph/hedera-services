@@ -119,11 +119,12 @@ public class RecordStreamSigningUtils {
             return true;
         } catch (final SignatureException | InvalidProtobufVersionException | IOException e) {
             System.err.printf(
-                    "signRecordStreamFile :: Failed to sign file [%s] with exception : [%s]%n",
-                    streamFileToSign.getFileName(), e);
+                    "signRecordStreamFile :: Failed to sign file [%s] with exception : [%s]%n", streamFileToSign, e);
             return false;
         } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
-            System.err.printf("signRecordStreamFile :: Irrecoverable error encountered :[%s]%n", e);
+            System.err.printf(
+                    "signRecordStreamFile :: Irrecoverable error encountered when signing [%s] with exception : [%s]%n",
+                    streamFileToSign, e);
             throw new RuntimeException("Irrecoverable error encountered", e);
         }
     }
@@ -142,7 +143,7 @@ public class RecordStreamSigningUtils {
         } catch (final IOException e) {
             System.err.printf(
                     "getRecordStreamVersion :: Failed to read record stream version from file [%s] with exception : [%s]%n",
-                    recordFile.getName(), e);
+                    recordFile.getAbsolutePath(), e);
             throw e;
         }
     }
@@ -191,7 +192,7 @@ public class RecordStreamSigningUtils {
         } catch (final IOException e) {
             System.err.printf(
                     "generateSigRecordStreamFile :: Failed to generate signature file for [%s] with exception : [%s]%n",
-                    filePath.getName(), e);
+                    filePath.getAbsolutePath(), e);
             throw e;
         }
     }

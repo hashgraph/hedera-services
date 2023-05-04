@@ -23,6 +23,8 @@ import java.security.KeyPair;
 import java.util.Objects;
 
 public class TestUtils {
+    static String HAPI_VERSION = "0.37.0-allowance-SNAPSHOT";
+
     static KeyPair loadKey() {
         try {
             return FileSigningUtils.loadPfxKey(
@@ -36,5 +38,42 @@ public class TestUtils {
         } catch (final URISyntaxException e) {
             throw new RuntimeException("Failed to get resource", e);
         }
+    }
+
+    static KeyPair loadNode0Key() {
+        try {
+            return FileSigningUtils.loadPfxKey(
+                    Path.of(Objects.requireNonNull(TestUtils.class
+                                    .getClassLoader()
+                                    .getResource("com.hedera.services.cli.sign.test/private-node0000.pfx"))
+                            .toURI()),
+                    "password",
+                    "s-node0000");
+
+        } catch (final URISyntaxException e) {
+            throw new RuntimeException("Failed to get resource", e);
+        }
+    }
+
+    static KeyPair loadNode1Key() {
+        try {
+            return FileSigningUtils.loadPfxKey(
+                    Path.of(Objects.requireNonNull(TestUtils.class
+                                    .getClassLoader()
+                                    .getResource("com.hedera.services.cli.sign.test/private-node0001.pfx"))
+                            .toURI()),
+                    "password",
+                    "s-node0001");
+
+        } catch (final URISyntaxException e) {
+            throw new RuntimeException("Failed to get resource", e);
+        }
+    }
+
+    static Path loadResourceFile(String resourceFileName) {
+        return Path.of(Objects.requireNonNull(TestUtils.class
+                        .getClassLoader()
+                        .getResource("com.hedera.services.cli.sign.test/" + resourceFileName))
+                .getPath());
     }
 }

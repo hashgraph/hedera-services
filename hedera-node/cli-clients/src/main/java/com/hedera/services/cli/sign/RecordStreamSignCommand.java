@@ -16,6 +16,7 @@
 
 package com.hedera.services.cli.sign;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.platform.cli.SignCommand;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -56,6 +57,7 @@ public final class RecordStreamSignCommand extends SignCommand {
                 || RecordStreamType.getInstance().isGzFile(path.toFile().getName());
     }
 
+    @VisibleForTesting
     public void setHapiVersion(String hapiVersion) {
         this.hapiVersion = hapiVersion;
     }
