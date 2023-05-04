@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.components.state;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 
@@ -26,6 +25,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -66,7 +66,9 @@ import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -151,6 +153,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *                                           complete
      * @param issConsumer                        consumer to invoke when an ISS is detected
      * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
+     * @param getPlatformStatus                  a supplier that returns the current platform status
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext context,
@@ -168,27 +171,29 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final IssConsumer issConsumer,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
-            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+            @NonNull final PreConsensusEventWriter preConsensusEventWriter,
+            @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
-        throwArgNull(context, "context");
-        throwArgNull(threadManager, "threadManager");
-        throwArgNull(addressBook, "addressBook");
-        throwArgNull(signer, "signer");
-        throwArgNull(mainClassName, "mainClassName");
-        throwArgNull(selfId, "selfId");
-        throwArgNull(swirldName, "swirldName");
-        throwArgNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
-        throwArgNull(stateToDiskEventConsumer, "stateToDiskEventConsumer");
-        throwArgNull(newLatestCompleteStateConsumer, "newLatestCompleteStateConsumer");
-        throwArgNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
-        throwArgNull(stateHasEnoughSignaturesConsumer, "stateHasEnoughSignaturesConsumer");
-        throwArgNull(issConsumer, "issConsumer");
-        throwArgNull(haltRequestedConsumer, "haltRequestedConsumer");
-        throwArgNull(fatalErrorConsumer, "fatalErrorConsumer");
-        throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
+        Objects.requireNonNull(context, "context");
+        Objects.requireNonNull(threadManager, "threadManager");
+        Objects.requireNonNull(addressBook, "addressBook");
+        Objects.requireNonNull(signer, "signer");
+        Objects.requireNonNull(mainClassName, "mainClassName");
+        Objects.requireNonNull(selfId, "selfId");
+        Objects.requireNonNull(swirldName, "swirldName");
+        Objects.requireNonNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
+        Objects.requireNonNull(stateToDiskEventConsumer, "stateToDiskEventConsumer");
+        Objects.requireNonNull(newLatestCompleteStateConsumer, "newLatestCompleteStateConsumer");
+        Objects.requireNonNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
+        Objects.requireNonNull(stateHasEnoughSignaturesConsumer, "stateHasEnoughSignaturesConsumer");
+        Objects.requireNonNull(issConsumer, "issConsumer");
+        Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer");
+        Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer");
+        Objects.requireNonNull(preConsensusEventWriter, "preConsensusEventWriter");
+        Objects.requireNonNull(getPlatformStatus, "getPlatformStatus");
 
         this.signer = signer;
-        this.signatureTransmitter = new SignatureTransmitter(addressBook, selfId, prioritySystemTransactionSubmitter);
+        this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, getPlatformStatus);
         this.signedStateMetrics = new SignedStateMetrics(context.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);

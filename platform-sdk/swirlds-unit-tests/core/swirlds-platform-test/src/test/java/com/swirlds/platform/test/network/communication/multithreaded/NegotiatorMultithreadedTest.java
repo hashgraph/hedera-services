@@ -19,7 +19,7 @@ package com.swirlds.platform.test.network.communication.multithreaded;
 import static org.awaitility.Awaitility.await;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.network.communication.TestProtocol;
 import com.swirlds.platform.test.sync.ConnectionFactory;
 import java.util.concurrent.TimeUnit;

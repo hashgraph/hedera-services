@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.OutboundConnectionManager;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import java.util.ArrayList;
