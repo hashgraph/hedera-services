@@ -25,24 +25,22 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.swirlds.common.AutoCloseableNonThrowing;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -55,7 +53,7 @@ import org.apache.tuweni.units.bigints.UInt256;
  * the "signed state file". But the whole directory tree must be present.
  *
  * <p>This uses a `SignedStateFileReader` to suck that entire merkle tree into memory, plus the
- * indexes of the virtual maps ("vmap"s) - ~1Gb serialized (2022-11). Then you can traverse the
+ * indexes of the virtual maps ("vmap"s) - ~2Gb serialized (2023-04). Then you can traverse the
  * rematerialized hashgraph state.
  *
  * <p>Currently implements only operations needed for looking at contract bytecodes and contract
@@ -64,41 +62,50 @@ import org.apache.tuweni.units.bigints.UInt256;
 public class SignedStateHolder implements AutoCloseableNonThrowing {
 
     static final int ESTIMATED_NUMBER_OF_CONTRACTS = 100_000;
+    static final int ESTIMATED_NUMBER_OF_DELETED_CONTRACTS = 10_000;
 
     @NonNull
     private final Path swh;
 
+    @NonNull
     private final ReservedSignedState reservedSignedState;
 
     @NonNull
-    private ServicesState platformState;
+    private final ServicesState servicesState;
 
-    public SignedStateHolder(@NonNull final Path swhFile) throws Exception {
+    public SignedStateHolder(@NonNull final Path swhFile) {
+        Objects.requireNonNull(swhFile, "swhFile");
+
         swh = swhFile;
         final var state = dehydrate();
         reservedSignedState = state.getLeft();
-        platformState = state.getRight();
+        servicesState = state.getRight();
     }
 
     /** Deserialize the signed state file into an in-memory data structure. */
-    @SuppressWarnings("java:S112") // "Generic exceptions should never be thrown" - LCM of fatal exceptions: don't care
+    @SuppressWarnings("removal")
     @NonNull
     private Pair<ReservedSignedState, ServicesState> dehydrate() {
         try {
-            // register all applicable classes on classpath before deserializing signed state
-            ConstructableRegistry.getInstance().registerConstructables("*");
+            registerConstructables();
 
-            final PlatformContext platformContext = new DefaultPlatformContext(
-                    ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+            final var config = com.swirlds.common.config.singleton.ConfigurationHolder.getInstance()
+                    .get();
+            final var metrics = new com.swirlds.common.metrics.noop.NoOpMetrics();
+            final var crypto = com.swirlds.common.crypto.CryptographyHolder.get();
 
+            final PlatformContext platformContext = new DefaultPlatformContext(config, metrics, crypto);
             final var rss =
                     SignedStateFileReader.readStateFile(platformContext, swh).reservedSignedState();
-            final var ps = (ServicesState) (rss.get().getSwirldState());
-
-            assertSignedStateComponentExists(ps, "platform state (Swirlds)");
-            return Pair.of(rss, ps);
-        } catch (ConstructableRegistryException | IOException e) {
-            throw new RuntimeException(e);
+            if (null == rss) throw new MissingSignedStateComponent("ReservedSignedState", swh);
+            final var swirldsState = rss.get().getSwirldState();
+            if (swirldsState instanceof ServicesState ss) {
+                return Pair.of(rss, ss);
+            } else {
+                throw new MissingSignedStateComponent("ServicesState", swh);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -126,29 +133,30 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
 
         @Override
         public boolean equals(final Object obj) {
+            if (obj == null) return false;
+            if (obj == this) return true;
             return obj instanceof Contract other
-                    && ids.equals(other.ids)
-                    && Arrays.equals(bytecode, other.bytecode)
-                    && validity.equals(other.validity);
+                    && new EqualsBuilder()
+                            .append(ids, other.ids)
+                            .append(bytecode, other.bytecode)
+                            .append(validity, other.validity)
+                            .isEquals();
         }
 
         @Override
         public int hashCode() {
-            return ids.hashCode() * 31 + Arrays.hashCode(bytecode) + validity.hashCode();
+            return new HashCodeBuilder(17, 37)
+                    .append(ids)
+                    .append(bytecode)
+                    .append(validity)
+                    .toHashCode();
         }
 
         @Override
         public String toString() {
+            var csvIds = ids.stream().map(Object::toString).collect(Collectors.joining(","));
 
-            var csvIds = new StringBuilder(100);
-            for (var id : ids()) {
-                csvIds.append(id); // hides a `toString` which is why `String::join` isn't enough
-                csvIds.append(',');
-            }
-            csvIds.setLength(csvIds.length() - 1);
-
-            return "Contract{ids=(%s), %s, bytecode=%s}"
-                    .formatted(csvIds.toString(), validity, Arrays.toString(bytecode));
+            return "Contract{ids=(%s), %s, bytecode=%s}".formatted(csvIds, validity, Arrays.toString(bytecode));
         }
     }
 
@@ -163,7 +171,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
      */
     public record Contracts(
             @NonNull Collection</*@NonNull*/ Contract> contracts,
-            Collection<Integer> deletedContracts,
+            @NonNull Collection<Integer> deletedContracts,
             int registeredContractsCount) {}
 
     /**
@@ -171,21 +179,25 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
      * bytecodes for all the contracts in that state.
      */
     @NonNull
-    public Contracts getContracts() throws Exception {
+    public Contracts getContracts() {
         final var contractIds = getAllKnownContracts();
         final var deletedContractIds = getAllDeletedContracts();
         final var contractContents = getAllContractContents(contractIds, deletedContractIds);
         return new Contracts(contractContents, deletedContractIds, contractIds.size());
     }
 
-    public record ContractKeyLocal(long contractId, UInt256 key) {
+    public record ContractKeyLocal(long contractId, @NonNull UInt256 key) {
         public static ContractKeyLocal from(final ContractKey ckey) {
+            Objects.requireNonNull(ckey, "ckey");
+
             return new ContractKeyLocal(ckey.getContractId(), toUInt256FromPackedIntArray(ckey.getKey()));
         }
     }
 
     @NonNull
-    public static UInt256 toUInt256FromPackedIntArray(final int[] packed) {
+    public static UInt256 toUInt256FromPackedIntArray(@NonNull final int[] packed) {
+        Objects.requireNonNull(packed, "packed");
+
         final var buf = ByteBuffer.allocate(32);
         buf.asIntBuffer().put(packed);
         return UInt256.fromBytes(Bytes.wrap(buf.array()));
@@ -193,16 +205,16 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
 
     @NonNull
     public VirtualMapLike<ContractKey, IterableContractValue> getRawContractStorage() {
-        return getPlatformState().contractStorage();
+        return getServicesState().contractStorage();
     }
 
-    public @NonNull ServicesState getPlatformState() {
-        return platformState;
+    public @NonNull ServicesState getServicesState() {
+        return servicesState;
     }
 
     /** Gets all existing accounts */
     public @NonNull AccountStorageAdapter getAccounts() {
-        final var accounts = platformState.accounts();
+        final var accounts = servicesState.accounts();
         assertSignedStateComponentExists(accounts, "accounts");
         return accounts;
     }
@@ -213,7 +225,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
      * <p>The file state contains, among other things, all the contracts' bytecodes.
      */
     public @NonNull VirtualMapLike<VirtualBlobKey, VirtualBlobValue> getFileStore() {
-        final var fileStore = platformState.storage();
+        final var fileStore = servicesState.storage();
         assertSignedStateComponentExists(fileStore, "fileStore");
         return fileStore;
     }
@@ -223,7 +235,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
      */
     @NonNull
     public Set</*@NonNull*/ Integer> getAllKnownContracts() {
-        var ids = new HashSet<Integer>();
+        final var ids = new HashSet<Integer>(ESTIMATED_NUMBER_OF_CONTRACTS);
         getAccounts().forEach((k, v) -> {
             if (null != k && null != v && v.isSmartContract()) ids.add(k.intValue());
         });
@@ -233,7 +245,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
     /** Returns the ids of all deleted contracts ("self-destructed") */
     @NonNull
     public Set</*@NonNull*/ Integer> getAllDeletedContracts() {
-        var ids = new HashSet<Integer>(ESTIMATED_NUMBER_OF_CONTRACTS);
+        final var ids = new HashSet<Integer>(ESTIMATED_NUMBER_OF_DELETED_CONTRACTS);
         getAccounts().forEach((k, v) -> {
             if (null != k && null != v && v.isSmartContract() && v.isDeleted()) ids.add(k.intValue());
         });
@@ -245,9 +257,11 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
     public Collection</*@NonNull*/ Contract> getAllContractContents(
             @NonNull final Collection</*@NonNull*/ Integer> contractIds,
             @NonNull final Collection</*@NonNull*/ Integer> deletedContractIds) {
+        Objects.requireNonNull(contractIds, "contractIds");
+        Objects.requireNonNull(deletedContractIds, "deletedContractIds");
 
         final var fileStore = getFileStore();
-        var codes = new ArrayList<Contract>();
+        final var codes = new ArrayList<Contract>();
         for (var cid : contractIds) {
             final var vbk = new VirtualBlobKey(Type.CONTRACT_BYTECODE, cid);
             if (fileStore.containsKey(vbk)) {
@@ -264,13 +278,29 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         return codes;
     }
 
+    /** register all applicable classes on classpath before deserializing signed state */
+    void registerConstructables() {
+        try {
+            ConstructableRegistry.getInstance().registerConstructables("*");
+        } catch (ConstructableRegistryException e) {
+            throw new UncheckedConstructableRegistryException(e);
+        }
+    }
+
+    public static class UncheckedConstructableRegistryException extends RuntimeException {
+        public UncheckedConstructableRegistryException(@NonNull final ConstructableRegistryException e) {
+            super(e);
+        }
+    }
+
     public static class MissingSignedStateComponent extends NullPointerException {
         public MissingSignedStateComponent(@NonNull final String component, @NonNull final Path swh) {
             super("Expected non-null %s from signed state file %s".formatted(component, swh.toString()));
         }
     }
 
-    private void assertSignedStateComponentExists(final Object component, @NonNull final String componentName) {
+    private void assertSignedStateComponentExists(
+            @Nullable final Object component, @NonNull final String componentName) {
         if (null == component) throw new MissingSignedStateComponent(componentName, swh);
     }
 }
