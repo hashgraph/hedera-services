@@ -24,6 +24,8 @@ import static com.swirlds.common.utility.Units.BYTES_PER_SHORT;
  * Utility class for byte operations
  */
 public final class ByteUtils {
+    /** The number of bits in an int */
+    private static final int INT_BITS = 32;
 
     private ByteUtils() {}
 
@@ -210,5 +212,33 @@ public final class ByteUtils {
         // Hard coded constants are used instead of a for loop to reduce the arithmetic required at runtime
         data[position] = (byte) (value >> 8);
         data[position + 1] = (byte) value;
+    }
+
+    /**
+     * Extract the left integer from a long
+     * @param pair the long to extract from
+     * @return the left integer
+     */
+    public static int extractLeftInt(final long pair) {
+        return (int) (pair >> INT_BITS);
+    }
+
+    /**
+     * Extract the right integer from a long
+     * @param pair the long to extract from
+     * @return the right integer
+     */
+    public static int extractRightInt(final long pair) {
+        return (int) pair;
+    }
+
+    /**
+     * Combine the two integers into a single long
+     * @param left the left integer
+     * @param right the right integer
+     * @return the combined long
+     */
+    public static long combineInts(final int left, final int right) {
+        return (((long) left) << INT_BITS) | (right & 0xffffffffL);
     }
 }

@@ -17,8 +17,8 @@
 package com.swirlds.platform.test.chatter.protocol.input;
 
 import com.swirlds.common.metrics.extensions.CountPerSecond;
-import com.swirlds.platform.chatter.protocol.input.InputDelegateBuilder;
-import com.swirlds.platform.chatter.protocol.input.MessageTypeHandler;
+import com.swirlds.platform.gossip.chatter.protocol.input.InputDelegateBuilder;
+import com.swirlds.platform.gossip.chatter.protocol.input.MessageTypeHandler;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
