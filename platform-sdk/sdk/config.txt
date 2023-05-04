@@ -66,10 +66,6 @@ swirld, 123
 # The above addresses assume all are running on the same computer.
 # If multiple computers are being used, then the listed IP addresses should be changed.
 
-# TLS, off
-# maxSyncs, 1
-# transactionMaxBytes, 1024
-# ipTos, 123
 # genesisFreezeTime, -1
 
 ###############################################################################################

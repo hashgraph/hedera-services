@@ -166,14 +166,16 @@ public class SignedState implements SignedStateInfo {
         state.reserve();
 
         this.state = state;
-        history = new SignedStateHistory(
-                OSTime.getInstance(),
-                getRound(),
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(StateConfig.class)
-                        .debugStackTracesEnabled());
-        history.recordAction(CREATION, getReservationCount(), reason, null);
+
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+
+        if (stateConfig.stateHistoryEnabled()) {
+            history = new SignedStateHistory(OSTime.getInstance(), getRound(), stateConfig.debugStackTracesEnabled());
+            history.recordAction(CREATION, getReservationCount(), reason, null);
+        } else {
+            history = null;
+        }
+
         registryRecord = RuntimeObjectRegistry.createRecord(getClass(), history);
         sigSet = new SigSet();
     }
@@ -262,7 +264,9 @@ public class SignedState implements SignedStateInfo {
      * Increment reservation count.
      */
     void incrementReservationCount(@NonNull final String reason, final long reservationId) {
-        history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
+        if (history != null) {
+            history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
+        }
         reservations.reserve();
     }
 
@@ -270,7 +274,9 @@ public class SignedState implements SignedStateInfo {
      * Decrement reservation count.
      */
     void decrementReservationCount(@NonNull final String reason, final long reservationId) {
-        history.recordAction(RELEASE, getReservationCount(), reason, reservationId);
+        if (history != null) {
+            history.recordAction(RELEASE, getReservationCount(), reason, reservationId);
+        }
         reservations.release();
     }
 
@@ -294,8 +300,10 @@ public class SignedState implements SignedStateInfo {
      * This method is called when there is a reference count exception.
      */
     private void onReferenceCountException() {
-        logger.error(
-                EXCEPTION.getMarker(), "SignedState reference count error detected, dumping history.\n{}", history);
+        if (history != null) {
+            logger.error(
+                    EXCEPTION.getMarker(), "SignedState reference count error detected, dumping history.\n{}", history);
+        }
     }
 
     /**
@@ -317,7 +325,9 @@ public class SignedState implements SignedStateInfo {
                 try {
                     deleted = true;
 
-                    history.recordAction(SignedStateAction.DESTROY, getReservationCount(), null, null);
+                    if (history != null) {
+                        history.recordAction(SignedStateAction.DESTROY, getReservationCount(), null, null);
+                    }
                     registryRecord.release();
                     state.release();
 
@@ -623,11 +633,11 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
-     * Get the reservation history for this object.
+     * Get the reservation history for this object (if configured to gather history)
      *
      * @return the reservation history
      */
-    @NonNull
+    @Nullable
     SignedStateHistory getHistory() {
         return history;
     }
