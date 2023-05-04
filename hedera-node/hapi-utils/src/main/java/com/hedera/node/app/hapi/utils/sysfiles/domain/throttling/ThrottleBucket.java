@@ -169,7 +169,8 @@ public final class ThrottleBucket<E extends Enum<E>> {
     private DeterministicThrottle throttleFor(final long mtps, final long capacitySplit) {
         try {
             final var effBurstPeriodMs = autoScaledBurstPeriodMs(capacitySplit);
-            return DeterministicThrottle.withMtpsAndBurstPeriodMsNamed(mtps / capacitySplit, effBurstPeriodMs, name);
+            return DeterministicThrottle.withMtpsAndBurstPeriodMsNamed(
+                    mtpsSplitBy(mtps, capacitySplit), effBurstPeriodMs, name);
         } catch (final IllegalArgumentException unsatisfiable) {
             if (unsatisfiable.getMessage().startsWith("Cannot free")) {
                 throw new IllegalStateException(exceptionMsgFor(
@@ -194,7 +195,7 @@ public final class ThrottleBucket<E extends Enum<E>> {
             minCapacityUnitsPostSplit =
                     Math.max(minCapacityUnitsPostSplit, DeterministicThrottle.capacityRequiredFor(opsReq));
         }
-        final var postSplitCapacityUnitsLeakedPerMs = BucketThrottle.capacityUnitsPerMs(mtps / capacitySplit);
+        final var postSplitCapacityUnitsLeakedPerMs = BucketThrottle.capacityUnitsPerMs(mtpsSplitBy(mtps, capacitySplit));
         final var minBurstPeriodMs = quotientRoundedUp(minCapacityUnitsPostSplit, postSplitCapacityUnitsLeakedPerMs);
         final var reqBurstPeriodMs = impliedBurstPeriodMs();
         if (minBurstPeriodMs > reqBurstPeriodMs) {
@@ -205,6 +206,10 @@ public final class ThrottleBucket<E extends Enum<E>> {
                     minBurstPeriodMs);
         }
         return Math.max(minBurstPeriodMs, reqBurstPeriodMs);
+    }
+
+    private long mtpsSplitBy(final long mtps, final long splitFactor) {
+        return Math.max(1, mtps / splitFactor);
     }
 
     public static long quotientRoundedUp(final long a, final long b) {

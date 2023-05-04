@@ -44,7 +44,6 @@ public class DiscreteLeakyBucket {
         return used;
     }
 
-    @VisibleForTesting
     public long totalCapacity() {
         return capacity;
     }

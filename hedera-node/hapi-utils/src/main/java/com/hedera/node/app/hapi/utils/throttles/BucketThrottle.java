@@ -167,12 +167,10 @@ public class BucketThrottle {
         lastAllowedUnits = 0;
     }
 
-    @VisibleForTesting
     public DiscreteLeakyBucket bucket() {
         return bucket;
     }
 
-    @VisibleForTesting
     public long mtps() {
         return mtps;
     }

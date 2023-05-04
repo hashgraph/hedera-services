@@ -238,7 +238,6 @@ public class DeterministicThrottle implements CongestibleThrottle {
         }
     }
 
-    @VisibleForTesting
     public BucketThrottle delegate() {
         return delegate;
     }

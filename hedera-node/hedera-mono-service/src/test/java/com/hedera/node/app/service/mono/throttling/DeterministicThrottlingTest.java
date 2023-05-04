@@ -1037,26 +1037,6 @@ class DeterministicThrottlingTest {
     }
 
     @Test
-    void logsErrorOnBadBucketButDoesntFail() throws IOException {
-        final var ridiculousSplitFactor = 1_000_000;
-        subject = new DeterministicThrottling(
-                () -> ridiculousSplitFactor, aliasManager, dynamicProperties, CONSENSUS, scheduleStore);
-
-        var defs = SerdeUtils.pojoDefs("bootstrap/insufficient-capacity-throttles.json");
-
-        // expect:
-        assertDoesNotThrow(() -> subject.rebuildFor(defs));
-        // and:
-        assertEquals(1, subject.activeThrottlesFor(CryptoGetAccountBalance).size());
-        // and:
-        assertThat(
-                logCaptor.errorLogs(),
-                contains("When constructing bucket 'A' from state:"
-                        + " NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION :: Bucket A contains an"
-                        + " unsatisfiable milliOpsPerSec with 1000000 nodes!"));
-    }
-
-    @Test
     void alwaysThrottlesContractCallWhenGasThrottleIsNotDefined() {
         givenFunction(ContractCall);
         given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
