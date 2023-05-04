@@ -184,7 +184,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      * {@inheritDoc}
      */
     @Override
-    public boolean createTransaction(final byte[] trans) {
+    public boolean createTransaction(@NonNull final byte[] trans) {
         // Transaction creation always fails
         return false;
     }

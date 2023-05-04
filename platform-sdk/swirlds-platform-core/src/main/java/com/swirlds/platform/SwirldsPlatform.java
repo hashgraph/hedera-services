@@ -1363,6 +1363,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     PAUSE_ALERT_INTERVAL / 2);
         }
 
+        // FUTURE WORK: set platform status REPLAYING_EVENTS
+        // FUTURE WORK: replay events
+        // FUTURE WORK: validate that status is still REPLAYING_EVENTS (holdover until we refactor platform status)
+        // FUTURE WORK: set platform status READY
+
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
         checkPlatformStatus();
@@ -1930,7 +1935,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
     /** {@inheritDoc} */
     @Override
-    public boolean createTransaction(final byte[] trans) {
+    public boolean createTransaction(@NonNull final byte[] trans) {
         return transactionSubmitter.submitTransaction(new SwirldTransaction(trans));
     }
 

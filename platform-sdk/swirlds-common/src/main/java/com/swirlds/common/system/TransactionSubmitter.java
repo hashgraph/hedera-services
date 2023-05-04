@@ -16,11 +16,14 @@
 
 package com.swirlds.common.system;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * An object that can be used to submit transactions.
  */
 public interface TransactionSubmitter {
 
+    // TODO this javadoc is out of date
     /**
      * The SwirldMain object calls this method when it wants to create a new transaction. The newly-created
      * transaction is then embedded inside a newly-created event, and sent to all the other members of the
@@ -37,5 +40,5 @@ public interface TransactionSubmitter {
      * 		the transaction to handle, encoded any way the swirld author chooses
      * @return true if successful
      */
-    boolean createTransaction(byte[] trans);
+    boolean createTransaction(@NonNull byte[] trans);
 }
