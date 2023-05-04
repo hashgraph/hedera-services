@@ -29,6 +29,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -118,6 +119,7 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
@@ -143,10 +145,12 @@ import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccount
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hedera.node.app.service.token.impl.records.CreateAccountRecordBuilder;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.service.util.impl.records.UtilPrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
@@ -317,13 +321,16 @@ class MonoTransactionDispatcherTest {
     private GlobalDynamicProperties dynamicProperties;
 
     @Mock
-    private WritableStoreFactory writableStoreFactory;
+    private WorkingStateWritableStoreFactory writableStoreFactory;
 
     @Mock
     private WritableTopicStore writableTopicStore;
 
     @Mock
     private WritableTokenStore writableTokenStore;
+
+    @Mock
+    private WritableAccountStore writableAccountStore;
 
     @Mock
     private WritableTokenRelationStore writableTokenRelStore;
@@ -578,6 +585,41 @@ class MonoTransactionDispatcherTest {
         dispatcher.dispatchHandle(HederaFunctionality.TOKEN_UNPAUSE, transactionBody, writableStoreFactory);
 
         verify(writableTokenStore).commit();
+    }
+
+    @Test
+    void dispatchesCryptoCreateAsExpected() {
+        final var createBuilder = mock(CreateAccountRecordBuilder.class);
+
+        given(cryptoCreateHandler.newRecordBuilder()).willReturn(createBuilder);
+        given(createBuilder.getCreatedAccount()).willReturn(666L);
+        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+
+        dispatcher.dispatchHandle(HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory);
+
+        verify(txnCtx)
+                .setCreated(PbjConverter.fromPbj(
+                        AccountID.newBuilder().accountNum(666L).build()));
+        verify(writableAccountStore).commit();
+    }
+
+    @Test
+    void doesntCommitWhenUsageLimitsExceeded() {
+        final var createBuilder = mock(CreateAccountRecordBuilder.class);
+
+        given(cryptoCreateHandler.newRecordBuilder()).willReturn(createBuilder);
+        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(false);
+
+        assertThatThrownBy(() -> dispatcher.dispatchHandle(
+                        HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory))
+                .isInstanceOf(HandleException.class);
+
+        verify(txnCtx, never())
+                .setCreated(PbjConverter.fromPbj(
+                        AccountID.newBuilder().accountNum(666L).build()));
+        verify(writableAccountStore, never()).commit();
     }
 
     @Test

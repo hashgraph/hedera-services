@@ -29,8 +29,10 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
@@ -105,6 +107,7 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
+            case CRYPTO_CREATE -> dispatchCryptoCreate(txn, writableStoreFactory.createAccountStore());
             case UTIL_PRNG -> dispatchPrng(txn);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
@@ -410,6 +413,32 @@ public class TransactionDispatcher {
      * @param recordBuilder the record builder
      */
     protected void finishUtilPrng(@NonNull final PrngRecordBuilder recordBuilder) {
+        // No-op by default
+    }
+
+    /**
+     * Dispatches the crypto create transaction to the appropriate handler.
+     * @param cryptoCreate the crypto create transaction body
+     * @param accountStore the writable account store
+     */
+    private void dispatchCryptoCreate(
+            @NonNull final TransactionBody cryptoCreate, @NonNull final WritableAccountStore accountStore) {
+        final var handler = handlers.cryptoCreateHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(handleContext, cryptoCreate, accountStore, recordBuilder);
+        finishCryptoCreate(recordBuilder, accountStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param recordBuilder the completed record builder for the creation
+     * @param accountStore the account store used for the creation
+     */
+    protected void finishCryptoCreate(
+            @NonNull final CryptoCreateRecordBuilder recordBuilder, @NonNull final WritableAccountStore accountStore) {
         // No-op by default
     }
 }
