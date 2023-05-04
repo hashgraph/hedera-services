@@ -35,6 +35,7 @@ import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.settings.MerkleDbSettings;
 import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -45,8 +46,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Set;
@@ -434,6 +435,7 @@ public class DataFileCollection<D> implements Snapshotable {
             readers[r.getIndex() - firstIndexInc] = r;
         }
 
+        boolean allDataItemsProcessed = false;
         try {
             final KeyRange keyRange = validKeyRange;
             index.forEach((path, dataLocation) -> {
@@ -466,6 +468,7 @@ public class DataFileCollection<D> implements Snapshotable {
                     snapshotCompactionLock.release();
                 }
             });
+            allDataItemsProcessed = true;
         } finally {
             // Even if the thread is interrupted, make sure the new compacted file is properly closed
             // and is included to future compactions
@@ -475,8 +478,10 @@ public class DataFileCollection<D> implements Snapshotable {
                 finishCurrentCompactionFile();
                 // Clear compaction start time
                 currentCompactionStartTime.set(null);
-                // Close the readers and delete compacted files
-                deleteFiles(new HashSet<>(filesToMerge));
+                if (allDataItemsProcessed) {
+                    // Close the readers and delete compacted files
+                    deleteFiles(filesToMerge);
+                }
             } finally {
                 snapshotCompactionLock.release();
             }
@@ -917,7 +922,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param filesToDelete the list of files to delete
      * @throws IOException If there was a problem deleting the files
      */
-    private void deleteFiles(final Set<DataFileReader<D>> filesToDelete) throws IOException {
+    private void deleteFiles(@NonNull final Collection<DataFileReader<D>> filesToDelete) throws IOException {
         // remove files from index
         dataFiles.getAndUpdate(currentFileList ->
                 (currentFileList == null) ? null : currentFileList.withDeletedObjects(filesToDelete));

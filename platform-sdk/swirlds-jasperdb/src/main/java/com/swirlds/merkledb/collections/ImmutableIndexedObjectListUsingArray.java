@@ -16,13 +16,14 @@
 
 package com.swirlds.merkledb.collections;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -107,9 +108,10 @@ public class ImmutableIndexedObjectListUsingArray<T extends IndexedObject> imple
     }
 
     /** {@inheritDoc} */
-    public ImmutableIndexedObjectListUsingArray<T> withDeletedObjects(final Set<T> objectsToDelete) {
+    @Override
+    public ImmutableIndexedObjectListUsingArray<T> withDeletedObjects(@NonNull final Collection<T> objectsToDelete) {
         // Ignore null objects, share an immutable empty list
-        if (objectsToDelete == null || objectsToDelete.isEmpty() || isEmpty()) {
+        if (objectsToDelete.isEmpty() || isEmpty()) {
             return this;
         }
 
