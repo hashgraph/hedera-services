@@ -285,18 +285,6 @@ public class SyncManagerTest {
     }
 
     /**
-     * A mirror node should not create events
-     */
-    @Test
-    @Order(6)
-    void shouldCreateEventTestMirrorNode() {
-        final SyncManagerTestData test = new SyncManagerTestData(new NodeId(ID));
-        resetTestSettings();
-        test.hashgraph.isInCriticalQuorum.put(ID, true);
-        assertFalse(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0), "mirror node cannot create events");
-    }
-
-    /**
      * If there any frozen transaction events then do not create any new events.
      */
     @Test
