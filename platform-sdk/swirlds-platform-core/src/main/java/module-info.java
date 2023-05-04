@@ -5,16 +5,16 @@ module com.swirlds.platform {
 
     /* Public Package Exports. This list should remain alphabetized. */
     exports com.swirlds.platform;
-    exports com.swirlds.platform.chatter;
-    exports com.swirlds.platform.chatter.communication;
+    exports com.swirlds.platform.gossip.chatter;
+    exports com.swirlds.platform.gossip.chatter.communication;
     exports com.swirlds.platform.network.communication.handshake;
-    exports com.swirlds.platform.chatter.config;
-    exports com.swirlds.platform.chatter.protocol;
-    exports com.swirlds.platform.chatter.protocol.input;
-    exports com.swirlds.platform.chatter.protocol.messages;
-    exports com.swirlds.platform.chatter.protocol.output;
-    exports com.swirlds.platform.chatter.protocol.peer;
-    exports com.swirlds.platform.chatter.protocol.heartbeat;
+    exports com.swirlds.platform.gossip.chatter.config;
+    exports com.swirlds.platform.gossip.chatter.protocol;
+    exports com.swirlds.platform.gossip.chatter.protocol.input;
+    exports com.swirlds.platform.gossip.chatter.protocol.messages;
+    exports com.swirlds.platform.gossip.chatter.protocol.output;
+    exports com.swirlds.platform.gossip.chatter.protocol.peer;
+    exports com.swirlds.platform.gossip.chatter.protocol.heartbeat;
     exports com.swirlds.platform.cli;
     exports com.swirlds.platform.components;
     exports com.swirlds.platform.components.appcomm;
@@ -54,7 +54,7 @@ module com.swirlds.platform {
     exports com.swirlds.platform.stats.simple;
     exports com.swirlds.platform.state.signed;
     exports com.swirlds.platform.state.address;
-    exports com.swirlds.platform.sync;
+    exports com.swirlds.platform.gossip.sync;
     exports com.swirlds.platform.system;
     exports com.swirlds.platform.threading;
     exports com.swirlds.platform.util;
@@ -93,7 +93,7 @@ module com.swirlds.platform {
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.iss.internal to
             com.swirlds.platform.test;
-    exports com.swirlds.platform.chatter.protocol.processing;
+    exports com.swirlds.platform.gossip.chatter.protocol.processing;
     exports com.swirlds.platform.dispatch to
             com.swirlds.platform.test,
             com.swirlds.config.impl,
@@ -120,7 +120,7 @@ module com.swirlds.platform {
     exports com.swirlds.platform.components.transaction.system.internal;
     exports com.swirlds.platform.components.transaction.system;
     exports com.swirlds.platform.event.preconsensus;
-    exports com.swirlds.platform.sync.protocol;
+    exports com.swirlds.platform.gossip.sync.protocol;
 
     /* Swirlds Libraries */
     requires com.swirlds.base;

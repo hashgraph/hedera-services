@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.platform.gossip.sync.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.sync.ShadowEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

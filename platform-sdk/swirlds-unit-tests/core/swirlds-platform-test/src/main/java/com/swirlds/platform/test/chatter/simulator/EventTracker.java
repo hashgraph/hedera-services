@@ -25,7 +25,7 @@ import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;

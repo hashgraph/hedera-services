@@ -23,7 +23,7 @@ import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.Connection;
-import com.swirlds.platform.sync.ShadowEvent;
+import com.swirlds.platform.gossip.sync.ShadowEvent;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;

@@ -21,10 +21,10 @@ import static com.swirlds.logging.LogMarker.SYNC;
 
 import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;

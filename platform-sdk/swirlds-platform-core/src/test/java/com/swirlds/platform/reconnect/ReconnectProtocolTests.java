@@ -30,13 +30,13 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.ValueReference;
+import com.swirlds.platform.gossip.sync.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.platform.sync.FallenBehindManager;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;

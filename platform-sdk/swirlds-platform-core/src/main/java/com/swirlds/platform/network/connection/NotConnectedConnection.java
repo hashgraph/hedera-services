@@ -18,8 +18,8 @@ package com.swirlds.platform.network.connection;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.Connection;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import java.net.SocketException;
 
 /**

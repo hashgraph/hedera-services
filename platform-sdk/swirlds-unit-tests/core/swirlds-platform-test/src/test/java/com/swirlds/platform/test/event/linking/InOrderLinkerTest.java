@@ -26,7 +26,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
-import com.swirlds.platform.sync.Generations;
+import com.swirlds.platform.gossip.sync.Generations;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

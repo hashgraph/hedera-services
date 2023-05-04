@@ -18,8 +18,8 @@ package com.swirlds.platform.test.network.communication.multithreaded;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.Connection;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.concurrent.atomic.AtomicInteger;

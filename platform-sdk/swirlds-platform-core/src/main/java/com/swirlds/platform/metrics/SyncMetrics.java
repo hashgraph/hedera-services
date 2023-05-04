@@ -27,15 +27,15 @@ import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.utility.Units;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.gossip.sync.ShadowGraph;
+import com.swirlds.platform.gossip.sync.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.sync.SyncResult;
+import com.swirlds.platform.gossip.sync.SyncTiming;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageAndMaxTimeStat;
 import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.stats.AverageTimeStat;
 import com.swirlds.platform.stats.MaxStat;
-import com.swirlds.platform.sync.ShadowGraph;
-import com.swirlds.platform.sync.ShadowGraphSynchronizer;
-import com.swirlds.platform.sync.SyncResult;
-import com.swirlds.platform.sync.SyncTiming;
 import java.time.temporal.ChronoUnit;
 
 /**

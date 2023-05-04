@@ -23,7 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.platform.Connection;
-import com.swirlds.platform.sync.SyncException;
+import com.swirlds.platform.gossip.sync.SyncException;
 import org.junit.jupiter.api.Test;
 
 class SyncExceptionTests {
