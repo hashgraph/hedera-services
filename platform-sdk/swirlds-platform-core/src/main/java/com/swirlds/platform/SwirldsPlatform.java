@@ -150,6 +150,8 @@ import com.swirlds.platform.gossip.sync.ShadowGraphEventObserver;
 import com.swirlds.platform.gossip.sync.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.SimultaneousSyncThrottle;
 import com.swirlds.platform.gossip.sync.SingleNodeNetworkSync;
+import com.swirlds.platform.gossip.sync.SyncCaller;
+import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncProtocolResponder;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
@@ -1783,7 +1785,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * @return the SyncManager used by this platform
      */
-    SyncManagerImpl getSyncManager() {
+    public SyncManagerImpl getSyncManager() {
         return syncManager;
     }
 
@@ -1806,7 +1808,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * @return locks used to synchronize usage of outbound connections
      */
-    SharedConnectionLocks getSharedConnectionLocks() {
+    public SharedConnectionLocks getSharedConnectionLocks() {
         return sharedConnectionLocks;
     }
 
@@ -1848,7 +1850,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * Checks the status of the platform and notifies the SwirldMain if there is a change in status
      */
-    void checkPlatformStatus() {
+    public void checkPlatformStatus() {
         final int numNodes = initialAddressBook.getSize();
 
         synchronized (currentPlatformStatus) {

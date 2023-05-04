@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.gossip.sync;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
@@ -26,6 +26,9 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.locks.locked.MaybeLockedResource;
 import com.swirlds.logging.payloads.ReconnectPeerInfoPayload;
+import com.swirlds.platform.PlatformMetrics;
+import com.swirlds.platform.Settings;
+import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.NetworkUtils;
@@ -42,7 +45,7 @@ import org.apache.logging.log4j.Marker;
 /**
  * A thread can run this to repeatedly initiate syncs with other members.
  */
-class SyncCaller implements Runnable {
+public class SyncCaller implements Runnable {
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SyncCaller.class);
     /** ID number for this caller thread (0 is the first created by this platform, 1 next, etc) */

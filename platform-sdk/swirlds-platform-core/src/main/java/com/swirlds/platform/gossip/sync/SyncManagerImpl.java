@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.gossip.sync;
 
 import static com.swirlds.logging.LogMarker.FREEZE;
 import static com.swirlds.logging.LogMarker.SYNC;
@@ -22,13 +22,10 @@ import static com.swirlds.logging.LogMarker.SYNC;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.Settings;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.event.EventIntakeTask;
-import com.swirlds.platform.gossip.sync.FallenBehindManager;
-import com.swirlds.platform.gossip.sync.SyncManager;
-import com.swirlds.platform.gossip.sync.SyncResult;
-import com.swirlds.platform.gossip.sync.SyncUtils;
 import com.swirlds.platform.network.RandomGraph;
 import java.util.LinkedList;
 import java.util.List;
@@ -84,7 +81,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
      * @param eventCreationRules
      * 		Contains a list of rules for checking whether this node should create an event or not
      */
-    SyncManagerImpl(
+    public SyncManagerImpl(
             final BlockingQueue<EventIntakeTask> intakeQueue,
             final RandomGraph connectionGraph,
             final NodeId selfId,
