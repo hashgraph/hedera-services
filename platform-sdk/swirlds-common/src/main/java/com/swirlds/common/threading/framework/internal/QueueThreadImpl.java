@@ -277,7 +277,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
         // we would return prematurely if we only waited for a single increment.
 
         final long initialCount = noWorkCount.get();
-        while (noWorkCount.get() <= initialCount + 2 && getStatus() != Status.DEAD) {
+        while (noWorkCount.get() <= initialCount + 1 && getStatus() != Status.DEAD) {
             MILLISECONDS.sleep(WAIT_FOR_WORK_DELAY_MS);
         }
     }
