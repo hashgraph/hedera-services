@@ -84,7 +84,6 @@ public class PropertyNames {
     public static final String CACHE_RECORDS_TTL = "cache.records.ttl";
     public static final String CACHE_CRYPTO_TRANSFER_WARM_THREADS = "cache.cryptoTransfer.warmThreads";
 
-
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";
     public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
     public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME = "contracts.referenceSlotLifetime";
@@ -173,7 +172,6 @@ public class PropertyNames {
     public static final String STAKING_START_THRESH = "staking.startThreshold";
     public static final String STAKING_SUM_OF_CONSENSUS_WEIGHTS = "staking.sumOfConsensusWeights";
 
-
     public static final String TOKENS_MAX_AGGREGATE_RELS = "tokens.maxAggregateRels";
     public static final String TOKENS_STORE_RELS_ON_DISK = "tokens.storeRelsOnDisk";
     public static final String TOKENS_MAX_NUM = "tokens.maxNumber";
@@ -212,7 +210,6 @@ public class PropertyNames {
     public static final String HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION =
             "hedera.recordStream.compressFilesOnCreation";
     public static final String TOKENS_AUTO_CREATIONS_ENABLED = "tokens.autoCreations.isEnabled";
-
 
     /* ---- Node properties ----- */
     public static final String DEV_ONLY_DEFAULT_NODE_LISTENS = "dev.onlyDefaultNodeListens";
