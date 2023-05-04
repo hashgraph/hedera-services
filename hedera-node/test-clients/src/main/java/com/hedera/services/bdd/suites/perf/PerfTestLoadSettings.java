@@ -89,7 +89,7 @@ public class PerfTestLoadSettings {
     private int totalTestTokenAccounts = DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS;
 
     /**
-     * testTreasureStartAccount specifies the first account number (by default, 1001) of a range
+     * testTreasureStartAccount specifies the first account number of a range
      * accounts that will be serve as the treasures of the totalTestTokens. One account for each
      * active test token
      */
