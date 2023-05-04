@@ -56,9 +56,6 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
      */
     private InterruptableConsumer<T> handler;
 
-    /** A runnable to execute when waiting for an item to become available in the queue. */
-    private InterruptableRunnable waitForItemRunnable;
-
     /** An initialized queue to use. */
     private BlockingQueue<T> queue;
 
@@ -95,7 +92,6 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
         this.capacity = that.capacity;
         this.maxBufferSize = that.maxBufferSize;
         this.handler = that.handler;
-        this.waitForItemRunnable = that.waitForItemRunnable;
         this.queue = that.queue;
         this.metrics = that.metrics;
         this.maxSizeMetricEnabled = that.maxSizeMetricEnabled;
@@ -186,27 +182,6 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     protected C setHandler(final InterruptableConsumer<T> handler) {
         throwIfImmutable();
         this.handler = handler;
-        return (C) this;
-    }
-
-    /**
-     * Get the runnable to execute when waiting for an item to become available in the queue.
-     */
-    public InterruptableRunnable getWaitForItemRunnable() {
-        return waitForItemRunnable;
-    }
-
-    /**
-     * Set the runnable to execute when there is nothing in the queue to handle. The default is to poll the queue,
-     * waiting a certain amount of time for it to return an item.
-     *
-     * @param waitForItemRunnable the runnable to execute
-     * @return this object
-     */
-    @SuppressWarnings("unchecked")
-    public C setWaitForItemRunnable(final InterruptableRunnable waitForItemRunnable) {
-        throwIfImmutable();
-        this.waitForItemRunnable = waitForItemRunnable;
         return (C) this;
     }
 
