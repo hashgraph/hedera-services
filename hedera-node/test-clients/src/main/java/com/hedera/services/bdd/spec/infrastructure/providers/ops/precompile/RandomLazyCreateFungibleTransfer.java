@@ -17,8 +17,14 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.regression.factories.LazyCreatePrecompileFuzzingFactory.*;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.getEvmAddressFromString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -27,7 +33,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
@@ -52,19 +58,40 @@ public class RandomLazyCreateFungibleTransfer implements OpProvider {
         return randomKey().map(this::generateLazyCreateTransferOfFungibleToken);
     }
 
-    private HapiContractCall generateLazyCreateTransferOfFungibleToken(String evmAddressRecipient) {
+    private HapiSpecOperation generateLazyCreateTransferOfFungibleToken(String evmAddressRecipient) {
         final var addressBytes = recoverAddressFromPubKey(getEvmAddressFromString(registry, evmAddressRecipient));
-        return contractCall(
-                        TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
-                        "transferTokenCallNestedThenAgain",
-                        HapiParserUtil.asHeadlongAddress(asAddress(registry.getTokenID(FUNGIBLE_TOKEN))),
-                        HapiParserUtil.asHeadlongAddress(asAddress(registry.getAccountID(OWNER))),
-                        HapiParserUtil.asHeadlongAddress(addressBytes),
-                        2L,
-                        2L)
-                .via(TRANSFER_TOKEN_TXN)
-                .alsoSigningWithFullPrefix(OWNER)
-                .gas(GAS_TO_OFFER)
-                .hasKnownStatus(SUCCESS);
+
+        return withOpContext((spec, opLog) -> {
+            final var opContractCall = contractCall(
+                            TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
+                            "transferTokenCallNestedThenAgain",
+                            HapiParserUtil.asHeadlongAddress(asAddress(registry.getTokenID(FUNGIBLE_TOKEN))),
+                            HapiParserUtil.asHeadlongAddress(asAddress(registry.getAccountID(OWNER))),
+                            HapiParserUtil.asHeadlongAddress(addressBytes),
+                            2L,
+                            2L)
+                    .via(TRANSFER_TOKEN_TXN)
+                    .alsoSigningWithFullPrefix(OWNER)
+                    .gas(GAS_TO_OFFER)
+                    .hasKnownStatus(SUCCESS);
+
+            final HapiGetTxnRecord hapiGetTxnRecord =
+                    getTxnRecord(TRANSFER_TOKEN_TXN).andAllChildRecords().assertingNothingAboutHashes();
+
+            allRunFor(spec, opContractCall, hapiGetTxnRecord);
+
+            if (!hapiGetTxnRecord.getChildRecords().isEmpty()) {
+                updateSpecFor(spec, evmAddressRecipient);
+                final var opUpdate = cryptoUpdateAliased(evmAddressRecipient)
+                        .maxAutomaticAssociations(2)
+                        .payingWith(GENESIS)
+                        .signedBy(evmAddressRecipient, GENESIS)
+                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                        .hasKnownStatusFrom(STANDARD_PERMISSIBLE_OUTCOMES)
+                        .logged();
+
+                allRunFor(spec, opUpdate);
+            }
+        });
     }
 }

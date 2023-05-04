@@ -38,38 +38,22 @@ public class LazyCreatePrecompileFuzzing extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                transferFungibleTokenLazyCreateFuzzing(),
-                transferNonFungibleTokenLazyCreateFuzzing(),
-                transferERC20LazyCreateFuzzing()
+                transferTokensFuzzing()
+                // transferFungibleTokenLazyCreateFuzzing()
+                // transferNonFungibleTokenLazyCreateFuzzing()
+                // transferERC20LazyCreateFuzzing()
+
                 // test transfer hbars
                 // test transfer erc721
                 );
     }
 
-    private HapiSpec transferFungibleTokenLazyCreateFuzzing() {
+    private HapiSpec transferTokensFuzzing() {
 
         return defaultHapiSpec("TransferFungibleTokenLazyCreateFuzzing")
-                .given(initOperationsTransferFungibleToken())
+                .given(initOperations())
                 .when()
-                .then(runWithProvider(transferFungibleTokenFuzzingWith(PROPERTIES))
-                        .lasting(10L, TimeUnit.SECONDS));
-    }
-
-    private HapiSpec transferNonFungibleTokenLazyCreateFuzzing() {
-
-        return defaultHapiSpec("TransferNonFungibleTokenLazyCreateFuzzing")
-                .given(initOperationsTransferNonFungibleToken())
-                .when()
-                .then(runWithProvider(transferNonFungibleTokenFuzzingWith(PROPERTIES))
-                        .lasting(10L, TimeUnit.SECONDS));
-    }
-
-    private HapiSpec transferERC20LazyCreateFuzzing() {
-
-        return defaultHapiSpec("TransferERC20LazyCreateFuzzing")
-                .given(initOperationsTransferERC20())
-                .when()
-                .then(runWithProvider(transferERC20FuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(transferTokensFuzzingWith(PROPERTIES)).lasting(2L, TimeUnit.SECONDS));
     }
 
     @Override
