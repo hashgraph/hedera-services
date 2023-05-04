@@ -19,7 +19,7 @@ package com.swirlds.platform.gui.hashgraph.internal;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.event.EventConstants;
-import com.swirlds.platform.gossip.sync.Generations;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 
 /**

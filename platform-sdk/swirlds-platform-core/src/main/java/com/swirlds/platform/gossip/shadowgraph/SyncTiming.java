@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.sync;
+package com.swirlds.platform.gossip.shadowgraph;
 
 /**
  * A type to record the points for gossip steps. At the end of a gossip session,

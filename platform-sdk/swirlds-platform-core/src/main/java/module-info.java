@@ -121,6 +121,7 @@ module com.swirlds.platform {
     exports com.swirlds.platform.gossip.sync.protocol;
     exports com.swirlds.platform.gossip;
     exports com.swirlds.platform.reconnect;
+    exports com.swirlds.platform.gossip.shadowgraph;
 
     /* Swirlds Libraries */
     requires com.swirlds.base;

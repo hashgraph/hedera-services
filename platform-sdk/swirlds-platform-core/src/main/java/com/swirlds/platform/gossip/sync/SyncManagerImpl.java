@@ -27,6 +27,8 @@ import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.gossip.FallenBehindManager;
+import com.swirlds.platform.gossip.shadowgraph.SyncResult;
+import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.network.RandomGraph;
 import java.util.LinkedList;
 import java.util.List;

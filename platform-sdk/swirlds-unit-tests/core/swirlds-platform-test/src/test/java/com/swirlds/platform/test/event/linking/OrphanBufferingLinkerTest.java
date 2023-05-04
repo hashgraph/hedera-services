@@ -26,7 +26,7 @@ import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
-import com.swirlds.platform.gossip.sync.Generations;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;

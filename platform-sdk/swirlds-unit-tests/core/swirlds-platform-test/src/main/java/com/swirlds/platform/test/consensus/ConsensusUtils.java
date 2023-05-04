@@ -27,7 +27,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.ConsensusWrapper;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gossip.sync.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;

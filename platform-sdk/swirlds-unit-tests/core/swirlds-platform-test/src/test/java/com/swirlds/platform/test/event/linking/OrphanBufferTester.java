@@ -28,7 +28,7 @@ import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
-import com.swirlds.platform.gossip.sync.Generations;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import java.util.ArrayList;

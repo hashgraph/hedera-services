@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.sync;
+package com.swirlds.platform.gossip.shadowgraph;
 
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 

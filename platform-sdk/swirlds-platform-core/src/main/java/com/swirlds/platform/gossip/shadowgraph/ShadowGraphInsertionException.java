@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.sync;
+package com.swirlds.platform.gossip.shadowgraph;
 
 /**
  * An exception thrown by {@link ShadowGraph} when an event cannot be added to the shadow graph.

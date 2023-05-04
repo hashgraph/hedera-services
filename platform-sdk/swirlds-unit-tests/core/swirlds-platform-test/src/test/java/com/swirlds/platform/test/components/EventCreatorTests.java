@@ -47,7 +47,7 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.creation.AncientParentsRule;
-import com.swirlds.platform.gossip.sync.Generations;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.EventMocks;
 import com.swirlds.test.framework.TestComponentTags;

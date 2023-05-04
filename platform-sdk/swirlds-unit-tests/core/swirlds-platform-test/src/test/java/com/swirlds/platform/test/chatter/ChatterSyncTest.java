@@ -25,7 +25,7 @@ import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.chatter.ChatterSyncProtocol;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
 import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
-import com.swirlds.platform.gossip.sync.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import java.io.IOException;

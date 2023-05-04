@@ -19,8 +19,8 @@ package com.swirlds.platform.gui.hashgraph.internal;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.gossip.sync.ShadowEvent;
-import com.swirlds.platform.gossip.sync.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.internal.EventImpl;
 

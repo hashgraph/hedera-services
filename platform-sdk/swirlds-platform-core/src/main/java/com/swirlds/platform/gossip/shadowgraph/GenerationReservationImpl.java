@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.sync;
+package com.swirlds.platform.gossip.shadowgraph;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

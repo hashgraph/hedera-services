@@ -25,6 +25,7 @@ import com.swirlds.common.io.extendable.extensions.HashingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.SyncException;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.network.ByteConstants;
 import java.io.BufferedInputStream;
 import java.io.IOException;

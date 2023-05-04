@@ -26,7 +26,7 @@ import com.swirlds.platform.crypto.KeyCertPurpose;
 import com.swirlds.platform.crypto.KeyGeneratingException;
 import com.swirlds.platform.crypto.KeyLoadingException;
 import com.swirlds.platform.gossip.chatter.protocol.PeerMessageException;
-import com.swirlds.platform.gossip.sync.SyncTimeoutException;
+import com.swirlds.platform.gossip.shadowgraph.SyncTimeoutException;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.system.PlatformConstructionException;
 import java.time.Duration;

@@ -18,7 +18,7 @@ package com.swirlds.platform.gui.internal;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.gossip.sync.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gui.hashgraph.internal.ShadowgraphGuiSource;
 
 /**

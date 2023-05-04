@@ -17,6 +17,7 @@
 package com.swirlds.platform.gossip.sync;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import java.util.List;
 
 public interface SyncManager {

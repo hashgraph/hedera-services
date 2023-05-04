@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.gossip.sync.ShadowEvent;
+import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitter;

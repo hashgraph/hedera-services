@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gossip.sync.Generations;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;

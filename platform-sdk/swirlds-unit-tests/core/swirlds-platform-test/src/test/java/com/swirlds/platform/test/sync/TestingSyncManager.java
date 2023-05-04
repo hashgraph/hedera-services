@@ -18,8 +18,8 @@ package com.swirlds.platform.test.sync;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.FallenBehindManager;
+import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.sync.SyncManager;
-import com.swirlds.platform.gossip.sync.SyncResult;
 import java.util.List;
 
 public class TestingSyncManager implements SyncManager, FallenBehindManager {

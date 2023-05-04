@@ -17,7 +17,7 @@
 package com.swirlds.platform.gui.hashgraph.internal;
 
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.gossip.sync.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 
 /**
  * A {@link ShadowgraphGuiSource} where the {@link ShadowGraph} is set in the constructor and never changes

@@ -20,7 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.gossip.sync.SyncTimeoutException;
+import com.swirlds.platform.gossip.shadowgraph.SyncTimeoutException;
 import java.io.Closeable;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;

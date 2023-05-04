@@ -20,9 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gossip.sync.Generations;
-import com.swirlds.platform.gossip.sync.ShadowEvent;
-import com.swirlds.platform.gossip.sync.SyncUtils;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
+import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
+import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
