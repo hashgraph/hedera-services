@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
@@ -30,7 +31,9 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -115,5 +118,19 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     @Override
     protected void finishTokenRevokeKycFromAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
         tokenRelStore.commit();
+    }
+
+    protected void finishTokenCreate(
+            @NonNull final TokenCreateRecordBuilder recordBuilder, @NonNull final WritableTokenStore tokenStore) {
+        // If token can't be created, due to the usage of a price regime, throw an exception
+        if(!usageLimits.areCreatableTokens(1)){
+            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        }
+
+        // Adapt the record builder outcome for mono-service
+        txnCtx.setCreated(PbjConverter.fromPbj(TokenID.newBuilder()
+                .tokenNum(recordBuilder.getCreatedToken())
+                .build()));
+        accountStore.commit();
     }
 }

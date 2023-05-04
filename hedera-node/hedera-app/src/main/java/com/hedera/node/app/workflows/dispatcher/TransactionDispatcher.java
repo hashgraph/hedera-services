@@ -33,6 +33,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -90,6 +91,10 @@ public class TransactionDispatcher {
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody txn,
             @NonNull final WritableStoreFactory writableStoreFactory) {
+        requireNonNull(function);
+        requireNonNull(txn);
+        requireNonNull(writableStoreFactory);
+
         switch (function) {
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(
                     txn.consensusCreateTopicOrThrow(), writableStoreFactory.createTopicStore());
@@ -105,6 +110,7 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
+            case TOKEN_CREATE -> dispatchTokenCreate(txn, writableStoreFactory.createTokenStore());
             case CRYPTO_CREATE -> dispatchCryptoCreate(txn, writableStoreFactory.createAccountStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
@@ -363,6 +369,36 @@ public class TransactionDispatcher {
         final var handler = handlers.tokenPauseHandler();
         handler.handle(tokenPause, tokenStore);
         tokenStore.commit();
+    }
+
+    /**
+     * Dispatches the token create transaction to the appropriate handler.
+     *
+     * @param tokenCreate the token create transaction
+     * @param tokenStore the token store
+     */
+    private void dispatchTokenCreate(@NonNull final TransactionBody tokenCreate,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final WritableTokenStore tokenStore) {
+        requireNonNull(tokenCreate);
+        requireNonNull(tokenStore);
+
+        final var handler = handlers.tokenCreateHandler();
+        handler.handle(handleContext, tokenCreate, accountStore, tokenStore);
+        tokenStore.commit();
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param recordBuilder the completed record builder for the creation
+     * @param tokenStore the token store used for the creation
+     */
+    protected void finishTokenCreate(
+            @NonNull final TokenCreateRecordBuilder recordBuilder, @NonNull final WritableTokenStore tokenStore) {
+        // No-op by default
     }
 
     /**

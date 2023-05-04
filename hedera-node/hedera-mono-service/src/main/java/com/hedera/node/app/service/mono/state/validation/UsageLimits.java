@@ -118,6 +118,10 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
         ensure(candidateNum <= dynamicProperties.maxNumTokens());
     }
 
+    public boolean areCreatableTokens(final int n) {
+        return (updatedNumTokens() + n) <= dynamicProperties.maxNumTokens();
+    }
+
     public void assertCreatableTokenRels(final int n) {
         final var candidateNum = updatedNumTokenRels() + n;
         ensure(candidateNum <= dynamicProperties.maxNumTokenRels());
