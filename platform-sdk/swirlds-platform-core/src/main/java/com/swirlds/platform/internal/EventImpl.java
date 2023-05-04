@@ -42,7 +42,6 @@ import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.RoundInfo;
-import com.swirlds.platform.StreamEventParser;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.InternalEventData;
