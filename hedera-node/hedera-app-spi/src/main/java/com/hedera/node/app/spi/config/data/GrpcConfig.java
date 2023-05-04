@@ -20,10 +20,10 @@ package com.hedera.node.app.spi.config.data;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
-@ConfigData("entities")
-public record EntitiesConfig(@ConfigProperty(defaultValue = "3153600000") long maxLifetime,
-                             //@ConfigProperty Set<EntityType> systemDeletable
-                             @ConfigProperty boolean limitTokenAssociations
-) {
+@ConfigData("grpc")
+public record GrpcConfig(@ConfigProperty int port,
+                         @ConfigProperty int tlsPort,
+                         @ConfigProperty int workflowsPort,
+                         @ConfigProperty int workflowsTlsPort) {
 
 }

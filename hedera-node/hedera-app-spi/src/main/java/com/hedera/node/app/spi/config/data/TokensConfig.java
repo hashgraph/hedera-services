@@ -39,6 +39,7 @@ public record TokensConfig(@ConfigProperty(defaultValue = "10000000") long maxAg
                            @ConfigProperty(value = "nfts.maxQueryRange", defaultValue = "100") long nftsMaxQueryRange,
                            @ConfigProperty(value = "nfts.useTreasuryWildcards", defaultValue = "true") boolean nftsUseTreasuryWildcards,
                            //@ConfigProperty("nfts.mintThrottleScaleFactor") ScaleFactor nftsMintThrottleScaleFactor,
-                           @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "false") boolean nftsUseVirtualMerkle) {
+                           @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "false") boolean nftsUseVirtualMerkle,
+                           @ConfigProperty("autoCreations.isEnabled") boolean autoCreationsIsEnabled) {
 
 }

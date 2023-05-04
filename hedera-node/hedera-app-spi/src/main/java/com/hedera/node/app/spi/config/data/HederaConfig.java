@@ -17,6 +17,7 @@
 
 package com.hedera.node.app.spi.config.data;
 
+import com.hedera.node.app.spi.config.types.Profile;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -30,7 +31,23 @@ public record HederaConfig(@ConfigProperty(defaultValue = "1001") long firstUser
                            @ConfigProperty(value = "transaction.minValidDuration", defaultValue = "15") long transactionMinValidDuration,
                            @ConfigProperty(value = "transaction.minValidityBufferSecs", defaultValue = "10") int transactionMinValidityBufferSecs,
                            @ConfigProperty(value = "recordStream.recordFileVersion", defaultValue = "6") int recordStreamRecordFileVersion,
-                           @ConfigProperty(value = "recordStream.signatureFileVersion", defaultValue = "6") int recordStreamSignatureFileVersion) {
-
+                           @ConfigProperty(value = "recordStream.signatureFileVersion", defaultValue = "6") int recordStreamSignatureFileVersion,
+                           @ConfigProperty("allowances.maxTransactionLimit") int allowancesMaxTransactionLimit,
+                           @ConfigProperty("allowances.maxAccountLimit") int allowancesMaxAccountLimit,
+                           @ConfigProperty("allowances.isEnabled") boolean allowancesIsEnabled,
+                           @ConfigProperty("recordStream.enableTraceabilityMigration") boolean recordStreamEnableTraceabilityMigration,
+                           @ConfigProperty("recordStream.compressFilesOnCreation") boolean recordStreamCompressFilesOnCreation,
+                           @ConfigProperty String accountsExportPath,
+                           @ConfigProperty boolean exportAccountsOnStartup,
+                           @ConfigProperty("prefetch.queueCapacity") int prefetchQueueCapacity,
+                           @ConfigProperty("prefetch.threadPoolSize") int prefetchThreadPoolSize,
+                           @ConfigProperty("prefetch.codeCacheTtlSecs") int prefetchCodeCacheTtlSecs,
+                           @ConfigProperty("profiles.active") Profile profilesActive,
+                           @ConfigProperty("recordStream.isEnabled") boolean recordStreamIsEnabled,
+                           @ConfigProperty("recordStream.logDir") String recordStreamLogDir,
+                           @ConfigProperty("recordStream.sidecarDir") String recordStreamSideCarDir,
+                           @ConfigProperty("recordStream.logPeriod") long recordStreamLogPeriod,
+                           @ConfigProperty("recordStream.queueCapacity") int recordStreamQueueCapacity,
+                           @ConfigProperty("recordStream.logEveryTransaction") boolean recordStreamLogEveryTransaction) {
 
 }

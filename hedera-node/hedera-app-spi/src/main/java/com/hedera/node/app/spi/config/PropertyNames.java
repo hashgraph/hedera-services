@@ -199,8 +199,6 @@ public class PropertyNames {
     public static final String CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS = "consensus.handle.maxPrecedingRecords";
     public static final String CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS = "consensus.handle.maxFollowingRecords";
     public static final String UPGRADE_ARTIFACTS_PATH = "upgrade.artifacts.path";
-
-
     public static final String HEDERA_ALLOWANCES_MAX_TXN_LIMIT = "hedera.allowances.maxTransactionLimit";
     public static final String HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT = "hedera.allowances.maxAccountLimit";
     public static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
@@ -213,8 +211,8 @@ public class PropertyNames {
             "traceability.minFreeToUsedGasThrottleRatio";
     public static final String HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION =
             "hedera.recordStream.compressFilesOnCreation";
-
     public static final String TOKENS_AUTO_CREATIONS_ENABLED = "tokens.autoCreations.isEnabled";
+
 
     /* ---- Node properties ----- */
     public static final String DEV_ONLY_DEFAULT_NODE_LISTENS = "dev.onlyDefaultNodeListens";
@@ -249,6 +247,8 @@ public class PropertyNames {
     public static final String NETTY_START_RETRY_INTERVAL_MS = "netty.startRetryIntervalMs";
     public static final String NETTY_TLS_CERT_PATH = "netty.tlsCrt.path";
     public static final String NETTY_TLS_KEY_PATH = "netty.tlsKey.path";
+
+
     public static final String QUERIES_BLOB_LOOK_UP_RETRIES = "queries.blob.lookupRetries";
     public static final String STATS_CONS_THROTTLES_TO_SAMPLE = "stats.consThrottlesToSample";
     public static final String STATS_HAPI_THROTTLES_TO_SAMPLE = "stats.hapiThrottlesToSample";
