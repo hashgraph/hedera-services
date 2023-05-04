@@ -18,29 +18,29 @@ package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.GLOBAL_DYNAMIC_PROPS;
 import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.transformFor;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_DIR_PATH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_MAX_SIZE_KB;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_WHITE_LIST;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
-import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_DIR_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
-import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
-import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
-import static com.hedera.node.app.spi.config.PropertyNames.FILES_MAX_SIZE_KB;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
-import static com.hedera.node.app.spi.config.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
-import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_WHITE_LIST;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
 import static java.util.Map.entry;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -140,10 +140,10 @@ public final class ScreenedSysFileProps implements PropertySource {
 
         final var msg = "Global/dynamic properties overridden in system file are:\n  "
                 + GLOBAL_DYNAMIC_PROPS.stream()
-                        .filter(from121::containsKey)
-                        .sorted()
-                        .map(name -> String.format("%s=%s", name, from121.get(name)))
-                        .collect(Collectors.joining("\n  "));
+                .filter(from121::containsKey)
+                .sorted()
+                .map(name -> String.format("%s=%s", name, from121.get(name)))
+                .collect(Collectors.joining("\n  "));
         log.info(msg);
     }
 

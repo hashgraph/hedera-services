@@ -16,9 +16,10 @@
 
 package com.hedera.node.app.service.consensus.impl.config;
 
-import com.hedera.node.app.spi.config.PropertyNames;
+import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.swirlds.config.api.ConfigProperty;
 
 public record ConsensusServiceConfig(
         @ConfigProperty(PropertyNames.TOPICS_MAX_NUM) long maxTopics,
-        @ConfigProperty(PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED) int maxMessageSize) {}
+        @ConfigProperty(PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED) int maxMessageSize) {
+}

@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.state.annotations.RunTriggeredTransition
 import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.node.app.spi.config.PropertyNames;
+import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;

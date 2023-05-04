@@ -19,27 +19,26 @@ package com.hedera.node.app.service.mono.context.properties;
 import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.NODE_PROPS;
 import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.transformFor;
 import static com.hedera.node.app.service.mono.context.properties.PropUtils.loadOverride;
-import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
-import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PROFILES_ACTIVE;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PROFILES_ACTIVE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE;
 import static java.util.Map.entry;
 
-import com.hedera.node.app.spi.config.types.Profile;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -103,10 +102,10 @@ public class ScreenedNodeFileProps implements PropertySource {
         loadFrom(nodePropsLoc, true);
         final var msg = "Node-local properties overridden on disk are:\n  "
                 + NODE_PROPS.stream()
-                        .filter(fromFile::containsKey)
-                        .sorted()
-                        .map(name -> String.format("%s=%s", name, fromFile.get(name)))
-                        .collect(Collectors.joining("\n  "));
+                .filter(fromFile::containsKey)
+                .sorted()
+                .map(name -> String.format("%s=%s", name, fromFile.get(name)))
+                .collect(Collectors.joining("\n  "));
         log.info(msg);
     }
 
