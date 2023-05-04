@@ -20,7 +20,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.locks.AutoClosableResourceLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.LockedResource;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 

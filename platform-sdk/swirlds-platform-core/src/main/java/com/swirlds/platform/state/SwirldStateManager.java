@@ -21,7 +21,6 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.threading.framework.Stoppable;
-import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
@@ -50,26 +49,6 @@ public interface SwirldStateManager extends FreezePeriodChecker, Clearable, Load
      * 		the event to handle
      */
     void handlePreConsensusEvent(final EventImpl event);
-
-    /**
-     * Provides a {@link Runnable} to execute while waiting for pre-consensus events (q1) to process.
-     *
-     * @return the runnable
-     */
-    default InterruptableRunnable getPreConsensusWaitForWorkRunnable() {
-        // tells QueueThread to execute its default method when there is nothing in the queue to process
-        return null;
-    }
-
-    /**
-     * Provides a {@link Runnable} to execute while waiting for consensus events (q2) to process.
-     *
-     * @return the runnable
-     */
-    default InterruptableRunnable getConsensusWaitForWorkRunnable() {
-        // tells QueueThread to execute its default method when there is nothing in the queue to process
-        return null;
-    }
 
     /**
      * Determines if a pre-consensus event should be discarded or added to the pre-consensus queue (q1) for
