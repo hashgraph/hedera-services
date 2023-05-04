@@ -62,6 +62,7 @@ import static com.hedera.node.app.spi.config.legacy.PropertyNames.BOOTSTRAP_RATE
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
@@ -162,6 +163,7 @@ import static com.hedera.node.app.spi.config.legacy.PropertyNames.LEDGER_AUTO_RE
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.LEDGER_FUNDING_ACCOUNT;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
@@ -202,6 +204,7 @@ import static com.hedera.node.app.spi.config.legacy.PropertyNames.STAKING_REWARD
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.legacy.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 import static com.hedera.node.app.spi.config.legacy.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
@@ -240,7 +243,23 @@ import static com.hedera.node.app.spi.config.legacy.PropertyNames.WORKFLOWS_ENAB
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static java.util.Map.entry;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -419,6 +438,7 @@ class BootstrapPropertiesTest {
             entry(LEDGER_ID, "0x03"),
             entry(LEDGER_CHANGE_HIST_MEM_SECS, 20),
             entry(LEDGER_FUNDING_ACCOUNT, 98L),
+            entry(LEDGER_MAX_AUTO_ASSOCIATIONS, 5000),
             entry(LEDGER_NUM_SYSTEM_ACCOUNTS, 100),
             entry(LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT, 180),
             entry(LEDGER_TRANSFERS_MAX_LEN, 10),
@@ -533,7 +553,9 @@ class BootstrapPropertiesTest {
             entry(WORKFLOWS_ENABLED, Set.of()),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, true),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, true),
-            entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"));
+            entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"),
+            entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
+            entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30));
 
     @Test
     void containsProperty() {

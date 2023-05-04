@@ -18,10 +18,7 @@ package com.hedera.node.app.spi.config.legacy;
 
 /**
  * This class contains the properties that are part of the {@code PropertyNames} class in the mono-service module.
- *
- * @deprecated Class will be removed once we have migrated to the new configuration framework.
  */
-@Deprecated(forRemoval = true)
 public class PropertyNames {
 
     private PropertyNames() {
@@ -68,6 +65,7 @@ public class PropertyNames {
     public static final String HEDERA_FIRST_USER_ENTITY = "hedera.firstUserEntity";
     public static final String HEDERA_REALM = "hedera.realm";
     public static final String HEDERA_SHARD = "hedera.shard";
+    public static final String LEDGER_MAX_AUTO_ASSOCIATIONS = "ledger.maxAutoAssociations";
     public static final String LEDGER_NUM_SYSTEM_ACCOUNTS = "ledger.numSystemAccounts";
     public static final String LEDGER_TOTAL_TINY_BAR_FLOAT = "ledger.totalTinyBarFloat";
     public static final String LEDGER_ID = "ledger.id";
@@ -87,6 +85,7 @@ public class PropertyNames {
     public static final String BALANCES_NODE_BALANCE_WARN_THRESHOLD = "balances.nodeBalanceWarningThreshold";
     public static final String BALANCES_COMPRESS_ON_CREATION = "balances.compressOnCreation";
     public static final String CACHE_RECORDS_TTL = "cache.records.ttl";
+    public static final String CACHE_CRYPTO_TRANSFER_WARM_THREADS = "cache.cryptoTransfer.warmThreads";
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";
     public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
     public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME = "contracts.referenceSlotLifetime";
@@ -175,6 +174,7 @@ public class PropertyNames {
     public static final String STAKING_REQUIRE_MIN_STAKE_TO_REWARD = "staking.requireMinStakeToReward";
     public static final String STAKING_REWARD_RATE = "staking.rewardRate";
     public static final String STAKING_START_THRESH = "staking.startThreshold";
+    public static final String STAKING_SUM_OF_CONSENSUS_WEIGHTS = "staking.sumOfConsensusWeights";
     public static final String TOKENS_MAX_AGGREGATE_RELS = "tokens.maxAggregateRels";
     public static final String TOKENS_STORE_RELS_ON_DISK = "tokens.storeRelsOnDisk";
     public static final String TOKENS_MAX_NUM = "tokens.maxNumber";

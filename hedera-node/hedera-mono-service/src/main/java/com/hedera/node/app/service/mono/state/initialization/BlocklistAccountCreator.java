@@ -43,6 +43,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
@@ -96,9 +97,43 @@ public class BlocklistAccountCreator {
      * Makes sure that all blocked accounts contained in the blocklist resource are present in state, and creates them if necessary.
      */
     public void createMissingAccounts() {
+        final List<String> fileLines = readFileLines();
+        if (fileLines.isEmpty()) return;
+
+        final List<BlockedInfo> blocklist = parseBlockList(fileLines);
+
+        if (!blocklist.isEmpty()) {
+            final var blockedToCreate = blocklist.stream()
+                    .filter(blockedAccount ->
+                            aliasManager.lookupIdBy(blockedAccount.evmAddress).equals(MISSING_NUM))
+                    .collect(Collectors.toSet());
+
+            for (final var blockedInfo : blockedToCreate) {
+                final var newId = ids.newAccountId(); // get the next available new account ID
+                final var account = blockedAccountWith(blockedInfo);
+                accounts.put(newId, account); // add the account with the corresponding newId to state
+                accountsCreated.add(account); // add the account to the list of accounts created by this class
+                aliasManager.link(
+                        blockedInfo.evmAddress,
+                        EntityNum.fromAccountId(newId)); // link the EVM address alias to the new account ID
+            }
+        }
+    }
+
+    private List<String> readFileLines() {
+        final List<String> fileLines;
+        try {
+            fileLines = readPrivateKeyBlocklist(blocklistResourceName);
+        } catch (Exception e) {
+            log.error("Failed to read blocklist resource {}", blocklistResourceName, e);
+            return Collections.emptyList();
+        }
+        return fileLines;
+    }
+
+    private List<BlockedInfo> parseBlockList(final List<String> fileLines) {
         final List<BlockedInfo> blocklist;
         try {
-            final var fileLines = readPrivateKeyBlocklist(blocklistResourceName);
             final var columnHeaderLine = fileLines.get(0);
             final var blocklistLines = fileLines.subList(1, fileLines.size());
             final var columnCount = columnHeaderLine.split(",").length;
@@ -107,26 +142,9 @@ public class BlocklistAccountCreator {
                     .toList();
         } catch (IllegalArgumentException iae) {
             log.error("Failed to parse blocklist", iae);
-            return;
-        } catch (Exception e) {
-            log.error("Failed to read blocklist resource {}", blocklistResourceName, e);
-            return;
+            return Collections.emptyList();
         }
-
-        final var blockedToCreate = blocklist.stream()
-                .filter(blockedAccount ->
-                        aliasManager.lookupIdBy(blockedAccount.evmAddress).equals(MISSING_NUM))
-                .collect(Collectors.toSet());
-
-        for (final var blockedInfo : blockedToCreate) {
-            final var newId = ids.newAccountId(); // get the next available new account ID
-            final var account = blockedAccountWith(blockedInfo);
-            accounts.put(newId, account); // add the account with the corresponding newId to state
-            accountsCreated.add(account); // add the account to the list of accounts created by this class
-            aliasManager.link(
-                    blockedInfo.evmAddress,
-                    EntityNum.fromAccountId(newId)); // link the EVM address alias to the new account ID
-        }
+        return blocklist;
     }
 
     @NonNull
