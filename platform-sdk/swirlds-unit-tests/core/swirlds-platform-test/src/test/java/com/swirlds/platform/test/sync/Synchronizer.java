@@ -20,8 +20,8 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.swirlds.common.test.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.gossip.sync.ShadowGraphSynchronizer;
+import com.swirlds.platform.network.Connection;
 
 /**
  * This class initiates a sync between a caller and listener node.

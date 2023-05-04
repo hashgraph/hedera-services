@@ -20,13 +20,13 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.gossip.chatter.ChatterSyncProtocol;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
 import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
 import com.swirlds.platform.gossip.sync.FallenBehindManager;
 import com.swirlds.platform.gossip.sync.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.SyncException;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import java.io.IOException;
 import java.util.List;

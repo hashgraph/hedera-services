@@ -18,7 +18,6 @@ package com.swirlds.platform.gossip.chatter;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
@@ -26,6 +25,7 @@ import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
 import com.swirlds.platform.gossip.sync.FallenBehindManager;
 import com.swirlds.platform.gossip.sync.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.SyncException;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
 import java.io.IOException;

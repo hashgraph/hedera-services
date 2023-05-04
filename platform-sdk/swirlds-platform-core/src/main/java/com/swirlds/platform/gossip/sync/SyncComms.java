@@ -19,11 +19,11 @@ package com.swirlds.platform.gossip.sync;
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
+import com.swirlds.platform.network.Connection;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;

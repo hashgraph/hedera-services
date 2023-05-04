@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.network;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
@@ -115,7 +115,7 @@ public class Network {
      * @param portsToBeMapped
      * 		a list of ports that require mapping
      */
-    static void doPortForwarding(final ThreadManager threadManager, List<PortMapping> portsToBeMapped) {
+    public static void doPortForwarding(final ThreadManager threadManager, List<PortMapping> portsToBeMapped) {
         PortMappingListener listener = new PortMappingListener() {
             public void noForwardingDeviceFound() {
                 noForwardingDeviceFound = true;
@@ -148,7 +148,7 @@ public class Network {
     /**
      * Unmaps all the ports that were previously mapped and stops the service
      */
-    static void stopPortForwarding() {
+    public static void stopPortForwarding() {
         if (portForwarderThread != null) {
             portForwarderThread.interrupt();
             portForwarder.closeService();
@@ -166,7 +166,7 @@ public class Network {
      *
      * @return an array of all local addresses, sorted by IP version (4 or 6), then alphabetically.
      */
-    static String[] getOwnAddresses2() {
+    public static String[] getOwnAddresses2() {
         if (ownAddresses == null) {
             try {
                 ownAddresses = computeOwnAddresses();

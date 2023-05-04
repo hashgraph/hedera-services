@@ -19,7 +19,6 @@ package com.swirlds.platform.network;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.gossip.sync.SyncTimeoutException;
 import java.io.Closeable;

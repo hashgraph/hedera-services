@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.network;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SYNC;
 
 import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.Settings;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
-import com.swirlds.platform.network.ConnectionTracker;
-import com.swirlds.platform.network.NetworkUtils;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;

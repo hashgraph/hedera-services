@@ -24,11 +24,11 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.FakeTime;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.network.ByteConstants;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import java.io.IOException;

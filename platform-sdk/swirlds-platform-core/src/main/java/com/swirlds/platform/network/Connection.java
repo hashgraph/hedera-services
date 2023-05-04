@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.network;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.sync.SyncInputStream;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.network;
 
 /**
  * Status for the Ip Address found by {@link Network}

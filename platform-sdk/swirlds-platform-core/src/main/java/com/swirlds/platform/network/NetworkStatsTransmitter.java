@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.network;
 
 import static com.swirlds.common.utility.Units.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -26,7 +26,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
 import com.swirlds.platform.components.common.query.SystemTransactionSubmitter;
-import com.swirlds.platform.network.NetworkMetrics;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;

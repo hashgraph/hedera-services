@@ -20,9 +20,9 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.gossip.sync.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.state.signed.ReservedSignedState;

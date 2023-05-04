@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.sync;
 
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 
 /**
  * Thrown if any issue occurs during a sync that is not connection related
