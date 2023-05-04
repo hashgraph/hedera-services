@@ -151,15 +151,6 @@ public class EventImpl extends AbstractSerializableHashable
         updateConsensusDataGeneration();
     }
 
-    /**
-     * This constructor is used in {@link StreamEventParser} when parsing events from stream
-     *
-     * @param consensusEvent
-     */
-    public EventImpl(final DetailedConsensusEvent consensusEvent) {
-        buildFromConsensusEvent(consensusEvent);
-    }
-
     public EventImpl(
             final BaseEventHashedData baseEventHashedData,
             final BaseEventUnhashedData baseEventUnhashedData,
