@@ -16,7 +16,6 @@
 
 package com.swirlds.common.config;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.constructable.URLClassLoaderWithLookup;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -26,6 +25,7 @@ import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,7 +37,8 @@ public final class ConfigUtils {
     private ConfigUtils() {}
 
     /**
-     * Scan all classes in a classpath and register all configuration data types with a configuration builder.
+     * Scan all classes on the classpath / modulepath and register all configuration data types with a configuration
+     * builder.
      *
      * @param configurationBuilder a configuration builder
      * @return the configuration builder that was passed as a param (for fluent api)
@@ -45,11 +46,13 @@ public final class ConfigUtils {
     @NonNull
     public static ConfigurationBuilder scanAndRegisterAllConfigTypes(
             @NonNull final ConfigurationBuilder configurationBuilder) {
-        return scanAndRegisterAllConfigTypes(configurationBuilder, Collections.emptySet(), Collections.emptyList());
+        return scanAndRegisterAllConfigTypes(configurationBuilder, Set.of());
     }
 
     /**
-     * Scan all classes in a classpath and register all configuration data types with a configuration builder.
+     * Scan all classes on the classpath / modulepath that are under the provided {@code packagePrefixes} and register
+     * all configuration data types to the given {@code configurationBuilder}. If the given {@code packagePrefixes} Set
+     * is empty all packages will be scanned.
      *
      * @param configurationBuilder a configuration builder
      * @param packagePrefixes      the package prefixes to scan
@@ -57,9 +60,9 @@ public final class ConfigUtils {
      */
     @NonNull
     public static ConfigurationBuilder scanAndRegisterAllConfigTypes(
-            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final String... packagePrefixes) {
-        ArgumentUtils.throwArgNull(packagePrefixes, "packagePrefixes");
-        return scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(packagePrefixes), Collections.emptyList());
+            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Set<String> packagePrefixes) {
+        Objects.requireNonNull(packagePrefixes, "packagePrefixes must not be null");
+        return scanAndRegisterAllConfigTypes(configurationBuilder, packagePrefixes, Collections.emptyList());
     }
 
     /**
@@ -75,7 +78,7 @@ public final class ConfigUtils {
             @NonNull final ConfigurationBuilder configurationBuilder,
             @NonNull final Set<String> packagePrefixes,
             @NonNull final List<URLClassLoaderWithLookup> additionalClassLoaders) {
-        ArgumentUtils.throwArgNull(configurationBuilder, "configurationBuilder");
+        Objects.requireNonNull(configurationBuilder, "configurationBuilder must not be null");
         loadAllConfigDataRecords(packagePrefixes, additionalClassLoaders)
                 .forEach(configurationBuilder::withConfigDataType);
         return configurationBuilder;
@@ -85,8 +88,8 @@ public final class ConfigUtils {
     private static Set<Class<? extends Record>> loadAllConfigDataRecords(
             @NonNull final Set<String> packagePrefixes,
             @NonNull final List<URLClassLoaderWithLookup> additionalClassLoaders) {
-        ArgumentUtils.throwArgNull(packagePrefixes, "packagePrefix");
-        ArgumentUtils.throwArgNull(additionalClassLoaders, "additionalClassLoaders");
+        Objects.requireNonNull(packagePrefixes, "packagePrefix must not be null");
+        Objects.requireNonNull(additionalClassLoaders, "additionalClassLoaders must not be null");
 
         final ClassGraph classGraph = new ClassGraph().enableAnnotationInfo();
 
