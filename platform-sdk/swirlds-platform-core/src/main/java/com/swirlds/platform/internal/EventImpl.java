@@ -42,7 +42,6 @@ import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.RoundInfo;
-import com.swirlds.platform.StreamEventParser;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.InternalEventData;
@@ -150,15 +149,6 @@ public class EventImpl extends AbstractSerializableHashable
     public EventImpl(final GossipEvent gossipEvent, final EventImpl selfParent, final EventImpl otherParent) {
         this(gossipEvent, new ConsensusData(), selfParent, otherParent);
         updateConsensusDataGeneration();
-    }
-
-    /**
-     * This constructor is used in {@link StreamEventParser} when parsing events from stream
-     *
-     * @param consensusEvent
-     */
-    public EventImpl(final DetailedConsensusEvent consensusEvent) {
-        buildFromConsensusEvent(consensusEvent);
     }
 
     public EventImpl(

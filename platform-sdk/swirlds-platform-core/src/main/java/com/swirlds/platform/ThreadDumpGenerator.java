@@ -81,13 +81,6 @@ class ThreadDumpGenerator {
     }
 
     /**
-     * Same as generateThreadDumpFile(Path dir, String heading) but with no heading
-     */
-    public static void generateThreadDumpFile(final Path dir) {
-        generateThreadDumpFile(dir, null);
-    }
-
-    /**
      * Generate a thread dump file
      *
      * @param heading

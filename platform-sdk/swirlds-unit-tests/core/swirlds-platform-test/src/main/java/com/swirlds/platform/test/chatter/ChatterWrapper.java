@@ -18,9 +18,9 @@ package com.swirlds.platform.test.chatter;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.sequence.Shiftable;
-import com.swirlds.platform.chatter.protocol.ChatterCore;
-import com.swirlds.platform.chatter.protocol.PeerMessageException;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
+import com.swirlds.platform.gossip.chatter.protocol.PeerMessageException;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import java.time.Instant;
 import java.util.List;
 

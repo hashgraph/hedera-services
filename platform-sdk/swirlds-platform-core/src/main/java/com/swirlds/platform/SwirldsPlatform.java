@@ -83,14 +83,6 @@ import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
-import com.swirlds.platform.chatter.ChatterNotifier;
-import com.swirlds.platform.chatter.ChatterSyncProtocol;
-import com.swirlds.platform.chatter.PrepareChatterEvent;
-import com.swirlds.platform.chatter.communication.ChatterProtocol;
-import com.swirlds.platform.chatter.config.ChatterConfig;
-import com.swirlds.platform.chatter.protocol.ChatterCore;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
-import com.swirlds.platform.chatter.protocol.peer.PeerInstance;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.EventCreationRules;
@@ -145,6 +137,26 @@ import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
+import com.swirlds.platform.gossip.FallenBehindManagerImpl;
+import com.swirlds.platform.gossip.chatter.ChatterNotifier;
+import com.swirlds.platform.gossip.chatter.ChatterSyncProtocol;
+import com.swirlds.platform.gossip.chatter.PrepareChatterEvent;
+import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
+import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
+import com.swirlds.platform.gossip.shadowgraph.SingleNodeNetworkSync;
+import com.swirlds.platform.gossip.sync.SyncCaller;
+import com.swirlds.platform.gossip.sync.SyncManagerImpl;
+import com.swirlds.platform.gossip.sync.SyncProtocolResponder;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
+import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
@@ -157,8 +169,10 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
+import com.swirlds.platform.network.NetworkStatsTransmitter;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
@@ -180,7 +194,6 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
-import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
@@ -197,15 +210,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
-import com.swirlds.platform.sync.ShadowGraph;
-import com.swirlds.platform.sync.ShadowGraphEventObserver;
-import com.swirlds.platform.sync.ShadowGraphSynchronizer;
-import com.swirlds.platform.sync.SimultaneousSyncThrottle;
-import com.swirlds.platform.sync.SingleNodeNetworkSync;
-import com.swirlds.platform.sync.SyncProtocolResponder;
-import com.swirlds.platform.sync.config.SyncConfig;
-import com.swirlds.platform.sync.protocol.PeerAgnosticSyncChecks;
-import com.swirlds.platform.sync.protocol.SyncProtocol;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
@@ -563,7 +567,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this::createPrioritySystemTransaction,
                 this::haltRequested,
                 appCommunicationComponent,
-                preConsensusEventWriter);
+                preConsensusEventWriter,
+                currentPlatformStatus::get);
         wiring.registerComponents(components);
 
         final NetworkStatsTransmitter networkStatsTransmitter =
@@ -1363,6 +1368,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     PAUSE_ALERT_INTERVAL / 2);
         }
 
+        // FUTURE WORK: set platform status REPLAYING_EVENTS
+        // FUTURE WORK: replay events
+        // FUTURE WORK: validate that status is still REPLAYING_EVENTS (holdover until we refactor platform status)
+        // FUTURE WORK: set platform status READY
+
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
         checkPlatformStatus();
@@ -1781,7 +1791,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * @return the SyncManager used by this platform
      */
-    SyncManagerImpl getSyncManager() {
+    public SyncManagerImpl getSyncManager() {
         return syncManager;
     }
 
@@ -1804,7 +1814,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * @return locks used to synchronize usage of outbound connections
      */
-    SharedConnectionLocks getSharedConnectionLocks() {
+    public SharedConnectionLocks getSharedConnectionLocks() {
         return sharedConnectionLocks;
     }
 
@@ -1846,7 +1856,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * Checks the status of the platform and notifies the SwirldMain if there is a change in status
      */
-    void checkPlatformStatus() {
+    public void checkPlatformStatus() {
         final int numNodes = initialAddressBook.getSize();
 
         synchronized (currentPlatformStatus) {
@@ -1930,8 +1940,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
     /** {@inheritDoc} */
     @Override
-    public boolean createTransaction(final byte[] trans) {
-        return transactionSubmitter.submitTransaction(new SwirldTransaction(trans));
+    public boolean createTransaction(@NonNull final byte[] transaction) {
+        return transactionSubmitter.submitTransaction(new SwirldTransaction(transaction));
     }
 
     /**
