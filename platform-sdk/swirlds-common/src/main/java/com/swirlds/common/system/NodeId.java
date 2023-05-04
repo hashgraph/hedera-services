@@ -16,6 +16,8 @@
 
 package com.swirlds.common.system;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -23,9 +25,13 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @param id ID number unique within the network
  */
-public record NodeId(long id) {
+public record NodeId(long id) implements Comparable<NodeId> {
 
+    /** the map of all NodeId objects created, indexed by ID number */
     private static final ConcurrentHashMap<Long, NodeId> nodeIds = new ConcurrentHashMap<>();
+
+    /** the first NodeId object created */
+    public static final NodeId FIRST_NODE_ID = NodeId.create(0L);
 
     /**
      * Constructs a NodeId object
@@ -58,6 +64,15 @@ public record NodeId(long id) {
     @Deprecated(since = "0.39.0", forRemoval = true)
     public boolean equals(long id) {
         return this.id == id;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int compareTo(@NonNull final NodeId other) {
+        Objects.requireNonNull(other, "NodeId cannot be null");
+        return Long.compare(this.id, other.id);
     }
 
     /**
