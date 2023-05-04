@@ -88,9 +88,6 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("thread-curr")
                 .setStopBehavior(swirldStateManager.getStopBehavior())
-                // DO NOT turn the line below into a lambda reference because it will execute the getter, not the
-                // runnable returned by the getter.
-                .setWaitForItemRunnable(swirldStateManager.getPreConsensusWaitForWorkRunnable())
                 .setHandler(swirldStateManager::handlePreConsensusEvent)
                 .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
                         .get()
