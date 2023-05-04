@@ -23,12 +23,12 @@ import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.txns.TransactionLastStep;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WorkingStateWritableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
@@ -84,13 +84,15 @@ public interface HandleWorkflowModule {
     }
 
     @Provides
-    @Singleton
-    static LongSupplier provideConsensusSecond(@NonNull final TransactionContext txnCtx) {
-        return () -> txnCtx.consensusTime().getEpochSecond();
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    static NonAtomicReference<HederaState> provideMutableStateSupplier(@NonNull final Platform platform) {
+        // Always return the latest mutable state until we support state proofs
+        return new NonAtomicReference<>();
     }
 
     @Provides
-    static ReadableStoreFactory provideReadableStoreFactory(final Supplier<AutoCloseableWrapper<HederaState>> state) {
-        return new ReadableStoreFactory(state.get().get());
+    @Singleton
+    static LongSupplier provideConsensusSecond(@NonNull final TransactionContext txnCtx) {
+        return () -> txnCtx.consensusTime().getEpochSecond();
     }
 }

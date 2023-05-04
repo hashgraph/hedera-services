@@ -16,17 +16,20 @@
 
 package com.hedera.node.app.meta;
 
+import com.hedera.node.app.components.StoreComponent;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.function.LongSupplier;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
@@ -40,7 +43,8 @@ public class MonoHandleContext implements HandleContext {
     private final ExpiryValidator expiryValidator;
     private final TransactionContext txnCtx;
     private final AttributeValidator attributeValidator;
-    private final ReadableStoreFactory readableStoreFactory;
+    private final NonAtomicReference<HederaState> mutableState;
+    private final Provider<StoreComponent.Factory> storeFactory;
 
     @Inject
     public MonoHandleContext(
@@ -48,12 +52,14 @@ public class MonoHandleContext implements HandleContext {
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final TransactionContext txnCtx,
-            @NonNull final ReadableStoreFactory storeFactory) {
+            @NonNull final NonAtomicReference<HederaState> mutableState,
+            @NonNull final Provider<StoreComponent.Factory> storeFactory) {
         this.nums = Objects.requireNonNull(ids)::newAccountNumber;
         this.txnCtx = Objects.requireNonNull(txnCtx);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
         this.attributeValidator = Objects.requireNonNull(attributeValidator);
-        this.readableStoreFactory = Objects.requireNonNull(storeFactory);
+        this.mutableState = Objects.requireNonNull(mutableState);
+        this.storeFactory = Objects.requireNonNull(storeFactory);
     }
 
     /**
@@ -94,6 +100,13 @@ public class MonoHandleContext implements HandleContext {
     @Override
     @NonNull
     public <C> C createReadableStore(@NonNull Class<C> storeInterface) {
+        // FUTURE: This is a temporary solution to the problem of creating a readable store factory.
+        // Once HandleContext is created which is not Singleton and is created per request, we can
+        // inject the store factory directly into the HandleContext constructor.
+        // Currently, this ReadableStoreFactory is created per each handle as defined by the
+        // custom scope @HandleScope
+        final var readableStoreFactory =
+                storeFactory.get().create(mutableState.get()).storeFactory();
         return readableStoreFactory.createStore(storeInterface);
     }
 }
