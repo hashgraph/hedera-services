@@ -27,6 +27,7 @@ import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.base.state.Startable;
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -61,6 +62,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -143,6 +145,7 @@ import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
+import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
@@ -198,7 +201,11 @@ import com.swirlds.platform.sync.ShadowGraph;
 import com.swirlds.platform.sync.ShadowGraphEventObserver;
 import com.swirlds.platform.sync.ShadowGraphSynchronizer;
 import com.swirlds.platform.sync.SimultaneousSyncThrottle;
+import com.swirlds.platform.sync.SingleNodeNetworkSync;
 import com.swirlds.platform.sync.SyncProtocolResponder;
+import com.swirlds.platform.sync.config.SyncConfig;
+import com.swirlds.platform.sync.protocol.PeerAgnosticSyncChecks;
+import com.swirlds.platform.sync.protocol.SyncProtocol;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
@@ -210,6 +217,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -220,6 +228,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -345,8 +354,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private SequenceCycle<EventIntakeTask> intakeCycle = null;
     /** sleep in ms after each sync in SyncCaller. A public setter for this exists. */
     private long delayAfterSync = 0;
-    /** Executes a sync with a remote node */
-    private ShadowGraphSynchronizer shadowgraphSynchronizer;
+    /**
+     * Executes a sync with a remote node. Only used for sync, not chatter.
+     */
+    private ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     /** Stores and passes pre-consensus events to {@link SwirldStateManager} for handling */
     private PreConsensusEventHandler preConsensusEventHandler;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
@@ -369,6 +380,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * A list of threads that execute the chatter protocol.
      */
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
+
+    /**
+     * A list of threads that execute the sync protocol using bidirectional connections
+     */
+    private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
 
     /**
      * All components that need to be started or that have dispatch observers.
@@ -406,6 +422,16 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * Writes pre-consensus events to disk.
      */
     private final PreConsensusEventWriter preConsensusEventWriter;
+
+    /**
+     * True if gossip has been halted. Only relevant for sync-as-a-protocol
+     */
+    private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
+
+    /**
+     * The permit provider for syncs. Only relevant when sync is running as a protocol
+     */
+    private SyncPermitProvider syncPermitProvider;
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -556,18 +582,22 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         reconnectThrottle = new ReconnectThrottle(settings.getReconnect());
 
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
         topology = new StaticTopology(
                 selfId,
                 initialAddressBook.getSize(),
                 settings.getNumConnections(),
-                !settings.getChatter().isChatterUsed());
+                // unidirectional connections are ONLY used for old-style syncs, that don't run as a protocol
+                !settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled());
 
         fallenBehindManager = new FallenBehindManagerImpl(
                 selfId,
                 topology.getConnectionGraph(),
                 this::checkPlatformStatus,
                 () -> {
-                    if (!settings.getChatter().isChatterUsed()) {
+                    // if we are using old-style syncs, don't start the reconnect controller
+                    if (!settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled()) {
                         return;
                     }
                     reconnectController.get().start();
@@ -975,6 +1005,15 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         for (final StoppableThread thread : chatterThreads) {
             thread.stop();
         }
+        for (final StoppableThread thread : syncProtocolThreads) {
+            thread.stop();
+        }
+
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        if (syncConfig.syncAsProtocolEnabled()) {
+            gossipHalted.set(true);
+        }
+
         if (syncManager != null) {
             syncManager.haltRequestedObserver(reason);
         }
@@ -1075,6 +1114,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             eventCreator = null;
         } else {
             eventCreator = new EventCreator(
+                    this.appVersion,
                     selfId,
                     PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
                     consensusRef::get,
@@ -1168,6 +1208,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final State state, final QueueThread<ReservedSignedState> stateHashSignQueueThread) {
 
         swirldStateManager = PlatformConstructor.swirldStateManager(
+                platformContext,
+                initialAddressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
@@ -1244,9 +1286,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // a genesis event could be created here, but it isn't needed. This member will naturally create an
         // event after their first sync, where the first sync will involve sending no events.
 
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         shadowgraphExecutor.start();
-        shadowgraphSynchronizer = new ShadowGraphSynchronizer(
+        syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 getShadowGraph(),
                 getAddressBook().getSize(),
                 syncMetrics,
@@ -1255,15 +1299,29 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 eventTaskCreator::addEvent,
                 syncManager,
                 shadowgraphExecutor,
-                true,
+                // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
+                !syncConfig.syncAsProtocolEnabled(),
                 () -> {});
 
-        final Runnable stopGossip = settings.getChatter().isChatterUsed()
-                ? chatterCore::stopChatter
-                // wait and acquire all sync ongoing locks and release them immediately
-                // this will ensure any ongoing sync are finished before we start reconnect
-                // no new sync will start because we have a fallen behind status
-                : getSimultaneousSyncThrottle()::waitForAllSyncsToFinish;
+        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
+
+        final Runnable stopGossip;
+        if (settings.getChatter().isChatterUsed()) {
+            stopGossip = chatterCore::stopChatter;
+        } else if (syncConfig.syncAsProtocolEnabled()) {
+            stopGossip = () -> {
+                gossipHalted.set(true);
+                // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
+                // we've fallen behind
+                syncPermitProvider.waitForAllSyncsToFinish();
+            };
+        } else {
+            // wait and acquire all sync ongoing locks and release them immediately
+            // this will ensure any ongoing sync are finished before we start reconnect
+            // no new sync will start because we have a fallen behind status
+            stopGossip = getSimultaneousSyncThrottle()::waitForAllSyncsToFinish;
+        }
+
         reconnectHelper = new ReconnectHelper(
                 stopGossip,
                 clearAllPipelines,
@@ -1318,6 +1376,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @return an instance that maintains connection managers for all connections to neighbors
      */
     public StaticConnectionManagers startCommonNetwork() {
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
         final SocketFactory socketFactory = PlatformConstructor.socketFactory(
                 crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));
         // create an instance that can create new outbound connections
@@ -1327,7 +1387,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this,
                 socketFactory,
                 initialAddressBook,
-                !settings.getChatter().isChatterUsed(),
+                // only do a version check for old-style sync
+                !settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled(),
                 appVersion);
         final StaticConnectionManagers connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
@@ -1336,7 +1397,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 initialAddressBook,
                 connectionManagers::newConnection,
                 StaticSettingsProvider.getSingleton(),
-                !settings.getChatter().isChatterUsed(),
+                // only do a version check for old-style sync
+                !settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled(),
                 appVersion);
         // allow other members to create connections to me
         final Address address = getSelfAddress();
@@ -1362,6 +1424,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * separate event creation thread.
      */
     public void startChatterNetwork() {
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
@@ -1410,9 +1473,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setOtherNodeId(otherId.getId())
                     .setThreadName("ChatterReader")
-                    .setHangingThreadPeriod(chatterConfig.hangingThreadDuration())
+                    .setHangingThreadPeriod(basicConfig.hangingThreadDuration())
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
+                            chatterConfig.sleepAfterFailedNegotiation(),
                             List.of(
                                     new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
                                     new VersionCompareHandshake(
@@ -1469,6 +1533,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         new AncientParentsRule(consensusRef::get),
                         criticalQuorum));
         final ChatterEventCreator chatterEventCreator = new ChatterEventCreator(
+                appVersion,
                 selfId,
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
                 swirldStateManager.getTransactionPool(),
@@ -1514,7 +1579,16 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * Constructs and starts all networking components needed for a sync network to run: heartbeats, callers, listeners
      */
     public void startSyncNetwork() {
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
+
+        if (syncConfig.syncAsProtocolEnabled()) {
+            reconnectController.set(
+                    new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false)));
+            startSyncAsProtocolNetwork(connectionManagers);
+            return;
+        }
 
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
         final MultiProtocolResponder protocolHandlers = new MultiProtocolResponder(List.of(
@@ -1522,10 +1596,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         UnidirectionalProtocols.SYNC.getInitialByte(),
                         new SyncProtocolResponder(
                                 simultaneousSyncThrottle,
-                                shadowgraphSynchronizer,
+                                syncShadowgraphSynchronizer,
                                 syncManager,
-                                syncManager::shouldAcceptSync,
-                                syncMetrics)),
+                                syncManager::shouldAcceptSync)),
                 ProtocolMapping.map(
                         UnidirectionalProtocols.RECONNECT.getInitialByte(),
                         new ReconnectProtocolResponder(
@@ -1568,6 +1641,107 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // create and start threads to call other members
         for (int i = 0; i < settings.getMaxOutgoingSyncs(); i++) {
             spawnSyncCaller(i);
+        }
+    }
+
+    /**
+     * Starts sync as a protocol network, with work managed by a {@link NegotiatorThread}
+     * <p>
+     * Starting sync with this method supports emergency reconnect
+     *
+     * @param connectionManagers the constructed connection managers
+     */
+    private void startSyncAsProtocolNetwork(@NonNull final StaticConnectionManagers connectionManagers) {
+        Objects.requireNonNull(connectionManagers);
+
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
+        final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
+
+        // if this is a single node network, start dedicated thread to "sync" and create events
+        if (initialAddressBook.getSize() == 1) {
+            syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
+                    .setPriority(Thread.NORM_PRIORITY)
+                    .setNodeId(selfId.getId())
+                    .setComponent(PLATFORM_THREAD_POOL_NAME)
+                    .setOtherNodeId(selfId.getId())
+                    .setThreadName("SingleNodeNetworkSync")
+                    .setHangingThreadPeriod(hangingThreadDuration)
+                    .setWork(new SingleNodeNetworkSync(
+                            this::checkPlatformStatus,
+                            eventTaskCreator::createEvent,
+                            this::getSleepAfterSync,
+                            selfId.getId()))
+                    .build(true));
+
+            return;
+        }
+
+        // If we still need an emergency recovery state, we need it via emergency reconnect.
+        // Start the helper now so that it is ready to receive a connection to perform reconnect with when the
+        // protocol is initiated.
+        if (emergencyRecoveryManager.isEmergencyStateRequired()) {
+            reconnectController.get().start();
+        }
+
+        final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
+                () -> !gossipHalted.get(), () -> intakeQueue.size() < settings.getEventIntakeQueueThrottleSize()));
+
+        for (final NodeId otherId : topology.getNeighbors()) {
+            syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
+                    .setPriority(Thread.NORM_PRIORITY)
+                    .setNodeId(selfId.getId())
+                    .setComponent(PLATFORM_THREAD_POOL_NAME)
+                    .setOtherNodeId(otherId.getId())
+                    .setThreadName("SyncProtocolWith" + otherId.getId())
+                    .setHangingThreadPeriod(hangingThreadDuration)
+                    .setWork(new NegotiatorThread(
+                            connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
+                            syncConfig.syncSleepAfterFailedNegotiation(),
+                            List.of(
+                                    new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
+                                    new VersionCompareHandshake(
+                                            PlatformVersion.locateOrDefault(),
+                                            !settings.isGossipWithDifferentVersions())),
+                            new NegotiationProtocols(List.of(
+                                    new HeartbeatProtocol(
+                                            otherId,
+                                            Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()),
+                                            networkMetrics,
+                                            time),
+                                    new EmergencyReconnectProtocol(
+                                            threadManager,
+                                            notificationEngine,
+                                            otherId,
+                                            emergencyRecoveryManager,
+                                            reconnectThrottle,
+                                            stateManagementComponent,
+                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectMetrics,
+                                            reconnectController.get()),
+                                    new ReconnectProtocol(
+                                            threadManager,
+                                            otherId,
+                                            reconnectThrottle,
+                                            () -> stateManagementComponent.getLatestSignedState(
+                                                    "SwirldsPlatform: ReconnectProtocol"),
+                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectMetrics,
+                                            reconnectController.get(),
+                                            new DefaultSignedStateValidator(),
+                                            fallenBehindManager),
+                                    new SyncProtocol(
+                                            otherId,
+                                            syncShadowgraphSynchronizer,
+                                            fallenBehindManager,
+                                            syncPermitProvider,
+                                            criticalQuorum,
+                                            peerAgnosticSyncChecks,
+                                            Duration.ofMillis(getSleepAfterSync()),
+                                            syncMetrics,
+                                            time)))))
+                    .build(true));
         }
     }
 
@@ -1977,10 +2151,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * @return the platform instance of the {@link ShadowGraphSynchronizer}
+     * @return the platform instance of the {@link ShadowGraphSynchronizer} used for sync
      */
-    public ShadowGraphSynchronizer getShadowGraphSynchronizer() {
-        return shadowgraphSynchronizer;
+    public ShadowGraphSynchronizer getSyncShadowGraphSynchronizer() {
+        return syncShadowgraphSynchronizer;
     }
 
     /**

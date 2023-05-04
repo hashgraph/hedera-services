@@ -29,7 +29,11 @@ import java.util.List;
  * Continuously runs protocol negotiation and protocols over connections supplied by the connection manager
  */
 public class NegotiatorThread implements InterruptableRunnable {
-    private static final int SLEEP_MS = 100;
+    /**
+     * The number of milliseconds to sleep if a negotiation fails
+     */
+    private final int sleepMillis;
+
     private final ConnectionManager connectionManager;
     private final List<ProtocolRunnable> handshakeProtocols;
     private final NegotiationProtocols protocols;
@@ -37,6 +41,8 @@ public class NegotiatorThread implements InterruptableRunnable {
     /**
      * @param connectionManager
      * 		supplies network connections
+     * @param sleepMillis
+     *         the number of milliseconds to sleep if a negotiation fails
      * @param handshakeProtocols
      * 		the list of protocols to execute when a new connection is established
      * @param protocols
@@ -44,9 +50,12 @@ public class NegotiatorThread implements InterruptableRunnable {
      */
     public NegotiatorThread(
             final ConnectionManager connectionManager,
+            final int sleepMillis,
             final List<ProtocolRunnable> handshakeProtocols,
             final NegotiationProtocols protocols) {
+
         this.connectionManager = connectionManager;
+        this.sleepMillis = sleepMillis;
         this.handshakeProtocols = handshakeProtocols;
         this.protocols = protocols;
     }
@@ -54,7 +63,7 @@ public class NegotiatorThread implements InterruptableRunnable {
     @Override
     public void run() throws InterruptedException {
         final Connection currentConn = connectionManager.waitForConnection();
-        final Negotiator negotiator = new Negotiator(protocols, currentConn, SLEEP_MS);
+        final Negotiator negotiator = new Negotiator(protocols, currentConn, sleepMillis);
         try {
             // run the handshake protocols on every new connection
             for (final ProtocolRunnable handshakeProtocol : handshakeProtocols) {

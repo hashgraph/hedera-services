@@ -85,9 +85,11 @@ import java.time.Duration;
  * @param suspiciousSignedStateAge              The age of a signed state which is considered to be suspicious.
  *                                              Suspicious states cause a large amount of data to be logged that helps
  *                                              to debug the potential state leak.
- * @param debugStackTracesEnabled               if true, then stack traces are captured each time a signed state
- *                                              reference count is changed, and logged if a signed state reference count
- *                                              bug is detected.
+ * @param stateHistoryEnabled                   If true, then a history of operations that modify the signed state
+ *                                              reference count are kept for debugging purposes.
+ * @param debugStackTracesEnabled               if true and stateHistoryEnabled is true, then stack traces are captured
+ *                                              each time a signed state reference count is changed, and logged if a
+ *                                              signed state reference count bug is detected.
  */
 @ConfigData("state")
 public record StateConfig(
@@ -111,6 +113,7 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning,
         @ConfigProperty(defaultValue = "0") int roundsToKeepAfterSigning,
         @ConfigProperty(defaultValue = "5m") Duration suspiciousSignedStateAge,
+        @ConfigProperty(defaultValue = "false") boolean stateHistoryEnabled,
         @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled) {
 
     /**

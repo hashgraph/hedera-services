@@ -18,7 +18,8 @@ package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAliasSizeGreaterThanEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
 
@@ -38,7 +39,6 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -79,7 +79,7 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
         // If the transaction fails, we will get an opportunity to unlink this alias in
         // reclaimPendingAliases()
         aliasManager.link(alias, EntityNum.fromAccountId(newId));
-        if (alias.size() > EntityIdUtils.EVM_ADDRESS_SIZE) {
+        if (isAliasSizeGreaterThanEvmAddress(alias)) {
             final var key = asPrimitiveKeyUnchecked(alias);
             JKey jKey = asFcKeyUnchecked(key);
             aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
@@ -99,7 +99,7 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
                 final var alias = syntheticTxnBody.getAlias();
                 if (!alias.isEmpty()) {
                     aliasManager.unlink(alias);
-                    if (alias.size() != EVM_ADDRESS_SIZE) {
+                    if (!isOfEvmAddressSize(alias)) {
                         // if this is an alias of type ECDSA public key
                         // we should also unlink the EVM address derived from that key
                         aliasManager.forgetEvmAddress(alias);
