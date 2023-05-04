@@ -16,7 +16,6 @@
 
 package com.hedera.node.config.data;
 
-import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -30,31 +29,32 @@ public record HederaConfig(
         @ConfigProperty(value = "transaction.maxValidDuration", defaultValue = "180") long transactionMaxValidDuration,
         @ConfigProperty(value = "transaction.minValidDuration", defaultValue = "15") long transactionMinValidDuration,
         @ConfigProperty(value = "transaction.minValidityBufferSecs", defaultValue = "10")
-                int transactionMinValidityBufferSecs,
+        int transactionMinValidityBufferSecs,
         @ConfigProperty(value = "recordStream.recordFileVersion", defaultValue = "6") int recordStreamRecordFileVersion,
         @ConfigProperty(value = "recordStream.signatureFileVersion", defaultValue = "6")
-                int recordStreamSignatureFileVersion,
+        int recordStreamSignatureFileVersion,
         @ConfigProperty(value = "allowances.maxTransactionLimit", defaultValue = "20")
-                int allowancesMaxTransactionLimit,
+        int allowancesMaxTransactionLimit,
         @ConfigProperty(value = "allowances.maxAccountLimit", defaultValue = "100") int allowancesMaxAccountLimit,
         @ConfigProperty(value = "allowances.isEnabled", defaultValue = "true") boolean allowancesIsEnabled,
         @ConfigProperty(value = "recordStream.enableTraceabilityMigration", defaultValue = "true")
-                boolean recordStreamEnableTraceabilityMigration,
+        boolean recordStreamEnableTraceabilityMigration,
         @ConfigProperty(value = "recordStream.compressFilesOnCreation", defaultValue = "true")
-                boolean recordStreamCompressFilesOnCreation,
+        boolean recordStreamCompressFilesOnCreation,
         @ConfigProperty(defaultValue = "data/onboard/exportedAccount.txt") String accountsExportPath,
         @ConfigProperty(defaultValue = "false") boolean exportAccountsOnStartup,
         @ConfigProperty(value = "prefetch.queueCapacity", defaultValue = "70000") int prefetchQueueCapacity,
         @ConfigProperty(value = "prefetch.threadPoolSize", defaultValue = "4") int prefetchThreadPoolSize,
         @ConfigProperty(value = "prefetch.codeCacheTtlSecs", defaultValue = "600") int prefetchCodeCacheTtlSecs,
-        @ConfigProperty(value = "profiles.active", defaultValue = "PROD") Profile profilesActive,
+        //@ConfigProperty(value = "profiles.active", defaultValue = "PROD") Profile profilesActive,
         @ConfigProperty(value = "recordStream.isEnabled", defaultValue = "true") boolean recordStreamIsEnabled,
         @ConfigProperty(value = "recordStream.logDir", defaultValue = "/opt/hgcapp/recordStreams")
-                String recordStreamLogDir,
+        String recordStreamLogDir,
         @ConfigProperty(value = "recordStream.sidecarDir", defaultValue = "sidecar") String recordStreamSideCarDir,
         @ConfigProperty(value = "recordStream.logPeriod", defaultValue = "2") long recordStreamLogPeriod,
         @ConfigProperty(value = "recordStream.queueCapacity", defaultValue = "5000") int recordStreamQueueCapacity,
         @ConfigProperty(value = "recordStream.logEveryTransaction", defaultValue = "false")
-                boolean recordStreamLogEveryTransaction
+        boolean recordStreamLogEveryTransaction
         // @ConfigProperty("workflows.enabled", defaultValue = "") Set<HederaFunctionality> workflowsEnabled
-        ) {}
+) {
+}
