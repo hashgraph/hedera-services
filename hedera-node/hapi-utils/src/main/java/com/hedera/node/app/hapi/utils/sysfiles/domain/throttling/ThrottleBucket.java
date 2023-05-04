@@ -195,7 +195,8 @@ public final class ThrottleBucket<E extends Enum<E>> {
             minCapacityUnitsPostSplit =
                     Math.max(minCapacityUnitsPostSplit, DeterministicThrottle.capacityRequiredFor(opsReq));
         }
-        final var postSplitCapacityUnitsLeakedPerMs = BucketThrottle.capacityUnitsPerMs(mtpsSplitBy(mtps, capacitySplit));
+        final var postSplitCapacityUnitsLeakedPerMs =
+                BucketThrottle.capacityUnitsPerMs(mtpsSplitBy(mtps, capacitySplit));
         final var minBurstPeriodMs = quotientRoundedUp(minCapacityUnitsPostSplit, postSplitCapacityUnitsLeakedPerMs);
         final var reqBurstPeriodMs = impliedBurstPeriodMs();
         if (minBurstPeriodMs > reqBurstPeriodMs) {

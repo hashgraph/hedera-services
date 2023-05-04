@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.hapi.utils.throttles;
 
-import com.google.common.annotations.VisibleForTesting;
-
 /** A bucket of discrete capacity. */
 public class DiscreteLeakyBucket {
     private long used;
