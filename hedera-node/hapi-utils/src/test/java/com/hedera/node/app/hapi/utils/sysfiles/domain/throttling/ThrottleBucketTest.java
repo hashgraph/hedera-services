@@ -94,7 +94,8 @@ class ThrottleBucketTest {
         "2, bootstrap/insufficient-capacity-throttles.json",
         "1, bootstrap/undersupplied-throttles.json",
         "1, bootstrap/overflow-throttles.json",
-        "1, bootstrap/repeated-op-throttles.json"
+        "1, bootstrap/repeated-op-throttles.json",
+        "1, bootstrap/lcm-overflow-throttles.json",
     })
     void failsWhenConstructingThrottlesThatNeverPermitAnOperationAtNodeLevel(final int networkSize, final String path)
             throws IOException {

@@ -244,7 +244,6 @@ public final class ThrottleBucket<E extends Enum<E>> {
      *
      * @param a the first number
      * @param b the second number
-     * @return the least common multiple of the given two numbers
      * @throws ArithmeticException if the result overflows a {@code long}
      */
     private long lcm(final long a, final long b) {

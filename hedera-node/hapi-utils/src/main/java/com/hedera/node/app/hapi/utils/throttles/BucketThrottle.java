@@ -18,8 +18,6 @@ package com.hedera.node.app.hapi.utils.throttles;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
 
-import com.google.common.annotations.VisibleForTesting;
-
 /**
  * A throttle that enforces a transaction rate with resolution of 1/1000th of a transaction.
  * Throttling decisions are made based on the capacity remaining in a {@link DiscreteLeakyBucket}
@@ -89,7 +87,6 @@ public class BucketThrottle {
         return new BucketThrottle(mtps, burstPeriod * MS_PER_SEC);
     }
 
-    @VisibleForTesting
     public static BucketThrottle withMtpsAndBurstPeriodMs(final long mtps, final long burstPeriodMs) {
         return new BucketThrottle(mtps, burstPeriodMs);
     }
