@@ -43,7 +43,6 @@ public class LazyCreatePrecompileFuzzing extends HapiSuite {
                 // transferNonFungibleTokenLazyCreateFuzzing()
                 // transferERC20LazyCreateFuzzing()
 
-                // test transfer hbars
                 // test transfer erc721
                 );
     }

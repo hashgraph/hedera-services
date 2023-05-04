@@ -35,6 +35,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomHbarTransfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomLazyCreateERC20Transfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomLazyCreateFungibleTransfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomLazyCreateNonFungibleTransfer;
@@ -53,6 +54,7 @@ public class LazyCreatePrecompileFuzzingFactory {
     public static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     public static final String MULTI_KEY = "purpose";
     public static final String OWNER = "owner";
+    public static final String SENDER = "sender";
     public static final String TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT = "PrecompileAliasXfer";
     public static final String TOKEN_TREASURY = "treasury";
     public static final String TOKEN_TREASURY_ERC = "treasuryErc";
@@ -194,6 +196,9 @@ public class LazyCreatePrecompileFuzzingFactory {
                     .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
                     .withRecharging(),
 
+            // HBAR TRANSFER
+            cryptoCreate(SENDER).balance(INITIAL_SUPPLY).key(MULTI_KEY).maxAutomaticTokenAssociations(5),
+
             // Fungible init
             tokenCreate(FUNGIBLE_TOKEN)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -236,6 +241,7 @@ public class LazyCreatePrecompileFuzzingFactory {
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
                     .withInitialization(onlyEcdsaKeys(NUM_DISTINCT_ECDSA_KEYS))
+                    .withOp(new RandomHbarTransfer(spec.registry(), keys), intPropOrElse("randomHbar.bias", 0, props))
                     .withOp(
                             new RandomLazyCreateFungibleTransfer(spec.registry(), keys),
                             intPropOrElse("randomFungibleTransfer.bias", 0, props))
