@@ -219,7 +219,8 @@ class SyncCaller implements Runnable {
                         }
                         // try to initiate a sync. If they accept the request, then sync
                         try {
-                            syncAccepted = platform.getShadowGraphSynchronizer().synchronize(conn);
+                            syncAccepted =
+                                    platform.getSyncShadowGraphSynchronizer().synchronize(conn);
                             if (syncAccepted) {
                                 break;
                             }
