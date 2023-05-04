@@ -61,12 +61,11 @@ class DataFileReaderCloseTest {
         //noinspection resource
         collection.endWriting(0, COUNT - 1);
         final AtomicBoolean readingThreadStarted = new AtomicBoolean(false);
-        final AtomicBoolean readingThreadInterrupted = new AtomicBoolean(false);
         final AtomicReference<IOException> exceptionOccurred = new AtomicReference<>();
         final Thread readingThread = new Thread(() -> {
             final Random rand = new Random();
             try {
-                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     final int i = rand.nextInt(COUNT);
                     final long dataLocation = index.get(i);
                     final long[] item = collection.readDataItem(dataLocation);
@@ -79,7 +78,6 @@ class DataFileReaderCloseTest {
             } catch (final IOException e) {
                 exceptionOccurred.set(e);
             }
-            readingThreadInterrupted.set(true);
         });
         readingThread.start();
         while (!readingThreadStarted.get()) {
@@ -87,10 +85,7 @@ class DataFileReaderCloseTest {
             Thread.sleep(1);
         }
         readingThread.interrupt();
-        while (!readingThreadInterrupted.get()) {
-            //noinspection BusyWait
-            Thread.sleep(1);
-        }
+        readingThread.join(4000);
         if (exceptionOccurred.get() != null) {
             exceptionOccurred.get().printStackTrace();
             Assertions.assertNull(exceptionOccurred.get(), "No IOException is expected");

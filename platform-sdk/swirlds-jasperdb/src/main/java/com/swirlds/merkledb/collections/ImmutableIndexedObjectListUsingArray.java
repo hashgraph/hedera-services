@@ -110,7 +110,7 @@ public class ImmutableIndexedObjectListUsingArray<T extends IndexedObject> imple
     /** {@inheritDoc} */
     @Override
     public ImmutableIndexedObjectListUsingArray<T> withDeletedObjects(@NonNull final Collection<T> objectsToDelete) {
-        // Ignore null objects, share an immutable empty list
+        // Share an immutable empty list
         if (objectsToDelete.isEmpty() || isEmpty()) {
             return this;
         }
