@@ -50,8 +50,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class SocketConnectionTests {
 
-    private NodeId selfId;
-    private NodeId otherId;
+    private NodeId selfId = NodeId.create(0L);
+    private NodeId otherId = NodeId.create(1L);
     private SwirldsPlatform platform;
     private Socket socket;
     private SyncInputStream dis;
@@ -68,8 +68,6 @@ class SocketConnectionTests {
 
     @BeforeEach
     void newMocks() {
-        selfId = mock(NodeId.class);
-        otherId = mock(NodeId.class);
         platform = mock(SwirldsPlatform.class, withSettings().withoutAnnotations());
         socket = mock(Socket.class);
         dis = mock(SyncInputStream.class);

@@ -169,7 +169,7 @@ class EventTaskCreatorTest {
         when(syncManager.shouldCreateEvent(any())).thenReturn(true);
 
         SyncResult syncResult = mock(SyncResult.class);
-        when(syncResult.getOtherId()).thenReturn(mock(NodeId.class));
+        when(syncResult.getOtherId()).thenReturn(NodeId.create(2));
 
         taskCreator.syncDone(syncResult);
 
@@ -185,7 +185,7 @@ class EventTaskCreatorTest {
         when(setting.getRandomEventProbability()).thenReturn(1);
 
         SyncResult syncResult = mock(SyncResult.class);
-        when(syncResult.getOtherId()).thenReturn(mock(NodeId.class));
+        when(syncResult.getOtherId()).thenReturn(NodeId.create(2));
 
         taskCreator.syncDone(syncResult);
 
