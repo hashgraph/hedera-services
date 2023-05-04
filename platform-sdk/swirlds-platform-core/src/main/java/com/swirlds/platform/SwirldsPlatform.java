@@ -563,7 +563,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this::createPrioritySystemTransaction,
                 this::haltRequested,
                 appCommunicationComponent,
-                preConsensusEventWriter);
+                preConsensusEventWriter,
+                currentPlatformStatus::get);
         wiring.registerComponents(components);
 
         final NetworkStatsTransmitter networkStatsTransmitter =
