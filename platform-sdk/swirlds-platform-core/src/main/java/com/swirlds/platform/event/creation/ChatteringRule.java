@@ -18,7 +18,7 @@ package com.swirlds.platform.event.creation;
 
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
-import com.swirlds.platform.chatter.protocol.peer.CommunicationState;
+import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
 import java.util.Collection;
 
 /**

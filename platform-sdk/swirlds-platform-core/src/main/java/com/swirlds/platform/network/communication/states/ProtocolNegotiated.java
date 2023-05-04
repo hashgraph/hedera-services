@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network.communication.states;
 
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.communication.NegotiationException;
 import com.swirlds.platform.network.protocol.Protocol;
