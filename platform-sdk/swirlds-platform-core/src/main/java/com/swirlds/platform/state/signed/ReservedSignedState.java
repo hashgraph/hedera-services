@@ -178,13 +178,16 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
     private void throwIfClosed() {
         if (closed) {
             if (signedState != null) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "This ReservedSignedState has already been closed, dumping history. "
-                                + "Reservation ID = {}, reservation reason ={}\n{},",
-                        reservationId,
-                        reason,
-                        signedState.getHistory());
+                final SignedStateHistory history = signedState.getHistory();
+                if (history != null) {
+                    logger.error(
+                            EXCEPTION.getMarker(),
+                            "This ReservedSignedState has already been closed, dumping history. "
+                                    + "Reservation ID = {}, reservation reason ={}\n{},",
+                            reservationId,
+                            reason,
+                            history);
+                }
             }
             throw new ReferenceCountException("This ReservedSignedState has been closed.");
         }
