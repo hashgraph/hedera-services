@@ -47,7 +47,7 @@ import java.util.stream.Stream;
  * 		The type of leaf node.
  */
 @SuppressWarnings("unused")
-public interface VirtualDataSource<K extends VirtualKey<? super K>, V extends VirtualValue> {
+public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue> {
 
     /** nominal value for a invalid path */
     int INVALID_PATH = -1;
@@ -223,4 +223,14 @@ public interface VirtualDataSource<K extends VirtualKey<? super K>, V extends Vi
      * @return a new key set
      */
     VirtualKeySet<K> buildKeySet();
+
+    /**
+     * Provides estimation how much space is needed to store the given number of internal / leaf nodes in the data
+     * source. This estimation is used to decide when to flush virtual node caches to data sources.
+     *
+     * @param dirtyInternals Number of dirty internal nodes in the node cache
+     * @param dirtyLeaves    Number of dirty leaf nodes in the node cache
+     * @return Estimated space needed to store the given number of nodes in the data source, in bytes
+     */
+    long estimatedSize(long dirtyInternals, long dirtyLeaves);
 }

@@ -43,9 +43,12 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
     }
 
     private HapiSpec getAccountBalanceFromAllNodes() {
-        String sender = "0.0.1002";
-        String receiver = "0.0.1003";
-        String lastlyCreatedAccount = "0.0.21063";
+        // Since https://github.com/hashgraph/hedera-services/pull/5799, the nodes will create
+        // 299 "blocklist" accounts with EVM addresses commonly used in HardHat test environments,
+        // to protect developers from accidentally sending hbar to those addresses
+        String sender = "0.0.1301";
+        String receiver = "0.0.1302";
+        String lastlyCreatedAccount = "0.0.21362";
         return defaultHapiSpec("GetAccountBalanceFromAllNodes")
                 .given()
                 .when()
@@ -84,10 +87,10 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
     }
 
     private HapiSpec validateTopicInfo() {
-        String firstlyCreatedTopic = "0.0.21064";
-        String lastlyCreatedTopic = "0.0.41063";
-        String invalidTopicId = "0.0.41064";
-        String topicIdWithMessagesSubmittedTo = "0.0.30050";
+        String firstlyCreatedTopic = "0.0.21363";
+        String lastlyCreatedTopic = "0.0.41362";
+        String invalidTopicId = "0.0.41363";
+        String topicIdWithMessagesSubmittedTo = "0.0.30349";
         byte[] emptyRunningHash = new byte[48];
         return defaultHapiSpec("ValidateTopicInfo")
                 .given(getTopicInfo(topicIdWithMessagesSubmittedTo).logged().saveRunningHash())
@@ -109,9 +112,9 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
     }
 
     private HapiSpec validateFileInfo() {
-        String firstlyCreatedFile = "0.0.41064";
-        String lastlyCreatedFile = "0.0.42063";
-        String invalidFileId = "0.0.42064";
+        String firstlyCreatedFile = "0.0.41363";
+        String lastlyCreatedFile = "0.0.42362";
+        String invalidFileId = "0.0.42363";
         return defaultHapiSpec("ValidateFileInfo")
                 .given()
                 .when()

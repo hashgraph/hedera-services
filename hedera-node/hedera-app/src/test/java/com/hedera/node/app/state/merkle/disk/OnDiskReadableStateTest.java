@@ -38,7 +38,7 @@ class OnDiskReadableStateTest extends MerkleTestBase {
         md = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100));
+                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC, 100));
         virtualMap = createVirtualMap("TEST LABEL", md);
     }
 

@@ -176,7 +176,7 @@ public abstract class AbstractAutoCreationLogic {
         final var maxAutoAssociations =
                 tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         customizer.maxAutomaticAssociations(maxAutoAssociations);
-        final var isAliasEVMAddress = alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE;
+        final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
             customizer.key(EMPTY_KEY);
@@ -203,7 +203,7 @@ public abstract class AbstractAutoCreationLogic {
             fee += getLazyCreationFinalizationFee();
         }
 
-        final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
+        final var newId = ids.newAccountId();
         accountsLedger.create(newId);
         replaceAliasAndSetBalanceOnChange(change, newId);
 
@@ -264,7 +264,7 @@ public abstract class AbstractAutoCreationLogic {
 
         final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
         final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, currentView.get(), txnCtx.consensusTime());
-        return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     private void analyzeTokenTransferCreations(final List<BalanceChange> changes) {

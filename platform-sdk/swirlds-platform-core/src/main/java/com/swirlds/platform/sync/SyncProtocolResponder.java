@@ -19,7 +19,6 @@ package com.swirlds.platform.sync;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Connection;
-import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.unidirectional.NetworkProtocolResponder;
 import java.io.IOException;
@@ -36,19 +35,15 @@ public class SyncProtocolResponder implements NetworkProtocolResponder {
     /** returns true if the sync should be accepted */
     private final BooleanSupplier otherSyncThrottle;
 
-    private final SyncMetrics syncMetrics;
-
     public SyncProtocolResponder(
             final SimultaneousSyncThrottle syncThrottle,
             final ShadowGraphSynchronizer synchronizer,
             final FallenBehindManager fallenBehindManager,
-            final BooleanSupplier otherSyncThrottle,
-            final SyncMetrics syncMetrics) {
+            final BooleanSupplier otherSyncThrottle) {
         this.syncThrottle = syncThrottle;
         this.synchronizer = synchronizer;
         this.fallenBehindManager = fallenBehindManager;
         this.otherSyncThrottle = otherSyncThrottle;
-        this.syncMetrics = syncMetrics;
     }
 
     /**
@@ -70,7 +65,6 @@ public class SyncProtocolResponder implements NetworkProtocolResponder {
                     return;
                 }
 
-                syncMetrics.updateRejectedSyncRatio(false);
                 synchronizer.synchronize(connection);
             } catch (ParallelExecutionException | SyncException e) {
                 throw new NetworkProtocolException(e);
@@ -79,7 +73,6 @@ public class SyncProtocolResponder implements NetworkProtocolResponder {
     }
 
     private void rejectSync(final Connection connection) throws IOException {
-        syncMetrics.updateRejectedSyncRatio(true);
         synchronizer.rejectSync(connection);
     }
 }

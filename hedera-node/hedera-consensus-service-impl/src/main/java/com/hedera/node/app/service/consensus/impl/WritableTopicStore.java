@@ -63,7 +63,6 @@ public class WritableTopicStore extends TopicStore {
 
     /**
      * Commits the changes to the underlying data storage.
-     * TODO: Not sure if the stores have responsibility of committing the changes. This might change in the future.
      */
     public void commit() {
         requireNonNull(topicState);
@@ -80,7 +79,7 @@ public class WritableTopicStore extends TopicStore {
     }
 
     /**
-     * Returns the {@link Topic} with the given number using {@link WritableKVState#getForModify(Comparable K)}.
+     * Returns the {@link Topic} with the given number using {@link WritableKVState#getForModify}.
      * If no such topic exists, returns {@code Optional.empty()}
      * @param topicNum - the number of the topic to be retrieved.
      */

@@ -16,64 +16,57 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_FOR_TOKEN_WITHOUT_SUPPLY;
 import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_SUPPLY_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.junit.jupiter.api.Test;
 
-public class TokenBurnHandlerParityTest extends ParityTestBase {
+class TokenBurnHandlerParityTest extends ParityTestBase {
     private final TokenBurnHandler subject = new TokenBurnHandler();
 
     @Test
-    void getsTokenBurnWithValidId() {
+    void getsTokenBurnWithValidId() throws PreCheckException {
         final var theTxn = txnFrom(BURN_WITH_SUPPLY_KEYED_TOKEN);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_SUPPLY_KT.asKey()));
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(1, context.requiredNonPayerKeys().size());
+        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_SUPPLY_KT.asPbjKey()));
     }
 
     @Test
-    void getsTokenBurnWithMissingToken() {
+    void getsTokenBurnWithMissingToken() throws PreCheckException {
         final var theTxn = txnFrom(BURN_WITH_MISSING_TOKEN);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context, readableTokenStore);
-
-        assertTrue(context.failed());
-        assertEquals(INVALID_TOKEN_ID, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(0, context.getRequiredNonPayerKeys().size());
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
     }
 
     @Test
-    void getsTokenBurnWithoutSupplyKey() {
+    void getsTokenBurnWithoutSupplyKey() throws PreCheckException {
         final var theTxn = txnFrom(BURN_FOR_TOKEN_WITHOUT_SUPPLY);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context, readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(0, context.getRequiredNonPayerKeys().size());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertEquals(0, context.requiredNonPayerKeys().size());
     }
 }

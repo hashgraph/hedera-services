@@ -16,18 +16,11 @@
 
 package com.hedera.node.app.meta;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -42,8 +35,6 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class MonoHandleContext implements HandleContext {
-    private static final AccountID PLACEHOLDER_ID = AccountID.getDefaultInstance();
-
     private final LongSupplier nums;
     private final ExpiryValidator expiryValidator;
     private final TransactionContext txnCtx;
@@ -53,13 +44,12 @@ public class MonoHandleContext implements HandleContext {
     public MonoHandleContext(
             @NonNull final EntityIdSource ids,
             @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final OptionValidator optionValidator,
+            @NonNull final AttributeValidator attributeValidator,
             @NonNull final TransactionContext txnCtx) {
-        Objects.requireNonNull(ids);
-        this.nums = () -> ids.newAccountId(PLACEHOLDER_ID).getAccountNum();
+        this.nums = Objects.requireNonNull(ids)::newAccountNumber;
         this.txnCtx = Objects.requireNonNull(txnCtx);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
-        this.attributeValidator = new MonoAttributeValidator(Objects.requireNonNull(optionValidator));
+        this.attributeValidator = Objects.requireNonNull(attributeValidator);
     }
 
     /**
@@ -92,30 +82,5 @@ public class MonoHandleContext implements HandleContext {
     @Override
     public ExpiryValidator expiryValidator() {
         return expiryValidator;
-    }
-
-    private static final class MonoAttributeValidator implements AttributeValidator {
-        private final OptionValidator optionValidator;
-
-        private MonoAttributeValidator(final OptionValidator optionValidator) {
-            this.optionValidator = optionValidator;
-        }
-
-        @Override
-        public void validateKey(final Key key) {
-            try {
-                optionValidator.attemptDecodeOrThrow(key);
-            } catch (final InvalidTransactionException e) {
-                throw new HandleStatusException(e.getResponseCode());
-            }
-        }
-
-        @Override
-        public void validateMemo(final String memo) {
-            final var validity = optionValidator.memoCheck(memo);
-            if (validity != OK) {
-                throw new HandleStatusException(validity);
-            }
-        }
     }
 }

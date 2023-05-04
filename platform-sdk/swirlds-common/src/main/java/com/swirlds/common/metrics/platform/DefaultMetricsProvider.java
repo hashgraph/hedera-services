@@ -19,7 +19,9 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.sun.net.httpserver.HttpServer;
-import com.swirlds.common.config.ConfigUtils;
+import com.swirlds.base.state.Lifecycle;
+import com.swirlds.base.state.LifecyclePhase;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsFactory;
 import com.swirlds.common.metrics.MetricsProvider;
@@ -28,8 +30,6 @@ import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.common.utility.Lifecycle;
-import com.swirlds.common.utility.LifecyclePhase;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -87,7 +87,7 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
 
                 globalMetrics.subscribe(endpoint::handleMetricsChange);
                 snapshotService.subscribe(endpoint::handleSnapshots);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 logger.error("Exception while setting up Prometheus endpoint", e);
             }
         }
@@ -125,7 +125,7 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
 
         if (!metricsConfig.disableMetricsOutput()) {
             final String folderName = metricsConfig.csvOutputFolder();
-            final Path folderPath = Path.of(StringUtils.isBlank(folderName) ? ConfigUtils.getUserDir() : folderName);
+            final Path folderPath = Path.of(StringUtils.isBlank(folderName) ? FileUtils.getUserDir() : folderName);
 
             // setup LegacyCsvWriter
             if (StringUtils.isNotBlank(metricsConfig.csvFileName())) {

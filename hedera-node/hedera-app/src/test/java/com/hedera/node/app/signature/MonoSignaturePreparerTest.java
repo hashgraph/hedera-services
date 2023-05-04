@@ -16,18 +16,23 @@
 
 package com.hedera.node.app.signature;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.sigs.Expansion;
 import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
@@ -35,7 +40,7 @@ import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.List;
@@ -103,9 +108,9 @@ class MonoSignaturePreparerTest {
         given(cryptoSigsCreation.createFrom((List) OTHER_PARTY_KEYS, keyToSigBytes, scopedFactory))
                 .willReturn(otherPartiesResult);
 
-        final var result = subject.expandedSigsFor(MOCK_TRANSACTION, PAYER_KEY, OTHER_PARTY_KEYS);
+        final var result = subject.expandedSigsFor(PbjConverter.toPbj(MOCK_TRANSACTION), PAYER_KEY, OTHER_PARTY_KEYS);
 
-        assertEquals(OK, result.status());
+        assertEquals(ResponseCodeEnum.OK, result.status());
         assertEquals(List.of(mockSig, mockSig, mockSig), result.cryptoSigs());
     }
 
@@ -117,9 +122,9 @@ class MonoSignaturePreparerTest {
         given(cryptoSigsCreation.createFrom(List.of(PAYER_KEY), keyToSigBytes, scopedFactory))
                 .willReturn(payerResult);
 
-        final var result = subject.expandedSigsFor(MOCK_TRANSACTION, PAYER_KEY, OTHER_PARTY_KEYS);
+        final var result = subject.expandedSigsFor(PbjConverter.toPbj(MOCK_TRANSACTION), PAYER_KEY, OTHER_PARTY_KEYS);
 
-        assertEquals(KEY_PREFIX_MISMATCH, result.status());
+        assertEquals(ResponseCodeEnum.KEY_PREFIX_MISMATCH, result.status());
         assertEquals(List.of(), result.cryptoSigs());
     }
 
@@ -135,38 +140,45 @@ class MonoSignaturePreparerTest {
         given(cryptoSigsCreation.createFrom((List) OTHER_PARTY_KEYS, keyToSigBytes, scopedFactory))
                 .willReturn(otherPartiesResult);
 
-        final var result = subject.expandedSigsFor(MOCK_TRANSACTION, PAYER_KEY, OTHER_PARTY_KEYS);
+        final var result = subject.expandedSigsFor(PbjConverter.toPbj(MOCK_TRANSACTION), PAYER_KEY, OTHER_PARTY_KEYS);
 
-        assertEquals(KEY_PREFIX_MISMATCH, result.status());
+        assertEquals(ResponseCodeEnum.KEY_PREFIX_MISMATCH, result.status());
         assertEquals(List.of(mockSig, mockSig), result.cryptoSigs());
     }
 
     @Test
     void delegatesPayerSigCheck() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
-        final var status = subject.syncGetPayerSigStatus(MOCK_TXN);
-        assertEquals(OK, status);
+
+        assertThatCode(() -> subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN)))
+                .doesNotThrowAnyException();
     }
 
     @Test
     void translatesKeyPrefixMismatch() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willThrow(KeyPrefixMismatchException.class);
-        final var status = subject.syncGetPayerSigStatus(MOCK_TXN);
-        assertEquals(KEY_PREFIX_MISMATCH, status);
+
+        assertThatThrownBy(() -> subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN)))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(KEY_PREFIX_MISMATCH));
     }
 
     @Test
     void translatesInvalidIdException() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willThrow(InvalidAccountIDException.class);
-        final var status = subject.syncGetPayerSigStatus(MOCK_TXN);
-        assertEquals(INVALID_ACCOUNT_ID, status);
+
+        assertThatThrownBy(() -> subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN)))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_ACCOUNT_ID));
     }
 
     @Test
     void translatesUnrecognizedFailure() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willThrow(IllegalArgumentException.class);
-        final var status = subject.syncGetPayerSigStatus(MOCK_TXN);
-        assertEquals(INVALID_SIGNATURE, status);
+
+        assertThatThrownBy(() -> subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN)))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_SIGNATURE));
     }
 
     private void givenHappy(final PlatformSigsCreationResult result) {
@@ -178,7 +190,7 @@ class MonoSignaturePreparerTest {
     }
 
     private void givenUnhappy(final PlatformSigsCreationResult result) {
-        given(result.asCode()).willReturn(KEY_PREFIX_MISMATCH);
+        given(result.asCode()).willReturn(com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH);
         given(result.hasFailed()).willReturn(true);
     }
 }

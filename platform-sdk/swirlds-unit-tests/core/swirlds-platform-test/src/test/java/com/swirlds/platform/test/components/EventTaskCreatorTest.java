@@ -105,10 +105,10 @@ class EventTaskCreatorTest {
 
         reset(eventQueueThread);
 
-        // with zero stake node
-        when(address.isZeroStake()).thenReturn(true);
+        // with zero weight node
+        when(address.isZeroWeight()).thenReturn(true);
         taskCreator.createEvent(otherId);
-        verify(eventQueueThread, times(0)).put(any());
+        verify(eventQueueThread, times(1)).put(any());
     }
 
     @Test

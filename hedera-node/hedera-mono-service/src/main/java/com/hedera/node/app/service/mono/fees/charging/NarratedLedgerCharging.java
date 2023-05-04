@@ -95,9 +95,9 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
     @Override
     public void setFees(FeeObject fees) {
-        this.nodeFee = fees.getNodeFee();
-        this.networkFee = fees.getNetworkFee();
-        this.serviceFee = fees.getServiceFee();
+        this.nodeFee = fees.nodeFee();
+        this.networkFee = fees.networkFee();
+        this.serviceFee = fees.serviceFee();
     }
 
     @Override

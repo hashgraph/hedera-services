@@ -117,6 +117,7 @@ public class HTSTestsUtil {
             Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
     public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
     public static final Bytes failResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
+    public static final Bytes invalidAccountId = UInt256.valueOf(ResponseCodeEnum.INVALID_ACCOUNT_ID_VALUE);
     public static final Bytes invalidAutoRenewAccountResult = UInt256.valueOf(INVALID_AUTORENEW_ACCOUNT_VALUE);
     public static final Bytes invalidTokenIdResult = UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_ID_VALUE);
     public static final Bytes invalidSerialNumberResult =
@@ -127,6 +128,7 @@ public class HTSTestsUtil {
     public static final Bytes missingNftResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
     public static final Association associateOp = Association.singleAssociation(accountMerkleId, tokenMerkleId);
+    public static final Dissociation dissociateOp = Dissociation.singleDissociation(accountMerkleId, tokenMerkleId);
     public static final TokenID fungible = IdUtils.asToken("0.0.888");
     public static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
@@ -447,6 +449,21 @@ public class HTSTestsUtil {
                             .setSerialNumber(2L)
                             .build(),
                     payer));
+    public static final List<BalanceChange> nftTransferChangesWithCustomFeesForRoyalty = List.of(
+            BalanceChange.changingNftOwnership(
+                    Id.fromGrpcToken(token),
+                    token,
+                    NftTransfer.newBuilder()
+                            .setSenderAccountID(sender)
+                            .setReceiverAccountID(receiver)
+                            .setSerialNumber(1L)
+                            .build(),
+                    payer),
+            /* Simulate an assessed fallback fee */
+            setFallBackFeeChange(List.of(BalanceChange.tokenCustomFeeAdjust(
+                            Id.fromGrpcAccount(receiver), Id.fromGrpcToken(token), -AMOUNT)))
+                    .get(0),
+            BalanceChange.tokenCustomFeeAdjust(Id.fromGrpcAccount(feeCollector), Id.fromGrpcToken(token), +AMOUNT));
     public static final List<BalanceChange> balanceChangesForLazyCreateFailing = List.of(
             BalanceChange.changingNftOwnership(
                     Id.fromGrpcToken(token),
@@ -639,6 +656,11 @@ public class HTSTestsUtil {
 
     public static TokenUpdateWrapper createNonFungibleTokenUpdateWrapperWithKeys(final List<TokenKeyWrapper> keys) {
         return new TokenUpdateWrapper(nonFungible, null, null, null, null, keys, new TokenExpiryWrapper(0, null, 0));
+    }
+
+    private static List<BalanceChange> setFallBackFeeChange(final List<BalanceChange> balanceChanges) {
+        balanceChanges.forEach(balanceChange -> balanceChange.setIncludesFallbackFee());
+        return balanceChanges;
     }
 
     public static final TokenCreateWrapper.FixedFeeWrapper fixedFee =

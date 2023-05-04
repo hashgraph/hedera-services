@@ -25,7 +25,7 @@ import java.io.Closeable;
  * @param <K>
  * 		the type of the key
  */
-public interface VirtualKeySet<K extends VirtualKey<? super K>> extends Closeable {
+public interface VirtualKeySet<K extends VirtualKey> extends Closeable {
 
     /**
      * Add a key to the set.

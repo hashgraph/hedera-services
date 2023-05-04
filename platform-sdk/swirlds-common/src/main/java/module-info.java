@@ -46,6 +46,7 @@ module com.swirlds.common {
     exports com.swirlds.common.metrics;
     exports com.swirlds.common.metrics.atomic;
     exports com.swirlds.common.metrics.config;
+    exports com.swirlds.common.metrics.noop;
     exports com.swirlds.common.metrics.platform;
     exports com.swirlds.common.metrics.platform.prometheus;
     exports com.swirlds.common.notification;
@@ -84,16 +85,13 @@ module com.swirlds.common {
             com.swirlds.platform.test,
             com.swirlds.common.test,
             com.swirlds.jrs,
-            com.swirlds.demo.platform;
+            com.swirlds.demo.platform,
+            com.swirlds.signingtool;
     exports com.swirlds.common.crypto.internal to
             com.swirlds.platform,
             com.swirlds.common.test;
     exports com.swirlds.common.notification.internal to
             com.swirlds.common.test;
-    exports com.swirlds.common.signingtool to
-            com.swirlds.common.test,
-            com.swirlds.demo.platform,
-            com.swirlds.jrs;
     exports com.swirlds.common.crypto.engine to
             com.swirlds.common.test;
 
@@ -143,10 +141,6 @@ module com.swirlds.common {
 
     opens com.swirlds.common.merkle.crypto to
             com.fasterxml.jackson.databind;
-
-    exports com.swirlds.common.context.internal to
-            com.swirlds.platform;
-
     opens com.swirlds.common.formatting to
             com.fasterxml.jackson.databind;
     opens com.swirlds.common.units to
@@ -154,7 +148,7 @@ module com.swirlds.common {
 
     exports com.swirlds.common.metrics.extensions;
 
-    requires com.swirlds.base;
+    requires transitive com.swirlds.base;
     requires com.swirlds.config;
     requires com.swirlds.logging;
     requires java.desktop;

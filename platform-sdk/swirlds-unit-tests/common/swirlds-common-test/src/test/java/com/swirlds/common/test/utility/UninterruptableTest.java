@@ -207,4 +207,31 @@ class UninterruptableTest {
         assertEventuallyFalse(thread::isAlive, Duration.ofSeconds(1), "thread should be dead by now");
         assertFalse(exceptionEncountered.get(), "no exceptions should have been thrown");
     }
+
+    @Test
+    @DisplayName("abortAndLogIfInterrupted() Consumer Test")
+    void abortAndLogIfInterruptedConsumerTest() {
+        final AtomicBoolean exceptionEncountered = new AtomicBoolean(false);
+
+        final BlockingQueue<Integer> queue = new LinkedBlockingDeque<>(1);
+
+        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    abortAndLogIfInterrupted(queue::put, 0, "unexpected error");
+                    abortAndLogIfInterrupted(queue::put, 1, "expected error");
+                })
+                .setExceptionHandler((t, throwable) -> exceptionEncountered.set(true))
+                .build(true);
+
+        assertEventuallyEquals(1, queue::size, Duration.ofSeconds(1), "element should eventually added to queue");
+
+        // Thread will be blocked on adding next element. Interrupt should unblock the thread.
+        thread.interrupt();
+
+        assertEventuallyFalse(thread::isAlive, Duration.ofSeconds(1), "thread should be dead");
+
+        assertEquals(0, queue.remove(), "unexpected element in queue");
+        assertTrue(queue.isEmpty(), "nothing else should be in the queue");
+        assertFalse(exceptionEncountered.get(), "no exceptions should have been thrown");
+    }
 }

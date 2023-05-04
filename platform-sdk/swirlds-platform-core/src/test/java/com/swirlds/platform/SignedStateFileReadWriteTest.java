@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.throwIfFileExists;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
+import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
@@ -128,17 +129,19 @@ class SignedStateFileReadWriteTest {
         writeStateFile(testDirectory, signedState);
         assertTrue(exists(stateFile), "signed state file should be present");
 
-        final DeserializedSignedState deserializedSignedState = readStateFile(stateFile);
+        final DeserializedSignedState deserializedSignedState =
+                readStateFile(TestPlatformContextBuilder.create().build(), stateFile);
         MerkleCryptoFactory.getInstance()
-                .digestTreeSync(deserializedSignedState.signedState().getState());
+                .digestTreeSync(
+                        deserializedSignedState.reservedSignedState().get().getState());
 
         assertNotNull(deserializedSignedState.originalHash(), "hash should not be null");
         assertEquals(signedState.getState().getHash(), deserializedSignedState.originalHash(), "hash should match");
         assertEquals(
                 signedState.getState().getHash(),
-                deserializedSignedState.signedState().getState().getHash(),
+                deserializedSignedState.reservedSignedState().get().getState().getHash(),
                 "hash should match");
-        assertNotSame(signedState, deserializedSignedState.signedState(), "state should be a different object");
+        assertNotSame(signedState, deserializedSignedState.reservedSignedState(), "state should be a different object");
     }
 
     @Test
@@ -150,6 +153,7 @@ class SignedStateFileReadWriteTest {
         final Path stateFile = directory.resolve(SIGNED_STATE_FILE_NAME);
         final Path hashInfoFile = directory.resolve(HASH_INFO_FILE_NAME);
         final Path settingsUsedFile = directory.resolve("settingsUsed.txt");
+        final Path addressBookFile = directory.resolve(CURRENT_ADDRESS_BOOK_FILE_NAME);
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
         writeSignedStateToDisk(0, directory, signedState, "test");
@@ -157,6 +161,7 @@ class SignedStateFileReadWriteTest {
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");
         assertTrue(exists(settingsUsedFile), "settings used file should exist");
+        assertTrue(exists(addressBookFile), "address book file should exist");
     }
 
     @Test
@@ -266,7 +271,7 @@ class SignedStateFileReadWriteTest {
                         "state.savedStateDirectory",
                         testDirectory.resolve("data/saved").toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final SignedStateMetrics signedStateMetrics = mock(SignedStateMetrics.class);
@@ -281,7 +286,8 @@ class SignedStateFileReadWriteTest {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ss, path, success) -> {});
+                (ss, path, success) -> {},
+                x -> {});
         manager.start();
 
         final int rounds = 3;

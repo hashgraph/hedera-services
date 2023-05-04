@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -111,7 +112,7 @@ import org.apache.logging.log4j.Logger;
  * 		type for values
  */
 @SuppressWarnings({"DuplicatedCode"})
-public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extends VirtualValue>
+public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualValue>
         implements VirtualDataSource<K, V> {
     private static final Logger logger = LogManager.getLogger(VirtualDataSourceJasperDB.class);
 
@@ -604,6 +605,12 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      */
     public long getLastLeafPath() {
         return this.validLeafPathRange.getMaxValidKey();
+    }
+
+    @Override
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+        return dirtyInternals * (Long.BYTES + DigestType.SHA_384.digestLength())
+                + dirtyLeaves * pathToHashKeyValue.getSerializer().getTypicalSerializedSize();
     }
 
     /**

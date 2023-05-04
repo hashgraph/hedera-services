@@ -20,10 +20,11 @@ import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.intern.ConfigurationProvider;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * The {@link ConfigurationBuilder} is the main entry point to the config api since it is used to create a
- * {@link Configuration} instance. A new builder can be created by calling {@link #create()} and must be used to setup a
+ * The {@link ConfigurationBuilder} is the main entry point to the config api since it is used to create a {@link
+ * Configuration} instance. A new builder can be created by calling {@link #create()} and must be used to setup a
  * configuration by adding {@link ConfigSource}, {@link ConfigConverter}, {@link ConfigValidator} or config data type
  * (see {@link ConfigData}) instance. By calling {@link #build()} a new {@link Configuration} instance will be created
  * based on the defined setup.
@@ -32,108 +33,99 @@ public interface ConfigurationBuilder {
 
     /**
      * Adds a config source (see {@link ConfigSource}). If this method is called after the config has been created (see
-     * {@link #build()}) a
-     * {@link IllegalStateException} will be thrown.
+     * {@link #build()}) a {@link IllegalStateException} will be thrown.
      *
-     * @param configSource
-     * 		the config source that should be used for the configuration
+     * @param configSource the config source that should be used for the configuration
      * @return the builder instance (useful for fluent API)
-     * @throws IllegalStateException
-     * 		if this method is called after the config has been created
+     * @throws IllegalStateException if this method is called after the config has been created
      */
-    ConfigurationBuilder withSource(final ConfigSource configSource) throws IllegalStateException;
+    @NonNull
+    ConfigurationBuilder withSource(@NonNull final ConfigSource configSource) throws IllegalStateException;
 
     /**
      * Adds config sources (see {@link ConfigSource}). If this method is called after the config has been created (see
      * {@link #build()}) a {@link IllegalStateException} will be thrown.
      *
-     * @param configSources
-     * 		the config sources that should be used for the configuration
+     * @param configSources the config sources that should be used for the configuration
      * @return the builder instance (useful for fluent API)
-     * @throws IllegalStateException
-     * 		if this method is called after the config has been created
+     * @throws IllegalStateException if this method is called after the config has been created
      */
-    ConfigurationBuilder withSources(final ConfigSource... configSources) throws IllegalStateException;
+    @NonNull
+    ConfigurationBuilder withSources(@NonNull final ConfigSource... configSources) throws IllegalStateException;
 
     /**
      * Adds a converter (see {@link ConfigConverter}). If this method is called after the config has been created (see
      * {@link #build()}) a {@link IllegalStateException} will be thrown.
      *
-     * @param converter
-     * 		the converter that should be used for the configuration
+     * @param converter the converter that should be used for the configuration
      * @return the builder instance (useful for fluent API)
-     * @throws IllegalStateException
-     * 		if this method is called after the config has been created
+     * @throws IllegalStateException if this method is called after the config has been created
      */
-    ConfigurationBuilder withConverter(final ConfigConverter<?> converter) throws IllegalStateException;
+    @NonNull
+    ConfigurationBuilder withConverter(@NonNull final ConfigConverter<?> converter) throws IllegalStateException;
 
     /**
      * Adds converters (see {@link ConfigConverter}). If this method is called after the config has been created (see
      * {@link #build()}) a {@link IllegalStateException} will be thrown.
      *
-     * @param converters
-     * 		the converters that should be used for the configuration
+     * @param converters the converters that should be used for the configuration
      * @return the builder instance (useful for fluent API)
-     * @throws IllegalStateException
-     * 		if this method is called after the config has been created
+     * @throws IllegalStateException if this method is called after the config has been created
      */
-    ConfigurationBuilder withConverters(final ConfigConverter<?>... converters) throws IllegalStateException;
+    @NonNull
+    ConfigurationBuilder withConverters(@NonNull final ConfigConverter<?>... converters) throws IllegalStateException;
 
     /**
      * Adds a validator (see {@link ConfigValidator}). If this method is called after the config has been created (see
      * {@link #build()}) a {@link IllegalStateException} will be thrown.
      *
-     * @param validator
-     * 		the validator that should be used for the configuration
+     * @param validator the validator that should be used for the configuration
      * @return the builder instance (useful for fluent API)
-     * @throws IllegalStateException
-     * 		if this method is called after the config has been created
+     * @throws IllegalStateException if this method is called after the config has been created
      */
-    ConfigurationBuilder withValidator(final ConfigValidator validator) throws IllegalStateException;
+    @NonNull
+    ConfigurationBuilder withValidator(@NonNull final ConfigValidator validator) throws IllegalStateException;
 
     /**
      * Adds validators (see {@link ConfigValidator}). If this method is called after the config has been created (see
      * {@link #build()}) a {@link IllegalStateException} will be thrown.
      *
-     * @param validators
-     * 		the validators that should be used for the configuration
+     * @param validators the validators that should be used for the configuration
      * @return the builder instance (useful for fluent API)
-     * @throws IllegalStateException
-     * 		if this method is called after the config has been created
+     * @throws IllegalStateException if this method is called after the config has been created
      */
-    ConfigurationBuilder withValidators(final ConfigValidator... validators) throws IllegalStateException;
+    @NonNull
+    ConfigurationBuilder withValidators(@NonNull final ConfigValidator... validators) throws IllegalStateException;
 
     /**
      * Adds a config data type (see {@link ConfigData}). If this method is called after the config has been created (see
      * {@link #build()}) a {@link IllegalStateException} will be thrown.
      *
-     * @param type
-     * 		the config data type that should be used for the configuration
+     * @param type the config data type that should be used for the configuration
      * @return the builder instance (useful for fluent API)
-     * @throws IllegalStateException
-     * 		if this method is called after the config has been created
+     * @throws IllegalStateException if this method is called after the config has been created
      */
-    <T extends Record> ConfigurationBuilder withConfigDataType(Class<T> type) throws IllegalStateException;
+    @NonNull
+    <T extends Record> ConfigurationBuilder withConfigDataType(@NonNull Class<T> type) throws IllegalStateException;
 
     /**
      * Adds config data types (see {@link ConfigData}). If this method is called after the config has been created (see
      * {@link #build()}) a {@link IllegalStateException} will be thrown.
      *
-     * @param types
-     * 		the config data types that should be used for the configuration
+     * @param types the config data types that should be used for the configuration
      * @return the builder instance (useful for fluent API)
-     * @throws IllegalStateException
-     * 		if this method is called after the config has been created
+     * @throws IllegalStateException if this method is called after the config has been created
      */
-    ConfigurationBuilder withConfigDataTypes(Class<? extends Record>... types) throws IllegalStateException;
+    @NonNull
+    ConfigurationBuilder withConfigDataTypes(@NonNull Class<? extends Record>... types) throws IllegalStateException;
 
     /**
      * Creates a {@link Configuration} instance based on this builder.
      *
      * @return a new {@link Configuration} instance
-     * @throws IllegalStateException
-     * 		If the method has already been called
+     * @throws IllegalStateException If the method has already been called
      */
+    @NonNull
     Configuration build();
 
     /**
@@ -142,6 +134,7 @@ public interface ConfigurationBuilder {
      *
      * @return a new {@link ConfigurationBuilder} instance
      */
+    @NonNull
     static ConfigurationBuilder create() {
         return ConfigurationProvider.getInstance().createBuilder();
     }

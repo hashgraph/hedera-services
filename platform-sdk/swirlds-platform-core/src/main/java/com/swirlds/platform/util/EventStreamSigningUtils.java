@@ -20,7 +20,6 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeEntir
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeMetaHash;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.readFirstIntFromFile;
 import static com.swirlds.common.stream.internal.TimestampStreamFileWriter.writeSignatureFile;
-import static com.swirlds.platform.util.FileSigningUtils.buildSignatureFilePath;
 import static com.swirlds.platform.util.FileSigningUtils.signData;
 
 import com.swirlds.common.crypto.Hash;
@@ -30,7 +29,6 @@ import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.internal.InvalidStreamFileException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -38,7 +36,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * Utility class for signing event stream files
@@ -74,16 +71,17 @@ public class EventStreamSigningUtils {
     /**
      * Generates a signature file for the given event stream file
      *
-     * @param destinationDirectory the directory where the signature file will be saved
-     * @param streamFileToSign     the stream file to be signed
-     * @param keyPair              the keyPair used for signing
+     * @param signatureFileDestination the full path where the signature file will be generated
+     * @param streamFileToSign         the stream file to be signed
+     * @param keyPair                  the keyPair used for signing
+     * @return true if the signature file was generated successfully, false otherwise
      */
-    public static void signEventStreamFile(
-            @NonNull final Path destinationDirectory,
+    public static boolean signEventStreamFile(
+            @NonNull final Path signatureFileDestination,
             @NonNull final Path streamFileToSign,
             @NonNull final KeyPair keyPair) {
 
-        Objects.requireNonNull(destinationDirectory, "destinationDirectory must not be null");
+        Objects.requireNonNull(signatureFileDestination, "signatureFileDestination must not be null");
         Objects.requireNonNull(streamFileToSign, "streamFileToSign must not be null");
         Objects.requireNonNull(keyPair, "keyPair must not be null");
 
@@ -93,7 +91,7 @@ public class EventStreamSigningUtils {
                 System.err.printf(
                         "Failed to sign file [%s] with unsupported version [%s]%n",
                         streamFileToSign.getFileName(), version);
-                return;
+                return false;
             }
 
             final Hash entireHash = computeEntireHash(streamFileToSign.toFile());
@@ -106,50 +104,22 @@ public class EventStreamSigningUtils {
             final com.swirlds.common.crypto.Signature metaHashSignature =
                     new com.swirlds.common.crypto.Signature(SignatureType.RSA, signData(metaHash.getValue(), keyPair));
 
-            final Path signatureFilePath = buildSignatureFilePath(destinationDirectory, streamFileToSign);
-
             writeSignatureFile(
                     entireHash,
                     entireHashSignature,
                     metaHash,
                     metaHashSignature,
-                    signatureFilePath.toString(),
+                    signatureFileDestination.toString(),
                     streamType);
 
-            System.out.println("Generated signature file: " + signatureFilePath);
+            System.out.println("Generated signature file: " + signatureFileDestination);
+
+            return true;
         } catch (final SignatureException | InvalidStreamFileException | IOException e) {
             System.err.println("Failed to sign file " + streamFileToSign.getFileName() + ". Exception: " + e);
+            return false;
         } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
             throw new RuntimeException("Irrecoverable error encountered", e);
-        }
-    }
-
-    /**
-     * Signs all event stream files in a directory
-     * <p>
-     * If a recoverable error is encountered while signing an individual file in the directory, an error will be logged,
-     * and signing of remaining files will continue
-     *
-     * @param sourceDirectory      the source directory
-     * @param destinationDirectory the destination directory
-     * @param keyPair              the key pair to sign with
-     */
-    public static void signEventStreamFilesInDirectory(
-            @NonNull final Path sourceDirectory,
-            @NonNull final Path destinationDirectory,
-            @NonNull final KeyPair keyPair) {
-
-        Objects.requireNonNull(sourceDirectory, "sourceDirectory must not be null");
-        Objects.requireNonNull(destinationDirectory, "destinationDirectory must not be null");
-        Objects.requireNonNull(keyPair, "keyPair must not be null");
-
-        final EventStreamType streamType = EventStreamType.getInstance();
-
-        try (final Stream<Path> stream = Files.walk(sourceDirectory)) {
-            stream.filter(filePath -> streamType.isStreamFile(filePath.toString()))
-                    .forEach(path -> signEventStreamFile(destinationDirectory, path, keyPair));
-        } catch (final IOException e) {
-            throw new RuntimeException("Failed to list files in directory: " + sourceDirectory);
         }
     }
 }

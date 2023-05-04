@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.receiver;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.royaltyFee;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory.MOCK_INITCODE;
@@ -738,12 +739,14 @@ class SyntheticTxnFactoryTest {
     void createsAdjustAllowanceForAllNFT() {
         final var allowances = new SetApprovalForAllWrapper(nonFungible, receiver, true);
 
-        final var result = subject.createApproveAllowanceForAllNFT(allowances);
+        final var result = subject.createApproveAllowanceForAllNFT(allowances, senderId);
         final var txnBody = result.build();
 
         assertEquals(
                 receiver,
                 txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
+        assertEquals(
+                sender, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getOwner());
         assertEquals(
                 nonFungible,
                 txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());

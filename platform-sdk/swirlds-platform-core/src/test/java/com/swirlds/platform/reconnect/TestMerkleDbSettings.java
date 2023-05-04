@@ -216,4 +216,16 @@ public class TestMerkleDbSettings implements MerkleDbSettings {
     public int getReservedBufferLengthForLeafList() {
         return defaultSettings.getReservedBufferLengthForLeafList();
     }
+
+    /** {@inheritDoc} */
+    @Override
+    public double getPercentHalfDiskHashMapFlushThreads() {
+        return defaultSettings.getPercentHalfDiskHashMapFlushThreads();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int getNumHalfDiskHashMapFlushThreads() {
+        return defaultSettings.getNumHalfDiskHashMapFlushThreads();
+    }
 }

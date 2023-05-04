@@ -19,13 +19,14 @@ package com.hedera.node.app.platform;
 import com.swirlds.common.system.Platform;
 import dagger.Module;
 import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 
 @Module
 public interface PlatformModule {
     @Provides
     @Singleton
-    static long selfId(final Platform platform) {
+    static long selfId(@NonNull final Platform platform) {
         return platform.getSelfId().getId();
     }
 }

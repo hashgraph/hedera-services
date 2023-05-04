@@ -81,12 +81,12 @@ public class ConsensusHandlingMetrics {
                         "consRound",
                         List.of(
                                 Pair.of(
+                                        "keystoneFlushMillis/round",
+                                        "average time to flush a round's keystone event to disk"),
+                                Pair.of(
                                         "dataPropMillis/round",
                                         "average time to propagate consensus data to transactions"),
                                 Pair.of("handleMillis/round", "average time to handle a consensus round"),
-                                Pair.of(
-                                        "roundCompletedDispatch/round",
-                                        "average time to send round completed dispatch"),
                                 Pair.of(
                                         "storeMillis/round",
                                         "average time to add consensus round events to signed state storage"),

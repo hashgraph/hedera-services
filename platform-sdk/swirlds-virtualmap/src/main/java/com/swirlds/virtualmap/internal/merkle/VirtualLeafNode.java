@@ -35,7 +35,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * Implementation of a VirtualLeaf
  */
 @ConstructableIgnored
-public final class VirtualLeafNode<K extends VirtualKey<? super K>, V extends VirtualValue> extends PartialMerkleLeaf
+public final class VirtualLeafNode<K extends VirtualKey, V extends VirtualValue> extends PartialMerkleLeaf
         implements MerkleLeaf, VirtualNode<VirtualLeafRecord<K, V>> {
 
     public static final long CLASS_ID = 0x499677a326fb04caL;

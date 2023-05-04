@@ -16,10 +16,11 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import com.hedera.node.app.spi.state.Serdes;
-import com.hedera.node.app.spi.state.serdes.ByteBufferDataInput;
+import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
+
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.data.MeteredOutputStream;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -29,7 +30,6 @@ import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -47,26 +47,28 @@ import java.util.Objects;
  */
 public final class OnDiskKeySerializer<K extends Comparable<? super K>>
         implements KeySerializer<OnDiskKey<K>>, SelfSerializableSupplier<OnDiskKey<K>> {
+    /** This is a hint for virtual maps, but isn't actually useful. We just pick some size. */
+    private static final int TYPICAL_SIZE = 256;
 
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x9992382838283411L;
 
     private final long classId;
-    private final Serdes<K> serdes;
+    private final Codec<K> codec;
     private final StateMetadata<K, ?> md;
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
     @Deprecated(forRemoval = true)
     public OnDiskKeySerializer() {
         classId = CLASS_ID; // BAD!!
-        serdes = null;
+        codec = null;
         md = null;
     }
 
     public OnDiskKeySerializer(@NonNull final StateMetadata<K, ?> md) {
         this.classId = md.onDiskKeySerializerClassId();
         this.md = Objects.requireNonNull(md);
-        this.serdes = md.stateDefinition().keySerdes();
+        this.codec = md.stateDefinition().keyCodec();
     }
 
     @Override
@@ -98,7 +100,7 @@ public final class OnDiskKeySerializer<K extends Comparable<? super K>>
 
     @Override
     public int getTypicalSerializedSize() {
-        return serdes.typicalSize();
+        return TYPICAL_SIZE;
     }
 
     @Override
@@ -109,7 +111,7 @@ public final class OnDiskKeySerializer<K extends Comparable<? super K>>
     @Override
     public int deserializeKeySize(@NonNull final ByteBuffer byteBuffer) {
         try {
-            return serdes.measure(new ByteBufferDataInput(byteBuffer));
+            return codec.measure(BufferedData.wrap(byteBuffer)) + 4;
         } catch (IOException e) {
             // Maybe log here?
             return -1;
@@ -118,7 +120,9 @@ public final class OnDiskKeySerializer<K extends Comparable<? super K>>
 
     @Override
     public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored) throws IOException {
-        final var k = serdes.parse(new ByteBufferDataInput(byteBuffer));
+        final var buff = BufferedData.wrap(byteBuffer);
+        buff.skip(4); // skip the length we wrote
+        final var k = codec.parse(buff);
         Objects.requireNonNull(k);
         return new OnDiskKey<>(md, k);
     }
@@ -126,10 +130,7 @@ public final class OnDiskKeySerializer<K extends Comparable<? super K>>
     @Override
     public int serialize(@Nullable final OnDiskKey<K> key, @NonNull final SerializableDataOutputStream out)
             throws IOException {
-        final var metered = new MeteredOutputStream(out);
-        final var k = Objects.requireNonNull(Objects.requireNonNull(key).getKey());
-        serdes.write(k, new DataOutputStream(metered));
-        return metered.getCountWritten();
+        return writeToStream(out, codec, Objects.requireNonNull(key).getKey());
     }
 
     @Override
@@ -138,7 +139,7 @@ public final class OnDiskKeySerializer<K extends Comparable<? super K>>
         // I really don't have a fast path for this. Which is very problematic for performance.
         // All we can do is serialize one or deserialize the other! It would be nice if PBJ
         // had a special method for this, but then we'd have to pipe it through all our APIs again
-        // or create some kind of Serdes object with all this stuff on it.
+        // or create some kind of Codec object with all this stuff on it.
         final var other = deserialize(byteBuffer, 0);
         return other.equals(key);
     }

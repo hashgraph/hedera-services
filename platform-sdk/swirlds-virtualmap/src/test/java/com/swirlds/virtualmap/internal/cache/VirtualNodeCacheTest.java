@@ -32,10 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.io.InputOutputStream;
 import com.swirlds.test.framework.TestTypeTags;
@@ -61,7 +61,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -910,7 +909,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         while (time < start + 1000) {
             try {
                 MILLISECONDS.sleep(20);
-            } catch (InterruptedException ignored) {
+            } catch (final InterruptedException ignored) {
             }
             time = System.currentTimeMillis();
         }
@@ -1072,7 +1071,6 @@ class VirtualNodeCacheTest extends VirtualTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache"), @Tag("Internal")})
     @DisplayName("Exception when getting an internal on a released cache")
-    @Disabled("Actually, this now should work...")
     void gettingAnInternalOnReleasedCacheThrows() {
         final VirtualNodeCache<TestKey, TestValue> cache0 = cache;
         nextRound();
@@ -1082,10 +1080,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache0.seal();
         cache0.release();
 
-        assertThrows(
-                ReferenceCountException.class,
-                () -> cache0.lookupLeafByPath(ROOT_PATH, false),
-                "should not be able to look up value on destroyed cache");
+        assertNull(cache0.lookupLeafByPath(ROOT_PATH, false), "should not be able to look up value on destroyed cache");
     }
 
     @Test
@@ -1369,17 +1364,13 @@ class VirtualNodeCacheTest extends VirtualTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache"), @Tag("Leaf")})
     @DisplayName("Exception when getting a leaf on a destroyed cache")
-    @Disabled("Actually, this now should work...")
     void gettingALeafOnDestroyedCacheThrows() {
         final VirtualLeafRecord<TestKey, TestValue> appleLeaf0 = appleLeaf(A_PATH);
         cache.putLeaf(appleLeaf0);
         cache.seal();
         cache.release();
 
-        assertThrows(
-                ReferenceCountException.class,
-                () -> cache.lookupLeafByKey(A_KEY, false),
-                "shouldn't be able to key on destroyed cache");
+        assertNull(cache.lookupLeafByKey(A_KEY, false), "shouldn't be able to key on destroyed cache");
     }
 
     @Test
@@ -1922,7 +1913,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         return List.of(new CacheInfo(cache0, 6, 12), new CacheInfo(cache1, 5, 10), new CacheInfo(cache2, 4, 8));
     }
 
-    private void validateSnapshot(CacheInfo expected, CacheInfo snapshot, int iteration) {
+    private void validateSnapshot(final CacheInfo expected, final CacheInfo snapshot, final int iteration) {
         assertEquals(expected.firstLeafPath, snapshot.firstLeafPath, "Should have the same firstLeafPath");
         assertEquals(expected.lastLeafPath, snapshot.lastLeafPath, "Should have the same lastLeafPath");
 
@@ -1960,7 +1951,8 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         }
     }
 
-    // TODO Write a test that verifies that a snapshot cannot be mutated by either leaf or internal changes... ? Is
+    // FUTURE WORK Write a test that verifies that a snapshot cannot be mutated by either leaf or internal changes... ?
+    // Is
     //  this right? Maybe not?
 
     // ----------------------------------------------------------------------
@@ -2802,12 +2794,12 @@ class VirtualNodeCacheTest extends VirtualTestBase {
     // Test Utility methods
     // ----------------------------------------------------------------------
 
-    private TestValue lookupValue(VirtualNodeCache<TestKey, TestValue> cache, TestKey key) {
+    private TestValue lookupValue(final VirtualNodeCache<TestKey, TestValue> cache, final TestKey key) {
         final VirtualLeafRecord<TestKey, TestValue> leaf = cache.lookupLeafByKey(key, false);
         return leaf == null ? null : leaf.getValue();
     }
 
-    private void validateCache(VirtualNodeCache<TestKey, TestValue> cache, List<TestValue> expected) {
+    private void validateCache(final VirtualNodeCache<TestKey, TestValue> cache, final List<TestValue> expected) {
         assertEquals(
                 expected.get(0), lookupValue(cache, A_KEY), "value that was looked up should match expected value");
         assertEquals(
@@ -2825,9 +2817,9 @@ class VirtualNodeCacheTest extends VirtualTestBase {
     }
 
     private void validateLeaves(
-            VirtualNodeCache<TestKey, TestValue> cache,
-            long firstLeafPath,
-            List<VirtualLeafRecord<TestKey, TestValue>> leaves) {
+            final VirtualNodeCache<TestKey, TestValue> cache,
+            final long firstLeafPath,
+            final List<VirtualLeafRecord<TestKey, TestValue>> leaves) {
         long expectedPath = firstLeafPath;
         for (final VirtualLeafRecord<TestKey, TestValue> leaf : leaves) {
             assertEquals(expectedPath, leaf.getPath(), "path should match expected path");
@@ -2844,8 +2836,8 @@ class VirtualNodeCacheTest extends VirtualTestBase {
     }
 
     private void validateDirtyLeaves(
-            List<VirtualLeafRecord<TestKey, TestValue>> expected,
-            Stream<VirtualLeafRecord<TestKey, TestValue>> stream) {
+            final List<VirtualLeafRecord<TestKey, TestValue>> expected,
+            final Stream<VirtualLeafRecord<TestKey, TestValue>> stream) {
         final List<VirtualLeafRecord<TestKey, TestValue>> dirty = stream.collect(Collectors.toList());
         assertEquals(expected.size(), dirty.size(), "dirtyLeaves did not have the expected number of elements");
         for (int i = 0; i < expected.size(); i++) {
@@ -2853,7 +2845,8 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         }
     }
 
-    private void validateDirtyInternals(List<VirtualInternalRecord> expected, Stream<VirtualInternalRecord> stream) {
+    private void validateDirtyInternals(
+            final List<VirtualInternalRecord> expected, final Stream<VirtualInternalRecord> stream) {
         final List<VirtualInternalRecord> dirty = stream.collect(Collectors.toList());
         assertEquals(expected.size(), dirty.size(), "dirtyInternals did not have the expected number of elements");
         for (int i = 0; i < expected.size(); i++) {
@@ -2861,7 +2854,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         }
     }
 
-    private void validateTree(VirtualNodeCache<TestKey, TestValue> cache, List<VirtualRecord> nodes) {
+    private void validateTree(final VirtualNodeCache<TestKey, TestValue> cache, final List<VirtualRecord> nodes) {
         long expectedPath = 0;
         for (final VirtualRecord node : nodes) {
             if (node == null) {
@@ -2893,7 +2886,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         }
     }
 
-    private Hash digest(VirtualRecord left, VirtualRecord right) {
+    private Hash digest(final VirtualRecord left, final VirtualRecord right) {
         final HashBuilder builder = new HashBuilder(Cryptography.DEFAULT_DIGEST_TYPE);
         builder.update(left.getHash());
         builder.update(right.getHash());
@@ -2921,7 +2914,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         long firstLeafPath;
         long lastLeafPath;
 
-        CacheInfo(VirtualNodeCache<TestKey, TestValue> cache, long first, long last) {
+        CacheInfo(final VirtualNodeCache<TestKey, TestValue> cache, final long first, final long last) {
             this.cache = cache;
             this.firstLeafPath = first;
             this.lastLeafPath = last;

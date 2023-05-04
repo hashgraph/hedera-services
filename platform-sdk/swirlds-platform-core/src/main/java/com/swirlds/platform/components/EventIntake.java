@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
 import static com.swirlds.logging.LogMarker.SYNC;
@@ -33,6 +34,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.sync.ShadowGraph;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
@@ -41,8 +43,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * This class is responsible for adding events to {@link Consensus} and notifying event observers, including
- * {@link ConsensusRoundHandler} and
- * {@link com.swirlds.platform.eventhandling.PreConsensusEventHandler}.
+ * {@link ConsensusRoundHandler} and {@link com.swirlds.platform.eventhandling.PreConsensusEventHandler}.
  */
 public class EventIntake {
     private static final Logger logger = LogManager.getLogger(EventIntake.class);
@@ -66,39 +67,34 @@ public class EventIntake {
     /**
      * Constructor
      *
-     * @param selfId
-     * 		the ID of this node
-     * @param consensusSupplier
-     * 		a functor which provides access to the {@code Consensus} interface
-     * @param addressBook
-     * 		the current address book
-     * @param dispatcher
-     * 		an event observer dispatcher
+     * @param selfId                        the ID of this node
+     * @param consensusSupplier             a functor which provides access to the {@code Consensus} interface
+     * @param addressBook                   the current address book
+     * @param dispatcher                    an event observer dispatcher
      */
     public EventIntake(
-            final NodeId selfId,
-            final EventLinker eventLinker,
-            final Supplier<Consensus> consensusSupplier,
-            final AddressBook addressBook,
-            final EventObserverDispatcher dispatcher,
-            final IntakeCycleStats stats,
-            final ShadowGraph shadowGraph) {
-        this.selfId = selfId;
-        this.eventLinker = eventLinker;
-        this.consensusSupplier = consensusSupplier;
+            @NonNull final NodeId selfId,
+            @NonNull final EventLinker eventLinker,
+            @NonNull final Supplier<Consensus> consensusSupplier,
+            @NonNull final AddressBook addressBook,
+            @NonNull final EventObserverDispatcher dispatcher,
+            @NonNull final IntakeCycleStats stats,
+            @NonNull final ShadowGraph shadowGraph) {
+        this.selfId = throwArgNull(selfId, "selfId");
+        this.eventLinker = throwArgNull(eventLinker, "eventLinker");
+        this.consensusSupplier = throwArgNull(consensusSupplier, "consensusSupplier");
         this.consensusWrapper = new ConsensusWrapper(consensusSupplier);
-        this.addressBook = addressBook;
-        this.dispatcher = dispatcher;
-        this.stats = stats;
-        this.shadowGraph = shadowGraph;
+        this.addressBook = throwArgNull(addressBook, "addressBook");
+        this.dispatcher = throwArgNull(dispatcher, "dispatcher");
+        this.stats = throwArgNull(stats, "stats");
+        this.shadowGraph = throwArgNull(shadowGraph, "shadowGraph");
     }
 
     /**
      * Adds an event received from gossip that has been validated without its parents. It must be linked to its parents
      * before being added to consensus. The linking is done by the {@link EventLinker} provided.
      *
-     * @param event
-     * 		the event
+     * @param event the event
      */
     public void addUnlinkedEvent(final GossipEvent event) {
         stats.receivedUnlinkedEvent();
@@ -114,8 +110,7 @@ public class EventIntake {
     /**
      * Add an event to the hashgraph
      *
-     * @param event
-     * 		an event to be added
+     * @param event an event to be added
      */
     public void addEvent(final EventImpl event) {
         // an expired event will cause ShadowGraph to throw an exception, so we just to discard it
@@ -127,6 +122,7 @@ public class EventIntake {
             event.clear();
             return;
         }
+
         stats.doneValidation();
         logger.debug(SYNC.getMarker(), "{} sees {}", selfId, event);
         dispatcher.preConsensusEvent(event);
@@ -187,11 +183,10 @@ public class EventIntake {
     }
 
     /**
-     * Notify observers that an event has reach consensus. Called on a list of
-     * events returned from {@code Consensus.addEvent}.
+     * Notify observers that an event has reach consensus. Called on a list of events returned from
+     * {@code Consensus.addEvent}.
      *
-     * @param consensusRound
-     * 		the (new) consensus round to be observed
+     * @param consensusRound the (new) consensus round to be observed
      */
     private void handleConsensus(final ConsensusRound consensusRound) {
         if (consensusRound != null) {

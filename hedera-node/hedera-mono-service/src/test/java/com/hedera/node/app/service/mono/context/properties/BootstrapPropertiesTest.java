@@ -24,6 +24,8 @@ import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_PUT;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_REMOVE;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
@@ -60,12 +62,14 @@ import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_CREATE2;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
@@ -80,13 +84,16 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_GAS_PER
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_AGGREGATE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
@@ -94,6 +101,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
@@ -155,6 +163,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
@@ -195,6 +204,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTOR
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
@@ -233,10 +243,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static java.util.Map.entry;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -319,6 +326,27 @@ class BootstrapPropertiesTest {
             entry(AUTO_RENEW_GRANT_FREE_RENEWALS, false),
             entry(CONTRACTS_ALLOW_CREATE2, true),
             entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
+            entry(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, 10_000_000L),
+            entry(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS, Set.<Address>of()),
+            entry(
+                    CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
+                    Set.of(
+                            ContractCall,
+                            TokenAssociateToAccount,
+                            TokenDissociateFromAccount,
+                            TokenFreezeAccount,
+                            TokenUnfreezeAccount,
+                            TokenGrantKycToAccount,
+                            TokenRevokeKycFromAccount,
+                            TokenAccountWipe,
+                            TokenBurn,
+                            TokenDelete,
+                            TokenMint,
+                            TokenPause,
+                            TokenUnpause,
+                            TokenCreate,
+                            TokenUpdate,
+                            CryptoTransfer)),
             entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
             entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
             entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, false),
@@ -329,6 +357,7 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 163_840),
             entry(CONTRACTS_CHAIN_ID, 295),
             entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, true),
+            entry(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS, EnumSet.of(CustomFeeType.FIXED_FEE)),
             entry(
                     CONTRACTS_PERMITTED_DELEGATE_CALLERS,
                     Set.of(Address.fromHexString("0x164e64"), Address.fromHexString("0x103783"))),
@@ -343,6 +372,7 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, true),
             entry(DEV_ONLY_DEFAULT_NODE_LISTENS, true),
             entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, true),
+            entry(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED, true),
             entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
             entry(ENTITIES_MAX_LIFETIME, 3153600000L),
             entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),
@@ -392,6 +422,7 @@ class BootstrapPropertiesTest {
             entry(LEDGER_ID, "0x03"),
             entry(LEDGER_CHANGE_HIST_MEM_SECS, 20),
             entry(LEDGER_FUNDING_ACCOUNT, 98L),
+            entry(LEDGER_MAX_AUTO_ASSOCIATIONS, 5000),
             entry(LEDGER_NUM_SYSTEM_ACCOUNTS, 100),
             entry(LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT, 180),
             entry(LEDGER_TRANSFERS_MAX_LEN, 10),
@@ -504,7 +535,11 @@ class BootstrapPropertiesTest {
             entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
             entry(WORKFLOWS_ENABLED, Set.of()),
-            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, true));
+            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, true),
+            entry(ACCOUNTS_BLOCKLIST_ENABLED, true),
+            entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"),
+            entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
+            entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30));
 
     @Test
     void containsProperty() {

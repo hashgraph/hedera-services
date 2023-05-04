@@ -43,11 +43,13 @@ public class WrappedReadableKVState<K extends Comparable<K>, V> extends Readable
         this.delegate = delegate;
     }
 
+    /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
         return delegate.get(key);
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     protected Iterator<K> iterateFromDataSource() {

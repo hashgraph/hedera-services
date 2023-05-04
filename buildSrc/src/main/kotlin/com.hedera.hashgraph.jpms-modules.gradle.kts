@@ -1,5 +1,3 @@
-import gradle.kotlin.dsl.accessors._34a132ac50631db3ea5353237b274f3d.extraJavaModuleInfo
-
 /*
  * Copyright 2016-2022 Hedera Hashgraph, LLC
  *
@@ -48,6 +46,7 @@ extraJavaModuleInfo {
 
     automaticModule("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.secp256k1")
     automaticModule("org.hyperledger.besu.internal:crypto", "org.hyperledger.besu.crypto")
+    automaticModule("tech.pegasys:jc-kzg-4844", "tech.pegasys.jckzg4844")
 
     automaticModule("javax.annotation:javax.annotation-api", "javax.annotation.api")
     automaticModule("javax.inject:javax.inject", "javax.inject")
@@ -99,6 +98,7 @@ extraJavaModuleInfo {
     automaticModule("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.bls12.for381")
     automaticModule("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.secp256r1")
     automaticModule("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf")
+    automaticModule("org.hyperledger.besu:arithmetic", "org.hyperledger.besu.arithmetic")
     automaticModule("org.apache.commons:commons-math3", "org.apache.commons.math3")
 
     automaticModule("com.github.docker-java:docker-java-transport-zerodep", "com.github.docker.transport.zerodep")

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -106,7 +107,7 @@ public class TokenCreateReqs {
             final AccountID id, final MessageFrame frame, final ResponseCodeEnum rcWhenMissing) {
         validateTrue(ledgers.accounts().exists(id), rcWhenMissing);
         final var hasSig = keyValidator.validateKey(
-                frame, asTypedEvmAddress(id), sigsVerifier::hasLegacyActiveKey, ledgers, aliases);
+                frame, asTypedEvmAddress(id), sigsVerifier::hasLegacyActiveKey, ledgers, aliases, TokenCreate);
         validateTrue(hasSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
     }
 }

@@ -16,23 +16,28 @@
 
 package com.hedera.services.bdd.suites.leaky;
 
+import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.*;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -46,10 +51,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
@@ -64,6 +71,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.roy
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInTokenInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithoutFallbackInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmountAlias;
@@ -85,7 +93,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
+import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACCOUNT_INFO;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACCOUNT_INFO_AFTER_CALL;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CALL_TX;
@@ -97,6 +107,7 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.DEF
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.DEPOSIT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.RECEIVER_2;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.SIMPLE_UPDATE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFERRING_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFER_TO_CALLER;
@@ -123,20 +134,34 @@ import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompil
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_CREATE_CONTRACT_AS_KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_NAME;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_SYMBOL;
+import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.TOTAL_SUPPLY;
+import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.TRANSFER_MULTIPLE_TOKENS;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.APPROVE;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.ERC_20_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.RECIPIENT;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM_ACCOUNT_TXN;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIGNATURE;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIG_NAME;
+import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.FIRST_META;
 import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NON_FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.OWNER;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
+import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
+import static com.hedera.services.yahcli.commands.validation.ValidationCommand.SENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
@@ -144,17 +169,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -163,17 +193,20 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
+import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
+import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -201,6 +234,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
     private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
     public static final String FALSE = "false";
+    private static final String TRANSFER_CONTRACT = "NonDelegateCryptoTransfer";
+    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+    private static final String CRYPTO_TRANSFER = "CryptoTransfer";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -236,7 +272,475 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 erc20TransferFromDoesNotWorkIfFlagIsDisabled(),
                 rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled(),
                 whitelistPositiveCase(),
-                whitelistNegativeCases());
+                whitelistNegativeCases(),
+                requiresTopLevelSignatureOrApprovalDependingOnControllingProperty(),
+                transferWorksWithTopLevelSignatures(),
+                transferDontWorkWithoutTopLevelSignatures(),
+                transferErc20TokenFromContractWithApproval(),
+                transferErc20TokenFromErc721TokenFails());
+    }
+
+    private HapiSpec transferErc20TokenFromErc721TokenFails() {
+        return propertyPreservingHapiSpec("ERC_20_TRANSFER_FROM_ERC_721_TOKEN")
+                .preserving("hedera.allowances.isEnabled")
+                .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
+                        cryptoCreate(RECIPIENT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
+                        tokenAssociate(ACCOUNT, List.of(NON_FUNGIBLE_TOKEN)),
+                        tokenAssociate(RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
+                        cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY, ACCOUNT))
+                                .payingWith(ACCOUNT),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        ERC_20_CONTRACT,
+                                        TRANSFER,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        BigInteger.TWO)
+                                .payingWith(ACCOUNT)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .via(TRANSFER_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
+    }
+
+    private HapiSpec transferErc20TokenFromContractWithApproval() {
+        final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
+        final var nestedContract = "NestedERC20Contract";
+
+        return propertyPreservingHapiSpec("TransferErc20TokenFromContractWithApproval")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
+                        cryptoCreate(RECIPIENT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(35)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(ERC_20_CONTRACT, nestedContract),
+                        newKeyNamed(TRANSFER_SIG_NAME).shape(SIMPLE.signedWith(ON)),
+                        contractCreate(ERC_20_CONTRACT).adminKey(TRANSFER_SIG_NAME),
+                        contractCreate(nestedContract).adminKey(TRANSFER_SIG_NAME),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(nestedContract, List.of(FUNGIBLE_TOKEN)),
+                        cryptoTransfer(TokenMovement.moving(20, FUNGIBLE_TOKEN)
+                                        .between(TOKEN_TREASURY, ERC_20_CONTRACT))
+                                .payingWith(ACCOUNT),
+                        contractCall(
+                                        ERC_20_CONTRACT,
+                                        APPROVE,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
+                                        BigInteger.valueOf(20))
+                                .gas(1_000_000)
+                                .payingWith(ACCOUNT)
+                                .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME),
+                        contractCall(
+                                        ERC_20_CONTRACT,
+                                        TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(nestedContract))),
+                                        BigInteger.valueOf(5))
+                                .via(TRANSFER_TXN)
+                                .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(
+                                        ERC_20_CONTRACT,
+                                        TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(nestedContract))),
+                                        BigInteger.valueOf(5))
+                                .payingWith(ACCOUNT)
+                                .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME)
+                                .via(transferFromOtherContractWithSignaturesTxn))))
+                .then(
+                        getContractInfo(ERC_20_CONTRACT).saveToRegistry(ERC_20_CONTRACT),
+                        getContractInfo(nestedContract).saveToRegistry(nestedContract),
+                        withOpContext((spec, log) -> {
+                            final var sender = spec.registry()
+                                    .getContractInfo(ERC_20_CONTRACT)
+                                    .getContractID();
+                            final var receiver = spec.registry()
+                                    .getContractInfo(nestedContract)
+                                    .getContractID();
+
+                            var transferRecord = getTxnRecord(TRANSFER_TXN)
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith()
+                                                    .logs(inOrder(logWith()
+                                                            .withTopicsInOrder(List.of(
+                                                                    eventSignatureOf(TRANSFER_SIGNATURE),
+                                                                    parsedToByteString(sender.getContractNum()),
+                                                                    parsedToByteString(receiver.getContractNum())))
+                                                            .longValue(5)))))
+                                    .andAllChildRecords();
+
+                            var transferFromOtherContractWithSignaturesTxnRecord = getTxnRecord(
+                                            transferFromOtherContractWithSignaturesTxn)
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith()
+                                                    .logs(inOrder(logWith()
+                                                            .withTopicsInOrder(List.of(
+                                                                    eventSignatureOf(TRANSFER_SIGNATURE),
+                                                                    parsedToByteString(sender.getContractNum()),
+                                                                    parsedToByteString(receiver.getContractNum())))
+                                                            .longValue(5)))))
+                                    .andAllChildRecords();
+
+                            allRunFor(spec, transferRecord, transferFromOtherContractWithSignaturesTxnRecord);
+                        }),
+                        childRecordsCheck(
+                                TRANSFER_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.ERC_TRANSFER)
+                                                        .withErcFungibleTransferStatus(true)))),
+                        childRecordsCheck(
+                                transferFromOtherContractWithSignaturesTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.ERC_TRANSFER)
+                                                        .withErcFungibleTransferStatus(true)))),
+                        getAccountBalance(ERC_20_CONTRACT).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                        getAccountBalance(nestedContract).hasTokenBalance(FUNGIBLE_TOKEN, 10));
+    }
+
+    private HapiSpec transferDontWorkWithoutTopLevelSignatures() {
+        final var transferTokenTxn = "transferTokenTxn";
+        final var transferTokensTxn = "transferTokensTxn";
+        final var transferNFTTxn = "transferNFTTxn";
+        final var transferNFTsTxn = "transferNFTsTxn";
+        final var contract = "TokenTransferContract";
+
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
+        return propertyPreservingHapiSpec("transferWorksWithTopLevelSignatures")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .given(
+                        // disable top level signatures for all functions
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""),
+                        newKeyNamed(SUPPLY_KEY),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(RECEIVER),
+                        cryptoCreate(RECEIVER_2),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyKey(SUPPLY_KEY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        tokenCreate(KNOWABLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyKey(SUPPLY_KEY)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(id -> vanillaNftID.set(asToken(id))),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN, KNOWABLE_TOKEN),
+                        tokenAssociate(RECEIVER, VANILLA_TOKEN, KNOWABLE_TOKEN),
+                        tokenAssociate(RECEIVER_2, VANILLA_TOKEN, KNOWABLE_TOKEN),
+                        mintToken(
+                                KNOWABLE_TOKEN,
+                                List.of(
+                                        copyFromUtf8("dark"),
+                                        copyFromUtf8("matter"),
+                                        copyFromUtf8("dark1"),
+                                        copyFromUtf8("matter1"))),
+                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+                        cryptoTransfer(movingUnique(KNOWABLE_TOKEN, 1, 2, 3, 4).between(TOKEN_TREASURY, ACCOUNT)),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(
+                        // Do transfers by calling contract from EOA, and should be failing with
+                        // CONTRACT_REVERT_EXECUTED
+                        withOpContext((spec, opLog) -> {
+                            final var receiver1 =
+                                    asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+                            final var receiver2 =
+                                    asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER_2)));
+                            final var sender =
+                                    asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+                            final var amount = 5L;
+
+                            final var accounts = new Address[] {sender, receiver1, receiver2};
+                            final var amounts = new long[] {-10L, 5L, 5L};
+                            final var serials = new long[] {2L, 3L};
+                            final var serial = 1L;
+                            allRunFor(
+                                    spec,
+                                    contractCall(
+                                                    contract,
+                                                    "transferTokenPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(VANILLA_TOKEN))),
+                                                    sender,
+                                                    receiver1,
+                                                    amount)
+                                            .payingWith(ACCOUNT)
+                                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                            .gas(GAS_TO_OFFER)
+                                            .via(transferTokenTxn),
+                                    contractCall(
+                                                    contract,
+                                                    "transferTokensPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(VANILLA_TOKEN))),
+                                                    accounts,
+                                                    amounts)
+                                            .payingWith(ACCOUNT)
+                                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                            .gas(GAS_TO_OFFER)
+                                            .via(transferTokensTxn),
+                                    contractCall(
+                                                    contract,
+                                                    "transferNFTPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(KNOWABLE_TOKEN))),
+                                                    sender,
+                                                    receiver1,
+                                                    serial)
+                                            .payingWith(ACCOUNT)
+                                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                            .gas(GAS_TO_OFFER)
+                                            .via(transferNFTTxn),
+                                    contractCall(
+                                                    contract,
+                                                    "transferNFTsPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(KNOWABLE_TOKEN))),
+                                                    new Address[] {sender, sender},
+                                                    new Address[] {receiver2, receiver2},
+                                                    serials)
+                                            .payingWith(ACCOUNT)
+                                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                            .gas(GAS_TO_OFFER)
+                                            .via(transferNFTsTxn));
+                        }))
+                .then(
+                        // Confirm the transactions fails with no top level signatures enabled
+                        childRecordsCheck(
+                                transferTokenTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+                        childRecordsCheck(
+                                transferTokensTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+                        childRecordsCheck(
+                                transferNFTTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+                        childRecordsCheck(
+                                transferNFTsTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+                        // Confirm the balances are correct
+                        getAccountInfo(RECEIVER).hasOwnedNfts(0),
+                        getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 0),
+                        getAccountInfo(RECEIVER_2).hasOwnedNfts(0),
+                        getAccountBalance(RECEIVER_2).hasTokenBalance(VANILLA_TOKEN, 0),
+                        getAccountInfo(ACCOUNT).hasOwnedNfts(4),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 500L));
+    }
+
+    private HapiSpec transferWorksWithTopLevelSignatures() {
+        final var transferTokenTxn = "transferTokenTxn";
+        final var transferTokensTxn = "transferTokensTxn";
+        final var transferNFTTxn = "transferNFTTxn";
+        final var transferNFTsTxn = "transferNFTsTxn";
+        final var contract = "TokenTransferContract";
+
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
+        return propertyPreservingHapiSpec("transferWorksWithTopLevelSignatures")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .given(
+                        // enable top level signatures for
+                        // transferToken/transferTokens/transferNft/transferNfts
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
+                        newKeyNamed(SUPPLY_KEY),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(RECEIVER),
+                        cryptoCreate(RECEIVER_2),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyKey(SUPPLY_KEY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        tokenCreate(KNOWABLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyKey(SUPPLY_KEY)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(id -> vanillaNftID.set(asToken(id))),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN, KNOWABLE_TOKEN),
+                        tokenAssociate(RECEIVER, VANILLA_TOKEN, KNOWABLE_TOKEN),
+                        tokenAssociate(RECEIVER_2, VANILLA_TOKEN, KNOWABLE_TOKEN),
+                        mintToken(
+                                KNOWABLE_TOKEN,
+                                List.of(
+                                        copyFromUtf8("dark"),
+                                        copyFromUtf8("matter"),
+                                        copyFromUtf8("dark1"),
+                                        copyFromUtf8("matter1"))),
+                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+                        cryptoTransfer(movingUnique(KNOWABLE_TOKEN, 1, 2, 3, 4).between(TOKEN_TREASURY, ACCOUNT)),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(
+                        // Do transfers by calling contract from EOA
+                        withOpContext((spec, opLog) -> {
+                            final var receiver1 =
+                                    asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+                            final var receiver2 =
+                                    asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER_2)));
+                            final var sender =
+                                    asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+                            final var amount = 5L;
+
+                            final var accounts = new Address[] {sender, receiver1, receiver2};
+                            final var amounts = new long[] {-10L, 5L, 5L};
+                            final var serials = new long[] {2L, 3L};
+                            final var serial = 1L;
+                            allRunFor(
+                                    spec,
+                                    contractCall(
+                                                    contract,
+                                                    "transferTokenPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(VANILLA_TOKEN))),
+                                                    sender,
+                                                    receiver1,
+                                                    amount)
+                                            .payingWith(ACCOUNT)
+                                            .gas(GAS_TO_OFFER)
+                                            .via(transferTokenTxn),
+                                    contractCall(
+                                                    contract,
+                                                    "transferTokensPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(VANILLA_TOKEN))),
+                                                    accounts,
+                                                    amounts)
+                                            .payingWith(ACCOUNT)
+                                            .gas(GAS_TO_OFFER)
+                                            .via(transferTokensTxn),
+                                    contractCall(
+                                                    contract,
+                                                    "transferNFTPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(KNOWABLE_TOKEN))),
+                                                    sender,
+                                                    receiver1,
+                                                    serial)
+                                            .payingWith(ACCOUNT)
+                                            .gas(GAS_TO_OFFER)
+                                            .via(transferNFTTxn),
+                                    contractCall(
+                                                    contract,
+                                                    "transferNFTsPublic",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getTokenID(KNOWABLE_TOKEN))),
+                                                    new Address[] {sender, sender},
+                                                    new Address[] {receiver2, receiver2},
+                                                    serials)
+                                            .payingWith(ACCOUNT)
+                                            .gas(GAS_TO_OFFER)
+                                            .via(transferNFTsTxn));
+                        }))
+                .then(
+                        // Confirm the transactions succeeded
+                        getTxnRecord(transferTokenTxn).logged(),
+                        childRecordsCheck(
+                                transferTokenTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .tokenTransfers(SomeFungibleTransfers.changingFungibleBalances()
+                                                .including(VANILLA_TOKEN, ACCOUNT, -5L)
+                                                .including(VANILLA_TOKEN, RECEIVER, 5L))),
+                        childRecordsCheck(
+                                transferTokensTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .tokenTransfers(SomeFungibleTransfers.changingFungibleBalances()
+                                                .including(VANILLA_TOKEN, ACCOUNT, -10L)
+                                                .including(VANILLA_TOKEN, RECEIVER, 5L)
+                                                .including(VANILLA_TOKEN, RECEIVER_2, 5L))),
+                        childRecordsCheck(
+                                transferNFTTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))
+                                        .tokenTransfers(NonFungibleTransfers.changingNFTBalances()
+                                                .including(KNOWABLE_TOKEN, ACCOUNT, RECEIVER, 1L))),
+                        childRecordsCheck(
+                                transferNFTsTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))
+                                        .tokenTransfers(NonFungibleTransfers.changingNFTBalances()
+                                                .including(KNOWABLE_TOKEN, ACCOUNT, RECEIVER_2, 2L)
+                                                .including(KNOWABLE_TOKEN, ACCOUNT, RECEIVER_2, 3L))),
+                        // Confirm the balances are correct
+                        getAccountInfo(RECEIVER).hasOwnedNfts(1),
+                        getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 10L),
+                        getAccountInfo(RECEIVER_2).hasOwnedNfts(2),
+                        getAccountBalance(RECEIVER_2).hasTokenBalance(VANILLA_TOKEN, 5L),
+                        getAccountInfo(ACCOUNT).hasOwnedNfts(1),
+                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 485L));
     }
 
     HapiSpec payerCannotOverSendValue() {
@@ -328,7 +832,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(EXISTING_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(ECDSA_KEY)
                                 .initialSupply(0L))
                 .when(withOpContext((spec, opLog) -> allRunFor(
@@ -482,15 +986,15 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
-                                ResponseCodeEnum.SUCCESS,
-                                TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
+                                SUCCESS,
+                                TransactionRecordAsserts.recordWith().status(SUCCESS)),
                         sourcing(() -> {
                             final var newToken = asTokenString(TokenID.newBuilder()
                                     .setTokenNum(createTokenNum.get())
                                     .build());
                             return getTokenInfo(newToken)
                                     .logged()
-                                    .hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                    .hasTokenType(NON_FUNGIBLE_UNIQUE)
                                     .hasSymbol(TOKEN_SYMBOL)
                                     .hasName(TOKEN_NAME)
                                     .hasDecimals(0)
@@ -564,15 +1068,15 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
-                                ResponseCodeEnum.SUCCESS,
-                                TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
+                                SUCCESS,
+                                TransactionRecordAsserts.recordWith().status(SUCCESS)),
                         sourcing(() -> {
                             final var newToken = asTokenString(TokenID.newBuilder()
                                     .setTokenNum(createdTokenNum.get())
                                     .build());
                             return getTokenInfo(newToken)
                                     .logged()
-                                    .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                    .hasTokenType(FUNGIBLE_COMMON)
                                     .hasSymbol(TOKEN_SYMBOL)
                                     .hasName(TOKEN_NAME)
                                     .hasDecimals(8)
@@ -949,13 +1453,13 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         }),
                         sourcing(() -> childRecordsCheck(
                                 call,
-                                ResponseCodeEnum.SUCCESS,
+                                SUCCESS,
                                 recordWith()
                                         .contractCreateResult(resultWith().evmAddress(expectedFirstAddress.get()))
-                                        .status(ResponseCodeEnum.SUCCESS),
+                                        .status(SUCCESS),
                                 recordWith()
                                         .contractCreateResult(resultWith().evmAddress(expectedSecondAddress.get()))
-                                        .status(ResponseCodeEnum.SUCCESS))),
+                                        .status(SUCCESS))),
                         sourcing(() -> getContractInfo(firstLiteralId.get())
                                 .has(contractWith().propertiesInheritedFrom(contract))));
     }
@@ -1041,7 +1545,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     private HapiSpec lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled() {
-        final var CONTRACT = "CryptoTransfer";
+        final var CONTRACT = CRYPTO_TRANSFER;
         final var SENDER = "sender";
         final var FUNGIBLE_TOKEN = "fungibleToken";
         final var DELEGATE_KEY = "contractKey";
@@ -1057,7 +1561,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .tokenType(FUNGIBLE_COMMON)
                                 .initialSupply(TOTAL_SUPPLY)
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
@@ -1169,6 +1673,128 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 }));
     }
 
+    private HapiSpec requiresTopLevelSignatureOrApprovalDependingOnControllingProperty() {
+        final var ignoredTopLevelSigTransfer = "ignoredTopLevelSigTransfer";
+        final var ignoredApprovalTransfer = "ignoredApprovalTransfer";
+        final var approvedTransfer = "approvedTransfer";
+        final AtomicReference<AccountID> senderAddress = new AtomicReference<>();
+        final AtomicReference<AccountID> receiverAddress = new AtomicReference<>();
+        final AtomicReference<Address> tokenAddress = new AtomicReference<>();
+        final var amountPerTransfer = 50L;
+        return propertyPreservingHapiSpec("RequiresTopLevelSignatureOrApprovalDependingOnControllingProperty")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .given(
+                        cryptoCreate(SENDER)
+                                .keyShape(SECP256K1_ON)
+                                .exposingCreatedIdTo(senderAddress::set)
+                                .maxAutomaticTokenAssociations(1),
+                        cryptoCreate(RECEIVER)
+                                .keyShape(SECP256K1_ON)
+                                .exposingCreatedIdTo(receiverAddress::set)
+                                .maxAutomaticTokenAssociations(1),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(TOTAL_SUPPLY)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingAddressTo(tokenAddress::set),
+                        cryptoTransfer(
+                                moving(4 * amountPerTransfer, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
+                        uploadInitCode(TRANSFER_CONTRACT),
+                        contractCreate(TRANSFER_CONTRACT),
+                        // First revoke use of top-level signatures from all precompiles
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
+                .when(
+                        // Then, try to transfer tokens using a top-level signature
+                        sourcing(() -> contractCall(TRANSFER_CONTRACT, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {
+                                    tokenTransferList()
+                                            .forTokenAddress(tokenAddress.get())
+                                            .withAccountAmounts(
+                                                    accountAmount(senderAddress.get(), -amountPerTransfer),
+                                                    accountAmount(receiverAddress.get(), +amountPerTransfer))
+                                            .build()
+                                })
+                                .alsoSigningWithFullPrefix(SENDER)
+                                .via(ignoredTopLevelSigTransfer)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        // Switch to allow use of top-level signatures from CryptoTransfer
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
+                        // Validate now the top-level signature works
+                        sourcing(() -> contractCall(TRANSFER_CONTRACT, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {
+                                    tokenTransferList()
+                                            .forTokenAddress(tokenAddress.get())
+                                            .withAccountAmounts(
+                                                    accountAmount(senderAddress.get(), -amountPerTransfer),
+                                                    accountAmount(receiverAddress.get(), +amountPerTransfer))
+                                            .build()
+                                })
+                                .alsoSigningWithFullPrefix(SENDER)
+                                .gas(GAS_TO_OFFER)),
+                        // And validate that ONLY top-level signatures work here (i.e. approvals are
+                        // not used
+                        // automatically) by trying to transfer tokens using an approval without
+                        // top-level signature
+                        cryptoApproveAllowance()
+                                .payingWith(SENDER)
+                                .addTokenAllowance(SENDER, FUNGIBLE_TOKEN, TRANSFER_CONTRACT, 4 * amountPerTransfer),
+                        sourcing(() -> contractCall(TRANSFER_CONTRACT, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {
+                                    tokenTransferList()
+                                            .forTokenAddress(tokenAddress.get())
+                                            .withAccountAmounts(
+                                                    accountAmount(senderAddress.get(), -amountPerTransfer),
+                                                    accountAmount(receiverAddress.get(), +amountPerTransfer))
+                                            .build()
+                                })
+                                .gas(GAS_TO_OFFER)
+                                .via(ignoredApprovalTransfer)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        // Then revoke use of top-level signatures once more, so the approval will
+                        // be used automatically
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
+                .then(
+                        // Validate the approval is used automatically (although not specified in
+                        // the contract)
+                        sourcing(() -> contractCall(TRANSFER_CONTRACT, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {
+                                    tokenTransferList()
+                                            .forTokenAddress(tokenAddress.get())
+                                            .withAccountAmounts(
+                                                    accountAmount(senderAddress.get(), -amountPerTransfer),
+                                                    accountAmount(receiverAddress.get(), +amountPerTransfer))
+                                            .build()
+                                })
+                                .via(approvedTransfer)
+                                .gas(GAS_TO_OFFER)),
+                        // Two successful transfers - one with a top-level signature, one with an
+                        // approval
+                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 2 * amountPerTransfer),
+                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 2 * amountPerTransfer),
+                        childRecordsCheck(
+                                approvedTransfer,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))
+                                                .gasUsed(14085L))
+                                        .tokenTransfers(SomeFungibleTransfers.changingFungibleBalances()
+                                                .including(FUNGIBLE_TOKEN, SENDER, -amountPerTransfer)
+                                                .including(FUNGIBLE_TOKEN, RECEIVER, amountPerTransfer))),
+                        // Confirm the failure without access to top-level sigs was due to the
+                        // contract not having an allowance
+                        childRecordsCheck(
+                                ignoredTopLevelSigTransfer,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+                        // Confirm the failure with access to top-level sigs was due to the missing
+                        // top-level sig (not the lack of an allowance)
+                        childRecordsCheck(
+                                ignoredApprovalTransfer,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
+    }
+
     private HapiSpec evmLazyCreateViaSolidityCallTooManyCreatesFails() {
         final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";
@@ -1245,7 +1871,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         cryptoCreate(RECIPIENT),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .tokenType(FUNGIBLE_COMMON)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .initialSupply(10L)
                                 .maxSupply(1000L)

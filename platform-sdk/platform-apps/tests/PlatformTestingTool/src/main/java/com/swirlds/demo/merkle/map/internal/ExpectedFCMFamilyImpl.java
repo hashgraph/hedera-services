@@ -167,11 +167,11 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
     private FCMConfig fcmConfig;
 
     /**
-     * number of nodes with non-zero stake in current AddressBook
-     * is used for calculating expected amount of each EntityType to be created by all staked nodes
-     * because nodes with zero stake don't submit transactions
+     * number of nodes with non-zero weight in current AddressBook
+     * is used for calculating expected amount of each EntityType to be created by all weighted nodes
+     * because nodes with zero weight don't submit transactions
      */
-    private int stakedNodeNum;
+    private int weightedNodeNum;
 
     /**
      * if fcmConfig is null, use this value as default initialCapacity
@@ -216,8 +216,8 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
     /**
      * {@inheritDoc}
      */
-    public void setStakedNodeNum(final int stakedNodeNum) {
-        this.stakedNodeNum = stakedNodeNum;
+    public void setWeightedNodeNum(final int weightedNodeNum) {
+        this.weightedNodeNum = weightedNodeNum;
     }
 
     /**
@@ -240,24 +240,24 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
     /**
      * if fcmConfig is not null, return expected amount of create transactions for certain EntityType to be handled by
      * each node,
-     * i.e., expected amount of create transactions for given EntityType to be submitted by all staked node;
+     * i.e., expected amount of create transactions for given EntityType to be submitted by all weighted node;
      * else return default list capacity
      */
     private int getEntityListInitCapacity(final EntityType entityType) {
         return fcmConfig == null
                 ? DEFAULT_LIST_CAPACITY
-                : fcmConfig.getExpectedEntityAmountForTypePerNode(entityType) * stakedNodeNum;
+                : fcmConfig.getExpectedEntityAmountForTypePerNode(entityType) * weightedNodeNum;
     }
 
     /**
      * if fcmConfig is not null, calculate expected amount of create transactions to be handled by each node,
-     * i.e., expected amount of create transactions to be submitted by all staked node;
+     * i.e., expected amount of create transactions to be submitted by all weighted node;
      * else return default list capacity * number of entity type
      */
     private int getExpectedMapInitCapacity() {
         return fcmConfig == null
                 ? DEFAULT_LIST_CAPACITY * ENTITY_TYPES_NUM
-                : fcmConfig.getExpectedEntityAmountTotalPerNode() * stakedNodeNum;
+                : fcmConfig.getExpectedEntityAmountTotalPerNode() * weightedNodeNum;
     }
 
     private int getVirtualMerkleAccountCounter() {
@@ -1494,7 +1494,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
     }
 
     int calculateSelfListCapacity(final int listCapacity) {
-        return (int) Math.ceil((double) listCapacity / Math.max(stakedNodeNum, 1));
+        return (int) Math.ceil((double) listCapacity / Math.max(weightedNodeNum, 1));
     }
 
     /**

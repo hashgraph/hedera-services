@@ -30,6 +30,8 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
@@ -40,7 +42,7 @@ import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.SwirldStateManagerImpl;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
@@ -61,7 +63,7 @@ import org.junit.jupiter.api.Test;
 class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
     private EventStreamManager<EventImpl> eventStreamManager;
-    private QueueThread<SignedState> stateHashSignQueue;
+    private QueueThread<ReservedSignedState> stateHashSignQueue;
 
     private ConsensusRoundHandler consensusRoundHandler;
 
@@ -119,6 +121,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 consensusHandlingMetrics,
                 eventStreamManager,
                 stateHashSignQueue,
+                e -> {},
                 () -> {},
                 (round) -> {},
                 null);
@@ -185,7 +188,11 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
         when(settingsProvider.getMaxEventQueueForCons()).thenReturn(500);
 
+        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+
         final SwirldStateManager swirldStateManager = new SwirldStateManagerImpl(
+                TestPlatformContextBuilder.create().build(),
+                addressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
@@ -206,6 +213,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 consensusHandlingMetrics,
                 eventStreamManager,
                 stateHashSignQueue,
+                e -> {},
                 () -> {},
                 (round) -> {},
                 null);

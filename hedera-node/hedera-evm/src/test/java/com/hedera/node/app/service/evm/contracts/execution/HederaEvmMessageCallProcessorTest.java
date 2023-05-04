@@ -32,7 +32,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import java.util.Map;
 import java.util.Optional;
@@ -95,9 +94,6 @@ class HederaEvmMessageCallProcessorTest {
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     @Mock
-    private HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater;
-
-    @Mock
     private AbstractLedgerEvmWorldUpdater updater;
 
     @BeforeEach
@@ -132,7 +128,7 @@ class HederaEvmMessageCallProcessorTest {
         given(frame.getRemainingGas()).willReturn(1337L);
         given(frame.getInputData()).willReturn(Bytes.of(1));
         given(frame.getContractAddress()).willReturn(HEDERA_PRECOMPILE_ADDRESS);
-        given(frame.getWorldUpdater()).willReturn(hederaEvmStackedWorldStateUpdater);
+        given(frame.getWorldUpdater()).willReturn(updater);
         given(evmHTSPrecompiledContract.getName()).willReturn("EvmHTS");
         given(evmHTSPrecompiledContract.computeCosted(any(), any(), any(), any()))
                 .willReturn(Pair.of(1L, Bytes.EMPTY));

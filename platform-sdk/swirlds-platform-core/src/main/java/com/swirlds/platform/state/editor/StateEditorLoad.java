@@ -29,6 +29,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -83,7 +84,9 @@ public class StateEditorLoad extends StateEditorOperation {
         parent.asInternal().setChild(indexInParent, subtree);
 
         // Invalidate hashes in path down from root
-        new MerkleRouteIterator(getStateEditor().getState(), parent.getRoute())
-                .forEachRemaining(Hashable::invalidateHash);
+        try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorLoad.run()")) {
+            new MerkleRouteIterator(reservedSignedState.get().getState(), parent.getRoute())
+                    .forEachRemaining(Hashable::invalidateHash);
+        }
     }
 }

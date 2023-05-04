@@ -49,8 +49,7 @@ import java.util.Objects;
  * @param <V>
  * 		The value.
  */
-public class JasperDbBuilder<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements VirtualDataSourceBuilder<K, V> {
+public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSourceBuilder<K, V> {
 
     private static final long CLASS_ID = 0xe3f6da254983b38cL;
 

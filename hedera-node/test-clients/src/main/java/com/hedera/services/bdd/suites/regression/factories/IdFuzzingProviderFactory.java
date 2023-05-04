@@ -25,8 +25,8 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountUpdate;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.*;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyInventoryCreation;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -40,6 +40,8 @@ public class IdFuzzingProviderFactory {
      * accounts with random {@link InitialAccountIdentifiers} based on this fixed set of keys.
      */
     private static final int NUM_DISTINCT_ECDSA_KEYS = 42;
+
+    private static final String RANDOM_TRANSFER_BIAS = "randomTransfer.bias";
 
     public static Function<HapiSpec, OpProvider> idFuzzingWith(final String resource) {
         return spec -> {
@@ -58,9 +60,29 @@ public class IdFuzzingProviderFactory {
                                     .ceiling(intPropOrElse(
                                             "randomAccount.ceilingNum", RandomAccount.DEFAULT_CEILING_NUM, props)),
                             intPropOrElse("randomAccount.bias", 0, props))
+                    .withOp(new TransferToRandomEVMAddress(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props))
+                    .withOp(new TransferToRandomKey(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props))
                     .withOp(
                             new RandomAccountUpdate(keys, accounts),
-                            intPropOrElse("randomAccountUpdate.bias", 0, props));
+                            intPropOrElse("randomAccountUpdate.bias", 0, props))
+                    .withOp(
+                            new EthereumTransferToRandomEVMAddress(spec.registry(), keys),
+                            intPropOrElse("randomEthereumTransactionTransfer.bias", 0, props));
+        };
+    }
+
+    public static Function<HapiSpec, OpProvider> idTransferToRandomKeyWith(final String resource) {
+        return spec -> {
+            final var props = RegressionProviderFactory.propsFrom(resource);
+
+            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
+            KeyInventoryCreation keyInventory = new KeyInventoryCreation();
+
+            return new BiasedDelegatingProvider()
+                    /* --- <inventory> --- */
+                    .withInitialization(keyInventory.creationOps())
+                    /* ----- CRYPTO ----- */
+                    .withOp(new TransferToRandomKey(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props));
         };
     }
 

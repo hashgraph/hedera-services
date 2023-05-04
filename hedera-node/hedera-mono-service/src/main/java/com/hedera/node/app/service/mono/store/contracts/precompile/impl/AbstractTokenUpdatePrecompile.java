@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -82,7 +83,7 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
 
         /* --- Check required signatures --- */
         final var hasAdminSig = keyValidator.validateKey(
-                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveAdminKey, ledgers, aliases);
+                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveAdminKey, ledgers, aliases, TokenUpdate);
         validateTrue(hasAdminSig, INVALID_SIGNATURE);
         if (updateOp.hasTreasury()) {
             validateTreasurySig(frame, updateOp);
@@ -99,8 +100,13 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
         validateTrue(validity == OK, validity);
         /* --- Execute the transaction and capture its results --- */
         switch (type) {
+                // We pass true as the last argument to indicate that even if the contract left the
+                // memo field unset in its call to this precompile, we want to leave the memo as-is
+                // instead of erasing it (with a protobuf message through HAPI we can distinguish
+                // between an unset memo and an empty/erased memo; but we cannot with an ABI-encoded
+                // call, so the more reasonable default here is to leave the memo as-is
             case UPDATE_TOKEN_INFO -> updateLogic.updateToken(
-                    updateOp, frame.getBlockValues().getTimestamp());
+                    updateOp, frame.getBlockValues().getTimestamp(), true);
             case UPDATE_TOKEN_KEYS -> updateLogic.updateTokenKeys(
                     updateOp, frame.getBlockValues().getTimestamp());
             case UPDATE_TOKEN_EXPIRY -> updateLogic.updateTokenExpiryInfo(updateOp);
@@ -119,7 +125,7 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
             final AccountID id, final MessageFrame frame, final ResponseCodeEnum rcWhenMissing) {
         validateTrue(ledgers.accounts().exists(id), rcWhenMissing);
         final var hasSig = legacyKeyValidator.validateKey(
-                frame, asTypedEvmAddress(id), sigsVerifier::hasLegacyActiveKey, ledgers, aliases);
+                frame, asTypedEvmAddress(id), sigsVerifier::hasLegacyActiveKey, ledgers, aliases, TokenUpdate);
         validateTrue(hasSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
     }
 

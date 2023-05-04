@@ -48,13 +48,11 @@ import java.time.Duration;
  * 		the interval at which to send each peer heartbeats
  * @param futureGenerationLimit
  * 		the number of non-ancient generations we are willing to accept from a peer
- * @param hangingThreadDuration
- * 		the length of time the chatter thread is allowed to wait when it is asked to shutdown.
- * 		If a chatter thread takes longer than this period to shut down then an error message is written to the log.
+ * @param sleepAfterFailedNegotiation the number of milliseconds to sleep after a failed negotiation
  */
 @ConfigData("chatter")
 public record ChatterConfig(
-        @ConfigProperty(defaultValue = "true") boolean useChatter,
+        @ConfigProperty(defaultValue = "false") boolean useChatter,
         @ConfigProperty(defaultValue = "40") int attemptedChatterEventPerSecond,
         @ConfigProperty(defaultValue = "0.5") double chatteringCreationThreshold,
         @ConfigProperty(defaultValue = "20") int chatterIntakeThrottle,
@@ -66,4 +64,4 @@ public record ChatterConfig(
         @ConfigProperty(defaultValue = "1s") Duration heartbeatInterval,
         @ConfigProperty(defaultValue = "100000") int futureGenerationLimit,
         @ConfigProperty(defaultValue = "50") int criticalQuorumSoftening,
-        @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration) {}
+        @ConfigProperty(value = "sleepAfterFailedNegotiation", defaultValue = "100") int sleepAfterFailedNegotiation) {}

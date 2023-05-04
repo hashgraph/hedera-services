@@ -86,7 +86,7 @@ public class SolvencyPrecheck {
         return assess(accessor, false);
     }
 
-    TxnValidityAndFeeReq assessWithSvcFees(SignedTxnAccessor accessor) {
+    public TxnValidityAndFeeReq assessWithSvcFees(SignedTxnAccessor accessor) {
         return assess(accessor, true);
     }
 
@@ -182,7 +182,7 @@ public class SolvencyPrecheck {
     }
 
     private long totalOf(FeeObject fees, boolean includeSvcFee) {
-        return (includeSvcFee ? fees.getServiceFee() : 0) + fees.getNodeFee() + fees.getNetworkFee();
+        return (includeSvcFee ? fees.serviceFee() : 0) + fees.nodeFee() + fees.networkFee();
     }
 
     private ResponseCodeEnum checkSigs(SignedTxnAccessor accessor) {

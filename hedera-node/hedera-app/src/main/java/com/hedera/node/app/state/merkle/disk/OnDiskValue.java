@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import com.hedera.node.app.spi.state.Serdes;
-import com.hedera.node.app.spi.state.serdes.ByteBufferDataInput;
-import com.hedera.node.app.spi.state.serdes.ByteBufferDataOutput;
+import static com.hedera.node.app.state.merkle.StateUtils.readFromStream;
+import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
+
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -43,7 +45,7 @@ public class OnDiskValue<V> implements VirtualValue {
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x8837746626372L;
 
-    private final Serdes<V> serdes;
+    private final Codec<V> codec;
     private final StateMetadata<?, V> md;
     private V value;
     private boolean immutable = false;
@@ -51,13 +53,13 @@ public class OnDiskValue<V> implements VirtualValue {
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
     @Deprecated(forRemoval = true)
     public OnDiskValue() {
-        this.serdes = null;
+        this.codec = null;
         this.md = null;
     }
 
     public OnDiskValue(@NonNull final StateMetadata<?, V> md) {
         this.md = md;
-        this.serdes = md.stateDefinition().valueSerdes();
+        this.codec = md.stateDefinition().valueCodec();
     }
 
     public OnDiskValue(@NonNull final StateMetadata<?, V> md, @NonNull final V value) {
@@ -95,28 +97,33 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        final var output = new ByteBufferDataOutput(byteBuffer);
-        serdes.write(value, output);
+        final var output = BufferedData.wrap(byteBuffer);
+        output.skip(4);
+        codec.write(value, output);
+        final var pos = output.position();
+        output.position(0);
+        output.writeInt((int) pos - 4);
+        output.position(pos);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        serdes.write(value, serializableDataOutputStream);
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+        writeToStream(out, codec, value);
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        final var input = new ByteBufferDataInput(byteBuffer);
-        value = serdes.parse(input);
+        final var input = BufferedData.wrap(byteBuffer);
+        input.skip(4); // skip the length
+        value = codec.parse(input);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
-            throws IOException {
-        value = serdes.parse(serializableDataInputStream);
+    public void deserialize(@NonNull final SerializableDataInputStream in, int ignored) throws IOException {
+        value = readFromStream(in, codec);
     }
 
     /** {@inheritDoc} */

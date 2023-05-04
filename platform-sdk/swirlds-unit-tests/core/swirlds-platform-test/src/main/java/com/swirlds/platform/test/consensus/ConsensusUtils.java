@@ -200,7 +200,7 @@ public abstract class ConsensusUtils {
     /**
      * Runs one or more iterations of a consensus test definition. If one or more seeds are provided, each seed is used
      * once resulting in {@code seeds.length} number of iterations. If no seeds are provided, {@code iterations}
-     * iterations are run where each iteration generates a new seed. The seed is used for stake calculation and event
+     * iterations are run where each iteration generates a new seed. The seed is used for weight calculation and event
      * generation.
      *
      * @param testDefinition

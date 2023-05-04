@@ -19,21 +19,24 @@ package com.swirlds.common.system.address;
 import static com.swirlds.common.system.address.Address.ipString;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.address.internal.AddressBookIterator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * The Address of every known member of the swirld. The getters are public and the setters aren't, so it is read-only
@@ -112,14 +115,14 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     private final List<Long> orderedNodeIds = new ArrayList<>();
 
     /**
-     * the total stake of all members
+     * the total weight of all members
      */
-    private long totalStake;
+    private long totalWeight;
 
     /**
-     * the number of addresses with non-zero stake
+     * the number of addresses with non-zero weight
      */
-    private int numberWithStake;
+    private int numberWithWeight;
 
     /**
      * Create an empty address book.
@@ -209,22 +212,22 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Get the number of addresses currently in the address book that have a stake greater than zero.
+     * Get the number of addresses currently in the address book that have a weight greater than zero.
      *
-     * @return the number of addresses with a stake greater than zero
+     * @return the number of addresses with a weight greater than zero
      */
-    public int getNumberWithStake() {
-        return numberWithStake;
+    public int getNumberWithWeight() {
+        return numberWithWeight;
     }
 
     /**
-     * Get the total stake of all members added together, where each member has nonnegative stake. This is zero if there
-     * are no members.
+     * Get the total weight of all members added together, where each member has nonnegative weight. This is zero if
+     * there are no members.
      *
-     * @return the total stake
+     * @return the total weight
      */
-    public long getTotalStake() {
-        return totalStake;
+    public long getTotalWeight() {
+        return totalWeight;
     }
 
     /**
@@ -347,27 +350,27 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Updates the stake on the address with the given ID. If the address does not exist, a NoSuchElementException is
-     * thrown. If the stake value is negative, an IllegalArgumentException is thrown.  If the address book is immutable,
-     * a MutabilityException is thrown. This method does not validate the address book after updating the address.  When
-     * the user is finished with making incremental changes, the final address book should be validated.
+     * Updates the weight on the address with the given ID. If the address does not exist, a NoSuchElementException is
+     * thrown. If the weight value is negative, an IllegalArgumentException is thrown.  If the address book is
+     * immutable, a MutabilityException is thrown. This method does not validate the address book after updating the
+     * address.  When the user is finished with making incremental changes, the final address book should be validated.
      *
-     * @param id    the ID of the address to update.
-     * @param stake the new stake value.  The stake must be nonnegative.
+     * @param id     the ID of the address to update.
+     * @param weight the new weight value.  The weight must be nonnegative.
      * @throws NoSuchElementException   if the address does not exist.
-     * @throws IllegalArgumentException if the stake is negative.
+     * @throws IllegalArgumentException if the weight is negative.
      * @throws MutabilityException      if the address book is immutable.
      */
-    public void updateStake(final long id, final long stake) {
+    public void updateWeight(final long id, final long weight) {
         throwIfImmutable();
         final Address address = getAddress(id);
         if (address == null) {
             throw new NoSuchElementException("no address with ID " + id + " exists");
         }
-        if (stake < 0) {
-            throw new IllegalArgumentException("stake must be nonnegative");
+        if (weight < 0) {
+            throw new IllegalArgumentException("weight must be nonnegative");
         }
-        updateAddress(address.copySetStake(stake));
+        updateAddress(address.copySetWeight(weight));
     }
 
     /**
@@ -381,16 +384,16 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         publicKeyToId.remove(oldAddress.getNickname());
         publicKeyToId.put(address.getNickname(), address.getId());
 
-        final long oldStake = oldAddress.getStake();
-        final long newStake = address.getStake();
+        final long oldWeight = oldAddress.getWeight();
+        final long newWeight = address.getWeight();
 
-        totalStake -= oldStake;
-        totalStake += newStake;
+        totalWeight -= oldWeight;
+        totalWeight += newWeight;
 
-        if (oldStake == 0 && newStake != 0) {
-            numberWithStake++;
-        } else if (oldStake != 0 && newStake == 0) {
-            numberWithStake--;
+        if (oldWeight == 0 && newWeight != 0) {
+            numberWithWeight++;
+        } else if (oldWeight != 0 && newWeight == 0) {
+            numberWithWeight--;
         }
 
         addresses.put(address.getId(), address);
@@ -417,9 +420,9 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         publicKeyToId.put(address.getNickname(), address.getId());
         addToOrderedList(address.getId());
 
-        totalStake += address.getStake();
-        if (!address.isZeroStake()) {
-            numberWithStake++;
+        totalWeight += address.getWeight();
+        if (!address.isZeroWeight()) {
+            numberWithWeight++;
         }
     }
 
@@ -463,9 +466,9 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         publicKeyToId.remove(address.getNickname());
         removeNodeFromOrderedList(id);
 
-        totalStake -= address.getStake();
-        if (!address.isZeroStake()) {
-            numberWithStake--;
+        totalWeight -= address.getWeight();
+        if (!address.isZeroWeight()) {
+            numberWithWeight--;
         }
         orderedNodeIds.remove(id);
 
@@ -483,8 +486,8 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         nodeIndices.clear();
         orderedNodeIds.clear();
 
-        totalStake = 0;
-        numberWithStake = 0;
+        totalWeight = 0;
+        numberWithWeight = 0;
         nextNodeId = FIRST_NODE_ID;
     }
 
@@ -553,6 +556,16 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
+     * Get a set of all node IDs in the address book. Set is safe to modify.
+     *
+     * @return a set of all node IDs in the address book
+     */
+    @NonNull
+    public Set<Long> getNodeIdSet() {
+        return new HashSet<>(addresses.keySet());
+    }
+
+    /**
      * The text form of an address book that appears in config.txt
      *
      * @return the string form of the AddressBook that would appear in config.txt
@@ -564,7 +577,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
                     "address,",
                     address.getNickname() + ",",
                     address.getSelfName() + ",",
-                    address.getStake() + ",",
+                    address.getWeight() + ",",
                     ipString(address.getAddressInternalIpv4()) + ",",
                     address.getPortInternalIpv4() + ",",
                     ipString(address.getAddressExternalIpv4()) + ",",

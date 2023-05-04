@@ -37,7 +37,7 @@ import java.nio.ByteBuffer;
  *
  * @param <K> Virtual key type
  */
-public interface KeySerializer<K extends VirtualKey<?>> extends BaseSerializer<K>, SelfSerializable {
+public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, SelfSerializable {
 
     /**
      * Get the current key serialization version. Key serializers can only use the lower 32 bits of
@@ -52,19 +52,6 @@ public interface KeySerializer<K extends VirtualKey<?>> extends BaseSerializer<K
      */
     default KeyIndexType getIndexType() {
         return getSerializedSize() == Long.BYTES ? KeyIndexType.SEQUENTIAL_INCREMENTING_LONGS : KeyIndexType.GENERIC;
-    }
-
-    /**
-     * For variable sized keys get the typical number of bytes a key takes when serialized.
-     *
-     * @return Either for fixed size same as getSerializedSize() or an estimated typical size for
-     *     keys
-     */
-    default int getTypicalSerializedSize() {
-        if (isVariableSize()) {
-            throw new IllegalStateException("Variable sized implementations have to override this method");
-        }
-        return getSerializedSize();
     }
 
     /**

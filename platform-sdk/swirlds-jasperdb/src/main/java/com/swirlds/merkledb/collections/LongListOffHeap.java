@@ -129,7 +129,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
 
     /** {@inheritDoc} */
     @Override
-    protected void put(ByteBuffer chunk, int subIndex, long value) {
+    protected void putToChunk(ByteBuffer chunk, int subIndex, long value) {
         /* The remaining lines below are equivalent to a chunk.put(subIndex, value) call
         on a heap byte buffer. Since we have instead a direct buffer, we need to, first,
         get its native memory address from the Buffer.address field; and, second, store
@@ -169,7 +169,9 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
             for (int i = firstChunkWithDataIndex; i < totalNumOfChunks; i++) {
                 final ByteBuffer byteBuffer = chunkList.get(i);
                 final ByteBuffer nonNullBuffer = requireNonNullElse(byteBuffer, emptyBuffer);
-                final ByteBuffer buf = nonNullBuffer.slice(); // slice so we don't mess with state
+                // Slice so we don't mess with the byte buffer pointers.
+                // Also, the slice size has to be equal to the size of the buffer
+                final ByteBuffer buf = nonNullBuffer.slice(0, nonNullBuffer.capacity());
                 if (i == firstChunkWithDataIndex) {
                     // writing starts from the first valid index in the first valid chunk
                     final int firstValidIndexInChunk = toIntExact(currentMinValidIndex % numLongsPerChunk);

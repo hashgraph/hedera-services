@@ -29,7 +29,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -41,7 +40,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -244,12 +242,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         } else {
             final var builder = ContractGetInfoQuery.newBuilder()
                     .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment));
-            if (contract.length() == 40) {
-                builder.setContractID(
-                        ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
-            } else {
-                builder.setContractID(asContractId(contract, spec));
-            }
+            builder.setContractID(asContractId(contract, spec));
             contractGetInfo = builder.build();
         }
         return Query.newBuilder().setContractGetInfo(contractGetInfo).build();

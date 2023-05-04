@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.datasource;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
@@ -36,8 +37,7 @@ import javax.imageio.IIOException;
  * @param <V>
  * 		the type for values
  */
-public class InMemoryDataSource<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements VirtualDataSource<K, V> {
+public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
 
     private static final String NEGATIVE_PATH_MESSAGE = "path is less than 0";
 
@@ -368,5 +368,11 @@ public class InMemoryDataSource<K extends VirtualKey<? super K>, V extends Virtu
             this.keyToPathMap.remove(rec.getKey());
             this.leafRecords.remove(rec.getPath());
         }
+    }
+
+    @Override
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+        // It doesn't have to be very precise as this data source is used for testing purposed only
+        return dirtyInternals * (Long.BYTES + DigestType.SHA_384.digestLength()) + dirtyLeaves * 1024;
     }
 }

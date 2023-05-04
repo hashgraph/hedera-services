@@ -24,7 +24,7 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 /**
  * Listens to various events that occur during the hashing process.
  */
-public interface VirtualHashListener<K extends VirtualKey<? super K>, V extends VirtualValue> {
+public interface VirtualHashListener<K extends VirtualKey, V extends VirtualValue> {
     /**
      * Called when starting a new fresh hash operation.
      */

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.records;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
