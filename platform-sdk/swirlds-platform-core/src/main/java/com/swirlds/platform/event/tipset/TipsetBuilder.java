@@ -21,8 +21,10 @@ import static com.swirlds.platform.event.tipset.Tipset.merge;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.IntToLongFunction;
 import java.util.function.LongToIntFunction;
 
@@ -71,8 +73,8 @@ public class TipsetBuilder {
             @NonNull final IntToLongFunction indexToWeight) {
 
         this.nodeCount = nodeCount;
-        this.nodeIdToIndex = nodeIdToIndex;
-        this.indexToWeight = indexToWeight;
+        this.nodeIdToIndex = Objects.requireNonNull(nodeIdToIndex);
+        this.indexToWeight = Objects.requireNonNull(indexToWeight);
         this.latestGenerations = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
 
         tipsets = new StandardSequenceMap<>(
@@ -97,7 +99,9 @@ public class TipsetBuilder {
      * @param parents          the parents of the event being added
      * @return the tipset for the event that was added
      */
-    public Tipset addEvent(final EventFingerprint eventFingerprint, final List<EventFingerprint> parents) {
+    @NonNull
+    public Tipset addEvent(
+            @NonNull final EventFingerprint eventFingerprint, @NonNull final List<EventFingerprint> parents) {
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
         for (final EventFingerprint parent : parents) {
             final Tipset parentTipset = tipsets.get(parent);
@@ -124,9 +128,10 @@ public class TipsetBuilder {
      * Get the tipset of an event, or null if the event is not being tracked.
      *
      * @param eventFingerprint the fingerprint of the event
-     * @return the tipset of the event
+     * @return the tipset of the event, or null if the event is not being tracked
      */
-    public Tipset getTipset(final EventFingerprint eventFingerprint) {
+    @Nullable
+    public Tipset getTipset(@NonNull final EventFingerprint eventFingerprint) {
         return tipsets.get(eventFingerprint);
     }
 

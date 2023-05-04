@@ -64,7 +64,7 @@ public class Tipset {
      * @param tipset the tipset to use as a template
      * @return a new empty tipset
      */
-    private static @NonNull Tipset buildEmptyTipset(final Tipset tipset) {
+    private static @NonNull Tipset buildEmptyTipset(@NonNull final Tipset tipset) {
         return new Tipset(tipset.size(), tipset.nodeIdToIndex, tipset.indexToWeight);
     }
 

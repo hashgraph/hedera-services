@@ -176,7 +176,7 @@ public class TipsetScoreCalculator {
      * @param parents the proposed parents of an event
      * @return the advancement score we would get by creating an event with the given parents
      */
-    public long getTheoreticalAdvancementScore(final List<EventFingerprint> parents) { // TODO test
+    public long getTheoreticalAdvancementScore(@NonNull final List<EventFingerprint> parents) { // TODO test
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
         for (final EventFingerprint parent : parents) {
             parentTipsets.add(tipsetBuilder.getTipset(parent));
