@@ -20,9 +20,9 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
 import com.swirlds.platform.metrics.ReconnectMetrics;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.unidirectional.NetworkProtocolResponder;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.IOException;
