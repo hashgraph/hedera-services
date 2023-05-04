@@ -22,7 +22,7 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.utility.Units;
 import com.swirlds.platform.Connection;
@@ -34,7 +34,6 @@ import com.swirlds.platform.stats.AverageTimeStat;
 import com.swirlds.platform.stats.MaxStat;
 import com.swirlds.platform.sync.ShadowGraph;
 import com.swirlds.platform.sync.ShadowGraphSynchronizer;
-import com.swirlds.platform.sync.SyncManager;
 import com.swirlds.platform.sync.SyncResult;
 import com.swirlds.platform.sync.SyncTiming;
 import java.time.temporal.ChronoUnit;
@@ -43,28 +42,65 @@ import java.time.temporal.ChronoUnit;
  * Interface to update relevant sync statistics
  */
 public class SyncMetrics {
+    private static final RunningAverageMetric.Config PERMITS_AVAILABLE_CONFIG = new RunningAverageMetric.Config(
+                    PLATFORM_CATEGORY, "syncPermitsAvailable")
+            .withDescription("number of sync permits available")
+            .withFormat(FORMAT_16_2);
+    private final RunningAverageMetric permitsAvailable;
+
     private static final RunningAverageMetric.Config AVG_BYTES_PER_SEC_SYNC_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "bytes/sec_sync")
-            .withDescription("average number of bytes per second transfered during a sync")
+            .withDescription("average number of bytes per second transferred during a sync")
             .withFormat(FORMAT_16_2);
     private final RunningAverageMetric avgBytesPerSecSync;
 
-    private static final SpeedometerMetric.Config CALL_SYNCS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
+    private static final CountPerSecond.Config CALL_SYNCS_PER_SECOND_CONFIG = new CountPerSecond.Config(
                     PLATFORM_CATEGORY, "sync/secC")
             .withDescription("(call syncs) syncs completed per second initiated by this member")
             .withFormat(FORMAT_14_7);
-    private final SpeedometerMetric callSyncsPerSecond;
+    private final CountPerSecond callSyncsPerSecond;
 
-    private static final SpeedometerMetric.Config REC_SYNCS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
+    private static final CountPerSecond.Config REC_SYNCS_PER_SECOND_CONFIG = new CountPerSecond.Config(
                     PLATFORM_CATEGORY, "sync/secR")
             .withDescription("(receive syncs) syncs completed per second initiated by other member")
             .withFormat(FORMAT_14_7);
-    private final SpeedometerMetric recSyncsPerSecond;
+    private final CountPerSecond recSyncsPerSecond;
 
     private static final RunningAverageMetric.Config TIPS_PER_SYNC_CONFIG = new RunningAverageMetric.Config(
                     INTERNAL_CATEGORY, PlatformStatNames.TIPS_PER_SYNC)
             .withDescription("the average number of tips per sync at the start of each sync")
             .withFormat(FORMAT_15_3);
+
+    private static final CountPerSecond.Config INCOMING_SYNC_REQUESTS_CONFIG = new CountPerSecond.Config(
+                    PLATFORM_CATEGORY, "incomingSyncRequests/sec")
+            .withDescription("Incoming sync requests received per second")
+            .withFormat(FORMAT_14_7);
+    private final CountPerSecond incomingSyncRequestsPerSec;
+
+    private static final CountPerSecond.Config ACCEPTED_SYNC_REQUESTS_CONFIG = new CountPerSecond.Config(
+                    PLATFORM_CATEGORY, "acceptedSyncRequests/sec")
+            .withDescription("Incoming sync requests accepted per second")
+            .withFormat(FORMAT_14_7);
+    private final CountPerSecond acceptedSyncRequestsPerSec;
+
+    private static final CountPerSecond.Config OPPORTUNITIES_TO_INITIATE_SYNC_CONFIG = new CountPerSecond.Config(
+                    PLATFORM_CATEGORY, "opportunitiesToInitiateSync/sec")
+            .withDescription("Opportunities to initiate an outgoing sync per second")
+            .withFormat(FORMAT_14_7);
+    private final CountPerSecond opportunitiesToInitiateSyncPerSec;
+
+    private static final CountPerSecond.Config OUTGOING_SYNC_REQUESTS_CONFIG = new CountPerSecond.Config(
+                    PLATFORM_CATEGORY, "outgoingSyncRequests/sec")
+            .withDescription("Outgoing sync requests sent per second")
+            .withFormat(FORMAT_14_7);
+    private final CountPerSecond outgoingSyncRequestsPerSec;
+
+    private static final CountPerSecond.Config SYNCS_PER_SECOND_CONFIG = new CountPerSecond.Config(
+                    PLATFORM_CATEGORY, "syncs/sec")
+            .withDescription("Total number of syncs completed per second")
+            .withFormat(FORMAT_14_7);
+    private final CountPerSecond syncsPerSec;
+
     private final RunningAverageMetric tipsPerSync;
 
     private final AverageStat syncGenerationDiff;
@@ -80,7 +116,6 @@ public class SyncMetrics {
     private final AverageAndMax avgEventsPerSyncRec;
     private final MaxStat multiTipsPerSync;
     private final AverageStat gensWaitingForExpiry;
-    private final AverageStat rejectedSyncRatio;
 
     /**
      * Constructor of {@code SyncMetrics}
@@ -92,9 +127,15 @@ public class SyncMetrics {
      */
     public SyncMetrics(final Metrics metrics) {
         avgBytesPerSecSync = metrics.getOrCreate(AVG_BYTES_PER_SEC_SYNC_CONFIG);
-        callSyncsPerSecond = metrics.getOrCreate(CALL_SYNCS_PER_SECOND_CONFIG);
-        recSyncsPerSecond = metrics.getOrCreate(REC_SYNCS_PER_SECOND_CONFIG);
+        callSyncsPerSecond = new CountPerSecond(metrics, CALL_SYNCS_PER_SECOND_CONFIG);
+        recSyncsPerSecond = new CountPerSecond(metrics, REC_SYNCS_PER_SECOND_CONFIG);
         tipsPerSync = metrics.getOrCreate(TIPS_PER_SYNC_CONFIG);
+
+        incomingSyncRequestsPerSec = new CountPerSecond(metrics, INCOMING_SYNC_REQUESTS_CONFIG);
+        acceptedSyncRequestsPerSec = new CountPerSecond(metrics, ACCEPTED_SYNC_REQUESTS_CONFIG);
+        opportunitiesToInitiateSyncPerSec = new CountPerSecond(metrics, OPPORTUNITIES_TO_INITIATE_SYNC_CONFIG);
+        outgoingSyncRequestsPerSec = new CountPerSecond(metrics, OUTGOING_SYNC_REQUESTS_CONFIG);
+        syncsPerSec = new CountPerSecond(metrics, SYNCS_PER_SECOND_CONFIG);
 
         avgSyncDuration = new AverageAndMaxTimeStat(
                 metrics,
@@ -175,13 +216,8 @@ public class SyncMetrics {
                 "the average number of generations waiting to be expired",
                 FORMAT_5_3,
                 AverageStat.WEIGHT_VOLATILE);
-        rejectedSyncRatio = new AverageStat(
-                metrics,
-                INTERNAL_CATEGORY,
-                PlatformStatNames.REJECTED_SYNC_RATIO,
-                "the averaged ratio of rejected syncs to accepted syncs over time",
-                FORMAT_1_3,
-                AverageStat.WEIGHT_VOLATILE);
+
+        permitsAvailable = metrics.getOrCreate(PERMITS_AVAILABLE_CONFIG);
     }
 
     /**
@@ -258,10 +294,12 @@ public class SyncMetrics {
      */
     public void syncDone(final SyncResult info) {
         if (info.isCaller()) {
-            callSyncsPerSecond.cycle();
+            callSyncsPerSecond.count();
         } else {
-            recSyncsPerSecond.cycle();
+            recSyncsPerSecond.count();
         }
+        syncsPerSec.count();
+
         avgEventsPerSyncSent.update(info.getEventsWritten());
         avgEventsPerSyncRec.update(info.getEventsRead());
     }
@@ -300,13 +338,39 @@ public class SyncMetrics {
     }
 
     /**
-     * Called by {@link SyncManager#shouldAcceptSync()} when a sync is accepted or rejected to maintain the ratio of
-     * rejected syncs to accepted syncs.
+     * Updates the number of permits available for syncs
      *
-     * @param syncRejected
-     * 		true is a sync was rejected, false otherwise
+     * @param permits the number of permits available
      */
-    public void updateRejectedSyncRatio(final boolean syncRejected) {
-        rejectedSyncRatio.update(syncRejected);
+    public void updateSyncPermitsAvailable(final int permits) {
+        permitsAvailable.update(permits);
+    }
+
+    /**
+     * Indicate that a request to sync has been received
+     */
+    public void incomingSyncRequestReceived() {
+        incomingSyncRequestsPerSec.count();
+    }
+
+    /**
+     * Indicate that a request to sync has been accepted
+     */
+    public void acceptedSyncRequest() {
+        acceptedSyncRequestsPerSec.count();
+    }
+
+    /**
+     * Indicate that there was an opportunity to sync with a peer. The protocol may or may not take the opportunity
+     */
+    public void opportunityToInitiateSync() {
+        opportunitiesToInitiateSyncPerSec.count();
+    }
+
+    /**
+     * Indicate that a request to sync has been sent
+     */
+    public void outgoingSyncRequestSent() {
+        outgoingSyncRequestsPerSec.count();
     }
 }
