@@ -23,22 +23,30 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface TransactionSubmitter {
 
-    // TODO this javadoc is out of date
     /**
-     * The SwirldMain object calls this method when it wants to create a new transaction. The newly-created
-     * transaction is then embedded inside a newly-created event, and sent to all the other members of the
-     * community during syncs. It is also sent to the swirldState object.
+     * This method can be called to create a new transaction. If accepted by this method, the newly-created transaction
+     * will eventually be embedded inside a newly-created event as long as the node does not shut down before getting
+     * around to it. As long as this node is healthy, with high probability the transaction will reach consensus, but
+     * this is not a hard guarantee.
      * <p>
-     * If transactions are being created faster than they can be handled, then eventually a large backlog
-     * will build up. At that point, a call to createTransaction will return false, and will not actually
-     * create a transaction.
-     * <p>
-     * A transaction can be at most 1024 bytes. If trans.length &gt; 1024, then this will return false, and
-     * will not actually create a transaction.
+     * This method will sometimes reject new transactions. Some (but not necessarily all) causes for a transaction to be
+     * rejected by this method:
      *
-     * @param trans
-     * 		the transaction to handle, encoded any way the swirld author chooses
-     * @return true if successful
+     * <ul>
+     * <li>the node is starting up</li>
+     * <li>the node is performing a reconnect</li>
+     * <li>the node is preparing for an upgrade</li>
+     * <li>the node is unable to submit transactions fast enough and has built up a backlog</li>
+     * <li>the node is having health problems</li>
+     * </ul>
+     *
+     * <p>
+     * Transactions have a maximum size defined by the setting "transactionMaxBytes". If a transaction larger than
+     * this is submitted, this method will always reject it.
+     *
+     * @param transaction the transaction to handle in binary format (format used is up to the application)
+     * @return true if the transaction is accepted, false if it is rejected. Being accepted does not guarantee that the
+     * transaction will ever reach consensus, only that this node will make a best-effort attempt to make that happen.
      */
-    boolean createTransaction(@NonNull byte[] trans);
+    boolean createTransaction(@NonNull byte[] transaction);
 }

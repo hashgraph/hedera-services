@@ -1935,8 +1935,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
     /** {@inheritDoc} */
     @Override
-    public boolean createTransaction(@NonNull final byte[] trans) {
-        return transactionSubmitter.submitTransaction(new SwirldTransaction(trans));
+    public boolean createTransaction(@NonNull final byte[] transaction) {
+        return transactionSubmitter.submitTransaction(new SwirldTransaction(transaction));
     }
 
     /**
