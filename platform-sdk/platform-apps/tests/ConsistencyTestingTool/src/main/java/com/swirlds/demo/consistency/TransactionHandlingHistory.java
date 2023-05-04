@@ -101,6 +101,7 @@ public class TransactionHandlingHistory {
     private void tryReadLog() {
         if (!Files.exists(logFilePath)) {
             logger.info(STARTUP.getMarker(), "No log file found. Starting without any previous history");
+            return;
         }
 
         logger.info(STARTUP.getMarker(), "Log file found. Parsing previous history");

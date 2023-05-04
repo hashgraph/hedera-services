@@ -24,9 +24,8 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.File;
-import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -50,29 +49,14 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     private Platform platform;
 
     /**
-     * Whether to permit gaps in round history
-     */
-    private final boolean permitRoundGaps;
-
-    /**
      * The number of transactions to generate per second.
      */
     private static final int TRANSACTIONS_PER_SECOND = 100;
 
     /**
-     * The name of the log file being written to / read from
-     */
-    private static final String LOG_FILE_NAME = "ConsistencyTestLog";
-
-    /**
      * Constructor
-     *
-     * @param permitRoundGaps whether or not gaps in the round history will be permitted in the test. if false, an error
-     *                        will be logged if a gap is found
      */
-    public ConsistencyTestingToolMain(final boolean permitRoundGaps) {
-        this.permitRoundGaps = permitRoundGaps;
-
+    public ConsistencyTestingToolMain() {
         logger.info(STARTUP.getMarker(), "constructor called in Main.");
     }
 
@@ -81,11 +65,11 @@ public class ConsistencyTestingToolMain implements SwirldMain {
      */
     @Override
     public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
-        Objects.requireNonNull(platform);
         Objects.requireNonNull(nodeId);
 
+        this.platform = Objects.requireNonNull(platform);
+
         logger.info(STARTUP.getMarker(), "init called in Main for node {}.", nodeId);
-        this.platform = platform;
 
         parseArguments(((PlatformWithDeprecatedMethods) platform).getParameters());
     }
@@ -120,8 +104,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     @Override
     @NonNull
     public SwirldState newState() {
-        return new ConsistencyTestingToolState(
-                permitRoundGaps, Path.of(System.getProperty("user.dir") + File.separator + LOG_FILE_NAME + ".csv"));
+        return new ConsistencyTestingToolState();
     }
 
     /**
@@ -132,5 +115,15 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     public BasicSoftwareVersion getSoftwareVersion() {
         logger.info(STARTUP.getMarker(), "returning software version {}", softwareVersion);
         return softwareVersion;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updateConfigurationBuilder(@NonNull final ConfigurationBuilder configurationBuilder) {
+        Objects.requireNonNull(configurationBuilder);
+
+        configurationBuilder.withConfigDataType(ConsistencyTestingToolConfig.class);
     }
 }

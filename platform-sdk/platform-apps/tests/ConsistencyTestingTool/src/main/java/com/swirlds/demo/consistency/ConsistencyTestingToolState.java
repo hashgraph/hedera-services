@@ -23,12 +23,17 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -49,7 +54,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     /**
      * The history of transactions that have been handled by this app
      */
-    private final TransactionHandlingHistory transactionHandlingHistory;
+    private TransactionHandlingHistory transactionHandlingHistory;
 
     /**
      * The true "state" of this app. This long value is updated with every transaction
@@ -58,16 +63,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
 
     /**
      * Constructor
-     *
-     * @param permitRoundGaps whether or not gaps in the round history will be permitted in the test. if false, an error
-     *                        will be logged if a gap is found
-     * @param logFilePath     the path of the log file where the round history will be written
      */
-    public ConsistencyTestingToolState(final boolean permitRoundGaps, final @NonNull Path logFilePath) {
-        Objects.requireNonNull(logFilePath);
-
-        this.transactionHandlingHistory = new TransactionHandlingHistory(permitRoundGaps, logFilePath);
-
+    public ConsistencyTestingToolState() {
         logger.info(STARTUP.getMarker(), "New State Constructed.");
     }
 
@@ -81,6 +78,27 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
 
         this.transactionHandlingHistory = new TransactionHandlingHistory(that.transactionHandlingHistory);
         this.stateLong = that.stateLong;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void init(
+            @NonNull final Platform platform,
+            @NonNull final SwirldDualState swirldDualState,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
+
+        Objects.requireNonNull(platform);
+        Objects.requireNonNull(swirldDualState);
+        Objects.requireNonNull(trigger);
+
+        final ConsistencyTestingToolConfig config =
+                platform.getContext().getConfiguration().getConfigData(ConsistencyTestingToolConfig.class);
+
+        final Path logFilePath = Path.of(System.getProperty("user.dir") + File.separator + config.logfileName());
+        this.transactionHandlingHistory = new TransactionHandlingHistory(config.permitGaps(), logFilePath);
     }
 
     /**
