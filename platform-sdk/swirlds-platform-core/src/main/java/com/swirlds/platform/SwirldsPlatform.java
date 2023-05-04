@@ -1655,16 +1655,16 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         if (initialAddressBook.getSize() == 1) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
-                    .setNodeId(selfId.getId())
+                    .setNodeId(selfId.id())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
-                    .setOtherNodeId(selfId.getId())
+                    .setOtherNodeId(selfId.id())
                     .setThreadName("SingleNodeNetworkSync")
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new SingleNodeNetworkSync(
                             this::checkPlatformStatus,
                             eventTaskCreator::createEvent,
                             this::getSleepAfterSync,
-                            selfId.getId()))
+                            selfId.id()))
                     .build(true));
 
             return;
@@ -1683,10 +1683,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
-                    .setNodeId(selfId.getId())
+                    .setNodeId(selfId.id())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
-                    .setOtherNodeId(otherId.getId())
-                    .setThreadName("SyncProtocolWith" + otherId.getId())
+                    .setOtherNodeId(otherId.id())
+                    .setThreadName("SyncProtocolWith" + otherId.id())
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
