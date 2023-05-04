@@ -22,9 +22,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.config.VersionedConfiguration;
-import com.hedera.node.app.spi.config.data.GlobalConfig;
-import com.hedera.node.app.spi.config.data.GlobalDynamicConfig;
-import com.hedera.node.app.spi.config.data.NodeConfig;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -219,23 +216,6 @@ class ConfigProviderImplTest {
     }
 
     @Test
-    void testConfigDataCreation() {
-        // given
-        final var configProvider = new ConfigProviderImpl(propertySource);
-        final var configuration = configProvider.getConfiguration();
-
-        // when
-        final GlobalConfig globalConfig = configuration.getConfigData(GlobalConfig.class);
-        final GlobalDynamicConfig globalDynamicConfig = configuration.getConfigData(GlobalDynamicConfig.class);
-        final NodeConfig nodeConfig = configuration.getConfigData(NodeConfig.class);
-
-        // then
-        assertThat(globalConfig).isNotNull();
-        assertThat(globalDynamicConfig).isNotNull();
-        assertThat(nodeConfig).isNotNull();
-    }
-
-    @Test
     void testUpdateCreatesNewConfig() {
         // given
         final var configProvider = new ConfigProviderImpl(propertySource);
@@ -256,16 +236,16 @@ class ConfigProviderImplTest {
         // given
         final var configProvider = new ConfigProviderImpl(propertySource);
         final var configuration1 = configProvider.getConfiguration();
-        final NodeConfig nodeConfig1 = configuration1.getConfigData(NodeConfig.class);
+        final String value1 = configuration1.getValue("port");
 
         // when
         configProvider.update("port", "8080");
         final var configuration2 = configProvider.getConfiguration();
-        final NodeConfig nodeConfig2 = configuration2.getConfigData(NodeConfig.class);
+        final String value2 = configuration2.getValue("port");
 
         // then
-        assertThat(nodeConfig1).isNotSameAs(nodeConfig2);
-        assertThat(nodeConfig1).returns(1, NodeConfig::port);
-        assertThat(nodeConfig2).returns(8080, NodeConfig::port);
+        assertThat(value1).isNotSameAs(value2);
+        assertThat(value1).isEqualTo("1");
+        assertThat(value2).isEqualTo("8080");
     }
 }

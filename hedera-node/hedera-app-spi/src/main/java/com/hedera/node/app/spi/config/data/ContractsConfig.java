@@ -17,14 +17,12 @@
 
 package com.hedera.node.app.spi.config.data;
 
-import com.swirlds.common.system.address.Address;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import java.util.Set;
 
 @ConfigData("contracts")
 public record ContractsConfig(@ConfigProperty(defaultValue = "true") boolean itemizeStorageFees,
-                              @ConfigProperty(defaultValue = "1062787,1461860") Set<Address> permittedDelegateCallers,
+                              //@ConfigProperty(defaultValue = "1062787,1461860") Set<Address> permittedDelegateCallers,
                               @ConfigProperty(defaultValue = "31536000") long referenceSlotLifetime,
                               @ConfigProperty(defaultValue = "100") int freeStorageTierLimit,
                               @ConfigProperty(defaultValue = "0til100M,2000til450M") String storageSlotPriceTiers,
@@ -36,7 +34,7 @@ public record ContractsConfig(@ConfigProperty(defaultValue = "true") boolean ite
                               @ConfigProperty(defaultValue = "false") boolean allowAutoAssociations,
                               // @ConfigProperty(defaultValue = "TokenAssociateToAccount,TokenDissociateFromAccount,TokenFreezeAccount,TokenUnfreezeAccount,TokenGrantKycToAccount,TokenRevokeKycFromAccount,TokenAccountWipe,TokenBurn,TokenDelete,TokenMint,TokenUnpause,TokenPause,TokenCreate,TokenUpdate,ContractCall,CryptoTransfer") Set<HederaFunctionality> allowSystemUseOfHapiSigs,
                               @ConfigProperty(defaultValue = "10000000") long maxNumWithHapiSigsAccess,
-                              @ConfigProperty(defaultValue = "") Set<Address> withSpecialHapiSigsAccess,
+                              //@ConfigProperty(defaultValue = "") Set<Address> withSpecialHapiSigsAccess,
                               @ConfigProperty(defaultValue = "false") boolean enforceCreationThrottle,
                               @ConfigProperty(defaultValue = "15000000") long maxGasPerSec,
                               @ConfigProperty(value = "maxKvPairs.aggregate", defaultValue = "500000000") long maxKvPairsAggregate,

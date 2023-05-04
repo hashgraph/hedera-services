@@ -22,12 +22,13 @@ import com.swirlds.config.api.ConfigProperty;
 import java.util.List;
 
 @ConfigData("stats")
-public record StatsConfig(@ConfigProperty List<String> consThrottlesToSample,
-                          @ConfigProperty List<String> hapiThrottlesToSample,
-                          @ConfigProperty int executionTimesToTrack,
-                          @ConfigProperty("entityUtils.gaugeUpdateIntervalMs") long entityUtilsGaugeUpdateIntervalMs,
-                          @ConfigProperty("hapiOps.speedometerUpdateIntervalMs") long hapiOpsSpeedometerUpdateIntervalMs,
-                          @ConfigProperty("throttleUtils.gaugeUpdateIntervalMs") long throttleUtilsGaugeUpdateIntervalMs,
-                          @ConfigProperty double runningAvgHalfLifeSecs,
-                          @ConfigProperty double speedometerHalfLifeSecs) {
+public record StatsConfig(
+        @ConfigProperty(defaultValue = "<GAS>,ThroughputLimits,CreationLimits") List<String> consThrottlesToSample,
+        @ConfigProperty(defaultValue = "<GAS>,ThroughputLimits,OffHeapQueryLimits,CreationLimits,FreeQueryLimits") List<String> hapiThrottlesToSample,
+        @ConfigProperty(defaultValue = "0") int executionTimesToTrack,
+        @ConfigProperty(value = "entityUtils.gaugeUpdateIntervalMs", defaultValue = "3000") long entityUtilsGaugeUpdateIntervalMs,
+        @ConfigProperty(value = "hapiOps.speedometerUpdateIntervalMs", defaultValue = "3000") long hapiOpsSpeedometerUpdateIntervalMs,
+        @ConfigProperty(value = "throttleUtils.gaugeUpdateIntervalMs", defaultValue = "1000") long throttleUtilsGaugeUpdateIntervalMs,
+        @ConfigProperty(defaultValue = "10.0") double runningAvgHalfLifeSecs,
+        @ConfigProperty(defaultValue = "10.0") double speedometerHalfLifeSecs) {
 }

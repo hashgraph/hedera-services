@@ -22,10 +22,10 @@ import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("tokens")
 public record TokensConfig(@ConfigProperty(defaultValue = "10000000") long maxAggregateRels,
-                           @ConfigProperty boolean storeRelsOnDisk,
+                           @ConfigProperty(defaultValue = "false") boolean storeRelsOnDisk,
                            @ConfigProperty(defaultValue = "1000000") long maxNumber,
                            @ConfigProperty(defaultValue = "1000") int maxRelsPerInfoQuery,
-                           @ConfigProperty int maxPerAccount,
+                           @ConfigProperty(defaultValue = "1000") int maxPerAccount,
                            @ConfigProperty(defaultValue = "100") int maxSymbolUtf8Bytes,
                            @ConfigProperty(defaultValue = "100") int maxTokenNameUtf8Bytes,
                            @ConfigProperty(defaultValue = "10") int maxCustomFeesAllowed,
@@ -38,8 +38,8 @@ public record TokensConfig(@ConfigProperty(defaultValue = "10000000") long maxAg
                            @ConfigProperty(value = "nfts.maxAllowedMints", defaultValue = "5000000") long nftsMaxAllowedMints,
                            @ConfigProperty(value = "nfts.maxQueryRange", defaultValue = "100") long nftsMaxQueryRange,
                            @ConfigProperty(value = "nfts.useTreasuryWildcards", defaultValue = "true") boolean nftsUseTreasuryWildcards,
-                           //@ConfigProperty("nfts.mintThrottleScaleFactor") ScaleFactor nftsMintThrottleScaleFactor,
+                           //@ConfigProperty(value = "nfts.mintThrottleScaleFactor", defaultValue = "5:2") ScaleFactor nftsMintThrottleScaleFactor,
                            @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "false") boolean nftsUseVirtualMerkle,
-                           @ConfigProperty("autoCreations.isEnabled") boolean autoCreationsIsEnabled) {
+                           @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") boolean autoCreationsIsEnabled) {
 
 }

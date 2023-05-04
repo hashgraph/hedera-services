@@ -28,7 +28,7 @@ public record BootstrapConfig(
         @ConfigProperty(value = "networkProperties.path", defaultValue = "data/config/application.properties") String networkPropertiesPath,
         @ConfigProperty(value = "rates.currentHbarEquiv", defaultValue = "1") int ratesCurrentHbarEquiv,
         @ConfigProperty(value = "rates.currentCentEquiv", defaultValue = "12") int ratesCurrentCentEquiv,
-        @ConfigProperty(value = "rates.currentExpiry", defaultValue = "4102444800") int ratesCurrentExpiry,
+        @ConfigProperty(value = "rates.currentExpiry", defaultValue = "4102444800") long ratesCurrentExpiry,
         @ConfigProperty(value = "rates.nextHbarEquiv", defaultValue = "1") int ratesNextHbarEquiv,
         @ConfigProperty(value = "rates.nextCentEquiv", defaultValue = "15") int ratesNextCentEquiv,
         @ConfigProperty(value = "rates.nextExpiry", defaultValue = "4102444800") long ratesNextExpiry,

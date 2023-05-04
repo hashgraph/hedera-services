@@ -21,5 +21,5 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("utilPrng")
-public record UtilPrngConfig(@ConfigProperty boolean isEnabled) {
+public record UtilPrngConfig(@ConfigProperty(defaultValue = "true") boolean isEnabled) {
 }
