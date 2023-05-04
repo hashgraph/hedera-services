@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.sync;
+package com.swirlds.platform.gossip;
 
 import com.swirlds.common.system.NodeId;
 import java.util.List;

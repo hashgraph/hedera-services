@@ -85,8 +85,6 @@ module com.swirlds.platform {
             com.swirlds.platform.test;
     exports com.swirlds.platform.event.intake to
             com.swirlds.platform.test;
-    exports com.swirlds.platform.reconnect to
-            com.swirlds.platform.test;
     exports com.swirlds.platform.state.notifications to
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.iss to
@@ -121,6 +119,8 @@ module com.swirlds.platform {
     exports com.swirlds.platform.components.transaction.system;
     exports com.swirlds.platform.event.preconsensus;
     exports com.swirlds.platform.gossip.sync.protocol;
+    exports com.swirlds.platform.gossip;
+    exports com.swirlds.platform.reconnect;
 
     /* Swirlds Libraries */
     requires com.swirlds.base;

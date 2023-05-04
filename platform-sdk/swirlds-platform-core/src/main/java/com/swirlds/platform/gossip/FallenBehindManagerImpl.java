@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.reconnect;
+package com.swirlds.platform.gossip;
 
 import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.gossip.sync.FallenBehindManager;
 import com.swirlds.platform.network.RandomGraph;
 import java.util.ArrayList;
 import java.util.Collections;

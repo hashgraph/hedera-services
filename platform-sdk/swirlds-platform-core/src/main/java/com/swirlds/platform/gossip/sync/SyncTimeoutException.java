@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.sync;
 
+import com.swirlds.platform.gossip.SyncException;
 import java.time.Duration;
 
 public class SyncTimeoutException extends SyncException {

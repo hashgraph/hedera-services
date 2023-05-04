@@ -19,9 +19,9 @@ package com.swirlds.platform.test.reconnect;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.gossip.sync.FallenBehindManager;
+import com.swirlds.platform.gossip.FallenBehindManager;
+import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.network.RandomGraph;
-import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
 import com.swirlds.platform.reconnect.ReconnectSettingsImpl;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
