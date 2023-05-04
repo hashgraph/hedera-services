@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.cli.utils;
+package com.hedera.services.cli.signedstate.utils;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;

@@ -16,8 +16,8 @@
 
 package com.hedera.services.cli.signedstate;
 
-import com.hedera.services.cli.utils.SignedStateHolder;
-import com.hedera.services.cli.utils.SignedStateHolder.Contract;
+import com.hedera.services.cli.signedstate.utils.SignedStateHolder;
+import com.hedera.services.cli.signedstate.utils.SignedStateHolder.Contract;
 import com.swirlds.common.io.utility.FileUtils;
 import java.lang.reflect.Array;
 import java.nio.file.Path;
