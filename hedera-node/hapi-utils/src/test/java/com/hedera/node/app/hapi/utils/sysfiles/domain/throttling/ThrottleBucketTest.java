@@ -16,16 +16,20 @@
 
 package com.hedera.node.app.hapi.utils.sysfiles.domain.throttling;
 
+import static com.hedera.node.app.hapi.utils.throttles.BucketThrottle.CAPACITY_UNITS_PER_NANO_TXN;
+import static com.hedera.node.app.hapi.utils.throttles.BucketThrottle.NTPS_PER_MTPS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.hapi.utils.TestUtils;
+import com.hedera.node.app.hapi.utils.throttles.BucketThrottle;
 import com.hedera.node.app.hapi.utils.throttles.ConcurrentThrottleTestHelper;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
@@ -62,6 +66,27 @@ class ThrottleBucketTest {
     void roundsUpToEnsureMinBurstPeriodIfRequired() {
         assertEquals(5, ThrottleBucket.quotientRoundedUp(35, 7));
         assertEquals(6, ThrottleBucket.quotientRoundedUp(36, 7));
+    }
+
+    @Test
+    void burstPeriodAutoScalingIsMinimumNeededWithPostSplitBucketParams() throws IOException {
+        final var resource = "typical-perf-throttles.json";
+        // Get the PriorityReservations bucket from a typical perf configuration
+        final var bucket = bucketFrom(resource, 2);
+
+        // Get the BucketThrottle delegate for this throttle
+        final var delegate = bucket.asThrottleMapping(31).getKey().delegate();
+        final var mtps = delegate.mtps();
+        // Compute the burst period implied by the delegates mtps and total capacity
+        final var chosenBurstPeriodMs = BigDecimal.valueOf(delegate.bucket().totalCapacity())
+                .divide(BigDecimal.valueOf(mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN))
+                .multiply(BigDecimal.valueOf(1000))
+                .longValue();
+        // Validate the auto-scaling chose the minimum burst period that would allow the network to operate
+        final var oneSmallerBurstPeriodMs = chosenBurstPeriodMs - 1;
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> BucketThrottle.withMtpsAndBurstPeriodMs(mtps, oneSmallerBurstPeriodMs));
     }
 
     @ParameterizedTest
@@ -126,8 +151,12 @@ class ThrottleBucketTest {
     }
 
     private static ThrottleBucket<HederaFunctionality> bucketFrom(final String path) throws IOException {
+        return bucketFrom(path, 0);
+    }
+
+    private static ThrottleBucket<HederaFunctionality> bucketFrom(final String path, final int i) throws IOException {
         final var defs = TestUtils.pojoDefs(path);
-        return defs.getBuckets().get(0);
+        return defs.getBuckets().get(i);
     }
 
     private static int opsForFunction(

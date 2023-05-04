@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.hapi.utils.throttles;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /** A bucket of discrete capacity. */
-class DiscreteLeakyBucket {
+public class DiscreteLeakyBucket {
     private long used;
     private final long capacity;
 
@@ -42,7 +44,8 @@ class DiscreteLeakyBucket {
         return used;
     }
 
-    long totalCapacity() {
+    @VisibleForTesting
+    public long totalCapacity() {
         return capacity;
     }
 

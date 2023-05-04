@@ -193,9 +193,8 @@ public final class ThrottleBucket<E extends Enum<E>> {
             minCapacityUnitsPostSplit =
                     Math.max(minCapacityUnitsPostSplit, DeterministicThrottle.capacityRequiredFor(opsReq));
         }
-        final var minCapacityUnits = minCapacityUnitsPostSplit * capacitySplit;
-        final var capacityUnitsPerMs = BucketThrottle.capacityUnitsPerMs(mtps);
-        final var minBurstPeriodMs = quotientRoundedUp(minCapacityUnits, capacityUnitsPerMs);
+        final var postSplitCapacityUnitsLeakedPerMs = BucketThrottle.capacityUnitsPerMs(mtps / capacitySplit);
+        final var minBurstPeriodMs = quotientRoundedUp(minCapacityUnitsPostSplit, postSplitCapacityUnitsLeakedPerMs);
         final var reqBurstPeriodMs = impliedBurstPeriodMs();
         if (minBurstPeriodMs > reqBurstPeriodMs) {
             log.info(
@@ -204,7 +203,7 @@ public final class ThrottleBucket<E extends Enum<E>> {
                     reqBurstPeriodMs,
                     minBurstPeriodMs);
         }
-        return Math.max(minBurstPeriodMs, impliedBurstPeriodMs());
+        return Math.max(minBurstPeriodMs, reqBurstPeriodMs);
     }
 
     public static long quotientRoundedUp(final long a, final long b) {
