@@ -75,7 +75,7 @@ public class ConfigBenchmark {
     public void reset() {
         try {
             fileSystem.close();
-        } catch (final IOException ignored) {
+        } catch (IOException ignored) {
             // Intentionally ignored
         }
     }
