@@ -190,7 +190,7 @@ public final class EntityIdUtils {
     }
 
     public static byte[] asEvmAddress(final ContractID id) {
-        if (id.getEvmAddress().size() == EVM_ADDRESS_SIZE) {
+        if (isOfEvmAddressSize(id.getEvmAddress())) {
             return id.getEvmAddress().toByteArray();
         } else {
             return asEvmAddress(id.getContractNum());
@@ -350,5 +350,29 @@ public final class EntityIdUtils {
         } else {
             return EntityNum.fromAccountId(idOrAlias);
         }
+    }
+
+    public static boolean isOfEvmAddressSize(final ByteString alias) {
+        return alias.size() == EVM_ADDRESS_SIZE;
+    }
+
+    public static boolean isOfEvmAddressSize(final com.hedera.pbj.runtime.io.buffer.Bytes alias) {
+        return alias.length() == EVM_ADDRESS_SIZE;
+    }
+
+    public static boolean isOfEvmAddressSize(final byte[] evmAddress) {
+        return evmAddress.length == EVM_ADDRESS_SIZE;
+    }
+
+    public static boolean isOfEcdsaAddressSize(final ByteString alias) {
+        return alias.size() == ECDSA_SECP256K1_ALIAS_SIZE;
+    }
+
+    public static boolean isAliasSizeGreaterThanEvmAddress(final com.hedera.pbj.runtime.io.buffer.Bytes alias) {
+        return alias.length() > EVM_ADDRESS_SIZE;
+    }
+
+    public static boolean isAliasSizeGreaterThanEvmAddress(final ByteString alias) {
+        return alias.size() > EVM_ADDRESS_SIZE;
     }
 }
