@@ -35,6 +35,7 @@ import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.settings.MerkleDbSettings;
 import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -45,8 +46,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Set;
@@ -434,48 +435,56 @@ public class DataFileCollection<D> implements Snapshotable {
             readers[r.getIndex() - firstIndexInc] = r;
         }
 
-        final KeyRange keyRange = validKeyRange;
-        index.forEach((path, dataLocation) -> {
-            if (!keyRange.withinRange(path)) {
-                return;
-            }
-            final int fileIndex = DataFileCommon.fileIndexFromDataLocation(dataLocation);
-            if ((fileIndex < firstIndexInc) || (fileIndex >= lastIndexExc)) {
-                return;
-            }
-            final DataFileReader<D> reader = readers[fileIndex - firstIndexInc];
-            if (reader == null) {
-                return;
-            }
-            final long fileOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
-            snapshotCompactionLock.acquire();
-            try {
+        boolean allDataItemsProcessed = false;
+        try {
+            final KeyRange keyRange = validKeyRange;
+            index.forEach((path, dataLocation) -> {
+                if (!keyRange.withinRange(path)) {
+                    return;
+                }
+                final int fileIndex = DataFileCommon.fileIndexFromDataLocation(dataLocation);
+                if ((fileIndex < firstIndexInc) || (fileIndex >= lastIndexExc)) {
+                    return;
+                }
+                final DataFileReader<D> reader = readers[fileIndex - firstIndexInc];
+                if (reader == null) {
+                    return;
+                }
+                final long fileOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
                 // Take the lock. If a snapshot is started in a different thread, this call
                 // will block until the snapshot is done. The current file will be flushed,
                 // and current data file writer and reader will point to a new file
-                final DataFileWriter<D> newFileWriter = currentCompactionWriter.get();
-                final long newLocation = newFileWriter.writeCopiedDataItem(
-                        reader.getMetadata().getSerializationVersion(), reader.readDataItemBytes(fileOffset));
-                // update the index
-                index.putIfEqual(path, dataLocation, newLocation);
-            } catch (final IOException z) {
-                logger.error(EXCEPTION.getMarker(), "Failed to copy data item {} / {}", fileIndex, fileOffset, z);
-                throw z;
+                snapshotCompactionLock.acquire();
+                try {
+                    final DataFileWriter<D> newFileWriter = currentCompactionWriter.get();
+                    final long newLocation = newFileWriter.writeCopiedDataItem(
+                            reader.getMetadata().getSerializationVersion(), reader.readDataItemBytes(fileOffset));
+                    // update the index
+                    index.putIfEqual(path, dataLocation, newLocation);
+                } catch (final IOException z) {
+                    logger.error(EXCEPTION.getMarker(), "Failed to copy data item {} / {}", fileIndex, fileOffset, z);
+                    throw z;
+                } finally {
+                    snapshotCompactionLock.release();
+                }
+            });
+            allDataItemsProcessed = true;
+        } finally {
+            // Even if the thread is interrupted, make sure the new compacted file is properly closed
+            // and is included to future compactions
+            snapshotCompactionLock.acquire();
+            try {
+                // Finish writing the last file. In rare cases, it may be an empty file
+                finishCurrentCompactionFile();
+                // Clear compaction start time
+                currentCompactionStartTime.set(null);
+                if (allDataItemsProcessed) {
+                    // Close the readers and delete compacted files
+                    deleteFiles(filesToMerge);
+                }
             } finally {
                 snapshotCompactionLock.release();
             }
-        });
-
-        snapshotCompactionLock.acquire();
-        try {
-            // Finish writing the last file. In rare cases, it may be an empty file
-            finishCurrentCompactionFile();
-            // Clear compaction start time
-            currentCompactionStartTime.set(null);
-            // Close the readers and delete compacted files
-            deleteFiles(new HashSet<>(filesToMerge));
-        } finally {
-            snapshotCompactionLock.release();
         }
 
         return newCompactedFiles;
@@ -913,7 +922,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param filesToDelete the list of files to delete
      * @throws IOException If there was a problem deleting the files
      */
-    private void deleteFiles(final Set<DataFileReader<D>> filesToDelete) throws IOException {
+    private void deleteFiles(@NonNull final Collection<DataFileReader<D>> filesToDelete) throws IOException {
         // remove files from index
         dataFiles.getAndUpdate(currentFileList ->
                 (currentFileList == null) ? null : currentFileList.withDeletedObjects(filesToDelete));
