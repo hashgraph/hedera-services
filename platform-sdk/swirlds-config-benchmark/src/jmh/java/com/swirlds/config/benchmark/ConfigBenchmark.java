@@ -111,6 +111,5 @@ public class ConfigBenchmark {
     }
 
     @ConfigData("app")
-    public record AppConfig(String name, int version) {
-    }
+    public record AppConfig(String name, int version) {}
 }
