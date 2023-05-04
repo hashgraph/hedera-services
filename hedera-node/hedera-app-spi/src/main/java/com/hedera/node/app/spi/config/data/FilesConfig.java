@@ -27,7 +27,7 @@ public record FilesConfig(@ConfigProperty(defaultValue = "101") long addressBook
                           @ConfigProperty(defaultValue = "111") long feeSchedules,
                           @ConfigProperty(defaultValue = "122") long hapiPermissions,
                           @ConfigProperty(defaultValue = "102") long nodeDetails,
-                          //@ConfigProperty Pair<Long, Long> softwareUpdateRange,
+                          //@ConfigProperty(defaultValue = "150-159") Pair<Long, Long> softwareUpdateRange,
                           @ConfigProperty(defaultValue = "123") long throttleDefinitions,
                           @ConfigProperty(defaultValue = "1000000") long maxNumber,
                           @ConfigProperty(defaultValue = "1024") int maxSizeKb) {

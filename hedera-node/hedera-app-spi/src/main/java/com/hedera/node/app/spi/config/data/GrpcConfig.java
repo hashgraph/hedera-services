@@ -21,9 +21,9 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("grpc")
-public record GrpcConfig(@ConfigProperty int port,
-                         @ConfigProperty int tlsPort,
-                         @ConfigProperty int workflowsPort,
-                         @ConfigProperty int workflowsTlsPort) {
+public record GrpcConfig(@ConfigProperty(defaultValue = "50211") int port,
+                         @ConfigProperty(defaultValue = "50212") int tlsPort,
+                         @ConfigProperty(defaultValue = "60211") int workflowsPort,
+                         @ConfigProperty(defaultValue = "60212") int workflowsTlsPort) {
 
 }

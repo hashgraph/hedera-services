@@ -21,7 +21,7 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("dev")
-public record DevConfig(@ConfigProperty boolean onlyDefaultNodeListens,
-                        @ConfigProperty String defaultListeningNodeAccount) {
+public record DevConfig(@ConfigProperty(defaultValue = "true") boolean onlyDefaultNodeListens,
+                        @ConfigProperty(defaultValue = "0.0.3") String defaultListeningNodeAccount) {
 
 }

@@ -21,7 +21,7 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("iss")
-public record IssConfig(@ConfigProperty int resetPeriod,
-                        @ConfigProperty int roundsToLog) {
+public record IssConfig(@ConfigProperty(defaultValue = "60") int resetPeriod,
+                        @ConfigProperty(defaultValue = "5000") int roundsToLog) {
 
 }

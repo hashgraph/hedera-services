@@ -22,9 +22,9 @@ import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("ledger")
 public record LedgerConfig(@ConfigProperty(defaultValue = "5000") int maxAutoAssociations,
-                           @ConfigProperty int numSystemAccounts,
-                           @ConfigProperty long totalTinyBarFloat,
-                           @ConfigProperty String id,
+                           @ConfigProperty(defaultValue = "100") int numSystemAccounts,
+                           @ConfigProperty(defaultValue = "5000000000000000000") long totalTinyBarFloat,
+                           @ConfigProperty(defaultValue = "0x03") String id,
                            @ConfigProperty(value = "changeHistorian.memorySecs", defaultValue = "20") int changeHistorianMemorySecs,
                            @ConfigProperty(value = "autoRenewPeriod.maxDuration", defaultValue = "8000001") long autoRenewPeriodMaxDuration,
                            @ConfigProperty(value = "autoRenewPeriod.minDuration", defaultValue = "2592000") long autoRenewPeriodMinDuration,

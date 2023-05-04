@@ -21,6 +21,6 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("queries")
-public record QueriesConfig(@ConfigProperty("blob.lookupRetries") int blobLookupRetries) {
+public record QueriesConfig(@ConfigProperty(value = "blob.lookupRetries", defaultValue = "3") int blobLookupRetries) {
 
 }

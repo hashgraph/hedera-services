@@ -22,17 +22,17 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("netty")
-public record NettyConfig(@ConfigProperty Profile mode,
-                          @ConfigProperty("prod.flowControlWindow") int prodFlowControlWindow,
-                          @ConfigProperty("prod.maxConcurrentCalls") int prodMaxConcurrentCalls,
-                          @ConfigProperty("prod.maxConnectionAge") long prodMaxConnectionAge,
-                          @ConfigProperty("prod.maxConnectionAgeGrace") long prodMaxConnectionAgeGrace,
-                          @ConfigProperty("prod.maxConnectionIdle") long prodMaxConnectionIdle,
-                          @ConfigProperty("prod.keepAliveTime") long prodKeepAliveTime,
-                          @ConfigProperty("prod.keepAliveTimeout") long prodKeepAliveTimeout,
-                          @ConfigProperty int startRetries,
-                          @ConfigProperty long startRetryIntervalMs,
-                          @ConfigProperty("tlsCrt.path") String tlsCrtPath,
-                          @ConfigProperty("tlsKey.path") String tlsKeyPath) {
+public record NettyConfig(@ConfigProperty(defaultValue = "PROD") Profile mode,
+                          @ConfigProperty(value = "prod.flowControlWindow", defaultValue = "10240") int prodFlowControlWindow,
+                          @ConfigProperty(value = "prod.maxConcurrentCalls", defaultValue = "10") int prodMaxConcurrentCalls,
+                          @ConfigProperty(value = "prod.maxConnectionAge", defaultValue = "15") long prodMaxConnectionAge,
+                          @ConfigProperty(value = "prod.maxConnectionAgeGrace", defaultValue = "5") long prodMaxConnectionAgeGrace,
+                          @ConfigProperty(value = "prod.maxConnectionIdle", defaultValue = "10") long prodMaxConnectionIdle,
+                          @ConfigProperty(value = "prod.keepAliveTime", defaultValue = "10") long prodKeepAliveTime,
+                          @ConfigProperty(value = "prod.keepAliveTimeout", defaultValue = "3") long prodKeepAliveTimeout,
+                          @ConfigProperty(defaultValue = "90") int startRetries,
+                          @ConfigProperty(defaultValue = "1000") long startRetryIntervalMs,
+                          @ConfigProperty(value = "tlsCrt.path", defaultValue = "hedera.crt") String tlsCrtPath,
+                          @ConfigProperty(value = "tlsKey.path", defaultValue = "hedera.key") String tlsKeyPath) {
 
 }

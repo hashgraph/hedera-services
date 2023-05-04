@@ -32,24 +32,25 @@ public record HederaConfig(@ConfigProperty(defaultValue = "1001") long firstUser
                            @ConfigProperty(value = "transaction.minValidityBufferSecs", defaultValue = "10") int transactionMinValidityBufferSecs,
                            @ConfigProperty(value = "recordStream.recordFileVersion", defaultValue = "6") int recordStreamRecordFileVersion,
                            @ConfigProperty(value = "recordStream.signatureFileVersion", defaultValue = "6") int recordStreamSignatureFileVersion,
-                           @ConfigProperty("allowances.maxTransactionLimit") int allowancesMaxTransactionLimit,
-                           @ConfigProperty("allowances.maxAccountLimit") int allowancesMaxAccountLimit,
-                           @ConfigProperty("allowances.isEnabled") boolean allowancesIsEnabled,
-                           @ConfigProperty("recordStream.enableTraceabilityMigration") boolean recordStreamEnableTraceabilityMigration,
-                           @ConfigProperty("recordStream.compressFilesOnCreation") boolean recordStreamCompressFilesOnCreation,
-                           @ConfigProperty String accountsExportPath,
-                           @ConfigProperty boolean exportAccountsOnStartup,
-                           @ConfigProperty("prefetch.queueCapacity") int prefetchQueueCapacity,
-                           @ConfigProperty("prefetch.threadPoolSize") int prefetchThreadPoolSize,
-                           @ConfigProperty("prefetch.codeCacheTtlSecs") int prefetchCodeCacheTtlSecs,
-                           @ConfigProperty("profiles.active") Profile profilesActive,
-                           @ConfigProperty("recordStream.isEnabled") boolean recordStreamIsEnabled,
-                           @ConfigProperty("recordStream.logDir") String recordStreamLogDir,
-                           @ConfigProperty("recordStream.sidecarDir") String recordStreamSideCarDir,
-                           @ConfigProperty("recordStream.logPeriod") long recordStreamLogPeriod,
-                           @ConfigProperty("recordStream.queueCapacity") int recordStreamQueueCapacity,
-                           @ConfigProperty("recordStream.logEveryTransaction") boolean recordStreamLogEveryTransaction,
-                           @ConfigProperty("workflows.enabled") Object workflowsEnabled) {
+                           @ConfigProperty(value = "allowances.maxTransactionLimit", defaultValue = "20") int allowancesMaxTransactionLimit,
+                           @ConfigProperty(value = "allowances.maxAccountLimit", defaultValue = "100") int allowancesMaxAccountLimit,
+                           @ConfigProperty(value = "allowances.isEnabled", defaultValue = "true") boolean allowancesIsEnabled,
+                           @ConfigProperty(value = "recordStream.enableTraceabilityMigration", defaultValue = "true") boolean recordStreamEnableTraceabilityMigration,
+                           @ConfigProperty(value = "recordStream.compressFilesOnCreation", defaultValue = "true") boolean recordStreamCompressFilesOnCreation,
+                           @ConfigProperty(defaultValue = "data/onboard/exportedAccount.txt") String accountsExportPath,
+                           @ConfigProperty(defaultValue = "false") boolean exportAccountsOnStartup,
+                           @ConfigProperty(value = "prefetch.queueCapacity", defaultValue = "70000") int prefetchQueueCapacity,
+                           @ConfigProperty(value = "prefetch.threadPoolSize", defaultValue = "4") int prefetchThreadPoolSize,
+                           @ConfigProperty(value = "prefetch.codeCacheTtlSecs", defaultValue = "600") int prefetchCodeCacheTtlSecs,
+                           @ConfigProperty(value = "profiles.active", defaultValue = "PROD") Profile profilesActive,
+                           @ConfigProperty(value = "recordStream.isEnabled", defaultValue = "true") boolean recordStreamIsEnabled,
+                           @ConfigProperty(value = "recordStream.logDir", defaultValue = "/opt/hgcapp/recordStreams") String recordStreamLogDir,
+                           @ConfigProperty(value = "recordStream.sidecarDir", defaultValue = "sidecar") String recordStreamSideCarDir,
+                           @ConfigProperty(value = "recordStream.logPeriod", defaultValue = "2") long recordStreamLogPeriod,
+                           @ConfigProperty(value = "recordStream.queueCapacity", defaultValue = "5000") int recordStreamQueueCapacity,
+                           @ConfigProperty(value = "recordStream.logEveryTransaction", defaultValue = "false") boolean recordStreamLogEveryTransaction
+                           //@ConfigProperty("workflows.enabled", defaultValue = "") Set<HederaFunctionality> workflowsEnabled
+) {
 
 
 }

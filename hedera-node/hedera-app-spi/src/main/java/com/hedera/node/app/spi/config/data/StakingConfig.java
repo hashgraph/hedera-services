@@ -22,18 +22,18 @@ import com.swirlds.config.api.ConfigProperty;
 import java.util.Map;
 
 @ConfigData("staking")
-public record StakingConfig(@ConfigProperty long periodMins,
-                            @ConfigProperty("rewardHistory.numStoredPeriods") int rewardHistoryNumStoredPeriods,
-                            //ConfigProperty("startupHelper.recompute") Set<StakeStartupHelper.RecomputeType> startupHelperRecompute
-                            @ConfigProperty("fees.nodeRewardPercentage") int feesNodeRewardPercentage,
-                            @ConfigProperty("fees.stakingRewardPercentage") int feesStakingRewardPercentage,
-                            @ConfigProperty Map<Long, Long> nodeMaxToMinStakeRatios,
+public record StakingConfig(@ConfigProperty(defaultValue = "1440") long periodMins,
+                            @ConfigProperty(value = "rewardHistory.numStoredPeriods", defaultValue = "365") int rewardHistoryNumStoredPeriods,
+                            //ConfigProperty(value = "startupHelper.recompute", defaultValue = "NODE_STAKES,PENDING_REWARDS") Set<StakeStartupHelper.RecomputeType> startupHelperRecompute
+                            @ConfigProperty(value = "fees.nodeRewardPercentage", defaultValue = "0") int feesNodeRewardPercentage,
+                            @ConfigProperty(value = "fees.stakingRewardPercentage", defaultValue = "0") int feesStakingRewardPercentage,
+                            @ConfigProperty(defaultValue = "") Map<Long, Long> nodeMaxToMinStakeRatios,
                             @ConfigProperty(defaultValue = "true") boolean isEnabled,
-                            @ConfigProperty long maxDailyStakeRewardThPerH,
+                            @ConfigProperty(defaultValue = "17808") long maxDailyStakeRewardThPerH,
                             @ConfigProperty(defaultValue = "false") boolean requireMinStakeToReward,
                             @ConfigProperty(defaultValue = "0") long rewardRate,
                             @ConfigProperty(defaultValue = "25000000000000000") long startThreshold,
-                            @ConfigProperty int sumOfConsensusWeights
+                            @ConfigProperty(defaultValue = "500") int sumOfConsensusWeights
 ) {
 
 

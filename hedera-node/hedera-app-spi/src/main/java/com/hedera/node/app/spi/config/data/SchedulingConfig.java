@@ -25,6 +25,6 @@ public record SchedulingConfig(@ConfigProperty(defaultValue = "false") boolean l
                                @ConfigProperty(defaultValue = "100") long maxTxnPerSec,
                                @ConfigProperty(defaultValue = "10000000") long maxNumber,
                                @ConfigProperty(defaultValue = "5356800") long maxExpirationFutureSeconds
-                               //@ConfigProperty() Set<HederaFunctionality> whitelist
+                               //@ConfigProperty(defaultValue = "ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,CryptoApproveAllowance") Set<HederaFunctionality> whitelist
 ) {
 }
