@@ -21,7 +21,7 @@ import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("netty")
 public record NettyConfig(
-        //@ConfigProperty(defaultValue = "PROD") Profile mode,
+        // @ConfigProperty(defaultValue = "PROD") Profile mode,
         @ConfigProperty(value = "prod.flowControlWindow", defaultValue = "10240") int prodFlowControlWindow,
         @ConfigProperty(value = "prod.maxConcurrentCalls", defaultValue = "10") int prodMaxConcurrentCalls,
         @ConfigProperty(value = "prod.maxConnectionAge", defaultValue = "15") long prodMaxConnectionAge,
@@ -32,5 +32,4 @@ public record NettyConfig(
         @ConfigProperty(defaultValue = "90") int startRetries,
         @ConfigProperty(defaultValue = "1000") long startRetryIntervalMs,
         @ConfigProperty(value = "tlsCrt.path", defaultValue = "hedera.crt") String tlsCrtPath,
-        @ConfigProperty(value = "tlsKey.path", defaultValue = "hedera.key") String tlsKeyPath) {
-}
+        @ConfigProperty(value = "tlsKey.path", defaultValue = "hedera.key") String tlsKeyPath) {}

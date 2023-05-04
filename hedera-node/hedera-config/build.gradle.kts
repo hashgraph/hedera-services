@@ -15,20 +15,20 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
-    `java-test-fixtures`
+  id("com.hedera.hashgraph.conventions")
+  `java-test-fixtures`
 }
 
 description = "Hedera Configuration"
 
 dependencies {
-    implementation(project(":hedera-node:hedera-mono-service"))
-    implementation(project(":hedera-node:hapi-utils"))
-    implementation(libs.swirlds.config)
-    compileOnlyApi(libs.spotbugs.annotations)
+  implementation(project(":hedera-node:hedera-mono-service"))
+  implementation(project(":hedera-node:hapi-utils"))
+  implementation(libs.swirlds.config)
+  compileOnlyApi(libs.spotbugs.annotations)
 
-    testImplementation(testLibs.bundles.testing)
+  testImplementation(testLibs.bundles.testing)
 
-    testFixturesImplementation(libs.swirlds.test.framework)
-    testFixturesCompileOnlyApi(libs.spotbugs.annotations)
+  testFixturesImplementation(libs.swirlds.test.framework)
+  testFixturesCompileOnlyApi(libs.spotbugs.annotations)
 }
