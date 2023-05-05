@@ -19,6 +19,7 @@ package com.swirlds.platform.event.preconsensus;
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 
 /**
@@ -27,58 +28,69 @@ import java.time.Duration;
 public interface PreConsensusEventWriter extends Startable, Stoppable {
 
     /**
-     * Write an event to the stream.
-     *
-     * @param event
-     * 		the event to be written
-     * @throws InterruptedException
-     * 		if interrupted while waiting on queue to drain
+     * Prior to this method being called, all events added to the preconsensus event stream are assumed to be events
+     * read from the preconsensus event stream on disk. The events from the stream on disk are not re-written to the
+     * disk, and are considered to be durable immediately upon ingest.
      */
-    void writeEvent(EventImpl event) throws InterruptedException;
+    void beginStreamingNewEvents() throws InterruptedException;
 
     /**
-     * Let the event writer know the minimum generation for non-ancient events. Ancient events will be
-     * ignored if added to the event writer.
+     * Write an event to the stream.
      *
-     * @param minimumGenerationNonAncient
-     * 		the minimum generation of a non-ancient event
+     * @param event the event to be written
+     * @throws InterruptedException if interrupted while waiting on queue to drain
+     */
+    void writeEvent(@NonNull EventImpl event) throws InterruptedException;
+
+    /**
+     * Let the event writer know the minimum generation for non-ancient events. Ancient events will be ignored if added
+     * to the event writer.
+     *
+     * @param minimumGenerationNonAncient the minimum generation of a non-ancient event
      */
     void setMinimumGenerationNonAncient(long minimumGenerationNonAncient) throws InterruptedException;
 
     /**
      * Set the minimum generation needed to be kept on disk.
      *
-     * @param minimumGenerationToStore
-     * 		the minimum generation required to be stored on disk
+     * @param minimumGenerationToStore the minimum generation required to be stored on disk
      */
     void setMinimumGenerationToStore(long minimumGenerationToStore);
 
     /**
+     * Request that the event writer perform a flush as soon as all events currently added have been written.
+     *
+     * @throws InterruptedException if interrupted while waiting
+     */
+    void requestFlush() throws InterruptedException;
+
+    /**
      * Check if an event is guaranteed to be durable, i.e. flushed to disk.
+     *
      * @param event the event in question
      * @return true if the event can is guaranteed to be durable
      */
-    boolean isEventDurable(EventImpl event);
+    boolean isEventDurable(@NonNull EventImpl event);
 
     /**
-     * Wait until an event is guaranteed to be durable, i.e. flushed to disk.
+     * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method,
+     * the event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()}
+     * should have been called. Otherwise, this method may block indefinitely.
+     *
      * @param event the event in question
      * @throws InterruptedException if interrupted while waiting
      */
-    void waitUntilDurable(EventImpl event) throws InterruptedException;
+    void waitUntilDurable(@NonNull EventImpl event) throws InterruptedException;
 
     /**
-     * Wait until an event is guaranteed to be durable, i.e. flushed to disk.
-     * @param event the event in question
-     * @param  timeToWait the maximum time to wait
+     * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method,
+     * the event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()}
+     * should have been called. Otherwise, this method may block until the end of its timeout and return false.
+     *
+     * @param event      the event in question
+     * @param timeToWait the maximum time to wait
      * @return true if the event is durable, false if the time to wait has elapsed
      * @throws InterruptedException if interrupted while waiting
      */
-    boolean waitUntilDurable(EventImpl event, final Duration timeToWait) throws InterruptedException;
-
-    /**
-     * Request that the event writer flushes an event to disk as soon as possible.
-     * @param event the event that should be flushed as soon as possible
-     */
-    void requestFlush(EventImpl event);
+    boolean waitUntilDurable(@NonNull EventImpl event, @NonNull final Duration timeToWait) throws InterruptedException;
 }
