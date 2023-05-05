@@ -56,8 +56,8 @@ class RecordStreamSignCommandTest {
     }
 
     @Test
-    @DisplayName("Failure to generate signature file for file record stream")
-    void failureGenerateSignatureFileRecordStream() {
+    @DisplayName("Failure to generate signature file for file record stream with inbvalid key")
+    void failureGenerateSignatureFileRecordStreamWithInvalidKey() {
         // given:
         final var signatureFileDestination = Path.of("testPath");
         final Path fileToSign = loadResourceFile("2023-04-18T14_08_20.465612003Z.rcd");
@@ -69,6 +69,21 @@ class RecordStreamSignCommandTest {
         assertThrows(
                 RuntimeException.class,
                 () -> subject.generateSignatureFile(signatureFileDestination, fileToSign, keyPair));
+    }
+
+    @Test
+    @DisplayName("Failure to generate signature file for file record stream")
+    void failureGenerateSignatureFileRecordStream() {
+        // given:
+        final var signatureFileDestination = Path.of("testPath");
+        final Path fileToSign;
+        fileToSign = signatureFileDestination;
+        final var keyPair = new KeyPair(publicKey, privateKey);
+        // when:
+        subject.setHapiVersion(hapiVersion);
+
+        // then:
+        assertFalse(subject.generateSignatureFile(signatureFileDestination, fileToSign, keyPair));
     }
 
     @Test

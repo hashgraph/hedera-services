@@ -18,6 +18,7 @@ package com.hedera.services.cli.sign.test;
 
 import static com.hedera.services.cli.sign.test.TestUtils.HAPI_VERSION;
 import static com.hedera.services.cli.sign.test.TestUtils.loadResourceFile;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,6 +34,7 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -159,13 +161,19 @@ class RecordStreamSigningUtilsTest {
     @DisplayName("signed file matches original signed file")
     void matchOriginalSignatureFile() throws IOException {
         // given:
-        final var signedFileDestination = Path.of(tmpDir.getPath() + "/2023-04-28T07_49_19.316989740Z.rcd_sig");
-
-        final var fileToSign = loadResourceFile("2023-04-28T07_49_19.316989740Z.rcd");
-        final var origSign = loadResourceFile("2023-04-28T07_49_19.316989740Z.rcd_sig");
+        final var fileToSign = loadResourceFile("2023-04-28T07_49_22.718079003Z.rcd");
+        final var origSign = loadResourceFile("2023-04-28T07_49_22.718079003Z_1.rcd_sig");
+        final var signedFileDestination = Path.of(tmpDir.getPath() + "/2023-04-28T07_49_22.718079003Z.rcd_sig");
         // then:
         assertTrue(RecordStreamSigningUtils.signRecordStreamFile(
-                signedFileDestination, fileToSign, TestUtils.loadKey(), hapiVersion));
-        assertEquals(Files.size(signedFileDestination), Files.size(origSign));
+                signedFileDestination, fileToSign, TestUtils.loadNode0Key(), hapiVersion));
+
+        byte[] signeddata = Files.readAllBytes(signedFileDestination);
+        byte[] origddata = Files.readAllBytes(origSign);
+
+//        System.out.println("signeddata" + Arrays.toString(signeddata));
+//        System.out.println("origddata" + Arrays.toString(origddata));
+
+        assertArrayEquals(signeddata, origddata);
     }
 }

@@ -55,21 +55,6 @@ public class TestUtils {
         }
     }
 
-    static KeyPair loadNode1Key() {
-        try {
-            return FileSigningUtils.loadPfxKey(
-                    Path.of(Objects.requireNonNull(TestUtils.class
-                                    .getClassLoader()
-                                    .getResource("com.hedera.services.cli.sign.test/private-node0001.pfx"))
-                            .toURI()),
-                    "password",
-                    "s-node0001");
-
-        } catch (final URISyntaxException e) {
-            throw new RuntimeException("Failed to get resource", e);
-        }
-    }
-
     static Path loadResourceFile(String resourceFileName) {
         return Path.of(Objects.requireNonNull(TestUtils.class
                         .getClassLoader()
