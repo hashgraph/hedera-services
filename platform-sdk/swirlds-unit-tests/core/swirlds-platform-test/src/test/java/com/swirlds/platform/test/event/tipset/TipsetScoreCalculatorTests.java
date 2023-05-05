@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -197,7 +198,8 @@ class TipsetScoreCalculatorTests {
         final EventFingerprint eventD1 = new EventFingerprint(nodeD, 1, randomHash(random));
         builder.addEvent(eventD1, List.of());
 
-        window.addEventAndGetAdvancementScore(eventA1);
+        assertEquals(0, window.getTheoreticalAdvancementScore(List.of()));
+        assertEquals(0, window.addEventAndGetAdvancementScore(eventA1));
         assertSame(snapshot1, window.getSnapshot());
 
         // Each node creates another event. All nodes use all available other parents except the event from D.
@@ -210,7 +212,8 @@ class TipsetScoreCalculatorTests {
         final EventFingerprint eventD2 = new EventFingerprint(nodeD, 2, randomHash(random));
         builder.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
 
-        window.addEventAndGetAdvancementScore(eventA2);
+        assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA1, eventB1, eventC1)));
+        assertEquals(2, window.addEventAndGetAdvancementScore(eventA2));
 
         // This should have been enough to advance the snapshot window by 1.
         final Tipset snapshot2 = window.getSnapshot();
@@ -233,7 +236,8 @@ class TipsetScoreCalculatorTests {
         final EventFingerprint eventD3 = new EventFingerprint(nodeD, 3, randomHash(random));
         builder.addEvent(eventD3, List.of(eventA2, eventB2, eventC2, eventD2));
 
-        window.addEventAndGetAdvancementScore(eventA3);
+        assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA2, eventB2, eventC2)));
+        assertEquals(2, window.addEventAndGetAdvancementScore(eventA3));
 
         final Tipset snapshot3 = window.getSnapshot();
         assertNotSame(snapshot2, snapshot3);
@@ -255,7 +259,8 @@ class TipsetScoreCalculatorTests {
         final EventFingerprint eventD4 = new EventFingerprint(nodeD, 4, randomHash(random));
         builder.addEvent(eventD4, List.of(eventA3, eventB3, eventD3));
 
-        window.addEventAndGetAdvancementScore(eventA4);
+        assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA3, eventB3, eventD3)));
+        assertEquals(2, window.addEventAndGetAdvancementScore(eventA4));
 
         final Tipset snapshot4 = window.getSnapshot();
         assertNotSame(snapshot3, snapshot4);
@@ -275,7 +280,8 @@ class TipsetScoreCalculatorTests {
         final EventFingerprint eventC5 = new EventFingerprint(nodeC, 5, randomHash(random));
         builder.addEvent(eventC5, List.of(eventA4, eventB4, eventC4, eventD4));
 
-        window.addEventAndGetAdvancementScore(eventA5);
+        assertEquals(3, window.getTheoreticalAdvancementScore(List.of(eventA4, eventB4, eventC4, eventD4)));
+        assertEquals(3, window.addEventAndGetAdvancementScore(eventA5));
 
         final Tipset snapshot5 = window.getSnapshot();
         assertNotSame(snapshot4, snapshot5);
@@ -295,7 +301,8 @@ class TipsetScoreCalculatorTests {
         final EventFingerprint eventC6 = new EventFingerprint(nodeC, 6, randomHash(random));
         builder.addEvent(eventC6, List.of(eventA5, eventB5, eventC5));
 
-        window.addEventAndGetAdvancementScore(eventA6);
+        assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA5, eventB5, eventC5)));
+        assertEquals(2, window.addEventAndGetAdvancementScore(eventA6));
 
         final Tipset snapshot6 = window.getSnapshot();
         assertNotSame(snapshot5, snapshot6);
@@ -314,7 +321,8 @@ class TipsetScoreCalculatorTests {
         final EventFingerprint eventC7 = new EventFingerprint(nodeC, 7, randomHash(random));
         builder.addEvent(eventC7, List.of(eventA6, eventB6, eventC6));
 
-        window.addEventAndGetAdvancementScore(eventA7);
+        assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA6, eventB6, eventC6)));
+        assertEquals(2, window.addEventAndGetAdvancementScore(eventA7));
 
         final Tipset snapshot7 = window.getSnapshot();
         assertNotSame(snapshot6, snapshot7);

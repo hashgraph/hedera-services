@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.tipset;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -88,7 +87,7 @@ public class TipsetScoreCalculator {
      * Create a new tipset window.
      *
      * @param selfId        the ID of the node tracked by this window
-     * @param tipsetBuilder       builds tipsets for individual events
+     * @param tipsetBuilder builds tipsets for individual events
      * @param nodeCount     the number of nodes in the address book
      * @param nodeIdToIndex maps node ID to node index
      * @param indexToWeight maps node index to consensus weight
@@ -178,7 +177,11 @@ public class TipsetScoreCalculator {
      * @param parents the proposed parents of an event
      * @return the advancement score we would get by creating an event with the given parents
      */
-    public long getTheoreticalAdvancementScore(@NonNull final List<EventFingerprint> parents) { // TODO test
+    public long getTheoreticalAdvancementScore(@NonNull final List<EventFingerprint> parents) {
+        if (parents.isEmpty()) {
+            return 0;
+        }
+
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
         for (final EventFingerprint parent : parents) {
             parentTipsets.add(tipsetBuilder.getTipset(parent));
