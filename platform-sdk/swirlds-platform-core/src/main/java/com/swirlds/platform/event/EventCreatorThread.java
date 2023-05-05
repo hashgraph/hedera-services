@@ -65,7 +65,7 @@ public class EventCreatorThread implements Clearable {
         this.random = random;
         this.otherNodes = StreamSupport.stream(addressBook.spliterator(), false)
                 // don't create events with self as other parent
-                .filter(a -> !selfId.equals(a.getId()))
+                .filter(a -> !selfId.matches(a.getId()))
                 .map(a -> NodeId.create(a.getId()))
                 .collect(Collectors.toList());
 

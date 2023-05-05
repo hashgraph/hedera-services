@@ -709,7 +709,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     private void initializeAppClient(final String[] pars, final ObjectMapper objectMapper) throws IOException {
-        if (pars.length < 2 || !selfId.equals(0)) {
+        if (pars.length < 2 || !selfId.matches(0)) {
             return;
         }
 
@@ -781,7 +781,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
             // if single mode only node 0 can submit transactions
             // if not single mode anyone can submit transactions
-            if (!submitConfig.isSingleNodeSubmit() || selfId.equals(0)) {
+            if (!submitConfig.isSingleNodeSubmit() || selfId.matches(0)) {
 
                 if (submitConfig.isSubmitInTurn()) {
                     // Delay the start of transactions by interval multiply by node id

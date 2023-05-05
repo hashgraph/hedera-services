@@ -62,10 +62,8 @@ public record NodeId(long id) implements Comparable<NodeId> {
      *
      * @param id the ID value to compare
      * @return true if this ID value is equal to the supplied value, false otherwise
-     * @deprecated use {@link #equals(Object)} instead.
      */
-    @Deprecated(since = "0.39.0", forRemoval = true)
-    public boolean equals(long id) {
+    public boolean matches(long id) {
         return this.id == id;
     }
 

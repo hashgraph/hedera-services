@@ -251,7 +251,7 @@ public class EventImpl extends AbstractSerializableHashable
         /* number of seconds to add to the base time */
         double sec;
 
-        if (selfId.equals(getCreatorId())) {
+        if (selfId.matches(getCreatorId())) {
             // event by self
             t = getTimeCreated();
             // seconds from self creating an event to the consensus timestamp that event receives

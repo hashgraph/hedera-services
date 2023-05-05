@@ -142,7 +142,7 @@ public class EventTaskCreator {
         if (settings.getRandomEventProbability() > 0 && r.nextInt(settings.getRandomEventProbability()) == 0) {
             final long randomOtherId = r.nextInt(addressBook.getSize());
             // we don't want to create an event with selfId==otherId
-            if (!selfId.equals(randomOtherId)) {
+            if (!selfId.matches(randomOtherId)) {
                 createEvent(randomOtherId);
                 logger.debug(SYNC.getMarker(), "{} created random event otherId:{}", selfId, randomOtherId);
             }
@@ -161,7 +161,7 @@ public class EventTaskCreator {
         }
 
         for (int i = 0; i < addressBook.getSize(); i++) {
-            if (selfId.equals(i)) {
+            if (selfId.matches(i)) {
                 // we don't rescue our own event, this might have been the cause of a reconnect issue
                 continue;
             }
