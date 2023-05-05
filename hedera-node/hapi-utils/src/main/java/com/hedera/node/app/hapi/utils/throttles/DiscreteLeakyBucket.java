@@ -17,7 +17,7 @@
 package com.hedera.node.app.hapi.utils.throttles;
 
 /** A bucket of discrete capacity. */
-class DiscreteLeakyBucket {
+public class DiscreteLeakyBucket {
     private long used;
     private final long capacity;
 
@@ -42,7 +42,7 @@ class DiscreteLeakyBucket {
         return used;
     }
 
-    long totalCapacity() {
+    public long totalCapacity() {
         return capacity;
     }
 
