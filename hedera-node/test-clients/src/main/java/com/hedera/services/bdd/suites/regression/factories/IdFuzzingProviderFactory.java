@@ -86,7 +86,7 @@ public class IdFuzzingProviderFactory {
         };
     }
 
-    private static HapiSpecOperation[] onlyEcdsaKeys() {
+    public static HapiSpecOperation[] onlyEcdsaKeys() {
         return IntStream.range(0, NUM_DISTINCT_ECDSA_KEYS)
                 .mapToObj(i -> newKeyNamed("Fuzz#" + i).shape(SigControl.SECP256K1_ON))
                 .toArray(HapiSpecOperation[]::new);
