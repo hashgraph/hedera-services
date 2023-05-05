@@ -29,5 +29,5 @@ public interface TransactionSupplier {
      *
      * @return an array with 0 or more transactions
      */
-    ConsensusTransactionImpl[] getTransactions();
+    ConsensusTransactionImpl[] getTransactions(); // TODO convert away from using an array... yuck
 }

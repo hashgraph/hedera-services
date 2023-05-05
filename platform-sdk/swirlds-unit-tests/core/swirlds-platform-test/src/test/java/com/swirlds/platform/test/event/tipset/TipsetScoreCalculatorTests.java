@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.LongStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -183,8 +182,8 @@ class TipsetScoreCalculatorTests {
         final int nodeD = 3;
 
         final TipsetBuilder builder = new TipsetBuilder(nodeCount, x -> (int) x, x -> 1);
-        final TipsetScoreCalculator window = new TipsetScoreCalculator(
-                nodeA, builder, nodeCount, x -> (int) x, x -> 1, 4);
+        final TipsetScoreCalculator window =
+                new TipsetScoreCalculator(nodeA, builder, nodeCount, x -> (int) x, x -> 1, 4);
 
         final Tipset snapshot1 = window.getSnapshot();
 
