@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.txns.TransactionLastStep;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -74,6 +75,13 @@ public interface HandleWorkflowModule {
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
         return () -> (AutoCloseableWrapper) platform.getLatestImmutableState(HandleWorkflowModule.class.getName());
+    }
+
+    @Provides
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    static NonAtomicReference<HederaState> provideMutableStateSupplier(@NonNull final Platform platform) {
+        // Always return the latest mutable state until we support state proofs
+        return new NonAtomicReference<>();
     }
 
     @Provides

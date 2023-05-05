@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -100,6 +101,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
@@ -109,6 +111,7 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
@@ -316,6 +319,9 @@ class MonoTransactionDispatcherTest {
     private WritableTokenStore writableTokenStore;
 
     @Mock
+    private WritableAccountStore writableAccountStore;
+
+    @Mock
     private WritableTokenRelationStore writableTokenRelStore;
 
     @Mock
@@ -329,6 +335,8 @@ class MonoTransactionDispatcherTest {
 
     @Mock
     private Account account;
+
+    private SideEffectsTracker sideEffectsTracker = new SideEffectsTracker();
 
     private TransactionHandlers handlers;
     private TransactionDispatcher dispatcher;
@@ -388,17 +396,19 @@ class MonoTransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new MonoTransactionDispatcher(txnCtx, handlers, usageLimits);
+        dispatcher = new MonoTransactionDispatcher(txnCtx, handlers, usageLimits, sideEffectsTracker);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(null, handlers, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(null, handlers, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(txnCtx, null, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(txnCtx, null, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(txnCtx, handlers, null))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(txnCtx, handlers, null, sideEffectsTracker))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(txnCtx, handlers, usageLimits, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -561,6 +571,67 @@ class MonoTransactionDispatcherTest {
         dispatcher.dispatchHandle(handleContext);
 
         verify(writableTokenStore).commit();
+    }
+
+    @Test
+    void dispatchesCryptoCreateAsExpected() {
+        final var createBuilder = mock(CreateAccountRecordBuilder.class);
+
+        given(cryptoCreateHandler.newRecordBuilder()).willReturn(createBuilder);
+        given(createBuilder.getCreatedAccount()).willReturn(666L);
+        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+
+        dispatcher.dispatchHandle(HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory);
+
+        verify(txnCtx)
+                .setCreated(PbjConverter.fromPbj(
+                        AccountID.newBuilder().accountNum(666L).build()));
+        verify(writableAccountStore).commit();
+    }
+
+    @Test
+    void doesntCommitWhenUsageLimitsExceeded() {
+        final var createBuilder = mock(CreateAccountRecordBuilder.class);
+
+        given(cryptoCreateHandler.newRecordBuilder()).willReturn(createBuilder);
+        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(false);
+
+        assertThatThrownBy(() -> dispatcher.dispatchHandle(
+                        HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory))
+                .isInstanceOf(HandleException.class);
+
+        verify(txnCtx, never())
+                .setCreated(PbjConverter.fromPbj(
+                        AccountID.newBuilder().accountNum(666L).build()));
+        verify(writableAccountStore, never()).commit();
+    }
+
+    @Test
+    void dispatchesUtilPrngAsExpectedWithPrngBytes() {
+        final var mockRecordBuilder = mock(UtilPrngRecordBuilder.class);
+        given(utilPrngHandler.newRecordBuilder()).willReturn(mockRecordBuilder);
+        given(mockRecordBuilder.hasPrngBytes()).willReturn(true);
+        given(mockRecordBuilder.getPrngBytes()).willReturn(Bytes.wrap("test".getBytes()));
+
+        dispatcher.dispatchHandle(HederaFunctionality.UTIL_PRNG, transactionBody, writableStoreFactory);
+
+        assertEquals(-1, sideEffectsTracker.getPseudorandomNumber());
+        assertArrayEquals("test".getBytes(), sideEffectsTracker.getPseudorandomBytes());
+    }
+
+    @Test
+    void dispatchesUtilPrngAsExpectedWithPrngNumber() {
+        final var mockRecordBuilder = mock(UtilPrngRecordBuilder.class);
+        given(utilPrngHandler.newRecordBuilder()).willReturn(mockRecordBuilder);
+        given(mockRecordBuilder.hasPrngNumber()).willReturn(true);
+        given(mockRecordBuilder.getPrngNumber()).willReturn(123);
+
+        dispatcher.dispatchHandle(HederaFunctionality.UTIL_PRNG, transactionBody, writableStoreFactory);
+
+        assertEquals(123, sideEffectsTracker.getPseudorandomNumber());
+        assertNull(sideEffectsTracker.getPseudorandomBytes());
     }
 
     @Test

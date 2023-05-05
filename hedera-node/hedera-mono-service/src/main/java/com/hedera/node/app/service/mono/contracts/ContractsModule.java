@@ -27,6 +27,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessorV038;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperationExternalizer;
@@ -63,10 +64,13 @@ import dagger.multibindings.StringKey;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
@@ -192,15 +196,6 @@ public interface ContractsModule {
     @Provides
     @Singleton
     @IntoMap
-    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
-    static ContractCreationProcessor provideV_0_30ContractCreateProcessor(
-            final GasCalculator gasCalculator, final @V_0_30 EVM evm, Set<ContractValidationRule> validationRules) {
-        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
-    }
-
-    @Provides
-    @Singleton
-    @IntoMap
     @StringKey(ContractsV_0_34Module.EVM_VERSION_0_34)
     static MessageCallProcessor provideV_0_34MessageCallProcessor(
             final @V_0_34 EVM evm,
@@ -218,8 +213,19 @@ public interface ContractsModule {
             final @V_0_38 EVM evm,
             final @V_0_38 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
-            final InfrastructureFactory infrastructureFactory) {
-        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList, infrastructureFactory);
+            final InfrastructureFactory infrastructureFactory,
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
+        return new HederaMessageCallProcessorV038(
+                evm, precompiles, hederaPrecompileList, infrastructureFactory, hederaSystemAccountDetector);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
+    static ContractCreationProcessor provideV_0_30ContractCreateProcessor(
+            final GasCalculator gasCalculator, final @V_0_30 EVM evm, Set<ContractValidationRule> validationRules) {
+        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
     }
 
     @Provides
@@ -252,5 +258,37 @@ public interface ContractsModule {
             final AliasManager aliasManager) {
         return () -> new CallLocalEvmTxProcessor(
                 codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+    }
+
+    @Provides
+    @Singleton
+    @Named("HederaPrecompiledContractsDetector")
+    static Predicate<Address> provideHederaPrecompiledContractsDetector() {
+        // all addresses between 0-750 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
+        return address -> address.numberOfLeadingZeroBytes() >= 18
+                && (Integer.compareUnsigned(address.getInt(16), 359) == 0
+                        || Integer.compareUnsigned(address.getInt(16), 360) == 0
+                        || Integer.compareUnsigned(address.getInt(16), 361) == 0);
+    }
+
+    @Provides
+    @Singleton
+    @Named("HederaSystemAccountDetector")
+    static Predicate<Address> provideHederaSystemAccountDetector() {
+        // all addresses between 0-750 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
+        return address ->
+                address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 750) <= 0;
+    }
+
+    @Provides
+    @Singleton
+    @Named("StrictHederaSystemAccountDetector")
+    static Predicate<Address> provideStrictHederaSystemAccountDetector() {
+        // all addresses between 0-999 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing ExtCode operations
+        return address ->
+                address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 999) <= 0;
     }
 }

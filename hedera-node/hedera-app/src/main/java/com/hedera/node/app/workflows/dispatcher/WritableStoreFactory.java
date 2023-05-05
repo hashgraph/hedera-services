@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -47,6 +48,7 @@ public class WritableStoreFactory {
             ),
             TokenService.NAME,
             Map.of(
+                    WritableAccountStore.class, WritableAccountStore::new,
                     WritableTokenStore.class, WritableTokenStore::new,
                     WritableTokenRelationStore.class, WritableTokenRelationStore::new
             )
