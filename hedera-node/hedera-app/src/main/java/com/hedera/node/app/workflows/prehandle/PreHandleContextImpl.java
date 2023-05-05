@@ -81,7 +81,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
         this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
 
-        this.accountStore = storeFactory.createStore(ReadableAccountStore.class);
+        this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
 
         // Find the account, which must exist or throw a PreCheckException with the given response code.
         final var account = accountStore.getAccountById(payer);
@@ -95,7 +95,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Override
     @NonNull
     public <C> C createStore(@NonNull Class<C> storeInterface) {
-        return storeFactory.createStore(storeInterface);
+        return storeFactory.getStore(storeInterface);
     }
 
     @Override

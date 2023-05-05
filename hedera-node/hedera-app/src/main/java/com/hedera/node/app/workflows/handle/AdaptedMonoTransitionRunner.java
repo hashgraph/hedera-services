@@ -19,6 +19,8 @@ package com.hedera.node.app.workflows.handle;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.meta.MonoHandleContext;
+import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
@@ -26,6 +28,8 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.txns.TransitionRunner;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,7 +47,8 @@ import javax.inject.Singleton;
 public class AdaptedMonoTransitionRunner extends TransitionRunner {
     private final TransactionDispatcher dispatcher;
     private final Set<HederaFunctionality> functionsToDispatch;
-    private final WritableStoreFactory writableStoreFactory;
+    private final ExpiryValidator expiryValidator;
+    private final AttributeValidator attributeValidator;
 
     @Inject
     public AdaptedMonoTransitionRunner(
@@ -52,13 +57,15 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final TransitionLogicLookup lookup,
             @NonNull final GlobalStaticProperties staticProperties,
-            @NonNull final WritableStoreFactory storeFactory) {
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final AttributeValidator attributeValidator) {
         super(ids, txnCtx, lookup);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.functionsToDispatch = Objects.requireNonNull(staticProperties).workflowsEnabled().stream()
                 .map(PbjConverter::toPbj)
                 .collect(Collectors.toSet());
-        this.writableStoreFactory = Objects.requireNonNull(storeFactory);
+        this.expiryValidator = Objects.requireNonNull(expiryValidator);
+        this.attributeValidator = Objects.requireNonNull(attributeValidator);
     }
 
     /**
@@ -68,8 +75,12 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
     public boolean tryTransition(final @NonNull TxnAccessor accessor) {
         final var function = PbjConverter.toPbj(accessor.getFunction());
         if (functionsToDispatch.contains(function)) {
+            final var txBody = PbjConverter.toPbj(accessor.getTxn());
+            final var recordBuilder = new SingleTransactionRecordBuilder();
+            final var context = new MonoHandleContext(txBody, ids, expiryValidator, attributeValidator, txnCtx,
+                    recordBuilder);
             try {
-                dispatcher.dispatchHandle(function, PbjConverter.toPbj(accessor.getTxn()), writableStoreFactory);
+                dispatcher.dispatchHandle(context);
                 txnCtx.setStatus(SUCCESS);
             } catch (final HandleException e) {
                 super.resolveFailure(PbjConverter.fromPbj(e.getStatus()), accessor, e);

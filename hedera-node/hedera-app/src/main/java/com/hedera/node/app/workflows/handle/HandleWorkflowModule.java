@@ -24,9 +24,9 @@ import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactor
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.txns.TransactionLastStep;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
@@ -68,10 +68,6 @@ public interface HandleWorkflowModule {
     @Binds
     @Singleton
     AttributeValidator bindAttributeValidator(StandardizedAttributeValidator attributeValidator);
-
-    @Binds
-    @Singleton
-    WritableStoreFactory bindWritableStoreFactory(WorkingStateWritableStoreFactory writableStoreFactory);
 
     @Provides
     @SuppressWarnings({"unchecked", "rawtypes"})

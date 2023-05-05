@@ -82,7 +82,7 @@ public interface PreHandleContext {
      * Create a new store given the store's interface. This gives read-only access to the store.
      *
      * @param storeInterface The store interface to find and create a store for
-     * @return An implementation of store interface provided, or null if the store
+     * @return An implementation of the provided store interface
      * @param <C> Interface class for a Store
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
      * @throws NullPointerException if {@code storeInterface} is {@code null}

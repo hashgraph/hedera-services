@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.AdapterUt
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusCreateTopicHandlerTest.ACCOUNT_ID_3;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
@@ -30,15 +29,16 @@ import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenario
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_SCENARIO;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.Key;
@@ -53,13 +53,13 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.TopicMetadata;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.config.GlobalDynamicConfig;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -80,10 +80,14 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     @Mock
     private ReadableAccountStore accountStore;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
-    private ConsensusServiceConfig config;
+    @Mock(strictness = LENIENT)
+    private GlobalDynamicConfig config;
+
+    @Mock(answer = RETURNS_SELF)
+    private ConsensusSubmitMessageRecordBuilder recordBuilder;
 
     private ConsensusSubmitMessageHandler subject;
 
@@ -91,13 +95,18 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     void setUp() {
         commonSetUp();
         subject = new ConsensusSubmitMessageHandler();
-        config = new ConsensusServiceConfig(10L, 100);
+        given(config.maxNumTopics()).willReturn(10L);
+        given(config.messageMaxBytesAllowed()).willReturn(100);
 
         writableTopicState = writableTopicStateWithOneKey();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         writableStore = new WritableTopicStore(writableStates);
+        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
+
+        given(handleContext.config()).willReturn(config);
+        given(handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class)).willReturn(recordBuilder);
     }
 
     @Test
@@ -203,22 +212,16 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    @DisplayName("Correct RecordBuilder type returned")
-    void returnsExpectedRecordBuilderType() {
-        assertInstanceOf(ConsensusSubmitMessageRecordBuilder.class, subject.newRecordBuilder());
-    }
-
-    @Test
     @DisplayName("Handle works as expected")
     void handleWorksAsExpected() {
         givenValidTopic();
         final var txn = newDefaultSubmitMessageTxn(topicEntityNum);
+        given(handleContext.body()).willReturn(txn);
 
-        final var recordBuilder = subject.newRecordBuilder();
         given(handleContext.consensusNow()).willReturn(consensusTimestamp);
 
         final var initialTopic = writableTopicState.get(topicEntityNum);
-        subject.handle(handleContext, txn, config, recordBuilder, writableStore);
+        subject.handle(handleContext);
 
         final var expectedTopic = writableTopicState.get(topicEntityNum);
         assertNotEquals(initialTopic, expectedTopic);
@@ -233,12 +236,12 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     void handleWorksAsExpectedIfConsensusTimeIsNull() {
         givenValidTopic();
         final var txn = newDefaultSubmitMessageTxn(topicEntityNum);
+        given(handleContext.body()).willReturn(txn);
 
-        final var recordBuilder = subject.newRecordBuilder();
         given(handleContext.consensusNow()).willReturn(null);
 
         final var initialTopic = writableTopicState.get(topicEntityNum);
-        subject.handle(handleContext, txn, config, recordBuilder, writableStore);
+        subject.handle(handleContext);
 
         final var expectedTopic = writableTopicState.get(topicEntityNum);
         assertNotEquals(initialTopic, expectedTopic);
@@ -246,9 +249,9 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         assertNotEquals(
                 initialTopic.runningHash().toString(),
                 expectedTopic.runningHash().toString());
-        assertArrayEquals(asBytes(expectedTopic.runningHash()), recordBuilder.getNewTopicRunningHash());
-        assertEquals(expectedTopic.sequenceNumber(), recordBuilder.getNewTopicSequenceNumber());
-        assertEquals(RUNNING_HASH_VERSION, recordBuilder.getUsedRunningHashVersion());
+        verify(recordBuilder).topicRunningHash(expectedTopic.runningHash());
+        verify(recordBuilder).topicSequenceNumber(expectedTopic.sequenceNumber());
+        verify(recordBuilder).topicRunningHashVersion(RUNNING_HASH_VERSION);
     }
 
     @Test
@@ -256,11 +259,10 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     void failsIfMessageIsEmpty() {
         givenValidTopic();
         final var txn = newSubmitMessageTxn(topicEntityNum, "");
-
-        final var recordBuilder = subject.newRecordBuilder();
+        given(handleContext.body()).willReturn(txn);
 
         final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_TOPIC_MESSAGE, msg.getStatus());
     }
 
@@ -270,12 +272,12 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         givenValidTopic();
         final var txn = newSubmitMessageTxn(
                 topicEntityNum, TxnUtils.randomUtf8Bytes(2000).toString());
-
-        final var recordBuilder = subject.newRecordBuilder();
-        config = new ConsensusServiceConfig(10, 5);
+        given(handleContext.body()).willReturn(txn);
+        given(config.maxNumTopics()).willReturn(10L);
+        given(config.messageMaxBytesAllowed()).willReturn(5);
 
         final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE, msg.getStatus());
     }
 
@@ -284,11 +286,10 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     void failsIfTopicIDInvalid() {
         givenValidTopic();
         final var txn = newDefaultSubmitMessageTxn(MISSING_NUM);
-
-        final var recordBuilder = subject.newRecordBuilder();
+        given(handleContext.body()).willReturn(txn);
 
         final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_TOPIC_ID, msg.getStatus());
     }
 
@@ -303,11 +304,10 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     void failsIfChunkNumberIsInvalid() {
         givenValidTopic();
         final var txn = newSubmitMessageTxnWithChunks(topicEntityNum, 2, 1);
-
-        final var recordBuilder = subject.newRecordBuilder();
+        given(handleContext.body()).willReturn(txn);
 
         final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
     }
 
@@ -316,11 +316,10 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     void failsIfChunkNumberInvalid() {
         givenValidTopic();
         final var txn = newSubmitMessageTxnWithChunks(topicEntityNum, 0, 1);
-
-        final var recordBuilder = subject.newRecordBuilder();
+        given(handleContext.body()).willReturn(txn);
 
         final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
     }
 
@@ -331,11 +330,10 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var chunkTxnId =
                 TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build();
         final var txn = newSubmitMessageTxnWithChunksAndPayer(topicEntityNum, 2, 2, chunkTxnId);
-
-        final var recordBuilder = subject.newRecordBuilder();
+        given(handleContext.body()).willReturn(txn);
 
         final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
     }
 
@@ -346,11 +344,10 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var chunkTxnId =
                 TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build();
         final var txn = newSubmitMessageTxnWithChunksAndPayer(topicEntityNum, 1, 2, chunkTxnId);
-
-        final var recordBuilder = subject.newRecordBuilder();
+        given(handleContext.body()).willReturn(txn);
 
         final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
     }
 

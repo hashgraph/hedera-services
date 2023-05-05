@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.records.RecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -33,16 +31,6 @@ public interface TransactionHandler {
      * @throws PreCheckException if the transaction is invalid
      */
     void preHandle(@NonNull final PreHandleContext context) throws PreCheckException;
-
-    /**
-     * Returns an instance of the transaction-specific {@link RecordBuilder}.
-     *
-     * @return an instance of the transaction-specific {@link RecordBuilder}
-     * @param <R> the type of the transaction-specific {@link RecordBuilder}
-     */
-    default <R extends RecordBuilder<R>> R newRecordBuilder() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
 
     /**
      * Handles a transaction

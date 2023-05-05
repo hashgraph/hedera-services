@@ -26,6 +26,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -39,14 +40,21 @@ public class WritableStoreFactory {
 
     // This is the hard-coded part that needs to be replaced by a dynamic approach later,
     // e.g. services have to register their stores
-    private static final Map<Class<?>, StoreEntry> STORE_FACTORY = Map.of(
-            WritableTopicStore.class, new StoreEntry(ConsensusService.NAME, WritableTopicStore::new),
-            WritableTokenStore.class, new StoreEntry(TokenService.NAME, WritableTokenStore::new),
-            WritableTokenRelationStore.class, new StoreEntry(TokenService.NAME, WritableTokenRelationStore::new)
+    private static final Map<String, Map<Class<?>, Function<WritableStates, ?>>> STORE_FACTORY = Map.of(
+            ConsensusService.NAME,
+            Map.of(
+                    WritableTopicStore.class, WritableTopicStore::new
+            ),
+            TokenService.NAME,
+            Map.of(
+                    WritableTokenStore.class, WritableTokenStore::new,
+                    WritableTokenRelationStore.class, WritableTokenRelationStore::new
+            )
     );
 
-    private final HederaState state;
-    private final String serviceName;
+    private final Map<Class<?>, Function<WritableStates, ?>> storeFactories;
+    private final WritableStates states;
+    private final Map<Class<?>, Object> stores = new HashMap<>();
 
     /**
      * Constructor of {@code ReadableStoreFactory}
@@ -54,8 +62,15 @@ public class WritableStoreFactory {
      * @param state the {@link HederaState} to use
      */
     public WritableStoreFactory(@NonNull final HederaState state, @NonNull final String serviceName) {
-        this.state = requireNonNull(state, "The argument 'state' cannot be null!");
-        this.serviceName = requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
+        requireNonNull(state, "The argument 'state' cannot be null!");
+        requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
+
+        this.storeFactories = STORE_FACTORY.get(serviceName);
+        if (storeFactories == null) {
+            throw new IllegalArgumentException("No store factories for the given service name are available");
+        }
+
+        this.states = state.createWritableStates(serviceName);
     }
 
     /**
@@ -68,17 +83,20 @@ public class WritableStoreFactory {
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
     @NonNull
-    public <C> C createStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
+    public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
-        final var entry = STORE_FACTORY.get(storeInterface);
-        if (entry != null && !entry.name.equals(serviceName)) {
-            final var writableStates = state.createWritableStates(entry.name);
-            final var store = entry.factory.apply(writableStates);
+        final var store = stores.computeIfAbsent(storeInterface, this::createStore);
+        return storeInterface.cast(store);
+    }
+
+    @NonNull
+    private <C> C createStore(@NonNull Class<C> storeInterface) {
+        final var factory = storeFactories.get(storeInterface);
+        if (factory != null) {
+            final var store = factory.apply(states);
             assert storeInterface.isInstance(store); // This needs to be ensured while stores are registered
             return storeInterface.cast(store);
         }
         throw new IllegalArgumentException("No store of the given class is available");
     }
-
-    private record StoreEntry(@NonNull String name, @NonNull Function<WritableStates, ?> factory) {}
 }

@@ -32,7 +32,6 @@ import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -48,10 +47,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -72,6 +71,9 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Mock
     private ReadableTopicStore mockStore;
+
+    @Mock
+    private HandleContext handleContext;
 
     private ConsensusDeleteTopicHandler subject;
 
@@ -100,11 +102,6 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         assertThat(context.payerKey()).isEqualTo(payerKey);
         final var expectedHederaAdminKey = SIMPLE_KEY_A;
         assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(expectedHederaAdminKey);
-    }
-
-    @Test
-    void returnsExpectedRecordBuilderType() {
-        assertInstanceOf(ConsensusDeleteTopicRecordBuilder.class, subject.newRecordBuilder());
     }
 
     @Test
@@ -154,20 +151,23 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Fails handle if topic doesn't exist")
     void topicDoesntExist() {
-        final var txn = newDeleteTxn().consensusDeleteTopicOrThrow();
+        final var txn = newDeleteTxn();
+        given(handleContext.body()).willReturn(txn);
 
         writableTopicState = emptyWritableTopicState();
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
         writableStore = new WritableTopicStore(writableStates);
+        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_TOPIC_ID, msg.getStatus());
     }
 
     @Test
     @DisplayName("Fails handle if admin key doesn't exist on topic to be deleted")
     void adminKeyDoesntExist() {
-        final var txn = newDeleteTxn().consensusDeleteTopicOrThrow();
+        final var txn = newDeleteTxn();
+        given(handleContext.body()).willReturn(txn);
 
         topic = new Topic(
                 topicId.topicNum(),
@@ -184,8 +184,9 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         writableTopicState = writableTopicStateWithOneKey();
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
         writableStore = new WritableTopicStore(writableStates);
+        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
         assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
     }
@@ -193,13 +194,15 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Handle works as expected")
     void handleWorksAsExpected() {
-        final var txn = newDeleteTxn().consensusDeleteTopicOrThrow();
+        final var txn = newDeleteTxn();
+        given(handleContext.body()).willReturn(txn);
 
         final var existingTopic = writableStore.get(topicEntityNum.longValue());
         assertTrue(existingTopic.isPresent());
         assertFalse(existingTopic.get().deleted());
+        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
-        subject.handle(txn, writableStore);
+        subject.handle(handleContext);
 
         final var changedTopic = writableStore.get(topicEntityNum.longValue());
 

@@ -24,9 +24,9 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -70,19 +70,18 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * @param txn           the {@link TransactionBody} of the active transaction
-     * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
+     * @param handleContext the {@link HandleContext} of the transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull TransactionBody txn, @NonNull WritableTokenRelationStore tokenRelStore) {
-        requireNonNull(txn);
-        requireNonNull(tokenRelStore);
+    public void handle(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext);
 
-        final var op = txn.tokenRevokeKycOrThrow();
+        final var op = handleContext.body().tokenRevokeKycOrThrow();
         pureChecks(op);
 
         final var tokenId = op.tokenOrThrow().tokenNum();
         final var accountId = op.accountOrElse(AccountID.DEFAULT).accountNumOrThrow();
+        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var tokenRel = tokenRelStore.getForModify(tokenId, accountId);
 
         final var tokenRelBuilder = tokenRel.orElseThrow().copyBuilder();

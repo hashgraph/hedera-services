@@ -18,25 +18,27 @@ package com.hedera.node.app.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.willThrow;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.AdaptedMonoTransitionRunner;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
@@ -49,7 +51,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AdaptedMonoTransitionRunnerTest {
-    private final TransactionBody mockTxn = TransactionBody.getDefaultInstance();
+    private final TransactionBody mockTxn = TransactionBody.newBuilder()
+            .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.getDefaultInstance())
+            .build();
 
     @Mock
     private EntityIdSource ids;
@@ -70,14 +74,18 @@ class AdaptedMonoTransitionRunnerTest {
     private TxnAccessor accessor;
 
     @Mock
-    private WorkingStateWritableStoreFactory storeFactory;
+    private ExpiryValidator expiryValidator;
+
+    @Mock
+    private AttributeValidator attributeValidator;
 
     private AdaptedMonoTransitionRunner subject;
 
     @BeforeEach
     void setUp() {
         given(staticProperties.workflowsEnabled()).willReturn(Set.of(ConsensusCreateTopic));
-        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup, staticProperties, storeFactory);
+        subject = new AdaptedMonoTransitionRunner(
+                ids, txnCtx, dispatcher, lookup, staticProperties, expiryValidator, attributeValidator);
     }
 
     @Test
@@ -87,7 +95,7 @@ class AdaptedMonoTransitionRunnerTest {
 
         subject.tryTransition(accessor);
 
-        verify(dispatcher).dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), storeFactory);
+        verify(dispatcher).dispatchHandle(any());
         verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
     }
 
@@ -97,11 +105,11 @@ class AdaptedMonoTransitionRunnerTest {
         given(accessor.getTxn()).willReturn(mockTxn);
         willThrow(new HandleException(INVALID_EXPIRATION_TIME))
                 .given(dispatcher)
-                .dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), storeFactory);
+                .dispatchHandle(any());
 
         assertTrue(subject.tryTransition(accessor));
 
-        verify(dispatcher).dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), storeFactory);
+        verify(dispatcher).dispatchHandle(any());
         verify(txnCtx).setStatus(fromPbj(INVALID_EXPIRATION_TIME));
     }
 

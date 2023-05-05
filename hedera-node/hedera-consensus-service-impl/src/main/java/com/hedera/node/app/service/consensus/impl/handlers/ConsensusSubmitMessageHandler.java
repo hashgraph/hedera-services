@@ -38,8 +38,7 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -86,27 +85,19 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * Given the appropriate context, submits a message to a topic.
      *
      * @param handleContext the {@link HandleContext} for the active transaction
-     * @param txn the {@link TransactionBody} of the active transaction
-     * @param config the {@link ConsensusServiceConfig} for the active transaction
-     * @param recordBuilder the {@link ConsensusSubmitMessageRecordBuilder} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(
-            @NonNull final HandleContext handleContext,
-            @NonNull final TransactionBody txn,
-            @NonNull final ConsensusServiceConfig config,
-            @NonNull final ConsensusSubmitMessageRecordBuilder recordBuilder,
-            @NonNull final WritableTopicStore topicStore) {
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext);
-        requireNonNull(txn);
-        requireNonNull(config);
-        requireNonNull(recordBuilder);
-        requireNonNull(topicStore);
 
+        final var txn = handleContext.body();
         final var op = txn.consensusSubmitMessageOrThrow();
-        final var topic =
-                topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT).topicNum());
+        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
+        final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT).topicNum());
         /* Validate all needed fields in the transaction */
+        final var config = new ConsensusServiceConfig(
+                handleContext.config().maxNumTopics(), handleContext.config().messageMaxBytesAllowed());
         validateTransaction(txn, config, topic);
 
         /* since we have validated topic exists, topic.get() is safe to be called */
@@ -117,8 +108,10 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             It will not be committed to state until commit is called on the state.--- */
             topicStore.put(updatedTopic);
 
-            recordBuilder.setNewTopicMetadata(
-                    asBytes(updatedTopic.runningHash()), updatedTopic.sequenceNumber(), RUNNING_HASH_VERSION);
+            final var recordBuilder = handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class);
+            recordBuilder.topicRunningHash(updatedTopic.runningHash())
+                    .topicSequenceNumber(updatedTopic.sequenceNumber())
+                    .topicRunningHashVersion(RUNNING_HASH_VERSION);
         } catch (IOException e) {
             throw new HandleException(INVALID_TRANSACTION);
         }
@@ -243,12 +236,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             topicBuilder.runningHash(runningHash);
         }
         return topicBuilder.build();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public ConsensusSubmitMessageRecordBuilder newRecordBuilder() {
-        return new SubmitMessageRecordBuilder();
     }
 
     public static byte[] noThrowSha384HashOf(final byte[] byteArray) {

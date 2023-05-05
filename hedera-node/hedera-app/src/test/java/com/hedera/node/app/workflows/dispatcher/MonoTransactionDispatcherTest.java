@@ -20,10 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -33,7 +31,6 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
@@ -83,15 +80,13 @@ import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
+import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
@@ -140,12 +135,13 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -332,9 +328,6 @@ class MonoTransactionDispatcherTest {
     private TransactionContext txnCtx;
 
     @Mock
-    private TransactionBody transactionBody;
-
-    @Mock
     private Account account;
 
     private TransactionHandlers handlers;
@@ -345,7 +338,7 @@ class MonoTransactionDispatcherTest {
         when(state.createReadableStates(any())).thenReturn(readableStates);
         when(readableAccountStore.getAccountById(any(AccountID.class))).thenReturn(account);
         lenient().when(account.key()).thenReturn(payerKey);
-        when(readableStoreFactory.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
+        when(readableStoreFactory.getStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
 
         handlers = new TransactionHandlers(
                 consensusCreateTopicHandler,
@@ -395,24 +388,17 @@ class MonoTransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, usageLimits);
+        dispatcher = new MonoTransactionDispatcher(txnCtx, handlers, usageLimits);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(null, txnCtx, handlers, dynamicProperties, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(null, handlers, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new MonoTransactionDispatcher(handleContext, null, handlers, dynamicProperties, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(txnCtx, null, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new MonoTransactionDispatcher(handleContext, txnCtx, null, dynamicProperties, usageLimits))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, null, usageLimits))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, null))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(txnCtx, handlers, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -471,108 +457,118 @@ class MonoTransactionDispatcherTest {
 
     @Test
     void dispatchesCreateTopicAsExpected() {
-        final var createBuilder = mock(ConsensusCreateTopicRecordBuilder.class);
+        final var txnBody = TransactionBody.newBuilder()
+                .consensusCreateTopic(ConsensusCreateTopicTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
 
-        given(consensusCreateTopicHandler.newRecordBuilder()).willReturn(createBuilder);
-        given(dynamicProperties.maxNumTopics()).willReturn(123L);
-        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
-        given(createBuilder.getCreatedTopic()).willReturn(666L);
-        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
+        final var topicID = TopicID.newBuilder().topicNum(666L).build();
+        final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
+        given(recordBuilder.topicID()).willReturn(topicID);
+        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
 
-        dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(handleContext);
 
-        verify(txnCtx)
-                .setCreated(
-                        PbjConverter.fromPbj(TopicID.newBuilder().topicNum(666L).build()));
+        verify(txnCtx).setCreated(PbjConverter.fromPbj(topicID));
         verify(writableTopicStore).commit();
     }
 
     @Test
     void dispatchesUpdateTopicAsExpected() {
-        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
+        final var txnBody = TransactionBody.newBuilder()
+                .consensusUpdateTopic(ConsensusUpdateTopicTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
 
-        dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_UPDATE_TOPIC, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(handleContext);
 
         verifyNoInteractions(txnCtx);
     }
 
     @Test
     void dispatchesDeleteTopicAsExpected() {
-        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
+        final var txnBody = TransactionBody.newBuilder()
+                .consensusDeleteTopic(ConsensusDeleteTopicTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
 
-        dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_DELETE_TOPIC, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(handleContext);
 
         verifyNoInteractions(txnCtx);
     }
 
     @Test
     void dispatchesSubmitMessageAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
+
         final var newRunningHash = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        final var submitBuilder = mock(SubmitMessageRecordBuilder.class);
+        final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
+        given(recordBuilder.topicRunningHash()).willReturn(Bytes.wrap(newRunningHash));
+        given(recordBuilder.topicSequenceNumber()).willReturn(2L);
+        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
 
-        given(consensusSubmitMessageHandler.newRecordBuilder()).willReturn(submitBuilder);
-        given(dynamicProperties.maxNumTopics()).willReturn(123L);
-        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
-        given(submitBuilder.getNewTopicRunningHash()).willReturn(newRunningHash);
-        given(submitBuilder.getNewTopicSequenceNumber()).willReturn(2L);
-        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
-        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
-
-        doAnswer(invocation -> {
-                    final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
-                    builder.setNewTopicMetadata(newRunningHash, 2, 3L);
-                    return null;
-                })
-                .when(consensusSubmitMessageHandler)
-                .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any(), any());
-
-        dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(handleContext);
 
         verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
     }
 
     @Test
     void dispatchesTokenGrantKycAsExpected() {
-        given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenGrantKyc(TokenGrantKycTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
-        dispatcher.dispatchHandle(
-                HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(handleContext);
 
         verify(writableTokenRelStore).commit();
     }
 
     @Test
     void dispatchesTokenRevokeKycAsExpected() {
-        given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenRevokeKyc(TokenRevokeKycTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
-        dispatcher.dispatchHandle(
-                HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(handleContext);
 
         verify(writableTokenRelStore).commit();
     }
 
     @Test
     void dispatchesTokenPauseAsExpected() {
-        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
+        final var txnBody = TransactionBody.newBuilder()
+                        .tokenPause(TokenPauseTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
-        dispatcher.dispatchHandle(HederaFunctionality.TOKEN_PAUSE, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(handleContext);
 
         verify(writableTokenStore).commit();
     }
 
     @Test
     void dispatchesTokenUnpauseAsExpected() {
-        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenUnpause(TokenUnpauseTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
-        dispatcher.dispatchHandle(HederaFunctionality.TOKEN_UNPAUSE, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(handleContext);
 
         verify(writableTokenStore).commit();
     }
 
     @Test
     void cannotDispatchUnsupportedOperations() {
-        assertThatThrownBy(() -> dispatcher.dispatchHandle(
-                        HederaFunctionality.CRYPTO_TRANSFER, transactionBody, writableStoreFactory))
+        final var txnBody = TransactionBody.newBuilder()
+                .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
+        assertThatThrownBy(() -> dispatcher.dispatchHandle(handleContext))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

@@ -16,46 +16,55 @@
 
 package com.hedera.node.app.meta;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.config.GlobalDynamicConfig;
+import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.function.LongSupplier;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * A {@link HandleContext} implementation that primarily uses adapters of {@code mono-service}
  * utilities. These adapters will either be replaced with new implementations; or refactored
  * and ported from {@code mono-service} into {@code hedera-app} at a later time.
  */
-@Singleton
 public class MonoHandleContext implements HandleContext {
-    private final LongSupplier nums;
-    private final ExpiryValidator expiryValidator;
+    private final TransactionBody txnBody;
+    private final EntityIdSource entityIdSource;
     private final TransactionContext txnCtx;
+    private final ExpiryValidator expiryValidator;
     private final AttributeValidator attributeValidator;
+    private final SingleTransactionRecordBuilder recordBuilder;
 
-    @Inject
     public MonoHandleContext(
-            @NonNull final EntityIdSource ids,
+            @NonNull final TransactionBody txnBody,
+            @NonNull final EntityIdSource entityIdSource,
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final AttributeValidator attributeValidator,
-            @NonNull final TransactionContext txnCtx) {
-        this.nums = Objects.requireNonNull(ids)::newAccountNumber;
+            @NonNull final TransactionContext txnCtx,
+            @NonNull final SingleTransactionRecordBuilder recordBuilder) {
+        this.txnBody = Objects.requireNonNull(txnBody);
+        this.entityIdSource = Objects.requireNonNull(entityIdSource);
         this.txnCtx = Objects.requireNonNull(txnCtx);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
         this.attributeValidator = Objects.requireNonNull(attributeValidator);
+        this.recordBuilder = Objects.requireNonNull(recordBuilder);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Instant consensusNow() {
         return txnCtx.consensusTime();
     }
@@ -64,14 +73,33 @@ public class MonoHandleContext implements HandleContext {
      * {@inheritDoc}
      */
     @Override
-    public LongSupplier newEntityNumSupplier() {
-        return nums;
+    @NonNull
+    public TransactionBody body() {
+        return txnBody;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
+    @NonNull
+    public GlobalDynamicConfig config() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long newEntityNum() {
+        return entityIdSource.newAccountNumber();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
     public AttributeValidator attributeValidator() {
         return attributeValidator;
     }
@@ -80,7 +108,56 @@ public class MonoHandleContext implements HandleContext {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public ExpiryValidator expiryValidator() {
         return expiryValidator;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Nullable
+    public SignatureVerification verificationFor(@NonNull Key key) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    @NonNull
+    public <C> C readableStore(@NonNull Class<C> storeInterface) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    @NonNull
+    public <C> C writableStore(@NonNull Class<C> storeInterface) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    @NonNull
+    public <T> T recordBuilder(@NonNull final Class<T> singleTransactionRecordBuilderClass) {
+        if (! singleTransactionRecordBuilderClass.isInstance(recordBuilder)) {
+            throw new IllegalArgumentException("Not a valid record builder class");
+        }
+        return singleTransactionRecordBuilderClass.cast(recordBuilder);
+    }
+
+    @Override
+    @NonNull
+    public TransactionResult dispatchPrecedingTransaction(@NonNull TransactionBody txBody) throws HandleException {
+        throw new UnsupportedOperationException("Not yet implemented!");
+    }
+
+    @Override
+    @NonNull
+    public TransactionResult dispatchChildTransaction(@NonNull TransactionBody txBody) throws HandleException {
+        throw new UnsupportedOperationException("Not yet implemented!");
+    }
+
+    @Override
+    @NonNull
+    public TransactionStack transactionStack() {
+        throw new UnsupportedOperationException("Not yet implemented!");
     }
 }

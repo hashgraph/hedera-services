@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -36,6 +38,8 @@ class MonoHandleContextTest {
     private static final Instant NOW = Instant.ofEpochSecond(1_234_567L, 890);
 
     @Mock
+    private TransactionBody txBody;
+    @Mock
     private EntityIdSource ids;
 
     @Mock
@@ -47,11 +51,14 @@ class MonoHandleContextTest {
     @Mock
     private TransactionContext txnCtx;
 
+    @Mock
+    private SingleTransactionRecordBuilder recordBuilder;
+
     private MonoHandleContext subject;
 
     @BeforeEach
     void setup() {
-        subject = new MonoHandleContext(ids, expiryValidator, attributeValidator, txnCtx);
+        subject = new MonoHandleContext(txBody, ids, expiryValidator, attributeValidator, txnCtx, recordBuilder);
     }
 
     @Test
@@ -66,9 +73,9 @@ class MonoHandleContextTest {
         final var nextNum = 666L;
         given(ids.newAccountNumber()).willReturn(nextNum);
 
-        final var numSupplier = subject.newEntityNumSupplier();
+        final var suppliedNum = subject.newEntityNum();
 
-        assertEquals(nextNum, numSupplier.getAsLong());
+        assertEquals(nextNum, suppliedNum);
     }
 
     @Test

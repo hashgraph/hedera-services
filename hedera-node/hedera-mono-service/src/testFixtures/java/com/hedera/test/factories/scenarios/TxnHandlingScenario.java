@@ -41,6 +41,8 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.withSettings;
+import static org.mockito.quality.Strictness.LENIENT;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
@@ -272,7 +274,7 @@ public interface TxnHandlingScenario {
     }
 
     default TokenStore tokenStore() {
-        var tokenStore = mock(TokenStore.class);
+        var tokenStore = mock(TokenStore.class, withSettings().strictness(LENIENT));
 
         var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
         var optionalKycKey = TOKEN_KYC_KT.asJKeyUnchecked();

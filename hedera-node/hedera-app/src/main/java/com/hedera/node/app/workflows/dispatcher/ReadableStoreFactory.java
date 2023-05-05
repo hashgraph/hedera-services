@@ -76,7 +76,7 @@ public class ReadableStoreFactory {
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
     @NonNull
-    public <C> C createStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
+    public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null) {

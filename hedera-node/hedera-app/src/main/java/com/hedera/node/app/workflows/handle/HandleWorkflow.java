@@ -19,35 +19,24 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.clock.SystemClock;
-import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
-import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -97,20 +86,20 @@ public class HandleWorkflow {
         final Instant consensusTimestamp = platformTxn.getConsensusTimestamp();
         systemClock.advance(consensusTimestamp);
 
-        try {
-            final var context = prepareHandleContext(state, platformTxn, consensusTimestamp);
-            dispatcher.dispatchHandle(context);
-            finalizeTransaction(context);
-            commitState(context);
-            writeRecord(context);
-            updateReceipt(context);
-        } catch (HandleException e) {
-            writeFailureRecord(e);
-            updateFailureReceipt(e);
-        } catch (Throwable e) {
-            LOG.error("An unexpected exception was thrown during handle", e);
-            updateFatalErrorReceipt(platformTxn);
-        }
+//        try {
+//            final var context = prepareHandleContext(state, platformTxn, consensusTimestamp);
+//            dispatcher.dispatchHandle(context);
+//            finalizeTransaction(context);
+//            commitState(context);
+//            writeRecord(context);
+//            updateReceipt(context);
+//        } catch (HandleException e) {
+//            writeFailureRecord(e);
+//            updateFailureReceipt(e);
+//        } catch (Throwable e) {
+//            LOG.error("An unexpected exception was thrown during handle", e);
+//            updateFatalErrorReceipt(platformTxn);
+//        }
 
 
         // TODO: handle long scheduled transactions
@@ -128,35 +117,34 @@ public class HandleWorkflow {
 
         PreHandleResult preHandleResult;
         final List<Future<Object>> signatureVerifications;
-        if (preHandleStillValid(metadata)) {
-            final var previousResult = (PreHandleResult) metadata;
-            if (previousResult.isDueDiligenceFailure()) {
-                final var fee = calculateNetworkFee();
-                final var cryptoTransfer = createPenaltyPayment(fee);
-                return new HandleContextImpl();
-            }
+//        if (preHandleStillValid(metadata)) {
+//            final var previousResult = (PreHandleResult) metadata;
+//            if (previousResult.isDueDiligenceFailure()) {
+//                final var fee = calculateNetworkFee();
+//                final var cryptoTransfer = createPenaltyPayment(fee);
+//                return new HandleContextImpl();
+//            }
+//
+//            if (previousResult.status() == OK) {
+//                preHandleResult = addMissingSignatures(previousResult);
+//            } else {
+//                preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
+//            }
+//        } else {
+//            preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
+//        }
+//
+//        if (preHandleResult.status() != OK) {
+//            throw new PreCheckException(preHandleResult.status());
+//        }
+//
+//
+//
+//        if (! checkSignature(preHandleResult.payerVerification())) {
+//            return new HandleContextImpl();
+//        }
 
-            if (previousResult.status() == OK) {
-                preHandleResult = addMissingSignatures(previousResult);
-            } else {
-                preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
-            }
-        } else {
-            preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
-        }
-
-        if (preHandleResult.status() != OK) {
-            // TODO: Add data for record and receipt
-            throw new HandleException(preHandleResult.status());
-        }
-
-
-
-        if (! checkSignature(preHandleResult.payerVerification())) {
-            // TODO: Add data for record and receipt
-            return new HandleContextImpl();
-        }
-
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     private boolean preHandleStillValid(@NonNull final Object metadata) {
@@ -165,38 +153,42 @@ public class HandleWorkflow {
     }
 
     private void verifyMissingSignatures() {
-        final var txBody = requireNonNull(preHandleResult.txnBody());
+        throw new UnsupportedOperationException("Not implemented yet");
 
-        // extract keys and hollow accounts again
-        final var storeFactory = new ReadableStoreFactory(state);
-        final var context = new PreHandleContextImpl(storeFactory, txBody);
-        dispatcher.dispatchPreHandle(context);
-
-        // compare keys and hollow accounts
-        final var signatureData = new ArrayList<>();
-        signatureData.add(preHandleResult.payerSignature());
-        context.requiredNonPayerKeys().
-        for (final var key : context.requiredNonPayerKeys()) {
-            final var signatureData = preHandleResult.cryptoSignatures().get(key);
-            if (signatureData == null) {
-                signaturePreparer. ()
-                throw new PreCheckException(INVALID_TRANSACTION);
-            }
-            signatureData.add(preHandleResult.signatureMap().get(key));
-        }
-        Map<Key, TransactionSignature> signatureMap;
-        signatureMap.g
-        final var keys = context.requiredNonPayerKeys();
-
-        // initiate signature verification for delta
+//        final var txBody = requireNonNull(preHandleResult.txnBody());
+//
+//        // extract keys and hollow accounts again
+//        final var storeFactory = new ReadableStoreFactory(state);
+//        final var context = new PreHandleContextImpl(storeFactory, txBody);
+//        dispatcher.dispatchPreHandle(context);
+//
+//        // compare keys and hollow accounts
+//        final var signatureData = new ArrayList<>();
+//        signatureData.add(preHandleResult.payerSignature());
+//        context.requiredNonPayerKeys().
+//        for (final var key : context.requiredNonPayerKeys()) {
+//            final var signatureData = preHandleResult.cryptoSignatures().get(key);
+//            if (signatureData == null) {
+//                signaturePreparer. ()
+//                throw new PreCheckException(INVALID_TRANSACTION);
+//            }
+//            signatureData.add(preHandleResult.signatureMap().get(key));
+//        }
+//        Map<Key, TransactionSignature> signatureMap;
+//        signatureMap.g
+//        final var keys = context.requiredNonPayerKeys();
+//
+//        // initiate signature verification for delta
     }
 
     private void checkSignature(@NonNull final Future<SignatureVerification> signatureVerification) {
-        try {
-            signatureVerification.get(SIGNATURE_VERIFICATION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (TimeoutException ex) {
-            
-        }
+        throw new UnsupportedOperationException("Not implemented yet");
+
+//        try {
+//            signatureVerification.get(SIGNATURE_VERIFICATION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+//        } catch (TimeoutException ex) {
+//
+//        }
 
     }
 }

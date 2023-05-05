@@ -29,7 +29,7 @@ import static org.mockito.BDDMockito.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
@@ -45,10 +45,12 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -119,14 +121,19 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         @Mock
         private WritableTokenRelationStore tokenRelStore;
 
+        @Mock(strictness = LENIENT)
+        private HandleContext handleContext;
+
+        @BeforeEach
+        void setup() {
+            given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
+        }
+
         @Test
         @DisplayName("Any null input argument should throw an exception")
         @SuppressWarnings("DataFlowIssue")
         void nullArgsThrowException() {
-            assertThatThrownBy(() -> subject.handle(null, tokenRelStore)).isInstanceOf(NullPointerException.class);
-
-            assertThatThrownBy(() -> subject.handle(mock(TransactionBody.class), null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.handle(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -134,7 +141,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         void nullTokenGrantKycThrowsException() {
             final var txnBody = TransactionBody.newBuilder().build();
 
-            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -142,15 +149,16 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         void nullTokenIdThrowsException() {
             final var txnBody = newTxnBody(true, false);
 
-            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @DisplayName("When op account ID is null, accountOrThrow throws an exception")
         void nullAccountIdThrowsException() {
             final var txnBody = newTxnBody(false, true);
+            given(handleContext.body()).willReturn(txnBody);
 
-            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -159,7 +167,8 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
             given(tokenRelStore.getForModify(anyLong(), anyLong())).willReturn(Optional.empty());
 
             final var txnBody = newTxnBody(true, true);
-            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore)).isInstanceOf(NoSuchElementException.class);
+            given(handleContext.body()).willReturn(txnBody);
+            assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NoSuchElementException.class);
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));
             verify(tokenRelStore, never()).commit();
@@ -174,7 +183,8 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
                     .willReturn(Optional.of(stateTokenRel));
 
             final var txnBody = newTxnBody(true, true);
-            subject.handle(txnBody, tokenRelStore);
+            given(handleContext.body()).willReturn(txnBody);
+            subject.handle(handleContext);
 
             verify(tokenRelStore).put(newTokenRelationBuilder().kycGranted(true).build());
         }

@@ -21,10 +21,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -58,13 +57,14 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * @param txnBody the {@link TokenGrantKycTransactionBody} of the active transaction
-     * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
+     * @param handleContext the {@link HandleContext} of the transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionBody txnBody, @NonNull WritableTokenRelationStore tokenRelStore) {
-        requireNonNull(txnBody);
-        requireNonNull(tokenRelStore);
+    public void handle(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext);
+
+        final var txnBody = handleContext.body();
+        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
 
         final var op = txnBody.tokenGrantKycOrThrow();
 
