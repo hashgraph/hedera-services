@@ -136,12 +136,14 @@ public class LazyCreatePrecompileFuzzingFactory {
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
                     .withInitialization(onlyEcdsaKeys(NUM_DISTINCT_ECDSA_KEYS))
-                    .withOp(new RandomHbarTransfer(spec.registry(), keys), intPropOrElse("randomHbar.bias", 0, props))
                     .withOp(
-                            new RandomLazyCreateFungibleTransfer(spec.registry(), keys),
+                            new RandomHbarTransferLazyCreate(spec.registry(), keys),
+                            intPropOrElse("randomHbar.bias", 0, props))
+                    .withOp(
+                            new RandomFungibleTransferLazyCreate(spec.registry(), keys),
                             intPropOrElse("randomFungibleTransfer.bias", 0, props))
                     .withOp(
-                            new RandomLazyCreateERC20Transfer(spec.registry(), keys),
+                            new RandomERC20TransferLazyCreate(spec.registry(), keys),
                             intPropOrElse("randomERC20Transfer.bias", 0, props))
                     .withOp(
                             new RandomERC721TransferLazyCreate(spec.registry(), keys),

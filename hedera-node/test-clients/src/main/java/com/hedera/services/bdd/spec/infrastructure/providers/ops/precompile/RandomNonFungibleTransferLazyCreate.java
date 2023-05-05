@@ -32,13 +32,13 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
-public class RandomLazyCreateNonFungibleTransfer implements OpProvider {
+public class RandomNonFungibleTransferLazyCreate implements OpProvider {
     private final HapiSpecRegistry registry;
     private static final long GAS_TO_OFFER = 5_000_000L;
 
     private final EntityNameProvider<Key> keys;
 
-    public RandomLazyCreateNonFungibleTransfer(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
+    public RandomNonFungibleTransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
         this.registry = registry;
         this.keys = keys;
     }

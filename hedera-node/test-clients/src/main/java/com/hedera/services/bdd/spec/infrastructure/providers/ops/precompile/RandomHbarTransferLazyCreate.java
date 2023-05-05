@@ -33,7 +33,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
-public class RandomHbarTransfer implements OpProvider {
+public class RandomHbarTransferLazyCreate implements OpProvider {
     private static final String TRANSFER_TXN = "transferTxn";
 
     private final HapiSpecRegistry registry;
@@ -41,7 +41,7 @@ public class RandomHbarTransfer implements OpProvider {
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
     private final EntityNameProvider<Key> keys;
 
-    public RandomHbarTransfer(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
+    public RandomHbarTransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
         this.registry = registry;
         this.keys = keys;
     }

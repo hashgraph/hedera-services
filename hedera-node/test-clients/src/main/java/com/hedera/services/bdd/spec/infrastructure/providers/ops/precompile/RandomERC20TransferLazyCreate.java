@@ -18,8 +18,7 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -36,15 +35,17 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.Key;
+import java.math.BigInteger;
 import java.util.Optional;
 
-public class RandomLazyCreateFungibleTransfer implements OpProvider {
+public class RandomERC20TransferLazyCreate implements OpProvider {
     private final HapiSpecRegistry registry;
     private static final long GAS_TO_OFFER = 5_000_000L;
-
+    private static final String TRANSFER = "transfer";
+    private static final String TRANSFER_TXN = "transferTxn";
     private final EntityNameProvider<Key> keys;
 
-    public RandomLazyCreateFungibleTransfer(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
+    public RandomERC20TransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
         this.registry = registry;
         this.keys = keys;
     }
@@ -55,32 +56,29 @@ public class RandomLazyCreateFungibleTransfer implements OpProvider {
 
     @Override
     public Optional<HapiSpecOperation> get() {
-        return randomKey().map(this::generateLazyCreateTransferOfFungibleToken);
+        return randomKey().map(this::generateLazyCreateTransferOfERC20);
     }
 
-    private HapiSpecOperation generateLazyCreateTransferOfFungibleToken(String evmAddressRecipient) {
+    private HapiSpecOperation generateLazyCreateTransferOfERC20(String evmAddressRecipient) {
         final var addressBytes = recoverAddressFromPubKey(getEvmAddressFromString(registry, evmAddressRecipient));
-
         return withOpContext((spec, opLog) -> {
             final var opContractCall = contractCall(
-                            TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
-                            "transferTokenCallNestedThenAgain",
-                            HapiParserUtil.asHeadlongAddress(asAddress(registry.getTokenID(FUNGIBLE_TOKEN))),
-                            HapiParserUtil.asHeadlongAddress(asAddress(registry.getAccountID(OWNER))),
+                            ERC_20_CONTRACT,
+                            TRANSFER,
+                            HapiParserUtil.asHeadlongAddress(asAddress(registry.getTokenID(ERC_FUNGIBLE_TOKEN))),
                             HapiParserUtil.asHeadlongAddress(addressBytes),
-                            2L,
-                            2L)
-                    .via(TRANSFER_TOKEN_TXN)
-                    .alsoSigningWithFullPrefix(OWNER)
+                            BigInteger.valueOf(2))
+                    .via(TRANSFER_TXN)
                     .gas(GAS_TO_OFFER)
                     .hasKnownStatus(SUCCESS);
 
             final HapiGetTxnRecord hapiGetTxnRecord =
-                    getTxnRecord(TRANSFER_TOKEN_TXN).andAllChildRecords().assertingNothingAboutHashes();
+                    getTxnRecord(TRANSFER_TXN).andAllChildRecords().assertingNothingAboutHashes();
 
             allRunFor(spec, opContractCall, hapiGetTxnRecord);
 
             if (!hapiGetTxnRecord.getChildRecords().isEmpty()) {
+
                 updateSpecFor(spec, evmAddressRecipient);
                 final var opUpdate = cryptoUpdateAliased(evmAddressRecipient)
                         .maxAutomaticAssociations(2)
