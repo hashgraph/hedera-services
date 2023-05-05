@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.records;
@@ -60,11 +59,11 @@ import java.util.Objects;
  * A custom builder for SingleTransactionRecord.
  */
 @SuppressWarnings("unused")
-public class SingleTransactionRecordBuilder implements
-        ConsensusCreateTopicRecordBuilder,
-        ConsensusSubmitMessageRecordBuilder,
-        CryptoCreateRecordBuilder,
-        PrngRecordBuilder {
+public class SingleTransactionRecordBuilder
+        implements ConsensusCreateTopicRecordBuilder,
+                ConsensusSubmitMessageRecordBuilder,
+                CryptoCreateRecordBuilder,
+                PrngRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes;
@@ -100,45 +99,41 @@ public class SingleTransactionRecordBuilder implements
     private TransactionID scheduledTransactionID;
     private List<Long> serialNumbers;
     // Sidecar data, booleans are the migration flag
-    public final List<AbstractMap.SimpleEntry<ContractStateChanges,Boolean>> contractStateChanges = new ArrayList<>();
-    public final List<AbstractMap.SimpleEntry<ContractActions,Boolean>> contractActions = new ArrayList<>();
-    public final List<AbstractMap.SimpleEntry<ContractBytecode,Boolean>> contractBytecodes = new ArrayList<>();
+    public final List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new ArrayList<>();
+    public final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new ArrayList<>();
+    public final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new ArrayList<>();
 
     @SuppressWarnings("DataFlowIssue")
     public SingleTransactionRecord build() {
         // compute transaction hash: TODO could pass in if we have it calculated else where
-        final byte[] transactionBytes = new byte[(int)this.transactionBytes.length()];
-        this.transactionBytes.getBytes(0,transactionBytes);
+        final byte[] transactionBytes = new byte[(int) this.transactionBytes.length()];
+        this.transactionBytes.getBytes(0, transactionBytes);
         final Bytes transactionHash = Bytes.wrap(new Hash(transactionBytes).getValue());
         // create body one of
         OneOf<TransactionRecord.BodyOneOfType> body = new OneOf<>(TransactionRecord.BodyOneOfType.UNSET, null);
-        if (contractCallResult != null) body = new OneOf<>(TransactionRecord.BodyOneOfType.CONTRACT_CALL_RESULT, contractCallResult);
-        if (contractCreateResult != null) body = new OneOf<>(TransactionRecord.BodyOneOfType.CONTRACT_CREATE_RESULT, contractCreateResult);
+        if (contractCallResult != null)
+            body = new OneOf<>(TransactionRecord.BodyOneOfType.CONTRACT_CALL_RESULT, contractCallResult);
+        if (contractCreateResult != null)
+            body = new OneOf<>(TransactionRecord.BodyOneOfType.CONTRACT_CREATE_RESULT, contractCreateResult);
         // create list of sidecar records
         List<TransactionSidecarRecord> transactionSidecarRecords = new ArrayList<>();
         contractStateChanges.stream()
                 .map(pair -> new TransactionSidecarRecord(
                         consensusTimestamp,
                         pair.getValue(),
-                        new OneOf<>(
-                                TransactionSidecarRecord.SidecarRecordsOneOfType.STATE_CHANGES,
-                                pair.getKey())))
+                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.STATE_CHANGES, pair.getKey())))
                 .forEach(transactionSidecarRecords::add);
         contractActions.stream()
                 .map(pair -> new TransactionSidecarRecord(
                         consensusTimestamp,
                         pair.getValue(),
-                        new OneOf<>(
-                                TransactionSidecarRecord.SidecarRecordsOneOfType.ACTIONS,
-                                pair.getKey())))
+                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.ACTIONS, pair.getKey())))
                 .forEach(transactionSidecarRecords::add);
         contractBytecodes.stream()
                 .map(pair -> new TransactionSidecarRecord(
                         consensusTimestamp,
                         pair.getValue(),
-                        new OneOf<>(
-                                TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE,
-                                pair.getKey())))
+                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, pair.getKey())))
                 .forEach(transactionSidecarRecords::add);
         // build
         return new SingleTransactionRecord(
@@ -159,8 +154,7 @@ public class SingleTransactionRecordBuilder implements
                                         newTotalSupply,
                                         scheduleID,
                                         scheduledTransactionID,
-                                        serialNumbers
-                                ),
+                                        serialNumbers),
                                 transactionHash,
                                 consensusTimestamp,
                                 transaction.body().transactionID(),
@@ -177,10 +171,8 @@ public class SingleTransactionRecordBuilder implements
                                 ethereumHash,
                                 paidStakingRewards,
                                 entropy,
-                                evmAddress)
-                ),
-                transactionSidecarRecords
-        );
+                                evmAddress)),
+                transactionSidecarRecords);
     }
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
@@ -233,7 +225,8 @@ public class SingleTransactionRecordBuilder implements
         return this;
     }
 
-    public SingleTransactionRecordBuilder automaticTokenAssociations(List<TokenAssociation> automaticTokenAssociations) {
+    public SingleTransactionRecordBuilder automaticTokenAssociations(
+            List<TokenAssociation> automaticTokenAssociations) {
         this.automaticTokenAssociations = automaticTokenAssociations;
         return this;
     }
@@ -400,7 +393,8 @@ public class SingleTransactionRecordBuilder implements
 
     // ------------------------------------------------------------------------------------------------------------------------
     // Sidecar data, booleans are the migration flag
-    public SingleTransactionRecordBuilder addContractStateChanges(ContractStateChanges contractStateChanges, boolean isMigration) {
+    public SingleTransactionRecordBuilder addContractStateChanges(
+            ContractStateChanges contractStateChanges, boolean isMigration) {
         this.contractStateChanges.add(new AbstractMap.SimpleEntry<>(contractStateChanges, isMigration));
         return this;
     }

@@ -126,7 +126,8 @@ public class CryptoCreateHandler implements TransactionHandler {
 
         // set newly created account number in the record builder
         final var createdAccountNum = accountCreated.accountNumber();
-        final var createdAccountID = AccountID.newBuilder().accountNum(createdAccountNum).build();
+        final var createdAccountID =
+                AccountID.newBuilder().accountNum(createdAccountNum).build();
         final var recordBuilder = handleContext.recordBuilder(CryptoCreateRecordBuilder.class);
         recordBuilder.accountID(createdAccountID);
 

@@ -81,7 +81,8 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     void rejectsMissingTopic() {
-        final var txBody = TransactionBody.newBuilder().consensusUpdateTopic(OP_BUILDER).build();
+        final var txBody =
+                TransactionBody.newBuilder().consensusUpdateTopic(OP_BUILDER).build();
         given(handleContext.body()).willReturn(txBody);
 
         // expect:
@@ -93,7 +94,9 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         givenValidTopic(0, true);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var txBody = TransactionBody.newBuilder().consensusUpdateTopic(OP_BUILDER.topicID(wellKnownId())).build();
+        final var txBody = TransactionBody.newBuilder()
+                .consensusUpdateTopic(OP_BUILDER.topicID(wellKnownId()))
+                .build();
         given(handleContext.body()).willReturn(txBody);
 
         // expect:
@@ -105,9 +108,9 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         givenValidTopic(0, false, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var txBody = TransactionBody.newBuilder().consensusUpdateTopic(
-                OP_BUILDER.topicID(wellKnownId()).memo("Please mind the vase")
-        ).build();
+        final var txBody = TransactionBody.newBuilder()
+                .consensusUpdateTopic(OP_BUILDER.topicID(wellKnownId()).memo("Please mind the vase"))
+                .build();
         given(handleContext.body()).willReturn(txBody);
 
         // expect:
@@ -119,9 +122,9 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var txBody = TransactionBody.newBuilder().consensusUpdateTopic(
-                OP_BUILDER.topicID(wellKnownId()).adminKey(key)
-        ).build();
+        final var txBody = TransactionBody.newBuilder()
+                .consensusUpdateTopic(OP_BUILDER.topicID(wellKnownId()).adminKey(key))
+                .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         willThrow(new HandleException(ResponseCodeEnum.BAD_ENCODING))
@@ -137,9 +140,9 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var txBody = TransactionBody.newBuilder().consensusUpdateTopic(
-                OP_BUILDER.topicID(wellKnownId()).adminKey(anotherKey)
-        ).build();
+        final var txBody = TransactionBody.newBuilder()
+                .consensusUpdateTopic(OP_BUILDER.topicID(wellKnownId()).adminKey(anotherKey))
+                .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
@@ -234,8 +237,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
 
         // expect:
-        assertFailsWith(
-                ResponseCodeEnum.INVALID_EXPIRATION_TIME, () -> subject.handle(handleContext));
+        assertFailsWith(ResponseCodeEnum.INVALID_EXPIRATION_TIME, () -> subject.handle(handleContext));
     }
 
     @Test
@@ -278,9 +280,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
 
         // expect:
-        assertFailsWith(
-                ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE,
-                () -> subject.handle(handleContext));
+        assertFailsWith(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.handle(handleContext));
     }
 
     @Test

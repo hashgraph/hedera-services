@@ -94,7 +94,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var txn = handleContext.body();
         final var op = txn.consensusSubmitMessageOrThrow();
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
-        final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT).topicNum());
+        final var topic =
+                topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT).topicNum());
         /* Validate all needed fields in the transaction */
         final var config = new ConsensusServiceConfig(
                 handleContext.config().maxNumTopics(), handleContext.config().messageMaxBytesAllowed());
@@ -109,7 +110,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             topicStore.put(updatedTopic);
 
             final var recordBuilder = handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class);
-            recordBuilder.topicRunningHash(updatedTopic.runningHash())
+            recordBuilder
+                    .topicRunningHash(updatedTopic.runningHash())
                     .topicSequenceNumber(updatedTopic.sequenceNumber())
                     .topicRunningHashVersion(RUNNING_HASH_VERSION);
         } catch (IOException e) {

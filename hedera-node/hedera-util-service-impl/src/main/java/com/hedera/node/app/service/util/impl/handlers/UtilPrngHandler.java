@@ -77,7 +77,7 @@ public class UtilPrngHandler implements TransactionHandler {
         final var range = op.range();
 
         // TODO: This check should probably be moved into app
-        if (! context.config().utilPrngEnabled()) {
+        if (!context.config().utilPrngEnabled()) {
             return;
         }
         // get the n-3 running hash. If the running hash is not available, will throw a

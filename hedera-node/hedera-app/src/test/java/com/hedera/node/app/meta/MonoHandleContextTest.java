@@ -38,6 +38,7 @@ class MonoHandleContextTest {
 
     @Mock
     private TransactionBody txBody;
+
     @Mock
     private EntityIdSource ids;
 

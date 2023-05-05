@@ -18,10 +18,10 @@ package com.hedera.node.app.meta;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.spi.config.GlobalDynamicConfig;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -137,7 +137,7 @@ public class MonoHandleContext implements HandleContext {
     @Override
     @NonNull
     public <T> T recordBuilder(@NonNull final Class<T> singleTransactionRecordBuilderClass) {
-        if (! singleTransactionRecordBuilderClass.isInstance(recordBuilder)) {
+        if (!singleTransactionRecordBuilderClass.isInstance(recordBuilder)) {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
         return singleTransactionRecordBuilderClass.cast(recordBuilder);

@@ -144,8 +144,7 @@ class UtilPrngHandlerTest {
     @Test
     void followsHappyPathWithNoRange() {
         givenTxnWithoutRange();
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class))
-                .willReturn(readableRunningHashLeafStore);
+        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
@@ -158,8 +157,7 @@ class UtilPrngHandlerTest {
     @Test
     void followsHappyPathWithRange() {
         givenTxnWithRange(20);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class))
-                .willReturn(readableRunningHashLeafStore);
+        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
@@ -173,8 +171,7 @@ class UtilPrngHandlerTest {
     @Test
     void followsHappyPathWithMaxIntegerRange() {
         givenTxnWithRange(Integer.MAX_VALUE);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class))
-                .willReturn(readableRunningHashLeafStore);
+        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
@@ -199,8 +196,7 @@ class UtilPrngHandlerTest {
     @Test
     void givenRangeZeroGivesBitString() {
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class))
-                .willReturn(readableRunningHashLeafStore);
+        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
@@ -212,12 +208,10 @@ class UtilPrngHandlerTest {
     @Test
     void nullRunningHashesThrows() {
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class))
-                .willReturn(readableRunningHashLeafStore);
+        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(null);
 
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
 
         verify(recordBuilder, never()).entropyNumber(anyInt());
         verify(recordBuilder, never()).entropyBytes(any());
@@ -229,8 +223,7 @@ class UtilPrngHandlerTest {
         final var future = mock(StandardFuture.class);
 
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class))
-                .willReturn(readableRunningHashLeafStore);
+        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(hash);
         given(hash.getFutureHash()).willReturn(future);
         given(future.get()).willReturn(null);
@@ -247,8 +240,7 @@ class UtilPrngHandlerTest {
         final var future = mock(StandardFuture.class);
 
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class))
-                .willReturn(readableRunningHashLeafStore);
+        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(hash);
         given(hash.getFutureHash()).willReturn(future);
         given(future.get()).willReturn(new Hash());
@@ -265,14 +257,12 @@ class UtilPrngHandlerTest {
         final var future = mock(StandardFuture.class);
 
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class))
-                .willReturn(readableRunningHashLeafStore);
+        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(hash);
         given(hash.getFutureHash()).willReturn(future);
         given(future.get()).willThrow(new InterruptedException());
 
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class);
+        assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(HandleException.class);
 
         verify(recordBuilder, never()).entropyNumber(anyInt());
         verify(recordBuilder, never()).entropyBytes(any());
@@ -280,11 +270,13 @@ class UtilPrngHandlerTest {
 
     private void givenTxnWithRange(int range) {
         txn = UtilPrngTransactionBody.newBuilder().range(range).build();
-        given(handleContext.body()).willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
+        given(handleContext.body())
+                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
     }
 
     private void givenTxnWithoutRange() {
         txn = UtilPrngTransactionBody.newBuilder().build();
-        given(handleContext.body()).willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
+        given(handleContext.body())
+                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
     }
 }

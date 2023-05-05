@@ -472,7 +472,8 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesCreateTopicAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
-                .consensusCreateTopic(ConsensusCreateTopicTransactionBody.DEFAULT).build();
+                .consensusCreateTopic(ConsensusCreateTopicTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
 
@@ -490,7 +491,8 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesUpdateTopicAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
-                .consensusUpdateTopic(ConsensusUpdateTopicTransactionBody.DEFAULT).build();
+                .consensusUpdateTopic(ConsensusUpdateTopicTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
 
@@ -502,7 +504,8 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesDeleteTopicAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
-                .consensusDeleteTopic(ConsensusDeleteTopicTransactionBody.DEFAULT).build();
+                .consensusDeleteTopic(ConsensusDeleteTopicTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
 
@@ -514,7 +517,8 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesSubmitMessageAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
-                .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT).build();
+                .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
 
@@ -532,7 +536,8 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesTokenGrantKycAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
-                .tokenGrantKyc(TokenGrantKycTransactionBody.DEFAULT).build();
+                .tokenGrantKyc(TokenGrantKycTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
@@ -544,7 +549,8 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesTokenRevokeKycAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
-                .tokenRevokeKyc(TokenRevokeKycTransactionBody.DEFAULT).build();
+                .tokenRevokeKyc(TokenRevokeKycTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
@@ -556,7 +562,8 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesTokenPauseAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
-                        .tokenPause(TokenPauseTransactionBody.DEFAULT).build();
+                .tokenPause(TokenPauseTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
@@ -568,7 +575,8 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesTokenUnpauseAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
-                .tokenUnpause(TokenUnpauseTransactionBody.DEFAULT).build();
+                .tokenUnpause(TokenUnpauseTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
@@ -580,7 +588,8 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesCryptoCreateAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
-                .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT).build();
+                .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -599,12 +608,12 @@ class MonoTransactionDispatcherTest {
     @Test
     void doesntCommitWhenUsageLimitsExceeded() {
         final var txnBody = TransactionBody.newBuilder()
-                .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT).build();
+                .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
         given(usageLimits.areCreatableAccounts(1)).willReturn(false);
 
-        assertThatThrownBy(() -> dispatcher.dispatchHandle(handleContext))
-                .isInstanceOf(HandleException.class);
+        assertThatThrownBy(() -> dispatcher.dispatchHandle(handleContext)).isInstanceOf(HandleException.class);
 
         verify(txnCtx, never()).setCreated(any(com.hederahashgraph.api.proto.java.AccountID.class));
         verify(writableAccountStore, never()).commit();
@@ -613,7 +622,8 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesUtilPrngAsExpectedWithPrngBytes() {
         final var txnBody = TransactionBody.newBuilder()
-                .utilPrng(UtilPrngTransactionBody.DEFAULT).build();
+                .utilPrng(UtilPrngTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
 
         final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
@@ -630,7 +640,8 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesUtilPrngAsExpectedWithPrngNumber() {
         final var txnBody = TransactionBody.newBuilder()
-                .utilPrng(UtilPrngTransactionBody.DEFAULT).build();
+                .utilPrng(UtilPrngTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
 
         final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
@@ -647,10 +658,10 @@ class MonoTransactionDispatcherTest {
     @Test
     void cannotDispatchUnsupportedOperations() {
         final var txnBody = TransactionBody.newBuilder()
-                .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT).build();
+                .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
+                .build();
         given(handleContext.body()).willReturn(txnBody);
-        assertThatThrownBy(() -> dispatcher.dispatchHandle(handleContext))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> dispatcher.dispatchHandle(handleContext)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @ParameterizedTest

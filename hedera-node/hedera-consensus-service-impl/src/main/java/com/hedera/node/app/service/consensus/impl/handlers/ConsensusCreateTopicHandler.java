@@ -83,8 +83,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         final var op = handleContext.body().consensusCreateTopicOrThrow();
         final var consensusServiceConfig = new ConsensusServiceConfig(
-                handleContext.config().maxNumTopics(), handleContext.config().messageMaxBytesAllowed()
-        );
+                handleContext.config().maxNumTopics(), handleContext.config().messageMaxBytesAllowed());
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
 
         final var builder = new Topic.Builder();
@@ -137,7 +136,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
             /* --- Build the record with newly created topic --- */
             final var recordBuilder = handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class);
-            final var topicID = TopicID.newBuilder().topicNum(topic.topicNumber()).build();
+            final var topicID =
+                    TopicID.newBuilder().topicNum(topic.topicNumber()).build();
             recordBuilder.topicID(topicID);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {

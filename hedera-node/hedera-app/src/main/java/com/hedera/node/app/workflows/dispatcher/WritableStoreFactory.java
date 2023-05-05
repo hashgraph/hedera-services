@@ -43,16 +43,12 @@ public class WritableStoreFactory {
     // e.g. services have to register their stores
     private static final Map<String, Map<Class<?>, Function<WritableStates, ?>>> STORE_FACTORY = Map.of(
             ConsensusService.NAME,
-            Map.of(
-                    WritableTopicStore.class, WritableTopicStore::new
-            ),
+            Map.of(WritableTopicStore.class, WritableTopicStore::new),
             TokenService.NAME,
             Map.of(
                     WritableAccountStore.class, WritableAccountStore::new,
                     WritableTokenStore.class, WritableTokenStore::new,
-                    WritableTokenRelationStore.class, WritableTokenRelationStore::new
-            )
-    );
+                    WritableTokenRelationStore.class, WritableTokenRelationStore::new));
 
     private final Map<Class<?>, Function<WritableStates, ?>> storeFactories;
     private final WritableStates states;

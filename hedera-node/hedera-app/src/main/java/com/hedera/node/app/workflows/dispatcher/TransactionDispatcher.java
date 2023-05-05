@@ -73,8 +73,8 @@ public class TransactionDispatcher {
     public void dispatchHandle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context, "The supplied argument 'context' cannot be null!");
 
-//        final var serviceName = getServiceName(context.body());
-//        context.setServiceScope(serviceName);
+        //        final var serviceName = getServiceName(context.body());
+        //        context.setServiceScope(serviceName);
 
         // At this stage, we should always find a handler, otherwise something really weird is going on
         final var handler = getHandler(context.body());
@@ -122,18 +122,13 @@ public class TransactionDispatcher {
                     CRYPTO_ADD_LIVE_HASH,
                     CRYPTO_DELETE_LIVE_HASH -> TokenService.NAME;
 
-            case FILE_CREATE,
-                    FILE_UPDATE,
-                    FILE_DELETE,
-                    FILE_APPEND -> FileService.NAME;
+            case FILE_CREATE, FILE_UPDATE, FILE_DELETE, FILE_APPEND -> FileService.NAME;
 
             case FREEZE -> FreezeService.NAME;
 
             case UNCHECKED_SUBMIT -> NetworkService.NAME;
 
-            case SCHEDULE_CREATE,
-                    SCHEDULE_SIGN,
-                    SCHEDULE_DELETE -> ScheduleService.NAME;
+            case SCHEDULE_CREATE, SCHEDULE_SIGN, SCHEDULE_DELETE -> ScheduleService.NAME;
 
             case TOKEN_CREATION,
                     TOKEN_UPDATE,

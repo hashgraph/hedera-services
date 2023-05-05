@@ -106,7 +106,8 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         given(handleContext.config()).willReturn(config);
-        given(handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class))
+                .willReturn(recordBuilder);
     }
 
     @Test
@@ -261,8 +262,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var txn = newSubmitMessageTxn(topicEntityNum, "");
         given(handleContext.body()).willReturn(txn);
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_TOPIC_MESSAGE, msg.getStatus());
     }
 
@@ -276,8 +276,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         given(config.maxNumTopics()).willReturn(10L);
         given(config.messageMaxBytesAllowed()).willReturn(5);
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE, msg.getStatus());
     }
 
@@ -288,8 +287,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var txn = newDefaultSubmitMessageTxn(MISSING_NUM);
         given(handleContext.body()).willReturn(txn);
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_TOPIC_ID, msg.getStatus());
     }
 
@@ -306,8 +304,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var txn = newSubmitMessageTxnWithChunks(topicEntityNum, 2, 1);
         given(handleContext.body()).willReturn(txn);
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
     }
 
@@ -318,8 +315,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var txn = newSubmitMessageTxnWithChunks(topicEntityNum, 0, 1);
         given(handleContext.body()).willReturn(txn);
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
     }
 
@@ -332,8 +328,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var txn = newSubmitMessageTxnWithChunksAndPayer(topicEntityNum, 2, 2, chunkTxnId);
         given(handleContext.body()).willReturn(txn);
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
     }
 
@@ -346,8 +341,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var txn = newSubmitMessageTxnWithChunksAndPayer(topicEntityNum, 1, 2, chunkTxnId);
         given(handleContext.body()).willReturn(txn);
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
     }
 

@@ -336,8 +336,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
         assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
 
-        assertThrows(
-                NullPointerException.class, () -> subject.handle(handleContext));
+        assertThrows(NullPointerException.class, () -> subject.handle(handleContext));
     }
 
     @Test
@@ -351,8 +350,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
         assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INSUFFICIENT_PAYER_BALANCE, msg.getStatus());
 
         verify(recordBuilder, never()).accountID(any());
@@ -367,8 +365,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void handleFailsWhenPayerIsDeleted() {
         changeAccountToDeleted();
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ACCOUNT_DELETED, msg.getStatus());
 
         verify(recordBuilder, never()).accountID(any());
@@ -385,8 +382,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(handleContext.body()).willReturn(txn);
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_PAYER_ACCOUNT_ID, msg.getStatus());
 
         verify(recordBuilder, never()).accountID(any());

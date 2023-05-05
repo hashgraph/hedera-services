@@ -57,7 +57,6 @@ import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccount
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.NoSuchElementException;
 import java.util.Optional;

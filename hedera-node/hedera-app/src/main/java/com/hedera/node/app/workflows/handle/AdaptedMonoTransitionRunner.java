@@ -77,8 +77,8 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
         if (functionsToDispatch.contains(function)) {
             final var txBody = PbjConverter.toPbj(accessor.getTxn());
             final var recordBuilder = new SingleTransactionRecordBuilder();
-            final var context = new MonoHandleContext(txBody, ids, expiryValidator, attributeValidator, txnCtx,
-                    recordBuilder);
+            final var context =
+                    new MonoHandleContext(txBody, ids, expiryValidator, attributeValidator, txnCtx, recordBuilder);
             try {
                 dispatcher.dispatchHandle(context);
                 txnCtx.setStatus(SUCCESS);

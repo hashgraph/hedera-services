@@ -120,7 +120,8 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(config.messageMaxBytesAllowed()).willReturn(100);
         given(handleContext.config()).willReturn(config);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
-        given(handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class))
+                .willReturn(recordBuilder);
     }
 
     @Test
@@ -322,8 +323,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
-        final var failure = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var failure = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
     }
 
@@ -339,8 +339,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willThrow(new HandleException(INVALID_AUTORENEW_ACCOUNT));
 
-        final var failure = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var failure = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
@@ -399,9 +398,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
 
-
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
         assertEquals(0, topicStore.modifiedTopics().size());
     }
@@ -424,8 +421,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         doThrow(HandleException.class).when(expiryValidator).resolveCreationAttempt(anyBoolean(), any());
 
-        final var failure = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext));
+        final var failure = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(HandleException.class, failure.getClass());
         assertEquals(0, topicStore.modifiedTopics().size());
     }
