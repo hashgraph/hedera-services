@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.handleResponseCode;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.FREEZE_WITH_NO_KEYS;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.VALID_FREEZE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_KT;
@@ -33,7 +34,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -157,77 +157,64 @@ class TokenFreezeAccountHandlerTest {
         void tokenNotPresentInTxnBody() {
             final var noTokenTxn = newFreezeTxn(null, ACCOUNT_13257);
 
-            Assertions.assertThrowsHandle(
-                    () -> subject.handle(noTokenTxn, readableAccountStore, readableTokenStore, tokenRelStore),
-                    INVALID_TOKEN_ID);
+            assertThatThrownBy(
+                            () -> subject.handle(noTokenTxn, readableAccountStore, readableTokenStore, tokenRelStore))
+                    .isInstanceOf(HandleException.class)
+                    .has(handleResponseCode(INVALID_TOKEN_ID));
             verifyNoPut();
         }
 
         @Test
-        void accountNotPresentInTxnBody() throws PreCheckException {
+        void accountNotPresentInTxnBody() {
             final var pbjToken = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             final var noAcctTxn = newFreezeTxn(pbjToken, null);
             given(readableTokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey());
 
-            Assertions.assertThrowsHandle(
-                    () -> subject.handle(noAcctTxn, readableAccountStore, readableTokenStore, tokenRelStore),
-                    INVALID_ACCOUNT_ID);
+            assertThatThrownBy(() -> subject.handle(noAcctTxn, readableAccountStore, readableTokenStore, tokenRelStore))
+                    .isInstanceOf(HandleException.class)
+                    .has(handleResponseCode(INVALID_ACCOUNT_ID));
             verifyNoPut();
         }
 
         @Test
-        void tokenLookupThrowsPreCheckException() throws PreCheckException {
-            final var token = MISSING_TOKEN_12345;
-            doThrow(new PreCheckException(INVALID_TOKEN_ID))
-                    .when(readableTokenStore)
-                    .getTokenMeta(token);
-            final var txn = newFreezeTxn(token);
-
-            Assertions.assertThrowsHandle(
-                    () -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore),
-                    INVALID_TOKEN_ID);
-            verifyNoPut();
-        }
-
-        @Test
-        void tokenNotFound() throws PreCheckException {
+        void tokenNotFound() {
             final var token = MISSING_TOKEN_12345;
             given(readableTokenStore.getTokenMeta(token)).willReturn(null);
             final var txn = newFreezeTxn(token);
 
-            Assertions.assertThrowsHandle(
-                    () -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore),
-                    INVALID_TOKEN_ID);
+            assertThatThrownBy(() -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore))
+                    .isInstanceOf(HandleException.class)
+                    .has(handleResponseCode(INVALID_TOKEN_ID));
             verifyNoPut();
         }
 
         @Test
-        void tokenHasNoFreezeKey() throws PreCheckException {
+        void tokenHasNoFreezeKey() {
             final var token = toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS);
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey(null));
             final var txn = newFreezeTxn(token);
 
-            Assertions.assertThrowsHandle(
-                    () -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore),
-                    TOKEN_HAS_NO_FREEZE_KEY);
+            assertThatThrownBy(() -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore))
+                    .isInstanceOf(HandleException.class)
+                    .has(handleResponseCode(TOKEN_HAS_NO_FREEZE_KEY));
             verifyNoPut();
         }
 
         @Test
-        void accountNotFound() throws PreCheckException {
+        void accountNotFound() {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(readableAccountStore.getAccountById(ACCOUNT_13257)).willReturn(null);
             final var txn = newFreezeTxn(token);
 
-            Assertions.assertThrowsHandle(
-                    () -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore),
-                    INVALID_ACCOUNT_ID);
+            assertThatThrownBy(() -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore))
+                    .isInstanceOf(HandleException.class)
+                    .has(handleResponseCode(INVALID_ACCOUNT_ID));
             verifyNoPut();
         }
 
         @Test
-        void tokenRelNotFound() throws PreCheckException, HandleException {
+        void tokenRelNotFound() throws HandleException {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             final var accountNumber = (long) ACCOUNT_13257.accountNumOrThrow();
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
@@ -237,14 +224,14 @@ class TokenFreezeAccountHandlerTest {
             given(tokenRelStore.getForModify(token.tokenNum(), accountNumber)).willReturn(Optional.empty());
             final var txn = newFreezeTxn(token);
 
-            Assertions.assertThrowsHandle(
-                    () -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore),
-                    TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+            assertThatThrownBy(() -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore))
+                    .isInstanceOf(HandleException.class)
+                    .has(handleResponseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
             verifyNoPut();
         }
 
         @Test
-        void tokenRelFreezeSuccessful() throws PreCheckException {
+        void tokenRelFreezeSuccessful() {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             final var accountNumber = (long) ACCOUNT_13257.accountNumOrThrow();
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());

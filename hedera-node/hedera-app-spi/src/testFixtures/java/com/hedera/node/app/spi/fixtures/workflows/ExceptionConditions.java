@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.fixtures.workflows;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,11 +48,37 @@ public class ExceptionConditions {
         return new Condition<>(getResponseCodeCheck(responseCode), "responseCode " + responseCode);
     }
 
+    /**
+     * Returns a {@link Condition} that asserts that the {@link HandleException} has the given
+     * {@link ResponseCodeEnum}.
+     * <p>
+     * The type of the {@link Condition} is {@link Throwable} because
+     * {@link org.assertj.core.api.Assertions#assertThatThrownBy(ThrowingCallable)} expects a
+     * {@link Condition} of type {@link Throwable}.
+     *
+     * @param responseCode the expected {@link ResponseCodeEnum}
+     * @return the {@link Condition}
+     */
+    @NonNull
+    public static Condition<Throwable> handleResponseCode(@NonNull final ResponseCodeEnum responseCode) {
+        return new Condition<>(getHandleResponseCodeCheck(responseCode), "responseCode " + responseCode);
+    }
+
     @NonNull
     private static Predicate<Throwable> getResponseCodeCheck(@NonNull final ResponseCodeEnum responseCode) {
         return e -> {
             if (e instanceof PreCheckException exception) {
                 return exception.responseCode() == responseCode;
+            }
+            return false;
+        };
+    }
+
+    @NonNull
+    private static Predicate<Throwable> getHandleResponseCodeCheck(@NonNull final ResponseCodeEnum responseCode) {
+        return e -> {
+            if (e instanceof HandleException exception) {
+                return exception.getStatus() == responseCode;
             }
             return false;
         };
