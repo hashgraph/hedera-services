@@ -21,8 +21,6 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.math.IntMath;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -30,7 +28,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -95,15 +92,13 @@ public class UtilPrngHandler implements TransactionHandler {
         }
         // If range is provided then generate a random number in the given range
         // from the pseudoRandomBytes
-        final OneOf<EntropyOneOfType> entropy;
+        final var recordBuilder = context.recordBuilder(PrngRecordBuilder.class);
         if (range > 0) {
             final int pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
-            entropy = new OneOf<>(TransactionRecord.EntropyOneOfType.PRNG_NUMBER, pseudoRandomNumber);
+            recordBuilder.entropyNumber(pseudoRandomNumber);
         } else {
-            entropy = new OneOf<>(TransactionRecord.EntropyOneOfType.PRNG_BYTES, Bytes.wrap(pseudoRandomBytes));
+            recordBuilder.entropyBytes(Bytes.wrap(pseudoRandomBytes));
         }
-        final var recordBuilder = context.recordBuilder(PrngRecordBuilder.class);
-        recordBuilder.entropy(entropy);
     }
 
     /**

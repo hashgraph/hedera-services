@@ -17,8 +17,7 @@
 
 package com.hedera.node.app.service.util.impl.records;
 
-import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
-import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -27,13 +26,23 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface PrngRecordBuilder {
     /**
-     * Tracks the entropy, either a random number generated within the range provided in
-     * {@link com.hedera.hapi.node.util.UtilPrngTransactionBody} if range is greater than 0 or a
-     * pseudorandom 384-bit string generated when no output range is provided or a range of 0.
+     * Tracks the random number generated within the range provided in
+     * {@link com.hedera.hapi.node.util.UtilPrngTransactionBody} if range is greater than 0.
      *
-     * @param entropy the random number or pseudorandom 384-bit string
+     * @param num the random number generated within range
      * @return this builder
      */
     @NonNull
-    PrngRecordBuilder entropy(OneOf<EntropyOneOfType> entropy);
+    PrngRecordBuilder entropyNumber(final int num);
+
+    /**
+     * Tracks the pseudorandom 384-bit string generated when no output range is provided or range of 0 is provided in
+     * {@link com.hedera.hapi.node.util.UtilPrngTransactionBody}
+     *
+     * @param prngBytes the pseudorandom 384-bit string
+     * @return this builder
+     */
+    @NonNull
+    PrngRecordBuilder entropyBytes(@NonNull final Bytes prngBytes);
+
 }

@@ -36,6 +36,7 @@ import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -53,6 +54,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A custom builder for SingleTransactionRecord.
@@ -257,8 +259,15 @@ public class SingleTransactionRecordBuilder implements
     }
 
     @NonNull
-    public SingleTransactionRecordBuilder entropy(OneOf<TransactionRecord.EntropyOneOfType> entropy) {
-        this.entropy = entropy;
+    public SingleTransactionRecordBuilder entropyNumber(final int num) {
+        this.entropy = new OneOf<>(EntropyOneOfType.PRNG_NUMBER, num);
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilder entropyBytes(@NonNull final Bytes prngBytes) {
+        Objects.requireNonNull(prngBytes, "The argument 'entropyBytes' must not be null");
+        this.entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, prngBytes);
         return this;
     }
 

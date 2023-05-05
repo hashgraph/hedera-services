@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
@@ -136,7 +137,8 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        verify(recordBuilder, never()).entropy(any());
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
@@ -149,7 +151,8 @@ class UtilPrngHandlerTest {
         subject.handle(handleContext);
 
         final var entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, Bytes.wrap(hash.getValue()));
-        verify(recordBuilder).entropy(entropy);
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder).entropyBytes(Bytes.wrap(hash.getValue()));
     }
 
     @Test
@@ -161,10 +164,10 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        final var argCaptor = ArgumentCaptor.forClass(OneOf.class);
-        verify(recordBuilder).entropy(argCaptor.capture());
-        assertThat(argCaptor.getValue().value()).isInstanceOf(Integer.class);
-        assertThat((Integer) argCaptor.getValue().value()).isBetween(0, 20);
+        final var argCaptor = ArgumentCaptor.forClass(Integer.class);
+        verify(recordBuilder).entropyNumber(argCaptor.capture());
+        assertThat(argCaptor.getValue()).isBetween(0, 20);
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
@@ -176,10 +179,10 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        final var argCaptor = ArgumentCaptor.forClass(OneOf.class);
-        verify(recordBuilder).entropy(argCaptor.capture());
-        assertThat(argCaptor.getValue().value()).isInstanceOf(Integer.class);
-        assertThat((Integer) argCaptor.getValue().value()).isBetween(0, Integer.MAX_VALUE);
+        final var argCaptor = ArgumentCaptor.forClass(Integer.class);
+        verify(recordBuilder).entropyNumber(argCaptor.capture());
+        assertThat(argCaptor.getValue()).isBetween(0, Integer.MAX_VALUE);
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
@@ -202,8 +205,8 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        final var entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, Bytes.wrap(hash.getValue()));
-        verify(recordBuilder).entropy(entropy);
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder).entropyBytes(Bytes.wrap(hash.getValue()));
     }
 
     @Test
@@ -216,7 +219,8 @@ class UtilPrngHandlerTest {
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(NullPointerException.class);
 
-        verify(recordBuilder, never()).entropy(any());
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
@@ -233,7 +237,8 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        verify(recordBuilder, never()).entropy(any());
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
@@ -250,7 +255,8 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        verify(recordBuilder, never()).entropy(any());
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
@@ -267,7 +273,9 @@ class UtilPrngHandlerTest {
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class);
-        verify(recordBuilder, never()).entropy(any());
+
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     private void givenTxnWithRange(int range) {
