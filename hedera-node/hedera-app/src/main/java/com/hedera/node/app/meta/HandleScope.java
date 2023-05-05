@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+package com.hedera.node.app.meta;
 
-description = "Hedera Network Service API"
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-dependencies {
-  api(project(":hedera-node:hedera-app-spi"))
-  implementation(libs.swirlds.common)
-}
+import java.lang.annotation.Retention;
+import javax.inject.Scope;
+
+/**
+ * A Dagger scope that indicates that a component's lifetime is for each handle.
+ */
+@Scope
+@Retention(RUNTIME)
+public @interface HandleScope {}

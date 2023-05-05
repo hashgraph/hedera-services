@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,19 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+package com.hedera.node.app.service.network;
 
-description = "Hedera Network Service API"
+import com.swirlds.common.crypto.RunningHash;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-dependencies {
-  api(project(":hedera-node:hedera-app-spi"))
-  implementation(libs.swirlds.common)
+/**
+ * Provides access to the underlying running hash leaf in state.
+ */
+public interface ReadableRunningHashLeafStore {
+    /**
+     * Get the n-3 record's running hash from running hash leaf.
+     * @return the n-3 record's running hash
+     */
+    @NonNull
+    RunningHash getNMinusThreeRunningHash();
 }
