@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
+import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CommonUtils.combineConsumers;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -69,7 +69,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -802,7 +801,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // rehash the state as a whole.
         if (currentHash == null || !Objects.equals(initialHash, currentHash)) {
             initialState.invalidateHash();
-            Uninterruptable.abortAndThrowIfInterrupted(
+            abortAndThrowIfInterrupted(
                     () -> {
                         try {
                             MerkleCryptoFactory.getInstance()
@@ -1064,19 +1063,20 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 eventIntakeMetrics,
                 (PreConsensusEventObserver) event -> {
                     sequencer.assignStreamSequenceNumber(event);
-                    abortAndLogIfInterrupted(
+                    abortAndThrowIfInterrupted(
                             preConsensusEventWriter::writeEvent,
                             event,
                             "Interrupted while attempting to enqueue preconsensus event for writing");
                 },
                 (ConsensusRoundObserver) round -> {
-                    abortAndLogIfInterrupted(
+                    abortAndThrowIfInterrupted(
                             preConsensusEventWriter::setMinimumGenerationNonAncient,
                             round.getGenerations().getMinGenerationNonAncient(),
                             "Interrupted while attempting to enqueue change in minimum generation non-ancient");
 
-                    final EventImpl keystoneEvent = round.getKeystoneEvent();
-                    preConsensusEventWriter.requestFlush(keystoneEvent);
+                    abortAndThrowIfInterrupted(
+                            preConsensusEventWriter::requestFlush,
+                            "Interrupted while requesting preconsensus event flush");
                 });
         if (settings.getChatter().isChatterUsed()) {
             dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
@@ -1368,10 +1368,15 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     PAUSE_ALERT_INTERVAL / 2);
         }
 
+        // FUTURE WORK: validate that status is still STARTING_UP (sanity check until we refactor platform status)
         // FUTURE WORK: set platform status REPLAYING_EVENTS
-        // FUTURE WORK: replay events
-        // FUTURE WORK: validate that status is still REPLAYING_EVENTS (holdover until we refactor platform status)
+        // FUTURE WORK: replay the preconsensus event stream
+        // FUTURE WORK: validate that status is still REPLAYING_EVENTS (sanity check until we refactor platform status)
+        abortAndThrowIfInterrupted(
+                preConsensusEventWriter::beginStreamingNewEvents,
+                "interrupted while attempting to begin streaming new preconsensus events");
         // FUTURE WORK: set platform status READY
+        // FUTURE WORK: start gossip & new event creation here
 
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
