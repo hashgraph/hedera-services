@@ -44,6 +44,7 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.config.api.Configuration;
@@ -699,8 +700,11 @@ class QueueThreadTests {
                 .setThreadName(THREAD_NAME)
                 .setQueue(queue)
                 .setHandler(handler::add)
-                .enableMaxSizeMetric(metrics)
-                .enableMinSizeMetric(metrics)
+                .setMetricsConfiguration(
+                        new QueueThreadMetricsConfiguration(metrics)
+                                .enableMaxSizeMetric()
+                                .enableMinSizeMetric()
+                )
                 .build();
 
         final DefaultIntegerAccumulator maxSizeMetric =
@@ -748,8 +752,11 @@ class QueueThreadTests {
                 .setThreadName(THREAD_NAME)
                 .setQueue(queue)
                 .setHandler(handler::add)
-                .enableMaxSizeMetric(metrics)
-                .enableMinSizeMetric(metrics)
+                .setMetricsConfiguration(
+                        new QueueThreadMetricsConfiguration(metrics)
+                                .enableMaxSizeMetric()
+                                .enableMinSizeMetric()
+                )
                 .build();
 
         final DefaultIntegerAccumulator maxSizeMetric =

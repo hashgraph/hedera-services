@@ -66,6 +66,7 @@ import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
@@ -1173,7 +1174,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         .get()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
-                .enableMaxSizeMetric(metrics)
+                .setMetricsConfiguration(
+                        new QueueThreadMetricsConfiguration(metrics)
+                                .enableMaxSizeMetric())
                 .build());
     }
 
