@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network.protocol;
 
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import java.io.IOException;
 

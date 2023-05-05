@@ -17,7 +17,7 @@
 package com.swirlds.platform.network.unidirectional;
 
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.NetworkUtils;

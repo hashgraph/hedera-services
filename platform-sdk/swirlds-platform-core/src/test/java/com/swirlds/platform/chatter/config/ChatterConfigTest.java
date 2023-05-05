@@ -17,6 +17,7 @@
 package com.swirlds.platform.chatter.config;
 
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

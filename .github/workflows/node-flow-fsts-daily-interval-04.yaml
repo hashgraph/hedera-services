@@ -43,8 +43,9 @@ concurrency:
 #   "configs/services/suites/daily/GCP-Daily-Services-Global-3NReconnect-15N-4C.json"                 ----         90m
 #   "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C.json"    ----         150m
 #   "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C.json"     ----         220m
-#
-#   TOTAL RUN TIME:             550 minutes, 9.1 hours
+#   "configs/services/suites/weekly/GCP-Weekly-Services-Query-Restart-Performance-7N-7C.json"         ----         40m
+
+#   TOTAL RUN TIME:             590 minutes, 9.8 hours
 #
 #   Three parallel jobs:
 #
@@ -130,6 +131,26 @@ jobs:
       slack-summary-channel: hedera-regression-summary
       use-branch-for-slack-channel: false
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+    if: ${{ !cancelled() && always() }}
+
+  query-restart-performance-7n-7c:
+    name: Query-Restart-Performance-7N-7C
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    with:
+      ref: ${{ github.event.inputs.ref }}
+      branch-name: ${{ github.event.inputs.branch-name }}
+      hedera-tests-enabled: true
+      slack-results-channel: hedera-regression
+      slack-summary-channel: hedera-regression-summary
+      use-branch-for-slack-channel: false
+      panel-config: "configs/services/suites/weekly/GCP-Weekly-Services-Query-Restart-Performance-7N-7C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}

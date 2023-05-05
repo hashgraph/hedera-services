@@ -18,6 +18,7 @@ package com.swirlds.platform.test.event;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -195,6 +196,7 @@ public class RandomEventUtils {
             final EventImpl otherParent,
             final boolean fakeHash) {
         final BaseEventHashedData hashedData = new BaseEventHashedData(
+                new BasicSoftwareVersion(1),
                 creatorId,
                 selfParent != null ? selfParent.getGeneration() : -1,
                 otherParent != null ? otherParent.getGeneration() : -1,
@@ -227,6 +229,7 @@ public class RandomEventUtils {
             final boolean fakeHash) {
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
+                new BasicSoftwareVersion(1),
                 creatorId,
                 selfParent != null ? selfParent.getGeneration() : -1,
                 otherParent != null ? otherParent.getGeneration() : -1,

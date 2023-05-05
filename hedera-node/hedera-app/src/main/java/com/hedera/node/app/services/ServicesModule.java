@@ -27,13 +27,13 @@ import dagger.Module;
 
 @Module(
         includes = {
-            AdminServiceModule.class,
-            ConsensusServiceModule.class,
-            FileServiceModule.class,
-            NetworkServiceModule.class,
-            ScheduleServiceModule.class,
-            ConsensusServiceModule.class,
-            TokenServiceModule.class,
-            UtilServiceModule.class
+                AdminServiceModule.class,
+                ConsensusServiceModule.class,
+                FileServiceModule.class,
+                NetworkServiceModule.class,
+                ScheduleServiceModule.class,
+                TokenServiceModule.class,
+                UtilServiceModule.class,
         })
-public interface ServicesModule {}
+public interface ServicesModule {
+}
