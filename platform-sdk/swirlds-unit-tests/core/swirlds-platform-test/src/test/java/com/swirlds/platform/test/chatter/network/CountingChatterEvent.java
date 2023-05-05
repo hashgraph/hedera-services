@@ -19,6 +19,7 @@ package com.swirlds.platform.test.chatter.network;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.chatter.protocol.messages.EventDescriptor;
+import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
 import java.io.IOException;
 import java.time.Instant;
 
@@ -38,6 +39,10 @@ public class CountingChatterEvent implements SimulatedChatterEvent {
     private long creator;
     private long order;
     private Instant timeReceived;
+
+    public CountingChatterEvent(final CountingChatterEvent countingChatterEvent) {
+        this(countingChatterEvent.creator, countingChatterEvent.order);
+    }
 
     public CountingChatterEvent(final long creator, final long order) {
         this.descriptor = new FakeEventDescriptor(creator, order);
@@ -78,6 +83,11 @@ public class CountingChatterEvent implements SimulatedChatterEvent {
     @Override
     public void setTimeReceived(final Instant timeReceived) {
         this.timeReceived = timeReceived;
+    }
+
+    @Override
+    public SimulatedChatterEvent copy() {
+        return new CountingChatterEvent(this);
     }
 
     @Override

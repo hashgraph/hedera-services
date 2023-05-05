@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.chatter.network;
+package com.swirlds.platform.test.chatter.network.framework;
 
 import com.swirlds.platform.chatter.protocol.ChatterCore;
 import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.test.simulated.config.NodeConfig;
 
 /**
  * One component in an event processing pipeline. The first component in the pipeline is provided an event and can
- * decide if or when to pass that event on to the next component in the pipeline. These components can be used to track
+ * decide when and if to pass that event on to the next component in the pipeline. These components can be used to track
  * events, create bottlenecks, etc.
  *
  * @param <T>
  */
-public interface SimulatedEventPipeline<T extends ChatterEvent> {
+public interface SimulatedEventPipeline<T extends ChatterEvent> extends NodeConfigurable {
 
     /**
      * Add an event to this pipeline component
@@ -41,6 +42,13 @@ public interface SimulatedEventPipeline<T extends ChatterEvent> {
      * @param core the instance of core for this node
      */
     void maybeHandleEventsAndCallNext(final ChatterCore<T> core);
+
+    /**
+     * Apply the supplied node configuration., then invoke the next component in the pipeline
+     *
+     * @param nodeConfig nodeConfig the node configuration to apply
+     */
+    void applyNodeConfigAndCallNext(final NodeConfig nodeConfig);
 
     /**
      * Prints the status and/or results of this event component and calls the next component in the pipeline

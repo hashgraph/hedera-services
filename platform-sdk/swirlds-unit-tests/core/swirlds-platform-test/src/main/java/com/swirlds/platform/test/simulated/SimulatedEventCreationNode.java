@@ -168,7 +168,7 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
      * 		the message to add
      */
     @Override
-    public void handleMessage(final SelfSerializable msg, final long fromPeer) {
+    public void handleMessageFromWire(final SelfSerializable msg, final long fromPeer) {
         if (msg instanceof final GossipEvent event) {
             notifyCriticalQuorum(event);
             chatterEventMapper.mapEvent(event);

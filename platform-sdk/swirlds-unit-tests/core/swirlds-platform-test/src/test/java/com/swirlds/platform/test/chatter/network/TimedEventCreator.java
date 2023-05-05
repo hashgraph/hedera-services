@@ -17,22 +17,35 @@
 package com.swirlds.platform.test.chatter.network;
 
 import com.swirlds.common.time.Time;
+import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
+import com.swirlds.platform.test.chatter.network.framework.SimulatedEventCreator;
+import com.swirlds.platform.test.simulated.config.NodeConfig;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Supplier;
 
 public class TimedEventCreator<T extends SimulatedChatterEvent> implements SimulatedEventCreator<T> {
 
+    private static final Duration DEFAULT_CREATION_INTERVAL = Duration.ofMillis(500);
     private final Time time;
-    private final Duration createEvery;
+    private Duration createEvery;
     private final Supplier<T> newEventSupplier;
     private Instant nextEventCreation;
 
-    public TimedEventCreator(final Time time, final Duration createEvery, final Supplier<T> newEventSupplier) {
+    public TimedEventCreator(final Time time, final Supplier<T> newEventSupplier) {
+        this(time, newEventSupplier, DEFAULT_CREATION_INTERVAL);
+    }
+
+    public TimedEventCreator(final Time time, final Supplier<T> newEventSupplier, final Duration createEvery) {
         this.time = time;
         this.createEvery = createEvery;
         this.newEventSupplier = newEventSupplier;
         nextEventCreation = time.now();
+    }
+
+    @Override
+    public void applyNodeConfig(final NodeConfig nodeConfig) {
+        createEvery = nodeConfig.createEventEvery();
     }
 
     @Override

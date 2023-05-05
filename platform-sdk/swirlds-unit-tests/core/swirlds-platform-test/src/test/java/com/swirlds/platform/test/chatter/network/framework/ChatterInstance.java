@@ -1,20 +1,21 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.swirlds.platform.test.chatter.network;
+package com.swirlds.platform.test.chatter.network.framework;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -35,8 +36,10 @@ import com.swirlds.platform.chatter.ChatterSubSetting;
 import com.swirlds.platform.chatter.protocol.ChatterCore;
 import com.swirlds.platform.chatter.protocol.PeerMessageException;
 import com.swirlds.platform.chatter.protocol.peer.PeerInstance;
+import com.swirlds.platform.test.chatter.network.CountingChatterEvent;
 import com.swirlds.platform.test.simulated.GossipMessage;
 import com.swirlds.platform.test.simulated.GossipMessageHandler;
+import com.swirlds.platform.test.simulated.config.NodeConfig;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +51,7 @@ import java.util.concurrent.Executors;
  *
  * @param <T> the type of event sent and received by this node
  */
-public class ChatterNode<T extends SimulatedChatterEvent> implements GossipMessageHandler {
+public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipMessageHandler {
 
     private final NodeId selfId;
     private final Time time;
@@ -59,11 +62,11 @@ public class ChatterNode<T extends SimulatedChatterEvent> implements GossipMessa
     /**
      * The first of N event processors. Each event processor passes the event to the next processor when it is time to
      * do so. This first processor provided events as they are received via
-     * {@link #handleMessage(SelfSerializable, long)}
+     * {@link #handleMessageFromWire(SelfSerializable, long)}
      */
     private final SimulatedEventPipeline<T> eventPipeline;
 
-    public ChatterNode(
+    public ChatterInstance(
             final int numNodes,
             final NodeId selfId,
             final Class<T> clazz,
@@ -119,6 +122,11 @@ public class ChatterNode<T extends SimulatedChatterEvent> implements GossipMessa
         }
     }
 
+    public void applyNodeConfig(final NodeConfig nodeConfig) {
+        newEventCreator.applyNodeConfig(nodeConfig);
+        eventPipeline.applyNodeConfigAndCallNext(nodeConfig);
+    }
+
     public List<GossipMessage> getMessagesToGossip() {
         final List<GossipMessage> gossipMessages = new ArrayList<>();
         for (long peerId : peerIds) {
@@ -142,12 +150,16 @@ public class ChatterNode<T extends SimulatedChatterEvent> implements GossipMessa
     }
 
     @Override
-    public void handleMessage(final SelfSerializable msg, final long fromPeer) {
+    public void handleMessageFromWire(final SelfSerializable msg, final long fromPeer) {
         try {
             if (msg instanceof final SimulatedChatterEvent event) {
-                event.setTimeReceived(time.now());
+                // Add a copy so that each node can set its own time received
+                final SimulatedChatterEvent eventCopy = event.copy();
+                eventCopy.setTimeReceived(time.now());
+                core.getPeerInstance(fromPeer).inputHandler().handleMessage(eventCopy);
+            } else {
+                core.getPeerInstance(fromPeer).inputHandler().handleMessage(msg);
             }
-            core.getPeerInstance(fromPeer).inputHandler().handleMessage(msg);
         } catch (PeerMessageException e) {
             throw new RuntimeException(e);
         }

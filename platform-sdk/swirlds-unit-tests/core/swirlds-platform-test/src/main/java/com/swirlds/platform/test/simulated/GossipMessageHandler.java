@@ -25,12 +25,12 @@ import com.swirlds.common.system.NodeId;
 public interface GossipMessageHandler {
 
     /**
-     * Handle a message received from a peer
+     * Handle a message received from a peer over the network. This is the entry point to the gossip code.
      *
      * @param msg      the message received
      * @param fromPeer the peer who sent the message
      */
-    void handleMessage(final SelfSerializable msg, final long fromPeer);
+    void handleMessageFromWire(final SelfSerializable msg, final long fromPeer);
 
     /**
      * Get the node id of this handler

@@ -19,6 +19,9 @@ package com.swirlds.platform.test.chatter.network;
 import com.swirlds.common.time.Time;
 import com.swirlds.platform.chatter.protocol.ChatterCore;
 import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
+import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
+import com.swirlds.platform.test.simulated.config.NodeConfig;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -30,19 +33,25 @@ import java.util.Queue;
  *
  * @param <T>
  */
-public class DelayedIntakeQueue<T extends SimulatedChatterEvent> extends AbstractSimulatedEventPipeline<T> {
+public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends AbstractSimulatedEventPipeline<T> {
 
+    private static final Duration DEFAULT_DELAY = Duration.ZERO;
     private final Time time;
     private Duration intakeQueueDelay;
     private final Queue<IntakeQueueTask<T>> intakeQueue = new ArrayDeque<>();
 
-    public DelayedIntakeQueue(final Time time, final Duration intakeQueueDelay) {
+    public DelayableIntakeQueue(final Time time) {
+        this(time, DEFAULT_DELAY);
+    }
+
+    public DelayableIntakeQueue(final Time time, final Duration intakeQueueDelay) {
         this.time = time;
         this.intakeQueueDelay = intakeQueueDelay;
     }
 
-    public void setDelay(final Duration intakeQueueDelay) {
-        this.intakeQueueDelay = intakeQueueDelay;
+    @Override
+    public void applyNodeConfig(final NodeConfig nodeConfig) {
+        this.intakeQueueDelay = nodeConfig.intakeQueueDelay();
     }
 
     /**

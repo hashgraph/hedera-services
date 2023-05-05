@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.simulated.config;
 
+import com.swirlds.common.system.NodeId;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,7 +25,7 @@ import java.util.Map;
  * zero.
  */
 public class MapBuilder<T> {
-    private final Map<Long, T> map = new HashMap<>();
+    private final Map<NodeId, T> map = new HashMap<>();
     private T lastElement = null;
     private Long lastIndex = 0L;
 
@@ -41,12 +42,12 @@ public class MapBuilder<T> {
 
     public MapBuilder<T> times(final int num) {
         for (int i = 0; i < num; i++) {
-            map.put(lastIndex++, lastElement);
+            map.put(NodeId.createMain(lastIndex++), lastElement);
         }
         return this;
     }
 
-    public Map<Long, T> build() {
+    public Map<NodeId, T> build() {
         return map;
     }
 }

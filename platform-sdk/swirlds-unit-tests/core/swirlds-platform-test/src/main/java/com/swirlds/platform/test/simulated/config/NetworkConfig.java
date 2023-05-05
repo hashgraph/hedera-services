@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.simulated.config;
 
+import com.swirlds.common.system.NodeId;
 import java.time.Duration;
 import java.util.Map;
 
@@ -25,7 +26,7 @@ import java.util.Map;
  * @param nodeConfigs
  * 		configuration for nodes
  */
-public record NetworkConfig(Duration duration, Map<Long, NodeConfig> nodeConfigs) {
+public record NetworkConfig(String name, Duration duration, Map<NodeId, NodeConfig> nodeConfigs) {
 
     public int getNumConfigs() {
         return nodeConfigs.size();
