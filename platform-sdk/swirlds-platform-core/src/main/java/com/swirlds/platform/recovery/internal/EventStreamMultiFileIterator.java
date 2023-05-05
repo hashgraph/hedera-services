@@ -81,7 +81,7 @@ public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensu
      * Create an iterator that walks over all events in a given directory starting from a given event stream bound. The bound must occur in the event stream otherwise a NoSuchElementException will be thrown.
      *
      * @param eventStreamDirectory the directory in question
-     * @param bound                the  bound for the events in the event stream to be walked by this iterator
+     * @param bound                the bound for the events in the event stream to be walked by this iterator
      * @throws IOException            if there is a problem reading the event stream
      * @throws NoSuchElementException if an event prior to or matching the bound can't be found
      */

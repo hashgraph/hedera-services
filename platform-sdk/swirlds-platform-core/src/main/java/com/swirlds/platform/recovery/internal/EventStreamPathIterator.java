@@ -78,8 +78,9 @@ public class EventStreamPathIterator implements Iterator<Path> {
         } else {
             final EventStreamBound usedBound;
             if (bound.hasRound()) {
-                // corner case: get the file containing the round prior since the file may also contain events
-                // for the round we're looking for.
+                // Since we are only checking the first event in each file, if the first event is of the desired round,
+                // we can't be sure that there are not events of the same round at the end of the previous file.
+                // Therefore, we need to start at the previous round to capture all events of the desired round.
                 final long round = bound.getRound();
                 final long usedRound = round == FIRST_ROUND_AVAILABLE ? FIRST_ROUND_AVAILABLE : round - 1;
                 usedBound = new EventStreamBound(usedRound, bound.getTimestamp());
@@ -87,10 +88,9 @@ public class EventStreamPathIterator implements Iterator<Path> {
                 usedBound = bound;
             }
 
-            // This binary search is guaranteed to return a file that contains events
-            // from the round before where we want to start. As long as there are no gaps
-            // in the event stream files, this guarantees that we will observe all the events
-            // from the target round.
+            // If the bound has a round, this binary search is guaranteed to return a file that contains events
+            // from the round before where we want to start. As long as there are no gaps in the event stream files,
+            // this guarantees that we will observe all the events from the target round.
             final int startingIndex =
                     (int) BinarySearch.throwingSearch(0, eventStreamFiles.size(), (final Long index) -> {
                         final Path eventStreamFile = eventStreamFiles.get(index.intValue());
@@ -123,9 +123,10 @@ public class EventStreamPathIterator implements Iterator<Path> {
      *
      * @param path
      * 		a path to an event stream file
-     * @return the round of the first event in the file
+     * @return the DetailedConsensusEvent of the first event in the file
      */
-    private static DetailedConsensusEvent getFirstEventInEventStreamFile(final Path path) throws IOException {
+    @NonNull
+    private static DetailedConsensusEvent getFirstEventInEventStreamFile(@NonNull final Path path) throws IOException {
         try (final IOIterator<DetailedConsensusEvent> iterator = new EventStreamSingleFileIterator(path, true)) {
             if (!iterator.hasNext()) {
                 throw new IllegalStateException("Event stream file contains no events");
