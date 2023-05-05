@@ -37,14 +37,7 @@ public class LazyCreatePrecompileFuzzing extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                transferTokensFuzzing()
-                // transferFungibleTokenLazyCreateFuzzing()
-                // transferNonFungibleTokenLazyCreateFuzzing()
-                // transferERC20LazyCreateFuzzing()
-
-                // test transfer erc721
-                );
+        return List.of(transferTokensFuzzing());
     }
 
     private HapiSpec transferTokensFuzzing() {
@@ -52,7 +45,7 @@ public class LazyCreatePrecompileFuzzing extends HapiSuite {
         return defaultHapiSpec("TransferFungibleTokenLazyCreateFuzzing")
                 .given(initOperations())
                 .when()
-                .then(runWithProvider(transferTokensFuzzingWith(PROPERTIES)).lasting(2L, TimeUnit.SECONDS));
+                .then(runWithProvider(transferTokensFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
     }
 
     @Override
