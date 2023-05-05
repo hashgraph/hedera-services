@@ -19,7 +19,6 @@ package com.hedera.services.cli.sign;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
 import static com.hedera.services.stream.proto.SignatureType.SHA_384_WITH_RSA;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.readFirstIntFromFile;
-import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.platform.util.FileSigningUtils.signData;
 
 import com.google.protobuf.ByteString;
@@ -46,7 +45,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -189,7 +187,7 @@ public class RecordStreamSigningUtils {
     private static void generateSigRecordStreamFile(final File filePath, SignatureFile.Builder signatureFile)
             throws IOException {
         try (FileOutputStream output = new FileOutputStream(filePath)) {
-//            try (BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(filePath))) {
+            //            try (BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(filePath))) {
             output.write(RecordStreamType.getInstance().getSigFileHeader()[0]);
             signatureFile.build().writeTo(output);
         } catch (final IOException e) {
@@ -221,22 +219,23 @@ public class RecordStreamSigningUtils {
                     final byte[] serializedBytes = f.get().toByteArray();
 
                     // update stream digest
-                    System.out.printf("Writing file header [%s]%n", Arrays.toString(fileHeader));
+                    //                    System.out.printf("Writing file header [%s]%n", Arrays.toString(fileHeader));
                     for (final int value : fileHeader) {
                         dosMeta.writeInt(value);
                     }
-                    System.out.printf("Writing start running hash [%s]%n", hex(startRunningHash));
+                    //                    System.out.printf("Writing start running hash [%s]%n", hex(startRunningHash));
                     dosMeta.write(startRunningHash);
-                    System.out.printf("Writing end running hash [%s]%n", hex(endRunningHash));
+                    //                    System.out.printf("Writing end running hash [%s]%n", hex(endRunningHash));
                     dosMeta.write(endRunningHash);
-                    System.out.printf("Writing block number [%s]%n", blockNumber);
+                    //                    System.out.printf("Writing block number [%s]%n", blockNumber);
                     dosMeta.writeLong(blockNumber);
                     dosMeta.flush();
 
                     // update meta digest
-                    System.out.printf("Writing version [%s]%n", version);
+                    //                    System.out.printf("Writing version [%s]%n", version);
                     dos.writeInt(version);
-                    System.out.printf("Writing serializedBytes [%s]%n", hex(serializedBytes).substring(0, 32));
+                    //                    System.out.printf("Writing serializedBytes [%s]%n",
+                    // hex(serializedBytes).substring(0, 32));
                     dos.write(serializedBytes);
                     dos.flush();
                 } else {

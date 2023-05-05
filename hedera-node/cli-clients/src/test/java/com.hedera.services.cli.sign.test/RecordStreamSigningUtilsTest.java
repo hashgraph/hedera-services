@@ -19,7 +19,6 @@ package com.hedera.services.cli.sign.test;
 import static com.hedera.services.cli.sign.test.TestUtils.HAPI_VERSION;
 import static com.hedera.services.cli.sign.test.TestUtils.loadResourceFile;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,7 +33,6 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -171,8 +169,8 @@ class RecordStreamSigningUtilsTest {
         byte[] signeddata = Files.readAllBytes(signedFileDestination);
         byte[] origddata = Files.readAllBytes(origSign);
 
-//        System.out.println("signeddata" + Arrays.toString(signeddata));
-//        System.out.println("origddata" + Arrays.toString(origddata));
+        //        System.out.println("signeddata" + Arrays.toString(signeddata));
+        //        System.out.println("origddata" + Arrays.toString(origddata));
 
         assertArrayEquals(signeddata, origddata);
     }
