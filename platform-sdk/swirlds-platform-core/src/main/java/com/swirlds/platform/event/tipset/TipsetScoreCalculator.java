@@ -25,6 +25,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.IntToLongFunction;
 import java.util.function.LongToIntFunction;
 
@@ -109,6 +110,7 @@ public class TipsetScoreCalculator {
         this.maximumPossibleScore = totalWeight - selfWeight;
 
         this.snapshot = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
+        snapshotHistory.add(snapshot);
     }
 
     /**
@@ -138,7 +140,7 @@ public class TipsetScoreCalculator {
      * @return the change in the tipset advancement score
      */
     public long addEventAndGetAdvancementScore(@NonNull final EventFingerprint event) {
-        throwArgNull(event, "event");
+        Objects.requireNonNull(event);
         if (event.creator() != selfId) {
             throw new IllegalArgumentException("event creator must be the same as the window ID");
         }
@@ -195,7 +197,7 @@ public class TipsetScoreCalculator {
      *
      * @return the current tipset bully score
      */
-    public int getBullyScore() { // TODO test
+    public int getBullyScore() {
         int bullyScore = 0;
         for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
             bullyScore = Math.max(bullyScore, getBullyScoreForNodeIndex(nodeIndex));
@@ -210,22 +212,24 @@ public class TipsetScoreCalculator {
      * @param nodeIndex the index of the node in question
      * @return the bully score with respect to this node
      */
-    public int getBullyScoreForNodeIndex(final int nodeIndex) { // TODO test
+    public int getBullyScoreForNodeIndex(final int nodeIndex) {
         int bullyScore = 0;
         final long latestGeneration = tipsetBuilder.getLatestGenerationForNodeIndex(nodeIndex);
-
-        Tipset previousTipset = snapshot;
 
         // Iterate backwards in time until we find an event from the node being added to our ancestry, or if
         // we find that there are no eligible nodes to be added to our ancestry.
         final Iterator<Tipset> iterator = snapshotHistory.descendingIterator();
+
+        Tipset previousTipset = iterator.next();
+
         while (iterator.hasNext()) {
-            final Tipset currentTipset = iterator.next();
+            final Tipset currentTipset = previousTipset;
+            previousTipset = iterator.next();
 
             final long previousGeneration = previousTipset.getTipGenerationForNodeIndex(nodeIndex);
             final long currentGeneration = currentTipset.getTipGenerationForNodeIndex(nodeIndex);
 
-            if (previousGeneration == latestGeneration || previousGeneration < currentGeneration) {
+            if (currentGeneration == latestGeneration || previousGeneration < currentGeneration) {
                 // We stop increasing the bully score if we observe one of the two following events:
                 //
                 // 1) we find that the latest generation provided by a node matches a snapshot's generation
@@ -236,7 +240,6 @@ public class TipsetScoreCalculator {
             }
 
             bullyScore++;
-            previousTipset = currentTipset;
         }
 
         return bullyScore;

@@ -46,6 +46,8 @@ class TipsetBuilderTests {
         }
     }
 
+    // TODO test some examples by hand instead of randomly
+
     @Test
     @DisplayName("Basic Behavior Test")
     void basicBehaviorTest() {
