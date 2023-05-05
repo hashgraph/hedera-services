@@ -26,8 +26,8 @@ import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Implementation of the {@link ConfigProvider} interface.
@@ -36,7 +36,7 @@ public class ConfigProviderImpl implements ConfigProvider {
 
     private final PropertySource propertySource;
 
-    private final AtomicReference<VersionedConfiguration> configuration;
+    private volatile VersionedConfiguration configuration;
 
     private final AutoClosableLock updateLock = Locks.createAutoLock();
 
@@ -48,7 +48,7 @@ public class ConfigProviderImpl implements ConfigProvider {
     public ConfigProviderImpl(@NonNull final PropertySource propertySource) {
         this.propertySource = Objects.requireNonNull(propertySource, "propertySource");
         final Configuration config = new ConfigurationAdaptor(propertySource);
-        configuration = new AtomicReference<>(new VersionedConfigImpl(config, 0));
+        configuration = new VersionedConfigImpl(config, 0);
     }
 
     /**
@@ -58,9 +58,8 @@ public class ConfigProviderImpl implements ConfigProvider {
     public void update() {
         try (final var lock = updateLock.lock()) {
             final Configuration config = new ConfigurationAdaptor(propertySource);
-            final VersionedConfiguration versionedConfig =
+            configuration =
                     new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1);
-            configuration.set(versionedConfig);
         }
     }
 
