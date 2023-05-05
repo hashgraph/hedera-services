@@ -30,6 +30,9 @@ public record NodeId(long id) implements Comparable<NodeId> {
     /** the map of all NodeId objects created, indexed by ID number */
     private static final ConcurrentHashMap<Long, NodeId> nodeIds = new ConcurrentHashMap<>();
 
+    /** an invalid NodeId used in testing and boundary conditions. */
+    public static final NodeId INVALID_NODE_ID = NodeId.create(-1L);
+
     /** the first NodeId object created */
     public static final NodeId FIRST_NODE_ID = NodeId.create(0L);
 
@@ -39,7 +42,7 @@ public record NodeId(long id) implements Comparable<NodeId> {
      * @param id the ID number
      */
     public NodeId {
-        if (id < 0) {
+        if (id < -1L) {
             throw new IllegalArgumentException("id must be non-negative");
         }
     }
