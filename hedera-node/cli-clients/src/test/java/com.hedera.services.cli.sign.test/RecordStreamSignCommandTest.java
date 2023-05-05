@@ -66,9 +66,7 @@ class RecordStreamSignCommandTest {
         subject.setHapiVersion(hapiVersion);
 
         // then:
-        assertThrows(
-                RuntimeException.class,
-                () -> subject.generateSignatureFile(signatureFileDestination, fileToSign, keyPair));
+        assertFalse(subject.generateSignatureFile(signatureFileDestination, fileToSign, keyPair));
     }
 
     @Test

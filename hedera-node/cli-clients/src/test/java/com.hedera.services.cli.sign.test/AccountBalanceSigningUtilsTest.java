@@ -19,7 +19,6 @@ package com.hedera.services.cli.sign.test;
 import static com.hedera.services.cli.sign.test.TestUtils.loadResourceFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.cli.sign.AccountBalanceSigningUtils;
@@ -54,9 +53,7 @@ class AccountBalanceSigningUtilsTest {
         final var fileToSign = loadResourceFile("2023-03-23T14_25_29.576022Z_Balances.pb");
 
         // then:
-        assertThrows(
-                RuntimeException.class,
-                () -> AccountBalanceSigningUtils.signAccountBalanceFile(signatureFileDestination, fileToSign, keyPair));
+        assertFalse(AccountBalanceSigningUtils.signAccountBalanceFile(signatureFileDestination, fileToSign, keyPair));
     }
 
     @Test

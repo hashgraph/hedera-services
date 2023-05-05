@@ -20,7 +20,6 @@ import static com.hedera.services.cli.sign.test.TestUtils.HAPI_VERSION;
 import static com.hedera.services.cli.sign.test.TestUtils.loadResourceFile;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.cli.sign.RecordStreamSigningUtils;
@@ -65,10 +64,8 @@ class RecordStreamSigningUtilsTest {
         final var fileToSign = loadResourceFile("2023-04-18T14_08_20.465612003Z.rcd");
 
         // then:
-        assertThrows(
-                RuntimeException.class,
-                () -> RecordStreamSigningUtils.signRecordStreamFile(
-                        signatureFileDestination, fileToSign, keyPair, hapiVersion));
+        assertFalse(RecordStreamSigningUtils.signRecordStreamFile(
+                signatureFileDestination, fileToSign, keyPair, hapiVersion));
     }
 
     @Test

@@ -119,11 +119,11 @@ public class RecordStreamSigningUtils {
             System.out.println("Generated signature file: " + signatureFileDestination);
 
             return true;
-        } catch (final SignatureException | InvalidProtobufVersionException | IOException e) {
+        } catch (final SignatureException | InvalidKeyException | InvalidProtobufVersionException | IOException e) {
             System.err.printf(
                     "signRecordStreamFile :: Failed to sign file [%s] with exception : [%s]%n", streamFileToSign, e);
             return false;
-        } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
+        } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
             System.err.printf(
                     "signRecordStreamFile :: Irrecoverable error encountered when signing [%s] with exception : [%s]%n",
                     streamFileToSign, e);
