@@ -23,8 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.*;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.intPropOrElse;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.onlyEcdsaKeys;
 
@@ -35,10 +34,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomHbarTransfer;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomLazyCreateERC20Transfer;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomLazyCreateFungibleTransfer;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomLazyCreateNonFungibleTransfer;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.*;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -62,6 +58,8 @@ public class LazyCreatePrecompileFuzzingFactory {
     public static final String TRANSFER_TOKEN_TXN = "transferTokenTxn";
     public static final String TRANSFER_NFT_TXN = "transferNFTTxn";
     public static final String ERC_20_CONTRACT = "ERC20Contract";
+    public static final String ERC_721_CONTRACT = "ERC721Contract";
+    private static final String BASE_APPROVE_TXN = "baseApproveTxn";
     private static final String SPENDER = "spender";
     private static final String FIRST = "FIRST";
     public static final ByteString FIRST_META = ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
@@ -199,21 +197,33 @@ public class LazyCreatePrecompileFuzzingFactory {
             // HBAR TRANSFER
             cryptoCreate(SENDER).balance(INITIAL_SUPPLY).key(MULTI_KEY).maxAutomaticTokenAssociations(5),
 
-            // Fungible init
-            tokenCreate(FUNGIBLE_TOKEN)
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .initialSupply(INITIAL_SUPPLY)
+            // Non Fungible init
+            tokenCreate(NON_FUNGIBLE_TOKEN)
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .initialSupply(0)
                     .treasury(TOKEN_TREASURY)
                     .adminKey(MULTI_KEY)
-                    .supplyKey(MULTI_KEY)
-                    .exposingCreatedIdTo(id ->
-                            tokenAddr.set(HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
-            uploadInitCode(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
-            contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
-            tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
-            cryptoTransfer(moving(INITIAL_SUPPLY, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)),
-
-            // Non Fungible init
+                    .supplyKey(MULTI_KEY),
+            uploadInitCode(ERC_721_CONTRACT),
+            contractCreate(ERC_721_CONTRACT),
+            tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+            tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
+            tokenAssociate(ERC_721_CONTRACT, NON_FUNGIBLE_TOKEN),
+            mintToken(NON_FUNGIBLE_TOKEN, erc721UniqueTokens()),
+            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
+                    .between(TOKEN_TREASURY, OWNER)),
+            cryptoApproveAllowance()
+                    .payingWith(UNIQUE_PAYER_ACCOUNT)
+                    .addNftAllowance(
+                            OWNER,
+                            NON_FUNGIBLE_TOKEN,
+                            ERC_721_CONTRACT,
+                            false,
+                            List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L))
+                    .via(BASE_APPROVE_TXN)
+                    .logged()
+                    .signedBy(UNIQUE_PAYER_ACCOUNT, OWNER)
+                    .fee(ONE_HBAR),
 
             // ERC 20 init
             cryptoCreate(TOKEN_TREASURY_ERC),
@@ -247,7 +257,24 @@ public class LazyCreatePrecompileFuzzingFactory {
                             intPropOrElse("randomFungibleTransfer.bias", 0, props))
                     .withOp(
                             new RandomLazyCreateERC20Transfer(spec.registry(), keys),
-                            intPropOrElse("randomERC20Transfer.bias", 0, props));
+                            intPropOrElse("randomERC20Transfer.bias", 0, props))
+                    .withOp(
+                            new RandomERC721TransferLazyCreate(spec.registry(), keys),
+                            intPropOrElse("randomERC721Transfer.bias", 0, props));
         };
+    }
+
+    private static List<ByteString> erc721UniqueTokens() {
+        return List.of(
+                ByteString.copyFromUtf8("a"),
+                ByteString.copyFromUtf8("b"),
+                ByteString.copyFromUtf8("c"),
+                ByteString.copyFromUtf8("d"),
+                ByteString.copyFromUtf8("e"),
+                ByteString.copyFromUtf8("f"),
+                ByteString.copyFromUtf8("g"),
+                ByteString.copyFromUtf8("h"),
+                ByteString.copyFromUtf8("i"),
+                ByteString.copyFromUtf8("j"));
     }
 }
