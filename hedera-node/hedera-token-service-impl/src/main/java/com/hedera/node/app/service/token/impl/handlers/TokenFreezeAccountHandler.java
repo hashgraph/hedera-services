@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -77,9 +78,9 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
      */
     public void handle(
             @NonNull final TransactionBody txn,
-            @NonNull ReadableAccountStore accountStore,
-            @NonNull ReadableTokenStore tokenStore,
-            @NonNull WritableTokenRelationStore tokenRelStore)
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore)
             throws HandleException {
         requireNonNull(txn);
         requireNonNull(accountStore);
@@ -97,7 +98,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
     /**
      * Performs checks independent of state or context
      */
-    private void pureChecks(TokenFreezeAccountTransactionBody op) throws PreCheckException {
+    private void pureChecks(@NonNull final TokenFreezeAccountTransactionBody op) throws PreCheckException {
         if (!op.hasToken()) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }
@@ -114,10 +115,10 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
      * @return the token relation for the given token and account
      */
     private TokenRelation validateSemantics(
-            TokenFreezeAccountTransactionBody op,
-            ReadableAccountStore accountStore,
-            ReadableTokenStore tokenStore,
-            WritableTokenRelationStore tokenRelStore)
+            @NonNull final TokenFreezeAccountTransactionBody op,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore)
             throws HandleException {
         // Check that the token exists
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
@@ -127,24 +128,18 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         } catch (PreCheckException e) {
             throw new HandleException(INVALID_TOKEN_ID);
         }
-        if (token == null) {
-            throw new HandleException(INVALID_TOKEN_ID);
-        }
-        if (!token.hasFreezeKey()) {
-            throw new HandleException(TOKEN_HAS_NO_FREEZE_KEY);
-        }
+        validateTrue(token != null, INVALID_TOKEN_ID);
+
+        // Check that the token has a freeze key
+        validateTrue(token.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
 
         // Check that the account exists
         final var account = accountStore.getAccountById(op.accountOrElse(AccountID.DEFAULT));
-        if (account == null) {
-            throw new HandleException(INVALID_ACCOUNT_ID);
-        }
+        validateTrue(account != null, INVALID_ACCOUNT_ID);
 
         // Check that the token is associated to the account
         final var tokenRel = tokenRelStore.getForModify(tokenId.tokenNum(), account.accountNumber());
-        if (tokenRel.isEmpty()) {
-            throw new HandleException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-        }
+        validateTrue(tokenRel.isPresent(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
         // Return the token relation
         return tokenRel.get();
