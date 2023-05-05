@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.network;
 
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

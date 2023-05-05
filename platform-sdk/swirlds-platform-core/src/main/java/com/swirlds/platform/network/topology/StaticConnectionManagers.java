@@ -20,7 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.NETWORK;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.InboundConnectionManager;
 import com.swirlds.platform.network.OutboundConnectionManager;

@@ -47,6 +47,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
     private String account;
     private List<String> tokens = new ArrayList<>();
+    private Optional<ResponseCodeEnum[]> permissibleCostAnswerPrechecks = Optional.empty();
 
     @Override
     public HederaFunctionality type() {
@@ -85,9 +86,21 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
         }
     }
 
+    public HapiTokenAssociate hasCostAnswerPrecheckFrom(ResponseCodeEnum... prechecks) {
+        permissibleCostAnswerPrechecks = Optional.of(prechecks);
+        return self();
+    }
+
     private long lookupExpiry(HapiSpec spec) throws Throwable {
         if (!spec.registry().hasContractId(account)) {
-            HapiGetAccountInfo subOp = getAccountInfo(account).noLogging();
+            HapiGetAccountInfo subOp;
+            if (permissibleCostAnswerPrechecks.isPresent()) {
+                subOp = getAccountInfo(account)
+                        .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks.get())
+                        .noLogging();
+            } else {
+                subOp = getAccountInfo(account).noLogging();
+            }
             Optional<Throwable> error = subOp.execFor(spec);
             if (error.isPresent()) {
                 if (!loggingOff) {
