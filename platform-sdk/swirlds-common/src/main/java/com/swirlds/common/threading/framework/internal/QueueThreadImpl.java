@@ -53,6 +53,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
      * Incremented each time we timeout while waiting for work from the queue.
      */
     private final AtomicLong noWorkCount = new AtomicLong();
+    private final QueueThreadMetrics metrics;
 
     /**
      * <p>
@@ -81,8 +82,8 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
         }
 
         buffer = new ArrayList<>(bufferSize);
-
         handler = configuration.getHandler();
+        metrics = new QueueThreadMetrics(configuration);
 
         stoppableThread = configuration
                 .setWork(this::doWork)
@@ -130,6 +131,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
                     "can not start thread if it has already built a seed or if it has already been started");
         }
 
+        metrics.startingWork();
         stoppableThread.start();
     }
 
@@ -227,7 +229,12 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     private void doWork() throws InterruptedException {
         drainTo(buffer, bufferSize);
         if (buffer.size() == 0) {
-            waitForItem();
+            metrics.finishedWork();
+            final T item = waitForItem();
+            metrics.startingWork();
+            if (item != null) {
+                handler.accept(item);
+            }
             return;
         }
 
@@ -238,19 +245,18 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     }
 
     /**
-     * Wait a while for the next item to become available and handle it. If no item becomes available before
-     * a timeout then return without doing any work.
+     * Wait a while for the next item to become available and return it. If no item becomes available before
+     * a timeout then return null.
      *
      * @throws InterruptedException
      * 		if this method is interrupted during execution
      */
-    private void waitForItem() throws InterruptedException {
+    private T waitForItem() throws InterruptedException {
         final T item = poll(WAIT_FOR_WORK_DELAY_MS, MILLISECONDS);
-        if (item != null) {
-            handler.accept(item);
-        } else {
+        if (item == null) {
             noWorkCount.incrementAndGet();
         }
+        return item;
     }
 
     /**
