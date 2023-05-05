@@ -24,6 +24,7 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +58,7 @@ class ConfigUtilsTest {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
 
         // when
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, "not.available.package");
+        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("not.available.package"));
         final Configuration configuration = configurationBuilder.build();
 
         // then
@@ -70,7 +71,7 @@ class ConfigUtilsTest {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
 
         // when
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, "com.swirlds.common.config.sub");
+        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds.common.config.sub"));
         final Configuration configuration = configurationBuilder.build();
 
         // then

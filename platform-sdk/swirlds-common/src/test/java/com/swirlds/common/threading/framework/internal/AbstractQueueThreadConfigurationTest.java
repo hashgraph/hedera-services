@@ -106,8 +106,7 @@ class AbstractQueueThreadConfigurationTest {
                 .setThreadName(THREAD_NAME)
                 .setMaxBufferSize(MAX_BUFFER_SIZE)
                 .setCapacity(CAPACITY)
-                .setHandler(handler)
-                .setWaitForItemRunnable(waitForItemRunnable);
+                .setHandler(handler);
 
         // then
         assertThat(configuration.getNodeId()).isEqualTo(NODE_ID);
@@ -116,7 +115,6 @@ class AbstractQueueThreadConfigurationTest {
         assertThat(configuration.getMaxBufferSize()).isEqualTo(MAX_BUFFER_SIZE);
         assertThat(configuration.getCapacity()).isEqualTo(CAPACITY);
         assertThat(configuration.getHandler()).isEqualTo(handler);
-        assertThat(configuration.getWaitForItemRunnable()).isEqualTo(waitForItemRunnable);
         assertThat(configuration.getQueue()).isNull();
     }
 
@@ -134,8 +132,7 @@ class AbstractQueueThreadConfigurationTest {
                 .setThreadName(THREAD_NAME)
                 .setMaxBufferSize(MAX_BUFFER_SIZE)
                 .setCapacity(CAPACITY)
-                .setHandler(handler)
-                .setWaitForItemRunnable(waitForItemRunnable);
+                .setHandler(handler);
 
         // when
         final DummyQueueThreadConfiguration<String> copied = new DummyQueueThreadConfiguration<>(configuration);
@@ -147,7 +144,6 @@ class AbstractQueueThreadConfigurationTest {
         assertThat(configuration.getMaxBufferSize()).isEqualTo(copied.getMaxBufferSize());
         assertThat(configuration.getCapacity()).isEqualTo(copied.getCapacity());
         assertThat(configuration.getHandler()).isEqualTo(copied.getHandler());
-        assertThat(configuration.getWaitForItemRunnable()).isEqualTo(copied.getWaitForItemRunnable());
         assertThat(configuration.getQueue()).isEqualTo(copied.getQueue());
     }
 
@@ -167,8 +163,7 @@ class AbstractQueueThreadConfigurationTest {
                 .setThreadName(THREAD_NAME)
                 .setMaxBufferSize(MAX_BUFFER_SIZE)
                 .setCapacity(CAPACITY)
-                .setHandler(handler)
-                .setWaitForItemRunnable(waitForItemRunnable);
+                .setHandler(handler);
         final QueueThread<String> queueThread = configuration.buildQueueThread(false);
 
         // then
@@ -195,8 +190,7 @@ class AbstractQueueThreadConfigurationTest {
                 .setThreadName(THREAD_NAME)
                 .setMaxBufferSize(MAX_BUFFER_SIZE)
                 .setCapacity(CAPACITY)
-                .setHandler(handler)
-                .setWaitForItemRunnable(waitForItemRunnable);
+                .setHandler(handler);
         final QueueThread<String> queueThread = configuration.buildQueueThread(true);
 
         // then
@@ -223,7 +217,6 @@ class AbstractQueueThreadConfigurationTest {
                 .setMaxBufferSize(MAX_BUFFER_SIZE)
                 .setCapacity(CAPACITY)
                 .setHandler(handler)
-                .setWaitForItemRunnable(waitForItemRunnable)
                 .setQueue(queue);
         final QueueThread<String> queueThread = configuration.buildQueueThread(false);
 
@@ -261,7 +254,6 @@ class AbstractQueueThreadConfigurationTest {
                 .setMaxBufferSize(MAX_BUFFER_SIZE)
                 .setCapacity(CAPACITY)
                 .setHandler(handler)
-                .setWaitForItemRunnable(waitForItemRunnable)
                 .setQueue(queue)
                 .enableMaxSizeMetric(metrics)
                 .enableMinSizeMetric(metrics);
@@ -302,7 +294,6 @@ class AbstractQueueThreadConfigurationTest {
         // given
         final ThreadManager threadManager = mock(ThreadManager.class);
         final InterruptableConsumer<String> handler = mock(InterruptableConsumer.class);
-        final InterruptableRunnable waitForItemRunnable = mock(InterruptableRunnable.class);
 
         // then
         assertThatThrownBy(() -> new DummyQueueThreadConfiguration<String>(threadManager)
@@ -312,7 +303,6 @@ class AbstractQueueThreadConfigurationTest {
                         .setMaxBufferSize(MAX_BUFFER_SIZE)
                         .setCapacity(CAPACITY)
                         .setHandler(handler)
-                        .setWaitForItemRunnable(waitForItemRunnable)
                         .enableMaxSizeMetric(null)
                         .buildQueueThread(false))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -324,7 +314,6 @@ class AbstractQueueThreadConfigurationTest {
                         .setMaxBufferSize(MAX_BUFFER_SIZE)
                         .setCapacity(CAPACITY)
                         .setHandler(handler)
-                        .setWaitForItemRunnable(waitForItemRunnable)
                         .enableMinSizeMetric(null)
                         .buildQueueThread(false))
                 .isInstanceOf(IllegalArgumentException.class);

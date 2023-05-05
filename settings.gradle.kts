@@ -103,7 +103,8 @@ gitRepositories {
     uri.set("https://github.com/hashgraph/hedera-protobufs.git")
     // choose tag or branch of HAPI you would like to test with
     // this looks for a tag in hedera-protobufs repo
-    tag.set("v0.38.0")
+    // This version needs to match tha HAPI version below in versionCatalogs
+    tag.set("add-missing-account-fields")
     // do not load project from repo
     autoInclude.set(false)
   }
@@ -118,8 +119,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      // this looks for a tag in nexus repository manager
-      version("hapi-version", "0.38.1-SNAPSHOT")
+      version("hapi-version", "0.38.1-allowance-SNAPSHOT")
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.5.1")

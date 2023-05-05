@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.network.communication.multithreaded;
 
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
@@ -40,6 +40,7 @@ class TestNegotiator {
         this.protocol = protocol.setRunProtocol(Connection::disconnect);
         negotiator = new NegotiatorThread(
                 connectionManager,
+                100,
                 List.of(c -> handshakeRan.incrementAndGet()),
                 new NegotiationProtocols(List.of(protocol)));
         thread = new Thread(this::run);

@@ -19,6 +19,7 @@ package com.hedera.node.app.spi.meta;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.function.LongSupplier;
 
@@ -58,4 +59,16 @@ public interface HandleContext {
      * @return the validator for expiry metadata
      */
     ExpiryValidator expiryValidator();
+
+    /**
+     * Create a new store given the store's interface. This gives read-only access to the store.
+     *
+     * @param storeInterface The store interface to find and create a store for
+     * @return An implementation of store interface provided, or null if the store
+     * @param <C> Interface class for a Store
+     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
+     * @throws NullPointerException if {@code clazz} is {@code null}
+     */
+    @NonNull
+    <C> C createReadableStore(@NonNull Class<C> storeInterface);
 }

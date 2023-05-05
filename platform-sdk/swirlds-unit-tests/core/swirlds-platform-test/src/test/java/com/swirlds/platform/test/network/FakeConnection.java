@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.network;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
+import com.swirlds.platform.network.Connection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 

@@ -511,6 +511,7 @@ public final class Hedera implements SwirldMain {
     private void onHandleConsensusRound(
             @NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
         // TBD: The handle workflow should be created by dagger and just be something we can delegate to here.
+        daggerApp.mutableState().set(state);
         daggerApp.dualStateAccessor().setDualState(dualState);
         daggerApp.workingStateAccessor().setHederaState(state);
         daggerApp.logic().incorporateConsensus(round);
