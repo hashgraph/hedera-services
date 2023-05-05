@@ -60,7 +60,7 @@ class AccountBalanceSignCommandTest {
 
     @Test
     @DisplayName("Succeed to generate signature file")
-    void generateSignatureFile() {
+    void succeedGenerateSignatureFile() {
         // given:
         final var signatureFileDestination = Path.of(tmpDir.getPath() + "/2023-03-23T14_25_29.576022Z_Balances.pb_sig");
         final var fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
