@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.config.impl;
+package com.hedera.node.app.meta;
 
-import static com.swirlds.config.api.ConfigProperty.NULL_DEFAULT_VALUE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
-import java.util.List;
-import java.util.Set;
+import java.lang.annotation.Retention;
+import javax.inject.Scope;
 
-@ConfigData("null")
-public record NullConfig(
-        @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) List<Integer> list,
-        @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) Set<Integer> set,
-        @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) String value) {}
+/**
+ * A Dagger scope that indicates that a component's lifetime is for each handle.
+ */
+@Scope
+@Retention(RUNTIME)
+public @interface HandleScope {}

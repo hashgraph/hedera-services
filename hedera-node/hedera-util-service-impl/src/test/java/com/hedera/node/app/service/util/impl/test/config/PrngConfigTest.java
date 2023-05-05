@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.config.impl;
+package com.hedera.node.app.service.util.impl.test.config;
 
-import static com.swirlds.config.api.ConfigProperty.NULL_DEFAULT_VALUE;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
-import java.util.List;
-import java.util.Set;
+import com.hedera.node.app.service.util.impl.config.PrngConfig;
+import org.junit.jupiter.api.Test;
 
-@ConfigData("null")
-public record NullConfig(
-        @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) List<Integer> list,
-        @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) Set<Integer> set,
-        @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) String value) {}
+class PrngConfigTest {
+
+    @Test
+    void emptyConstructor() {
+        assertFalse(new PrngConfig(false).prngEnabled());
+        assertTrue(new PrngConfig(true).prngEnabled());
+    }
+}

@@ -19,6 +19,9 @@ package com.hedera.node.app.workflows.dispatcher;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -106,6 +109,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
@@ -143,6 +147,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.token.impl.records.CreateAccountRecordBuilder;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.service.util.impl.records.UtilPrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -150,6 +155,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -344,6 +350,8 @@ class MonoTransactionDispatcherTest {
     @Mock
     private Account account;
 
+    private SideEffectsTracker sideEffectsTracker = new SideEffectsTracker();
+
     private TransactionHandlers handlers;
     private TransactionDispatcher dispatcher;
 
@@ -402,24 +410,27 @@ class MonoTransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, usageLimits);
+        dispatcher = new MonoTransactionDispatcher(
+                handleContext, txnCtx, handlers, dynamicProperties, usageLimits, sideEffectsTracker);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(null, txnCtx, handlers, dynamicProperties, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                        null, txnCtx, handlers, dynamicProperties, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new MonoTransactionDispatcher(handleContext, null, handlers, dynamicProperties, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                        handleContext, null, handlers, dynamicProperties, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new MonoTransactionDispatcher(handleContext, txnCtx, null, dynamicProperties, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                        handleContext, txnCtx, null, dynamicProperties, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, null, usageLimits))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                        handleContext, txnCtx, handlers, null, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new MonoTransactionDispatcher(handleContext, txnCtx, handlers, dynamicProperties, null))
+        assertThatThrownBy(() -> new MonoTransactionDispatcher(
+                        handleContext, txnCtx, handlers, dynamicProperties, null, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -609,6 +620,32 @@ class MonoTransactionDispatcherTest {
                 .setCreated(PbjConverter.fromPbj(
                         AccountID.newBuilder().accountNum(666L).build()));
         verify(writableAccountStore, never()).commit();
+    }
+
+    @Test
+    void dispatchesUtilPrngAsExpectedWithPrngBytes() {
+        final var mockRecordBuilder = mock(UtilPrngRecordBuilder.class);
+        given(utilPrngHandler.newRecordBuilder()).willReturn(mockRecordBuilder);
+        given(mockRecordBuilder.hasPrngBytes()).willReturn(true);
+        given(mockRecordBuilder.getPrngBytes()).willReturn(Bytes.wrap("test".getBytes()));
+
+        dispatcher.dispatchHandle(HederaFunctionality.UTIL_PRNG, transactionBody, writableStoreFactory);
+
+        assertEquals(-1, sideEffectsTracker.getPseudorandomNumber());
+        assertArrayEquals("test".getBytes(), sideEffectsTracker.getPseudorandomBytes());
+    }
+
+    @Test
+    void dispatchesUtilPrngAsExpectedWithPrngNumber() {
+        final var mockRecordBuilder = mock(UtilPrngRecordBuilder.class);
+        given(utilPrngHandler.newRecordBuilder()).willReturn(mockRecordBuilder);
+        given(mockRecordBuilder.hasPrngNumber()).willReturn(true);
+        given(mockRecordBuilder.getPrngNumber()).willReturn(123);
+
+        dispatcher.dispatchHandle(HederaFunctionality.UTIL_PRNG, transactionBody, writableStoreFactory);
+
+        assertEquals(123, sideEffectsTracker.getPseudorandomNumber());
+        assertNull(sideEffectsTracker.getPseudorandomBytes());
     }
 
     @Test

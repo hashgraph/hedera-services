@@ -24,13 +24,16 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,6 +52,7 @@ import javax.inject.Singleton;
 public class MonoTransactionDispatcher extends TransactionDispatcher {
     private final TransactionContext txnCtx;
     private final UsageLimits usageLimits;
+    private final SideEffectsTracker sideEffectsTracker;
 
     @Inject
     public MonoTransactionDispatcher(
@@ -56,10 +60,12 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             @NonNull TransactionContext txnCtx,
             @NonNull TransactionHandlers handlers,
             @NonNull GlobalDynamicProperties dynamicProperties,
-            @NonNull UsageLimits usageLimits) {
+            @NonNull UsageLimits usageLimits,
+            @NonNull SideEffectsTracker sideEffectsTracker) {
         super(handleContext, handlers, dynamicProperties);
         this.txnCtx = requireNonNull(txnCtx);
         this.usageLimits = requireNonNull(usageLimits);
+        this.sideEffectsTracker = requireNonNull(sideEffectsTracker);
     }
 
     @Override
@@ -115,5 +121,24 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     @Override
     protected void finishTokenRevokeKycFromAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
         tokenRelStore.commit();
+    }
+
+    @Override
+    protected void finishTokenPause(@NonNull final WritableTokenStore tokenStore) {
+        tokenStore.commit();
+    }
+
+    @Override
+    protected void finishTokenUnPause(@NonNull final WritableTokenStore tokenStore) {
+        tokenStore.commit();
+    }
+
+    @Override
+    protected void finishUtilPrng(@NonNull final PrngRecordBuilder recordBuilder) {
+        if (recordBuilder.hasPrngNumber()) {
+            sideEffectsTracker.trackRandomNumber(recordBuilder.getPrngNumber());
+        } else if (recordBuilder.hasPrngBytes()) {
+            sideEffectsTracker.trackRandomBytes(PbjConverter.asBytes(recordBuilder.getPrngBytes()));
+        }
     }
 }
