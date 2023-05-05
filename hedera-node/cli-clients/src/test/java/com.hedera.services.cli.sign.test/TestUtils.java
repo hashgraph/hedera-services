@@ -40,12 +40,12 @@ public class TestUtils {
         }
     }
 
-    static KeyPair loadNode0Key() {
+    static KeyPair loadNode0Key(String fileName) {
         try {
             return FileSigningUtils.loadPfxKey(
                     Path.of(Objects.requireNonNull(TestUtils.class
                                     .getClassLoader()
-                                    .getResource("com.hedera.services.cli.sign.test/private-node0000.pfx"))
+                                    .getResource("com.hedera.services.cli.sign.test/" + fileName))
                             .toURI()),
                     "password",
                     "s-node0000");

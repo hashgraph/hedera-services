@@ -186,8 +186,7 @@ public class RecordStreamSigningUtils {
 
     private static void generateSigRecordStreamFile(final File filePath, SignatureFile.Builder signatureFile)
             throws IOException {
-        try (FileOutputStream output = new FileOutputStream(filePath)) {
-            //            try (BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(filePath))) {
+        try (BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(filePath))) {
             output.write(RecordStreamType.getInstance().getSigFileHeader()[0]);
             signatureFile.build().writeTo(output);
         } catch (final IOException e) {

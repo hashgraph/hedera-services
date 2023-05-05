@@ -160,18 +160,15 @@ class RecordStreamSigningUtilsTest {
     void matchOriginalSignatureFile() throws IOException {
         // given:
         final var fileToSign = loadResourceFile("2023-04-28T07_49_22.718079003Z.rcd");
-        final var origSign = loadResourceFile("2023-04-28T07_49_22.718079003Z_1.rcd_sig");
+        final var origSign = loadResourceFile("2023-04-28T07_49_22.718079003Z.rcd_sig");
         final var signedFileDestination = Path.of(tmpDir.getPath() + "/2023-04-28T07_49_22.718079003Z.rcd_sig");
         // then:
         assertTrue(RecordStreamSigningUtils.signRecordStreamFile(
-                signedFileDestination, fileToSign, TestUtils.loadNode0Key(), hapiVersion));
+                signedFileDestination, fileToSign, TestUtils.loadNode0Key("private-node0000-1.pfx"), hapiVersion));
 
-        byte[] signeddata = Files.readAllBytes(signedFileDestination);
-        byte[] origddata = Files.readAllBytes(origSign);
+        byte[] signdata = Files.readAllBytes(signedFileDestination);
+        byte[] origdata = Files.readAllBytes(origSign);
 
-        //        System.out.println("signeddata" + Arrays.toString(signeddata));
-        //        System.out.println("origddata" + Arrays.toString(origddata));
-
-        assertArrayEquals(signeddata, origddata);
+        assertArrayEquals(signdata, origdata);
     }
 }

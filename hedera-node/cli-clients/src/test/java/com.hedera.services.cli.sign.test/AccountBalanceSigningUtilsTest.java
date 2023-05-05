@@ -106,7 +106,7 @@ class AccountBalanceSigningUtilsTest {
         final var origSign = loadResourceFile("2023-05-04T07_45_00.089060542Z_Balances.pb_sig");
         // then:
         assertTrue(AccountBalanceSigningUtils.signAccountBalanceFile(
-                signatureFileDestination, fileToSign, TestUtils.loadNode0Key()));
+                signatureFileDestination, fileToSign, TestUtils.loadNode0Key("private-node0000.pfx")));
         assertEquals(-1, Files.mismatch(signatureFileDestination, origSign));
     }
 }
