@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.event.validation;
 
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import java.util.List;
 import java.util.function.Predicate;

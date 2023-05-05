@@ -19,6 +19,7 @@ package com.swirlds.platform.sync.protocol;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

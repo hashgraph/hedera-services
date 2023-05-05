@@ -20,8 +20,8 @@ import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.time.Time;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.network.ByteConstants;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;

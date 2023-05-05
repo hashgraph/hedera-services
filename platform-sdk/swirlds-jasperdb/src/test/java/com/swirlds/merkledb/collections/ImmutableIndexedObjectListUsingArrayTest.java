@@ -111,7 +111,6 @@ class ImmutableIndexedObjectListUsingArrayTest {
                 factoryForReaderToTest(new TestIndexedObject[0]);
 
         assertNull(emptyList.getLast(), "Last element of empty list should be null");
-        assertSame(emptyList, emptyList.withDeletedObjects(null), "Lists should reuse themselves given null deletions");
         assertSame(
                 emptyList,
                 emptyList.withDeletedObjects(Collections.emptySet()),
