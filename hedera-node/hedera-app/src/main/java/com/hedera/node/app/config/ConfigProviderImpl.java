@@ -58,13 +58,13 @@ public class ConfigProviderImpl implements ConfigProvider {
     public void update() {
         try (final var lock = updateLock.lock()) {
             final Configuration config = new ConfigurationAdaptor(propertySource);
-            configuration =
-                    new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1);
+            long nextVersion = this.configuration.getVersion() + 1;
+            configuration = new VersionedConfigImpl(config, nextVersion);
         }
     }
 
     @Override
     public VersionedConfiguration getConfiguration() {
-        return configuration.get();
+        return configuration;
     }
 }
