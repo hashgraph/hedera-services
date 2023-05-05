@@ -151,7 +151,6 @@ public class RecordStreamSigningUtils {
     private static int[] createFileHeader(@NonNull final String hapiVersion) throws InvalidProtobufVersionException {
         Objects.requireNonNull(hapiVersion, "hapiVersion must not be null");
 
-        //  example: "0.37.0-allowance-SNAPSHOT";
         final String[] versions = hapiVersion
                 .replace("-SNAPSHOT", "")
                 .split(Pattern.quote("-"))[0]
