@@ -18,6 +18,7 @@ package com.swirlds.platform.test.utils;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
@@ -72,6 +73,7 @@ public final class EqualsVerifier {
         }
 
         final BaseEventHashedData data = new BaseEventHashedData(
+                new BasicSoftwareVersion(1),
                 r.nextLong(Long.MAX_VALUE),
                 r.nextLong(Long.MAX_VALUE),
                 r.nextLong(Long.MAX_VALUE),

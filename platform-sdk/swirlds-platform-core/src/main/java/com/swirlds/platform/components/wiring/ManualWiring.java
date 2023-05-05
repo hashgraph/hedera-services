@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.components.wiring;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -47,6 +47,8 @@ import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -118,6 +120,7 @@ public class ManualWiring {
      * @param haltRequestedConsumer              consumer to invoke when a halt is requested
      * @param appCommunicationComponent          the {@link AppCommunicationComponent}
      * @param preConsensusEventWriter            writes preconsensus events to disk
+     * @param getPlatformStatus                  a supplier that returns the current platform status
      * @return a fully wired {@link StateManagementComponent}
      */
     public @NonNull StateManagementComponent wireStateManagementComponent(
@@ -128,20 +131,29 @@ public class ManualWiring {
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
-            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+            @NonNull final PreConsensusEventWriter preConsensusEventWriter,
+            @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
-        throwArgNull(platformSigner, "platformSigner");
-        throwArgNull(mainClassName, "mainClassName");
-        throwArgNull(selfId, "selfId");
-        throwArgNull(swirldName, "swirldName");
-        throwArgNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
-        throwArgNull(haltRequestedConsumer, "haltRequestedConsumer");
-        throwArgNull(appCommunicationComponent, "appCommunicationComponent");
-        throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
+        Objects.requireNonNull(platformSigner, "platformSigner");
+        Objects.requireNonNull(mainClassName, "mainClassName");
+        Objects.requireNonNull(selfId, "selfId");
+        Objects.requireNonNull(swirldName, "swirldName");
+        Objects.requireNonNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
+        Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer");
+        Objects.requireNonNull(appCommunicationComponent, "appCommunicationComponent");
+        Objects.requireNonNull(preConsensusEventWriter, "preConsensusEventWriter");
+        Objects.requireNonNull(getPlatformStatus, "getPlatformStatus");
 
         final StateManagementComponentFactory stateManagementComponentFactory =
                 new DefaultStateManagementComponentFactory(
-                        platformContext, threadManager, addressBook, platformSigner, mainClassName, selfId, swirldName);
+                        platformContext,
+                        threadManager,
+                        addressBook,
+                        platformSigner,
+                        mainClassName,
+                        selfId,
+                        swirldName,
+                        getPlatformStatus);
 
         stateManagementComponentFactory.newLatestCompleteStateConsumer(ss -> {
             final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");

@@ -24,11 +24,21 @@ import com.swirlds.common.UniqueId;
  */
 public enum PlatformStatus implements UniqueId {
     /**
-     * The Platform is still starting up. This is the default state before ACTIVE
+     * The Platform is starting up.
      */
     STARTING_UP(1),
     /**
-     * All is normal: the Platform is running, connected, and syncing properly
+     * The platform is replaying events from the preconsensus event stream.
+     * (Not yet in use)
+     */
+    REPLAYING_EVENTS(7),
+    /**
+     * The platform has starting up or has finished reconnecting, and is now ready to rejoin the network.
+     * (Not yet in use)
+     */
+    READY(8),
+    /**
+     * All is normal: the Platform is running, connected, and gossiping.
      */
     ACTIVE(2),
     /**
