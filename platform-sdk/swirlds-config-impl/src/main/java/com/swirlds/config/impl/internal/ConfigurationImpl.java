@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 class ConfigurationImpl implements Configuration, ConfigLifecycle {
@@ -133,6 +134,49 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
             return defaultValue;
         }
         return getValues(propertyName, propertyType);
+    }
+
+    @Override
+    @Nullable
+    public Set<String> getValueSet(@NonNull final String propertyName) {
+        final List<String> values = getValues(propertyName);
+        if (values == null) {
+            return null;
+        }
+        return Set.copyOf(values);
+    }
+
+    @Override
+    @Nullable
+    public Set<String> getValueSet(@NonNull final String propertyName, @Nullable final Set<String> defaultValue) {
+        if (!exists(propertyName)) {
+            return defaultValue;
+        }
+        return getValueSet(propertyName);
+    }
+
+    @Override
+    @Nullable
+    public <T> Set<T> getValueSet(@NonNull final String propertyName, @NonNull final Class<T> propertyType)
+            throws NoSuchElementException, IllegalArgumentException {
+        final List<T> values = getValues(propertyName, propertyType);
+        if (values == null) {
+            return null;
+        }
+        return Set.copyOf(values);
+    }
+
+    @Override
+    @Nullable
+    public <T> Set<T> getValueSet(
+            @NonNull final String propertyName,
+            @NonNull final Class<T> propertyType,
+            @Nullable final Set<T> defaultValue)
+            throws IllegalArgumentException {
+        if (!exists(propertyName)) {
+            return defaultValue;
+        }
+        return getValueSet(propertyName, propertyType);
     }
 
     @Nullable

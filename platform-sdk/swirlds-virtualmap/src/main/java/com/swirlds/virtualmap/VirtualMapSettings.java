@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap;
 
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.time.Duration;
 
 /**
@@ -103,9 +104,33 @@ public interface VirtualMapSettings {
      * The value must be positive and will typically be a fairly small number, such as 20. The first copy is not
      * flushed, but every Nth copy thereafter is.
      *
-     * @return The number of copies between flushes.
+     * This setting is ignored, if {@link #getFamilyThrottleThreshold()} is set to a positive value.
+     *
+     * @return The number of copies between flushes
      */
     int getFlushInterval();
+
+    /**
+     * Virtual root flush threshold, in bytes. When virtual root size exceeds the threshold, it is
+     * no longer merged with next copies, but marked to flush to disk, when it becomes the oldest
+     * accessible version.
+     *
+     * If a virtual root is explicitly requested to flush with {@link VirtualRootNode#enableFlush()},
+     * its size isn't checked against this threshold.
+     *
+     * @return Virtual root flush threshold
+     */
+    long getCopyFlushThreshold();
+
+    /**
+     * Virtual root family throttle threshold, in bytes. When sum of estimated sizes of all
+     * virtual roots in a single family (virtual map) exceeds the threshold, virtual pipeline
+     * starts throttling creating new virtual root copies.
+     *
+     * @return
+     * 		Virtual root family throttle threshold
+     */
+    long getFamilyThrottleThreshold();
 
     /**
      * The preferred maximum number of virtual maps waiting to be flushed. If more maps than this number are awaiting
