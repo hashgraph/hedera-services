@@ -69,7 +69,7 @@ public final class SignatureTransmitter {
 
         final PlatformStatus platformStatus = getPlatformStatus.get();
         if (platformStatus != PlatformStatus.ACTIVE && platformStatus != PlatformStatus.MAINTENANCE) {
-            // Don't bother sending signature transactions if not active or during the freeze process.
+            // Only send transactions if the platform is in ACTIVE or MAINTENANCE state.
             return;
         }
 
