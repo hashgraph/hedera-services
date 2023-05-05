@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -79,6 +80,7 @@ import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.token.TokenWipeAccountTransactionBody;
 import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
@@ -140,10 +142,12 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -575,63 +579,69 @@ class MonoTransactionDispatcherTest {
 
     @Test
     void dispatchesCryptoCreateAsExpected() {
-        final var createBuilder = mock(CreateAccountRecordBuilder.class);
+        final var txnBody = TransactionBody.newBuilder()
+                .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        given(cryptoCreateHandler.newRecordBuilder()).willReturn(createBuilder);
-        given(createBuilder.getCreatedAccount()).willReturn(666L);
-        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+        final var accountID = AccountID.newBuilder().accountNum(666L).build();
+        final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
+        given(recordBuilder.accountID()).willReturn(accountID);
+        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 
-        dispatcher.dispatchHandle(HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(handleContext);
 
-        verify(txnCtx)
-                .setCreated(PbjConverter.fromPbj(
-                        AccountID.newBuilder().accountNum(666L).build()));
+        verify(txnCtx).setCreated(PbjConverter.fromPbj(accountID));
         verify(writableAccountStore).commit();
     }
 
     @Test
     void doesntCommitWhenUsageLimitsExceeded() {
-        final var createBuilder = mock(CreateAccountRecordBuilder.class);
-
-        given(cryptoCreateHandler.newRecordBuilder()).willReturn(createBuilder);
-        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+        final var txnBody = TransactionBody.newBuilder()
+                .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
         given(usageLimits.areCreatableAccounts(1)).willReturn(false);
 
-        assertThatThrownBy(() -> dispatcher.dispatchHandle(
-                        HederaFunctionality.CRYPTO_CREATE, transactionBody, writableStoreFactory))
+        assertThatThrownBy(() -> dispatcher.dispatchHandle(handleContext))
                 .isInstanceOf(HandleException.class);
 
-        verify(txnCtx, never())
-                .setCreated(PbjConverter.fromPbj(
-                        AccountID.newBuilder().accountNum(666L).build()));
+        verify(txnCtx, never()).setCreated(any(com.hederahashgraph.api.proto.java.AccountID.class));
         verify(writableAccountStore, never()).commit();
     }
 
     @Test
     void dispatchesUtilPrngAsExpectedWithPrngBytes() {
-        final var mockRecordBuilder = mock(UtilPrngRecordBuilder.class);
-        given(utilPrngHandler.newRecordBuilder()).willReturn(mockRecordBuilder);
-        given(mockRecordBuilder.hasPrngBytes()).willReturn(true);
-        given(mockRecordBuilder.getPrngBytes()).willReturn(Bytes.wrap("test".getBytes()));
+        final var txnBody = TransactionBody.newBuilder()
+                .utilPrng(UtilPrngTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
 
-        dispatcher.dispatchHandle(HederaFunctionality.UTIL_PRNG, transactionBody, writableStoreFactory);
+        final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
+        final var entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, Bytes.wrap("test".getBytes()));
+        given(recordBuilder.entropy()).willReturn(entropy);
+        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
 
-        assertEquals(-1, sideEffectsTracker.getPseudorandomNumber());
-        assertArrayEquals("test".getBytes(), sideEffectsTracker.getPseudorandomBytes());
+        dispatcher.dispatchHandle(handleContext);
+
+        assertThat(sideEffectsTracker.getPseudorandomNumber()).isEqualTo(-1);
+        assertThat(sideEffectsTracker.getPseudorandomBytes()).isEqualTo("test".getBytes());
     }
 
     @Test
     void dispatchesUtilPrngAsExpectedWithPrngNumber() {
-        final var mockRecordBuilder = mock(UtilPrngRecordBuilder.class);
-        given(utilPrngHandler.newRecordBuilder()).willReturn(mockRecordBuilder);
-        given(mockRecordBuilder.hasPrngNumber()).willReturn(true);
-        given(mockRecordBuilder.getPrngNumber()).willReturn(123);
+        final var txnBody = TransactionBody.newBuilder()
+                .utilPrng(UtilPrngTransactionBody.DEFAULT).build();
+        given(handleContext.body()).willReturn(txnBody);
 
-        dispatcher.dispatchHandle(HederaFunctionality.UTIL_PRNG, transactionBody, writableStoreFactory);
+        final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
+        final var entropy = new OneOf<>(EntropyOneOfType.PRNG_NUMBER, 123);
+        given(recordBuilder.entropy()).willReturn(entropy);
+        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
 
-        assertEquals(123, sideEffectsTracker.getPseudorandomNumber());
-        assertNull(sideEffectsTracker.getPseudorandomBytes());
+        dispatcher.dispatchHandle(handleContext);
+
+        assertThat(sideEffectsTracker.getPseudorandomNumber()).isEqualTo(123);
+        assertThat(sideEffectsTracker.getPseudorandomBytes()).isNull();
     }
 
     @Test

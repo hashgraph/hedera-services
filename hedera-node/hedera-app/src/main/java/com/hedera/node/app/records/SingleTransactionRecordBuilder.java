@@ -43,6 +43,8 @@ import com.hedera.hapi.streams.RecordStreamItem;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
@@ -58,7 +60,9 @@ import java.util.List;
 @SuppressWarnings("unused")
 public class SingleTransactionRecordBuilder implements
         ConsensusCreateTopicRecordBuilder,
-        ConsensusSubmitMessageRecordBuilder {
+        ConsensusSubmitMessageRecordBuilder,
+        CryptoCreateRecordBuilder,
+        PrngRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes;
@@ -252,9 +256,19 @@ public class SingleTransactionRecordBuilder implements
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder entropy(OneOf<TransactionRecord.EntropyOneOfType> entropy) {
         this.entropy = entropy;
         return this;
+    }
+
+    /**
+     * @deprecated this method is only used temporarily during the migration
+     */
+    @Deprecated(forRemoval = true)
+    @Nullable
+    public OneOf<TransactionRecord.EntropyOneOfType> entropy() {
+        return entropy;
     }
 
     public SingleTransactionRecordBuilder evmAddress(Bytes evmAddress) {
@@ -270,9 +284,19 @@ public class SingleTransactionRecordBuilder implements
         return this;
     }
 
-    public SingleTransactionRecordBuilder accountID(AccountID accountID) {
+    @NonNull
+    public SingleTransactionRecordBuilder accountID(@NonNull final AccountID accountID) {
         this.accountID = accountID;
         return this;
+    }
+
+    /**
+     * @deprecated this method is only used temporarily during the migration
+     */
+    @Deprecated(forRemoval = true)
+    @Nullable
+    public AccountID accountID() {
+        return accountID;
     }
 
     public SingleTransactionRecordBuilder fileID(FileID fileID) {

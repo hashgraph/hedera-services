@@ -31,7 +31,4 @@ module com.hedera.node.app.service.token.impl.test {
     opens com.hedera.node.app.service.token.impl.test.handlers to
             org.junit.platform.commons,
             org.mockito;
-    opens com.hedera.node.app.service.token.impl.test.records to
-            org.junit.platform.commons,
-            org.mockito;
 }

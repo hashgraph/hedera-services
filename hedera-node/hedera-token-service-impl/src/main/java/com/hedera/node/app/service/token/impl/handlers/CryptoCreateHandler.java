@@ -34,11 +34,9 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody.StakedIdOneOfType;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CreateAccountRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -89,11 +87,10 @@ public class CryptoCreateHandler implements TransactionHandler {
      * account being deleted or has insufficient balance or the account is not created due to
      * the usage of a price regime
      */
-    public void handle(
-            @NonNull final HandleContext handleContext,
-            @NonNull final TransactionBody txnBody,
-            @NonNull final WritableAccountStore accountStore,
-            @NonNull final CryptoCreateRecordBuilder recordBuilder) {
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext);
+        final var txnBody = handleContext.body();
         final var op = txnBody.cryptoCreateAccount();
 
         // validate fields in the transaction body that involves checking with
@@ -107,6 +104,7 @@ public class CryptoCreateHandler implements TransactionHandler {
         //  Currently, this check is being done in `finishCryptoCreate` before `commit`
 
         // validate payer account exists and has enough balance
+        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
         final var optionalPayer = accountStore.getForModify(
                 txnBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
         if (optionalPayer.isEmpty()) {
@@ -128,17 +126,14 @@ public class CryptoCreateHandler implements TransactionHandler {
 
         // set newly created account number in the record builder
         final var createdAccountNum = accountCreated.accountNumber();
-        recordBuilder.setCreatedAccount(createdAccountNum);
+        final var createdAccountID = AccountID.newBuilder().accountNum(createdAccountNum).build();
+        final var recordBuilder = handleContext.recordBuilder(CryptoCreateRecordBuilder.class);
+        recordBuilder.accountID(createdAccountID);
 
         // put if any new alias is associated with the account into account store
         if (op.alias() != Bytes.EMPTY) {
             accountStore.putAlias(op.alias().toString(), createdAccountNum);
         }
-    }
-
-    @Override
-    public CryptoCreateRecordBuilder newRecordBuilder() {
-        return new CreateAccountRecordBuilder();
     }
 
     /* ----------- Helper Methods ----------- */
@@ -229,7 +224,7 @@ public class CryptoCreateHandler implements TransactionHandler {
             builder.stakedNumber(stakeNumber);
         }
         // set the new account number
-        builder.accountNumber(handleContext.newEntityNumSupplier().getAsLong());
+        builder.accountNumber(handleContext.newEntityNum());
         return builder.build();
     }
 

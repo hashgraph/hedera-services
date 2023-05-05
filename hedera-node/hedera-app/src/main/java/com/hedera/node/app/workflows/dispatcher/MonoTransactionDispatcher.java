@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.dispatcher;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -29,10 +29,9 @@ import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -85,23 +84,22 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(context);
             case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(context);
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(context);
+            case CRYPTO_CREATE_ACCOUNT -> dispatchCryptoCreate(context);
             case TOKEN_GRANT_KYC -> dispatchTokenGrantKycToAccount(context);
             case TOKEN_REVOKE_KYC -> dispatchTokenRevokeKycFromAccount(context);
             case TOKEN_PAUSE -> dispatchTokenPause(context);
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(context);
+            case UTIL_PRNG -> dispatchPrng(context);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
 
-    // TODO: In all the below methods, commit will be called in workflow or some other place
-    //  when handle workflow is implemented
+    private void dispatchConsensusCreateTopic(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.consensusCreateTopicHandler();
+        handler.handle(handleContext);
+        finishConsensusCreateTopic(handleContext);
+    }
 
-    /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
-     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
-     *
-     * @param handleContext the {@link HandleContext} for the transaction
-     */
     private void finishConsensusCreateTopic(@NonNull final HandleContext handleContext) {
         // Adapt the record builder outcome for mono-service
         final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilder.class);
@@ -112,47 +110,34 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         topicStore.commit();
     }
 
-    private void finishCryptoCreate(
-            @NonNull final CryptoCreateRecordBuilder recordBuilder, @NonNull final WritableAccountStore accountStore) {
-        // If accounts can't be created, due to the usage of a price regime, throw an exception
-        if (!usageLimits.areCreatableAccounts(1)) {
-            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
-        }
-        // Adapt the record builder outcome for mono-service
-        txnCtx.setCreated(PbjConverter.fromPbj(AccountID.newBuilder()
-                .accountNum(recordBuilder.getCreatedAccount())
-                .build()));
-        accountStore.commit();
+    private void dispatchConsensusUpdateTopic(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.consensusUpdateTopicHandler();
+        handler.handle(handleContext);
+        finishConsensusUpdateTopic(handleContext);
     }
 
-    /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
-     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
-     *
-     * @param handleContext the {@link HandleContext} for the transaction
-     */
     private void finishConsensusUpdateTopic(@NonNull final HandleContext handleContext) {
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         topicStore.commit();
     }
 
-    /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
-     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
-     *
-     * @param handleContext the {@link HandleContext} for the transaction
-     */
+    private void dispatchConsensusDeleteTopic(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.consensusDeleteTopicHandler();
+        handler.handle(handleContext);
+        finishConsensusDeleteTopic(handleContext);
+    }
+
     private void finishConsensusDeleteTopic(@NonNull final HandleContext handleContext) {
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         topicStore.commit();
     }
 
-    /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
-     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
-     *
-     * @param handleContext the {@link HandleContext} for the transaction
-     */
+    private void dispatchConsensusSubmitMessage(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.consensusSubmitMessageHandler();
+        handler.handle(handleContext);
+        finishConsensusSubmitMessage(handleContext);
+    }
+
     private void finishConsensusSubmitMessage(@NonNull final HandleContext handleContext) {
         // Adapt the record builder outcome for mono-service
         final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilder.class);
@@ -162,113 +147,81 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         topicStore.commit();
     }
 
-    /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
-     *
-     * @param handleContext the {@link HandleContext} for the transaction
-     */
-    protected void finishTokenGrantKycToAccount(@NonNull final HandleContext handleContext) {
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        tokenRelStore.commit();
-    }
-
-    /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
-     *
-     * @param handleContext the {@link HandleContext} for the transaction
-     */
-    protected void finishTokenRevokeKycFromAccount(@NonNull final HandleContext handleContext) {
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        tokenRelStore.commit();
-    }
-
-    private void dispatchConsensusDeleteTopic(@NonNull final HandleContext handleContext) {
-        final var handler = handlers.consensusDeleteTopicHandler();
+    private void dispatchCryptoCreate(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.cryptoCreateHandler();
         handler.handle(handleContext);
-        finishConsensusDeleteTopic(handleContext);
+        finishCryptoCreate(handleContext);
     }
 
-    private void dispatchConsensusUpdateTopic(@NonNull final HandleContext handleContext) {
-        final var handler = handlers.consensusUpdateTopicHandler();
-        handler.handle(handleContext);
-        finishConsensusUpdateTopic(handleContext);
+    private void finishCryptoCreate(@NonNull final HandleContext handleContext) {
+        // If accounts can't be created, due to the usage of a price regime, throw an exception
+        if (!usageLimits.areCreatableAccounts(1)) {
+            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        }
+        // Adapt the record builder outcome for mono-service
+        final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilder.class);
+        txnCtx.setCreated(PbjConverter.fromPbj(recordBuilder.accountID()));
+        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
+        accountStore.commit();
     }
 
-    private void dispatchConsensusCreateTopic(@NonNull final HandleContext handleContext) {
-        final var handler = handlers.consensusCreateTopicHandler();
-        handler.handle(handleContext);
-        finishConsensusCreateTopic(handleContext);
-    }
-
-    private void dispatchConsensusSubmitMessage(@NonNull final HandleContext handleContext) {
-        final var handler = handlers.consensusSubmitMessageHandler();
-        handler.handle(handleContext);
-        finishConsensusSubmitMessage(handleContext);
-    }
-
-    /**
-     * Dispatches the token grant KYC transaction to the appropriate handler.
-     *
-     * @param handleContext the {@link HandleContext} for the transaction
-     */
     private void dispatchTokenGrantKycToAccount(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenGrantKycToAccountHandler();
         handler.handle(handleContext);
         finishTokenGrantKycToAccount(handleContext);
     }
 
-    /**
-     * Dispatches the token revoke KYC transaction to the appropriate handler.
-     *
-     * @param handleContext the {@link HandleContext} for the transaction
-     */
+    private void finishTokenGrantKycToAccount(@NonNull final HandleContext handleContext) {
+        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
+        tokenRelStore.commit();
+    }
+
     private void dispatchTokenRevokeKycFromAccount(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenRevokeKycFromAccountHandler();
         handler.handle(handleContext);
         finishTokenRevokeKycFromAccount(handleContext);
     }
 
-    /**
-     * Dispatches the token unpause transaction to the appropriate handler.
-     *
-     * @param handleContext the {@link HandleContext} for the transaction
-     */
-    private void dispatchTokenUnpause(@NonNull final HandleContext handleContext) {
-        final var handler = handlers.tokenUnpauseHandler();
-        handler.handle(handleContext);
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        tokenStore.commit();
+    private void finishTokenRevokeKycFromAccount(@NonNull final HandleContext handleContext) {
+        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
+        tokenRelStore.commit();
     }
 
-    /**
-     * Dispatches the token pause transaction to the appropriate handler.
-     *
-     * @param handleContext the {@link HandleContext} for the transaction
-     */
     private void dispatchTokenPause(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenPauseHandler();
         handler.handle(handleContext);
+        finishTokenPause(handleContext);
+    }
+
+    private void finishTokenPause(@NonNull final HandleContext handleContext) {
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         tokenStore.commit();
     }
 
-    private void finishTokenPause(@NonNull final WritableTokenStore tokenStore) {
+    private void dispatchTokenUnpause(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.tokenUnpauseHandler();
+        handler.handle(handleContext);
+        finishTokenUnPause(handleContext);
+    }
+
+    private void finishTokenUnPause(@NonNull final HandleContext handleContext) {
+        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         tokenStore.commit();
     }
 
-    private void finishTokenUnPause(@NonNull final WritableTokenStore tokenStore) {
-        tokenStore.commit();
+    private void dispatchPrng(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.utilPrngHandler();
+        handler.handle(handleContext);
+        finishUtilPrng(handleContext);
     }
 
-    private void finishUtilPrng(@NonNull final PrngRecordBuilder recordBuilder) {
-        if (recordBuilder.hasPrngNumber()) {
-            sideEffectsTracker.trackRandomNumber(recordBuilder.getPrngNumber());
-        } else if (recordBuilder.hasPrngBytes()) {
-            sideEffectsTracker.trackRandomBytes(PbjConverter.asBytes(recordBuilder.getPrngBytes()));
+    private void finishUtilPrng(@NonNull final HandleContext handleContext) {
+        final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilder.class);
+        final var entropy = recordBuilder.entropy();
+        if (entropy.kind() == EntropyOneOfType.PRNG_NUMBER) {
+            sideEffectsTracker.trackRandomNumber((Integer) entropy.value());
+        } else if (entropy.kind() == EntropyOneOfType.PRNG_BYTES) {
+            sideEffectsTracker.trackRandomBytes(PbjConverter.asBytes((Bytes) entropy.value()));
         }
     }
 }

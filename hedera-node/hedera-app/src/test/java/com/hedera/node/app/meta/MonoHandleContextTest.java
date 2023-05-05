@@ -18,21 +18,14 @@ package com.hedera.node.app.meta;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
-import com.hedera.node.app.components.StoreComponent;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
-import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import java.time.Instant;
-import javax.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -92,17 +85,5 @@ class MonoHandleContextTest {
     @Test
     void returnsAttributeValidatorAsExpected() {
         assertThat(subject.attributeValidator()).isSameAs(attributeValidator);
-    }
-
-    @Test
-    void createsStore() {
-        given(storeFactory.get()).willReturn(storeComponentFactory);
-        given(mutableState.get()).willReturn(state);
-        given(storeComponentFactory.create(state)).willReturn(storeComponent);
-        given(storeComponent.storeFactory()).willReturn(readableStoreFactory);
-
-        subject.createReadableStore(ReadableRunningHashLeafStore.class);
-
-        verify(storeComponentFactory).create(state);
     }
 }
