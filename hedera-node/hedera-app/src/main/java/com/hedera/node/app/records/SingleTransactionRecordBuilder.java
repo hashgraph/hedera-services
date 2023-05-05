@@ -41,7 +41,6 @@ import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
-import com.hedera.hapi.streams.RecordStreamItem;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
@@ -55,16 +54,20 @@ import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A custom builder for SingleTransactionRecord.
+ * A custom builder for SingleTransactionRecord. This is an ugly superset of all fields for
+ * all transaction types. It is masked down to a sensible subset by the interfaces for
+ * specific transaction types.
  */
 @SuppressWarnings("unused")
 public class SingleTransactionRecordBuilder
@@ -123,9 +126,13 @@ public class SingleTransactionRecordBuilder
     public SingleTransactionRecord build() {
         // compute transaction hash: TODO could pass in if we have it calculated else where
         final Timestamp consensusTimestamp = HapiUtils.asTimestamp(consensusNow);
-        final byte[] transactionBytes = new byte[(int) this.transactionBytes.length()];
-        this.transactionBytes.getBytes(0, transactionBytes);
-        final Bytes transactionHash = Bytes.wrap(new Hash(transactionBytes).getValue());
+        final Bytes transactionHash;
+        try {
+            final MessageDigest digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+            transactionHash = Bytes.wrap(digest.digest(transactionBytes.toByteArray()));
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
         // create body one of
         OneOf<TransactionRecord.BodyOneOfType> body = new OneOf<>(TransactionRecord.BodyOneOfType.UNSET, null);
         if (contractCallResult != null)
@@ -154,41 +161,40 @@ public class SingleTransactionRecordBuilder
                 .forEach(transactionSidecarRecords::add);
         // build
         return new SingleTransactionRecord(
-                new RecordStreamItem(
-                        transaction,
-                        new TransactionRecord(
-                                new TransactionReceipt(
-                                        status,
-                                        accountID,
-                                        fileID,
-                                        contractID,
-                                        exchangeRate,
-                                        topicID,
-                                        topicSequenceNumber,
-                                        topicRunningHash,
-                                        topicRunningHashVersion,
-                                        tokenID,
-                                        newTotalSupply,
-                                        scheduleID,
-                                        scheduledTransactionID,
-                                        serialNumbers),
-                                transactionHash,
-                                consensusTimestamp,
-                                transaction.body().transactionID(),
-                                transaction.body().memo(),
-                                transactionFee,
-                                body,
-                                transferList,
-                                tokenTransferLists,
-                                scheduleRef,
-                                assessedCustomFees,
-                                automaticTokenAssociations,
-                                parentConsensusTimestamp,
-                                alias,
-                                ethereumHash,
-                                paidStakingRewards,
-                                entropy,
-                                evmAddress)),
+                transaction,
+                new TransactionRecord(
+                        new TransactionReceipt(
+                                status,
+                                accountID,
+                                fileID,
+                                contractID,
+                                exchangeRate,
+                                topicID,
+                                topicSequenceNumber,
+                                topicRunningHash,
+                                topicRunningHashVersion,
+                                tokenID,
+                                newTotalSupply,
+                                scheduleID,
+                                scheduledTransactionID,
+                                serialNumbers),
+                        transactionHash,
+                        consensusTimestamp,
+                        transaction.body().transactionID(),
+                        transaction.body().memo(),
+                        transactionFee,
+                        body,
+                        transferList,
+                        tokenTransferLists,
+                        scheduleRef,
+                        assessedCustomFees,
+                        automaticTokenAssociations,
+                        parentConsensusTimestamp,
+                        alias,
+                        ethereumHash,
+                        paidStakingRewards,
+                        entropy,
+                        evmAddress),
                 transactionSidecarRecords);
     }
     // ------------------------------------------------------------------------------------------------------------------------

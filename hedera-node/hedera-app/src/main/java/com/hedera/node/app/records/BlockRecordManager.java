@@ -16,28 +16,28 @@
 
 package com.hedera.node.app.records;
 
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.SingleTransactionRecord;
+import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.stream.Stream;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
- * RecordManager is a singleton facility that records transaction records into the record stream. It is responsible for:
- *
+ * Interface for BlockRecordManager which is responsible for managing blocks and writing
+ * the record file stream. It manages:
  * <ul>
- *     <li>Packages transaction records into files and sending for writing</li>
- *     <li>Manages block number</li>
- *     <li>Manages Running Hashes</li>
- *     <li>Manages Record State</li>
+ *     <li>Packaging transaction records into files and sending for writing</li>
+ *     <li>Updating block number</li>
+ *     <li>Computing running hashes</li>
+ *     <li>Updating State for blocks and running hashes</li>
  * </ul>
+ * This API is used exclusively by {@link com.hedera.node.app.workflows.handle.HandleWorkflow}
+ *
+ * <p>This is closeable so it can wait for all inflight threads to finish and leave things in
+ * a good state.</p>
  */
-@Singleton
-public class RecordManager {
-
-    @Inject
-    public RecordManager() {}
+public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
 
     /**
      * Inform BlockRecordManager of the new consensus time at the beginning of new transaction. This should only be called for before user
@@ -50,14 +50,25 @@ public class RecordManager {
      *
      * @param consensusTime The consensus time of the user transaction we are about to start executing. It must be the adjusted consensus time
      *                      not the platform assigned consensus time. Assuming the two are different.
+     * @param state         The state to read BlockInfo from and update when new blocks are created
      */
-    public void startUserTransaction(Instant consensusTime) {}
+    void startUserTransaction(Instant consensusTime, HederaState state);
 
     /**
      * Add a user transactions records to the record stream. They must be in exact consensus time order! This must only be called
-     * after the user transaction has been committed to state and is 100% done.
+     * after the user transaction has been committed to state and is 100% done. It must include the record of the user transaction
+     * along with all preceding child transactions and any child or system transactions after. IE. all transactions in the user
+     * transactions 1000ns window.
      *
      * @param recordStreamItems Stream of records produced while handling the user transaction
+     * @param state             The state to read BlockInfo from
      */
-    public void endUserTransaction(@NonNull final Stream<SingleTransactionRecord> recordStreamItems) {}
+    void endUserTransaction(@NonNull final Stream<SingleTransactionRecord> recordStreamItems, HederaState state);
+
+    /**
+     * Called at the end of a round to make sure running hash and block information is up-to-date in state.
+     *
+     * @param state The state to update
+     */
+    void endRound(HederaState state);
 }

@@ -27,6 +27,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -66,6 +67,7 @@ public class HandleContextImpl implements HandleContext {
     private final TransactionDispatcher dispatcher;
     private final ServiceScopeLookup serviceScopeLookup;
     private final WritableStoreFactory writableStoreFactory;
+    private final BlockRecordInfo blockRecordInfo;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
@@ -97,7 +99,8 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final ServiceScopeLookup serviceScopeLookup) {
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final BlockRecordInfo blockRecordInfo) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
         this.payerKey = requireNonNull(payerKey, "payerKey must not be null");
@@ -109,6 +112,7 @@ public class HandleContextImpl implements HandleContext {
         this.checker = requireNonNull(checker, "checker must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
+        this.blockRecordInfo = requireNonNull(blockRecordInfo, "blockRecordInfo must not be null");
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
@@ -146,6 +150,12 @@ public class HandleContextImpl implements HandleContext {
     @NonNull
     public Configuration configuration() {
         return current().configuration();
+    }
+
+    @Override
+    @NonNull
+    public BlockRecordInfo blockRecordInfo() {
+        return blockRecordInfo;
     }
 
     @Override
@@ -321,7 +331,8 @@ public class HandleContextImpl implements HandleContext {
                 recordListBuilder,
                 checker,
                 dispatcher,
-                serviceScopeLookup);
+                serviceScopeLookup,
+                blockRecordInfo);
 
         try {
             dispatcher.dispatchHandle(childContext);

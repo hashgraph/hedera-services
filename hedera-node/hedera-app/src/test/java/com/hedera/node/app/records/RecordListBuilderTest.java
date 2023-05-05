@@ -19,8 +19,7 @@ package com.hedera.node.app.records;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -165,6 +164,18 @@ class RecordListBuilderTest {
                 .isBeforeOrEqualTo(base.consensusNow().plusNanos(MAX_CHILDREN));
         assertThat(child2.status()).isEqualTo(OK);
         assertThat(recordListBuilder.builders()).containsExactly(base, child1, child2);
+    }
+
+    @Test
+    void testRevertNotFound() {
+        // given
+        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var recordListBuilder = new RecordListBuilder(base);
+
+        // when
+        assertThatException()
+                .isThrownBy(() ->
+                        recordListBuilder.revertChildRecordBuilders(new SingleTransactionRecordBuilder(Instant.EPOCH)));
     }
 
     @Test

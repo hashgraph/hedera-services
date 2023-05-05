@@ -22,6 +22,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -108,6 +109,15 @@ public class MonoHandleContext implements HandleContext {
     @Override
     public Key payerKey() {
         return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public BlockRecordInfo blockRecordInfo() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     /**
