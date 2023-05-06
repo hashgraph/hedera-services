@@ -25,6 +25,8 @@ import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -73,6 +75,13 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
      * If enabled, the min size metric will be applied to the queue.
      */
     private boolean minSizeMetricEnabled;
+
+    /**
+     * The callback to run periodically when the queue is idle.
+     */
+    private Runnable idleCallback;
+
+    // TODO also allow the sleep time to be configured, more important with idle callback
 
     protected AbstractQueueThreadConfiguration(final ThreadManager threadManager) {
         super(threadManager);
@@ -275,5 +284,24 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
         this.metrics = throwArgNull(metrics, "metrics");
         this.minSizeMetricEnabled = true;
         return (C) this;
+    }
+
+    /**
+     * Set the idle callback that will be called periodically when the queue is empty.
+     *
+     * @return this object
+     */
+    @SuppressWarnings("unchecked")
+    public C setIdleCallback(@NonNull final Runnable idleCallback) {
+        this.idleCallback = idleCallback;
+        return (C) this;
+    }
+
+    /**
+     * Get the idle callback that will be called periodically when the queue is empty.
+     */
+    @Nullable
+    public Runnable getIdleCallback() {
+        return idleCallback;
     }
 }

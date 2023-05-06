@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.event.tipset;
 
 import static com.swirlds.base.state.LifecyclePhase.NOT_STARTED;
@@ -19,11 +35,13 @@ import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Manages the creation of events.
  */
-public class TipsetEventCreationManager implements Lifecycle {
+public class TipsetEventCreationManager implements Lifecycle { // TODO test
 
     private LifecyclePhase lifecyclePhase = NOT_STARTED;
     private final long selfId;
@@ -32,6 +50,7 @@ public class TipsetEventCreationManager implements Lifecycle {
     private final MultiQueueThread workQueue;
     private final BlockingQueueInserter<GossipEvent> eventInserter;
     private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
+    private final Consumer<GossipEvent> newEventHandler;
 
     public TipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
@@ -42,25 +61,21 @@ public class TipsetEventCreationManager implements Lifecycle {
             @NonNull final AddressBook addressBook,
             final long selfId,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final TransactionSupplier transactionSupplier) {
+            @NonNull final TransactionSupplier transactionSupplier,
+            @NonNull final Consumer<GossipEvent> newEventHandler) {
 
         this.selfId = selfId;
+        this.newEventHandler = Objects.requireNonNull(newEventHandler);
+
         eventCreator = new TipsetEventCreator(
-                platformContext,
-                cryptography,
-                time,
-                signer,
-                addressBook,
-                selfId,
-                softwareVersion,
-                transactionSupplier);
+                platformContext, cryptography, time, signer, addressBook, selfId, softwareVersion, transactionSupplier);
 
         workQueue = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-creator")
                 .setCapacity(1024) // TODO setting for capacity
-                .setMaxBufferSize(1) // TODO think on this one...
                 .addHandler(GossipEvent.class, this::handleEvent)
                 .addHandler(Long.class, this::handleMinimumGenerationNonAncient)
+                .setIdleCallback(this::maybeCreateEvent)
                 .build();
 
         eventInserter = workQueue.getInserter(GossipEvent.class);
@@ -108,6 +123,18 @@ public class TipsetEventCreationManager implements Lifecycle {
     }
 
     /**
+     * Create a new event if it is legal to do so.
+     */
+    private void maybeCreateEvent() {
+        // TODO API for event creation rules, e.g. stop creating events if falling behind, etc.
+
+        final GossipEvent event = eventCreator.createNewEvent();
+        if (event != null) {
+            newEventHandler.accept(event);
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     @NonNull
@@ -123,6 +150,7 @@ public class TipsetEventCreationManager implements Lifecycle {
     public void start() {
         throwIfNotInPhase(NOT_STARTED);
         lifecyclePhase = STARTED;
+        workQueue.start();
     }
 
     /**
@@ -132,5 +160,6 @@ public class TipsetEventCreationManager implements Lifecycle {
     public void stop() {
         throwIfNotInPhase(STARTED);
         lifecyclePhase = STOPPED;
+        workQueue.stop();
     }
 }

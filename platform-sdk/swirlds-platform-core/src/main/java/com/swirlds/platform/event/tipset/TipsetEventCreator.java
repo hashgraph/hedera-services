@@ -32,7 +32,6 @@ import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -43,7 +42,7 @@ import java.util.Objects;
 /**
  * Responsible for creating new events using the tipset algorithm.
  */
-public class TipsetEventCreator {
+public class TipsetEventCreator { // TODO test
 
     private final Cryptography cryptography;
     private final Time time;

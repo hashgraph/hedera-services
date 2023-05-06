@@ -55,6 +55,11 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     private final AtomicLong noWorkCount = new AtomicLong();
 
     /**
+     * If not null, called periodically when the queue thread is idle.
+     */
+    private final Runnable idleCallback;
+
+    /**
      * <p>
      * All instances of this class should be created via the appropriate configuration object.
      * </p>
@@ -83,6 +88,8 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
         buffer = new ArrayList<>(bufferSize);
 
         handler = configuration.getHandler();
+
+        idleCallback = configuration.getIdleCallback();
 
         stoppableThread = configuration
                 .setWork(this::doWork)
@@ -250,6 +257,9 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
             handler.accept(item);
         } else {
             noWorkCount.incrementAndGet();
+            if (idleCallback != null) {
+                idleCallback.run(); // TODO test this
+            }
         }
     }
 
