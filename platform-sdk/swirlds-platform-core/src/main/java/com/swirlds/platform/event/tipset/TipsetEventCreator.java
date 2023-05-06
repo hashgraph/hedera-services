@@ -240,6 +240,7 @@ public class TipsetEventCreator { // TODO test
                 otherParentId, signer.sign(hashedData.getHash().getValue()).getSignatureBytes());
 
         final GossipEvent event = new GossipEvent(hashedData, unhashedData);
+        event.buildDescriptor(); // TODO ugh
         cryptography.digestSync(event); // TODO necessary?
         return event;
     }

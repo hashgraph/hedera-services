@@ -632,7 +632,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 selfId.getId(),
                 appVersion,
                 swirldStateManager.getTransactionPool(),
-                eventIntake::addUnlinkedEvent);
+                event -> abortAndThrowIfInterrupted(intakeQueue::put, event, "intakeQueue.put() interrupted"));
     }
 
     /**
@@ -950,8 +950,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * First part of initialization. This was split up so that appMain.init() could be called before {@link
-     * StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete parts.
+     * First part of initialization. This was split up so that appMain.init() could be called before
+     * {@link StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete
+     * parts.
      */
     private void init(
             @Nullable final SignedState signedStateFromDisk,
