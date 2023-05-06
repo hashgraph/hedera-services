@@ -18,6 +18,7 @@ package com.swirlds.platform.test.event.tipset;
 
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.RandomUtils.randomInstant;
 import static com.swirlds.platform.event.tipset.Tipset.merge;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -71,7 +72,8 @@ class TipsetBuilderTests {
             }
 
             final EventFingerprint selfParent = latestEvents.get(creator);
-            final EventFingerprint fingerprint = new EventFingerprint(creator, generation, randomHash(random));
+            final EventFingerprint fingerprint =
+                    new EventFingerprint(creator, generation, randomHash(random), randomInstant(random));
             latestEvents.put(creator, fingerprint);
 
             // Select some nodes we'd like to be our parents.

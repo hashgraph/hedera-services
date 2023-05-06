@@ -18,6 +18,7 @@ package com.swirlds.platform.test.event.tipset;
 
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.RandomUtils.randomInstant;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 import static com.swirlds.platform.event.tipset.Tipset.merge;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,7 +80,8 @@ class TipsetScoreCalculatorTests {
             }
 
             final EventFingerprint selfParent = latestEvents.get(creator);
-            final EventFingerprint fingerprint = new EventFingerprint(creator, generation, randomHash(random));
+            final EventFingerprint fingerprint =
+                    new EventFingerprint(creator, generation, randomHash(random), randomInstant(random));
             latestEvents.put(creator, fingerprint);
 
             // Select some nodes we'd like to be our parents.
@@ -188,13 +190,13 @@ class TipsetScoreCalculatorTests {
         final Tipset snapshot1 = window.getSnapshot();
 
         // Each node creates an event.
-        final EventFingerprint eventA1 = new EventFingerprint(nodeA, 1, randomHash(random));
+        final EventFingerprint eventA1 = new EventFingerprint(nodeA, 1, randomHash(random), randomInstant(random));
         builder.addEvent(eventA1, List.of());
-        final EventFingerprint eventB1 = new EventFingerprint(nodeB, 1, randomHash(random));
+        final EventFingerprint eventB1 = new EventFingerprint(nodeB, 1, randomHash(random), randomInstant(random));
         builder.addEvent(eventB1, List.of());
-        final EventFingerprint eventC1 = new EventFingerprint(nodeC, 1, randomHash(random));
+        final EventFingerprint eventC1 = new EventFingerprint(nodeC, 1, randomHash(random), randomInstant(random));
         builder.addEvent(eventC1, List.of());
-        final EventFingerprint eventD1 = new EventFingerprint(nodeD, 1, randomHash(random));
+        final EventFingerprint eventD1 = new EventFingerprint(nodeD, 1, randomHash(random), randomInstant(random));
         builder.addEvent(eventD1, List.of());
 
         assertEquals(0, window.getTheoreticalAdvancementScore(List.of()));
@@ -202,13 +204,13 @@ class TipsetScoreCalculatorTests {
         assertSame(snapshot1, window.getSnapshot());
 
         // Each node creates another event. All nodes use all available other parents except the event from D.
-        final EventFingerprint eventA2 = new EventFingerprint(nodeA, 2, randomHash(random));
+        final EventFingerprint eventA2 = new EventFingerprint(nodeA, 2, randomHash(random), randomInstant(random));
         builder.addEvent(eventA2, List.of(eventA1, eventB1, eventC1));
-        final EventFingerprint eventB2 = new EventFingerprint(nodeB, 2, randomHash(random));
+        final EventFingerprint eventB2 = new EventFingerprint(nodeB, 2, randomHash(random), randomInstant(random));
         builder.addEvent(eventB2, List.of(eventA1, eventB1, eventC1));
-        final EventFingerprint eventC2 = new EventFingerprint(nodeC, 2, randomHash(random));
+        final EventFingerprint eventC2 = new EventFingerprint(nodeC, 2, randomHash(random), randomInstant(random));
         builder.addEvent(eventC2, List.of(eventA1, eventB1, eventC1));
-        final EventFingerprint eventD2 = new EventFingerprint(nodeD, 2, randomHash(random));
+        final EventFingerprint eventD2 = new EventFingerprint(nodeD, 2, randomHash(random), randomInstant(random));
         builder.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
 
         assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA1, eventB1, eventC1)));
@@ -226,13 +228,13 @@ class TipsetScoreCalculatorTests {
         assertEquals(1, window.getBullyScore());
 
         // Create another batch of events where D is bullied.
-        final EventFingerprint eventA3 = new EventFingerprint(nodeA, 3, randomHash(random));
+        final EventFingerprint eventA3 = new EventFingerprint(nodeA, 3, randomHash(random), randomInstant(random));
         builder.addEvent(eventA3, List.of(eventA2, eventB2, eventC2));
-        final EventFingerprint eventB3 = new EventFingerprint(nodeB, 3, randomHash(random));
+        final EventFingerprint eventB3 = new EventFingerprint(nodeB, 3, randomHash(random), randomInstant(random));
         builder.addEvent(eventB3, List.of(eventA2, eventB2, eventC2));
-        final EventFingerprint eventC3 = new EventFingerprint(nodeC, 3, randomHash(random));
+        final EventFingerprint eventC3 = new EventFingerprint(nodeC, 3, randomHash(random), randomInstant(random));
         builder.addEvent(eventC3, List.of(eventA2, eventB2, eventC2));
-        final EventFingerprint eventD3 = new EventFingerprint(nodeD, 3, randomHash(random));
+        final EventFingerprint eventD3 = new EventFingerprint(nodeD, 3, randomHash(random), randomInstant(random));
         builder.addEvent(eventD3, List.of(eventA2, eventB2, eventC2, eventD2));
 
         assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA2, eventB2, eventC2)));
@@ -249,13 +251,13 @@ class TipsetScoreCalculatorTests {
         assertEquals(2, window.getBullyScore());
 
         // Create a bach of events that don't bully D. Let's all bully C, because C is a jerk.
-        final EventFingerprint eventA4 = new EventFingerprint(nodeA, 4, randomHash(random));
+        final EventFingerprint eventA4 = new EventFingerprint(nodeA, 4, randomHash(random), randomInstant(random));
         builder.addEvent(eventA4, List.of(eventA3, eventB3, eventD3));
-        final EventFingerprint eventB4 = new EventFingerprint(nodeB, 4, randomHash(random));
+        final EventFingerprint eventB4 = new EventFingerprint(nodeB, 4, randomHash(random), randomInstant(random));
         builder.addEvent(eventB4, List.of(eventA3, eventB3, eventD3));
-        final EventFingerprint eventC4 = new EventFingerprint(nodeC, 4, randomHash(random));
+        final EventFingerprint eventC4 = new EventFingerprint(nodeC, 4, randomHash(random), randomInstant(random));
         builder.addEvent(eventC4, List.of(eventA3, eventB3, eventC3, eventD3));
-        final EventFingerprint eventD4 = new EventFingerprint(nodeD, 4, randomHash(random));
+        final EventFingerprint eventD4 = new EventFingerprint(nodeD, 4, randomHash(random), randomInstant(random));
         builder.addEvent(eventD4, List.of(eventA3, eventB3, eventD3));
 
         assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA3, eventB3, eventD3)));
@@ -272,11 +274,11 @@ class TipsetScoreCalculatorTests {
         assertEquals(1, window.getBullyScore());
 
         // Stop bullying C. D stops creating events.
-        final EventFingerprint eventA5 = new EventFingerprint(nodeA, 5, randomHash(random));
+        final EventFingerprint eventA5 = new EventFingerprint(nodeA, 5, randomHash(random), randomInstant(random));
         builder.addEvent(eventA5, List.of(eventA4, eventB4, eventC4, eventD4));
-        final EventFingerprint eventB5 = new EventFingerprint(nodeB, 5, randomHash(random));
+        final EventFingerprint eventB5 = new EventFingerprint(nodeB, 5, randomHash(random), randomInstant(random));
         builder.addEvent(eventB5, List.of(eventA4, eventB4, eventC4, eventD4));
-        final EventFingerprint eventC5 = new EventFingerprint(nodeC, 5, randomHash(random));
+        final EventFingerprint eventC5 = new EventFingerprint(nodeC, 5, randomHash(random), randomInstant(random));
         builder.addEvent(eventC5, List.of(eventA4, eventB4, eventC4, eventD4));
 
         assertEquals(3, window.getTheoreticalAdvancementScore(List.of(eventA4, eventB4, eventC4, eventD4)));
@@ -293,11 +295,11 @@ class TipsetScoreCalculatorTests {
 
         // D still is not creating events. Since there is no legal event from D to use as a parent, this doesn't
         // count as bullying.
-        final EventFingerprint eventA6 = new EventFingerprint(nodeA, 6, randomHash(random));
+        final EventFingerprint eventA6 = new EventFingerprint(nodeA, 6, randomHash(random), randomInstant(random));
         builder.addEvent(eventA6, List.of(eventA5, eventB5, eventC5));
-        final EventFingerprint eventB6 = new EventFingerprint(nodeB, 6, randomHash(random));
+        final EventFingerprint eventB6 = new EventFingerprint(nodeB, 6, randomHash(random), randomInstant(random));
         builder.addEvent(eventB6, List.of(eventA5, eventB5, eventC5));
-        final EventFingerprint eventC6 = new EventFingerprint(nodeC, 6, randomHash(random));
+        final EventFingerprint eventC6 = new EventFingerprint(nodeC, 6, randomHash(random), randomInstant(random));
         builder.addEvent(eventC6, List.of(eventA5, eventB5, eventC5));
 
         assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA5, eventB5, eventC5)));
@@ -313,11 +315,11 @@ class TipsetScoreCalculatorTests {
         assertEquals(0, window.getBullyScore());
 
         // Rinse and repeat.
-        final EventFingerprint eventA7 = new EventFingerprint(nodeA, 7, randomHash(random));
+        final EventFingerprint eventA7 = new EventFingerprint(nodeA, 7, randomHash(random), randomInstant(random));
         builder.addEvent(eventA7, List.of(eventA6, eventB6, eventC6));
-        final EventFingerprint eventB7 = new EventFingerprint(nodeB, 7, randomHash(random));
+        final EventFingerprint eventB7 = new EventFingerprint(nodeB, 7, randomHash(random), randomInstant(random));
         builder.addEvent(eventB7, List.of(eventA6, eventB6, eventC6));
-        final EventFingerprint eventC7 = new EventFingerprint(nodeC, 7, randomHash(random));
+        final EventFingerprint eventC7 = new EventFingerprint(nodeC, 7, randomHash(random), randomInstant(random));
         builder.addEvent(eventC7, List.of(eventA6, eventB6, eventC6));
 
         assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA6, eventB6, eventC6)));

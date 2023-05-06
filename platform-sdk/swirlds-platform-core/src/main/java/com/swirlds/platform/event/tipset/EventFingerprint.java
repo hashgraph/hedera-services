@@ -17,7 +17,12 @@
 package com.swirlds.platform.event.tipset;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Uniquely identifies an event and stores basic metadata bout it.
@@ -29,7 +34,78 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param hash
  * 		the hash of the event, expected to be unique for all events
  */
-public record EventFingerprint(long creator, long generation, @NonNull Hash hash) {
+public record EventFingerprint(long creator, long generation, @NonNull Hash hash, @NonNull Instant creationTime) {
+
+    // TODO test
+    // TODO sort out EventImpl vs GossipEvent
+
+    /**
+     * Get the fingerprint of an event.
+     *
+     * @param event the event
+     * @return the fingerprint
+     */
+    @NonNull
+    public static EventFingerprint of(@NonNull final EventImpl event) {
+        return new EventFingerprint(
+                event.getCreatorId(), event.getGeneration(), event.getHash(), event.getTimeCreated());
+    }
+
+    /**
+     * Get the fingerprint of an event.
+     * @param event the event
+     * @return the fingerprint
+     */
+    @NonNull
+    public static EventFingerprint of(@NonNull final GossipEvent event) {
+        return new EventFingerprint(
+                event.getHashedData().getCreatorId(),
+                event.getGeneration(),
+                event.getHashedData().getHash(),
+                event.getHashedData().getTimeCreated());
+    }
+
+    /**
+     * Get the fingerprints of an event's parents.
+     */
+    @NonNull
+    public static List<EventFingerprint> getParentFingerprints(@NonNull final EventImpl event) {
+        final List<EventFingerprint> parentFingerprints = new ArrayList<>(2);
+        if (event.getSelfParent() != null) {
+            parentFingerprints.add(EventFingerprint.of(event.getSelfParent()));
+        }
+        if (event.getOtherParent() != null) {
+            parentFingerprints.add(EventFingerprint.of(event.getOtherParent()));
+        }
+        return parentFingerprints;
+    }
+
+    /**
+     * Get the fingerprints of an event's parents.
+     */
+    @NonNull
+    public static List<EventFingerprint> getParentFingerprints(@NonNull final GossipEvent event) {
+        final List<EventFingerprint> parentFingerprints = new ArrayList<>(2);
+
+        if (event.getHashedData().getSelfParentHash() != null) {
+            final EventFingerprint selfParentFingerprint = new EventFingerprint(
+                    event.getHashedData().getCreatorId(),
+                    event.getHashedData().getSelfParentGen(),
+                    event.getHashedData().getSelfParentHash(),
+                    Instant.EPOCH); // TODO how to figure out the correct time?
+            parentFingerprints.add(selfParentFingerprint);
+        }
+        if (event.getHashedData().getOtherParentHash() != null) {
+            final EventFingerprint otherParentFingerprint = new EventFingerprint(
+                    event.getUnhashedData().getOtherId(), // TODO why is this unhashed?!
+                    event.getHashedData().getOtherParentGen(),
+                    event.getHashedData().getOtherParentHash(),
+                    Instant.EPOCH); // TODO how to figure out the correct time?
+            parentFingerprints.add(otherParentFingerprint);
+        }
+
+        return parentFingerprints;
+    }
 
     /**
      * {@inheritDoc}
