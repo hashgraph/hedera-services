@@ -41,7 +41,5 @@ public interface ChatterEvent extends SelfSerializable {
      *
      * @return the generation of the event
      */
-    default long getGeneration() {
-        return getDescriptor().getGeneration();
-    }
+    long getGeneration();
 }

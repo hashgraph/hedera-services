@@ -56,6 +56,11 @@ public class Tipset {
         this.nodeIdToIndex = nodeIdToIndex;
         this.indexToWeight = indexToWeight;
         this.tips = new long[nodeCount];
+
+        // TODO we don't need this if we actually want to start with generation 1
+        for (int i = 0; i < nodeCount; i++) {
+            tips[i] = -1;
+        }
     }
 
     /**

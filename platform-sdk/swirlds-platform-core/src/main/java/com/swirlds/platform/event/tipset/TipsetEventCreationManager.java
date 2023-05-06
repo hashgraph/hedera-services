@@ -34,6 +34,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -48,7 +49,7 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
     private final TipsetEventCreator eventCreator;
 
     private final MultiQueueThread workQueue;
-    private final BlockingQueueInserter<GossipEvent> eventInserter;
+    private final BlockingQueueInserter<EventImpl> eventInserter;
     private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
     private final Consumer<GossipEvent> newEventHandler;
 
@@ -73,12 +74,12 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
         workQueue = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-creator")
                 .setCapacity(1024) // TODO setting for capacity
-                .addHandler(GossipEvent.class, this::handleEvent)
+                .addHandler(EventImpl.class, this::handleEvent)
                 .addHandler(Long.class, this::handleMinimumGenerationNonAncient)
                 .setIdleCallback(this::maybeCreateEvent)
                 .build();
 
-        eventInserter = workQueue.getInserter(GossipEvent.class);
+        eventInserter = workQueue.getInserter(EventImpl.class);
         minimumGenerationNonAncientInserter = workQueue.getInserter(Long.class);
     }
 
@@ -87,7 +88,7 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
      *
      * @param event the event to add
      */
-    public void registerEvent(@NonNull final GossipEvent event) throws InterruptedException {
+    public void registerEvent(@NonNull final EventImpl event) throws InterruptedException {
         if (event.getHashedData().getCreatorId() == selfId) {
             // TODO this behavior needs to be different at startup time if not at genesis
             return;
@@ -109,7 +110,7 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
      *
      * @param event the event to pass
      */
-    private void handleEvent(@NonNull final GossipEvent event) {
+    private void handleEvent(@NonNull final EventImpl event) {
         eventCreator.registerEvent(event);
     }
 

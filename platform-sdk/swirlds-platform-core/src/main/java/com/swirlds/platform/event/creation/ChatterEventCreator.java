@@ -17,6 +17,7 @@
 package com.swirlds.platform.event.creation;
 
 import static com.swirlds.logging.LogMarker.CREATE_EVENT;
+import static com.swirlds.platform.event.tipset.TipsetEventCreator.USE_TIPSET_ALGORITHM;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.stream.Signer;
@@ -100,6 +101,11 @@ public class ChatterEventCreator {
      * @return true if the event was created, false if not
      */
     public boolean createEvent(final long otherId) {
+
+        if (USE_TIPSET_ALGORITHM) {
+            return false;
+        }
+
         final EventCreationRuleResponse basicRulesResponse = eventCreationRules.shouldCreateEvent();
         if (basicRulesResponse == EventCreationRuleResponse.DONT_CREATE) {
             return false;

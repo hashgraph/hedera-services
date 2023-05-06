@@ -48,7 +48,7 @@ public record EventFingerprint(long creator, long generation, @NonNull Hash hash
     @NonNull
     public static EventFingerprint of(@NonNull final EventImpl event) {
         return new EventFingerprint(
-                event.getCreatorId(), event.getGeneration(), event.getHash(), event.getTimeCreated());
+                event.getCreatorId(), event.getGeneration(), event.getBaseHash(), event.getTimeCreated());
     }
 
     /**

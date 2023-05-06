@@ -17,6 +17,7 @@
 package com.swirlds.platform.components;
 
 import static com.swirlds.logging.LogMarker.CREATE_EVENT;
+import static com.swirlds.platform.event.tipset.TipsetEventCreator.USE_TIPSET_ALGORITHM;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.stream.Signer;
@@ -138,6 +139,11 @@ public class EventCreator {
      * 		the node ID that will supply the other parent for this event
      */
     public boolean createEvent(final long otherId) {
+
+        if (USE_TIPSET_ALGORITHM) {
+            return false;
+        }
+
         if (eventCreationRules.shouldCreateEvent() == EventCreationRuleResponse.DONT_CREATE) {
             return false;
         }

@@ -82,6 +82,14 @@ public class SimulatedEvent implements ChatterEvent {
         return timeReceived;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getGeneration() {
+        return descriptor.getGeneration();
+    }
+
     public void setTimeReceived(final Instant timeReceived) {
         this.timeReceived = timeReceived;
     }

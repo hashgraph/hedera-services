@@ -118,6 +118,14 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getGeneration() {
+        return hashedData.getGeneration();
+    }
+
+    /**
      * @return true if roundCreated has been set
      */
     public boolean isRoundCreatedSet() {

@@ -32,6 +32,7 @@ import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -43,6 +44,9 @@ import java.util.Objects;
  * Responsible for creating new events using the tipset algorithm.
  */
 public class TipsetEventCreator { // TODO test
+
+    // TODO use a more elegant solution for this
+    public static final boolean USE_TIPSET_ALGORITHM = true;
 
     private final Cryptography cryptography;
     private final Time time;
@@ -107,7 +111,7 @@ public class TipsetEventCreator { // TODO test
      *
      * @param event the event to add
      */
-    public void registerEvent(@NonNull final GossipEvent event) {
+    public void registerEvent(@NonNull final EventImpl event) {
         if (event.getHashedData().getCreatorId() == selfId) {
             // Self events are ingested immediately when they are created.
             // TODO what about when streaming from PCES?
@@ -235,6 +239,8 @@ public class TipsetEventCreator { // TODO test
         final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
                 otherParentId, signer.sign(hashedData.getHash().getValue()).getSignatureBytes());
 
-        return new GossipEvent(hashedData, unhashedData);
+        final GossipEvent event = new GossipEvent(hashedData, unhashedData);
+        cryptography.digestSync(event); // TODO necessary?
+        return event;
     }
 }

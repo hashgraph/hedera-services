@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.event.tipset.TipsetEventCreator.USE_TIPSET_ALGORITHM;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
@@ -126,6 +127,7 @@ import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
+import com.swirlds.platform.event.tipset.TipsetEventCreationManager;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -436,6 +438,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     private SyncPermitProvider syncPermitProvider;
 
+    private EventIntake eventIntake;
+
+    private final TipsetEventCreationManager tipsetEventCreator;
+
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
@@ -615,6 +621,18 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         try (loadedState.signedStateFromDisk) {
             init(loadedState.signedStateFromDisk.getNullable(), loadedState.initialState, genesisStateBuilder);
         }
+
+        tipsetEventCreator = new TipsetEventCreationManager(
+                platformContext,
+                threadManager,
+                CryptographyHolder.get(),
+                time,
+                this,
+                initialAddressBook,
+                selfId.getId(),
+                appVersion,
+                swirldStateManager.getTransactionPool(),
+                eventIntake::addUnlinkedEvent);
     }
 
     /**
@@ -1067,6 +1085,12 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                             preConsensusEventWriter::writeEvent,
                             event,
                             "Interrupted while attempting to enqueue preconsensus event for writing");
+                    if (USE_TIPSET_ALGORITHM) {
+                        abortAndThrowIfInterrupted(
+                                tipsetEventCreator::registerEvent,
+                                event,
+                                "Interrupted while attempting to register event with tipset event creator");
+                    }
                 },
                 (ConsensusRoundObserver) round -> {
                     abortAndThrowIfInterrupted(
@@ -1077,6 +1101,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     abortAndThrowIfInterrupted(
                             preConsensusEventWriter::requestFlush,
                             "Interrupted while requesting preconsensus event flush");
+
+                    if (USE_TIPSET_ALGORITHM) {
+                        abortAndThrowIfInterrupted(
+                                tipsetEventCreator::setMinimumGenerationNonAncient,
+                                round.getGenerations().getMinGenerationNonAncient(),
+                                "Interrupted while attempting to register event with tipset event creator");
+                    }
                 });
         if (settings.getChatter().isChatterUsed()) {
             dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
@@ -1109,7 +1140,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     eventMapper::getMostRecentEvent);
         }
 
-        final EventIntake eventIntake = new EventIntake(
+        eventIntake = new EventIntake(
                 selfId, eventLinker, consensusRef::get, initialAddressBook, dispatcher, intakeCycleStats, shadowGraph);
 
         final EventCreator eventCreator;
@@ -1377,6 +1408,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 "interrupted while attempting to begin streaming new preconsensus events");
         // FUTURE WORK: set platform status READY
         // FUTURE WORK: start gossip & new event creation here
+
+        if (USE_TIPSET_ALGORITHM) {
+            tipsetEventCreator.start();
+        }
 
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
