@@ -108,8 +108,8 @@ public class TipsetEventCreator {
      *
      * @param event the event to add
      */
-    public void registerEvent(@NonNull final EventImpl event) {
-        if (event.getCreatorId() == selfId) {
+    public void registerEvent(@NonNull final GossipEvent event) {
+        if (event.getHashedData().getCreatorId() == selfId) {
             // Self events are ingested immediately when they are created.
             // TODO what about when streaming from PCES?
             // TODO what about when we start with events in the state?
