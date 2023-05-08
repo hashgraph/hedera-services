@@ -35,9 +35,9 @@ plugins {
 
 include(":hedera-node")
 
-include(":hedera-node:hedera-admin-service")
+include(":hedera-node:hedera-networkadmin-service")
 
-include(":hedera-node:hedera-admin-service-impl")
+include(":hedera-node:hedera-networkadmin-service-impl")
 
 include(":hedera-node:hedera-consensus-service")
 
@@ -46,10 +46,6 @@ include(":hedera-node:hedera-consensus-service-impl")
 include(":hedera-node:hedera-file-service")
 
 include(":hedera-node:hedera-file-service-impl")
-
-include(":hedera-node:hedera-network-service")
-
-include(":hedera-node:hedera-network-service-impl")
 
 include(":hedera-node:hedera-schedule-service")
 
