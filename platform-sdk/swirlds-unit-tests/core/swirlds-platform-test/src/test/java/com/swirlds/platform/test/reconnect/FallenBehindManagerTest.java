@@ -24,10 +24,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.network.RandomGraph;
-import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
-import com.swirlds.platform.sync.FallenBehindManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import com.swirlds.platform.reconnect.ReconnectSettingsImpl;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 

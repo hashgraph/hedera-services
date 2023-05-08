@@ -1692,7 +1692,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
-
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
         // if this is a single node network, start dedicated thread to "sync" and create events
@@ -1753,7 +1754,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             emergencyRecoveryManager,
                                             reconnectThrottle,
                                             stateManagementComponent,
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get()),
                                     new ReconnectProtocol(
@@ -1762,7 +1763,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             reconnectThrottle,
                                             () -> stateManagementComponent.getLatestSignedState(
                                                     "SwirldsPlatform: ReconnectProtocol"),
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get(),
                                             new DefaultSignedStateValidator(),
