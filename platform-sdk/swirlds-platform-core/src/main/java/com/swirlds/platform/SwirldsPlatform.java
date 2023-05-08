@@ -1312,17 +1312,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 !syncConfig.syncAsProtocolEnabled(),
                 () -> {});
 
-        final Runnable stopGossip = settings.getChatter().isChatterUsed()
-                ? chatterCore::stopChatter
-                // wait and acquire all sync ongoing locks and release them immediately
-                // this will ensure any ongoing sync are finished before we start reconnect
-                // no new sync will start because we have a fallen behind status
-                : getSimultaneousSyncThrottle()::waitForAllSyncsToFinish;
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
         syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
 
-        final Runnable stopGossip;
+        Runnable stopGossip;
         if (settings.getChatter().isChatterUsed()) {
             stopGossip = chatterCore::stopChatter;
         } else if (syncConfig.syncAsProtocolEnabled()) {
