@@ -32,7 +32,8 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("sync")
 public record SyncConfig(
-        @ConfigProperty(value = "syncAsProtocolEnabled", defaultValue = "false") boolean syncAsProtocolEnabled,
+        // TODO revert back to default of false
+        @ConfigProperty(value = "syncAsProtocolEnabled", defaultValue = "true") boolean syncAsProtocolEnabled,
         @ConfigProperty(value = "syncSleepAfterFailedNegotiation", defaultValue = "25")
                 int syncSleepAfterFailedNegotiation,
         @ConfigProperty(value = "syncProtocolPermitCount", defaultValue = "17") int syncProtocolPermitCount,

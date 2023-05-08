@@ -17,5 +17,5 @@ loadKeysFromPfxFiles,             false
 event.preconsensus.enableStorage, false
 enableEventStreaming,             false
 reconnect.active,                 true
-sync.syncAsProtocolEnabled,       false
+sync.syncAsProtocolEnabled,       true
 chatter.useChatter,               false
