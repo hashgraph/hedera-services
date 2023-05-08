@@ -515,7 +515,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         this.platformMetrics = new PlatformMetrics(this);
         metrics.addUpdater(platformMetrics::update);
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
-        AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
+        final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
         this.eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
         this.syncMetrics = new SyncMetrics(metrics);
         this.networkMetrics =
