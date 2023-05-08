@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
+import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CommonUtils.combineConsumers;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -69,7 +69,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -351,7 +350,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** last time stamp when pause check timer is active */
     private long pauseCheckTimeStamp;
     /** Tracks recent events created in the network */
-    private CriticalQuorum criticalQuorum;
+    private final CriticalQuorum criticalQuorum;
 
     private QueueThread<EventIntakeTask> intakeQueue;
     private EventLinker eventLinker;
@@ -369,7 +368,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** Handles all interaction with {@link SwirldState} */
     private SwirldStateManager swirldStateManager;
     /** Checks the validity of transactions and submits valid ones to the event transaction pool */
-    private SwirldTransactionSubmitter transactionSubmitter;
+    private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
     private Clearable clearAllPipelines;
     /** Contains all information and state required for emergency recovery */
@@ -612,10 +611,64 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
 
+        // if this setting is 0 or less, there is no startup freeze
+        if (settings.getFreezeSecondsAfterStartup() > 0) {
+            final Instant startUpEventFrozenEndTime =
+                    Instant.now().plusSeconds(settings.getFreezeSecondsAfterStartup());
+            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
+            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
+        }
+
+        // initializes EventStreamManager instance
+        final Address address = getSelfAddress();
+        if (address.getMemo() != null && !address.getMemo().isEmpty()) {
+            initEventStreamManager(address.getMemo());
+        } else {
+            initEventStreamManager(String.valueOf(selfId));
+        }
+
+        if (settings.getChatter().isChatterUsed()) {
+            criticalQuorum =
+                    new CriticalQuorumImpl(initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
+        } else {
+            criticalQuorum = new CriticalQuorumImpl(initialAddressBook);
+        }
+
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
         try (loadedState.signedStateFromDisk) {
-            init(loadedState.signedStateFromDisk.getNullable(), loadedState.initialState, genesisStateBuilder);
+            final SignedState signedStateFromDisk = loadedState.signedStateFromDisk.getNullable();
+
+            buildEventHandlers(signedStateFromDisk, loadedState.initialState, genesisStateBuilder);
+
+            buildEventIntake();
+
+            if (signedStateFromDisk != null) {
+                loadIntoConsensusAndEventMapper(signedStateFromDisk);
+                eventLinker.loadFromSignedState(signedStateFromDisk);
+            } else {
+                consensusRef.set(new ConsensusImpl(
+                        platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                        consensusMetrics,
+                        consensusRoundHandler::addMinGenInfo,
+                        getAddressBook()));
+            }
         }
+
+        transactionSubmitter = new SwirldTransactionSubmitter(
+                currentPlatformStatus::get,
+                PlatformConstructor.settingsProvider(),
+                swirldStateManager::submitTransaction,
+                new TransactionMetrics(metrics));
+
+        clearAllPipelines = new LoggingClearables(
+                RECONNECT.getMarker(),
+                List.of(
+                        Pair.of(getIntakeQueue(), "intakeQueue"),
+                        Pair.of(getEventMapper(), "eventMapper"),
+                        Pair.of(getShadowGraph(), "shadowGraph"),
+                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
+                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
+                        Pair.of(swirldStateManager, "swirldStateManager")));
     }
 
     /**
@@ -802,7 +855,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // rehash the state as a whole.
         if (currentHash == null || !Objects.equals(initialHash, currentHash)) {
             initialState.invalidateHash();
-            Uninterruptable.abortAndThrowIfInterrupted(
+            abortAndThrowIfInterrupted(
                     () -> {
                         try {
                             MerkleCryptoFactory.getInstance()
@@ -933,73 +986,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * First part of initialization. This was split up so that appMain.init() could be called before {@link
-     * StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete parts.
-     */
-    private void init(
-            @Nullable final SignedState signedStateFromDisk,
-            @Nullable final State initialState,
-            @NonNull final Supplier<SwirldState> genesisStateBuilder) {
-
-        // if this setting is 0 or less, there is no startup freeze
-        if (settings.getFreezeSecondsAfterStartup() > 0) {
-            final Instant startUpEventFrozenEndTime =
-                    Instant.now().plusSeconds(settings.getFreezeSecondsAfterStartup());
-            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
-            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
-        }
-
-        // initializes EventStreamManager instance
-        final Address address = getSelfAddress();
-        if (address.getMemo() != null && !address.getMemo().isEmpty()) {
-            initEventStreamManager(address.getMemo());
-        } else {
-            initEventStreamManager(String.valueOf(selfId));
-        }
-
-        buildEventHandlers(signedStateFromDisk, initialState, genesisStateBuilder);
-
-        transactionSubmitter = new SwirldTransactionSubmitter(
-                currentPlatformStatus::get,
-                PlatformConstructor.settingsProvider(),
-                swirldStateManager::submitTransaction,
-                new TransactionMetrics(metrics));
-
-        if (signedStateFromDisk != null) {
-            loadIntoConsensusAndEventMapper(signedStateFromDisk);
-        } else {
-            consensusRef.set(new ConsensusImpl(
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                    consensusMetrics,
-                    consensusRoundHandler::addMinGenInfo,
-                    getAddressBook()));
-        }
-
-        if (settings.getChatter().isChatterUsed()) {
-            criticalQuorum =
-                    new CriticalQuorumImpl(initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
-        } else {
-            criticalQuorum = new CriticalQuorumImpl(initialAddressBook);
-        }
-
-        // build the event intake classes
-        buildEventIntake();
-        if (signedStateFromDisk != null) {
-            eventLinker.loadFromSignedState(signedStateFromDisk);
-        }
-
-        clearAllPipelines = new LoggingClearables(
-                RECONNECT.getMarker(),
-                List.of(
-                        Pair.of(getIntakeQueue(), "intakeQueue"),
-                        Pair.of(getEventMapper(), "eventMapper"),
-                        Pair.of(getShadowGraph(), "shadowGraph"),
-                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
-                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
-                        Pair.of(swirldStateManager, "swirldStateManager")));
-    }
-
-    /**
      * This observer is called when a system freeze is requested. Permanently stops event creation and gossip.
      *
      * @param reason the reason why the system is being frozen.
@@ -1064,19 +1050,20 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 eventIntakeMetrics,
                 (PreConsensusEventObserver) event -> {
                     sequencer.assignStreamSequenceNumber(event);
-                    abortAndLogIfInterrupted(
+                    abortAndThrowIfInterrupted(
                             preConsensusEventWriter::writeEvent,
                             event,
                             "Interrupted while attempting to enqueue preconsensus event for writing");
                 },
                 (ConsensusRoundObserver) round -> {
-                    abortAndLogIfInterrupted(
+                    abortAndThrowIfInterrupted(
                             preConsensusEventWriter::setMinimumGenerationNonAncient,
                             round.getGenerations().getMinGenerationNonAncient(),
                             "Interrupted while attempting to enqueue change in minimum generation non-ancient");
 
-                    final EventImpl keystoneEvent = round.getKeystoneEvent();
-                    preConsensusEventWriter.requestFlush(keystoneEvent);
+                    abortAndThrowIfInterrupted(
+                            preConsensusEventWriter::requestFlush,
+                            "Interrupted while requesting preconsensus event flush");
                 });
         if (settings.getChatter().isChatterUsed()) {
             dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
@@ -1368,10 +1355,15 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     PAUSE_ALERT_INTERVAL / 2);
         }
 
+        // FUTURE WORK: validate that status is still STARTING_UP (sanity check until we refactor platform status)
         // FUTURE WORK: set platform status REPLAYING_EVENTS
-        // FUTURE WORK: replay events
-        // FUTURE WORK: validate that status is still REPLAYING_EVENTS (holdover until we refactor platform status)
+        // FUTURE WORK: replay the preconsensus event stream
+        // FUTURE WORK: validate that status is still REPLAYING_EVENTS (sanity check until we refactor platform status)
+        abortAndThrowIfInterrupted(
+                preConsensusEventWriter::beginStreamingNewEvents,
+                "interrupted while attempting to begin streaming new preconsensus events");
         // FUTURE WORK: set platform status READY
+        // FUTURE WORK: start gossip & new event creation here
 
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now

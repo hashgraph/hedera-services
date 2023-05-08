@@ -102,7 +102,7 @@ gitRepositories {
     // choose tag or branch of HAPI you would like to test with
     // this looks for a tag in hedera-protobufs repo
     // This version needs to match tha HAPI version below in versionCatalogs
-    tag.set("add-missing-account-fields")
+    tag.set("add-pbj-types-for-state")
     // do not load project from repo
     autoInclude.set(false)
   }
@@ -144,7 +144,7 @@ dependencyResolutionManagement {
       version("netty-version", "4.1.66.Final")
       version("protobuf-java-version", "3.19.4")
       version("slf4j-version", "2.0.3")
-      version("swirlds-version", "0.38.0-alpha.2")
+      version("swirlds-version", "0.38.0-alpha.3")
       version("tuweni-version", "2.2.0")
       version("jna-version", "5.12.1")
       version("jsr305-version", "3.0.2")
