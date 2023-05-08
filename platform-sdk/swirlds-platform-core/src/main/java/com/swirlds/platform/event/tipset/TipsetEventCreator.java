@@ -37,6 +37,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -179,6 +180,7 @@ public class TipsetEventCreator { // TODO test
     @Nullable
     private GossipEvent createEventByOptimizingTipsetScore() {
         final List<EventFingerprint> possibleOtherParents = childlessEventTracker.getChildlessEvents();
+        Collections.shuffle(possibleOtherParents, random);
 
         EventFingerprint bestOtherParent = null;
         long bestScore = 0;

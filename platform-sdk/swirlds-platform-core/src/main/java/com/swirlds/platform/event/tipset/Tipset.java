@@ -217,6 +217,25 @@ public class Tipset {
         return count;
     }
 
+    // TODO javadoc
+    public int getAdvancementCount(final long nodeId, @NonNull final Tipset that) {
+        int count = 0;
+
+        final int selfIndex = nodeIdToIndex.applyAsInt(nodeId);
+        for (int index = 0; index < tips.length; index++) {
+            if (index == selfIndex) {
+                // We don't consider self advancement here, since self advancement does nothing to help consensus.
+                continue;
+            }
+
+            if (this.tips[index] < that.tips[index]) {
+                count += 1;
+            }
+        }
+
+        return count;
+    }
+
     /**
      * {@inheritDoc}
      */

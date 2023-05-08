@@ -198,6 +198,7 @@ public class TipsetScoreCalculator {
     }
 
     // TODO rename and document
+    // TODO should return int type
     public long getTheoreticalAdvancementScoreAntiBully(@NonNull final List<EventFingerprint> parents) {
         if (parents.isEmpty()) {
             return 0;
@@ -211,13 +212,13 @@ public class TipsetScoreCalculator {
         // Don't bother advancing the self generation, since self advancement doesn't contribute to tipset score.
         final Tipset newTipset = Tipset.merge(parentTipsets);
 
-        final IntToLongFunction weights = nodeIndex -> {
-//            final long baseWeight = indexToWeight.applyAsLong(nodeIndex);
-            final long bullyFactor = 1 + getBullyScoreForNodeIndex(nodeIndex);
-//            return baseWeight * bullyFactor; // TODO should we consider weight in this step?
-            return bullyFactor;
-        };
-        return snapshot.getWeightedAdvancementCount(selfId, newTipset, weights);
+//        final IntToLongFunction weights = nodeIndex -> {
+////            final long baseWeight = indexToWeight.applyAsLong(nodeIndex);
+//            final long bullyFactor = 1 + getBullyScoreForNodeIndex(nodeIndex);
+////            return baseWeight * bullyFactor; // TODO should we consider weight in this step?
+//            return bullyFactor;
+//        };
+        return snapshot.getAdvancementCount(selfId, newTipset);
     }
 
     /**
