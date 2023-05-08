@@ -61,16 +61,6 @@ public class ExceptionConditions {
         };
     }
 
-    @NonNull
-    private static Predicate<Throwable> getHandleResponseCodeCheck(@NonNull final ResponseCodeEnum responseCode) {
-        return e -> {
-            if (e instanceof HandleException exception) {
-                return exception.getStatus() == responseCode;
-            }
-            return false;
-        };
-    }
-
     /**
      * Returns a {@link Condition} that asserts that the {@link InsufficientBalanceException} has the given fee.
      * <p>
