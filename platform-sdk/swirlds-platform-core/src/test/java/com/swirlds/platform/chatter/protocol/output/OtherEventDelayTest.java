@@ -18,6 +18,7 @@ package com.swirlds.platform.chatter.protocol.output;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.platform.gossip.chatter.protocol.output.OtherEventDelay;
 import java.time.Duration;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -25,10 +25,7 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountUpdate;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.TransferToRandomEVMAddress;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.TransferToRandomKey;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.*;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyInventoryCreation;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -67,7 +64,10 @@ public class IdFuzzingProviderFactory {
                     .withOp(new TransferToRandomKey(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props))
                     .withOp(
                             new RandomAccountUpdate(keys, accounts),
-                            intPropOrElse("randomAccountUpdate.bias", 0, props));
+                            intPropOrElse("randomAccountUpdate.bias", 0, props))
+                    .withOp(
+                            new EthereumTransferToRandomEVMAddress(spec.registry(), keys),
+                            intPropOrElse("randomEthereumTransactionTransfer.bias", 0, props));
         };
     }
 
@@ -86,7 +86,7 @@ public class IdFuzzingProviderFactory {
         };
     }
 
-    private static HapiSpecOperation[] onlyEcdsaKeys() {
+    public static HapiSpecOperation[] onlyEcdsaKeys() {
         return IntStream.range(0, NUM_DISTINCT_ECDSA_KEYS)
                 .mapToObj(i -> newKeyNamed("Fuzz#" + i).shape(SigControl.SECP256K1_ON))
                 .toArray(HapiSpecOperation[]::new);

@@ -21,7 +21,6 @@ import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 import com.swirlds.common.threading.locks.AutoClosableResourceLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.LockedResource;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import java.util.concurrent.locks.Condition;
 import org.apache.logging.log4j.LogManager;

@@ -164,9 +164,11 @@ public class AddressBookInitializer {
                     "The loaded signed state is null. The candidateAddressBook is set to "
                             + "the address book from config.txt.");
             candidateAddressBook = configAddressBook;
+            checkCandidateAddressBookValidity(candidateAddressBook);
         } else if (!softwareUpgrade) {
             logger.info(STARTUP.getMarker(), "Using the loaded signed state's address book and weight values.");
             candidateAddressBook = loadedAddressBook;
+            // since state address book was checked for validity prior to adoption, no check needed here.
         } else {
             // There is a software upgrade
             logger.info(
@@ -176,8 +178,8 @@ public class AddressBookInitializer {
                     .getSwirldState()
                     .updateWeight(configAddressBook.copy(), platformContext)
                     .copy();
+            candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
         }
-        candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
         recordAddressBooks(candidateAddressBook);
         return candidateAddressBook;
     }

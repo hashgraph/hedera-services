@@ -24,6 +24,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.transaction.Transaction;
@@ -65,6 +66,7 @@ class EventValidatorTests {
         final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[0];
         Mockito.when(event.getHashedData())
                 .thenReturn(new BaseEventHashedData(
+                        new BasicSoftwareVersion(1),
                         creatorId,
                         selfParentGen,
                         otherParentGen,
