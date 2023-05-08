@@ -52,12 +52,12 @@ public class TransactionHandlingHistory {
     /**
      * A list of rounds that have come to consensus
      */
-    private List<ConsistencyTestingToolRound> roundHistory;
+    private final List<ConsistencyTestingToolRound> roundHistory;
 
     /**
      * A set of all transactions which have been seen
      */
-    private Set<Long> seenTransactions;
+    private final Set<Long> seenTransactions;
 
     /**
      * The location of the log file
@@ -248,6 +248,7 @@ public class TransactionHandlingHistory {
 
         try (BufferedWriter file = new BufferedWriter(new FileWriter(logFilePath.toFile(), true))) {
             file.write(round.toString());
+            file.flush();
         } catch (final IOException e) {
             e.printStackTrace();
         }
