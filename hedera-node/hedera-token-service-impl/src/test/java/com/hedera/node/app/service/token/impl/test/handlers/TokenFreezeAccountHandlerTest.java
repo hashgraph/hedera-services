@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.handleResponseCode;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.FREEZE_WITH_NO_KEYS;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.VALID_FREEZE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_KT;
@@ -160,7 +160,7 @@ class TokenFreezeAccountHandlerTest {
             assertThatThrownBy(
                             () -> subject.handle(noTokenTxn, readableAccountStore, readableTokenStore, tokenRelStore))
                     .isInstanceOf(HandleException.class)
-                    .has(handleResponseCode(INVALID_TOKEN_ID));
+                    .has(responseCode(INVALID_TOKEN_ID));
             verifyNoPut();
         }
 
@@ -172,7 +172,7 @@ class TokenFreezeAccountHandlerTest {
 
             assertThatThrownBy(() -> subject.handle(noAcctTxn, readableAccountStore, readableTokenStore, tokenRelStore))
                     .isInstanceOf(HandleException.class)
-                    .has(handleResponseCode(INVALID_ACCOUNT_ID));
+                    .has(responseCode(INVALID_ACCOUNT_ID));
             verifyNoPut();
         }
 
@@ -184,7 +184,7 @@ class TokenFreezeAccountHandlerTest {
 
             assertThatThrownBy(() -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore))
                     .isInstanceOf(HandleException.class)
-                    .has(handleResponseCode(INVALID_TOKEN_ID));
+                    .has(responseCode(INVALID_TOKEN_ID));
             verifyNoPut();
         }
 
@@ -196,7 +196,7 @@ class TokenFreezeAccountHandlerTest {
 
             assertThatThrownBy(() -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore))
                     .isInstanceOf(HandleException.class)
-                    .has(handleResponseCode(TOKEN_HAS_NO_FREEZE_KEY));
+                    .has(responseCode(TOKEN_HAS_NO_FREEZE_KEY));
             verifyNoPut();
         }
 
@@ -209,7 +209,7 @@ class TokenFreezeAccountHandlerTest {
 
             assertThatThrownBy(() -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore))
                     .isInstanceOf(HandleException.class)
-                    .has(handleResponseCode(INVALID_ACCOUNT_ID));
+                    .has(responseCode(INVALID_ACCOUNT_ID));
             verifyNoPut();
         }
 
@@ -226,7 +226,7 @@ class TokenFreezeAccountHandlerTest {
 
             assertThatThrownBy(() -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore))
                     .isInstanceOf(HandleException.class)
-                    .has(handleResponseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+                    .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
             verifyNoPut();
         }
 
