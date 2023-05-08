@@ -17,10 +17,13 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -42,10 +45,10 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-
         final var op = context.body().tokenAssociateOrThrow();
-        final var target = op.accountOrElse(AccountID.DEFAULT);
+        pureChecks(op);
 
+        final var target = op.accountOrElse(AccountID.DEFAULT);
         context.requireKeyOrThrow(target, INVALID_ACCOUNT_ID);
     }
 
@@ -59,5 +62,18 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
      */
     public void handle() {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Performs checks independent of state or context
+     */
+    private void pureChecks(@NonNull final TokenAssociateTransactionBody op) throws PreCheckException {
+        if (!op.hasAccount()) {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+        }
+
+        if (TokenListChecks.repeatsItself(op.tokensOrThrow())) {
+            throw new PreCheckException(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+        }
     }
 }
