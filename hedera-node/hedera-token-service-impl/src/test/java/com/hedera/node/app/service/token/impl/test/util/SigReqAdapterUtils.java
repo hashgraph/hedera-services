@@ -101,17 +101,18 @@ public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
-    private static AccountCryptoAllowance cryptoAllowances = AccountCryptoAllowance.newBuilder()
+    private static final AccountCryptoAllowance CRYPTO_ALLOWANCES = AccountCryptoAllowance.newBuilder()
             .spenderNum(DEFAULT_PAYER.getAccountNum())
             .amount(500L)
             .build();
-    private static AccountFungibleTokenAllowance fungibleTokenAllowances = AccountFungibleTokenAllowance.newBuilder()
-            .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
-            .spenderNum(DEFAULT_PAYER.getAccountNum())
-            .amount(10_000L)
-            .build();
+    private static final AccountFungibleTokenAllowance FUNGIBLE_TOKEN_ALLOWANCES =
+            AccountFungibleTokenAllowance.newBuilder()
+                    .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
+                    .spenderNum(DEFAULT_PAYER.getAccountNum())
+                    .amount(10_000L)
+                    .build();
 
-    private static AccountApprovalForAllAllowance nftAllowances = AccountApprovalForAllAllowance.newBuilder()
+    private static final AccountApprovalForAllAllowance NFT_ALLOWANCES = AccountApprovalForAllAllowance.newBuilder()
             .tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
             .spenderNum(DEFAULT_PAYER.getAccountNum())
             .build();
@@ -191,9 +192,9 @@ public class SigReqAdapterUtils {
                         OWNER_ACCOUNT_KT.asPbjKey(),
                         DEFAULT_BALANCE,
                         false,
-                        List.of(cryptoAllowances),
-                        List.of(fungibleTokenAllowances),
-                        List.of(nftAllowances)));
+                        List.of(CRYPTO_ALLOWANCES),
+                        List.of(FUNGIBLE_TOKEN_ALLOWANCES),
+                        List.of(NFT_ALLOWANCES)));
         destination.put(
                 EntityNumVirtualKey.fromLong(DELEGATING_SPENDER.getAccountNum()),
                 toPbjAccount(
@@ -201,9 +202,9 @@ public class SigReqAdapterUtils {
                         DELEGATING_SPENDER_KT.asPbjKey(),
                         DEFAULT_BALANCE,
                         false,
-                        List.of(cryptoAllowances),
-                        List.of(fungibleTokenAllowances),
-                        List.of(nftAllowances)));
+                        List.of(CRYPTO_ALLOWANCES),
+                        List.of(FUNGIBLE_TOKEN_ALLOWANCES),
+                        List.of(NFT_ALLOWANCES)));
         destination.put(
                 EntityNumVirtualKey.fromLong(COMPLEX_KEY_ACCOUNT.getAccountNum()),
                 toPbjAccount(COMPLEX_KEY_ACCOUNT.getAccountNum(), COMPLEX_KEY_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
