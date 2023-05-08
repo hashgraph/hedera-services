@@ -41,7 +41,7 @@ jobs:
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
 
-  unit-label-check:
+  label-check:
     name: "Label Check [CI:ExtendedChecks]"
     runs-on: [self-hosted, Linux, medium, ephemeral]
     if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:ExtendedChecks') }}
@@ -54,6 +54,8 @@ jobs:
   reconnect:
     name: Reconnect
     uses: ./.github/workflows/zxc-jrs-regression.yaml
+    needs:
+      - label-check
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -70,6 +72,8 @@ jobs:
   restart:
     name: Restart
     uses: ./.github/workflows/zxc-jrs-regression.yaml
+    needs:
+      - label-check
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -86,6 +90,8 @@ jobs:
   dynamic-freeze:
     name: DynamicFreeze
     uses: ./.github/workflows/zxc-jrs-regression.yaml
+    needs:
+      - label-check
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -102,6 +108,8 @@ jobs:
   NewNodesSimilarStake:
     name: NewNodesSimilarStake
     uses: ./.github/workflows/zxc-jrs-regression.yaml
+    needs:
+      - label-check
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
