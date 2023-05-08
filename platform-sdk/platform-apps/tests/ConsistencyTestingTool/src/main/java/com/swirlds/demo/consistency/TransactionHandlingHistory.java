@@ -47,38 +47,31 @@ public class TransactionHandlingHistory {
     /**
      * Whether gaps in the round history are permitted. If false, an error will be logged if a gap is found
      */
-    private final boolean permitRoundGaps;
+    private boolean permitRoundGaps;
 
     /**
      * A list of rounds that have come to consensus
      */
-    private final List<ConsistencyTestingToolRound> roundHistory;
+    private List<ConsistencyTestingToolRound> roundHistory;
 
     /**
      * A set of all transactions which have been seen
      */
-    private final Set<Long> seenTransactions;
+    private Set<Long> seenTransactions;
 
     /**
      * The location of the log file
      */
-    private final Path logFilePath;
+    private Path logFilePath;
 
     /**
      * Constructor
-     * <p>
-     * Reads the contents of the log file if it exists, and adds the included rounds to the history
-     *
-     * @param permitRoundGaps whether gaps in the round history are permitted
-     * @param logFilePath     the location of the log file
      */
-    public TransactionHandlingHistory(final boolean permitRoundGaps, final @NonNull Path logFilePath) {
-        this.permitRoundGaps = permitRoundGaps;
+    public TransactionHandlingHistory() {
         this.roundHistory = new ArrayList<>();
         this.seenTransactions = new HashSet<>();
-        this.logFilePath = Objects.requireNonNull(logFilePath);
 
-        tryReadLog();
+        // initialization is happening in init()
     }
 
     /**
@@ -93,6 +86,23 @@ public class TransactionHandlingHistory {
         this.roundHistory = new ArrayList<>(that.roundHistory);
         this.seenTransactions = new HashSet<>(that.seenTransactions);
         this.logFilePath = that.logFilePath;
+    }
+
+    /**
+     * Initializer
+     * <p>
+     * Reads the contents of the log file if it exists, and adds the included rounds to the history
+     *
+     * @param permitRoundGaps whether gaps in the round history are permitted
+     * @param logFilePath     the location of the log file
+     */
+    public void init(final boolean permitRoundGaps, final @NonNull Path logFilePath) {
+        this.permitRoundGaps = permitRoundGaps;
+        this.logFilePath = Objects.requireNonNull(logFilePath);
+
+        logger.info(STARTUP.getMarker(), "Consistency testing tool log path: {}", logFilePath);
+
+        tryReadLog();
     }
 
     /**

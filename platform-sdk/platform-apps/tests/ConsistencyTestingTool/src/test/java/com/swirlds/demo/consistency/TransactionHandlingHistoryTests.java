@@ -63,7 +63,8 @@ class TransactionHandlingHistoryTests {
     @Test
     @DisplayName("New rounds are added to history and logged to file")
     void newRoundsHandled() {
-        final TransactionHandlingHistory history = new TransactionHandlingHistory(false, logFilePath);
+        final TransactionHandlingHistory history = new TransactionHandlingHistory();
+        history.init(false, logFilePath);
 
         final ConsistencyTestingToolRound round1 = new ConsistencyTestingToolRound(1, 1, List.of(1L, 2L, 3L));
         final ConsistencyTestingToolRound round2 = new ConsistencyTestingToolRound(2, 22, List.of(6L, 5L, 4L));
@@ -81,7 +82,8 @@ class TransactionHandlingHistoryTests {
     @Test
     @DisplayName("Duplicate transactions are detected")
     void duplicateTransaction() {
-        final TransactionHandlingHistory history = new TransactionHandlingHistory(false, logFilePath);
+        final TransactionHandlingHistory history = new TransactionHandlingHistory();
+        history.init(false, logFilePath);
 
         final ConsistencyTestingToolRound round1 = new ConsistencyTestingToolRound(1, 1, List.of(1L, 2L, 3L));
         final ConsistencyTestingToolRound round2 = new ConsistencyTestingToolRound(2, 22, List.of(3L, 5L, 4L));
@@ -95,7 +97,8 @@ class TransactionHandlingHistoryTests {
     @Test
     @DisplayName("A new round that matches a historical round is handled correctly")
     void historicalRound() {
-        final TransactionHandlingHistory history = new TransactionHandlingHistory(false, logFilePath);
+        final TransactionHandlingHistory history = new TransactionHandlingHistory();
+        history.init(false, logFilePath);
 
         final ConsistencyTestingToolRound round1 = new ConsistencyTestingToolRound(1, 1, List.of(1L, 2L, 3L));
 
@@ -111,7 +114,8 @@ class TransactionHandlingHistoryTests {
     @Test
     @DisplayName("A new round that matches a historical round but with incorrect state is detected")
     void historicalRoundWithIncorrectState() {
-        final TransactionHandlingHistory history = new TransactionHandlingHistory(false, logFilePath);
+        final TransactionHandlingHistory history = new TransactionHandlingHistory();
+        history.init(false, logFilePath);
 
         final ConsistencyTestingToolRound round1 = new ConsistencyTestingToolRound(1, 1, List.of(1L, 2L, 3L));
 
@@ -127,7 +131,8 @@ class TransactionHandlingHistoryTests {
     @Test
     @DisplayName("A new round that matches a historical round but with incorrect transactions is detected")
     void historicalRoundWithIncorrectTransactions() {
-        final TransactionHandlingHistory history = new TransactionHandlingHistory(false, logFilePath);
+        final TransactionHandlingHistory history = new TransactionHandlingHistory();
+        history.init(false, logFilePath);
 
         final ConsistencyTestingToolRound round1 = new ConsistencyTestingToolRound(1, 1, List.of(1L, 2L, 3L));
 
@@ -143,7 +148,8 @@ class TransactionHandlingHistoryTests {
     @Test
     @DisplayName("A new round with non-increasing round number is detected")
     void nonIncreasingRoundNumber() {
-        final TransactionHandlingHistory history = new TransactionHandlingHistory(false, logFilePath);
+        final TransactionHandlingHistory history = new TransactionHandlingHistory();
+        history.init(false, logFilePath);
 
         final ConsistencyTestingToolRound round1 = new ConsistencyTestingToolRound(3, 1, List.of(1L, 2L, 3L));
         final ConsistencyTestingToolRound round2 = new ConsistencyTestingToolRound(2, 22, List.of(6L, 5L, 4L));
@@ -157,7 +163,8 @@ class TransactionHandlingHistoryTests {
     @Test
     @DisplayName("No error occurs with non-consecutive round numbers if they are permitted")
     void nonConsecutiveRoundNumbersPermitted() {
-        final TransactionHandlingHistory history = new TransactionHandlingHistory(true, logFilePath);
+        final TransactionHandlingHistory history = new TransactionHandlingHistory();
+        history.init(true, logFilePath);
 
         final ConsistencyTestingToolRound round1 = new ConsistencyTestingToolRound(1, 1, List.of(1L, 2L, 3L));
         final ConsistencyTestingToolRound round2 = new ConsistencyTestingToolRound(6, 22, List.of(6L, 5L, 4L));
@@ -171,7 +178,8 @@ class TransactionHandlingHistoryTests {
     @Test
     @DisplayName("An error occurs with non-consecutive round numbers if they are not permitted")
     void nonConsecutiveRoundNumbersForbidden() {
-        final TransactionHandlingHistory history = new TransactionHandlingHistory(false, logFilePath);
+        final TransactionHandlingHistory history = new TransactionHandlingHistory();
+        history.init(false, logFilePath);
 
         final ConsistencyTestingToolRound round1 = new ConsistencyTestingToolRound(1, 1, List.of(1L, 2L, 3L));
         final ConsistencyTestingToolRound round2 = new ConsistencyTestingToolRound(6, 22, List.of(6L, 5L, 4L));
@@ -185,7 +193,8 @@ class TransactionHandlingHistoryTests {
     @Test
     @DisplayName("History that has been parsed from file is equivalent to the normal history")
     void parsedHistory() {
-        final TransactionHandlingHistory history = new TransactionHandlingHistory(false, logFilePath);
+        final TransactionHandlingHistory history = new TransactionHandlingHistory();
+        history.init(false, logFilePath);
 
         final ConsistencyTestingToolRound round1 = new ConsistencyTestingToolRound(1, 1, List.of(1L, 2L, 3L));
         final ConsistencyTestingToolRound round2 = new ConsistencyTestingToolRound(2, 22, List.of(6L, 5L, 4L));
@@ -195,7 +204,8 @@ class TransactionHandlingHistoryTests {
 
         assertEquals(2, getLogFileContents().lines().count(), "Log file should have 2 rounds recorded");
 
-        final TransactionHandlingHistory parsedHistory = new TransactionHandlingHistory(false, logFilePath);
+        final TransactionHandlingHistory parsedHistory = new TransactionHandlingHistory();
+        parsedHistory.init(false, logFilePath);
 
         // new rounds can be recorded
         final ConsistencyTestingToolRound round3 = new ConsistencyTestingToolRound(3, 33, List.of(7L, 8L, 9L));

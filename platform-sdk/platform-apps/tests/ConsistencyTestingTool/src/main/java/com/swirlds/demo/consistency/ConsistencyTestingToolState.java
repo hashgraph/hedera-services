@@ -54,7 +54,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     /**
      * The history of transactions that have been handled by this app
      */
-    private TransactionHandlingHistory transactionHandlingHistory;
+    private final TransactionHandlingHistory transactionHandlingHistory;
 
     /**
      * The true "state" of this app. This long value is updated with every transaction
@@ -66,6 +66,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      */
     public ConsistencyTestingToolState() {
         logger.info(STARTUP.getMarker(), "New State Constructed.");
+
+        this.transactionHandlingHistory = new TransactionHandlingHistory();
     }
 
     /**
@@ -98,7 +100,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
                 platform.getContext().getConfiguration().getConfigData(ConsistencyTestingToolConfig.class);
 
         final Path logFilePath = Path.of(System.getProperty("user.dir") + File.separator + config.logfileName());
-        this.transactionHandlingHistory = new TransactionHandlingHistory(config.permitGaps(), logFilePath);
+
+        transactionHandlingHistory.init(config.permitGaps(), logFilePath);
     }
 
     /**
@@ -114,7 +117,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @Override
     public void serialize(final @NonNull SerializableDataOutputStream out) throws IOException {
-        Objects.requireNonNull(out).writeLong(stateLong);
+        Objects.requireNonNull(out);
+        out.writeLong(stateLong);
     }
 
     /**
