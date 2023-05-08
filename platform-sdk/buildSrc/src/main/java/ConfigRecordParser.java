@@ -32,7 +32,9 @@ public class ConfigRecordParser {
     private static Pattern FIELD_PATTERN = Pattern.compile(
             "@ConfigProperty\\s*\\(([^)]+)\\)\s+([a-zA-Z0-9_]+)\\s+([a-zA-Z0-9_]+)");
     private static Pattern CONFIG_DATA_PATTERN = Pattern.compile(
-            "/\\*\\*(.*?)\\*/\\s+@ConfigData\\s*\\(([^)]+)\\)\\s+public\\s+record\\s+([a-zA-Z0-9_]+)", Pattern.DOTALL);
+            //"/\\*\\*(.*?)\\*/\\s+@ConfigData\\s*\\(([^)]+)\\)\\s+public\\s+record\\s+([a-zA-Z0-9_]+)",
+            "/\\*\\*(.*?)\\*/\\s+@ConfigData\\s*\\(?([^)]*)\\)?\\s*public\\s+record\\s+([a-zA-Z0-9_]+)",
+            Pattern.DOTALL);
     private static Pattern JAVA_DOC_PARAM_PATTERN = Pattern.compile("@param\\s+(\\S+)(.*?)(?=@|$)", Pattern.DOTALL);
     private static Pattern PACKAGE_PATTERN = Pattern.compile("package\\s+([^\\s;]+);");
     private static Pattern CONFIG_OPTION_PATTERN = Pattern.compile("([a-zA-Z0-9_]+)\\s*=\\s*([^,]+)");
