@@ -83,6 +83,8 @@ public class TipsetScoreCalculator {
      */
     private long previousScore = 0;
 
+    private final IntToLongFunction indexToWeight;
+
     /**
      * Create a new tipset window.
      *
@@ -101,11 +103,13 @@ public class TipsetScoreCalculator {
             @NonNull final IntToLongFunction indexToWeight,
             final long totalWeight) {
 
+        // TODO requireNonNull
         this.selfId = selfId;
         this.tipsetBuilder = tipsetBuilder;
         this.nodeCount = nodeCount;
         this.totalWeight = totalWeight;
         this.selfWeight = indexToWeight.applyAsLong(nodeIdToIndex.applyAsInt(selfId));
+        this.indexToWeight = Objects.requireNonNull(indexToWeight);
         this.maximumPossibleScore = totalWeight - selfWeight;
 
         this.snapshot = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
@@ -191,6 +195,29 @@ public class TipsetScoreCalculator {
         final Tipset newTipset = Tipset.merge(parentTipsets);
 
         return snapshot.getWeightedAdvancementCount(selfId, newTipset);
+    }
+
+    // TODO rename and document
+    public long getTheoreticalAdvancementScoreAntiBully(@NonNull final List<EventFingerprint> parents) {
+        if (parents.isEmpty()) {
+            return 0;
+        }
+
+        final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
+        for (final EventFingerprint parent : parents) {
+            parentTipsets.add(tipsetBuilder.getTipset(parent));
+        }
+
+        // Don't bother advancing the self generation, since self advancement doesn't contribute to tipset score.
+        final Tipset newTipset = Tipset.merge(parentTipsets);
+
+        final IntToLongFunction weights = nodeIndex -> {
+//            final long baseWeight = indexToWeight.applyAsLong(nodeIndex);
+            final long bullyFactor = 1 + getBullyScoreForNodeIndex(nodeIndex);
+//            return baseWeight * bullyFactor; // TODO should we consider weight in this step?
+            return bullyFactor;
+        };
+        return snapshot.getWeightedAdvancementCount(selfId, newTipset, weights);
     }
 
     /**

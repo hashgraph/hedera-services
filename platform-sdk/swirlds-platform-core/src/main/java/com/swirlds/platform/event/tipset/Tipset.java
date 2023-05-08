@@ -183,6 +183,41 @@ public class Tipset {
     }
 
     /**
+     * <p>
+     * Get the number of tip advancements, weighted using the provided function, between this tipset and another
+     * tipset.
+     * </p>
+     *
+     * <p>
+     * A tip advancement is defined as an increase in the tip generation for a node ID. The exception to this rule is
+     * that an increase in generation for the target node ID is never counted as a tip advancement. The tip advancement
+     * count is defined as the sum of all tip advancements after being appropriately weighted.
+     * </p>
+     *
+     * @param nodeId compute the advancement count relative to this node ID
+     * @param that   the tipset to compare to
+     * @return the number of tip advancements to get from this tipset to that tipset
+     */
+    public long getWeightedAdvancementCount(
+            final long nodeId, @NonNull final Tipset that, @NonNull IntToLongFunction indexWeight) {
+        long count = 0;
+
+        final int selfIndex = nodeIdToIndex.applyAsInt(nodeId);
+        for (int index = 0; index < tips.length; index++) {
+            if (index == selfIndex) {
+                // We don't consider self advancement here, since self advancement does nothing to help consensus.
+                continue;
+            }
+
+            if (this.tips[index] < that.tips[index]) {
+                count += indexWeight.applyAsLong(index);
+            }
+        }
+
+        return count;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
