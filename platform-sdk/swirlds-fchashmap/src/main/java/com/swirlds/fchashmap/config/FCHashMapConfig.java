@@ -41,5 +41,4 @@ public record FCHashMapConfig(
         @ConfigProperty(defaultValue = "1m") Duration gCQueueThresholdPeriod,
         @ConfigProperty(defaultValue = "true") boolean archiveEnabled,
         @ConfigProperty(defaultValue = "7") int rebuildSplitFactor,
-        @ConfigProperty(defaultValue = "24") int rebuildThreadCount) {
-}
+        @ConfigProperty(defaultValue = "24") int rebuildThreadCount) {}

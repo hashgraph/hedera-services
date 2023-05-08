@@ -16,7 +16,6 @@
 
 package com.swirlds.fchashmap;
 
-
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 
 import com.swirlds.common.FastCopyable;
