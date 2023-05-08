@@ -29,6 +29,7 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
@@ -378,7 +379,7 @@ public class TransactionDispatcher {
      * @param tokenStore the token store
      */
     private void dispatchTokenCreate(@NonNull final TransactionBody tokenCreate,
-            @NonNull final WritableAccountStore accountStore,
+            @NonNull final ReadableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore) {
         requireNonNull(tokenCreate);
         requireNonNull(tokenStore);

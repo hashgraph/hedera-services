@@ -49,7 +49,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
 
     @Override
     @Nullable
-    public TokenMetadata getTokenMeta(@NonNull final TokenID id) throws PreCheckException {
+    public TokenMetadata getTokenMeta(@NonNull final TokenID id) {
         requireNonNull(id);
         final var token = getTokenLeaf(id.tokenNum());
         if (token.isEmpty()) {

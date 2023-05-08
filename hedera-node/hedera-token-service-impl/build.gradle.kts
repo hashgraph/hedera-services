@@ -38,6 +38,7 @@ dependencies {
   implementation(libs.pbj.runtime)
   implementation(libs.swirlds.virtualmap)
   implementation(libs.swirlds.jasperdb)
+  implementation(libs.swirlds.config)
 
   testImplementation(testLibs.bundles.testing)
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))

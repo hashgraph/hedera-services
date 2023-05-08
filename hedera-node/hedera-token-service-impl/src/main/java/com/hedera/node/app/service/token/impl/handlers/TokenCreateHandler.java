@@ -16,39 +16,37 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenSupplyType;
-import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.evm.utils.ValidationUtils;
-import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.service.token.impl.records.CreateTokenRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.service.token.impl.validator.CustomFeesValidator;
+import com.hedera.node.app.service.token.impl.validator.TokenTypeValidator;
+import com.hedera.node.app.spi.config.ConfigProvider;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -69,19 +67,24 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenCreateHandler implements TransactionHandler {
+    private final ConfigProvider configProvider;
+    private final CustomFeesValidator customFeesValidator;
+    private final TokenTypeValidator tokenTypeValidator;
     @Inject
-    public TokenCreateHandler() {
-        // Exists for injection
+    public TokenCreateHandler(ConfigProvider configProvider,
+            CustomFeesValidator customFeesValidator,
+            TokenTypeValidator tokenTypeValidator) {
+        this.configProvider = configProvider;
+        this.customFeesValidator = customFeesValidator;
+        this.tokenTypeValidator = tokenTypeValidator;
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenCreationOrThrow();
-        final var validationResult = pureChecks(op);
-        if (validationResult != OK) {
-            throw new PreCheckException(validationResult);
-        }
+        pureChecks(op);
+
         if (op.hasTreasury()) {
             final var treasuryId = op.treasuryOrThrow();
             context.requireKeyOrThrow(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
@@ -107,43 +110,81 @@ public class TokenCreateHandler implements TransactionHandler {
      */
     public void handle(@NonNull final HandleContext handleContext,
             @NonNull final TransactionBody txn,
-            @NonNull final WritableAccountStore accountStore,
+            @NonNull final ReadableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore) {
         final var op = txn.tokenCreationOrThrow();
+        final var config = configProvider.getConfiguration().getConfigData(TokenServiceConfig.class);
 
         // validate fields in the transaction body that involves checking with
-        // dynamic properties or state
-        final ResponseCodeEnum validationResult = validateSemantics();
-        if (validationResult != OK) {
-            throw new HandleException(validationResult);
+        // dynamic properties or state. Also validate custom fees
+        validateSemantics(accountStore, tokenStore, op, config);
+
+        // validate expiration and auto-renew account if present
+        final var givenExpiryMeta = getExpiryMeta(handleContext.consensusNow().getEpochSecond(), op);
+        final var resolvedExpiryMeta = handleContext
+                .expiryValidator()
+                .resolveCreationAttempt(false, givenExpiryMeta);
+
+        // validate auto-renew account exists
+        if(resolvedExpiryMeta.autoRenewNum() != 0){
+            final var id = AccountID.newBuilder().accountNum(resolvedExpiryMeta.autoRenewNum()).build();
+            final var autoRenewAccount = accountStore.getAccountById(id);
+            validateTrue(autoRenewAccount != null, INVALID_AUTORENEW_ACCOUNT);
         }
-//        final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
-//                + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
-//        final var entityExpiryMeta = new ExpiryMeta(
-//                impliedExpiry,
-//                op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
-//                // Shard and realm will be ignored if num is NA
-//                op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA,
-//                op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA,
-//                op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
-//        final var hasValidOrNoExplicitExpiry = !op.hasExpiry() || handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
-//        validateTrue(hasValidOrNoExplicitExpiry, INVALID_EXPIRATION_TIME);
-//
-//        final var treasuryId = Id.fromGrpcAccount(op.getTreasury());
-//        treasury = accountStore.loadAccountOrFailWith(treasuryId, com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-//        autoRenew = null;
-//        if (op.hasAutoRenewAccount()) {
-//            final var autoRenewId = Id.fromGrpcAccount(op.getAutoRenewAccount());
-//            autoRenew = accountStore.loadAccountOrFailWith(autoRenewId, com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+
+//        provisionalToken
+//                .getCustomFees()
+//                .forEach(fee -> fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore));
+//        newRels = listing.listFrom(provisionalToken, tokenStore, dynamicProperties);
+//        if (op.getInitialSupply() > 0) {
+//            // Treasury relationship is always first
+//            provisionalToken.mint(newRels.get(0), op.getInitialSupply(), true);
 //        }
-//
-//        provisionalId = Id.fromGrpcToken(ids.newTokenId(sponsor));
-//
-//        // --- Do the business logic ---
-//        creation.doProvisionallyWith(now, MODEL_FACTORY, RELS_LISTING);
-//
-//        // --- Persist the created model ---
-//        creation.persist();
+//        provisionalToken.getCustomFees().forEach(FcCustomFee::nullOutCollector);
+
+        // get the new token id to persist
+        final var newTokenId = handleContext.newEntityNumSupplier().getAsLong();
+        tokenStore.put(buildToken(newTokenId, op, resolvedExpiryMeta));
+    }
+
+    private Token buildToken(long newTokenNum, TokenCreateTransactionBody op, ExpiryMeta resolvedExpiryMeta) {
+        return new Token(newTokenNum,
+        op.name(),
+        op.symbol(),
+        op.decimals(),
+        0, // is this correct ?
+        op.treasury().accountNum(),
+        op.adminKey(),
+        op.kycKey(),
+        op.freezeKey(),
+        op.wipeKey(),
+        op.supplyKey(),
+        op.feeScheduleKey(),
+        op.pauseKey(),
+        0,
+        false,
+        op.tokenType(),
+        op.supplyType(),
+        resolvedExpiryMeta.autoRenewNum(),
+        resolvedExpiryMeta.autoRenewPeriod(),
+        resolvedExpiryMeta.expiry(),
+        op.memo(),
+        op.maxSupply(),
+        false,
+        op.freezeDefault(),
+        false,
+        op.customFees());
+    }
+
+    private ExpiryMeta getExpiryMeta(final long consensusTime, final TokenCreateTransactionBody op) {
+        final var impliedExpiry = consensusTime + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
+        return new ExpiryMeta(
+                impliedExpiry,
+                op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
+                // Shard and realm will be ignored if num is NA
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA,
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA,
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
     }
 
     private void pureChecks(@NonNull final TokenCreateTransactionBody op) {
@@ -153,10 +194,10 @@ public class TokenCreateHandler implements TransactionHandler {
         final var supplyType = op.supplyType();
         final var tokenType = op.tokenType();
 
-        var validity = typeCheck(tokenType, initialSupply, decimals);
+        var validity = tokenTypeValidator.typeCheck(tokenType, initialSupply, decimals);
         validateTrue(validity == OK, validity);
 
-        validity = supplyTypeCheck(supplyType, maxSupply);
+        validity = tokenTypeValidator.supplyTypeCheck(supplyType, maxSupply);
         validateTrue(validity == OK, validity);
 
         if (maxSupply > 0 && initialSupply > maxSupply) {
@@ -176,10 +217,18 @@ public class TokenCreateHandler implements TransactionHandler {
         }
     }
 
-    private ResponseCodeEnum validateSemantics() {
-        return OK;
+    private void validateSemantics(final ReadableAccountStore accountStore,
+            final WritableTokenStore tokenStore,
+            final TokenCreateTransactionBody op,
+            final TokenServiceConfig config) {
+        // validate treasury exists
+        final var treasury = accountStore.getAccountById(op.treasuryOrElse(AccountID.DEFAULT));
+        validateTrue(treasury != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+
         // FUTURE : Need to do areNftsEnabled, memoCheck, tokenSymbolCheck, tokenNameCheck, checkKeys,
         // validateAutoRenewAccount
+        validateTrue(op.customFees().size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
+        customFeesValidator.validate(op.customFees(), accountStore, tokenStore, true);
     }
 
 
@@ -240,33 +289,6 @@ public class TokenCreateHandler implements TransactionHandler {
             context.requireKeyOrThrow(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         } else {
             context.requireKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
-        }
-    }
-
-    private ResponseCodeEnum typeCheck(final TokenType type, final long initialSupply, final int decimals) {
-        switch (type) {
-            case FUNGIBLE_COMMON -> {
-                return initialSupply < 0
-                        ? INVALID_TOKEN_INITIAL_SUPPLY
-                        : (decimals < 0 ? INVALID_TOKEN_DECIMALS : OK);
-                    }
-            case NON_FUNGIBLE_UNIQUE -> {
-                return initialSupply != 0
-                        ? INVALID_TOKEN_INITIAL_SUPPLY
-                        : (decimals != 0 ? INVALID_TOKEN_DECIMALS : OK);
-            }
-        }
-        return NOT_SUPPORTED;
-    }
-
-    public ResponseCodeEnum supplyTypeCheck(final TokenSupplyType supplyType, final long maxSupply) {
-        switch (supplyType) {
-            case INFINITE:
-                return maxSupply != 0 ? INVALID_TOKEN_MAX_SUPPLY : ResponseCodeEnum.OK;
-            case FINITE:
-                return maxSupply <= 0 ? INVALID_TOKEN_MAX_SUPPLY : ResponseCodeEnum.OK;
-            default:
-                return NOT_SUPPORTED;
         }
     }
 }
