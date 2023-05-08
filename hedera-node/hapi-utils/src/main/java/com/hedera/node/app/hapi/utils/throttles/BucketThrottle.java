@@ -38,7 +38,7 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
  *   <li>The <i>burst period</i>; that is, the maximum period for which the allowed transaction rate
  *       can be sustained in a sudden burst; units are seconds or milliseconds.
  * </ol>
- *
+ * <p>
  * The purpose of the mtps unit is to allow the user to create a {@code BucketThrottle} with allowed
  * transaction rate below 1 tps. However, if the user tries to construct a {@code BucketThrottle}
  * for which the allowed transaction rate multiplied by the burst period still does not amount to a
@@ -50,9 +50,9 @@ public class BucketThrottle {
 
     static final long MS_PER_SEC = 1_000L;
     static final long MTPS_PER_TPS = 1_000L;
-    static final long NTPS_PER_MTPS = 1_000_000L;
+    public static final long NTPS_PER_MTPS = 1_000_000L;
     static final long CAPACITY_UNITS_PER_TXN = 1_000_000_000_000L;
-    static final long CAPACITY_UNITS_PER_NANO_TXN = 1_000L;
+    public static final long CAPACITY_UNITS_PER_NANO_TXN = 1_000L;
 
     public static long capacityUnitsPerTxn() {
         return CAPACITY_UNITS_PER_TXN;
@@ -87,7 +87,7 @@ public class BucketThrottle {
         return new BucketThrottle(mtps, burstPeriod * MS_PER_SEC);
     }
 
-    static BucketThrottle withMtpsAndBurstPeriodMs(final long mtps, final long burstPeriodMs) {
+    public static BucketThrottle withMtpsAndBurstPeriodMs(final long mtps, final long burstPeriodMs) {
         return new BucketThrottle(mtps, burstPeriodMs);
     }
 
@@ -164,11 +164,11 @@ public class BucketThrottle {
         lastAllowedUnits = 0;
     }
 
-    DiscreteLeakyBucket bucket() {
+    public DiscreteLeakyBucket bucket() {
         return bucket;
     }
 
-    long mtps() {
+    public long mtps() {
         return mtps;
     }
 }

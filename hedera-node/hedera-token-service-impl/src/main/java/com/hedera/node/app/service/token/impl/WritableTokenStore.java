@@ -48,7 +48,7 @@ public class WritableTokenStore {
     public WritableTokenStore(@NonNull final WritableStates states) {
         requireNonNull(states);
 
-        this.tokenState = states.get("TOKENS");
+        this.tokenState = states.get(TokenServiceImpl.TOKENS_KEY);
     }
 
     /**

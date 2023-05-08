@@ -29,6 +29,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.chatter.protocol.ChatterCore;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
+import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.event.GossipEventBuilder;
 import com.swirlds.test.framework.config.TestConfigBuilder;

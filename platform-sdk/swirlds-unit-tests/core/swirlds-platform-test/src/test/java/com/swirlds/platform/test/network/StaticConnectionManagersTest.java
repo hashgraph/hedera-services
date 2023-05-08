@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;

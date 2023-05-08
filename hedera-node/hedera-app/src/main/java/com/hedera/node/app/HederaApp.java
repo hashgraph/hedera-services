@@ -50,9 +50,11 @@ import com.hedera.node.app.service.mono.store.StoresModule;
 import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.token.impl.TokenServiceModule;
 import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.solvency.SolvencyModule;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleModule;
@@ -114,7 +116,8 @@ import javax.inject.Singleton;
             SolvencyModule.class,
             TokenServiceModule.class,
             AdminServiceModule.class,
-            ConsensusServiceModule.class
+            ConsensusServiceModule.class,
+            HandleWorkflowModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
@@ -125,6 +128,8 @@ public interface HederaApp extends ServicesApp {
     WorkingStateAccessor workingStateAccessor();
 
     AdaptedMonoEventExpansion adaptedMonoEventExpansion();
+
+    NonAtomicReference<HederaState> mutableState();
 
     @Component.Builder
     interface Builder {

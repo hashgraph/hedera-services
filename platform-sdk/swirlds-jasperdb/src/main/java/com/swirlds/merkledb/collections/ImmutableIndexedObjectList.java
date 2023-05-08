@@ -16,15 +16,16 @@
 
 package com.swirlds.merkledb.collections;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
-import java.util.Set;
+import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
  * An immutable list of indexed objects, containing at most one object at any given index.
  *
  * The {@link ImmutableIndexedObjectList#withAddedObject(IndexedObject)} and
- * {@link ImmutableIndexedObjectList#withDeletedObjects(Set)}} methods return shallow copies
+ * {@link ImmutableIndexedObjectList#withDeletedObjects(Collection)}} methods return shallow copies
  * of the list that result from applying the requested addition or deletion(s), leaving the
  * receiving list unchanged.
  *
@@ -47,13 +48,12 @@ public interface ImmutableIndexedObjectList<T extends IndexedObject> {
 
     /**
      * Creates a new ImmutableIndexedObjectList with the existing objects, minus any
-     * at indexes in a list of objects (indexes) to delete.
+     * at indexes in a set of objects (indexes) to delete.
      *
-     * @param objectsToDelete
-     * 		a non-null list of objects to delete
-     * @return an immutable copy of this list minus any existing elements at indices from the deletion list
+     * @param objectsToDelete a non-null set of objects to delete
+     * @return an immutable copy of this list minus any existing elements at indices from the deletion set
      */
-    ImmutableIndexedObjectList<T> withDeletedObjects(Set<T> objectsToDelete);
+    ImmutableIndexedObjectList<T> withDeletedObjects(@NonNull Collection<T> objectsToDelete);
 
     /**
      * Gets the last object in this list.

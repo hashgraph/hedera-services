@@ -118,6 +118,7 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.settings.ParsingUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
 import com.swirlds.platform.reconnect.ReconnectSettingsImpl;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.test.framework.TestTypeTags;
