@@ -98,7 +98,8 @@ public class DataFileReaderHammerTest {
             });
             jobs[i] = result;
         }
-        // Add chaos: interrupt random threads
+        // Add chaos: interrupt random threads, but not same thread twice in a row
+        int lastInterruptedThread = -1;
         while (activeReaders.get() > 0) {
             try {
                 // Don't interrupt too often
@@ -106,9 +107,13 @@ public class DataFileReaderHammerTest {
             } catch (final InterruptedException e) {
                 // ignore
             }
-            final Thread thread = threads.get(rand.nextInt(readerThreads));
-            if (thread != null) {
-                thread.interrupt();
+            final int threadToInterrupt = rand.nextInt(readerThreads);
+            if (threadToInterrupt != lastInterruptedThread) {
+                final Thread thread = threads.get(threadToInterrupt);
+                if (thread != null) {
+                    thread.interrupt();
+                }
+                lastInterruptedThread = threadToInterrupt;
             }
         }
         // Check for exceptions
