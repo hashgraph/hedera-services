@@ -1,4 +1,5 @@
 import com.adarshr.gradle.testlogger.theme.ThemeType
+import gradle.kotlin.dsl.accessors._64acc05bf1a66f2c855e386526b4bcff.sourceSets
 
 /*
  * Copyright 2016-2022 Hedera Hashgraph, LLC
@@ -54,7 +55,7 @@ tasks.withType<JavaCompile> {
 tasks.withType<Javadoc> {
     options.encoding = "UTF-8"
     (options as StandardJavadocDocletOptions)
-        .tags("apiNote:a:API Note:", "implSpec:a:Implementation Requirements:", "implNote:a:Implementation Note:")
+            .tags("apiNote:a:API Note:", "implSpec:a:Implementation Requirements:", "implNote:a:Implementation Note:")
 }
 
 testing {
@@ -69,13 +70,13 @@ testing {
                         options {
                             val jpo = this as JUnitPlatformOptions
                             jpo.excludeTags(
-                                "TIME_CONSUMING",
-                                "AT_SCALE",
-                                "REMOTE_ONLY",
-                                "HAMMER",
-                                "PERFORMANCE",
-                                "PROFILING_ONLY",
-                                "INFREQUENT_EXEC_ONLY"
+                                    "TIME_CONSUMING",
+                                    "AT_SCALE",
+                                    "REMOTE_ONLY",
+                                    "HAMMER",
+                                    "PERFORMANCE",
+                                    "PROFILING_ONLY",
+                                    "INFREQUENT_EXEC_ONLY"
                             )
                         }
                         maxHeapSize = "4g"
@@ -174,9 +175,9 @@ tasks.jacocoTestReport {
     val hammerExtension = tasks.getByName("hammerTest").extensions.getByType<JacocoTaskExtension>()
     val performanceExtension = tasks.getByName("performanceTest").extensions.getByType<JacocoTaskExtension>()
     executionData.from(
-        testExtension.destinationFile,
-        hammerExtension.destinationFile,
-        performanceExtension.destinationFile
+            testExtension.destinationFile,
+            hammerExtension.destinationFile,
+            performanceExtension.destinationFile
     )
 
     mustRunAfter(tasks.getByName("hammerTest"))
@@ -210,4 +211,10 @@ testlogger {
 
 tasks.jar {
     exclude("**/classpath.index")
+}
+
+tasks.register("configDoc") {
+    group = "documentation"
+    val configProperties = ConfigRecordParser.parse(sourceSets["main"].allJava);
+    ConfigRecordMarkdownWriter.createDocumentation(configProperties);
 }
