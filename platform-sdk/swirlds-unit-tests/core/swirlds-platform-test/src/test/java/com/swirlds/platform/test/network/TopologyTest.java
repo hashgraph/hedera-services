@@ -113,7 +113,6 @@ class TopologyTest {
     @ParameterizedTest
     @MethodSource("fullyConnected")
     void testFullyConnectedUnidirectionalTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
-        final NodeId negativeId = NodeId.create(-1);
         final NodeId outOfBoundsId = NodeId.create(numNodes);
 
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
@@ -132,7 +131,6 @@ class TopologyTest {
             assertFalse(topology.shouldConnectTo(thisNodeId), "I should not connect to myself");
             assertFalse(topology.shouldConnectToMe(thisNodeId), "I should not connect to myself");
 
-            assertFalse(topology.shouldConnectToMe(negativeId), "negative values should return to false");
             assertFalse(topology.shouldConnectToMe(outOfBoundsId), "values >=numNodes should return to false");
 
             testRandomGraphWithSets(topology.getConnectionGraph(), numNodes, numNeighbors);
