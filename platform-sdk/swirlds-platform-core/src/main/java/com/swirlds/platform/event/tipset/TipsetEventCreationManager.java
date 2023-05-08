@@ -37,6 +37,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import java.util.Random;
 import java.util.function.Consumer;
 
 /**
@@ -58,6 +59,7 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
             @NonNull final ThreadManager threadManager,
             @NonNull final Cryptography cryptography,
             @NonNull final Time time,
+            @NonNull final Random random,
             @NonNull final Signer signer,
             @NonNull final AddressBook addressBook,
             final long selfId,
@@ -69,7 +71,15 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
         this.newEventHandler = Objects.requireNonNull(newEventHandler);
 
         eventCreator = new TipsetEventCreator(
-                platformContext, cryptography, time, signer, addressBook, selfId, softwareVersion, transactionSupplier);
+                platformContext,
+                cryptography,
+                time,
+                random,
+                signer,
+                addressBook,
+                selfId,
+                softwareVersion,
+                transactionSupplier);
 
         workQueue = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-creator")

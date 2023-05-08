@@ -39,6 +39,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 
 /**
  * Responsible for creating new events using the tipset algorithm.
@@ -50,7 +51,9 @@ public class TipsetEventCreator { // TODO test
 
     private final Cryptography cryptography;
     private final Time time;
+    private final Random random;
     private final Signer signer;
+    private final AddressBook addressBook;
     private final long selfId;
     private final TipsetBuilder tipsetBuilder;
     private final TipsetScoreCalculator tipsetScoreCalculator;
@@ -71,10 +74,24 @@ public class TipsetEventCreator { // TODO test
      */
     private EventFingerprint lastSelfEvent;
 
+    /**
+     * Create a new tipset event creator.
+     *
+     * @param platformContext     the platform context
+     * @param cryptography        the cryptography instance
+     * @param time                provides wall clock time
+     * @param random              a source of randomness, does not need to be cryptographically secure
+     * @param signer              used for signing things with this node's private key
+     * @param addressBook         the current address book
+     * @param selfId              this node's ID
+     * @param softwareVersion     the current software version of the application
+     * @param transactionSupplier provides transactions to be included in new events
+     */
     public TipsetEventCreator(
             @NonNull final PlatformContext platformContext,
             @NonNull final Cryptography cryptography,
             @NonNull final Time time,
+            @NonNull final Random random,
             @NonNull final Signer signer,
             @NonNull final AddressBook addressBook,
             final long selfId,
@@ -83,7 +100,9 @@ public class TipsetEventCreator { // TODO test
 
         this.cryptography = Objects.requireNonNull(cryptography);
         this.time = Objects.requireNonNull(time);
+        this.random = Objects.requireNonNull(random);
         this.signer = Objects.requireNonNull(signer);
+        this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = selfId;
         this.transactionSupplier = Objects.requireNonNull(transactionSupplier);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
@@ -136,6 +155,8 @@ public class TipsetEventCreator { // TODO test
         childlessEventTracker.pruneOldEvents(minimumGenerationNonAncient);
     }
 
+    private static final double BE_NICE_TO_NERD_CHANCE = 0.1; // TODO setting
+
     /**
      * Create a new event if it is legal to do so.
      *
@@ -143,9 +164,22 @@ public class TipsetEventCreator { // TODO test
      */
     @Nullable
     public GossipEvent createNewEvent() {
+        final EventImpl event;
+        if (random.nextDouble() < BE_NICE_TO_NERD_CHANCE) {
+            return createEventToReduceBullyScore();
+        } else {
+            return createEventByOptimizingTipsetScore();
+        }
+    }
 
+    /**
+     * Create an event using the other parent with the best tipset score.
+     *
+     * @return the new event, or null if it is not legal to create a new event
+     */
+    @Nullable
+    private GossipEvent createEventByOptimizingTipsetScore() {
         final List<EventFingerprint> possibleOtherParents = childlessEventTracker.getChildlessEvents();
-        // TODO should we shuffle in case of ties?
 
         EventFingerprint bestOtherParent = null;
         long bestScore = 0;
@@ -183,6 +217,75 @@ public class TipsetEventCreator { // TODO test
         return event;
     }
 
+    /**
+     * Create an event that reduces the bully score.
+     *
+     * @return the new event, or null if it is not legal to create a new event
+     */
+    @Nullable
+    private GossipEvent createEventToReduceBullyScore() {
+        final List<EventFingerprint> possibleOtherParents = childlessEventTracker.getChildlessEvents();
+        final List<EventFingerprint> nerds = new ArrayList<>(possibleOtherParents.size());
+
+        int bullyScoreSum = 0;
+        final List<Integer> bullyScores = new ArrayList<>(possibleOtherParents.size());
+        for (final EventFingerprint nerd : possibleOtherParents) {
+            final int nodeIndex = addressBook.getIndex(nerd.creator());
+            final int bullyScore = tipsetScoreCalculator.getBullyScoreForNodeIndex(nodeIndex);
+
+            final long tipsetScore = tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(nerd));
+
+            if (bullyScore > 1 && tipsetScore > 0) {
+                nerds.add(nerd);
+                bullyScores.add(bullyScore);
+                bullyScoreSum += bullyScore;
+            }
+        }
+
+        if (nerds.isEmpty()) {
+            // No eligible nerds, choose the event with the best tipset score
+            return createEventByOptimizingTipsetScore();
+        }
+
+        final int choice = random.nextInt(bullyScoreSum);
+        int runningSum = 0;
+        for (int i = 0; i < nerds.size(); i++) {
+            runningSum += bullyScores.get(i);
+            if (choice < runningSum) {
+                final EventFingerprint otherParent = nerds.get(i);
+
+                final List<EventFingerprint> parentFingerprints = new ArrayList<>(2);
+                if (lastSelfEvent != null) {
+                    parentFingerprints.add(lastSelfEvent);
+                }
+                parentFingerprints.add(otherParent);
+
+                // TODO duplicate code
+                final GossipEvent event = buildEventFromParents(lastSelfEvent, otherParent);
+
+                final EventFingerprint fingerprint = EventFingerprint.of(event);
+                tipsetBuilder.addEvent(fingerprint, parentFingerprints);
+                final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(fingerprint);
+                final double scoreRatio = score / (double) tipsetScoreCalculator.getMaximumPossibleScore();
+                tipsetScoreMetric.update(scoreRatio);
+
+                lastSelfEvent = fingerprint;
+
+                return event;
+            }
+        }
+
+        // TODO this should not happen
+        return null;
+    }
+
+    /**
+     * Given the parents, build the event object.
+     *
+     * @param selfParent  the self parent
+     * @param otherParent the other parent
+     * @return the event
+     */
     @NonNull
     private GossipEvent buildEventFromParents(
             @Nullable final EventFingerprint selfParent, @Nullable final EventFingerprint otherParent) {

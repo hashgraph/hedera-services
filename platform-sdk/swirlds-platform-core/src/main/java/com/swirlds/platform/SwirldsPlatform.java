@@ -229,6 +229,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
@@ -627,6 +628,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 threadManager,
                 CryptographyHolder.get(),
                 time,
+                new Random() /* does not need to be cryptographically secure */,
                 this,
                 initialAddressBook,
                 selfId.getId(),
