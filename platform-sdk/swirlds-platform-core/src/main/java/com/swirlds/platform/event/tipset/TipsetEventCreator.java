@@ -165,11 +165,15 @@ public class TipsetEventCreator { // TODO test
      */
     @Nullable
     public GossipEvent createNewEvent() {
-        //        if (random.nextDouble() < BE_NICE_TO_NERD_CHANCE) {
-        //            return createEventToReduceBullyScore();
-        //        } else {
-        //        }
-        return createEventByOptimizingTipsetScore();
+
+        final long bullyScore = tipsetScoreCalculator.getBullyScore();
+        final double beNiceToNerdChance = (bullyScore - 1) / 10; // TODO settings
+
+        if (random.nextDouble() < beNiceToNerdChance) {
+            return createEventToReduceBullyScore();
+        } else {
+            return createEventByOptimizingTipsetScore();
+        }
     }
 
     /**
@@ -185,8 +189,7 @@ public class TipsetEventCreator { // TODO test
         EventFingerprint bestOtherParent = null;
         long bestScore = 0;
         for (final EventFingerprint otherParent : possibleOtherParents) {
-            final long parentScore =
-                    tipsetScoreCalculator.getTheoreticalAdvancementScoreAntiBully(List.of(otherParent));
+            final long parentScore = tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(otherParent));
             if (parentScore > bestScore) {
                 bestOtherParent = otherParent;
                 bestScore = parentScore;
