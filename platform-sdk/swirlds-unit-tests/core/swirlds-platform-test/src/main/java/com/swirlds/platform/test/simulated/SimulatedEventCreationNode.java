@@ -29,7 +29,6 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.event.EventCreatorThread;
@@ -40,10 +39,10 @@ import com.swirlds.platform.event.creation.OtherParentTracker;
 import com.swirlds.platform.event.creation.ParentBasedCreationRule;
 import com.swirlds.platform.event.creation.StaticCreationRules;
 import com.swirlds.platform.event.intake.ChatterEventMapper;
-import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.internal.EventImpl;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -101,13 +100,10 @@ public class SimulatedEventCreationNode {
         Objects.requireNonNull(consumers, "the consumers is null");
         this.nodeId = Objects.requireNonNull(nodeId, "the node ID is null");
         this.eventByHash = Objects.requireNonNull(eventByHash, "the event by hash function is null");
-        criticalQuorum =
-                new CriticalQuorumImpl(addressBook, false, new ChatterSubSetting().getCriticalQuorumSoftening());
         final ChatterConfig chatterConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(ChatterConfig.class);
-        this.nodeId = nodeId;
-        this.eventByHash = eventByHash;
         criticalQuorum = new CriticalQuorumImpl(addressBook, false, chatterConfig.criticalQuorumSoftening());
+
         final OtherParentTracker otherParentTracker = new OtherParentTracker();
         final LoggingEventCreationRules eventCreationRules = LoggingEventCreationRules.create(
                 List.of(() ->
