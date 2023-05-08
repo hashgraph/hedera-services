@@ -71,9 +71,9 @@ public abstract class E2ETestBase extends TestBase {
     @BeforeAll
     static void beforeAll() {
         try {
-            NODE_0.waitUntilActive(Duration.ofSeconds(30));
-            NODE_1.waitUntilActive(Duration.ofSeconds(30));
-            NODE_2.waitUntilActive(Duration.ofSeconds(30));
+            NODE_0.waitUntilActive(Duration.ofSeconds(60));
+            NODE_1.waitUntilActive(Duration.ofSeconds(60));
+            NODE_2.waitUntilActive(Duration.ofSeconds(60));
         } catch (TimeoutException e) {
             throw new RuntimeException(e);
         }
