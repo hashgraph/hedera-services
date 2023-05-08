@@ -208,7 +208,7 @@ public class EventCreator {
      * 		the ID of the node supplying the other parent
      */
     protected boolean hasOtherParentAlreadyBeenUsed(final long otherId) {
-        return !selfId.matches(otherId) && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
+        return selfId.id() != otherId && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
     }
 
     /**

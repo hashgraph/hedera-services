@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.google.protobuf.ByteString;
 import com.swirlds.common.FastCopyable;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.test.crypto.ECDSASigningProvider;
 import com.swirlds.common.test.crypto.ED25519SigningProvider;
@@ -170,7 +171,9 @@ public class TransactionPool implements FastCopyable {
         }
 
         /** If the startFreezeAfterMin is 0, we don't send freeze transaction */
-        if (freezeConfig != null && platform.getSelfId().matches(0) && freezeConfig.getStartFreezeAfterMin() > 0) {
+        if (freezeConfig != null
+                && platform.getSelfId().equals(NodeId.FIRST_NODE_ID)
+                && freezeConfig.getStartFreezeAfterMin() > 0) {
             this.freezeConfig = freezeConfig;
             this.needToSubmitFreezeTx = true;
         }

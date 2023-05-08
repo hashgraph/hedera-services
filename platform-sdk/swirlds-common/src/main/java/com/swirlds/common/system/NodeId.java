@@ -66,16 +66,6 @@ public record NodeId(long id) implements Comparable<NodeId> {
     }
 
     /**
-     * Checks if this NodeId is equal to the given ID value
-     *
-     * @param id the ID value to compare
-     * @return true if this ID value is equal to the supplied value, false otherwise
-     */
-    public boolean matches(long id) {
-        return this.id == id;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
