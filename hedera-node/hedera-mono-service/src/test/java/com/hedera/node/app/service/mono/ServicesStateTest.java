@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -125,8 +124,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -393,9 +390,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    void minimumVersionIsRelease030() {
+    void minimumVersionIsRelease031() {
         // expect:
-        assertEquals(StateVersions.RELEASE_030X_VERSION, subject.getMinimumSupportedVersion());
+        assertEquals(StateVersions.RELEASE_0310_VERSION, subject.getMinimumSupportedVersion());
     }
 
     @Test
@@ -648,7 +645,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
-        subject.setDeserializedStateVersion(StateVersions.RELEASE_030X_VERSION);
+        subject.setDeserializedStateVersion(StateVersions.RELEASE_0310_VERSION);
 
         final var when = Instant.ofEpochSecond(1_234_567L, 890);
         given(dualState.getFreezeTime()).willReturn(when);
@@ -675,7 +672,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void nonGenesisInitThrowsWithUnsupportedStateVersionUsed() {
-        subject.setDeserializedStateVersion(StateVersions.RELEASE_030X_VERSION - 1);
+        subject.setDeserializedStateVersion(StateVersions.RELEASE_0310_VERSION - 1);
 
         assertThrows(IllegalStateException.class, () -> subject.init(platform, dualState, RESTART, null));
     }
@@ -850,41 +847,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertSame(addressBook, copy.addressBook());
         assertSame(networkContext, copy.networkCtx());
         assertSame(specialFiles, copy.specialFiles());
-    }
-
-    @Test
-    // Since 0.30 JDB files include the ':' character which is forbidden by Windows (and may
-    // exceed the maximum path length besides), only run this test on Linux, Mac, or UNIX
-    @EnabledOnOs({OS.LINUX, OS.MAC, OS.AIX, OS.SOLARIS})
-    void testLoading0305State() throws IOException {
-        // The saved state used for this test is from 0.30.5, meaning the JDB file names
-        // use the ':' character; but Windows prohibits such files, so the repository
-        // couldn't be cloned on that OS with the as-is saved state. The solution is to
-        // store the JDB files in the repo with ':' replaced by 'cln' (plus other
-        // shortening abbreviations); and then copy those files to a temp directory, using
-        // their proper JDB names, for use in this test. We can't use @TempDir here because
-        // JDB uses symlinks and we'll get "Invalid cross-device link" errors if we let
-        // JUnit create the temp directory under /tmp
-        final var jdbNamedSignedStateDir = new File("swirlds-sst-tmp");
-
-        ClassLoaderHelper.loadClassPathDependencies();
-
-        cpWithDirTransform(
-                Paths.get(statesDir, "0.30.5/").toString(),
-                jdbNamedSignedStateDir.getAbsolutePath(),
-                ServicesStateTest::unabbreviate);
-        final var relocatedSignedState = Paths.get(jdbNamedSignedStateDir.getAbsolutePath(), "SignedState.swh");
-        // This signed state should be auto-closed by the try block
-        try (ReservedSignedState state = loadSignedState(relocatedSignedState.toString())) {
-            final var mockPlatform = createMockPlatformWithCrypto();
-            given(mockPlatform.getAddressBook()).willReturn(addressBook);
-            ServicesState swirldState = (ServicesState) state.get().getSwirldState();
-            swirldState.init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));
-        } catch (IOException e) {
-            fail("State file should be loaded correctly, but failed with exception: " + e.getMessage());
-        }
-
-        FileUtils.deleteDirectory(jdbNamedSignedStateDir);
     }
 
     @Test
