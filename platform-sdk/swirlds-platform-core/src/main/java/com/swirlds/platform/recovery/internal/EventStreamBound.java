@@ -20,13 +20,13 @@ import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Objects;
 
 /**
- * A bound on the event stream. This bound can be either a round or a timestamp or both.  It can be compared as an upper
- * bound or a lower bound to an event.  The bound is inclusive. If no round or timestamp is specified, then the bound is
- * unbounded.
+ * A bound on the event stream. This bound can be either a round or a timestamp but not both. The bound is inclusive of
+ * exact matches to round and timestamp. If no round or timestamp is specified, then the bound is unbounded.
  */
 public class EventStreamBound {
 
@@ -42,14 +42,19 @@ public class EventStreamBound {
     private final Instant timestamp;
 
     /**
-     * Create an event stream bound with the specified round and timestamp.
+     * Create an event stream bound with the specified round or timestamp.  Throws an IllegalStateException if both the
+     * round and timestamp are specified.
      *
      * @param round     the round
      * @param timestamp the timestamp
+     * @throws IllegalStateException if both the round and timestamp are specified
      */
-    public EventStreamBound(final long round, @NonNull final Instant timestamp) {
-        this.round = round >= NO_ROUND ? round : NO_ROUND;
-        this.timestamp = Objects.requireNonNull(timestamp, "timestamp must not be null");
+    public EventStreamBound(final long round, @Nullable final Instant timestamp) {
+        this.round = round > NO_ROUND ? round : NO_ROUND;
+        this.timestamp = Objects.requireNonNullElse(timestamp, NO_TIMESTAMP);
+        if (hasRound() && hasTimestamp()) {
+            throw new IllegalStateException("Cannot specify both round and timestamp");
+        }
     }
 
     /**
@@ -131,25 +136,23 @@ public class EventStreamBound {
     /**
      * Compares the detailed consensus event to this bound based on the consensus data in the event.
      *
-     * @param event     the detailed consensus event to compare to
-     * @param boundType the type of bound to compare as
+     * @param event the detailed consensus event to compare to
      * @return a negative integer, zero, or a positive integer based on whether the consensus data is less, equal or
      * greater than the bound.
      */
-    public int compareTo(@NonNull final DetailedConsensusEvent event, @NonNull final BoundType boundType) {
-        return compareTo(event.getConsensusData(), boundType);
+    public int compareTo(@NonNull final DetailedConsensusEvent event) {
+        return compareTo(event.getConsensusData());
     }
 
     /**
      * Compares the event implementation's consensus data to this bound.
      *
-     * @param event     the event implementation to compare to
-     * @param boundType the type of bound to compare as
+     * @param event the event implementation to compare to
      * @return a negative integer, zero, or a positive integer based on whether the consensus data is less, equal or
      * greater than the bound.
      */
-    public int compareTo(@NonNull final EventImpl event, @NonNull final BoundType boundType) {
-        return compareTo(event.getConsensusData(), boundType);
+    public int compareTo(@NonNull final EventImpl event) {
+        return compareTo(event.getConsensusData());
     }
 
     /**
@@ -157,83 +160,25 @@ public class EventStreamBound {
      * with the frame of reference of the consensus data. If the data is higher, a value greater than 0 is returned, if
      * the data is lower, a valued less than 0 is returned, otherwise 0 is returned.
      * <p>
-     * CASE: The bound is a LOWER bound. If bound.hasRound() and bound.hasTimestamp() are both true, then the consensus
-     * data is greater than the bound if both the data's round received is greater than the bound's round and the data's
-     * consensus timestamp is after the bound's timestamp. The consensus data is less than the bound if the data's round
-     * received is less than the bound's round or the data's consensus timestamp is before the bound's timestamp. The
-     * data and the bound are equal, otherwise.   If only bound.hasRound() is true, then the data is compared by long
-     * value to the bound's round. If only bound.hasTimestamp is true, then the data is compared by consensus timestamp
-     * to the bound's timestamp. If neither the timestamp nor round is present, the bound is an unbounded lower bound
-     * and the event is always greater than it.
+     * If hasRound() is true, the long value of the data's roundReceived() is compared to the round of the bound.
      * <p>
-     * CASE: The bound is a UPPER bound. If bound.hasRound() and bound.hasTimestamp() are both true, then the consensus
-     * data is less than the bound if both the data's round received is less than the bound's round and the data's
-     * consensus timestamp is before the bound's timestamp. The consensus data is greater than the bound if the data's round
-     * received is greater than the bound's round or the data's consensus timestamp is after the bound's timestamp. The
-     * data and the bound are equal, otherwise.   If only bound.hasRound() is true, then the data is compared by long
-     * value to the bound's round. If only bound.hasTimestamp is true, then the data is compared by consensus timestamp
-     * to the bound's timestamp. If neither the timestamp nor round is present, the bound is an unbounded upper bound
-     * and the event is always less than it.
+     * If hasTimestamp() is true, the consensusTimestamp() is compared to the timestamp of the bound.
      *
      * @param consensusData the consensus data to compare to
-     * @param boundType     the type of bound
      * @return A positive value if the consensus data is greater than the bound, A negative value if the consensus data
      * is less than the bound, and 0 otherwise.
      */
-    public int compareTo(@NonNull final ConsensusData consensusData, @NonNull final BoundType boundType) {
+    public int compareTo(@NonNull final ConsensusData consensusData) {
         Objects.requireNonNull(consensusData, "consensusData must not be null");
-        Objects.requireNonNull(boundType, "boundType must not be null");
         if (isUnbounded()) {
-            return boundType == BoundType.LOWER ? 1 : -1;
+            return 1;
         }
-        if (round == NO_ROUND) {
-            return compareTimestamp(consensusData);
-        }
-        if (timestamp == NO_TIMESTAMP) {
-            return compareRound(consensusData);
-        }
-
-        int roundCompare = compareRound(consensusData);
-        int timestampCompare = compareTimestamp(consensusData);
-
-        if (boundType == BoundType.LOWER) {
-            if (roundCompare > 0 && timestampCompare > 0) {
-                return 1;
-            }
-            if (roundCompare < 0 || timestampCompare < 0) {
-                return -1;
-            }
+        if (round > NO_ROUND) {
+            return Long.compare(consensusData.getRoundReceived(), round);
         } else {
-            if (roundCompare > 0 || timestampCompare > 0) {
-                return 1;
-            }
-            if (roundCompare < 0 && timestampCompare < 0) {
-                return -1;
-            }
+            // the timestamp must be set, since the bound is not unbounded.
+            return consensusData.getConsensusTimestamp().compareTo(timestamp);
         }
-        return 0;
-    }
-
-    /**
-     * Compares the round received of the consensus data to the round of the bound.
-     *
-     * @param consensusData the consensus data to compare to
-     * @return a negative integer, zero, or a positive integer based on whether the consensus data is less, equal or
-     * greater than the bound.
-     */
-    private int compareRound(@NonNull final ConsensusData consensusData) {
-        return Long.compare(consensusData.getRoundReceived(), round);
-    }
-
-    /**
-     * Compares the consensus timestamp of the consensus data to the timestamp of the bound.
-     *
-     * @param consensusData the consensus data to compare to
-     * @return a negative integer, zero, or a positive integer based on whether the consensus data is less, equal or
-     * greater than the bound.
-     */
-    private int compareTimestamp(@NonNull final ConsensusData consensusData) {
-        return consensusData.getConsensusTimestamp().compareTo(timestamp);
     }
 
     /**
@@ -243,14 +188,6 @@ public class EventStreamBound {
      */
     public boolean isUnbounded() {
         return round == NO_ROUND && timestamp == NO_TIMESTAMP;
-    }
-
-    /**
-     * The type of bound.
-     */
-    public enum BoundType {
-        LOWER,
-        UPPER
     }
 
     /**
@@ -284,9 +221,8 @@ public class EventStreamBound {
          * @return the builder
          */
         @NonNull
-        public BoundBuilder setTimestamp(@NonNull final Instant timestamp) {
-            Objects.requireNonNull(timestamp, "timestamp must not be null");
-            this.timestamp = timestamp;
+        public BoundBuilder setTimestamp(@Nullable final Instant timestamp) {
+            this.timestamp = Objects.requireNonNullElse(timestamp, NO_TIMESTAMP);
             return this;
         }
 

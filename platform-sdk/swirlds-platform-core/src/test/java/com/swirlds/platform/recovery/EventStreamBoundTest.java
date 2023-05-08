@@ -30,7 +30,6 @@ import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamBound;
-import com.swirlds.platform.recovery.internal.EventStreamBound.BoundType;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -54,11 +53,7 @@ class EventStreamBoundTest {
         assertEquals(NO_TIMESTAMP, UNBOUNDED.getTimestamp(), "timestamp should be NO_TIMESTAMP");
 
         DetailedConsensusEvent event = createDetailedEventConsensus(1L, Instant.now());
-        assertTrue(
-                bound.compareTo(event, BoundType.LOWER) > 0,
-                "every event must be greater than an unbounded lower bound.");
-        assertTrue(
-                bound.compareTo(event, BoundType.UPPER) < 0, "every event must be less than an unbounded upper bound.");
+        assertTrue(bound.compareTo(event) > 0, "every event must be greater than an unbounded lower bound.");
     }
 
     @Test
@@ -80,19 +75,14 @@ class EventStreamBoundTest {
         assertEquals(NO_TIMESTAMP, bound.getTimestamp(), "timestamp should be NO_TIMESTAMP");
         assertFalse(bound.isUnbounded(), "bound should not be unbounded");
 
-        EventImpl before = createEventImpl(99L, Instant.now());
-        EventImpl after = createEventImpl(101L, Instant.now());
-        EventImpl same = createEventImpl(100L, Instant.now());
+        EventImpl before = createEventImpl(99L, NO_TIMESTAMP);
+        EventImpl after = createEventImpl(101L, NO_TIMESTAMP);
+        EventImpl same = createEventImpl(100L, NO_TIMESTAMP);
 
         // check lower behavior
-        assertTrue(bound.compareTo(before, BoundType.LOWER) < 0, "event must be less than the bound.");
-        assertTrue(bound.compareTo(after, BoundType.LOWER) > 0, "event must be greater than the bound.");
-        assertEquals(0, (int) bound.compareTo(same, BoundType.LOWER), "event must be equal to the bound.");
-
-        // check upper behavior
-        assertTrue(bound.compareTo(before, BoundType.UPPER) < 0, "event must be less than the bound.");
-        assertTrue(bound.compareTo(after, BoundType.UPPER) > 0, "event must be greater than the bound.");
-        assertEquals(0, (int) bound.compareTo(same, BoundType.UPPER), "event must be equal to the bound.");
+        assertTrue(bound.compareTo(before) < 0, "event must be less than the bound.");
+        assertTrue(bound.compareTo(after) > 0, "event must be greater than the bound.");
+        assertEquals(0, (int) bound.compareTo(same), "event must be equal to the bound.");
     }
 
     @Test
@@ -114,69 +104,14 @@ class EventStreamBoundTest {
         assertEquals(NO_ROUND, bound.getRound(), "round should be NO_ROUND");
         assertFalse(bound.isUnbounded(), "bound should not be unbounded");
 
-        final EventImpl before = createEventImpl(99L, beforeTime);
-        final EventImpl after = createEventImpl(101L, afterTime);
-        final EventImpl same = createEventImpl(100L, sameTime);
+        final EventImpl before = createEventImpl(NO_ROUND, beforeTime);
+        final EventImpl after = createEventImpl(NO_ROUND, afterTime);
+        final EventImpl same = createEventImpl(NO_ROUND, sameTime);
 
         // check lower behavior
-        assertTrue(bound.compareTo(before, BoundType.LOWER) < 0, "event must be less than the bound.");
-        assertTrue(bound.compareTo(after, BoundType.LOWER) > 0, "event must be greater than the bound.");
-        assertEquals(0, (int) bound.compareTo(same, BoundType.LOWER), "event must be equal to the bound.");
-
-        // check upper behavior
-        assertTrue(bound.compareTo(before, BoundType.UPPER) < 0, "event must be less than the bound.");
-        assertTrue(bound.compareTo(after, BoundType.UPPER) > 0, "event must be greater than the bound.");
-        assertEquals(0, (int) bound.compareTo(same, BoundType.UPPER), "event must be equal to the bound.");
-    }
-
-    @Test
-    @DisplayName("Round And Timestamp Based EventStreamBound Test")
-    void reoundAndTimestampBasedEventStreamBoundTest() throws InterruptedException {
-
-        final Instant beforeTime = Instant.now();
-        final Instant sameTime = beforeTime.plus(Duration.of(20, ChronoUnit.MILLIS));
-        final Instant afterTime = sameTime.plus(Duration.of(20, ChronoUnit.MILLIS));
-
-        assertTrue(beforeTime.isBefore(sameTime), "beforeTime must be before sameTime");
-        assertTrue(sameTime.isBefore(afterTime), "sameTime must be before afterTime");
-
-        final EventStreamBound bound =
-                EventStreamBound.create().setTimestamp(sameTime).setRound(100L).build();
-        assertEquals(sameTime, bound.getTimestamp(), "timestamp must match");
-        assertEquals(100L, bound.getRound(), "round must match");
-        assertTrue(bound.hasRound(), "bound should not have round");
-        assertTrue(bound.hasTimestamp(), "bound should have timestamp");
-        assertFalse(bound.isUnbounded(), "bound should not be unbounded");
-
-        final EventImpl before = createEventImpl(99L, beforeTime);
-        final EventImpl after = createEventImpl(101L, afterTime);
-        final EventImpl same = createEventImpl(100L, sameTime);
-        final EventImpl sameTimeBeforeRound = createEventImpl(99L, sameTime);
-        final EventImpl sameTimeAfterRound = createEventImpl(101L, sameTime);
-        final EventImpl sameRoundAfterTime = createEventImpl(100L, afterTime);
-        final EventImpl sameRoundBeforeTime = createEventImpl(100L, beforeTime);
-
-        // check lower behavior
-        assertTrue(bound.compareTo(before, BoundType.LOWER) < 0, "event must be less than the bound.");
-        assertTrue(bound.compareTo(after, BoundType.LOWER) > 0, "event must be greater than the bound.");
-        assertEquals(0, (int) bound.compareTo(same, BoundType.LOWER), "event must be equal to the bound.");
-        assertTrue(bound.compareTo(sameTimeBeforeRound, BoundType.LOWER) < 0, "event must be equal to the bound.");
-        assertEquals(
-                0, (int) bound.compareTo(sameTimeAfterRound, BoundType.LOWER), "event must be equal to the bound.");
-        assertEquals(
-                0, (int) bound.compareTo(sameRoundAfterTime, BoundType.LOWER), "event must be equal to the bound.");
-        assertTrue(bound.compareTo(sameRoundBeforeTime, BoundType.LOWER) < 0, "event must be equal to the bound.");
-
-        // check upper behavior
-        assertTrue(bound.compareTo(before, BoundType.UPPER) < 0, "event must be less than the bound.");
-        assertTrue(bound.compareTo(after, BoundType.UPPER) > 0, "event must be greater than the bound.");
-        assertEquals(0, (int) bound.compareTo(same, BoundType.UPPER), "event must be equal to the bound.");
-        assertEquals(
-                0, (int) bound.compareTo(sameTimeBeforeRound, BoundType.UPPER), "event must be equal to the bound.");
-        assertTrue(bound.compareTo(sameTimeAfterRound, BoundType.UPPER) > 0, "event must be equal to the bound.");
-        assertTrue(bound.compareTo(sameRoundAfterTime, BoundType.UPPER) > 0, "event must be equal to the bound.");
-        assertEquals(
-                0, (int) bound.compareTo(sameRoundBeforeTime, BoundType.UPPER), "event must be equal to the bound.");
+        assertTrue(bound.compareTo(before) < 0, "event must be less than the bound.");
+        assertTrue(bound.compareTo(after) > 0, "event must be greater than the bound.");
+        assertEquals(0, (int) bound.compareTo(same), "event must be equal to the bound.");
     }
 
     /**

@@ -19,7 +19,6 @@ package com.swirlds.platform.recovery.internal;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
-import com.swirlds.platform.recovery.internal.EventStreamBound.BoundType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -72,7 +71,7 @@ public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensu
         this.skippedEvents = new ArrayList<>();
 
         // Remove events from before the requested bound
-        while (hasNext() && bound.compareTo(peek(), BoundType.LOWER) < 0) {
+        while (hasNext() && bound.compareTo(peek()) < 0) {
             skippedEvents.add(next());
         }
     }

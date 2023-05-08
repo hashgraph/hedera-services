@@ -19,7 +19,6 @@ package com.swirlds.platform.recovery.internal;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.common.utility.BinarySearch;
-import com.swirlds.platform.recovery.internal.EventStreamBound.BoundType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -72,7 +71,7 @@ public class EventStreamPathIterator implements Iterator<Path> {
         }
 
         final DetailedConsensusEvent firstEvent = getFirstEventInEventStreamFile(eventStreamFiles.get(0));
-        if (bound.isUnbounded() || bound.compareTo(firstEvent, BoundType.LOWER) == 0) {
+        if (bound.isUnbounded() || bound.compareTo(firstEvent) == 0) {
             // We are attempting to get events from the beginning of the event stream.
             iterator = eventStreamFiles.iterator();
         } else {
@@ -94,7 +93,7 @@ public class EventStreamPathIterator implements Iterator<Path> {
             final int startingIndex =
                     (int) BinarySearch.throwingSearch(0, eventStreamFiles.size(), (final Long index) -> {
                         final Path eventStreamFile = eventStreamFiles.get(index.intValue());
-                        return usedBound.compareTo(getFirstEventInEventStreamFile(eventStreamFile), BoundType.LOWER);
+                        return usedBound.compareTo(getFirstEventInEventStreamFile(eventStreamFile));
                     });
 
             iterator = eventStreamFiles

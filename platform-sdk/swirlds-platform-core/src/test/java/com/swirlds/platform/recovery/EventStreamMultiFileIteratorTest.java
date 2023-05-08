@@ -37,7 +37,6 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamBound;
-import com.swirlds.platform.recovery.internal.EventStreamBound.BoundType;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -351,6 +350,7 @@ class EventStreamMultiFileIteratorTest {
         testEventStreamBound(firstRound + 75, NO_TIMESTAMP, events, directory);
         testEventStreamBound(firstRound + 50, NO_TIMESTAMP, events, directory);
         testEventStreamBound(firstRound + 200, NO_TIMESTAMP, events, directory);
+
         // timestamp only bound test
         final long longStart = start.toEpochMilli();
         final long longEnd = end.toEpochMilli();
@@ -362,13 +362,6 @@ class EventStreamMultiFileIteratorTest {
         testEventStreamBound(NO_ROUND, start.plus(halfDuration), events, directory);
         testEventStreamBound(NO_ROUND, start.plus(halfDuration).plus(quarterDuration), events, directory);
         testEventStreamBound(NO_ROUND, end.plus(quarterDuration), events, directory);
-        // both round and timestamp bound test
-        testEventStreamBound(firstRound, start, events, directory);
-        testEventStreamBound(firstRound + 50, start, events, directory);
-        testEventStreamBound(firstRound, start.plus(halfDuration), events, directory);
-        testEventStreamBound(firstRound + 50, start.plus(halfDuration), events, directory);
-        testEventStreamBound(firstRound + 50, start.plus(halfDuration).plus(quarterDuration), events, directory);
-        testEventStreamBound(firstRound + 75, start.plus(halfDuration), events, directory);
 
         FileUtils.deleteDirectory(directory);
     }
@@ -389,7 +382,7 @@ class EventStreamMultiFileIteratorTest {
                 .build();
 
         int startingIndex = 0;
-        while (startingIndex < events.size() && bound.compareTo(events.get(startingIndex), BoundType.LOWER) < 0) {
+        while (startingIndex < events.size() && bound.compareTo(events.get(startingIndex)) < 0) {
             startingIndex++;
         }
 

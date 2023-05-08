@@ -200,6 +200,7 @@ class EventStreamPathIteratorTest {
         final long longEnd = end.toEpochMilli();
         final long longHalfDuration = (longEnd - longStart) / 2;
         final long longQuarterDuration = longHalfDuration / 2;
+
         // timestamp only bound test
         TemporalAmount halfDuration = Duration.ofMillis(longHalfDuration);
         TemporalAmount quarterDuration = Duration.ofMillis(longQuarterDuration);
@@ -208,14 +209,6 @@ class EventStreamPathIteratorTest {
         testEventStreamBound(
                 NO_ROUND, start.plus(halfDuration).plus(quarterDuration), expectedFileCount / 4, directory);
         testEventStreamBound(NO_ROUND, end.plus(quarterDuration), 0, directory);
-        // both round and timestamp bound test
-        testEventStreamBound(firstRound, start, expectedFileCount, directory);
-        testEventStreamBound(firstRound + 50, start, expectedFileCount / 2, directory);
-        testEventStreamBound(firstRound, start.plus(halfDuration), expectedFileCount / 2, directory);
-        testEventStreamBound(firstRound + 50, start.plus(halfDuration), expectedFileCount / 2, directory);
-        testEventStreamBound(
-                firstRound + 50, start.plus(halfDuration).plus(quarterDuration), expectedFileCount / 4, directory);
-        testEventStreamBound(firstRound + 75, start.plus(halfDuration), expectedFileCount / 4, directory);
 
         FileUtils.deleteDirectory(directory);
     }
