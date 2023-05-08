@@ -16,7 +16,8 @@
 
 package com.swirlds.fchashmap;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.exceptions.ReferenceCountException;
@@ -62,9 +63,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 		the type of the value
  */
 public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
-    public static String REBUILD_THREAD_COUNT =
-            String.valueOf(Runtime.getRuntime().availableProcessors());
-
     /**
      * When a copy of an FCHashMap is made, that copy is in the same family as the original. A sequence of copies
      * form a single family. The FCHashMapFamily object manages the data shared between copies in a family,
