@@ -20,7 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.Network;
+import com.swirlds.platform.network.Network;
 import java.net.InetAddress;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
