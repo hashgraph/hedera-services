@@ -627,11 +627,20 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             initEventStreamManager(String.valueOf(selfId));
         }
 
+        if (settings.getChatter().isChatterUsed()) {
+            criticalQuorum =
+                    new CriticalQuorumImpl(initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
+        } else {
+            criticalQuorum = new CriticalQuorumImpl(initialAddressBook);
+        }
+
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
         try (loadedState.signedStateFromDisk) {
             final SignedState signedStateFromDisk = loadedState.signedStateFromDisk.getNullable();
 
             buildEventHandlers(signedStateFromDisk, loadedState.initialState, genesisStateBuilder);
+
+            buildEventIntake();
 
             if (signedStateFromDisk != null) {
                 loadIntoConsensusAndEventMapper(signedStateFromDisk);
@@ -650,15 +659,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 PlatformConstructor.settingsProvider(),
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
-
-        if (settings.getChatter().isChatterUsed()) {
-            criticalQuorum =
-                    new CriticalQuorumImpl(initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
-        } else {
-            criticalQuorum = new CriticalQuorumImpl(initialAddressBook);
-        }
-
-        buildEventIntake();
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
