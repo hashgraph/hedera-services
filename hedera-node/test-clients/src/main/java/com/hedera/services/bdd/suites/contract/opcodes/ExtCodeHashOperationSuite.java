@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecod
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -64,8 +65,9 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
                 ByteString.copyFrom(Hash.keccak256(Bytes.EMPTY).toArray());
         final var hashOf = "hashOf";
 
+        final String account = "account";
         return defaultHapiSpec("VerifiesExistence")
-                .given(uploadInitCode(contract), contractCreate(contract))
+                .given(uploadInitCode(contract), contractCreate(contract), cryptoCreate(account))
                 .when()
                 .then(
                         contractCall(contract, hashOf, asHeadlongAddress(invalidAddress))
@@ -73,7 +75,7 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
                         contractCallLocal(contract, hashOf, asHeadlongAddress(invalidAddress))
                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
                         withOpContext((spec, opLog) -> {
-                            final var accountID = spec.registry().getAccountID(DEFAULT_PAYER);
+                            final var accountID = spec.registry().getAccountID(account);
                             final var contractID = spec.registry().getContractId(contract);
                             final var accountSolidityAddress = asHexedSolidityAddress(accountID);
                             final var contractAddress = asHexedSolidityAddress(contractID);

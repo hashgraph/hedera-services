@@ -21,12 +21,12 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.chatter.communication.ChatterProtocol;
-import com.swirlds.platform.chatter.protocol.MessageProvider;
-import com.swirlds.platform.chatter.protocol.PeerMessageHandler;
-import com.swirlds.platform.chatter.protocol.peer.CommunicationState;
-import com.swirlds.platform.chatter.protocol.peer.PeerGossipState;
-import com.swirlds.platform.chatter.protocol.peer.PeerInstance;
+import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
+import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
+import com.swirlds.platform.gossip.chatter.protocol.PeerMessageHandler;
+import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
+import com.swirlds.platform.gossip.chatter.protocol.peer.PeerGossipState;
+import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.test.network.communication.ReadWriteFakeConnection;
 import java.io.IOException;

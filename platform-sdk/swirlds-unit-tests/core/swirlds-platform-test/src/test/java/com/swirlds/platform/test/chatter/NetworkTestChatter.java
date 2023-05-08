@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.chatter;
 
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.chatter.simulator.SimulatedEvent;
 import java.time.Duration;
 import java.time.Instant;

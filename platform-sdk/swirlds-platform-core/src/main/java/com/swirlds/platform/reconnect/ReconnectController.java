@@ -24,7 +24,7 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.LogMarker;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.SystemExitReason;
