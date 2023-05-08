@@ -6,8 +6,11 @@ module com.hedera.node.app.spi.fixtures {
     requires com.hedera.node.app.spi;
     requires com.hedera.node.hapi;
     requires com.hedera.pbj.runtime;
+    requires com.swirlds.test.framework;
+    requires com.swirlds.config;
+    requires com.swirlds.common;
     requires org.assertj.core;
-    requires com.github.spotbugs.annotations;
+    requires static com.github.spotbugs.annotations;
 
     // Temporarily needed until FakePreHandleContext can be removed
     requires com.hedera.node.app.service.token;
