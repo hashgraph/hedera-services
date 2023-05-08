@@ -61,7 +61,7 @@ class EventIntakeTest {
         final ShadowGraph shadowGraph = mock(ShadowGraph.class);
 
         final EventIntake intake = new EventIntake(
-                NodeId.create(0),
+                NodeId.FIRST_NODE_ID,
                 mock(EventLinker.class),
                 () -> consensus,
                 addressBook,

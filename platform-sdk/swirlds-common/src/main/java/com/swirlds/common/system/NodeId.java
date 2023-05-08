@@ -21,7 +21,10 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A class that is used to uniquely identify a Swirlds Node
+ * A class that is used to uniquely identify a Swirlds Node.
+ * <p>
+ * * Use {@link #create(long)} to create a new NodeId object. This method will return an existing NodeId object if one *
+ * already exists with the same ID number.
  *
  * @param id ID number unique within the network
  */
@@ -30,29 +33,34 @@ public record NodeId(long id) implements Comparable<NodeId> {
     /** the map of all NodeId objects created, indexed by ID number */
     private static final ConcurrentHashMap<Long, NodeId> nodeIds = new ConcurrentHashMap<>();
 
-    /** an invalid NodeId used in testing and boundary conditions. */
-    public static final NodeId INVALID_NODE_ID = NodeId.create(-1L);
+    /** The first allowed Node ID. */
+    public static final long LOWEST_NODE_NUMBER = 0L;
 
-    /** the first NodeId object created */
+    /** the first NodeId record */
     public static final NodeId FIRST_NODE_ID = NodeId.create(0L);
 
     /**
      * Constructs a NodeId object
+     * <p>
+     * Use {@link #create(long)} to create a new NodeId object. This method will return an existing NodeId object if one
+     * already exists with the same ID number.
      *
      * @param id the ID number
      */
     public NodeId {
-        if (id < -1L) {
+        if (id < LOWEST_NODE_NUMBER) {
             throw new IllegalArgumentException("id must be non-negative");
         }
     }
 
     /**
-     * Constructs a main network NodeId object
+     * Constructs a NodeId object
      *
      * @param id the ID number
      * @return the object created
+     * @throws IllegalArgumentException if the ID number is negative
      */
+    @NonNull
     public static NodeId create(long id) {
         return nodeIds.computeIfAbsent(id, NodeId::new);
     }
@@ -90,6 +98,7 @@ public record NodeId(long id) implements Comparable<NodeId> {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public String toString() {
         return Long.toString(id);

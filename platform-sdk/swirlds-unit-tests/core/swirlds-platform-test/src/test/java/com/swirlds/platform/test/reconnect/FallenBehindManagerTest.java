@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 class FallenBehindManagerTest {
     final int numNodes = 11;
     final double fallenBehindThreshold = 0.5;
-    final NodeId selfId = NodeId.create(0);
+    final NodeId selfId = NodeId.FIRST_NODE_ID;
     final RandomGraph graph = new RandomGraph(numNodes, numNodes + (numNodes % 2), numNodes);
     final AtomicInteger platformNotification = new AtomicInteger(0);
     final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
