@@ -17,8 +17,8 @@
 package com.swirlds.platform.test.network.communication;
 
 import com.swirlds.common.io.utility.IOConsumer;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.test.network.FakeConnection;
 import java.io.IOException;
 import java.io.InputStream;

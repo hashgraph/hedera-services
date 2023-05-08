@@ -38,7 +38,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -1034,26 +1033,6 @@ class DeterministicThrottlingTest {
         var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 
         assertTrue(ans);
-    }
-
-    @Test
-    void logsErrorOnBadBucketButDoesntFail() throws IOException {
-        final var ridiculousSplitFactor = 1_000_000;
-        subject = new DeterministicThrottling(
-                () -> ridiculousSplitFactor, aliasManager, dynamicProperties, CONSENSUS, scheduleStore);
-
-        var defs = SerdeUtils.pojoDefs("bootstrap/insufficient-capacity-throttles.json");
-
-        // expect:
-        assertDoesNotThrow(() -> subject.rebuildFor(defs));
-        // and:
-        assertEquals(1, subject.activeThrottlesFor(CryptoGetAccountBalance).size());
-        // and:
-        assertThat(
-                logCaptor.errorLogs(),
-                contains("When constructing bucket 'A' from state:"
-                        + " NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION :: Bucket A contains an"
-                        + " unsatisfiable milliOpsPerSec with 1000000 nodes!"));
     }
 
     @Test

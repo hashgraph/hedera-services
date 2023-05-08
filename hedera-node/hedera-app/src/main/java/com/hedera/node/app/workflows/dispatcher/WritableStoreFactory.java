@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.dispatcher;
 
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 
@@ -43,5 +44,12 @@ public interface WritableStoreFactory {
      *
      * @return a new {@link WritableTokenRelationStore}
      */
-    public WritableTokenRelationStore createTokenRelStore();
+    WritableTokenRelationStore createTokenRelStore();
+
+    /**
+     * Get a {@link WritableAccountStore}.
+     *
+     * @return a new {@link WritableAccountStore}
+     */
+    WritableAccountStore createAccountStore();
 }

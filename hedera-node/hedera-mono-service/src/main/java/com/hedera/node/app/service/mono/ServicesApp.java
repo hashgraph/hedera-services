@@ -86,6 +86,7 @@ import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssListener;
+import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
@@ -205,6 +206,8 @@ public interface ServicesApp {
     IssListener issListener();
 
     NewSignedStateListener newSignedStateListener();
+
+    Optional<NewRecoveredStateListener> maybeNewRecoveredStateListener();
 
     Supplier<NotificationEngine> notificationEngine();
 

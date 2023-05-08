@@ -332,6 +332,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param source
      * 		Cannot be null and must be the most recent version!
      */
+    @SuppressWarnings("CopyConstructorMissesField")
     private VirtualNodeCache(final VirtualNodeCache<K, V> source) {
         // Make sure this version is exactly 1 greater than source
         this.fastCopyVersion.set(source.fastCopyVersion.get() + 1);
@@ -600,7 +601,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * be called if there is no longer any leaf at this path. This happens when we add leaves
      * and the leaf at firstLeafPath is moved and replaced by an internal node, or when a leaf
      * is deleted and the lastLeafPath is moved or removed.
-     * <p>
+     *
      * This method should only be called from the <strong>HANDLE TRANSACTION THREAD</strong>.
      * It is NOT threadsafe!
      *
@@ -766,6 +767,15 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     }
 
     /**
+     * Gets estimated number of dirty leaf nodes in this cache.
+     *
+     * @return Estimated number of dirty leaf nodes
+     */
+    public long estimatedDirtyLeavesCount(long firstLeafPath, long lastLeafPath) {
+        return (dirtyLeaves == null) ? 0 : dirtyLeaves.size();
+    }
+
+    /**
      * Gets a stream of deleted leaves <strong>from this cache instance</strong>.
      * <p>
      * This method may be called concurrently from multiple threads (although in practice, this should never happen).
@@ -891,9 +901,9 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         // create a new value and a new mutation and return the new mutation.
         if (forModify && mutation.version < fastCopyVersion.get()) {
             assert !internalIndexesAreImmutable.get() : "You cannot create internal records at this time!";
-            final VirtualInternalRecord virtualRecord = new VirtualInternalRecord(path, null);
-            updatePaths(virtualRecord, path, pathToDirtyInternalIndex, dirtyInternals);
-            return virtualRecord;
+            final VirtualInternalRecord internal = new VirtualInternalRecord(path, null);
+            putInternal(internal);
+            return internal;
         }
 
         return mutation.value;
@@ -926,6 +936,16 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                 .filter(mutation -> dedupeByPath(mutation, lastSeen))
                 .filter(mutation -> !mutation.deleted)
                 .map(mutation -> mutation.value);
+    }
+
+    /**
+     * Gets estimated number of dirty internal nodes in this cache.
+     *
+     * @return
+     * 		Estimated number of dirty internal nodes
+     */
+    public long estimatedInternalsCount(final long firstLeafPath) {
+        return (dirtyInternals == null) ? 0 : dirtyInternals.size();
     }
 
     /**
@@ -974,6 +994,15 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     @Override
     public int getVersion() {
         return ClassVersion.ORIGINAL;
+    }
+
+    /**
+     * Get fast copy version of the cache.
+     *
+     * @return Fast copy version
+     */
+    public long getFastCopyVersion() {
+        return fastCopyVersion.get();
     }
 
     /**

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network.protocol;
 
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 
 /**
  * A network protocol that run over a provided connection. The decision to run the protocol is made outside it, it can

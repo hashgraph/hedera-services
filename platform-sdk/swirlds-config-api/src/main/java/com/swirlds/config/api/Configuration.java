@@ -21,6 +21,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -119,7 +120,6 @@ public interface Configuration {
      * @param propertyName the name of the property
      * @param defaultValue the default {@link List}
      * @return a {@link List} of elements of the property with the given name
-     * @throws NoSuchElementException   if the property does not exist.
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
      *                                  or the given type
      */
@@ -154,6 +154,60 @@ public interface Configuration {
      */
     @Nullable
     <T> List<T> getValues(@NonNull String propertyName, @NonNull Class<T> propertyType, @Nullable List<T> defaultValue)
+            throws IllegalArgumentException;
+
+    /**
+     * Returns a {@link Set} of string elements of the property with the given name
+     *
+     * @param propertyName the name of the property
+     * @return a {@link Set} of elements of the property with the given name
+     * @throws NoSuchElementException   if the property does not exist.
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
+     *                                  the given type
+     */
+    @Nullable
+    Set<String> getValueSet(@NonNull String propertyName);
+
+    /**
+     * Returns a {@link Set} of string elements of the property with the given name or the given default {@link Set}
+     *
+     * @param propertyName the name of the property
+     * @param defaultValue the default {@link Set}
+     * @return a {@link Set} of elements of the property with the given name
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
+     *                                  the given type
+     */
+    @Nullable
+    Set<String> getValueSet(@NonNull String propertyName, @Nullable Set<String> defaultValue);
+
+    /**
+     * Returns a {@link Set} of elements of the property with the given name
+     *
+     * @param propertyName the name of the property
+     * @param propertyType the type of the elements
+     * @param <T>          the generic type of the elements
+     * @return a {@link Set} of elements of the property with the given name
+     * @throws NoSuchElementException   if the property does not exist.
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
+     *                                  the given type
+     */
+    @Nullable
+    <T> Set<T> getValueSet(@NonNull String propertyName, @NonNull Class<T> propertyType)
+            throws NoSuchElementException, IllegalArgumentException;
+
+    /**
+     * Returns a {@link Set} of elements of the property with the given name or the given default {@link Set}
+     *
+     * @param propertyName the name of the property
+     * @param propertyType the type of the elements
+     * @param defaultValue the default {@link Set}
+     * @param <T>          the generic type of the elements
+     * @return a {@link Set} of elements of the property with the given name or the given default set
+     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
+     *                                  the given type
+     */
+    @Nullable
+    <T> Set<T> getValueSet(@NonNull String propertyName, @NonNull Class<T> propertyType, @Nullable Set<T> defaultValue)
             throws IllegalArgumentException;
 
     /**

@@ -25,6 +25,7 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.legacy.AddressConfig;
 import com.swirlds.platform.config.legacy.JarAppConfig;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
+import com.swirlds.platform.network.Network;
 import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.nio.file.Path;

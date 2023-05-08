@@ -13,4 +13,5 @@ module com.hedera.services.cli {
     requires org.apache.commons.lang3;
     requires com.hedera.node.app.hapi.utils;
     requires com.google.protobuf;
+    requires com.google.common;
 }

@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.network;
 
-import com.swirlds.platform.Connection;
-
 /**
  * Manages a single topological connection, not a single {@link Connection}. This means that if the network topology
  * states that there should be a connection A->B, there will always be a single {@link ConnectionManager}. {@link

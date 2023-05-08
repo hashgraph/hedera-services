@@ -25,6 +25,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
@@ -59,6 +60,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.BooleanSupplier;
 
@@ -137,6 +139,8 @@ final class PlatformConstructor {
     /**
      * Creates a new instance of {@link SwirldStateManager}.
      *
+     * @param platformContext                       the platform context
+     * @param addressBook                           the address book
      * @param selfId                                this node's id
      * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
      * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
@@ -146,15 +150,29 @@ final class PlatformConstructor {
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
-            final NodeId selfId,
-            final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
-            final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
-            final Metrics metrics,
-            final SettingsProvider settings,
-            final BooleanSupplier inFreezeChecker,
-            final State initialState) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
+            @NonNull final Metrics metrics,
+            @NonNull final SettingsProvider settings,
+            @NonNull final BooleanSupplier inFreezeChecker,
+            @NonNull final State initialState) {
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(preConsensusSystemTransactionManager);
+        Objects.requireNonNull(postConsensusSystemTransactionManager);
+        Objects.requireNonNull(metrics);
+        Objects.requireNonNull(settings);
+        Objects.requireNonNull(inFreezeChecker);
+        Objects.requireNonNull(initialState);
 
         return new SwirldStateManagerImpl(
+                platformContext,
+                addressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,

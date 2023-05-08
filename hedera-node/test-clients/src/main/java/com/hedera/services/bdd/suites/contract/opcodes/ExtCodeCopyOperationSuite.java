@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecod
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -60,9 +61,10 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var emptyBytecode = ByteString.EMPTY;
         final var codeCopyOf = "codeCopyOf";
+        final var account = "account";
 
         return defaultHapiSpec("VerifiesExistence")
-                .given(uploadInitCode(contract), contractCreate(contract))
+                .given(cryptoCreate(account), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
                         contractCall(contract, codeCopyOf, asHeadlongAddress(invalidAddress))
@@ -70,7 +72,7 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
                         contractCallLocal(contract, codeCopyOf, asHeadlongAddress(invalidAddress))
                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
                         withOpContext((spec, opLog) -> {
-                            final var accountID = spec.registry().getAccountID(DEFAULT_PAYER);
+                            final var accountID = spec.registry().getAccountID(account);
                             final var contractID = spec.registry().getContractId(contract);
                             final var accountSolidityAddress = asHexedSolidityAddress(accountID);
                             final var contractAddress = asHexedSolidityAddress(contractID);

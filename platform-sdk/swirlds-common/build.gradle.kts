@@ -47,4 +47,5 @@ dependencies {
   testImplementation(testLibs.bundles.utils)
   testImplementation(project(":swirlds-config-impl"))
   testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+  testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
 }

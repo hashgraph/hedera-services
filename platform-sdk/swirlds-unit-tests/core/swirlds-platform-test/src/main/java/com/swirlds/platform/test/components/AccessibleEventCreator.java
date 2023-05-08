@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.components;
 
 import com.swirlds.common.stream.Signer;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventCreator;
@@ -46,6 +47,7 @@ public class AccessibleEventCreator extends EventCreator {
             final EventCreationRules eventCreationRules) {
 
         super(
+                new BasicSoftwareVersion(1),
                 selfId,
                 signer,
                 graphGenerationsSupplier,
