@@ -99,6 +99,7 @@ import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Assertions;
 
 public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LazyCreateThroughPrecompileSuite.class);
@@ -377,6 +378,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                 htsPrecompileResult().withStatus(SUCCESS)))));
     }
 
+    @SuppressWarnings("java:S5960")
     HapiSpec canCreateViaFungibleWithFractionalFee() {
         final var ft = "ft";
         final var ftKey = NFT_KEY;
@@ -403,18 +405,29 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .exposingCreatedIdTo(idLit -> ftMirrorAddr.set(asHexedSolidityAddress(asToken(idLit)))),
                         cryptoTransfer(TokenMovement.moving(supply, ft).between(TOKEN_TREASURY, CIVILIAN)))
-                .when(sourcing(() -> contractCall(
-                                AUTO_CREATION_MODES,
-                                "createDirectlyViaFungible",
-                                headlongFromHexed(ftMirrorAddr.get()),
-                                mirrorAddrWith(civilianId.get()),
-                                nonMirrorAddrWith(123, civilianId.get() + 1),
-                                supply)
-                        .via(creationAttempt)
-                        .gas(GAS_TO_OFFER)
-                        .alsoSigningWithFullPrefix(CIVILIAN)
-                        .hasKnownStatus(SUCCESS)))
-                .then(getTxnRecord(creationAttempt).andAllChildRecords().logged());
+                .when(withOpContext((spec, opLog) -> {
+                    final var op = contractCall(
+                                    AUTO_CREATION_MODES,
+                                    "createDirectlyViaFungible",
+                                    headlongFromHexed(ftMirrorAddr.get()),
+                                    mirrorAddrWith(civilianId.get()),
+                                    nonMirrorAddrWith(123, civilianId.get() + 1),
+                                    supply)
+                            .via(creationAttempt)
+                            .gas(GAS_TO_OFFER)
+                            .alsoSigningWithFullPrefix(CIVILIAN)
+                            .hasKnownStatusFrom(SUCCESS, CONTRACT_REVERT_EXECUTED);
+                    allRunFor(spec, op);
+                    if (op.getActualStatus() == CONTRACT_REVERT_EXECUTED) {
+                        final var lookup = getTxnRecord(creationAttempt).andAllChildRecords();
+                        allRunFor(spec, lookup);
+                        Assertions.fail("canCreateViaFungibleWithFractionalFee() failed w/ record "
+                                + lookup.getResponseRecord()
+                                + " and child records "
+                                + lookup.getChildRecords());
+                    }
+                }))
+                .then();
     }
 
     HapiSpec canCreateMultipleHollows() {
