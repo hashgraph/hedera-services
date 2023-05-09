@@ -28,7 +28,6 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;

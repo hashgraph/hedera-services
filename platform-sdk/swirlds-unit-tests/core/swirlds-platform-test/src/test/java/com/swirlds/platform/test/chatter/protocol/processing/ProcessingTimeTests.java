@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.test.fixtures.FakeTime;
-import com.swirlds.platform.chatter.protocol.processing.ProcessingTimeMessage;
-import com.swirlds.platform.chatter.protocol.processing.ProcessingTimeSendReceive;
+import com.swirlds.platform.gossip.chatter.protocol.processing.ProcessingTimeMessage;
+import com.swirlds.platform.gossip.chatter.protocol.processing.ProcessingTimeSendReceive;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;

@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.network;
 
-import com.swirlds.platform.Connection;
-
 /**
  * Tracks all connections that have been opened and closed by the platform
  */

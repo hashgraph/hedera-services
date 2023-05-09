@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /** Hedera adapted {@link ExceptionalHaltReason} */
@@ -49,6 +50,9 @@ public class HederaExceptionalHaltReason {
     /** Used when a lazy account creation fails and a lazy creation can't be completed. */
     public static final ExceptionalHaltReason FAILURE_DURING_LAZY_ACCOUNT_CREATE =
             HederaExceptionalHalt.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
+    /** Used when there is a EVM call attempt with value, where value is not allowed to be sent. Example is calls
+     * to all the precompiles (except for the {@link EvmHTSPrecompiledContract}*/
+    public static final ExceptionalHaltReason INVALID_FEE_SUBMITTED = HederaExceptionalHalt.INVALID_FEE_SUBMITTED;
 
     public static final ExceptionalHaltReason NOT_SUPPORTED = HederaExceptionalHalt.NOT_SUPPORTED;
 
@@ -61,7 +65,8 @@ public class HederaExceptionalHaltReason {
         CONTRACT_STILL_OWNS_NFTS("Accounts who own nfts cannot be deleted"),
         ERROR_DECODING_PRECOMPILE_INPUT("Error when decoding precompile input."),
         FAILURE_DURING_LAZY_ACCOUNT_CREATION("Failure during lazy account creation"),
-        NOT_SUPPORTED("Not supported.");
+        NOT_SUPPORTED("Not supported."),
+        INVALID_FEE_SUBMITTED("Invalid fee submitted for an EVM call.");
 
         final String description;
 

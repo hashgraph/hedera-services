@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.network.unidirectional;
 
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.network.ByteConstants;
+import com.swirlds.platform.network.Connection;
 import java.io.IOException;
 
 /**
