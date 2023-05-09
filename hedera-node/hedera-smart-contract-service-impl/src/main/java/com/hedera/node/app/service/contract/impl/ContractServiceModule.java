@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.components;
+package com.hedera.node.app.service.contract.impl;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
@@ -24,20 +24,15 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractGetBySolidityI
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBytecodeHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetInfoHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetRecordsHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.ContractSystemDeleteHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractSystemUndeleteHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.EtherumTransactionHandler;
-import dagger.Component;
-import javax.inject.Singleton;
+import dagger.Module;
 
-@Singleton
-@Component
-public interface ContractComponent {
-    @Component.Factory
-    interface Factory {
-        ContractComponent create();
-    }
+@Module
+public interface ContractServiceModule {
 
     ContractCallHandler contractCallHandler();
 
@@ -62,4 +57,6 @@ public interface ContractComponent {
     ContractUpdateHandler contractUpdateHandler();
 
     EtherumTransactionHandler etherumTransactionHandler();
+
+    ContractHandlers contractHandlers();
 }
