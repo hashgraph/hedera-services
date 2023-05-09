@@ -17,11 +17,9 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.metrics.FloatFormats.*;
-import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -113,51 +111,6 @@ public class PlatformMetrics {
         avgRoundSupermajority = metrics.getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
         avgEventsInMem = metrics.getOrCreate(AVG_EVENTS_IN_MEM_CONFIG);
         sleep1perSecond = metrics.getOrCreate(SLEEP_1_PER_SECOND_CONFIG);
-
-        addFunctionGauges(metrics);
-    }
-
-    private void addFunctionGauges(final Metrics metrics) {
-        metrics.getOrCreate(
-                new FunctionGauge.Config<>(INFO_CATEGORY, "transEvent", Integer.class, this::getTransEventSize)
-                        .withDescription("transEvent queue size")
-                        .withFormat("%d"));
-        metrics.getOrCreate(new FunctionGauge.Config<>(
-                        INFO_CATEGORY, "priorityTransEvent", Integer.class, this::getPriorityTransEventSize)
-                .withDescription("priorityTransEvent queue size")
-                .withFormat("%d"));
-        metrics.getOrCreate(new FunctionGauge.Config<>(
-                        INTERNAL_CATEGORY,
-                        "hasFallenBehind",
-                        Object.class,
-                        () -> platform.getSyncManager() == null
-                                ? 0
-                                : platform.getSyncManager().hasFallenBehind())
-                .withFormat("%b"));
-        metrics.getOrCreate(new FunctionGauge.Config<>(
-                        INTERNAL_CATEGORY,
-                        "numReportFallenBehind",
-                        Integer.class,
-                        () -> platform.getSyncManager() == null
-                                ? 0
-                                : platform.getSyncManager().numReportedFallenBehind())
-                .withFormat("%d"));
-    }
-
-    private int getTransEventSize() {
-        if (platform.getSwirldStateManager() == null
-                || platform.getSwirldStateManager().getTransactionPool() == null) {
-            return 0;
-        }
-        return platform.getSwirldStateManager().getTransactionPool().getTransEventSize();
-    }
-
-    private int getPriorityTransEventSize() {
-        if (platform.getSwirldStateManager() == null
-                || platform.getSwirldStateManager().getTransactionPool() == null) {
-            return 0;
-        }
-        return platform.getSwirldStateManager().getTransactionPool().getPriorityTransEventSize();
     }
 
     void update() {

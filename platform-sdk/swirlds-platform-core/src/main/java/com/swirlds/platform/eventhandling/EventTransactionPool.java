@@ -16,6 +16,10 @@
 
 package com.swirlds.platform.eventhandling;
 
+import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
+
+import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -23,6 +27,7 @@ import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -64,9 +69,8 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
     protected final SettingsProvider settings;
 
     // Used for creating spy objects for unit tests
-    public EventTransactionPool() {
-        settings = null;
-        inFreeze = null;
+    public EventTransactionPool(@NonNull final Metrics metrics) {
+        this(metrics, null, null);
     }
 
     /**
@@ -77,9 +81,19 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
      * @param inFreeze
      * 		Indicates if the system is currently in a freeze
      */
-    public EventTransactionPool(final SettingsProvider settings, final BooleanSupplier inFreeze) {
+    public EventTransactionPool(
+            @NonNull final Metrics metrics, final SettingsProvider settings, final BooleanSupplier inFreeze) {
         this.settings = settings;
         this.inFreeze = inFreeze;
+
+        metrics.getOrCreate(
+                new FunctionGauge.Config<>(INFO_CATEGORY, "transEvent", Integer.class, this::getTransEventSize)
+                        .withDescription("transEvent queue size")
+                        .withUnit("count"));
+        metrics.getOrCreate(new FunctionGauge.Config<>(
+                        INFO_CATEGORY, "priorityTransEvent", Integer.class, this::getPriorityTransEventSize)
+                .withDescription("priorityTransEvent queue size")
+                .withUnit("count"));
     }
 
     /**

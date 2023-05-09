@@ -30,6 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
@@ -113,6 +114,7 @@ public class SyncManagerTest {
 
             eventQueue = new DummyEventQueue(hashgraph);
             syncManager = new SyncManagerImpl(
+                    new NoOpMetrics(),
                     eventQueue,
                     connectionGraph,
                     nodeId,

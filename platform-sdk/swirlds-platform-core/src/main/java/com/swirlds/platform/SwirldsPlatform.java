@@ -1169,7 +1169,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         logger.debug(
                 RECONNECT.getMarker(),
                 "`loadReconnectState` : reconnect complete notifications finished. Resetting fallen-behind");
-        getSyncManager().resetFallenBehind();
+        syncManager.resetFallenBehind();
         logger.debug(
                 RECONNECT.getMarker(),
                 "`loadReconnectState` : resetting fallen-behind & reloading state, finished, succeeded`");
@@ -1229,6 +1229,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     @Override
     public void start() {
         syncManager = components.add(new SyncManagerImpl(
+                platformContext.getMetrics(),
                 intakeQueue,
                 topology.getConnectionGraph(),
                 selfId,
@@ -1310,7 +1311,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         reconnectHelper = new ReconnectHelper(
                 stopGossip,
                 clearAllPipelines,
-                getSwirldStateManager()::getConsensusState,
+                swirldStateManager::getConsensusState,
                 stateManagementComponent::getLastCompleteRound,
                 new ReconnectLearnerThrottle(selfId, settings.getReconnect()),
                 this::loadReconnectState,
@@ -1834,7 +1835,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final PlatformStatus newStatus;
             if (numNodes > 1 && activeConnectionNumber.get() == 0) {
                 newStatus = PlatformStatus.DISCONNECTED;
-            } else if (getSyncManager().hasFallenBehind()) {
+            } else if (syncManager.hasFallenBehind()) {
                 newStatus = PlatformStatus.BEHIND;
             } else if (freezeManager.isFreezeStarted()) {
                 newStatus = PlatformStatus.MAINTENANCE;
@@ -1881,13 +1882,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         checkPlatformStatus();
 
         networkMetrics.recordDisconnect(conn);
-    }
-
-    /**
-     * @return the instance that manages interactions with the {@link SwirldState}
-     */
-    public SwirldStateManager getSwirldStateManager() {
-        return swirldStateManager;
     }
 
     /**
