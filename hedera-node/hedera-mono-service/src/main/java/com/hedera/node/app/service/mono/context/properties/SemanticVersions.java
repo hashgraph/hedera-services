@@ -59,21 +59,27 @@ public enum SemanticVersions {
 
     private void ensureLoaded() {
         if (knownActive.get() == null) {
-            final var deployed = fromResource(VERSION_INFO_RESOURCE, BOOTSTRAP_PROPERTIES_RESOURCE,
-                    HAPI_VERSION_KEY, HEDERA_VERSION_KEY, HEDERA_CONFIG_VERSION_KEY);
+            final var deployed = fromResource(
+                    VERSION_INFO_RESOURCE,
+                    BOOTSTRAP_PROPERTIES_RESOURCE,
+                    HAPI_VERSION_KEY,
+                    HEDERA_VERSION_KEY,
+                    HEDERA_CONFIG_VERSION_KEY);
             knownActive.set(deployed);
             knownSerializable.set(new SerializableSemVers(deployed.protoSemVer(), deployed.hederaSemVer()));
         }
     }
 
     @NonNull
-    static ActiveVersions fromResource(final String propertiesFile,
+    static ActiveVersions fromResource(
+            final String propertiesFile,
             final String bootstrapPropertiesFile,
             final String protoKey,
             final String servicesKey,
             final String configKey) {
         try (final var in = SemanticVersions.class.getClassLoader().getResourceAsStream(propertiesFile);
-             final var bootstrapIn = SemanticVersions.class.getClassLoader().getResourceAsStream(bootstrapPropertiesFile)) {
+                final var bootstrapIn =
+                        SemanticVersions.class.getClassLoader().getResourceAsStream(bootstrapPropertiesFile)) {
             final var props = new Properties();
             final var bootstrapProperties = new Properties();
             props.load(in);
@@ -89,7 +95,7 @@ public enum SemanticVersions {
             return new ActiveVersions(protoSemVer, hederaSemVerWithConfig);
         } catch (final Exception surprising) {
             log.warn(
-                    "Failed to parse resource '{}' (keys '{}' and '{}') and resource '{}' (keys '{}' and '{}')"
+                    "Failed to parse resource '{}' (keys '{}' and '{}') and resource '{}' (key '{}')"
                             + ". Version info will be" + " unavailable!",
                     propertiesFile,
                     protoKey,
@@ -102,8 +108,9 @@ public enum SemanticVersions {
         }
     }
 
-    private static SemanticVersion addConfigVersionToBuild(@NonNull final String configVersion, @NonNull final SemanticVersion hederaSemVer) {
-        if(!configVersion.isEmpty() && !configVersion.equals("0")) {
+    private static SemanticVersion addConfigVersionToBuild(
+            @NonNull final String configVersion, @NonNull final SemanticVersion hederaSemVer) {
+        if (!configVersion.isEmpty() && !configVersion.equals("0")) {
             return hederaSemVer.toBuilder().setBuild(configVersion).build();
         }
         return hederaSemVer;

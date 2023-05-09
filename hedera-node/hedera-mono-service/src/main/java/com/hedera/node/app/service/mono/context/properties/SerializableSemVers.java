@@ -41,8 +41,9 @@ public class SerializableSemVers implements SoftwareVersion {
             .thenComparingInt(SemanticVersion::getMinor)
             .thenComparingInt(SemanticVersion::getPatch)
             .thenComparingInt(semver -> alphaNumberOf(semver.getPre()))
-            // We never deploy versions with `build` parts to prod envs, so
-            // just give precedence to the version that doesn't have one
+            // Whenever there is a need for doing an upgrade with config-only changes,
+            // we set the build portion on semver. This is needed to trigger platform
+            // upgrade code, which is otherwise not triggered for config-only changes.
             .thenComparing(SemanticVersion::getBuild);
     public static final Comparator<SerializableSemVers> FULL_COMPARATOR = Comparator.comparing(
                     SerializableSemVers::getServices, SEM_VER_COMPARATOR)

@@ -250,9 +250,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
                 .setServices(SemanticVersion.newBuilder().setMinor(32).build());
-//        SEMANTIC_VERSIONS
-//                .deployedSoftwareVersion()
-//                .setConfigurationVersion("test-config-version");
+        //        SEMANTIC_VERSIONS
+        //                .deployedSoftwareVersion()
+        //                .setConfigurationVersion("test-config-version");
         subject = tracked(new ServicesState());
         setAllChildren();
     }

@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -102,9 +103,10 @@ class SemanticVersionsTest {
 
     @Test
     void warnsOfUnavailableSemversAndUsesEmpty() {
-        final var shouldBeEmpty = SemanticVersions.fromResource("nonExistent.properties", "bootstrap.properties","w/e", "n/a", "hedera.config.version");
-        final var desiredPrefix = "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a'). "
-                + "Version info will be unavailable!";
+        final var shouldBeEmpty = SemanticVersions.fromResource(
+                "nonExistent.properties", "bootstrap.properties", "w/e", "n/a", "hedera.config.version");
+        final var desiredPrefix =
+                "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a') and resource 'bootstrap.properties' (key 'hedera.config.version'). Version info will be unavailable! java.lang.NullPointerException: inStream parameter is null";
 
         assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.hederaSemVer());
         assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.protoSemVer());
@@ -113,13 +115,40 @@ class SemanticVersionsTest {
 
     @Test
     void warnsOfUnavailableSemversAndUsesEmptyConfig() {
-        final var shouldBeEmpty = SemanticVersions.fromResource("nonExistent.properties", "bootstrap.properties","hapi.proto.version", "hedera.services.version", "test");
-        final var desiredPrefix = "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a'). "
-                + "Version info will be unavailable!";
+        final var shouldBeEmpty = SemanticVersions.fromResource(
+                "nonExistent.properties",
+                "bootstrap.properties",
+                "hapi.proto.version",
+                "hedera.services.version",
+                "test");
+        final var desiredPrefix =
+                "Failed to parse resource 'nonExistent.properties' (keys 'hapi.proto.version' and 'hedera.services.version') and resource 'bootstrap.properties' (key 'test'). Version info will be unavailable! java.lang.NullPointerException: inStream parameter is null";
 
         assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.hederaSemVer());
         assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.protoSemVer());
         assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desiredPrefix)));
+    }
+
+    @Test
+    void doesntAppendBuildWhenConfigVersionIsZero() {
+        final var version = SemanticVersions.fromResource(
+                "semantic-version.properties",
+                "bootstrap.properties",
+                "hapi.proto.version",
+                "hedera.services.version",
+                "hedera.config.version");
+        assertTrue(version.hederaSemVer().getBuild().isEmpty());
+    }
+
+    @Test
+    void appendsBuildWhenConfigVersionIsNonZero() {
+        final var version = SemanticVersions.fromResource(
+                "semantic-version.properties",
+                "bootstrap/standard.properties",
+                "hapi.proto.version",
+                "hedera.services.version",
+                "hedera.config.version");
+        assertEquals("10", version.hederaSemVer().getBuild());
     }
 
     @Test

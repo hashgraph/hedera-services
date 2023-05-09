@@ -820,5 +820,5 @@ public final class BootstrapProperties implements PropertySource {
             entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT),
-            entry(CONFIG_VERSION, AS_STRING));
+            entry(CONFIG_VERSION, AS_INT));
 }
