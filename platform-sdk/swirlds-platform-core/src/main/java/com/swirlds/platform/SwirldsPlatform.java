@@ -274,10 +274,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final int instanceNumber;
     /** parameters given to the app when it starts */
     private final String[] parameters;
-    /** Handles all system transactions pre-consensus */
-    private final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager;
-    /** Handles all system transactions post-consensus */
-    private final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
     /** The platforms freeze manager */
     private final FreezeManager freezeManager;
     /** is used for pausing event creation for a while at start up */
@@ -321,8 +317,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final Crypto crypto;
     /** a long name including (app, swirld, member id, member self name) */
     private final String platformName;
-    /** is used for calculating runningHash of all consensus events and writing consensus events to file */
-    private final EventStreamManager<EventImpl> eventStreamManager;
     /**
      * True if this node started from genesis.
      */
@@ -569,13 +563,15 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 new NetworkStatsTransmitter(platformContext, this::createSystemTransaction, networkMetrics);
         components.add(networkStatsTransmitter);
 
-        preConsensusSystemTransactionManager = new PreConsensusSystemTransactionManagerFactory()
-                .addHandlers(stateManagementComponent.getPreConsensusHandleMethods())
-                .build();
+        final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
+                new PreConsensusSystemTransactionManagerFactory()
+                        .addHandlers(stateManagementComponent.getPreConsensusHandleMethods())
+                        .build();
 
-        postConsensusSystemTransactionManager = new PostConsensusSystemTransactionManagerFactory()
-                .addHandlers(stateManagementComponent.getPostConsensusHandleMethods())
-                .build();
+        final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
+                new PostConsensusSystemTransactionManagerFactory()
+                        .addHandlers(stateManagementComponent.getPostConsensusHandleMethods())
+                        .build();
 
         consensusRef = new AtomicReference<>();
 
@@ -622,7 +618,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             eventStreamManagerName = String.valueOf(selfId);
         }
         logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
-        eventStreamManager = new EventStreamManager<>(
+
+        final EventStreamManager<EventImpl> eventStreamManager = new EventStreamManager<>(
                 platformContext,
                 threadManager,
                 getSelfId(),
@@ -880,29 +877,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * Get the transactionMaxBytes in Settings
-     *
-     * @return integer representing the maximum number of bytes allowed in a transaction
-     */
-    public static int getTransactionMaxBytes() {
-        return Settings.getInstance().getTransactionMaxBytes();
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
     public NodeId getSelfId() {
         return selfId;
-    }
-
-    /**
-     * if it is a Mirror node
-     *
-     * @return true/false based on if this is mirror node
-     */
-    public boolean isMirrorNode() {
-        return selfId.isMirror();
     }
 
     /**
@@ -1019,10 +998,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         .setDepth(StateSettings.getDebugHashDepth())
                         .render());
 
-        /**
-         * The previous version of the software that was run. Null if this is the first time running, or if the previous
-         * version ran before the concept of application software versioning was introduced.
-         */
+        // The previous version of the software that was run. Null if this is the first time running, or if the previous
+        // version ran before the concept of application software versioning was introduced.
         final SoftwareVersion previousSoftwareVersion = signedStateFromDisk
                 .getState()
                 .getPlatformState()
