@@ -118,13 +118,6 @@ public class PlatformMetrics {
     }
 
     private void addFunctionGauges(final Metrics metrics) {
-        metrics.getOrCreate(new FunctionGauge.Config<>(INFO_CATEGORY, "name", String.class, this::getMemberName)
-                .withDescription("name of this member")
-                .withFormat("%8s"));
-        metrics.getOrCreate(
-                new FunctionGauge.Config<>(INFO_CATEGORY, "lastGen", Long.class, this::getLastEventGenerationNumber)
-                        .withDescription("last event generation number by me")
-                        .withFormat("%d"));
         metrics.getOrCreate(
                 new FunctionGauge.Config<>(INFO_CATEGORY, "transEvent", Integer.class, this::getTransEventSize)
                         .withDescription("transEvent queue size")
@@ -133,12 +126,6 @@ public class PlatformMetrics {
                         INFO_CATEGORY, "priorityTransEvent", Integer.class, this::getPriorityTransEventSize)
                 .withDescription("priorityTransEvent queue size")
                 .withFormat("%d"));
-        metrics.getOrCreate(new FunctionGauge.Config<>(
-                        INTERNAL_CATEGORY,
-                        "isStrongMinorityInMaxRound",
-                        Boolean.class,
-                        this::isStrongMinorityInMaxRound)
-                .withFormat("%b"));
         metrics.getOrCreate(new FunctionGauge.Config<>(
                         INTERNAL_CATEGORY,
                         "hasFallenBehind",
@@ -157,22 +144,6 @@ public class PlatformMetrics {
                 .withFormat("%d"));
     }
 
-    private String getMemberName() {
-        if (platform.isMirrorNode()) {
-            return "Mirror-" + platform.getSelfId().getId();
-        }
-        return platform.getAddressBook()
-                .getAddress(platform.getSelfId().getId())
-                .getSelfName();
-    }
-
-    private long getLastEventGenerationNumber() {
-        if (platform.isMirrorNode()) {
-            return -1L;
-        }
-        return platform.getLastGen(platform.getSelfId().getId());
-    }
-
     private int getTransEventSize() {
         if (platform.getSwirldStateManager() == null
                 || platform.getSwirldStateManager().getTransactionPool() == null) {
@@ -187,14 +158,6 @@ public class PlatformMetrics {
             return 0;
         }
         return platform.getSwirldStateManager().getTransactionPool().getPriorityTransEventSize();
-    }
-
-    private Boolean isStrongMinorityInMaxRound() {
-        if (platform.isMirrorNode()) {
-            return false;
-        }
-        return platform.getCriticalQuorum()
-                .isInCriticalQuorum(platform.getSelfId().getId());
     }
 
     void update() {

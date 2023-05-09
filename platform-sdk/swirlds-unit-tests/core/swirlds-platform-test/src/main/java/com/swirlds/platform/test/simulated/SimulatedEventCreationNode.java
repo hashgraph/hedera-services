@@ -21,6 +21,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SerializableHashable;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -99,8 +100,8 @@ public class SimulatedEventCreationNode {
         Objects.requireNonNull(consumers, "the consumers is null");
         this.nodeId = Objects.requireNonNull(nodeId, "the node ID is null");
         this.eventByHash = Objects.requireNonNull(eventByHash, "the event by hash function is null");
-        criticalQuorum =
-                new CriticalQuorumImpl(addressBook, false, new ChatterSubSetting().getCriticalQuorumSoftening());
+        criticalQuorum = new CriticalQuorumImpl(
+                new NoOpMetrics(), 0, addressBook, false, new ChatterSubSetting().getCriticalQuorumSoftening());
         final OtherParentTracker otherParentTracker = new OtherParentTracker();
         final LoggingEventCreationRules eventCreationRules = LoggingEventCreationRules.create(
                 List.of(() ->

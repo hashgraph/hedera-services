@@ -502,7 +502,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // set here, then given to the state in run(). A copy of it is given to hashgraph.
         this.initialAddressBook = initialAddressBook;
 
-        this.eventMapper = new EventMapper(selfId);
+        this.eventMapper = new EventMapper(platformContext.getMetrics(), selfId);
         this.chatterEventMapper = new ChatterEventMapper();
 
         this.metrics = platformContext.getMetrics();
@@ -636,10 +636,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this::isLastEventBeforeRestart);
 
         if (settings.getChatter().isChatterUsed()) {
-            criticalQuorum =
-                    new CriticalQuorumImpl(initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
+            criticalQuorum = new CriticalQuorumImpl(
+                    metrics, selfId.getId(), initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
         } else {
-            criticalQuorum = new CriticalQuorumImpl(initialAddressBook);
+            criticalQuorum = new CriticalQuorumImpl(metrics, selfId.getId(), initialAddressBook);
         }
 
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
@@ -1825,13 +1825,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * @return the object that tracks recent events created
-     */
-    public CriticalQuorum getCriticalQuorum() {
-        return criticalQuorum;
-    }
-
-    /**
      * Checks the status of the platform and notifies the SwirldMain if there is a change in status
      */
     public void checkPlatformStatus() {
@@ -1951,16 +1944,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             }
         }
         throw new IllegalStateException("Unable to sort events after 100 retries");
-    }
-
-    /**
-     * get the highest generation number of all events with the given creator
-     *
-     * @param creatorId the ID of the node in question
-     * @return the highest generation number known stored for the given creator ID
-     */
-    public long getLastGen(final long creatorId) {
-        return eventMapper.getHighestGenerationNumber(creatorId);
     }
 
     /**
