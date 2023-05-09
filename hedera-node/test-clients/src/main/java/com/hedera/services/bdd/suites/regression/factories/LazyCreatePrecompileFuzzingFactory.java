@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.regression.factories;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -43,14 +42,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 public class LazyCreatePrecompileFuzzingFactory {
-    public static final String FUNGIBLE_TOKEN = "fungibleToken";
     public static final long INITIAL_SUPPLY = 1_000_000_000L;
+    public static final String FUNGIBLE_TOKEN = "fungibleToken";
     public static final String ERC_FUNGIBLE_TOKEN = "ercFungibleToken";
     public static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     public static final String MULTI_KEY = "purpose";
     public static final String OWNER = "owner";
     public static final String SENDER = "sender";
     public static final String TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT = "PrecompileAliasXfer";
+    public static final String NESTED_LAZY_PRECOMPILE_CONTRACT = "LazyPrecompileTransfersAtomic";
     public static final String TOKEN_TREASURY = "treasury";
     public static final String TOKEN_TREASURY_ERC = "treasuryErc";
     public static final String ECDSA_KEY = "abcdECDSAkey";
@@ -81,8 +81,10 @@ public class LazyCreatePrecompileFuzzingFactory {
 
             // HBAR TRANSFER
             cryptoCreate(SENDER).balance(INITIAL_SUPPLY).key(MULTI_KEY).maxAutomaticTokenAssociations(5),
+            uploadInitCode(NESTED_LAZY_PRECOMPILE_CONTRACT),
+            contractCreate(NESTED_LAZY_PRECOMPILE_CONTRACT),
 
-            // Non Fungible init
+            // ERC721 init
             tokenCreate(NON_FUNGIBLE_TOKEN)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                     .initialSupply(0)
@@ -110,7 +112,7 @@ public class LazyCreatePrecompileFuzzingFactory {
                     .signedBy(UNIQUE_PAYER_ACCOUNT, OWNER)
                     .fee(ONE_HBAR),
 
-            // ERC 20 init
+            // ERC20 init
             cryptoCreate(TOKEN_TREASURY_ERC),
             tokenCreate(ERC_FUNGIBLE_TOKEN)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -136,6 +138,10 @@ public class LazyCreatePrecompileFuzzingFactory {
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
                     .withInitialization(onlyEcdsaKeys(NUM_DISTINCT_ECDSA_KEYS))
+                    /**
+                     * In case for hbar transfer to work properly through precmompile
+                     * contracts.precompile.atomicCryptoTransfer.enabled need to be set to TRUE
+                     */
                     .withOp(
                             new RandomHbarTransferLazyCreate(spec.registry(), keys),
                             intPropOrElse("randomHbar.bias", 0, props))

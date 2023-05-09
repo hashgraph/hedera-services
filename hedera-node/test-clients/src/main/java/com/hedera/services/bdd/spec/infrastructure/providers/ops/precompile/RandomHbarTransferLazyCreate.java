@@ -56,7 +56,6 @@ public class RandomHbarTransferLazyCreate implements OpProvider {
     }
 
     private HapiContractCall generateHbarTransferLazyCreate(String evmAddressRecipient) {
-        final var NESTED_LAZY_PRECOMPILE_CONTRACT = "LazyPrecompileTransfersAtomic";
         final var cryptoTransferV2LazyCreateFn = "cryptoTransferV2LazyCreate";
         final var sender = registry.getAccountID(SENDER);
         final var amountToBeSent = 50L;
@@ -81,6 +80,7 @@ public class RandomHbarTransferLazyCreate implements OpProvider {
                 .via(TRANSFER_TXN)
                 .signedBy(UNIQUE_PAYER_ACCOUNT, MULTI_KEY)
                 .alsoSigningWithFullPrefix(MULTI_KEY)
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .gas(GAS_TO_OFFER);
     }
 }
