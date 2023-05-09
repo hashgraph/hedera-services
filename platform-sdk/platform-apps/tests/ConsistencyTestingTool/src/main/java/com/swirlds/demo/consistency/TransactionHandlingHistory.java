@@ -119,7 +119,7 @@ public class TransactionHandlingHistory {
         try (final BufferedReader reader = new BufferedReader(new FileReader(logFilePath.toFile()))) {
             reader.lines().forEach(line -> addRoundToHistory(ConsistencyTestingToolRound.fromString(line)));
         } catch (final IOException e) {
-            e.printStackTrace();
+            logger.error(EXCEPTION.getMarker(), "Failed to read log file", e);
         }
     }
 
@@ -246,7 +246,7 @@ public class TransactionHandlingHistory {
     private void writeRoundToLog(final @NonNull ConsistencyTestingToolRound round) {
         Objects.requireNonNull(round);
 
-        try (BufferedWriter file = new BufferedWriter(new FileWriter(logFilePath.toFile(), true))) {
+        try (final BufferedWriter file = new BufferedWriter(new FileWriter(logFilePath.toFile(), true))) {
             file.write(round.toString());
             file.flush();
         } catch (final IOException e) {

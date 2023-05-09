@@ -19,6 +19,7 @@ package com.swirlds.demo.consistency;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -33,7 +34,6 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -96,12 +96,13 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(swirldDualState);
         Objects.requireNonNull(trigger);
 
-        final ConsistencyTestingToolConfig config =
+        final StateConfig stateConfig = platform.getContext().getConfiguration().getConfigData(StateConfig.class);
+        final ConsistencyTestingToolConfig testingToolConfig =
                 platform.getContext().getConfiguration().getConfigData(ConsistencyTestingToolConfig.class);
 
-        final Path logFilePath = Path.of(System.getProperty("user.dir") + File.separator + config.logfileName());
+        final Path logFilePath = stateConfig.savedStateDirectory().resolve(testingToolConfig.logfileName());
 
-        transactionHandlingHistory.init(config.permitGaps(), logFilePath);
+        transactionHandlingHistory.init(testingToolConfig.permitGaps(), logFilePath);
     }
 
     /**

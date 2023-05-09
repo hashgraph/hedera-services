@@ -21,7 +21,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -41,7 +41,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     /**
      * The default software version of this application
      */
-    private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
+    private static final SoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
     /**
      * The platform instance
@@ -70,23 +70,6 @@ public class ConsistencyTestingToolMain implements SwirldMain {
         this.platform = Objects.requireNonNull(platform);
 
         logger.info(STARTUP.getMarker(), "init called in Main for node {}.", nodeId);
-
-        parseArguments(((PlatformWithDeprecatedMethods) platform).getParameters());
-    }
-
-    /**
-     * Parses the arguments
-     * <p>
-     * Currently, no arguments are expected
-     *
-     * @param args the arguments
-     * @throws IllegalArgumentException if the arguments array has length other than 0
-     */
-    private void parseArguments(@NonNull final String[] args) {
-        Objects.requireNonNull(args, "The arguments must not be null.");
-        if (args.length != 0) {
-            throw new IllegalArgumentException("Expected no arguments. See javadocs for details.");
-        }
     }
 
     /**
@@ -112,7 +95,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public BasicSoftwareVersion getSoftwareVersion() {
+    public SoftwareVersion getSoftwareVersion() {
         logger.info(STARTUP.getMarker(), "returning software version {}", softwareVersion);
         return softwareVersion;
     }
@@ -122,8 +105,6 @@ public class ConsistencyTestingToolMain implements SwirldMain {
      */
     @Override
     public void updateConfigurationBuilder(@NonNull final ConfigurationBuilder configurationBuilder) {
-        Objects.requireNonNull(configurationBuilder);
-
         configurationBuilder.withConfigDataType(ConsistencyTestingToolConfig.class);
     }
 }
