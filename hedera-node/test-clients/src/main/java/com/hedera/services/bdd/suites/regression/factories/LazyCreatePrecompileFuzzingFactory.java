@@ -84,6 +84,20 @@ public class LazyCreatePrecompileFuzzingFactory {
             uploadInitCode(NESTED_LAZY_PRECOMPILE_CONTRACT),
             contractCreate(NESTED_LAZY_PRECOMPILE_CONTRACT),
 
+            // Fungible init
+            tokenCreate(FUNGIBLE_TOKEN)
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .initialSupply(INITIAL_SUPPLY)
+                    .treasury(TOKEN_TREASURY)
+                    .adminKey(MULTI_KEY)
+                    .supplyKey(MULTI_KEY)
+                    .exposingCreatedIdTo(id ->
+                            tokenAddr.set(HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
+            uploadInitCode(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
+            contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
+            tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
+            cryptoTransfer(moving(INITIAL_SUPPLY, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)),
+
             // ERC721 init
             tokenCreate(NON_FUNGIBLE_TOKEN)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
