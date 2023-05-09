@@ -35,11 +35,12 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenCustomFee;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.service.token.impl.records.CreateTokenRecordBuilder;
@@ -56,6 +57,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -108,29 +110,38 @@ public class TokenCreateHandler implements TransactionHandler {
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final HandleContext handleContext,
+    public void handle(@NonNull final HandleContext context,
             @NonNull final TransactionBody txn,
-            @NonNull final ReadableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore) {
         final var op = txn.tokenCreationOrThrow();
         final var config = configProvider.getConfiguration().getConfigData(TokenServiceConfig.class);
+        final var readableAccountStore = context.createReadableStore(ReadableAccountStore.class);
+        final var readableTokenRelationStore = context.createReadableStore(ReadableTokenRelationStore.class);
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state. Also validate custom fees
-        validateSemantics(accountStore, tokenStore, op, config);
+        validateSemantics(readableAccountStore, tokenStore, op, config);
 
         // validate expiration and auto-renew account if present
-        final var givenExpiryMeta = getExpiryMeta(handleContext.consensusNow().getEpochSecond(), op);
-        final var resolvedExpiryMeta = handleContext
+        final var givenExpiryMeta = getExpiryMeta(context.consensusNow().getEpochSecond(), op);
+        final var resolvedExpiryMeta = context
                 .expiryValidator()
                 .resolveCreationAttempt(false, givenExpiryMeta);
 
         // validate auto-renew account exists
         if(resolvedExpiryMeta.autoRenewNum() != 0){
             final var id = AccountID.newBuilder().accountNum(resolvedExpiryMeta.autoRenewNum()).build();
-            final var autoRenewAccount = accountStore.getAccountById(id);
+            final var autoRenewAccount = readableAccountStore.getAccountById(id);
             validateTrue(autoRenewAccount != null, INVALID_AUTORENEW_ACCOUNT);
         }
+        // build a token object
+        final var newTokenId = context.newEntityNumSupplier().getAsLong();
+        final var newToken = buildToken(newTokenId, op, resolvedExpiryMeta);
+        // validate custom fees
+        customFeesValidator.validateCreation(newToken, readableAccountStore, readableTokenRelationStore, tokenStore, op.customFees());
+
+        final List<TokenCustomFee> customFees = buildCustomFees(newToken, op.customFees());
+
 
 //        provisionalToken
 //                .getCustomFees()
@@ -143,8 +154,14 @@ public class TokenCreateHandler implements TransactionHandler {
 //        provisionalToken.getCustomFees().forEach(FcCustomFee::nullOutCollector);
 
         // get the new token id to persist
-        final var newTokenId = handleContext.newEntityNumSupplier().getAsLong();
-        tokenStore.put(buildToken(newTokenId, op, resolvedExpiryMeta));
+        final var newTokenId = context.newEntityNumSupplier().getAsLong();
+        final var newToken = buildToken(newTokenId, op, resolvedExpiryMeta);
+        tokenStore.put(newToken);
+    }
+
+    private List<TokenCustomFee> buildCustomFees(Token token, List<CustomFee> customFees) {
+        final List<TokenCustomFee> tokenCustomFees = new ArrayList<>();
+
     }
 
     private Token buildToken(long newTokenNum, TokenCreateTransactionBody op, ExpiryMeta resolvedExpiryMeta) {

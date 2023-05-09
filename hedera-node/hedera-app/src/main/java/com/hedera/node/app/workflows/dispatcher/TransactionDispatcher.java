@@ -430,13 +430,12 @@ public class TransactionDispatcher {
      * @param tokenStore the token store
      */
     private void dispatchTokenCreate(@NonNull final TransactionBody tokenCreate,
-            @NonNull final ReadableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore) {
         requireNonNull(tokenCreate);
         requireNonNull(tokenStore);
 
         final var handler = handlers.tokenCreateHandler();
-        handler.handle(handleContext, tokenCreate, accountStore, tokenStore);
+        handler.handle(handleContext, tokenCreate, tokenStore);
         tokenStore.commit();
     }
 
