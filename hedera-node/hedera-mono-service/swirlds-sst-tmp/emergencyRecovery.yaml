@@ -1,0 +1,6 @@
+recovery:
+  state:
+    round: 16024
+    hash: "96b1b36f2d7ed883afb452ef03edd56909d0021a8ef9212e8d95f4b7112700872cd8eb07c9059a2af4e8569ad28e3dd5"
+    timestamp: "2023-05-09T14:25:00.019129Z"
+  boostrap: null
