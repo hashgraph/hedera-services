@@ -16,8 +16,14 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.threading.SyncLock;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,9 +43,26 @@ public class SimultaneousSyncThrottle {
     /** lock per each other member, each one is used by all caller threads and the listener thread */
     private final Map<Long, SyncLock> simSyncThrottleLock;
 
-    public SimultaneousSyncThrottle(final int maxListenerSyncs) {
+    private static final RunningAverageMetric.Config AVG_SIM_SYNCS_CONFIG = new RunningAverageMetric.Config(
+                    PLATFORM_CATEGORY, "simSyncs")
+            .withDescription("avg number of simultaneous syncs happening at any given time")
+            .withFormat(FORMAT_9_6);
+
+    private static final RunningAverageMetric.Config AVG_SIM_LISTEN_SYNCS_CONFIG = new RunningAverageMetric.Config(
+                    PLATFORM_CATEGORY, "simListenSyncs")
+            .withDescription("avg number of simultaneous listening syncs happening at any given time")
+            .withFormat(FORMAT_9_6);
+
+    public SimultaneousSyncThrottle(@NonNull final Metrics metrics, final int maxListenerSyncs) {
         this.maxListenerSyncs = maxListenerSyncs;
         simSyncThrottleLock = new ConcurrentHashMap<>();
+
+        final RunningAverageMetric avgSimSyncs = metrics.getOrCreate(AVG_SIM_SYNCS_CONFIG);
+        final RunningAverageMetric avgSimListenSyncs = metrics.getOrCreate(AVG_SIM_LISTEN_SYNCS_CONFIG);
+        metrics.addUpdater(() -> {
+            avgSimSyncs.update(getNumSyncs());
+            avgSimListenSyncs.update(getNumListenerSyncs());
+        });
     }
 
     /**

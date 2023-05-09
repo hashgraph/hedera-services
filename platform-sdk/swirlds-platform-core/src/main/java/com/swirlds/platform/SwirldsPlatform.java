@@ -104,6 +104,7 @@ import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
+import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventCreatorThread;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.EventUtils;
@@ -299,7 +300,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final AddressBook initialAddressBook;
 
     private final Metrics metrics;
-    private final PlatformMetrics platformMetrics;
 
     private final SimultaneousSyncThrottle simultaneousSyncThrottle;
     private final ConsensusMetrics consensusMetrics;
@@ -487,8 +487,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         this.emergencyRecoveryManager = emergencyRecoveryManager;
 
-        this.simultaneousSyncThrottle =
-                new SimultaneousSyncThrottle(settings.getMaxIncomingSyncsInc() + settings.getMaxOutgoingSyncs());
+        this.simultaneousSyncThrottle = new SimultaneousSyncThrottle(
+                platformContext.getMetrics(), settings.getMaxIncomingSyncsInc() + settings.getMaxOutgoingSyncs());
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
@@ -513,8 +513,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         registerAddressBookMetrics(metrics, initialAddressBook, selfId);
 
-        this.platformMetrics = new PlatformMetrics(this);
-        metrics.addUpdater(platformMetrics::update);
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
         this.eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
         this.syncMetrics = new SyncMetrics(metrics);
@@ -545,6 +543,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         startUpEventFrozenManager = new StartUpEventFrozenManager(metrics, Instant::now);
         freezeManager = new FreezeManager(this::checkPlatformStatus);
         FreezeMetrics.registerFreezeMetrics(metrics, freezeManager, startUpEventFrozenManager);
+        EventCounter.registerMetrics(metrics);
 
         // Manually wire components for now.
         final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook(), freezeManager);
@@ -683,7 +682,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
 
             preConsensusEventHandler = components.add(PlatformConstructor.preConsensusEventHandler(
-                    threadManager, selfId, swirldStateManager, consensusMetrics));
+                    platformContext.getMetrics(), threadManager, selfId, swirldStateManager, consensusMetrics));
             consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                     platformContext,
                     threadManager,
@@ -1150,7 +1149,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             // thread will get the up-to-date data loaded
             new PauseAndLoad(getIntakeQueue(), eventLinker).loadFromSignedState(signedState);
 
-            getConsensusHandler().loadDataFromSignedState(signedState, true);
+            consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
             // Notify any listeners that the reconnect has been completed
             notificationEngine.dispatch(
@@ -1305,7 +1304,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             // wait and acquire all sync ongoing locks and release them immediately
             // this will ensure any ongoing sync are finished before we start reconnect
             // no new sync will start because we have a fallen behind status
-            stopGossip = getSimultaneousSyncThrottle()::waitForAllSyncsToFinish;
+            stopGossip = simultaneousSyncThrottle::waitForAllSyncsToFinish;
         }
 
         reconnectHelper = new ReconnectHelper(
@@ -1747,13 +1746,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private void spawnSyncCaller(final int callerNumber) {
         // create a caller that will run repeatedly to call random members other than selfId
         final SyncCaller syncCaller = new SyncCaller(
-                this,
-                getAddressBook(),
-                selfId,
-                callerNumber,
-                reconnectHelper,
-                new DefaultSignedStateValidator(),
-                platformMetrics);
+                this, getAddressBook(), selfId, callerNumber, reconnectHelper, new DefaultSignedStateValidator());
 
         /* the thread that repeatedly initiates syncs with other members */
         final Thread syncCallerThread = new ThreadConfiguration(threadManager)
@@ -1882,20 +1875,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         checkPlatformStatus();
 
         networkMetrics.recordDisconnect(conn);
-    }
-
-    /**
-     * @return the handler that applies consensus events to state and creates signed states
-     */
-    public ConsensusRoundHandler getConsensusHandler() {
-        return consensusRoundHandler;
-    }
-
-    /**
-     * @return the handler that applies pre-consensus events to state
-     */
-    public PreConsensusEventHandler getPreConsensusHandler() {
-        return preConsensusEventHandler;
     }
 
     /** {@inheritDoc} */

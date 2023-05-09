@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components.state;
 
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 
@@ -23,6 +24,7 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatus;
@@ -136,8 +138,12 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
     private final StateConfig stateConfig;
 
+    private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
+                    PLATFORM_CATEGORY, "roundSup")
+            .withDescription("latest round with state signed by a supermajority");
+
     /**
-     * @param context                            the platform context
+     * @param platformContext                    the platform context
      * @param threadManager                      manages platform thread resources
      * @param addressBook                        the initial address book
      * @param signer                             an object capable of signing with the platform's private key
@@ -156,7 +162,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param getPlatformStatus                  a supplier that returns the current platform status
      */
     public DefaultStateManagementComponent(
-            @NonNull final PlatformContext context,
+            @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final AddressBook addressBook,
             @NonNull final PlatformSigner signer,
@@ -174,7 +180,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final PreConsensusEventWriter preConsensusEventWriter,
             @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
-        Objects.requireNonNull(context, "context");
+        Objects.requireNonNull(platformContext, "context");
         Objects.requireNonNull(threadManager, "threadManager");
         Objects.requireNonNull(addressBook, "addressBook");
         Objects.requireNonNull(signer, "signer");
@@ -194,12 +200,13 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
         this.signer = signer;
         this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, getPlatformStatus);
-        this.signedStateMetrics = new SignedStateMetrics(context.getMetrics());
+        this.signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
-        this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
-        this.signedStateSentinel = new SignedStateSentinel(context, threadManager, OSTime.getInstance());
+        this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, OSTime.getInstance());
 
-        dispatchBuilder = new DispatchBuilder(context.getConfiguration().getConfigData(DispatchConfiguration.class));
+        dispatchBuilder =
+                new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
         hashLogger = new HashLogger(threadManager, selfId);
 
@@ -208,7 +215,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         signedStateHasher = new SignedStateHasher(signedStateMetrics, stateHashedTrigger, fatalErrorConsumer);
 
         signedStateFileManager = new SignedStateFileManager(
-                context,
+                platformContext,
                 threadManager,
                 signedStateMetrics,
                 OSTime.getInstance(),
@@ -229,7 +236,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         };
 
         signedStateManager = new SignedStateManager(
-                context.getConfiguration().getConfigData(StateConfig.class),
+                platformContext.getConfiguration().getConfigData(StateConfig.class),
                 signedStateMetrics,
                 newLatestCompleteStateConsumer,
                 combinedStateHasEnoughSignaturesConsumer,
@@ -239,7 +246,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 OSTime.getInstance(),
                 dispatchBuilder,
                 addressBook,
-                context.getConfiguration().getConfigData(ConsensusConfig.class),
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 stateConfig);
 
         final IssHandler issHandler = new IssHandler(
@@ -251,13 +258,17 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 fatalErrorConsumer,
                 issConsumer);
 
-        final IssMetrics issMetrics = new IssMetrics(context.getMetrics(), addressBook);
+        final IssMetrics issMetrics = new IssMetrics(platformContext.getMetrics(), addressBook);
 
         dispatchBuilder
                 .registerObservers(issHandler)
                 .registerObservers(consensusHashManager)
                 .registerObservers(issMetrics)
                 .registerObservers(this);
+
+        final RunningAverageMetric avgRoundSupermajority =
+                platformContext.getMetrics().getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
+        platformContext.getMetrics().addUpdater(() -> avgRoundSupermajority.update(getLastCompleteRound()));
     }
 
     /**

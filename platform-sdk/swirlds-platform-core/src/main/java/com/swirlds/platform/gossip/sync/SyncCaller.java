@@ -16,17 +16,18 @@
 
 package com.swirlds.platform.gossip.sync;
 
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.LogMarker.SYNC_START;
 
+import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.locks.locked.MaybeLockedResource;
 import com.swirlds.logging.payloads.ReconnectPeerInfoPayload;
-import com.swirlds.platform.PlatformMetrics;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.network.Connection;
@@ -59,7 +60,11 @@ public class SyncCaller implements Runnable {
 
     private final ReconnectHelper reconnectHelper;
     private final SignedStateValidator signedStateValidator;
-    private final PlatformMetrics platformMetrics;
+
+    private static final SpeedometerMetric.Config SLEEP_1_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
+                    INTERNAL_CATEGORY, "sleep1/sec")
+            .withDescription("sleeps per second because caller thread had too many failed connects");
+    private final SpeedometerMetric sleep1perSecond;
 
     /**
      * The platform instantiates this, and gives it the self ID number, plus other info that will be useful to it. The
@@ -77,15 +82,15 @@ public class SyncCaller implements Runnable {
             final NodeId selfId,
             final int callerNumber,
             final ReconnectHelper reconnectHelper,
-            final SignedStateValidator signedStateValidator,
-            final PlatformMetrics platformMetrics) {
+            final SignedStateValidator signedStateValidator) {
         this.platform = platform;
         this.addressBook = addressBook;
         this.selfId = selfId;
         this.callerNumber = callerNumber;
         this.reconnectHelper = reconnectHelper;
         this.signedStateValidator = signedStateValidator;
-        this.platformMetrics = platformMetrics;
+
+        sleep1perSecond = platform.getContext().getMetrics().getOrCreate(SLEEP_1_PER_SECOND_CONFIG);
     }
 
     /**
@@ -108,7 +113,7 @@ public class SyncCaller implements Runnable {
                         try {
                             // Necessary to slow down the attempts after N failures
                             Thread.sleep(Settings.getInstance().getSleepCallerSkips());
-                            platformMetrics.incrementSleep1perSecond();
+                            sleep1perSecond.cycle();
                         } catch (final InterruptedException ex) {
                             Thread.currentThread().interrupt();
                             return;
