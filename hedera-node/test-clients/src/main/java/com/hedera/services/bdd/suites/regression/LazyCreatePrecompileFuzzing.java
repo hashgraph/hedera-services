@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.regression.factories.LazyCreatePrecompileFuzzingFactory.*;
 
@@ -42,7 +42,8 @@ public class LazyCreatePrecompileFuzzing extends HapiSuite {
 
     private HapiSpec transferTokensFuzzing() {
 
-        return defaultHapiSpec("TransferFungibleTokenLazyCreateFuzzing")
+        return propertyPreservingHapiSpec("TransferFungibleTokenLazyCreateFuzzing")
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(initOperations())
                 .when()
                 .then(runWithProvider(transferTokensFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));

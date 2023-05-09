@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.HapiSuite.*;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.intPropOrElse;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.onlyEcdsaKeys;
@@ -69,6 +70,11 @@ public class LazyCreatePrecompileFuzzingFactory {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
         return new HapiSpecOperation[] {
+            /**
+             * In order for hbar transfer to work properly through precmompile
+             * contracts.precompile.atomicCryptoTransfer.enabled need to be set to TRUE
+             */
+            overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
             // common init
             newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
             newKeyNamed(MULTI_KEY),
@@ -152,10 +158,6 @@ public class LazyCreatePrecompileFuzzingFactory {
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
                     .withInitialization(onlyEcdsaKeys(NUM_DISTINCT_ECDSA_KEYS))
-                    /**
-                     * In case for hbar transfer to work properly through precmompile
-                     * contracts.precompile.atomicCryptoTransfer.enabled need to be set to TRUE
-                     */
                     .withOp(
                             new RandomHbarTransferLazyCreate(spec.registry(), keys),
                             intPropOrElse("randomHbar.bias", 0, props))
