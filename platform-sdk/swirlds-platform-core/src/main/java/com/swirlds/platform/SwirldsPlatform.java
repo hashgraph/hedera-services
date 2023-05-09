@@ -219,7 +219,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -236,7 +235,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -256,7 +254,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     private final NodeId selfId;
     /** tell which pairs of members should establish connections */
-    final NetworkTopology topology;
+    private final NetworkTopology topology;
     /**
      * This object is responsible for rate limiting reconnect attempts (in the role of sender)
      */
@@ -323,7 +321,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** a long name including (app, swirld, member id, member self name) */
     private final String platformName;
     /** is used for calculating runningHash of all consensus events and writing consensus events to file */
-    private EventStreamManager<EventImpl> eventStreamManager;
+    private final EventStreamManager<EventImpl> eventStreamManager;
     /**
      * True if this node started from genesis.
      */
@@ -613,13 +611,24 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
         }
 
-        // initializes EventStreamManager instance
         final Address address = getSelfAddress();
+        final String eventStreamManagerName;
         if (address.getMemo() != null && !address.getMemo().isEmpty()) {
-            initEventStreamManager(address.getMemo());
+            eventStreamManagerName = address.getMemo();
         } else {
-            initEventStreamManager(String.valueOf(selfId));
+            eventStreamManagerName = String.valueOf(selfId);
         }
+        logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
+        eventStreamManager = new EventStreamManager<>(
+                threadManager,
+                getSelfId(),
+                this,
+                eventStreamManagerName,
+                settings.isEnableEventStreaming(),
+                settings.getEventsLogDir(),
+                settings.getEventsLogPeriod(),
+                settings.getEventStreamQueueCapacity(),
+                this::isLastEventBeforeRestart);
 
         if (settings.getChatter().isChatterUsed()) {
             criticalQuorum =
@@ -2092,33 +2101,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     StartUpEventFrozenManager getStartUpEventFrozenManager() {
         return startUpEventFrozenManager;
-    }
-
-    /**
-     * Initializes EventStreamManager instance, which will start threads for calculating RunningHash, and writing event
-     * stream files when event streaming is enabled
-     *
-     * @param name name of this node
-     */
-    void initEventStreamManager(final String name) {
-        try {
-            logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
-            eventStreamManager = new EventStreamManager<>(
-                    threadManager,
-                    getSelfId(),
-                    this,
-                    name,
-                    settings.isEnableEventStreaming(),
-                    settings.getEventsLogDir(),
-                    settings.getEventsLogPeriod(),
-                    settings.getEventStreamQueueCapacity(),
-                    this::isLastEventBeforeRestart);
-        } catch (final NoSuchAlgorithmException | IOException e) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Fail to initialize eventStreamHelper. Exception: {}",
-                    ExceptionUtils.getStackTrace(e));
-        }
     }
 
     /**
