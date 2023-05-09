@@ -280,7 +280,7 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
 
         /**
          * Serialize a data item including header to the byte buffer returning the size of the data
-         * written
+         * written.
          *
          * @param data The data item to serialize
          * @param buffer Byte buffer to write to
@@ -291,14 +291,6 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
             data.serialize(buffer);
             return 2 + computeNonZeroBytes(data.value1) + computeNonZeroBytes(data.value2);
         }
-
-        /** {@inheritDoc} */
-        @Override
-        public void serialize(final SerializableDataOutputStream out) throws IOException {}
-
-        /** {@inheritDoc} */
-        @Override
-        public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
 
         /**
          * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the

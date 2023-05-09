@@ -26,6 +26,7 @@ import static com.hedera.node.app.service.mono.contracts.execution.traceability.
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_UNKNOWN;
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType.CALL;
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType.CREATE;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType.PRECOMPILE;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -265,15 +266,20 @@ public class HederaTracer implements HederaOperationTracer {
 
     @Override
     public void tracePrecompileResult(final MessageFrame frame, final ContractActionType type) {
-        if (areActionSidecarsEnabled()) {
-            popActionStack(frame).ifPresent(lastAction -> {
-                lastAction.setCallType(type);
-                lastAction.setRecipientAccount(null);
-                lastAction.setTargetedAddress(null);
-                lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
-                finalizeActionFor(lastAction, frame, frame.getState());
-            });
+        if (!areActionSidecarsEnabled()) {
+            return;
         }
+        if (type.equals(PRECOMPILE) && frame.getState().equals(State.EXCEPTIONAL_HALT)) {
+            // if a precompile call exceptional halted, the action is already finalized
+            return;
+        }
+        popActionStack(frame).ifPresent(lastAction -> {
+            lastAction.setCallType(type);
+            lastAction.setRecipientAccount(null);
+            lastAction.setTargetedAddress(null);
+            lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
+            finalizeActionFor(lastAction, frame, frame.getState());
+        });
     }
 
     @Override

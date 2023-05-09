@@ -29,6 +29,7 @@ import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.spi.config.ConfigProvider;
+import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.workflows.handle.AdaptedMonoProcessLogic;
 import com.swirlds.config.api.ConfigurationBuilder;
 import dagger.Binds;
@@ -70,6 +71,13 @@ public interface PreHandleWorkflowModule {
 
     @Binds
     ProcessLogic bindProcessLogic(AdaptedMonoProcessLogic processLogic);
+
+    /**
+     * This binding is only needed to have a PreHandleDispatcher implementation that can be provided by dagger.
+     */
+    @Deprecated
+    @Binds
+    PreHandleDispatcher bindPreHandleDispatcher(DummyPreHandleDispatcher preHandleDispatcher);
 
     @Provides
     static ExecutorService provideExecutorService() {

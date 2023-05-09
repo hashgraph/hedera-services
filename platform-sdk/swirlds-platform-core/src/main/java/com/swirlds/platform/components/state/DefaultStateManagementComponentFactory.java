@@ -21,6 +21,7 @@ import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
@@ -34,6 +35,8 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * Creates instances of {@link DefaultStateManagementComponent}
@@ -47,6 +50,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     private final String mainClassName;
     private final NodeId selfId;
     private final String swirldName;
+    private final Supplier<PlatformStatus> getPlatformStatus;
     private PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter;
     private StateToDiskAttemptConsumer stateToDiskAttemptConsumer;
     private NewLatestCompleteStateConsumer newLatestCompleteStateConsumer;
@@ -58,21 +62,23 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     private PreConsensusEventWriter preConsensusEventWriter;
 
     public DefaultStateManagementComponentFactory(
-            final PlatformContext context,
-            final ThreadManager threadManager,
-            final AddressBook addressBook,
-            final PlatformSigner signer,
-            final String mainClassName,
-            final NodeId selfId,
-            final String swirldName) {
+            @NonNull final PlatformContext context,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final AddressBook addressBook,
+            @NonNull final PlatformSigner signer,
+            @NonNull final String mainClassName,
+            @NonNull final NodeId selfId,
+            @NonNull final String swirldName,
+            @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
-        this.context = context;
-        this.threadManager = threadManager;
-        this.addressBook = addressBook;
-        this.signer = signer;
-        this.mainClassName = mainClassName;
-        this.selfId = selfId;
-        this.swirldName = swirldName;
+        this.context = Objects.requireNonNull(context);
+        this.threadManager = Objects.requireNonNull(threadManager);
+        this.addressBook = Objects.requireNonNull(addressBook);
+        this.signer = Objects.requireNonNull(signer);
+        this.mainClassName = Objects.requireNonNull(mainClassName);
+        this.selfId = Objects.requireNonNull(selfId);
+        this.swirldName = Objects.requireNonNull(swirldName);
+        this.getPlatformStatus = Objects.requireNonNull(getPlatformStatus);
     }
 
     @Override
@@ -151,7 +157,8 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
                 issConsumer,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                preConsensusEventWriter);
+                preConsensusEventWriter,
+                getPlatformStatus);
     }
 
     private void verifyInputs() {

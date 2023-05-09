@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
+import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CommonUtils.combineConsumers;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -27,6 +27,7 @@ import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.base.state.Startable;
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -61,13 +62,13 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -81,14 +82,6 @@ import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
-import com.swirlds.platform.chatter.ChatterNotifier;
-import com.swirlds.platform.chatter.ChatterSyncProtocol;
-import com.swirlds.platform.chatter.PrepareChatterEvent;
-import com.swirlds.platform.chatter.communication.ChatterProtocol;
-import com.swirlds.platform.chatter.config.ChatterConfig;
-import com.swirlds.platform.chatter.protocol.ChatterCore;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
-import com.swirlds.platform.chatter.protocol.peer.PeerInstance;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.EventCreationRules;
@@ -143,6 +136,27 @@ import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
+import com.swirlds.platform.gossip.FallenBehindManagerImpl;
+import com.swirlds.platform.gossip.chatter.ChatterNotifier;
+import com.swirlds.platform.gossip.chatter.ChatterSyncProtocol;
+import com.swirlds.platform.gossip.chatter.PrepareChatterEvent;
+import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
+import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
+import com.swirlds.platform.gossip.shadowgraph.SingleNodeNetworkSync;
+import com.swirlds.platform.gossip.sync.SyncCaller;
+import com.swirlds.platform.gossip.sync.SyncManagerImpl;
+import com.swirlds.platform.gossip.sync.SyncProtocolResponder;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
+import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
+import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
@@ -154,8 +168,10 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
+import com.swirlds.platform.network.NetworkStatsTransmitter;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
@@ -177,7 +193,6 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
-import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
@@ -194,11 +209,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
-import com.swirlds.platform.sync.ShadowGraph;
-import com.swirlds.platform.sync.ShadowGraphEventObserver;
-import com.swirlds.platform.sync.ShadowGraphSynchronizer;
-import com.swirlds.platform.sync.SimultaneousSyncThrottle;
-import com.swirlds.platform.sync.SyncProtocolResponder;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
@@ -210,6 +220,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -220,6 +231,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -288,7 +300,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final AddressBook initialAddressBook;
 
     private final Metrics metrics;
-    private final AddedEventMetrics addedEventMetrics;
     private final PlatformMetrics platformMetrics;
 
     private final SimultaneousSyncThrottle simultaneousSyncThrottle;
@@ -301,8 +312,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final AtomicReference<ReconnectController> reconnectController = new AtomicReference<>();
     /** tracks if we have fallen behind or not, takes appropriate action if we have */
     private final FallenBehindManagerImpl fallenBehindManager;
-    /** stats related to the intake cycle */
-    private final IntakeCycleStats intakeCycleStats;
 
     private final ChatterCore<GossipEvent> chatterCore;
     /** all the events and other data about the hashgraph */
@@ -338,15 +347,17 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** last time stamp when pause check timer is active */
     private long pauseCheckTimeStamp;
     /** Tracks recent events created in the network */
-    private CriticalQuorum criticalQuorum;
+    private final CriticalQuorum criticalQuorum;
 
-    private QueueThread<EventIntakeTask> intakeQueue;
-    private EventLinker eventLinker;
+    private final QueueThread<EventIntakeTask> intakeQueue;
+    private final EventLinker eventLinker;
     private SequenceCycle<EventIntakeTask> intakeCycle = null;
     /** sleep in ms after each sync in SyncCaller. A public setter for this exists. */
     private long delayAfterSync = 0;
-    /** Executes a sync with a remote node */
-    private ShadowGraphSynchronizer shadowgraphSynchronizer;
+    /**
+     * Executes a sync with a remote node. Only used for sync, not chatter.
+     */
+    private ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     /** Stores and passes pre-consensus events to {@link SwirldStateManager} for handling */
     private PreConsensusEventHandler preConsensusEventHandler;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
@@ -354,7 +365,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** Handles all interaction with {@link SwirldState} */
     private SwirldStateManager swirldStateManager;
     /** Checks the validity of transactions and submits valid ones to the event transaction pool */
-    private SwirldTransactionSubmitter transactionSubmitter;
+    private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
     private Clearable clearAllPipelines;
     /** Contains all information and state required for emergency recovery */
@@ -369,6 +380,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * A list of threads that execute the chatter protocol.
      */
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
+
+    /**
+     * A list of threads that execute the sync protocol using bidirectional connections
+     */
+    private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
 
     /**
      * All components that need to be started or that have dispatch observers.
@@ -406,6 +422,16 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * Writes pre-consensus events to disk.
      */
     private final PreConsensusEventWriter preConsensusEventWriter;
+
+    /**
+     * True if gossip has been halted. Only relevant for sync-as-a-protocol
+     */
+    private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
+
+    /**
+     * The permit provider for syncs. Only relevant when sync is running as a protocol
+     */
+    private SyncPermitProvider syncPermitProvider;
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -486,12 +512,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         metrics.getOrCreate(StatConstructor.createEnumStat(
                 "PlatformStatus", Metrics.PLATFORM_CATEGORY, PlatformStatus.values(), currentPlatformStatus::get));
 
-        this.intakeCycleStats = new IntakeCycleStats(time, metrics);
-
         this.platformMetrics = new PlatformMetrics(this);
         metrics.addUpdater(platformMetrics::update);
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
-        this.addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
         this.eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
         this.syncMetrics = new SyncMetrics(metrics);
         this.networkMetrics =
@@ -537,7 +560,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this::createPrioritySystemTransaction,
                 this::haltRequested,
                 appCommunicationComponent,
-                preConsensusEventWriter);
+                preConsensusEventWriter,
+                currentPlatformStatus::get);
         wiring.registerComponents(components);
 
         final NetworkStatsTransmitter networkStatsTransmitter =
@@ -556,18 +580,22 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         reconnectThrottle = new ReconnectThrottle(settings.getReconnect());
 
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
         topology = new StaticTopology(
                 selfId,
                 initialAddressBook.getSize(),
                 settings.getNumConnections(),
-                !settings.getChatter().isChatterUsed());
+                // unidirectional connections are ONLY used for old-style syncs, that don't run as a protocol
+                !settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled());
 
         fallenBehindManager = new FallenBehindManagerImpl(
                 selfId,
                 topology.getConnectionGraph(),
                 this::checkPlatformStatus,
                 () -> {
-                    if (!settings.getChatter().isChatterUsed()) {
+                    // if we are using old-style syncs, don't start the reconnect controller
+                    if (!settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled()) {
                         return;
                     }
                     reconnectController.get().start();
@@ -577,10 +605,196 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
 
+        // if this setting is 0 or less, there is no startup freeze
+        if (settings.getFreezeSecondsAfterStartup() > 0) {
+            final Instant startUpEventFrozenEndTime =
+                    Instant.now().plusSeconds(settings.getFreezeSecondsAfterStartup());
+            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
+            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
+        }
+
+        // initializes EventStreamManager instance
+        final Address address = getSelfAddress();
+        if (address.getMemo() != null && !address.getMemo().isEmpty()) {
+            initEventStreamManager(address.getMemo());
+        } else {
+            initEventStreamManager(String.valueOf(selfId));
+        }
+
+        if (settings.getChatter().isChatterUsed()) {
+            criticalQuorum =
+                    new CriticalQuorumImpl(initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
+        } else {
+            criticalQuorum = new CriticalQuorumImpl(initialAddressBook);
+        }
+
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
         try (loadedState.signedStateFromDisk) {
-            init(loadedState.signedStateFromDisk.getNullable(), loadedState.initialState, genesisStateBuilder);
+            final SignedState signedStateFromDisk = loadedState.signedStateFromDisk.getNullable();
+
+            buildEventHandlers(signedStateFromDisk, loadedState.initialState, genesisStateBuilder);
+
+            final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
+            final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+
+            final EventObserverDispatcher dispatcher = new EventObserverDispatcher(
+                    new ShadowGraphEventObserver(shadowGraph),
+                    consensusRoundHandler,
+                    preConsensusEventHandler,
+                    eventMapper,
+                    addedEventMetrics,
+                    criticalQuorum,
+                    eventIntakeMetrics,
+                    (PreConsensusEventObserver) event -> {
+                        sequencer.assignStreamSequenceNumber(event);
+                        abortAndThrowIfInterrupted(
+                                preConsensusEventWriter::writeEvent,
+                                event,
+                                "Interrupted while attempting to enqueue preconsensus event for writing");
+                    },
+                    (ConsensusRoundObserver) round -> {
+                        abortAndThrowIfInterrupted(
+                                preConsensusEventWriter::setMinimumGenerationNonAncient,
+                                round.getGenerations().getMinGenerationNonAncient(),
+                                "Interrupted while attempting to enqueue change in minimum generation non-ancient");
+
+                        abortAndThrowIfInterrupted(
+                                preConsensusEventWriter::requestFlush,
+                                "Interrupted while requesting preconsensus event flush");
+                    });
+            if (settings.getChatter().isChatterUsed()) {
+                dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
+                dispatcher.addObserver(chatterEventMapper);
+            }
+
+            final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
+
+            final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks = new ArrayList<>();
+            isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
+            if (settings.getChatter().isChatterUsed()) {
+                final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
+                        platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                        parentFinder,
+                        settings.getChatter().getFutureGenerationLimit());
+                metrics.getOrCreate(
+                        new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
+                                .withDescription("the number of events without parents buffered")
+                                .withFormat("%d"));
+                eventLinker = orphanBuffer;
+                // when using chatter an event could be an orphan, in this case it will be stored in the orphan set
+                // when its parents are found, or become ancient, it will move to the shadowgraph
+                // non-orphans are also stored in the shadowgraph
+                // to dedupe, we need to check both
+                isDuplicateChecks.add(orphanBuffer::isOrphan);
+            } else {
+                eventLinker = new InOrderLinker(
+                        platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                        parentFinder,
+                        eventMapper::getMostRecentEvent);
+            }
+
+            final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
+            final EventIntake eventIntake = new EventIntake(
+                    selfId,
+                    eventLinker,
+                    consensusRef::get,
+                    initialAddressBook,
+                    dispatcher,
+                    intakeCycleStats,
+                    shadowGraph);
+
+            final EventCreator eventCreator;
+            if (settings.getChatter().isChatterUsed()) {
+                // chatter has a separate event creator in a different thread. having 2 event creators creates the risk
+                // of forking, so a NPE is preferable to a fork
+                eventCreator = null;
+            } else {
+                eventCreator = new EventCreator(
+                        this.appVersion,
+                        selfId,
+                        PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
+                        consensusRef::get,
+                        swirldStateManager.getTransactionPool(),
+                        eventIntake::addEvent,
+                        eventMapper,
+                        eventMapper,
+                        swirldStateManager.getTransactionPool(),
+                        freezeManager::isFreezeStarted,
+                        new EventCreationRules(List.of()));
+            }
+
+            final List<GossipEventValidator> validators = new ArrayList<>();
+            // it is very important to discard ancient events, otherwise the deduplication will not work, since it
+            // doesn't
+            // track ancient events
+            validators.add(new AncientValidator(consensusRef::get));
+            validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
+            validators.add(StaticValidators::isParentDataValid);
+            validators.add(new TransactionSizeValidator(settings.getMaxTransactionBytesPerEvent()));
+            if (settings.isVerifyEventSigs()) {
+                validators.add(new SignatureValidator(initialAddressBook));
+            }
+            final GossipEventValidators eventValidators = new GossipEventValidators(validators);
+
+            /* validates events received from gossip */
+            final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
+
+            final EventTaskDispatcher taskDispatcher = new EventTaskDispatcher(
+                    time,
+                    eventValidator,
+                    eventCreator,
+                    eventIntake::addUnlinkedEvent,
+                    eventIntakeMetrics,
+                    intakeCycleStats);
+
+            final InterruptableConsumer<EventIntakeTask> intakeHandler;
+            if (settings.getChatter().isChatterUsed()) {
+                intakeCycle = new SequenceCycle<>(taskDispatcher::dispatchTask);
+                intakeHandler = intakeCycle;
+            } else {
+                intakeHandler = taskDispatcher::dispatchTask;
+            }
+
+            intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
+                    .setNodeId(selfId.getId())
+                    .setComponent(PLATFORM_THREAD_POOL_NAME)
+                    .setThreadName("event-intake")
+                    .setHandler(intakeHandler)
+                    .setCapacity(settings.getEventIntakeQueueSize())
+                    .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
+                            .get()
+                            .getConfigData(ThreadConfig.class)
+                            .logStackTracePauseDuration())
+                    .enableMaxSizeMetric(metrics)
+                    .build());
+
+            if (signedStateFromDisk != null) {
+                loadIntoConsensusAndEventMapper(signedStateFromDisk);
+                eventLinker.loadFromSignedState(signedStateFromDisk);
+            } else {
+                consensusRef.set(new ConsensusImpl(
+                        platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                        consensusMetrics,
+                        consensusRoundHandler::addMinGenInfo,
+                        getAddressBook()));
+            }
         }
+
+        transactionSubmitter = new SwirldTransactionSubmitter(
+                currentPlatformStatus::get,
+                PlatformConstructor.settingsProvider(),
+                swirldStateManager::submitTransaction,
+                new TransactionMetrics(metrics));
+
+        clearAllPipelines = new LoggingClearables(
+                RECONNECT.getMarker(),
+                List.of(
+                        Pair.of(getIntakeQueue(), "intakeQueue"),
+                        Pair.of(getEventMapper(), "eventMapper"),
+                        Pair.of(getShadowGraph(), "shadowGraph"),
+                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
+                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
+                        Pair.of(swirldStateManager, "swirldStateManager")));
     }
 
     /**
@@ -767,7 +981,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // rehash the state as a whole.
         if (currentHash == null || !Objects.equals(initialHash, currentHash)) {
             initialState.invalidateHash();
-            Uninterruptable.abortAndThrowIfInterrupted(
+            abortAndThrowIfInterrupted(
                     () -> {
                         try {
                             MerkleCryptoFactory.getInstance()
@@ -898,73 +1112,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * First part of initialization. This was split up so that appMain.init() could be called before {@link
-     * StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete parts.
-     */
-    private void init(
-            @Nullable final SignedState signedStateFromDisk,
-            @Nullable final State initialState,
-            @NonNull final Supplier<SwirldState> genesisStateBuilder) {
-
-        // if this setting is 0 or less, there is no startup freeze
-        if (settings.getFreezeSecondsAfterStartup() > 0) {
-            final Instant startUpEventFrozenEndTime =
-                    Instant.now().plusSeconds(settings.getFreezeSecondsAfterStartup());
-            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
-            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
-        }
-
-        // initializes EventStreamManager instance
-        final Address address = getSelfAddress();
-        if (address.getMemo() != null && !address.getMemo().isEmpty()) {
-            initEventStreamManager(address.getMemo());
-        } else {
-            initEventStreamManager(String.valueOf(selfId));
-        }
-
-        buildEventHandlers(signedStateFromDisk, initialState, genesisStateBuilder);
-
-        transactionSubmitter = new SwirldTransactionSubmitter(
-                currentPlatformStatus::get,
-                PlatformConstructor.settingsProvider(),
-                swirldStateManager::submitTransaction,
-                new TransactionMetrics(metrics));
-
-        if (signedStateFromDisk != null) {
-            loadIntoConsensusAndEventMapper(signedStateFromDisk);
-        } else {
-            consensusRef.set(new ConsensusImpl(
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                    consensusMetrics,
-                    consensusRoundHandler::addMinGenInfo,
-                    getAddressBook()));
-        }
-
-        if (settings.getChatter().isChatterUsed()) {
-            criticalQuorum =
-                    new CriticalQuorumImpl(initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
-        } else {
-            criticalQuorum = new CriticalQuorumImpl(initialAddressBook);
-        }
-
-        // build the event intake classes
-        buildEventIntake();
-        if (signedStateFromDisk != null) {
-            eventLinker.loadFromSignedState(signedStateFromDisk);
-        }
-
-        clearAllPipelines = new LoggingClearables(
-                RECONNECT.getMarker(),
-                List.of(
-                        Pair.of(getIntakeQueue(), "intakeQueue"),
-                        Pair.of(getEventMapper(), "eventMapper"),
-                        Pair.of(getShadowGraph(), "shadowGraph"),
-                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
-                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
-                        Pair.of(swirldStateManager, "swirldStateManager")));
-    }
-
-    /**
      * This observer is called when a system freeze is requested. Permanently stops event creation and gossip.
      *
      * @param reason the reason why the system is being frozen.
@@ -975,6 +1122,15 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         for (final StoppableThread thread : chatterThreads) {
             thread.stop();
         }
+        for (final StoppableThread thread : syncProtocolThreads) {
+            thread.stop();
+        }
+
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        if (syncConfig.syncAsProtocolEnabled()) {
+            gossipHalted.set(true);
+        }
+
         if (syncManager != null) {
             syncManager.haltRequestedObserver(reason);
         }
@@ -1001,135 +1157,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final PreConsensusEventWriter syncWriter = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
         return new AsyncPreConsensusEventWriter(platformContext, threadManager, syncWriter);
-    }
-
-    /**
-     * Creates and wires up all the classes responsible for accepting events from gossip, creating new events, and
-     * routing those events throughout the system.
-     */
-    private void buildEventIntake() {
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-
-        final EventObserverDispatcher dispatcher = new EventObserverDispatcher(
-                new ShadowGraphEventObserver(shadowGraph),
-                consensusRoundHandler,
-                preConsensusEventHandler,
-                eventMapper,
-                addedEventMetrics,
-                criticalQuorum,
-                eventIntakeMetrics,
-                (PreConsensusEventObserver) event -> {
-                    sequencer.assignStreamSequenceNumber(event);
-                    abortAndLogIfInterrupted(
-                            preConsensusEventWriter::writeEvent,
-                            event,
-                            "Interrupted while attempting to enqueue preconsensus event for writing");
-                },
-                (ConsensusRoundObserver) round -> {
-                    abortAndLogIfInterrupted(
-                            preConsensusEventWriter::setMinimumGenerationNonAncient,
-                            round.getGenerations().getMinGenerationNonAncient(),
-                            "Interrupted while attempting to enqueue change in minimum generation non-ancient");
-
-                    final EventImpl keystoneEvent = round.getKeystoneEvent();
-                    preConsensusEventWriter.requestFlush(keystoneEvent);
-                });
-        if (settings.getChatter().isChatterUsed()) {
-            dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
-            dispatcher.addObserver(chatterEventMapper);
-        }
-
-        final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
-
-        final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks = new ArrayList<>();
-        isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
-        if (settings.getChatter().isChatterUsed()) {
-            final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                    parentFinder,
-                    settings.getChatter().getFutureGenerationLimit());
-            metrics.getOrCreate(
-                    new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
-                            .withDescription("the number of events without parents buffered")
-                            .withFormat("%d"));
-            eventLinker = orphanBuffer;
-            // when using chatter an event could be an orphan, in this case it will be stored in the orphan set
-            // when its parents are found, or become ancient, it will move to the shadowgraph
-            // non-orphans are also stored in the shadowgraph
-            // to dedupe, we need to check both
-            isDuplicateChecks.add(orphanBuffer::isOrphan);
-        } else {
-            eventLinker = new InOrderLinker(
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                    parentFinder,
-                    eventMapper::getMostRecentEvent);
-        }
-
-        final EventIntake eventIntake = new EventIntake(
-                selfId, eventLinker, consensusRef::get, initialAddressBook, dispatcher, intakeCycleStats, shadowGraph);
-
-        final EventCreator eventCreator;
-        if (settings.getChatter().isChatterUsed()) {
-            // chatter has a separate event creator in a different thread. having 2 event creators creates the risk
-            // of forking, so a NPE is preferable to a fork
-            eventCreator = null;
-        } else {
-            eventCreator = new EventCreator(
-                    selfId,
-                    PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
-                    consensusRef::get,
-                    swirldStateManager.getTransactionPool(),
-                    eventIntake::addEvent,
-                    eventMapper,
-                    eventMapper,
-                    swirldStateManager.getTransactionPool(),
-                    freezeManager::isFreezeStarted,
-                    new EventCreationRules(List.of()));
-        }
-
-        final List<GossipEventValidator> validators = new ArrayList<>();
-        // it is very important to discard ancient events, otherwise the deduplication will not work, since it doesn't
-        // track ancient events
-        validators.add(new AncientValidator(consensusRef::get));
-        validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
-        validators.add(StaticValidators::isParentDataValid);
-        validators.add(new TransactionSizeValidator(settings.getMaxTransactionBytesPerEvent()));
-        if (settings.isVerifyEventSigs()) {
-            validators.add(new SignatureValidator(initialAddressBook));
-        }
-        final GossipEventValidators eventValidators = new GossipEventValidators(validators);
-
-        /* validates events received from gossip */
-        final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
-
-        final EventTaskDispatcher taskDispatcher = new EventTaskDispatcher(
-                time,
-                eventValidator,
-                eventCreator,
-                eventIntake::addUnlinkedEvent,
-                eventIntakeMetrics,
-                intakeCycleStats);
-
-        final InterruptableConsumer<EventIntakeTask> intakeHandler;
-        if (settings.getChatter().isChatterUsed()) {
-            intakeCycle = new SequenceCycle<>(taskDispatcher::dispatchTask);
-            intakeHandler = intakeCycle;
-        } else {
-            intakeHandler = taskDispatcher::dispatchTask;
-        }
-
-        intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
-                .setNodeId(selfId.getId())
-                .setComponent(PLATFORM_THREAD_POOL_NAME)
-                .setThreadName("event-intake")
-                .setHandler(intakeHandler)
-                .setCapacity(settings.getEventIntakeQueueSize())
-                .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
-                        .get()
-                        .getConfigData(ThreadConfig.class)
-                        .logStackTracePauseDuration())
-                .enableMaxSizeMetric(metrics)
-                .build());
     }
 
     /**
@@ -1168,6 +1195,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final State state, final QueueThread<ReservedSignedState> stateHashSignQueueThread) {
 
         swirldStateManager = PlatformConstructor.swirldStateManager(
+                platformContext,
+                initialAddressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
@@ -1244,9 +1273,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // a genesis event could be created here, but it isn't needed. This member will naturally create an
         // event after their first sync, where the first sync will involve sending no events.
 
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         shadowgraphExecutor.start();
-        shadowgraphSynchronizer = new ShadowGraphSynchronizer(
+        syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 getShadowGraph(),
                 getAddressBook().getSize(),
                 syncMetrics,
@@ -1255,15 +1286,29 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 eventTaskCreator::addEvent,
                 syncManager,
                 shadowgraphExecutor,
-                true,
+                // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
+                !syncConfig.syncAsProtocolEnabled(),
                 () -> {});
 
-        final Runnable stopGossip = settings.getChatter().isChatterUsed()
-                ? chatterCore::stopChatter
-                // wait and acquire all sync ongoing locks and release them immediately
-                // this will ensure any ongoing sync are finished before we start reconnect
-                // no new sync will start because we have a fallen behind status
-                : getSimultaneousSyncThrottle()::waitForAllSyncsToFinish;
+        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
+
+        final Runnable stopGossip;
+        if (settings.getChatter().isChatterUsed()) {
+            stopGossip = chatterCore::stopChatter;
+        } else if (syncConfig.syncAsProtocolEnabled()) {
+            stopGossip = () -> {
+                gossipHalted.set(true);
+                // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
+                // we've fallen behind
+                syncPermitProvider.waitForAllSyncsToFinish();
+            };
+        } else {
+            // wait and acquire all sync ongoing locks and release them immediately
+            // this will ensure any ongoing sync are finished before we start reconnect
+            // no new sync will start because we have a fallen behind status
+            stopGossip = getSimultaneousSyncThrottle()::waitForAllSyncsToFinish;
+        }
+
         reconnectHelper = new ReconnectHelper(
                 stopGossip,
                 clearAllPipelines,
@@ -1305,6 +1350,16 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     PAUSE_ALERT_INTERVAL / 2);
         }
 
+        // FUTURE WORK: validate that status is still STARTING_UP (sanity check until we refactor platform status)
+        // FUTURE WORK: set platform status REPLAYING_EVENTS
+        // FUTURE WORK: replay the preconsensus event stream
+        // FUTURE WORK: validate that status is still REPLAYING_EVENTS (sanity check until we refactor platform status)
+        abortAndThrowIfInterrupted(
+                preConsensusEventWriter::beginStreamingNewEvents,
+                "interrupted while attempting to begin streaming new preconsensus events");
+        // FUTURE WORK: set platform status READY
+        // FUTURE WORK: start gossip & new event creation here
+
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
         checkPlatformStatus();
@@ -1318,6 +1373,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @return an instance that maintains connection managers for all connections to neighbors
      */
     public StaticConnectionManagers startCommonNetwork() {
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
         final SocketFactory socketFactory = PlatformConstructor.socketFactory(
                 crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));
         // create an instance that can create new outbound connections
@@ -1327,7 +1384,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this,
                 socketFactory,
                 initialAddressBook,
-                !settings.getChatter().isChatterUsed(),
+                // only do a version check for old-style sync
+                !settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled(),
                 appVersion);
         final StaticConnectionManagers connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
@@ -1336,7 +1394,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 initialAddressBook,
                 connectionManagers::newConnection,
                 StaticSettingsProvider.getSingleton(),
-                !settings.getChatter().isChatterUsed(),
+                // only do a version check for old-style sync
+                !settings.getChatter().isChatterUsed() && !syncConfig.syncAsProtocolEnabled(),
                 appVersion);
         // allow other members to create connections to me
         final Address address = getSelfAddress();
@@ -1362,6 +1421,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * separate event creation thread.
      */
     public void startChatterNetwork() {
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
@@ -1410,9 +1470,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setOtherNodeId(otherId.getId())
                     .setThreadName("ChatterReader")
-                    .setHangingThreadPeriod(chatterConfig.hangingThreadDuration())
+                    .setHangingThreadPeriod(basicConfig.hangingThreadDuration())
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
+                            chatterConfig.sleepAfterFailedNegotiation(),
                             List.of(
                                     new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
                                     new VersionCompareHandshake(
@@ -1469,6 +1530,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         new AncientParentsRule(consensusRef::get),
                         criticalQuorum));
         final ChatterEventCreator chatterEventCreator = new ChatterEventCreator(
+                appVersion,
                 selfId,
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
                 swirldStateManager.getTransactionPool(),
@@ -1514,7 +1576,16 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * Constructs and starts all networking components needed for a sync network to run: heartbeats, callers, listeners
      */
     public void startSyncNetwork() {
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
+
+        if (syncConfig.syncAsProtocolEnabled()) {
+            reconnectController.set(
+                    new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false)));
+            startSyncAsProtocolNetwork(connectionManagers);
+            return;
+        }
 
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
         final MultiProtocolResponder protocolHandlers = new MultiProtocolResponder(List.of(
@@ -1522,10 +1593,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         UnidirectionalProtocols.SYNC.getInitialByte(),
                         new SyncProtocolResponder(
                                 simultaneousSyncThrottle,
-                                shadowgraphSynchronizer,
+                                syncShadowgraphSynchronizer,
                                 syncManager,
-                                syncManager::shouldAcceptSync,
-                                syncMetrics)),
+                                syncManager::shouldAcceptSync)),
                 ProtocolMapping.map(
                         UnidirectionalProtocols.RECONNECT.getInitialByte(),
                         new ReconnectProtocolResponder(
@@ -1572,6 +1642,107 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
+     * Starts sync as a protocol network, with work managed by a {@link NegotiatorThread}
+     * <p>
+     * Starting sync with this method supports emergency reconnect
+     *
+     * @param connectionManagers the constructed connection managers
+     */
+    private void startSyncAsProtocolNetwork(@NonNull final StaticConnectionManagers connectionManagers) {
+        Objects.requireNonNull(connectionManagers);
+
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
+        final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
+
+        // if this is a single node network, start dedicated thread to "sync" and create events
+        if (initialAddressBook.getSize() == 1) {
+            syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
+                    .setPriority(Thread.NORM_PRIORITY)
+                    .setNodeId(selfId.getId())
+                    .setComponent(PLATFORM_THREAD_POOL_NAME)
+                    .setOtherNodeId(selfId.getId())
+                    .setThreadName("SingleNodeNetworkSync")
+                    .setHangingThreadPeriod(hangingThreadDuration)
+                    .setWork(new SingleNodeNetworkSync(
+                            this::checkPlatformStatus,
+                            eventTaskCreator::createEvent,
+                            this::getSleepAfterSync,
+                            selfId.getId()))
+                    .build(true));
+
+            return;
+        }
+
+        // If we still need an emergency recovery state, we need it via emergency reconnect.
+        // Start the helper now so that it is ready to receive a connection to perform reconnect with when the
+        // protocol is initiated.
+        if (emergencyRecoveryManager.isEmergencyStateRequired()) {
+            reconnectController.get().start();
+        }
+
+        final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
+                () -> !gossipHalted.get(), () -> intakeQueue.size() < settings.getEventIntakeQueueThrottleSize()));
+
+        for (final NodeId otherId : topology.getNeighbors()) {
+            syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
+                    .setPriority(Thread.NORM_PRIORITY)
+                    .setNodeId(selfId.getId())
+                    .setComponent(PLATFORM_THREAD_POOL_NAME)
+                    .setOtherNodeId(otherId.getId())
+                    .setThreadName("SyncProtocolWith" + otherId.getId())
+                    .setHangingThreadPeriod(hangingThreadDuration)
+                    .setWork(new NegotiatorThread(
+                            connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
+                            syncConfig.syncSleepAfterFailedNegotiation(),
+                            List.of(
+                                    new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
+                                    new VersionCompareHandshake(
+                                            PlatformVersion.locateOrDefault(),
+                                            !settings.isGossipWithDifferentVersions())),
+                            new NegotiationProtocols(List.of(
+                                    new HeartbeatProtocol(
+                                            otherId,
+                                            Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()),
+                                            networkMetrics,
+                                            time),
+                                    new EmergencyReconnectProtocol(
+                                            threadManager,
+                                            notificationEngine,
+                                            otherId,
+                                            emergencyRecoveryManager,
+                                            reconnectThrottle,
+                                            stateManagementComponent,
+                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectMetrics,
+                                            reconnectController.get()),
+                                    new ReconnectProtocol(
+                                            threadManager,
+                                            otherId,
+                                            reconnectThrottle,
+                                            () -> stateManagementComponent.getLatestSignedState(
+                                                    "SwirldsPlatform: ReconnectProtocol"),
+                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectMetrics,
+                                            reconnectController.get(),
+                                            new DefaultSignedStateValidator(),
+                                            fallenBehindManager),
+                                    new SyncProtocol(
+                                            otherId,
+                                            syncShadowgraphSynchronizer,
+                                            fallenBehindManager,
+                                            syncPermitProvider,
+                                            criticalQuorum,
+                                            peerAgnosticSyncChecks,
+                                            Duration.ofMillis(getSleepAfterSync()),
+                                            syncMetrics,
+                                            time)))))
+                    .build(true));
+        }
+    }
+
+    /**
      * Spawn a thread to initiate syncs with other users
      */
     private void spawnSyncCaller(final int callerNumber) {
@@ -1607,7 +1778,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * @return the SyncManager used by this platform
      */
-    SyncManagerImpl getSyncManager() {
+    public SyncManagerImpl getSyncManager() {
         return syncManager;
     }
 
@@ -1630,7 +1801,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * @return locks used to synchronize usage of outbound connections
      */
-    SharedConnectionLocks getSharedConnectionLocks() {
+    public SharedConnectionLocks getSharedConnectionLocks() {
         return sharedConnectionLocks;
     }
 
@@ -1672,7 +1843,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * Checks the status of the platform and notifies the SwirldMain if there is a change in status
      */
-    void checkPlatformStatus() {
+    public void checkPlatformStatus() {
         final int numNodes = initialAddressBook.getSize();
 
         synchronized (currentPlatformStatus) {
@@ -1756,8 +1927,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
     /** {@inheritDoc} */
     @Override
-    public boolean createTransaction(final byte[] trans) {
-        return transactionSubmitter.submitTransaction(new SwirldTransaction(trans));
+    public boolean createTransaction(@NonNull final byte[] transaction) {
+        return transactionSubmitter.submitTransaction(new SwirldTransaction(transaction));
     }
 
     /**
@@ -1977,10 +2148,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * @return the platform instance of the {@link ShadowGraphSynchronizer}
+     * @return the platform instance of the {@link ShadowGraphSynchronizer} used for sync
      */
-    public ShadowGraphSynchronizer getShadowGraphSynchronizer() {
-        return shadowgraphSynchronizer;
+    public ShadowGraphSynchronizer getSyncShadowGraphSynchronizer() {
+        return syncShadowgraphSynchronizer;
     }
 
     /**

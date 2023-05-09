@@ -117,7 +117,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      version("hapi-version", "0.37.0-allowance-SNAPSHOT")
+      version("hapi-version", "0.38.1-allowance-SNAPSHOT")
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.5.1")
@@ -144,7 +144,7 @@ dependencyResolutionManagement {
       version("netty-version", "4.1.66.Final")
       version("protobuf-java-version", "3.19.4")
       version("slf4j-version", "2.0.3")
-      version("swirlds-version", "0.38.0-adhoc.xb74a8ba8")
+      version("swirlds-version", "0.38.0-alpha.3")
       version("tuweni-version", "2.2.0")
       version("jna-version", "5.12.1")
       version("jsr305-version", "3.0.2")
@@ -269,6 +269,7 @@ dependencyResolutionManagement {
       version("hamcrest-version", "2.2")
       version("json-version", "20210307")
       version("junit5-version", "5.9.0")
+      version("junit-pioneer-version", "2.0.1")
       version("helidon-version", "3.0.2")
       version("mockito-version", "4.6.1")
       version("picocli-version", "4.6.3")
@@ -287,6 +288,7 @@ dependencyResolutionManagement {
               "junit-jupiter",
               "junit-jupiter-api",
               "junit-jupiter-params",
+              "junit-pioneer",
               "mockito-inline",
               "mockito-jupiter",
               "hamcrest",
@@ -307,6 +309,8 @@ dependencyResolutionManagement {
           .versionRef("junit5-version")
       library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params")
           .versionRef("junit5-version")
+      library("junit-pioneer", "org.junit-pioneer", "junit-pioneer")
+          .versionRef("junit-pioneer-version")
       library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
       library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter")
           .versionRef("mockito-version")

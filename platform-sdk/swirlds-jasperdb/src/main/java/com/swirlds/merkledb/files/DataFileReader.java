@@ -67,6 +67,8 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     private final AtomicInteger fileChannelsCount = new AtomicInteger(0);
     /** Number of file channels currently in use by all threads working with this data file reader */
     private final AtomicInteger fileChannelsInUse = new AtomicInteger(0);
+    /** Indicates whether this file reader is open */
+    private final AtomicBoolean open = new AtomicBoolean(true);
     /** The path to the file on disk */
     private final Path path;
     /** The metadata for this file read from the footer */
@@ -265,12 +267,12 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      * @return True if file is open for reading
      */
     public boolean isOpen() {
-        final FileChannel fileChannel = fileChannels.get(0);
-        return fileChannel != null && fileChannel.isOpen();
+        return open.get();
     }
 
     /** Close this data file, it can not be used once closed. */
     public void close() throws IOException {
+        open.set(false);
         for (int i = 0; i < MAX_FILE_CHANNELS; i++) {
             final FileChannel fileChannel = fileChannels.getAndSet(i, null);
             if (fileChannel != null) {
@@ -286,7 +288,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      * Opens a new file channel for reading the file, if the total number of channels opened is
      * less than {@link #MAX_FILE_CHANNELS}. This method is safe to call from multiple threads.
      *
-     * @param index Index of the new file channel. If greater or equal to {@link}
+     * @param index Index of the new file channel. If greater or equal to {@link
      *                            #MAX_FILE_CHANNELS}, no new channel is opened
      * @throws IOException
      *      If an I/O error occurs
@@ -327,7 +329,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     }
 
     /**
-     * Returns an index of an opened file channel to reading data. Opens a new file channel, if
+     * Returns an index of an opened file channel to read data. Opens a new file channel, if
      * possible, when the number of file channels currently in use is much greater than the number
      * of opened file channels.
      *
@@ -340,7 +342,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         final int inUse = fileChannelsInUse.incrementAndGet();
         // Although openNewFileChannel() is thread safe, it makes sense to check the count here.
         // Since the channels are never closed (other than when the data file reader is closed),
-        // it's safe to check count against MAX_FC
+        // it's safe to check count against MAX_FILE_CHANNELS
         if ((inUse / count > THREADS_PER_FILECHANNEL) && (count < MAX_FILE_CHANNELS)) {
             openNewFileChannel(count);
             count = fileChannelsCount.get();

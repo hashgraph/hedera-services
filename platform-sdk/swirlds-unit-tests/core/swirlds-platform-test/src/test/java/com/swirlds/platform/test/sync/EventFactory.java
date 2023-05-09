@@ -18,11 +18,12 @@ package com.swirlds.platform.test.sync;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.sync.ShadowEvent;
 import java.time.Instant;
 import java.util.Random;
 
@@ -51,6 +52,7 @@ public class EventFactory {
 
     public static EventImpl makeEvent(final EventImpl selfParent, final EventImpl otherParent) {
         final BaseEventHashedData hashedEventData = new BaseEventHashedData(
+                new BasicSoftwareVersion(1),
                 selfParent != null ? selfParent.getCreatorId() : 0,
                 (selfParent != null ? selfParent.getGeneration() : EventConstants.GENERATION_UNDEFINED),
                 (otherParent != null ? otherParent.getGeneration() : EventConstants.GENERATION_UNDEFINED),

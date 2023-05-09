@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -290,6 +291,15 @@ public class PreConsensusEventFileManager {
      */
     public @NonNull Iterator<PreConsensusEventFile> getFileIterator(
             final long minimumGeneration, final boolean requireMinimumGeneration) {
+
+        if (files.size() == 0) {
+            if (requireMinimumGeneration) {
+                throw new IllegalStateException("No event files are available, cannot iterate over events");
+            } else {
+                return Collections.emptyIterator();
+            }
+        }
+
         try {
             // Returns the index of the last file with a maximum generation that is
             // less than or equal to the minimum requested generation.
@@ -421,18 +431,28 @@ public class PreConsensusEventFileManager {
     }
 
     /**
-     * The event file writer calls this method when it finishes writing an event file. This allows metrics to be
-     * updated.
+     * The event file writer calls this method when it finishes writing an event file.
      *
      * @param file the file that has been completely written
      */
     public void finishedWritingFile(@NonNull final PreConsensusEventMutableFile file) {
-        totalFileByteCount += file.fileSize();
 
+        final long previousFileHighestGeneration;
+        if (files.size() == 1) {
+            previousFileHighestGeneration = 0;
+        } else {
+            previousFileHighestGeneration = files.get(files.size() - 2).maximumGeneration();
+        }
+
+        // Compress the generational span of the file. Reduces overlap between files.
+        final PreConsensusEventFile compressedDescriptor = file.compressGenerationalSpan(previousFileHighestGeneration);
+        files.set(files.size() - 1, compressedDescriptor);
+
+        // Update metrics
+        totalFileByteCount += file.fileSize();
         metrics.getPreconsensusEventFileRate().cycle();
         metrics.getPreconsensusEventAverageFileSpan().update(file.getGenerationalSpan());
         metrics.getPreconsensusEventAverageUnUtilizedFileSpan().update(file.getUnUtilizedGenerationalSpan());
-
         updateFileSizeMetrics();
     }
 

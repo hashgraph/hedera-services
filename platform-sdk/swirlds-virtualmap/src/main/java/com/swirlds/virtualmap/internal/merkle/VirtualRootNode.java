@@ -77,6 +77,7 @@ import com.swirlds.virtualmap.internal.reconnect.ReconnectHashListener;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectState;
 import com.swirlds.virtualmap.internal.reconnect.VirtualLearnerTreeView;
 import com.swirlds.virtualmap.internal.reconnect.VirtualTeacherTreeView;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.ClosedByInterruptException;
@@ -86,6 +87,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -235,7 +237,17 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * If true, then this copy of {@link VirtualRootNode} should eventually be flushed to disk. A heuristic is
      * used to determine which copy is flushed.
      */
-    private boolean shouldBeFlushed;
+    private final AtomicBoolean shouldBeFlushed = new AtomicBoolean(false);
+
+    /**
+     * Flush threshold. If greater than zero, then this virtual root will be flushed to disk, if
+     * its estimated size exceeds the threshold. If this virtual root is explicitly requested to flush,
+     * the threshold is not taken into consideration.
+     *
+     * By default, the threshold is set to {@link VirtualMapSettings#getCopyFlushThreshold()}. The
+     * threshold is inherited by all copies.
+     */
+    private final AtomicLong flushThreshold = new AtomicLong();
 
     /**
      * This latch is used to implement {@link #waitUntilFlushed()}.
@@ -292,45 +304,40 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private VirtualMapStatistics statistics;
 
     /**
-     * Required by the {@link com.swirlds.common.constructable.RuntimeConstructable} contract.
-     * This can <strong>only</strong> be called as part of serialization, not for normal use.
+     * Creates a new empty root node. This constructor is used for deserialization and
+     * reconnects, not for normal use.
      */
     public VirtualRootNode() {
-        this(null, false); // FUTURE WORK https://github.com/swirlds/swirlds-platform/issues/4188
-    }
-
-    /**
-     * Create a new {@link VirtualMap} using the provided data source.
-     *
-     * @param dataSourceBuilder
-     * 		The data source builder. Must not be null.
-     */
-    public VirtualRootNode(final VirtualDataSourceBuilder<K, V> dataSourceBuilder) {
-        this(dataSourceBuilder, true);
-    }
-
-    /**
-     * Create an instance.
-     *
-     * @param dataSourceBuilder
-     * 		The datasource builder.
-     * @param enforce
-     * 		Whether to enforce the data source and state being non-null.
-     */
-    private VirtualRootNode(final VirtualDataSourceBuilder<K, V> dataSourceBuilder, final boolean enforce) {
         this.fastCopyVersion = 0;
-        this.cache = new VirtualNodeCache<>();
+        // Hasher is required during reconnects
         this.hasher = new VirtualHasher<>();
-        this.shouldBeFlushed = false;
-        this.dataSourceBuilder = enforce ? Objects.requireNonNull(dataSourceBuilder) : dataSourceBuilder;
+        this.flushThreshold.set(settings.getCopyFlushThreshold());
+        // All other fields are initialized in postInit()
     }
 
     /**
-     * Create a copy of the given source.
+     * Creates a new root node using the provided data source builder to create node's
+     * virtual data source.
      *
-     * @param source
-     * 		must not be null.
+     * @param dataSourceBuilder data source builder, must not be null
      */
+    public VirtualRootNode(final @NonNull VirtualDataSourceBuilder<K, V> dataSourceBuilder) {
+        this.fastCopyVersion = 0;
+        this.hasher = new VirtualHasher<>();
+        this.flushThreshold.set(settings.getCopyFlushThreshold());
+        Objects.requireNonNull(dataSourceBuilder);
+        this.dataSourceBuilder = dataSourceBuilder;
+        // All other fields are initialized in postInit()
+    }
+
+    /**
+     * Creates a copy of the given virtual root node. The created root node shares most
+     * attributes with the source (hasher, data source, cache, pipeline, etc.) Created
+     * copy's fast copy version is set to source' version + 1.
+     *
+     * @param source virtual root to copy, must not be null
+     */
+    @SuppressWarnings("CopyConstructorMissesField")
     private VirtualRootNode(VirtualRootNode<K, V> source) {
         super(source);
         this.fastCopyVersion = source.fastCopyVersion + 1;
@@ -346,22 +353,20 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         this.learnerTreeView = null;
         this.maxSizeReachedTriggeringWarning = source.maxSizeReachedTriggeringWarning;
         this.pipeline = source.pipeline;
+        this.flushThreshold.set(source.flushThreshold.get());
+        this.statistics = source.statistics;
 
         if (this.pipeline.isTerminated()) {
             throw new IllegalStateException("A fast-copy was made of a VirtualRootNode with a terminated pipeline!");
         }
 
-        // These three will be set in postInit. This is very unfortunate, but stems from the
-        // way serialization / deserialization are implemented which requires partially constructed objects.
-        this.state = null;
-        this.shouldBeFlushed = false;
-        this.records = null;
-
-        this.statistics = source.statistics;
+        // All other fields are initialized in postInit()
     }
 
     /**
-     * Sets the {@link VirtualStateAccessor}. This is called during copy, and also during reconnect.
+     * Sets the {@link VirtualStateAccessor}. This method is called when this root node
+     * is added as a child to its virtual map. It happens when virtual maps are created
+     * from scratch, or during deserialization. It's also called after learner reconnects.
      *
      * @param state
      * 		The accessor. Cannot be null.
@@ -373,20 +378,21 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             fullyReconnectedState = state;
             return;
         }
-
+        if (this.cache == null) {
+            this.cache = new VirtualNodeCache<>();
+        }
         this.state = Objects.requireNonNull(state);
-        this.shouldBeFlushed = fastCopyVersion != 0 && fastCopyVersion % settings.getFlushInterval() == 0;
-        if (this.dataSourceBuilder != null && this.dataSource == null) {
+        updateShouldBeFlushed();
+        Objects.requireNonNull(dataSourceBuilder);
+        if (this.dataSource == null) {
             this.dataSource = this.dataSourceBuilder.build(state.getLabel(), true);
         }
         this.records = new RecordAccessorImpl<>(this.state, this.cache, this.dataSource);
-
         if (statistics == null) {
             // Only create statistics instance if we don't yet have statistics. During a reconnect operation.
             // it is necessary to use the statistics object from the previous instance of the state.
             this.statistics = new VirtualMapStatistics(state.getLabel());
         }
-
         // At this point in time the copy knows if it should be flushed or merged, and so it is safe
         // to register with the pipeline.
         if (pipeline == null) {
@@ -532,7 +538,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     @Override
     protected void destroyNode() {
         if (pipeline != null) {
-            pipeline.destroyCopy();
+            pipeline.destroyCopy(this);
         }
     }
 
@@ -830,6 +836,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         if (statistics != null) {
             statistics.recordMergeLatency(end - (double) start);
         }
+        logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Merged in {} ms", end - start);
     }
 
     /**
@@ -848,14 +855,42 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * If called, this copy of the map will eventually be flushed.
      */
     public void enableFlush() {
-        this.shouldBeFlushed = true;
+        this.shouldBeFlushed.set(true);
+    }
+
+    /**
+     * Sets flush threshold for this virtual root. When a copy of this virtual root is created,
+     * it inherits the threshold value.
+     *
+     * If this virtual root is explicitly marked to flush using {@link #enableFlush()}, changing
+     * flush threshold doesn't have any effect.
+     *
+     * @param value The flush threshold, in bytes
+     */
+    public void setFlushThreshold(long value) {
+        flushThreshold.set(value);
+        updateShouldBeFlushed();
+    }
+
+    /**
+     * Gets flush threshold for this virtual root.
+     *
+     * @return The flush threshold, in bytes
+     */
+    long getFlushThreshold() {
+        return flushThreshold.get();
     }
 
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean shouldBeFlushed() {
-        return shouldBeFlushed;
+        if (shouldBeFlushed.get()) {
+            return true;
+        }
+        final long threshold = flushThreshold.get();
+        return (threshold > 0) && (estimatedSize() >= threshold);
     }
 
     /**
@@ -864,6 +899,17 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     @Override
     public boolean isFlushed() {
         return flushed.get();
+    }
+
+    /**
+     * If flush threshold isn't set for this virtual root, marks the root to flush based on
+     * {@link VirtualMapSettings#getFlushInterval()} setting.
+     */
+    private void updateShouldBeFlushed() {
+        if (flushThreshold.get() <= 0) {
+            // If copy size flush threshold is not set, use flush interval
+            this.shouldBeFlushed.set(fastCopyVersion != 0 && fastCopyVersion % settings.getFlushInterval() == 0);
+        }
     }
 
     /**
@@ -941,6 +987,14 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         }
     }
 
+    @Override
+    public long estimatedSize() {
+        final long estimatedDirtyLeavesCount =
+                cache.estimatedDirtyLeavesCount(state.getFirstLeafPath(), state.getLastLeafPath());
+        final long estimatedInternalsCount = cache.estimatedInternalsCount(state.getFirstLeafPath());
+        return dataSource.estimatedSize(estimatedInternalsCount, estimatedDirtyLeavesCount);
+    }
+
     /*
      * Serialization implementation
      **/
@@ -950,10 +1004,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public void serialize(final SerializableDataOutputStream out, final Path outputDirectory) throws IOException {
-
         final RecordAccessor<K, V> detachedRecords = pipeline.detachCopy(this, outputDirectory);
         assert detachedRecords.getDataSource() == null : "No data source should be created.";
-
         out.writeNormalisedString(state.getLabel());
         out.writeSerializable(dataSourceBuilder, true);
         out.writeSerializable(detachedRecords.getCache(), true);
@@ -1432,6 +1484,11 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         }
 
         return false;
+    }
+
+    @Override
+    public long getFastCopyVersion() {
+        return cache.getFastCopyVersion();
     }
 
     /*

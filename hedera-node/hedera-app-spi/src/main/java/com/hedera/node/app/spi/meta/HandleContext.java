@@ -64,6 +64,18 @@ public interface HandleContext {
     ExpiryValidator expiryValidator();
 
     /**
+     * Create a new store given the store's interface. This gives read-only access to the store.
+     *
+     * @param storeInterface The store interface to find and create a store for
+     * @return An implementation of store interface provided, or null if the store
+     * @param <C> Interface class for a Store
+     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
+     * @throws NullPointerException if {@code clazz} is {@code null}
+     */
+    @NonNull
+    <C> C createReadableStore(@NonNull Class<C> storeInterface);
+
+    /**
      * Gets the {@link SignatureVerification} for the given key. If this key was not provided during
      * pre-handle, then there will be no corresponding {@link SignatureVerification}. If the key was provided during
      * pre-handle, then the corresponding {@link SignatureVerification} will be returned with the result of that
