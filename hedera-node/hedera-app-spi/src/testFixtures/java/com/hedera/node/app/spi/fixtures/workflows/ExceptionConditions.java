@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.fixtures.workflows;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,8 +33,8 @@ public class ExceptionConditions {
     private ExceptionConditions() {}
 
     /**
-     * Returns a {@link Condition} that asserts that the {@link PreCheckException} has the given
-     * {@link ResponseCodeEnum}.
+     * Returns a {@link Condition} that asserts that the {@link PreCheckException} or
+     * {@link HandleException} has the given {@link ResponseCodeEnum}.
      * <p>
      * The type of the {@link Condition} is {@link Throwable} because
      * {@link org.assertj.core.api.Assertions#assertThatThrownBy(ThrowingCallable)} expects a
@@ -52,6 +53,9 @@ public class ExceptionConditions {
         return e -> {
             if (e instanceof PreCheckException exception) {
                 return exception.responseCode() == responseCode;
+            }
+            if (e instanceof HandleException exception) {
+                return exception.getStatus() == responseCode;
             }
             return false;
         };

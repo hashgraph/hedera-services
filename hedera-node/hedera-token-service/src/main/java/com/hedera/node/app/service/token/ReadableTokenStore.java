@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -36,7 +35,7 @@ public interface ReadableTokenStore {
      * @return token's metadata
      */
     @Nullable
-    TokenMetadata getTokenMeta(@NonNull TokenID id) throws PreCheckException;
+    TokenMetadata getTokenMeta(@NonNull TokenID id);
 
     record TokenMetadata(
             @Nullable Key adminKey,
