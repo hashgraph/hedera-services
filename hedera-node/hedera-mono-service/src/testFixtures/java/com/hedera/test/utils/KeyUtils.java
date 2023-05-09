@@ -57,6 +57,13 @@ public class KeyUtils {
                             KEY_BUILDER.apply(B_NAME).build(),
                             KEY_BUILDER.apply(C_NAME).build()))
             .build();
+    public static final Key B_KEY_LIST = Key.newBuilder()
+            .keyList(KeyList.newBuilder()
+                    .keys(
+                            KEY_BUILDER.apply(A_NAME).build(),
+                            KEY_BUILDER.apply(B_NAME).build(),
+                            KEY_BUILDER.apply(C_NAME).build()))
+            .build();
     public static final Key A_COMPLEX_KEY = Key.newBuilder()
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)

@@ -16,9 +16,25 @@
 
 package com.hedera.node.app.service.file.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.node.app.service.file.impl.utils.FileUtils.validateContent;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.file.FileCreateTransactionBody;
+import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.config.FileServiceConfig;
+import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.validation.ExpiryMeta;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,10 +51,26 @@ public class FileCreateHandler implements TransactionHandler {
         // Exists for injection
     }
 
+    /**
+     * This method is called during the pre-handle workflow.
+     *
+     * <p>Determines signatures needed for create a file
+     *
+     * @param context the {@link PreHandleContext} which collects all information
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+
+        final var op = context.body().fileCreateOrThrow();
+
+        final var candidate = Key.newBuilder().keyList(op.keys()).build();
+        if (op.hasKeys()) context.requireKey(candidate);
+
+        if (!op.hasExpirationTime()) {
+            throw new PreCheckException(INVALID_EXPIRATION_TIME);
+        }
     }
 
     /**
@@ -49,7 +81,69 @@ public class FileCreateHandler implements TransactionHandler {
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle() {
-        throw new UnsupportedOperationException("Not implemented");
+    public void handle(
+            @NonNull final HandleContext handleContext,
+            @NonNull final FileCreateTransactionBody fileCreateTransactionBody,
+            @NonNull final FileServiceConfig fileServiceConfig,
+            @NonNull final CreateFileRecordBuilder recordBuilder,
+            @NonNull final WritableFileStoreImpl fileStore) {
+        requireNonNull(handleContext);
+        requireNonNull(fileCreateTransactionBody);
+        requireNonNull(fileServiceConfig);
+        requireNonNull(recordBuilder);
+        requireNonNull(fileStore);
+
+        final var builder = new File.Builder();
+
+        if (fileCreateTransactionBody.hasKeys()) {
+            builder.keys(fileCreateTransactionBody.keys());
+        }
+
+        /* Validate if the current file can be created */
+        if (fileStore.sizeOfState() >= fileServiceConfig.maxNum()) {
+            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        }
+
+        var expiry = fileCreateTransactionBody.hasExpirationTime()
+                ? fileCreateTransactionBody.expirationTimeOrThrow().seconds()
+                : NA;
+        final var entityExpiryMeta = new ExpiryMeta(
+                expiry,
+                NA,
+                // Shard and realm will be ignored if num is NA
+                NA,
+                NA,
+                NA);
+
+        try {
+            final var effectiveExpiryMeta =
+                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
+            builder.expirationTime(effectiveExpiryMeta.expiry());
+
+            handleContext.attributeValidator().validateMemo(fileCreateTransactionBody.memo());
+            builder.memo(fileCreateTransactionBody.memo());
+
+            builder.keys(fileCreateTransactionBody.keys());
+            builder.fileNumber(handleContext.newEntityNumSupplier().getAsLong());
+            validateContent(PbjConverter.asBytes(fileCreateTransactionBody.contents()), fileServiceConfig);
+            builder.contents(fileCreateTransactionBody.contents());
+
+            final var file = builder.build();
+            fileStore.put(file);
+
+            recordBuilder.setCreatedFile(file.fileNumber());
+        } catch (final HandleException e) {
+            if (e.getStatus() == INVALID_EXPIRATION_TIME) {
+                // Since for some reason CreateTransactionBody does not have an expiration time,
+                // it makes more sense to propagate AUTORENEW_DURATION_NOT_IN_RANGE
+                throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE, e);
+            }
+            throw e;
+        }
+    }
+
+    @Override
+    public CreateFileRecordBuilder newRecordBuilder() {
+        return new CreateFileRecordBuilder();
     }
 }

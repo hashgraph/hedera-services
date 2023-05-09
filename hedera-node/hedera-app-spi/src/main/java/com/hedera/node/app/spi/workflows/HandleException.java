@@ -34,6 +34,11 @@ public class HandleException extends RuntimeException {
         this.status = status;
     }
 
+    public HandleException(final ResponseCodeEnum status, Throwable originalCause) {
+        super(originalCause);
+        this.status = status;
+    }
+
     public ResponseCodeEnum getStatus() {
         return status;
     }
