@@ -60,7 +60,6 @@ dependencies {
   jmhImplementation(project(":hedera-node:hedera-app"))
   jmhImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   jmhImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-  //  jmhAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.36")
 
   itestImplementation(project(":hedera-node:hapi"))
   itestImplementation(testFixtures(project(":hedera-node:hapi")))
