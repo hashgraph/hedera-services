@@ -81,16 +81,20 @@ public enum SemanticVersions {
                 final var bootstrapIn =
                         SemanticVersions.class.getClassLoader().getResourceAsStream(bootstrapPropertiesFile)) {
             final var props = new Properties();
-            final var bootstrapProperties = new Properties();
             props.load(in);
             log.info("Discovered semantic versions {} from resource '{}'", props, propertiesFile);
+
+            // construct semantic versions from "semantic-version.properties" file.
             final var protoSemVer = asSemVer((String) props.get(protoKey));
             final var hederaSemVer = asSemVer((String) props.get(servicesKey));
 
+            final var bootstrapProperties = new Properties();
             bootstrapProperties.load(bootstrapIn);
             final var configVersion = (String) bootstrapProperties.get(configKey);
             log.info("Discovered configuration version {} from resource '{}'", configVersion, bootstrapPropertiesFile);
 
+            // append the build portion of semver with the configurable property "hedera.config.version"
+            // This is needed only for internal use to do config-only upgrades.
             final var hederaSemVerWithConfig = addConfigVersionToBuild(configVersion, hederaSemVer);
             return new ActiveVersions(protoSemVer, hederaSemVerWithConfig);
         } catch (final Exception surprising) {
@@ -108,6 +112,15 @@ public enum SemanticVersions {
         }
     }
 
+    /**
+     * Appends the build portion of semver from the configurable property {@code hedera.config.version}.
+     * If the configured value is empty or 0, then the original semver is returned.
+     * This is needed only for internal use to do config-only upgrades.
+     *
+     * @param configVersion the configured value
+     * @param hederaSemVer the original semver
+     * @return the semver with the build portion appended
+     */
     private static SemanticVersion addConfigVersionToBuild(
             @NonNull final String configVersion, @NonNull final SemanticVersion hederaSemVer) {
         if (!configVersion.isEmpty() && !configVersion.equals("0")) {

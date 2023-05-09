@@ -299,7 +299,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private LegacyContractIdActivations legacyContractIdActivations;
     private int sumOfConsensusWeights;
     private int cacheWarmThreads;
-    private String configVersion;
+    private int configVersion;
 
     @Inject
     public GlobalDynamicProperties(final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
@@ -452,7 +452,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         maxAutoAssociations = properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS);
         sumOfConsensusWeights = properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS);
         cacheWarmThreads = properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS);
-        configVersion = properties.getStringProperty(CONFIG_VERSION);
+        configVersion = properties.getIntProperty(CONFIG_VERSION);
     }
 
     public int sumOfConsensusWeights() {
@@ -968,7 +968,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         return cacheWarmThreads;
     }
 
-    public String configVersion() {
+    public int configVersion() {
         return configVersion;
     }
 }

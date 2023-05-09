@@ -32,6 +32,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.spi.config.PropertyNames.CONFIG_VERSION;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
@@ -283,6 +284,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(79, subject.recordSignatureFileVersion());
         assertEquals(98, subject.sumOfConsensusWeights());
         assertEquals(99, subject.cacheCryptoTransferWarmThreads());
+        assertEquals(100, subject.configVersion());
     }
 
     @Test
@@ -460,6 +462,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(90, subject.getSidecarMaxSizeMb());
         assertEquals(99, subject.sumOfConsensusWeights());
         assertEquals(100, subject.cacheCryptoTransferWarmThreads());
+        assertEquals(101, subject.configVersion());
     }
 
     @Test
@@ -697,6 +700,7 @@ class GlobalDynamicPropertiesTest {
         given(properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS)).willReturn(i + 96);
         given(properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS)).willReturn(i + 97);
         given(properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS)).willReturn(i + 98);
+        given(properties.getIntProperty(CONFIG_VERSION)).willReturn(i + 99);
     }
 
     private Set<EntityType> typesFor(final int i) {
