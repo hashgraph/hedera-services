@@ -756,7 +756,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             }
 
             intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
-                    .setNodeId(selfId.getId())
+                    .setNodeId(selfId.id())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setThreadName("event-intake")
                     .setHandler(intakeHandler)
