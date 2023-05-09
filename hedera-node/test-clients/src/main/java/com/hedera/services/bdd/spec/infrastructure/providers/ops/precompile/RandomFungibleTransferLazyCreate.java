@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
@@ -27,7 +28,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.regression.factories.LazyCreatePrecompileFuzzingFactory.*;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.getEvmAddressFromString;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
@@ -83,11 +84,12 @@ public class RandomFungibleTransferLazyCreate implements OpProvider {
             if (!hapiGetTxnRecord.getChildRecords().isEmpty()) {
                 updateSpecFor(spec, evmAddressRecipient);
                 final var opUpdate = cryptoUpdateAliased(evmAddressRecipient)
-                        .maxAutomaticAssociations(2)
+                        .maxAutomaticAssociations(1000000000)
                         .payingWith(GENESIS)
                         .signedBy(evmAddressRecipient, GENESIS)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(STANDARD_PERMISSIBLE_OUTCOMES)
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor(evmAddressRecipient))
+                        .hasPrecheckFrom(OK)
+                        .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE)
                         .logged();
 
                 allRunFor(spec, opUpdate);
