@@ -23,13 +23,17 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.preHandleFailure;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFailure;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.signature.ExpandedSignaturePair;
+import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.config.ConfigProvider;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -42,7 +46,7 @@ import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -69,6 +73,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private final TransactionChecker transactionChecker;
     /** Dispatches transactions to the appropriate {@link TransactionHandler} based on the type of transaction. */
     private final TransactionDispatcher dispatcher;
+    /** "Expands" {@link SignaturePair}s by converting prefixes into full keys. */
+    private final SignatureExpander signatureExpander;
     /** Verifies signatures */
     private final SignatureVerifier signatureVerifier;
     /**
@@ -81,6 +87,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * for proper configuration.
      */
     private final ExecutorService exe;
+    /** Provides configuration for this pre handle workflow. */
+    private final ConfigProvider configProvider;
 
     /**
      * Creates a new instance of {@code PreHandleWorkflowImpl}.
@@ -96,14 +104,18 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      */
     @Inject
     public PreHandleWorkflowImpl(
+            @NonNull final ConfigProvider configProvider,
             @NonNull final ExecutorService exe,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final TransactionChecker transactionChecker,
-            @NonNull final SignatureVerifier signatureVerifier) {
+            @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final SignatureExpander signatureExpander) {
+        this.configProvider = requireNonNull(configProvider);
         this.exe = requireNonNull(exe);
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.signatureVerifier = requireNonNull(signatureVerifier);
+        this.signatureExpander = requireNonNull(signatureExpander);
     }
 
     /** {@inheritDoc} */
@@ -139,7 +151,9 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             try {
                 // FUTURE: Enhance this so the timeout duration is a configuration property (and then update the
                 // unit tests, so they use a much shorter configuration, so test execution is faster).
-                final var result = task.future.get(1, TimeUnit.SECONDS);
+                final var config = configProvider.getConfiguration().getConfigData(PreHandleConfig.class);
+                final var timeout = config.timeout();
+                final var result = task.future.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
                 task.platformTx.setMetadata(result);
             } catch (InterruptedException e) {
                 // The thread should only ever be interrupted during shutdown, so we can just log the error.
@@ -192,15 +206,23 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
             // so later during the handle phase. Technically, we could still try to gather and verify the other
             // signatures, but that might be tricky and complicated with little gain. So just throw.
-            return preHandleFailure(creator, PAYER_ACCOUNT_NOT_FOUND, txInfo, null);
+            return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null);
         }
 
-        // 3. Collect payer signature checks. Any PreHandleResult created from this point on MUST include
-        //    the payerVerificationFuture.
-        final var sigPairs = txInfo.signatureMap().sigPairOrThrow();
-        final var payerVerificationFuture = isHollow(payerAccount)
-                ? signatureVerifier.verify(payerAccount, txInfo.signedBytes(), sigPairs)
-                : signatureVerifier.verify(payerAccount.keyOrThrow(), txInfo.signedBytes(), sigPairs);
+        // Bootstrap the expanded signature pairs by grabbing all prefixes that are "full" keys already
+        final var originals = txInfo.signatureMap().sigPairOrElse(emptyList());
+        final var expanded = new HashSet<ExpandedSignaturePair>();
+        signatureExpander.expand(originals, expanded);
+
+        // 3. Expand the Payer signature
+        final Key payerKey;
+        if (isHollow(payerAccount)) {
+            payerKey = null;
+            signatureExpander.expand(payerAccount, originals, expanded);
+        } else {
+            payerKey = payerAccount.keyOrThrow();
+            signatureExpander.expand(payerKey, originals, expanded);
+        }
 
         // 4. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
@@ -226,37 +248,28 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // FUTURE: Finally, let the transaction handler do warm up of other state it may want to use later (TBD)
         } catch (PreCheckException preCheck) {
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
-            // In that case, the payer will end up paying for the transaction.
-            return preHandleFailure(payer, preCheck.responseCode(), txInfo, payerVerificationFuture);
+            // In that case, the payer will end up paying for the transaction. So we still need to do the signature
+            // verifications that we have determined so far.
+            final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
+            return preHandleFailure(payer, payerKey, preCheck.responseCode(), txInfo, results);
         }
 
-        // 6. Collect additional TransactionSignatures
+        // 6. Expand additional SignaturePairs based on gathered keys and hollow accounts
         final var nonPayerKeys = context.requiredNonPayerKeys();
-        final var nonPayerFutures = new HashMap<Key, Future<SignatureVerification>>();
         for (final var key : nonPayerKeys) {
-            final var future = signatureVerifier.verify(
-                    key, txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow());
-            nonPayerFutures.put(key, future);
+            signatureExpander.expand(key, originals, expanded);
         }
 
-        final var nonPayerHollowFutures = new HashMap<Long, Future<SignatureVerification>>();
         final var nonPayerHollowAccounts = context.requiredHollowAccounts();
         for (final var hollowAccount : nonPayerHollowAccounts) {
-            final var future = signatureVerifier.verify(
-                    hollowAccount, txInfo.signedBytes(), txInfo.signatureMap().sigPairOrThrow());
-            nonPayerHollowFutures.put(hollowAccount.accountNumber(), future);
+            signatureExpander.expand(hollowAccount, originals, expanded);
         }
 
-        // 7. Create and return TransactionMetadata
-        return new PreHandleResult(
-                payer,
-                SO_FAR_SO_GOOD,
-                OK,
-                txInfo,
-                payerVerificationFuture,
-                nonPayerFutures,
-                nonPayerHollowFutures,
-                null);
+        // 7. Submit the expanded SignaturePairs to the cryptography engine for verification
+        final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
+
+        // 8. Create and return TransactionMetadata
+        return new PreHandleResult(payer, payerKey, SO_FAR_SO_GOOD, OK, txInfo, results, null);
     }
 
     /** A platform transaction and the future that produces its {@link PreHandleResult} */

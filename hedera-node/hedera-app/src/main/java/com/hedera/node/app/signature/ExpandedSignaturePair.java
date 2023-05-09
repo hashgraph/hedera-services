@@ -17,24 +17,19 @@
 package com.hedera.node.app.signature;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SignaturePair;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Future;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
-/**
- * Asynchronously verifies signatures.
- */
-public interface SignatureVerifier {
-    /**
-     * Asynchronously verifies that the given {@code sigPairs} matches the given {@code signedBytes}.
-     *
-     * @param signedBytes The signed bytes to verify
-     * @param sigPairs The matching set of signatures to be verified
-     * @return A {@link Set} of {@link Future}s, one per {@link ExpandedSignaturePair}.
-     */
-    @NonNull
-    Map<Key, SignatureVerificationFuture> verify(
-            @NonNull Bytes signedBytes, @NonNull Set<ExpandedSignaturePair> sigPairs);
+public record ExpandedSignaturePair(@NonNull Key key, @Nullable Account hollowAccount, @NonNull SignaturePair sigPair) {
+
+    public Bytes keyBytes() {
+        return sigPair.pubKeyPrefix();
+    }
+
+    public Bytes signature() {
+        return sigPair.signature().as();
+    }
 }

@@ -24,27 +24,31 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.node.app.workflows.TransactionScenarioBuilder.scenario;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.UNKNOWN_FAILURE;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.signature.SignatureExpander;
+import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
+import com.hedera.node.app.spi.config.ConfigProvider;
+import com.hedera.node.app.spi.config.VersionedConfiguration;
 import com.hedera.node.app.spi.fixtures.ImmediateExecutorService;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -53,18 +57,15 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -77,7 +78,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     /**
      * The executor to use for running the workflow. For these unit tests, we will use an immediate executor,
-     * which will execute the
+     * which will execute the tasks in the same thread as the test.
      */
     private final ExecutorService executor = new ImmediateExecutorService();
 
@@ -102,6 +103,16 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @Mock
     private SignatureVerifier signatureVerifier;
 
+    /**
+     * We use a mocked {@link SignatureExpander}, so it is easy to fake out expansion of signatures.
+     */
+    @Mock
+    private SignatureExpander signatureExpander;
+
+    /** A mocked out {@link ConfigProvider} that returns a {@link PreHandleConfig}. */
+    @Mock
+    private ConfigProvider configProvider;
+
     /** We use a real functional store factory with our standard test data set. Needed by the workflow. */
     private ReadableStoreFactory storeFactory;
 
@@ -123,31 +134,41 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                                                 .accountNumOrThrow()),
                                         STAKING_REWARD_ACCOUNT.account())),
                 new MapReadableKVState<String, Long>("ALIASES", Collections.emptyMap()));
-
         storeFactory = new ReadableStoreFactory(fakeHederaState);
-        workflow = new PreHandleWorkflowImpl(executor, dispatcher, transactionChecker, signatureVerifier);
+        final var config = new PreHandleConfig(Duration.ofMillis(1));
+        final var versionedConfig = mock(VersionedConfiguration.class);
+        lenient().when(configProvider.getConfiguration()).thenReturn(versionedConfig);
+        lenient().when(versionedConfig.getConfigData(PreHandleConfig.class)).thenReturn(config);
+        workflow = new PreHandleWorkflowImpl(
+                configProvider, executor, dispatcher, transactionChecker, signatureVerifier, signatureExpander);
     }
 
-    /**
-     * Null arguments are not permitted to the constructor.
-     */
+    /** Null arguments are not permitted to the constructor. */
     @Test
     @DisplayName("Null constructor args throw NPE")
     @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
     void nullConstructorArgsTest() {
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, dispatcher, transactionChecker, signatureVerifier))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        null, executor, dispatcher, transactionChecker, signatureVerifier, signatureExpander))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executor, null, transactionChecker, signatureVerifier))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        configProvider, null, dispatcher, transactionChecker, signatureVerifier, signatureExpander))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executor, dispatcher, null, signatureVerifier))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        configProvider, executor, null, transactionChecker, signatureVerifier, signatureExpander))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executor, dispatcher, transactionChecker, null))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        configProvider, executor, dispatcher, null, signatureVerifier, signatureExpander))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        configProvider, executor, dispatcher, transactionChecker, null, signatureExpander))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        configProvider, executor, dispatcher, transactionChecker, signatureVerifier, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
-    /**
-     * Null arguments are not permitted to the preHandle method
-     */
+    /** Null arguments are not permitted to the preHandle method */
     @Test
     @DisplayName("Null pre-handle args throw NPE")
     @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
@@ -161,9 +182,13 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                 .isInstanceOf(NullPointerException.class);
     }
 
+    /**
+     * We do not currently handle any platform transactions that are marked as system transactions. This test ensures
+     * that if we send any system transactions, they are ignored.
+     */
     @Test
     @DisplayName("Pre-handle skips system transactions")
-    void preHandleSkipsSystemTransactionsTest() throws PreCheckException {
+    void preHandleSkipsSystemTransactionsTest() {
         final var platformTx = new SwirldTransaction(new byte[10]) {
             @Override
             public boolean isSystem() {
@@ -177,6 +202,10 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         assertThat((Object) platformTx.getMetadata()).isNull();
     }
 
+    /**
+     * This suite of tests verifies that should we encounter unexpected failures in our code, we will still behave
+     * in a safe and consistent way.
+     */
     @Nested
     @DisplayName("Handling of exceptions caused by bugs in our code")
     final class ExceptionTest {
@@ -193,12 +222,18 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             itr = list.iterator();
             creator = NODE_1.nodeAccountID();
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(Key.class), any(), any())).thenReturn(completedFuture(null));
         }
 
+        /**
+         * It may be that for some inexplicable reason the pre handle code takes too long to execute. This should never
+         * be possible, but since thread scheduling is up to the JVM or the OS, we cannot guarantee that it will never
+         * happen. Should it happen, pre-handle will fail with "UNKNOWN", and will be retried again during handle.
+         * Should it happen again in handle, the node will likely ISS and restart and reconnect, which is a perfectly
+         * acceptable outcome.
+         */
         @Test
         @DisplayName("TimoutException due to too slow Pre-Handle leads to \"unknown\" failure response")
-        void timeoutExceptionDueToTooSlowPreHandleLeadsToUnknownFailureResponseTest() throws PreCheckException {
+        void timeoutException() throws PreCheckException {
             doAnswer(invocation -> {
                         Thread.sleep(5000); // Long enough that it WILL time out
                         return null;
@@ -206,7 +241,13 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     .when(dispatcher)
                     .dispatchPreHandle(any());
             final var threadExecutor = Executors.newSingleThreadExecutor();
-            workflow = new PreHandleWorkflowImpl(threadExecutor, dispatcher, transactionChecker, signatureVerifier);
+            workflow = new PreHandleWorkflowImpl(
+                    configProvider,
+                    threadExecutor,
+                    dispatcher,
+                    transactionChecker,
+                    signatureVerifier,
+                    signatureExpander);
 
             workflow.preHandle(storeFactory, creator, itr);
             final PreHandleResult result = platformTx.getMetadata();
@@ -214,6 +255,12 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(result.status()).isEqualTo(UNKNOWN_FAILURE);
         }
 
+        /**
+         * Maybe some random exception happens during pre handle. This is <b>definitely</b> not expected. But if it
+         * does, we should still behave in a safe and consistent way. We should fail with "UNKNOWN", and will be
+         * retried again during handle. Should it happen again in handle, the node will likely ISS and restart and
+         * reconnect, which is a perfectly acceptable outcome.
+         */
         @Test
         @DisplayName("Unknown failure due to random exception during handling leads to \"unknown\" failure response")
         void timeoutExceptionDueToRandomErrorLeadsToUnknownFailureResponseTest() throws PreCheckException {
@@ -230,15 +277,21 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         }
     }
 
+    /**
+     * Due diligence tests cover scenarios where a possibly dishonest or broken node sends transactions to other
+     * nodes that it shouldn't have sent. For example, if the protobuf bytes cannot even be parsed, then the node has
+     * not performed its due diligence and should be charged for this waste of resources.
+     */
     @Nested
     @DisplayName("Due-diligence tests")
+    @ExtendWith(MockitoExtension.class)
     final class DueDiligenceTests implements Scenarios {
 
         /**
          * A dishonest node may send, in an event, a transaction that cannot be parsed. It might just
          * be random bytes. Or no bytes. Or too many bytes. In all of those cases, we should immediately
          * terminate with a {@link PreHandleResult} that as a response code, a payer for the node that sent the
-         * transaction, and nothing else.
+         * transaction.
          *
          * <p>Or, after successfully parsing the transaction from protobuf bytes, we perform a whole set of syntactic
          * checks on the transaction using the {@link TransactionChecker}. We don't need to verify every possible
@@ -326,14 +379,15 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
          */
         @Test
         @DisplayName("Payer signature is invalid")
-        void payerSignatureInvalid()
-                throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
+        void payerSignatureInvalid(@Mock SignatureVerificationFuture sigFuture) throws Exception {
             // Given a transaction with a signature that doesn't work out
             final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
 
             final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
+            final var key = ALICE.keyInfo().publicKey();
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(Key.class), any(), any())).thenReturn(failedVerificationFuture());
+            when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(key, sigFuture));
+            when(sigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(key, null, false));
 
             // When we pre-handle the transaction
             workflow.preHandle(
@@ -346,7 +400,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
             // But when we check the future for the signature, we find it will end up failing.
             // (And the handle workflow will deal with this)
-            final var future = result1.payerVerification();
+            final var future = result1.verificationFor(key);
             assertThat(future).isNotNull();
             final var result = future.get(1, TimeUnit.MILLISECONDS);
             assertThat(result.passed()).isFalse();
@@ -358,6 +412,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
      */
     @Nested
     @DisplayName("Transaction Handler pre-handle tests")
+    @ExtendWith(MockitoExtension.class)
     final class TransactionHandlerPreHandleTests {
         /**
          * If the transaction has a valid payer, then we next need to perform the pre-handle call on the dispatcher. It
@@ -365,14 +420,15 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
          */
         @Test
         @DisplayName("Pre-handle semantic checks fail with PreCheckException")
-        void preHandleSemanticChecksFail() throws PreCheckException {
+        void preHandleSemanticChecksFail(@Mock SignatureVerificationFuture sigFuture) throws Exception {
             // Given a transaction that fails the semantic check to the transaction handler
             // (NOTE that INVALID_ACCOUNT_AMOUNTS is one such semantic failure scenario)
             final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
             final Transaction platformTx = new SwirldTransaction(txBytes);
+            final var key = ALICE.keyInfo().publicKey();
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(Key.class), any(), any())).thenReturn(failedVerificationFuture());
+            when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(key, sigFuture));
             doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))
                     .when(dispatcher)
                     .dispatchPreHandle(any());
@@ -399,7 +455,6 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var txBytes = asByteArray(txInfo.transaction());
             final Transaction platformTx = new SwirldTransaction(txBytes);
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(Key.class), any(), any())).thenReturn(failedVerificationFuture());
             doThrow(new RuntimeException()).when(dispatcher).dispatchPreHandle(any());
 
             // When we pre-handle the transaction
@@ -418,19 +473,26 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
          */
         @Test
         @DisplayName("Signature verification fails for non-payer signatures")
-        void nonPayerSignatureInvalid()
-                throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
-            // Given a transaction that succeeds except it fails in the final signature check
-            final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
+        void nonPayerSignatureInvalid(
+                @Mock SignatureVerificationFuture goodFuture, @Mock SignatureVerificationFuture badFuture)
+                throws Exception {
+            // Given a good transaction with a bad non-payer signature
+            final var payerAccount = ALICE.accountID();
+            final var payerKey = ALICE.keyInfo().publicKey();
+            final var badKey = BOB.keyInfo().publicKey();
+            final var txInfo = scenario().withPayer(payerAccount).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
             final Transaction platformTx = new SwirldTransaction(txBytes);
+            when(goodFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
+            when(badFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(badKey, null, false));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(Key.class), any(), any()))
-                    .thenReturn(goodVerificationFuture(ALICE.account().keyOrThrow())) // Payer check passes
-                    .thenReturn(failedVerificationFuture()); // Sig checks fail
+            when(signatureVerifier.verify(any(), any()))
+                    .thenReturn(Map.of(
+                            payerKey, goodFuture, // Payer check passes
+                            badKey, badFuture)); // Sig checks fail
             doAnswer(invocation -> {
                         final var ctx = invocation.getArgument(0, PreHandleContext.class);
-                        ctx.requireKey(BOB.account().keyOrThrow()); // we need a non-payer key
+                        ctx.requireKey(badKey); // we need a non-payer key
                         return null;
                     })
                     .when(dispatcher)
@@ -443,16 +505,14 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             // Then the transaction succeeds
             final PreHandleResult result = platformTx.getMetadata();
             assertThat(result.responseCode()).isEqualTo(OK);
-            assertThat(result.payer()).isEqualTo(ALICE.accountID());
+            assertThat(result.payer()).isEqualTo(payerAccount);
             // and the payer sig check succeeds
-            final var payerFuture = result.payerVerification();
+            final var payerFuture = result.verificationFor(payerKey);
             assertThat(payerFuture).isNotNull();
             final var payerFutureResult = payerFuture.get(1, TimeUnit.MILLISECONDS);
             assertThat(payerFutureResult.passed()).isTrue();
             // but the other checks fail
-            final var nonPayerFutureMap = result.nonPayerVerifications();
-            assertThat(nonPayerFutureMap).isNotNull();
-            final var nonPayerFuture = nonPayerFutureMap.get(BOB.account().keyOrThrow());
+            final var nonPayerFuture = result.verificationFor(badKey);
             assertThat(nonPayerFuture).isNotNull();
             final var nonPayerFutureResult = nonPayerFuture.get(1, TimeUnit.MILLISECONDS);
             assertThat(nonPayerFutureResult.passed()).isFalse();
@@ -465,17 +525,20 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
      */
     @Nested
     @DisplayName("Happy Path Tests")
+    @ExtendWith(MockitoExtension.class)
     final class HappyPathTests {
         @Test
         @DisplayName("Happy path with Key-based signature verification")
-        void happyPath() throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
+        void happyPath(@Mock SignatureVerificationFuture sigFuture) throws Exception {
             // Given a transaction that is perfectly good
-            final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
+            final var payerAccount = ALICE.accountID();
+            final var payerKey = ALICE.keyInfo().publicKey();
+            final var txInfo = scenario().withPayer(payerAccount).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
             final Transaction platformTx = new SwirldTransaction(txBytes);
+            when(sigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(Key.class), any(), any()))
-                    .thenReturn(goodVerificationFuture(ALICE.account().keyOrThrow()));
+            when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(payerKey, sigFuture));
 
             // When we pre-handle the transaction
             workflow.preHandle(
@@ -486,7 +549,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(result.status()).isEqualTo(SO_FAR_SO_GOOD);
             assertThat(result.responseCode()).isEqualTo(OK);
             assertThat(result.payer()).isEqualTo(ALICE.accountID());
-            final var payerFuture = result.payerVerification();
+            final var payerFuture = result.verificationFor(payerKey);
             assertThat(payerFuture).isNotNull();
             final var payerFutureResult = payerFuture.get(1, TimeUnit.MILLISECONDS);
             assertThat(payerFutureResult.passed()).isTrue();
@@ -496,16 +559,19 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
         @Test
         @DisplayName("Happy path with a Hollow Account payer")
-        void happyPathHollowAccountAsPayer()
-                throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
+        void happyPathHollowAccountAsPayer(@Mock SignatureVerificationFuture sigFuture) throws Exception {
             // Given a transaction that is perfectly good, with a hollow account for the payer (!)
-            final var txInfo = scenario().withPayer(ERIN.accountID()).txInfo();
+            final var hollowAccount = ERIN.account();
+            final var hollowAccountID = ERIN.accountID();
+            final var finalizedKey = ERIN.keyInfo().publicKey();
+            final var txInfo = scenario().withPayer(hollowAccountID).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
             final Transaction platformTx = new SwirldTransaction(txBytes);
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(Account.class), any(), any()))
-                    .thenReturn(goodVerificationFuture(
-                            ERIN.account(), ERIN.keyInfo().publicKey()));
+            when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(finalizedKey, sigFuture));
+            when(sigFuture.hollowAccount()).thenReturn(hollowAccount);
+            when(sigFuture.get(anyLong(), any()))
+                    .thenReturn(new SignatureVerificationImpl(finalizedKey, hollowAccount, true));
 
             // When we pre-handle the transaction
             workflow.preHandle(
@@ -515,34 +581,40 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final PreHandleResult result = platformTx.getMetadata();
             assertThat(result.status()).isEqualTo(SO_FAR_SO_GOOD);
             assertThat(result.responseCode()).isEqualTo(OK);
-            assertThat(result.payer()).isEqualTo(ERIN.accountID());
-            final var payerFuture = result.payerVerification();
+            assertThat(result.payer()).isEqualTo(hollowAccountID);
+            final var payerFuture = result.verificationFor(hollowAccount.accountNumber());
             assertThat(payerFuture).isNotNull();
             final var payerFutureResult = payerFuture.get(1, TimeUnit.MILLISECONDS);
             assertThat(payerFutureResult.passed()).isTrue();
-            assertThat(payerFutureResult.hollowAccount()).isEqualTo(ERIN.account());
-            assertThat(payerFutureResult.key()).isEqualTo(ERIN.keyInfo().publicKey());
+            assertThat(payerFutureResult.hollowAccount()).isEqualTo(hollowAccount);
+            assertThat(payerFutureResult.key()).isEqualTo(finalizedKey);
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
         }
 
         @Test
         @DisplayName("Happy path with a required non-payer Hollow Account")
-        void happyPathHollowAccountsNonPayer()
-                throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
+        void happyPathHollowAccountsNonPayer(
+                @Mock SignatureVerificationFuture payerSigFuture, @Mock SignatureVerificationFuture nonPayerSigFuture)
+                throws Exception {
             // Given a transaction that is perfectly good
-            final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
+            final var payerAccountID = ALICE.accountID();
+            final var payerKey = ALICE.keyInfo().publicKey();
+            final var hollowAccount = ERIN.account();
+            final var finalizedKey = ERIN.keyInfo().publicKey();
+            final var txInfo = scenario().withPayer(payerAccountID).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
             final Transaction platformTx = new SwirldTransaction(txBytes);
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
-            when(signatureVerifier.verify(any(Key.class), any(), any()))
-                    .thenReturn(goodVerificationFuture(ALICE.account().keyOrThrow()));
-            when(signatureVerifier.verify(any(Account.class), any(), any()))
-                    .thenReturn(goodVerificationFuture(
-                            ERIN.account(), ERIN.keyInfo().publicKey()));
+            when(signatureVerifier.verify(any(), any()))
+                    .thenReturn(Map.of(payerKey, payerSigFuture, finalizedKey, nonPayerSigFuture));
+            when(payerSigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
+            when(nonPayerSigFuture.get(anyLong(), any()))
+                    .thenReturn(new SignatureVerificationImpl(finalizedKey, hollowAccount, true));
+            when(nonPayerSigFuture.hollowAccount()).thenReturn(hollowAccount);
             doAnswer(invocation -> {
                         final var ctx = invocation.getArgument(0, PreHandleContext.class);
-                        ctx.requireSignatureForHollowAccount(ERIN.account()); // we need a hollow account
+                        ctx.requireSignatureForHollowAccount(hollowAccount); // we need a hollow account
                         return null;
                     })
                     .when(dispatcher)
@@ -556,73 +628,20 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final PreHandleResult result = platformTx.getMetadata();
             assertThat(result.status()).isEqualTo(SO_FAR_SO_GOOD);
             assertThat(result.responseCode()).isEqualTo(OK);
-            assertThat(result.payer()).isEqualTo(ALICE.accountID());
+            assertThat(result.payer()).isEqualTo(payerAccountID);
             // and the payer sig check succeeds
-            final var payerFuture = result.payerVerification();
+            final var payerFuture = result.verificationFor(payerKey);
             assertThat(payerFuture).isNotNull();
             final var payerFutureResult = payerFuture.get(1, TimeUnit.MILLISECONDS);
             assertThat(payerFutureResult.passed()).isTrue();
             // and the non-payer sig check for the hollow account works
-            final var nonPayerHollowFuturesMap = result.nonPayerHollowVerifications();
-            assertThat(nonPayerHollowFuturesMap).isNotNull();
-            final var nonPayerHollowFuture =
-                    nonPayerHollowFuturesMap.get(ERIN.accountID().accountNumOrThrow());
+            final var nonPayerHollowFuture = result.verificationFor(hollowAccount.accountNumber());
             assertThat(nonPayerHollowFuture).isNotNull();
             final var nonPayerResult = nonPayerHollowFuture.get(1, TimeUnit.MILLISECONDS);
-            assertThat(nonPayerResult.hollowAccount()).isEqualTo(ERIN.account());
-            assertThat(nonPayerResult.key()).isEqualTo(ERIN.keyInfo().publicKey());
+            assertThat(nonPayerResult.hollowAccount()).isEqualTo(hollowAccount);
+            assertThat(nonPayerResult.key()).isEqualTo(finalizedKey);
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
         }
-    }
-
-    private static Future<SignatureVerification> failedVerificationFuture() {
-        return completedFuture(new SignatureVerification() {
-            @Nullable
-            @Override
-            public Key key() {
-                return null;
-            }
-
-            @Override
-            public boolean passed() {
-                return false;
-            }
-        });
-    }
-
-    private static Future<SignatureVerification> goodVerificationFuture(@NonNull final Key key) {
-        return completedFuture(new SignatureVerification() {
-            @Override
-            public Key key() {
-                return key;
-            }
-
-            @Override
-            public boolean passed() {
-                return true;
-            }
-        });
-    }
-
-    private static Future<SignatureVerification> goodVerificationFuture(
-            @NonNull final Account hollowAccount, @NonNull final Key key) {
-        return completedFuture(new SignatureVerification() {
-            @Override
-            public Key key() {
-                return key;
-            }
-
-            @Nullable
-            @Override
-            public Account hollowAccount() {
-                return hollowAccount;
-            }
-
-            @Override
-            public boolean passed() {
-                return true;
-            }
-        });
     }
 }

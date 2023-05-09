@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.signature.hapi;
+package com.hedera.node.app.signature.impl;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.DigestType;

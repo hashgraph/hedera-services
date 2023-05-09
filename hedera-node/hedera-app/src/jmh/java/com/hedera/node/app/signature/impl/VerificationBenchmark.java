@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.signature.hapi;
+package com.hedera.node.app.signature.impl;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
@@ -66,7 +66,7 @@ public class VerificationBenchmark extends AppTestBase implements Scenarios {
 
     @Benchmark
     public void singleKeySingleSignature(Blackhole blackhole) {
-        blackhole.consume(subject.verify(key, fakeSignedBytes, sigPairs));
+        //        blackhole.consume(subject.match(key, fakeSignedBytes, sigPairs));
     }
 
     private Key createKey(String scenario) {

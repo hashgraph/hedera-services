@@ -261,10 +261,7 @@ public interface Scenarios extends TransactionFactory {
             Account.newBuilder()
                     .accountNumber(1004L)
                     .key(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey())
-                    .alias(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]
-                            .publicKey()
-                            .ecdsaSecp256k1OrThrow()
-                            .slice(0, 20)) // Not true
+                    .alias(hexBytes("67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69"))
                     .build(),
             FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]);
 
@@ -273,10 +270,7 @@ public interface Scenarios extends TransactionFactory {
             Account.newBuilder()
                     .accountNumber(1006L)
                     .key(Key.newBuilder().keyList(KeyList.DEFAULT).build())
-                    .alias(FAKE_ECDSA_KEY_INFOS[3]
-                            .publicKey()
-                            .ecdsaSecp256k1OrThrow()
-                            .slice(0, 20)) // Not true
+                    .alias(hexBytes("0b75f0b70076fab3f18f94700ecaf3b00fe528e7"))
                     .build(),
             FAKE_ECDSA_KEY_INFOS[3]);
 
