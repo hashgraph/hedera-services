@@ -26,7 +26,18 @@ public enum TokenFreezeScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(newSignedTokenFreeze()
                     .freezing(KNOWN_TOKEN_WITH_FREEZE)
+                    .withAccount(OWNER_ACCOUNT)
                     .nonPayerKts(TOKEN_FREEZE_KT)
+                    .get());
+        }
+    },
+    FREEZE_WITH_NO_KEYS {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(newSignedTokenFreeze()
+                    .freezing(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                    .withAccount(OWNER_ACCOUNT)
+                    .nonPayerKts(TOKEN_ADMIN_KT)
                     .get());
         }
     },
