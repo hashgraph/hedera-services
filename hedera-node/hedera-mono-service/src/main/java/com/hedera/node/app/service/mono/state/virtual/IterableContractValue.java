@@ -113,7 +113,7 @@ public class IterableContractValue implements VirtualValue {
 
     // Keep it in sync with getSerializedSize() and serializeTo()
     static int getTypicalSerializedSize() {
-        return 128; // guesstimate
+        return 100; // estimation based on mainnet state as of 05/2023
     }
 
     /**

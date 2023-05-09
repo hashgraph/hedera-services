@@ -61,7 +61,7 @@ public class VirtualBlobValue implements VirtualValue {
     }
 
     static int getTypicalSerializedSize() {
-        return 1024; // guesstimate
+        return 5120; // estimated based on mainnet state as of 05/2023
     }
 
     @Override

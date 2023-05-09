@@ -175,8 +175,8 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     }
 
     // Keep it in sync with serialize()
-    static int getTypicalSerializedSize() {
-        return 1024; // guesstimate
+    public static int getTypicalSerializedSize() {
+        return 256; // estimation based on mainnet state as of 05/2023
     }
 
     @Override
