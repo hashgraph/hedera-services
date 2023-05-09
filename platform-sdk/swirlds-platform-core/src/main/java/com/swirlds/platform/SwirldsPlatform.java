@@ -704,7 +704,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     shadowGraph);
 
             final EventCreator eventCreator;
-            if (settings.getChatter().isChatterUsed()) {
+            if (chatterConfig.useChatter()) {
                 // chatter has a separate event creator in a different thread. having 2 event creators creates the risk
                 // of forking, so a NPE is preferable to a fork
                 eventCreator = null;
@@ -748,7 +748,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     intakeCycleStats);
 
             final InterruptableConsumer<EventIntakeTask> intakeHandler;
-            if (settings.getChatter().isChatterUsed()) {
+            if (chatterConfig.useChatter()) {
                 intakeCycle = new SequenceCycle<>(taskDispatcher::dispatchTask);
                 intakeHandler = intakeCycle;
             } else {
