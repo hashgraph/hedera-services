@@ -14,26 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.file.impl.components;
+package com.hedera.node.app.service.file.impl;
 
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
-import dagger.Component;
-import javax.inject.Singleton;
+import dagger.Module;
 
-@Singleton
-@Component
-public interface FileComponent {
-    @Component.Factory
-    interface Factory {
-        FileComponent create();
-    }
+@Module
+public interface FileServiceModule {
 
     FileAppendHandler fileAppendHandler();
 
@@ -50,4 +45,6 @@ public interface FileComponent {
     FileSystemUndeleteHandler fileSystemUndeleteHandler();
 
     FileUpdateHandler fileUpdateHandler();
+
+    FileHandlers fileHandlers();
 }

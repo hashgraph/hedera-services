@@ -19,10 +19,12 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Class to hold all the consensus handlers
  */
+@Singleton
 public class ConsensusHandlers {
 
     private final ConsensusCreateTopicHandler consensusCreateTopicHandler;
