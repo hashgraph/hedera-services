@@ -24,6 +24,7 @@ import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
+import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.base.state.Startable;
@@ -510,6 +511,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         metrics.getOrCreate(StatConstructor.createEnumStat(
                 "PlatformStatus", Metrics.PLATFORM_CATEGORY, PlatformStatus.values(), currentPlatformStatus::get));
 
+        registerAddressBookMetrics(metrics, initialAddressBook, selfId);
+
         this.platformMetrics = new PlatformMetrics(this);
         metrics.addUpdater(platformMetrics::update);
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
@@ -541,6 +544,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         startUpEventFrozenManager = new StartUpEventFrozenManager(metrics, Instant::now);
         freezeManager = new FreezeManager(this::checkPlatformStatus);
+        FreezeMetrics.registerFreezeMetrics(metrics, freezeManager, startUpEventFrozenManager);
 
         // Manually wire components for now.
         final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook(), freezeManager);
@@ -620,6 +624,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
         logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
         eventStreamManager = new EventStreamManager<>(
+                platformContext,
                 threadManager,
                 getSelfId(),
                 this,
@@ -1762,13 +1767,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public FreezeManager getFreezeManager() {
-        return freezeManager;
-    }
-
-    /**
      * @return the SyncManager used by this platform
      */
     public SyncManagerImpl getSyncManager() {
@@ -1889,11 +1887,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
         checkPlatformStatus();
 
-        if (outbound) {
-            platformMetrics.incrementInterruptedCallSyncs();
-        } else {
-            platformMetrics.incrementInterruptedRecSyncs();
-        }
         networkMetrics.recordDisconnect(conn);
     }
 
@@ -2085,22 +2078,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final ReservedSignedState wrapper = stateManagementComponent.getLatestSignedState(reason);
         return new AutoCloseableWrapper<>(
                 wrapper.isNull() ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
-    }
-
-    /**
-     * @return the instance for calculating runningHash and writing event stream files
-     */
-    EventStreamManager<EventImpl> getEventStreamManager() {
-        return eventStreamManager;
-    }
-
-    /**
-     * get the StartUpEventFrozenManager used by this platform
-     *
-     * @return The StartUpEventFrozenManager used by this platform
-     */
-    StartUpEventFrozenManager getStartUpEventFrozenManager() {
-        return startUpEventFrozenManager;
     }
 
     /**

@@ -36,43 +36,6 @@ import com.swirlds.platform.stats.AverageStat;
  */
 public class PlatformMetrics {
 
-    private static final SpeedometerMetric.Config INTERRUPTED_CALL_SYNCS_PER_SECOND_CONFIG =
-            new SpeedometerMetric.Config(PLATFORM_CATEGORY, "icSync/sec")
-                    .withDescription("(interrupted call syncs) syncs interrupted per second initiated by this member")
-                    .withFormat(FORMAT_14_7);
-    private final SpeedometerMetric interruptedCallSyncsPerSecond;
-
-    private static final SpeedometerMetric.Config INTERRUPTED_REC_SYNCS_PER_SECOND_CONFIG =
-            new SpeedometerMetric.Config(PLATFORM_CATEGORY, "irSync/sec")
-                    .withDescription(
-                            "(interrupted receive syncs) syncs interrupted per second initiated by other " + "member")
-                    .withFormat(FORMAT_14_7);
-    private final SpeedometerMetric interruptedRecSyncsPerSecond;
-
-    private static final RunningAverageMetric.Config AVG_SELF_ID_CONFIG = new RunningAverageMetric.Config(
-                    INFO_CATEGORY, "memberID")
-            .withDescription("ID number of this member")
-            .withFormat(FORMAT_3_0);
-    private final RunningAverageMetric avgSelfId;
-
-    private static final RunningAverageMetric.Config AVG_NUM_MEMBERS_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "members")
-            .withDescription("total number of members participating")
-            .withFormat(FORMAT_10_0);
-    private final RunningAverageMetric avgNumMembers;
-
-    private static final RunningAverageMetric.Config AVG_WRITE_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "write")
-            .withDescription("the app claimed to log statistics every this many milliseconds")
-            .withFormat(FORMAT_8_0);
-    private final RunningAverageMetric avgWrite;
-
-    private static final RunningAverageMetric.Config AVG_SIM_CALL_SYNCS_MAX_CONFIG = new RunningAverageMetric.Config(
-                    INTERNAL_CATEGORY, "simCallSyncsMax")
-            .withDescription("max number of syncs this can initiate simultaneously")
-            .withFormat(FORMAT_2_0);
-    private final RunningAverageMetric avgSimCallSyncsMax;
-
     private static final RunningAverageMetric.Config AVG_Q_SIGNED_STATE_EVENTS_CONFIG = new RunningAverageMetric.Config(
                     INTERNAL_CATEGORY, "queueSignedStateEvents")
             .withDescription("number of handled consensus events that will be part of the next signed state")
@@ -91,18 +54,6 @@ public class PlatformMetrics {
             .withFormat(FORMAT_9_6);
     private final RunningAverageMetric avgSimListenSyncs;
 
-    private static final RunningAverageMetric.Config EVENT_STREAM_QUEUE_SIZE_CONFIG = new RunningAverageMetric.Config(
-                    INFO_CATEGORY, "eventStreamQueueSize")
-            .withDescription("size of the queue from which we take events and write to EventStream file")
-            .withFormat(FORMAT_13_0);
-    private final RunningAverageMetric eventStreamQueueSize;
-
-    private static final RunningAverageMetric.Config HASH_QUEUE_SIZE_CONFIG = new RunningAverageMetric.Config(
-                    INFO_CATEGORY, "hashQueueSize")
-            .withDescription("size of the queue from which we take events, calculate Hash and RunningHash")
-            .withFormat(FORMAT_13_0);
-    private final RunningAverageMetric hashQueueSize;
-
     private static final RunningAverageMetric.Config AVG_STATE_TO_HASH_SIGN_DEPTH_CONFIG =
             new RunningAverageMetric.Config(INTERNAL_CATEGORY, "stateToHashSignDepth")
                     .withDescription("average depth of the stateToHashSign queue (number of SignedStates)")
@@ -120,14 +71,6 @@ public class PlatformMetrics {
             .withDescription("total number of events in memory, for all members on the local machine together")
             .withFormat(FORMAT_16_2);
     private final RunningAverageMetric avgEventsInMem;
-
-    private static final FunctionGauge.Config<Integer> TLS_CONFIG = new FunctionGauge.Config<>(
-                    INFO_CATEGORY,
-                    "TLS",
-                    Integer.class,
-                    () -> Settings.getInstance().isUseTLS() ? 1 : 0)
-            .withDescription("1 if using TLS, 0 if not")
-            .withFormat("%6d");
 
     private static final SpeedometerMetric.Config SLEEP_1_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
                     INTERNAL_CATEGORY, "sleep1/sec")
@@ -149,12 +92,6 @@ public class PlatformMetrics {
         this.platform = CommonUtils.throwArgNull(platform, "platform");
         final Metrics metrics = platform.getContext().getMetrics();
 
-        interruptedCallSyncsPerSecond = metrics.getOrCreate(INTERRUPTED_CALL_SYNCS_PER_SECOND_CONFIG);
-        interruptedRecSyncsPerSecond = metrics.getOrCreate(INTERRUPTED_REC_SYNCS_PER_SECOND_CONFIG);
-        avgSelfId = metrics.getOrCreate(AVG_SELF_ID_CONFIG);
-        avgNumMembers = metrics.getOrCreate(AVG_NUM_MEMBERS_CONFIG);
-        avgWrite = metrics.getOrCreate(AVG_WRITE_CONFIG);
-        avgSimCallSyncsMax = metrics.getOrCreate(AVG_SIM_CALL_SYNCS_MAX_CONFIG);
         avgQ1PreConsEvents = new AverageAndMax(
                 metrics,
                 INTERNAL_CATEGORY,
@@ -172,12 +109,9 @@ public class PlatformMetrics {
         avgQSignedStateEvents = metrics.getOrCreate(AVG_Q_SIGNED_STATE_EVENTS_CONFIG);
         avgSimSyncs = metrics.getOrCreate(AVG_SIM_SYNCS_CONFIG);
         avgSimListenSyncs = metrics.getOrCreate(AVG_SIM_LISTEN_SYNCS_CONFIG);
-        eventStreamQueueSize = metrics.getOrCreate(EVENT_STREAM_QUEUE_SIZE_CONFIG);
-        hashQueueSize = metrics.getOrCreate(HASH_QUEUE_SIZE_CONFIG);
         avgStateToHashSignDepth = metrics.getOrCreate(AVG_STATE_TO_HASH_SIGN_DEPTH_CONFIG);
         avgRoundSupermajority = metrics.getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
         avgEventsInMem = metrics.getOrCreate(AVG_EVENTS_IN_MEM_CONFIG);
-        metrics.getOrCreate(TLS_CONFIG);
         sleep1perSecond = metrics.getOrCreate(SLEEP_1_PER_SECOND_CONFIG);
 
         addFunctionGauges(metrics);
@@ -199,14 +133,6 @@ public class PlatformMetrics {
                         INFO_CATEGORY, "priorityTransEvent", Integer.class, this::getPriorityTransEventSize)
                 .withDescription("priorityTransEvent queue size")
                 .withFormat("%d"));
-        metrics.getOrCreate(new FunctionGauge.Config<>(
-                        INTERNAL_CATEGORY,
-                        "isEvFrozen",
-                        Boolean.class,
-                        () -> platform.getFreezeManager().isEventCreationFrozen()
-                                || platform.getStartUpEventFrozenManager().isEventCreationPausedAfterStartUp())
-                .withDescription("isEventCreationFrozen")
-                .withFormat("%b"));
         metrics.getOrCreate(new FunctionGauge.Config<>(
                         INTERNAL_CATEGORY,
                         "isStrongMinorityInMaxRound",
@@ -272,26 +198,12 @@ public class PlatformMetrics {
     }
 
     void update() {
-        interruptedCallSyncsPerSecond.update(0);
-        interruptedRecSyncsPerSecond.update(0);
         sleep1perSecond.update(0);
-        avgSelfId.update(platform.getSelfId().getId());
-        avgNumMembers.update(platform.getAddressBook().getSize());
-        avgWrite.update(Settings.getInstance().getCsvWriteFrequency());
-        avgSimCallSyncsMax.update(Settings.getInstance().getMaxOutgoingSyncs());
         avgQ1PreConsEvents.update(platform.getPreConsensusHandler().getQueueSize());
         avgQ2ConsEvents.update(platform.getConsensusHandler().getNumEventsInQueue());
         avgQSignedStateEvents.update(platform.getConsensusHandler().getSignedStateEventsSize());
         avgSimSyncs.update(platform.getSimultaneousSyncThrottle().getNumSyncs());
         avgSimListenSyncs.update(platform.getSimultaneousSyncThrottle().getNumListenerSyncs());
-        eventStreamQueueSize.update(
-                platform.getEventStreamManager() != null
-                        ? platform.getEventStreamManager().getEventStreamingQueueSize()
-                        : 0);
-        hashQueueSize.update(
-                platform.getEventStreamManager() != null
-                        ? platform.getEventStreamManager().getHashQueueSize()
-                        : 0);
         avgStateToHashSignDepth.update(platform.getConsensusHandler().getStateToHashSignSize());
         avgRoundSupermajority.update(platform.getStateManagementComponent().getLastCompleteRound());
         avgEventsInMem.update(EventCounter.getNumEventsInMemory());
@@ -299,13 +211,5 @@ public class PlatformMetrics {
 
     public void incrementSleep1perSecond() {
         sleep1perSecond.cycle();
-    }
-
-    public void incrementInterruptedCallSyncs() {
-        interruptedCallSyncsPerSecond.cycle();
-    }
-
-    public void incrementInterruptedRecSyncs() {
-        interruptedRecSyncsPerSecond.cycle();
     }
 }

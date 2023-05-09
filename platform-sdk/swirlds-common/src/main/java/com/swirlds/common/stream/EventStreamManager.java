@@ -16,17 +16,21 @@
 
 package com.swirlds.common.stream;
 
+import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
 import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EVENT_STREAM;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.crypto.SerializableHashable;
+import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -37,8 +41,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class is used for generating event stream files when enableEventStreaming is true,
- * and for calculating runningHash for consensus Events.
+ * This class is used for generating event stream files when enableEventStreaming is true, and for calculating
+ * runningHash for consensus Events.
  */
 public class EventStreamManager<T extends StreamAligned & Timestamped & RunningHashable & SerializableHashable> {
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
@@ -74,26 +78,20 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
     private volatile boolean freezePeriodStarted = false;
 
     /**
-     * @param selfId
-     * 		the id of this node
-     * @param signer
-     * 		an object that can sign things
-     * @param nodeName
-     * 		name of this node
-     * @param enableEventStreaming
-     * 		whether write event stream files or not
-     * @param eventsLogDir
-     * 		eventStream files will be generated in this directory
-     * @param eventsLogPeriod
-     * 		period of generating eventStream file
-     * @param eventStreamQueueCapacity
-     * 		capacity of the blockingQueue from which we take events and write to EventStream files
-     * @param isLastEventInFreezeCheck
-     * 		a predicate which checks whether this event is the last event before restart
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
+     * @param platformContext          the platform context
+     * @param selfId                   the id of this node
+     * @param signer                   an object that can sign things
+     * @param nodeName                 name of this node
+     * @param enableEventStreaming     whether write event stream files or not
+     * @param eventsLogDir             eventStream files will be generated in this directory
+     * @param eventsLogPeriod          period of generating eventStream file
+     * @param eventStreamQueueCapacity capacity of the blockingQueue from which we take events and write to EventStream
+     *                                 files
+     * @param isLastEventInFreezeCheck a predicate which checks whether this event is the last event before restart
+     * @param threadManager            responsible for managing thread lifecycles
      */
     public EventStreamManager(
+            @NonNull final PlatformContext platformContext,
             final ThreadManager threadManager,
             final NodeId selfId,
             final Signer signer,
@@ -132,6 +130,20 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
             writeQueueThread.start();
         }
 
+        platformContext
+                .getMetrics()
+                .getOrCreate(new FunctionGauge.Config<>(
+                                INFO_CATEGORY, "eventStreamQueueSize", Integer.class, this::getEventStreamingQueueSize)
+                        .withDescription("size of the queue from which we take events and write to EventStream file")
+                        .withUnit("count"));
+
+        platformContext
+                .getMetrics()
+                .getOrCreate(new FunctionGauge.Config<>(
+                                INFO_CATEGORY, "hashQueueSize", Integer.class, this::getHashQueueSize)
+                        .withDescription("size of the queue from which we take events, calculate Hash and RunningHash")
+                        .withUnit("count"));
+
         // receives consensus events from hashCalculator, calculates and set runningHash for this event
         final RunningHashCalculatorForStream<T> runningHashCalculator = new RunningHashCalculatorForStream<>();
         hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
@@ -151,10 +163,9 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
     }
 
     /**
-     * @param multiStream
-     * 		the instance which receives consensus events from ConsensusRoundHandler, then passes to nextStreams
-     * @param isLastEventInFreezeCheck
-     * 		a predicate which checks whether this event is the last event before restart
+     * @param multiStream              the instance which receives consensus events from ConsensusRoundHandler, then
+     *                                 passes to nextStreams
+     * @param isLastEventInFreezeCheck a predicate which checks whether this event is the last event before restart
      */
     public EventStreamManager(final MultiStream<T> multiStream, final Predicate<T> isLastEventInFreezeCheck) {
         this.multiStream = multiStream;
@@ -164,7 +175,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
 
     /**
      * Closes the multistream.
-     *
+     * <p>
      * IMPORTANT: For unit test purposes only.
      */
     public void stop() {
@@ -180,11 +191,10 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
     }
 
     /**
-     * receives a consensus event from ConsensusRoundHandler each time,
-     * sends it to multiStream which then sends to two queueThread for calculating runningHash and writing to file
+     * receives a consensus event from ConsensusRoundHandler each time, sends it to multiStream which then sends to two
+     * queueThread for calculating runningHash and writing to file
      *
-     * @param event
-     * 		the consensus event to be added
+     * @param event the consensus event to be added
      */
     public void addEvent(final T event) {
         if (!freezePeriodStarted) {
@@ -203,12 +213,10 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
     }
 
     /**
-     * sets startWriteAtCompleteWindow:
-     * it should be set to be true after reconnect, or at state recovering;
-     * it should be set to be false at restart
+     * sets startWriteAtCompleteWindow: it should be set to be true after reconnect, or at state recovering; it should
+     * be set to be false at restart
      *
-     * @param startWriteAtCompleteWindow
-     * 		whether the writer should not write until the first complete window
+     * @param startWriteAtCompleteWindow whether the writer should not write until the first complete window
      */
     public void setStartWriteAtCompleteWindow(final boolean startWriteAtCompleteWindow) {
         if (streamFileWriter != null) {
@@ -282,8 +290,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
     /**
      * sets initialHash after loading from signed state
      *
-     * @param initialHash
-     * 		current runningHash of all consensus events
+     * @param initialHash current runningHash of all consensus events
      */
     public void setInitialHash(final Hash initialHash) {
         this.initialHash = initialHash;
