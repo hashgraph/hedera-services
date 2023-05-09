@@ -663,7 +663,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                 preConsensusEventWriter::requestFlush,
                                 "Interrupted while requesting preconsensus event flush");
                     });
-            if (settings.getChatter().isChatterUsed()) {
+            if (chatterConfig.useChatter()) {
                 dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
                 dispatcher.addObserver(chatterEventMapper);
             }
@@ -672,11 +672,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
             final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks = new ArrayList<>();
             isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
-            if (settings.getChatter().isChatterUsed()) {
+            if (chatterConfig.useChatter()) {
                 final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
                         platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                         parentFinder,
-                        settings.getChatter().getFutureGenerationLimit());
+                        chatterConfig.futureGenerationLimit());
                 metrics.getOrCreate(
                         new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
                                 .withDescription("the number of events without parents buffered")
