@@ -43,7 +43,7 @@ public class SerializableSemVers implements SoftwareVersion {
             .thenComparingInt(semver -> alphaNumberOf(semver.getPre()))
             // We never deploy versions with `build` parts to prod envs, so
             // just give precedence to the version that doesn't have one
-            .thenComparingInt(semver -> semver.getBuild().isBlank() ? 1 : 0);
+            .thenComparing(SemanticVersion::getBuild);
     public static final Comparator<SerializableSemVers> FULL_COMPARATOR = Comparator.comparing(
                     SerializableSemVers::getServices, SEM_VER_COMPARATOR)
             .thenComparing(SerializableSemVers::getProto, SEM_VER_COMPARATOR);

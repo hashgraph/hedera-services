@@ -139,6 +139,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private final SoftwareVersion justPriorVersion = forHapiAndHedera("0.29.1", "0.29.2");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
     private final SoftwareVersion futureVersion = forHapiAndHedera("1.0.0", "1.0.0");
+    private final SoftwareVersion versionWithConfig = forHapiAndHedera("1.0.0", "1.0.0-config");
     private final NodeId selfId = new NodeId(false, 1L);
     private static final String bookMemo = "0.0.4";
 
@@ -249,6 +250,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
                 .setServices(SemanticVersion.newBuilder().setMinor(32).build());
+//        SEMANTIC_VERSIONS
+//                .deployedSoftwareVersion()
+//                .setConfigurationVersion("test-config-version");
         subject = tracked(new ServicesState());
         setAllChildren();
     }

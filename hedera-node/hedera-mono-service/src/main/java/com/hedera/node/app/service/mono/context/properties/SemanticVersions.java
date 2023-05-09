@@ -38,7 +38,9 @@ public enum SemanticVersions {
 
     private static final String HAPI_VERSION_KEY = "hapi.proto.version";
     private static final String HEDERA_VERSION_KEY = "hedera.services.version";
+    private static final String HEDERA_CONFIG_VERSION_KEY = "hedera.config.version";
     private static final String VERSION_INFO_RESOURCE = "semantic-version.properties";
+    private static final String BOOTSTRAP_PROPERTIES_RESOURCE = "bootstrap.properties";
 
     private final AtomicReference<ActiveVersions> knownActive = new AtomicReference<>(null);
     private final AtomicReference<SerializableSemVers> knownSerializable = new AtomicReference<>(null);
@@ -57,31 +59,54 @@ public enum SemanticVersions {
 
     private void ensureLoaded() {
         if (knownActive.get() == null) {
-            final var deployed = fromResource(VERSION_INFO_RESOURCE, HAPI_VERSION_KEY, HEDERA_VERSION_KEY);
+            final var deployed = fromResource(VERSION_INFO_RESOURCE, BOOTSTRAP_PROPERTIES_RESOURCE,
+                    HAPI_VERSION_KEY, HEDERA_VERSION_KEY, HEDERA_CONFIG_VERSION_KEY);
             knownActive.set(deployed);
             knownSerializable.set(new SerializableSemVers(deployed.protoSemVer(), deployed.hederaSemVer()));
         }
     }
 
     @NonNull
-    static ActiveVersions fromResource(final String propertiesFile, final String protoKey, final String servicesKey) {
-        try (final var in = SemanticVersions.class.getClassLoader().getResourceAsStream(propertiesFile)) {
+    static ActiveVersions fromResource(final String propertiesFile,
+            final String bootstrapPropertiesFile,
+            final String protoKey,
+            final String servicesKey,
+            final String configKey) {
+        try (final var in = SemanticVersions.class.getClassLoader().getResourceAsStream(propertiesFile);
+             final var bootstrapIn = SemanticVersions.class.getClassLoader().getResourceAsStream(bootstrapPropertiesFile)) {
             final var props = new Properties();
+            final var bootstrapProperties = new Properties();
             props.load(in);
             log.info("Discovered semantic versions {} from resource '{}'", props, propertiesFile);
             final var protoSemVer = asSemVer((String) props.get(protoKey));
             final var hederaSemVer = asSemVer((String) props.get(servicesKey));
-            return new ActiveVersions(protoSemVer, hederaSemVer);
+
+            bootstrapProperties.load(bootstrapIn);
+            final var configVersion = (String) bootstrapProperties.get(configKey);
+            log.info("Discovered configuration version {} from resource '{}'", configVersion, bootstrapPropertiesFile);
+
+            final var hederaSemVerWithConfig = addConfigVersionToBuild(configVersion, hederaSemVer);
+            return new ActiveVersions(protoSemVer, hederaSemVerWithConfig);
         } catch (final Exception surprising) {
             log.warn(
-                    "Failed to parse resource '{}' (keys '{}' and '{}'). Version info will be" + " unavailable!",
+                    "Failed to parse resource '{}' (keys '{}' and '{}') and resource '{}' (keys '{}' and '{}')"
+                            + ". Version info will be" + " unavailable!",
                     propertiesFile,
                     protoKey,
                     servicesKey,
+                    bootstrapPropertiesFile,
+                    configKey,
                     surprising);
             final var emptySemver = SemanticVersion.getDefaultInstance();
             return new ActiveVersions(emptySemver, emptySemver);
         }
+    }
+
+    private static SemanticVersion addConfigVersionToBuild(@NonNull final String configVersion, @NonNull final SemanticVersion hederaSemVer) {
+        if(!configVersion.isEmpty() && !configVersion.equals("0")) {
+            return hederaSemVer.toBuilder().setBuild(configVersion).build();
+        }
+        return hederaSemVer;
     }
 
     static SemanticVersion asSemVer(final String value) {

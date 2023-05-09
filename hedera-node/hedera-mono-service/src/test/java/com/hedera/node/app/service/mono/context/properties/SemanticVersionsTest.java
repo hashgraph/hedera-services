@@ -102,13 +102,34 @@ class SemanticVersionsTest {
 
     @Test
     void warnsOfUnavailableSemversAndUsesEmpty() {
-        final var shouldBeEmpty = SemanticVersions.fromResource("nonExistent.properties", "w/e", "n/a");
+        final var shouldBeEmpty = SemanticVersions.fromResource("nonExistent.properties", "bootstrap.properties","w/e", "n/a", "hedera.config.version");
         final var desiredPrefix = "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a'). "
                 + "Version info will be unavailable!";
 
         assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.hederaSemVer());
         assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.protoSemVer());
         assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desiredPrefix)));
+    }
+
+    @Test
+    void warnsOfUnavailableSemversAndUsesEmptyConfig() {
+        final var shouldBeEmpty = SemanticVersions.fromResource("nonExistent.properties", "bootstrap.properties","hapi.proto.version", "hedera.services.version", "test");
+        final var desiredPrefix = "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a'). "
+                + "Version info will be unavailable!";
+
+        assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.hederaSemVer());
+        assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.protoSemVer());
+        assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desiredPrefix)));
+    }
+
+    @Test
+    void appendsBuildCorrectly() {
+        final var literal = "1.2.4+1";
+        final var expected = baseSemVer().setBuild("1").build();
+
+        final var actual = SemanticVersions.asSemVer(literal);
+
+        assertEquals(expected, actual);
     }
 
     private static SemanticVersion.Builder baseSemVer() {

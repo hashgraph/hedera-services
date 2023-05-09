@@ -58,6 +58,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTI
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.spi.config.PropertyNames.CONFIG_VERSION;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
@@ -430,7 +431,8 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_REWARD_HISTORY_NUM_STORED_PERIODS,
             STAKING_STARTUP_HELPER_RECOMPUTE,
             WORKFLOWS_ENABLED,
-            STAKING_SUM_OF_CONSENSUS_WEIGHTS);
+            STAKING_SUM_OF_CONSENSUS_WEIGHTS,
+            CONFIG_VERSION);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
             ACCOUNTS_MAX_NUM,
@@ -817,5 +819,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING),
-            entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT));
+            entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT),
+            entry(CONFIG_VERSION, AS_STRING));
 }
