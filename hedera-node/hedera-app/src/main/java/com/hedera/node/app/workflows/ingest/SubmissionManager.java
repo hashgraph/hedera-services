@@ -51,7 +51,7 @@ public class SubmissionManager {
     /**
      * Constructor of {@code SubmissionManager}
      *
-     * @param nodeSelfID the {@link AccountID} for referring to this node's operator account'
+     * @param nodeSelfID the {@link AccountID} for referring to this node's operator account
      * @param platform the {@link Platform} to which transactions will be submitted
      * @param recordCache the {@link RecordCache} that tracks submitted transactions
      * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties

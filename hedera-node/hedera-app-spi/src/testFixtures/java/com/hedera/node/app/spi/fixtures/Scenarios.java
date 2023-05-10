@@ -327,10 +327,6 @@ public interface Scenarios extends TransactionFactory {
 
     TestUser FRANK = new TestUser(AccountID.newBuilder().accountNum(2000L).build(), null, FAKE_ECDSA_KEY_INFOS[3]);
 
-    default UserScenarioBuilder with(TestUser user) {
-        return new UserScenarioBuilder(user);
-    }
-
     default Map<Long, Account> defaultAccounts() {
         return Map.of(
                 NODE_1.nodeAccountID().accountNumOrThrow(), NODE_1.account(),

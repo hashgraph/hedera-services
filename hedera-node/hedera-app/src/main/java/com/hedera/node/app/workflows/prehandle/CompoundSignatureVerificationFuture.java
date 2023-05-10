@@ -121,8 +121,7 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
      * very nice.
      *
      * <p>Alternatively, we can just do a "best effort" cancel, which is what we will do. If the future exists, we will
-     * cancel it. If it does not exist, we will let it be. Canceling of futures is, on the whole, a best effort
-     * operation anyway.
+     * cancel it. If it does not exist, we will let it be.
      */
     @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
