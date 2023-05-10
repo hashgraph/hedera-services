@@ -75,21 +75,19 @@ public class RedirectPrecompileSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(withOpContext((spec, opLog) -> {
-                    allRunFor(
-                            spec,
-                            contractCall(
-                                            CONTRACT,
-                                            "getBalanceOf",
-                                            HapiParserUtil.asHeadlongAddress(
-                                                    asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                            asHeadlongAddress(
-                                                    asAddress(spec.registry().getAccountID(TOKEN_TREASURY))))
-                                    .payingWith(ACCOUNT)
-                                    .via(TXN)
-                                    .hasKnownStatus(SUCCESS)
-                                    .gas(1_000_000));
-                }))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        CONTRACT,
+                                        "getBalanceOf",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(TOKEN_TREASURY))))
+                                .payingWith(ACCOUNT)
+                                .via(TXN)
+                                .hasKnownStatus(SUCCESS)
+                                .gas(1_000_000))))
                 .then(childRecordsCheck(
                         TXN,
                         SUCCESS,
