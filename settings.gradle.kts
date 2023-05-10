@@ -73,6 +73,8 @@ include(":hedera-node:hapi-fees")
 
 include(":hedera-node:hapi")
 
+include(":hedera-node:hedera-config")
+
 include(":hedera-node:hedera-app")
 
 include(":hedera-node:hedera-app-spi")
@@ -239,7 +241,7 @@ dependencyResolutionManagement {
       library("protobuf-java", "com.google.protobuf", "protobuf-java")
           .versionRef("protobuf-java-version")
       library("swirlds-common", "com.swirlds", "swirlds-common").versionRef("swirlds-version")
-      library("swirlds-config", "com.swirlds", "swirlds-config").versionRef("swirlds-version")
+      library("swirlds-config", "com.swirlds", "swirlds-config-api").versionRef("swirlds-version")
       library("swirlds-config-impl", "com.swirlds", "swirlds-config-impl")
           .versionRef("swirlds-version")
       library("slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
