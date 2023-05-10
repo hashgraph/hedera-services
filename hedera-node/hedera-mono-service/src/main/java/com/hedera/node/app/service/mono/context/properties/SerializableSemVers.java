@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.asSemVer;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
@@ -88,22 +89,24 @@ public class SerializableSemVers implements SoftwareVersion {
         return RELEASE_027_VERSION;
     }
 
-    public boolean isAfter(@Nullable final SoftwareVersion other) {
+    public boolean isAfter(@NonNull final SoftwareVersion other) {
+        requireNonNull(other);
         return compareTo(other) > 0;
     }
 
-    public boolean isBefore(@Nullable final SoftwareVersion other) {
+    public boolean isBefore(@NonNull final SoftwareVersion other) {
+        requireNonNull(other);
         return compareTo(other) < 0;
     }
 
-    public boolean hasMigrationRecordsFrom(@Nullable final SoftwareVersion other) {
+    public boolean hasMigrationRecordsFrom(@NonNull final SoftwareVersion other) {
+        requireNonNull(other);
         return isNonPatchUpgradeFrom(other) || (this.isAfter(other) && currentVersionHasPatchMigrationRecords);
     }
 
-    public boolean isNonConfigUpgrade(@Nullable final SoftwareVersion other) {
-        if (other == null) {
-            return true;
-        }
+    public boolean isNonConfigUpgrade(@NonNull final SoftwareVersion other) {
+        requireNonNull(other);
+
         if (other instanceof SerializableSemVers that) {
             return this.isAfter(that) && haveDifferentNonBuildVersions(this, that);
         } else {
@@ -112,10 +115,9 @@ public class SerializableSemVers implements SoftwareVersion {
     }
 
     @VisibleForTesting
-    boolean isNonPatchUpgradeFrom(@Nullable final SoftwareVersion other) {
-        if (other == null) {
-            return true;
-        }
+    boolean isNonPatchUpgradeFrom(@NonNull final SoftwareVersion other) {
+        requireNonNull(other);
+
         if (other instanceof SerializableSemVers that) {
             return this.isAfter(that) && haveDifferentMajorAndMinorVersions(this, that);
         } else {

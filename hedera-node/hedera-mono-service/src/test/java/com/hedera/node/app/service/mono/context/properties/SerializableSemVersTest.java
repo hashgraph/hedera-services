@@ -120,8 +120,8 @@ class SerializableSemVersTest {
         assertTrue(b.compareTo(a) < 0);
         assertTrue(c.compareTo(a) > 0);
         assertEquals(0, a.compareTo(d));
-        assertTrue(a.isAfter(null));
-        assertFalse(a.isBefore(null));
+        assertThrows(NullPointerException.class, () -> a.isAfter(null));
+        assertThrows(NullPointerException.class, () -> a.isBefore(null));
     }
 
     @Test
@@ -155,7 +155,7 @@ class SerializableSemVersTest {
         final var major = new SerializableSemVers(someProto, servicesMajorUpgrade);
         final var mockVersion = mock(SoftwareVersion.class);
 
-        assertTrue(base.isNonPatchUpgradeFrom(null));
+        assertThrows(NullPointerException.class, () -> base.isNonPatchUpgradeFrom(null));
         assertFalse(base.isNonPatchUpgradeFrom(base));
         assertFalse(patch.isNonPatchUpgradeFrom(base));
         assertTrue(minor.isNonPatchUpgradeFrom(base));
@@ -179,7 +179,7 @@ class SerializableSemVersTest {
         final var config = new SerializableSemVers(someProto, servicesConfig);
         final var mockVersion = mock(SoftwareVersion.class);
 
-        assertTrue(base.isNonConfigUpgrade(null));
+        assertThrows(NullPointerException.class, () -> base.isNonConfigUpgrade(null));
         assertFalse(base.isNonConfigUpgrade(base));
         assertTrue(patch.isNonConfigUpgrade(base));
         assertTrue(minor.isNonConfigUpgrade(base));
