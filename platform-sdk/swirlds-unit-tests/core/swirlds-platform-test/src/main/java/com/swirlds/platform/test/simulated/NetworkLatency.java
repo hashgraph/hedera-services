@@ -63,8 +63,8 @@ public class NetworkLatency {
      * @param random   source of randomness
      * @return the {@link NetworkLatency} object
      */
-    public static NetworkLatency randomLatency(final Set<NodeId> nodeIds, final Duration maxDelay,
-            final Random random) {
+    public static NetworkLatency randomLatency(
+            final Set<NodeId> nodeIds, final Duration maxDelay, final Random random) {
         HashMap<Long, Latency> delays = new HashMap<>();
         for (final NodeId nodeId : nodeIds) {
             final Latency latency = new Latency(

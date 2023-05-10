@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.platform.test.chatter.network;
@@ -25,29 +24,19 @@ import com.swirlds.platform.test.simulated.config.NodeConfig;
 public class NoOpSimulatedEventPipeline<T extends ChatterEvent> implements SimulatedEventPipeline<T> {
 
     @Override
-    public void addEvent(T event) {
-
-    }
+    public void addEvent(T event) {}
 
     @Override
-    public void maybeHandleEventsAndCallNext(ChatterCore<T> core) {
-
-    }
+    public void maybeHandleEventsAndCallNext(ChatterCore<T> core) {}
 
     @Override
-    public void applyNodeConfigAndCallNext(NodeConfig nodeConfig) {
-
-    }
+    public void applyNodeConfigAndCallNext(NodeConfig nodeConfig) {}
 
     @Override
-    public void printResultsAndCallNext() {
-
-    }
+    public void printResultsAndCallNext() {}
 
     @Override
-    public void setNext(SimulatedEventPipeline<T> next) {
-
-    }
+    public void setNext(SimulatedEventPipeline<T> next) {}
 
     @Override
     public SimulatedEventPipeline<T> getNext() {

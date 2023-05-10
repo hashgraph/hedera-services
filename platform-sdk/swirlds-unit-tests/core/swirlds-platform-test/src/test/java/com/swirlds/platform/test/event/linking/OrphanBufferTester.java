@@ -65,7 +65,7 @@ public class OrphanBufferTester implements EventLinker {
     public void newAncientGeneration(final long ancientGeneration) {
         updateGenerations(new Generations(
                 GraphGenerations.FIRST_GENERATION, ancientGeneration + 1, Long.MAX_VALUE // not relevant ATM
-        ));
+                ));
     }
 
     public void loadFromSignedState(final SignedState signedState) {

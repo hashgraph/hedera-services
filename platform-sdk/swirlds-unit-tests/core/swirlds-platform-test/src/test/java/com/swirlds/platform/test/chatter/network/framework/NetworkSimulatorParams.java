@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.platform.test.chatter.network.framework;
@@ -39,13 +38,14 @@ import java.util.concurrent.atomic.AtomicLong;
  * @param simulationTime the amount of time to simulate
  * @param simulationStep the step size of the fake clock
  */
-public record NetworkSimulatorParams(FakeTime time,
-                                     Duration otherEventDelay,
-                                     Duration procTimeInterval,
-                                     NetworkLatency networkLatency,
-                                     Duration simulationTime,
-                                     Duration simulationStep,
-                                     List<NetworkConfig> networkConfigs) {
+public record NetworkSimulatorParams(
+        FakeTime time,
+        Duration otherEventDelay,
+        Duration procTimeInterval,
+        NetworkLatency networkLatency,
+        Duration simulationTime,
+        Duration simulationStep,
+        List<NetworkConfig> networkConfigs) {
 
     private static final Duration DEFAULT_SIMULATION_STEP = Duration.ofMillis(10);
     private static final Duration DEFAULT_NODE_LATENCY = Duration.ofMillis(50);
@@ -109,11 +109,13 @@ public record NetworkSimulatorParams(FakeTime time,
             simulationStep = simulationStep == null ? DEFAULT_SIMULATION_STEP : simulationStep;
 
             final Set<NodeId> nodeIds = networkConfigs.get(0).nodeConfigs().keySet();
-            networkLatency = networkLatency == null ? NetworkLatency.uniformLatency(nodeIds, DEFAULT_NODE_LATENCY)
+            networkLatency = networkLatency == null
+                    ? NetworkLatency.uniformLatency(nodeIds, DEFAULT_NODE_LATENCY)
                     : networkLatency;
 
             final AtomicLong simulationTimeInMillis = new AtomicLong(0L);
-            networkConfigs.forEach(nc -> simulationTimeInMillis.addAndGet(nc.duration().toMillis()));
+            networkConfigs.forEach(
+                    nc -> simulationTimeInMillis.addAndGet(nc.duration().toMillis()));
             simulationTime = Duration.ofMillis(simulationTimeInMillis.get());
 
             return new NetworkSimulatorParams(
@@ -123,8 +125,7 @@ public record NetworkSimulatorParams(FakeTime time,
                     networkLatency,
                     simulationTime,
                     simulationStep,
-                    networkConfigs
-            );
+                    networkConfigs);
         }
     }
 
@@ -134,5 +135,4 @@ public record NetworkSimulatorParams(FakeTime time,
         }
         return networkConfigs.get(0).getNumConfigs();
     }
-
 }

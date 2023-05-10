@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,7 +53,6 @@ public class ChatterSimulationTests {
     private static final Duration DEFAULT_MAX_DELAY = Duration.ofMillis(240);
     private static final Duration SLOW_NODE_INTAKE_DELAY = Duration.ofMillis(100);
     private static final Duration FAST_NODE_INTAKE_DELAY = Duration.ofMillis(0);
-
 
     @Disabled("This test currently fails due to a known bug")
     @Test
@@ -71,8 +71,7 @@ public class ChatterSimulationTests {
                         .build())
                 .times(3)
                 .build();
-        final NetworkConfig networkConfig =
-                new NetworkConfig("Single Phase", PHASE_DURATION, nodeConfigs);
+        final NetworkConfig networkConfig = new NetworkConfig("Single Phase", PHASE_DURATION, nodeConfigs);
 
         // Use uneven latencies to cause some events to sit in the orphan buffer for a short time
         final NetworkLatency latency = NetworkLatency.randomLatency(nodeConfigs.keySet(), DEFAULT_MAX_DELAY, random);
@@ -105,10 +104,12 @@ public class ChatterSimulationTests {
                 // sent after these zero duration messages.
                 if (nonZeroProcTimeSent.get()) {
                     final Duration actualDuration = Duration.ofNanos(procMsg.getProcessingTimeInNanos());
-                    assertEquals(SLOW_NODE_INTAKE_DELAY, actualDuration,
-                            String.format("Node %s sent a processing time message with an invalid duration (%s)",
-                                    id,
-                                    actualDuration));
+                    assertEquals(
+                            SLOW_NODE_INTAKE_DELAY,
+                            actualDuration,
+                            String.format(
+                                    "Node %s sent a processing time message with an invalid duration (%s)",
+                                    id, actualDuration));
                 }
             });
         }
@@ -150,8 +151,7 @@ public class ChatterSimulationTests {
                 .times(1)
                 .build();
         final NetworkConfig oneSlowNodeNetworkConfig =
-                new NetworkConfig("Second Phase - Node 0 has Slow Intake Queue", PHASE_DURATION,
-                        node0SlowIntakeMap);
+                new NetworkConfig("Second Phase - Node 0 has Slow Intake Queue", PHASE_DURATION, node0SlowIntakeMap);
 
         // Slow node's intake queue is fast again
         final NodeConfig node0FastIntake = initialConfigMap.get(NodeId.createMain(0L));
@@ -178,8 +178,8 @@ public class ChatterSimulationTests {
 
         network.printNetworkState();
 
-        final GossipEventTracker gossipEventTracker = network.chatterInstance(slowNodeId)
-                .getPipelineComponent(GossipEventTracker.class);
+        final GossipEventTracker gossipEventTracker =
+                network.chatterInstance(slowNodeId).getPipelineComponent(GossipEventTracker.class);
         assertTrue(gossipEventTracker.getNumDuplicates() > 0);
     }
 
@@ -189,7 +189,7 @@ public class ChatterSimulationTests {
      * @param params parameters describing how the network and simulation should operate
      * @return the newly constructed network
      */
-    private Network<CountingChatterEvent> createCountingEventNetwork(final NetworkSimulatorParams params) {
+    private Network<CountingChatterEvent> createCountingEventNetwork(@NonNull final NetworkSimulatorParams params) {
         // Create the network latency model
         final NetworkConfig initialNetworkConfig = params.networkConfigs().get(0);
         configureNetworkLatency(params.networkLatency(), initialNetworkConfig);
@@ -204,8 +204,7 @@ public class ChatterSimulationTests {
 
         // Create the nodes and add them to the network
         final AtomicLong eventCounter = new AtomicLong(0);
-        params.nodeIds().forEach(
-                (id) -> network.addNode(createCountingEventNode(id, params, eventCounter)));
+        params.nodeIds().forEach((id) -> network.addNode(createCountingEventNode(id, params, eventCounter)));
 
         return network;
     }
@@ -216,7 +215,8 @@ public class ChatterSimulationTests {
      * @param latency       the network latency to update
      * @param networkConfig the network configuration to apply to the network latency model
      */
-    private void configureNetworkLatency(final NetworkLatency latency, final NetworkConfig networkConfig) {
+    private void configureNetworkLatency(
+            @NonNull final NetworkLatency latency, @NonNull final NetworkConfig networkConfig) {
         for (final Map.Entry<NodeId, NodeConfig> entry :
                 networkConfig.nodeConfigs().entrySet()) {
             final NodeId nodeId = entry.getKey();
@@ -236,8 +236,8 @@ public class ChatterSimulationTests {
      * @param eventCounter the event counter used across all nodes to assign events a monotonically increasing number
      * @return the newly created node
      */
-    private Node<CountingChatterEvent> createCountingEventNode(final NodeId nodeId, final NetworkSimulatorParams params,
-            final AtomicLong eventCounter) {
+    private Node<CountingChatterEvent> createCountingEventNode(
+            final NodeId nodeId, final NetworkSimulatorParams params, final AtomicLong eventCounter) {
 
         // An event creator that creates events with a monotonically increasing event number across all nodes
         final TimedEventCreator<CountingChatterEvent> eventCreator = new TimedEventCreator<>(
@@ -256,7 +256,7 @@ public class ChatterSimulationTests {
         final InOrderOrphanBuffer orphanBuffer = new InOrderOrphanBuffer(nodeId);
 
         final SimulatedEventPipeline<CountingChatterEvent> pipeline = new SimulatedEventPipelineBuilder<
-                CountingChatterEvent>()
+                        CountingChatterEvent>()
                 .next(gossipRecorder)
                 .next(intakeQueue)
                 .next(eventDeduper)

@@ -170,7 +170,7 @@ public class SimpleSimulatedGossip {
 
         printInTransit(sb);
         printDelivered(sb);
-//        printSentBy(sb);
+        //        printSentBy(sb);
 
         System.out.println(sb);
     }

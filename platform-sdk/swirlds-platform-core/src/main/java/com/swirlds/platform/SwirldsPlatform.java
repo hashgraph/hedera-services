@@ -143,7 +143,6 @@ import com.swirlds.platform.gossip.chatter.PrepareChatterEvent;
 import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -1175,9 +1174,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         if (signedStateFromDisk != null) {
             logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                    signedStateFromDisk.getRound(),
-                    signedStateFromDisk.getConsensusTimestamp(),
-                    startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                            signedStateFromDisk.getRound(),
+                            signedStateFromDisk.getConsensusTimestamp(),
+                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
 
             buildEventHandlersFromState(initialState, stateHashSignQueueThread);
@@ -1865,7 +1864,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             if (oldStatus != newStatus) {
                 final PlatformStatus ns = newStatus;
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
+                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
                         .toString());
 
                 logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());
