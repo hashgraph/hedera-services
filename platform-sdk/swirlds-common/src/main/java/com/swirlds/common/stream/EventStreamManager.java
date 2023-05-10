@@ -28,7 +28,6 @@ import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -110,7 +109,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
             try {
                 Files.createDirectories(Paths.get(eventStreamDir));
             } catch (final IOException e) {
-                throw new UncheckedIOException(e);
+                throw new IllegalStateException("Can not create directory for event stream", e);
             }
 
             streamFileWriter = new TimestampStreamFileWriter<>(
