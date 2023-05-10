@@ -40,7 +40,6 @@ import com.swirlds.platform.test.chatter.network.CountingChatterEvent;
 import com.swirlds.platform.test.simulated.GossipMessage;
 import com.swirlds.platform.test.simulated.GossipMessageHandler;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -71,16 +70,13 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
             final NodeId selfId,
             final Class<T> clazz,
             final Time time,
+            final ChatterSubSetting settings,
             final SimulatedEventCreator<T> newEventCreator,
             final SimulatedEventPipeline<T> eventPipeline) {
         this.selfId = selfId;
         this.time = time;
         this.newEventCreator = newEventCreator;
         this.eventPipeline = eventPipeline;
-
-        final ChatterSubSetting settings = spy(ChatterSubSetting.class);
-        when(settings.getOtherEventDelay()).thenReturn(Duration.ZERO);
-        when(settings.getProcessingTimeInterval()).thenReturn(Duration.ofMillis(10));
 
         core = new ChatterCore<>(time, clazz, e -> {}, settings, (id, ping) -> {}, newDefaultMetrics(selfId));
 
@@ -93,6 +89,19 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
             core.newPeerInstance(peerId, this.eventPipeline::addEvent);
             peerIds.add(peerId);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <R extends SimulatedEventPipeline<T>> R getPipelineComponent(final Class<R> clazz) {
+        SimulatedEventPipeline<T> pipelineComponent = eventPipeline;
+        while (pipelineComponent != null) {
+            if (clazz.isAssignableFrom(eventPipeline.getClass())) {
+                return (R) pipelineComponent;
+            } else {
+                pipelineComponent = pipelineComponent.getNext();
+            }
+        }
+        return null;
     }
 
     /**
@@ -137,11 +146,6 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
 
             SelfSerializable message = peer.outputAggregator().getMessage();
             while (message != null) {
-                if (message instanceof final CountingChatterEvent event) {
-                    if (event.getCreator() != selfId.getId()) {
-                        System.out.println("Sending other event to peer: " + event);
-                    }
-                }
                 gossipMessages.add(GossipMessage.toPeer(message, selfId.getId(), peerId));
                 message = peer.outputAggregator().getMessage();
             }

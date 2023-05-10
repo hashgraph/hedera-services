@@ -34,15 +34,13 @@ import java.util.Set;
  *     <li>the number of duplicated events received</li>
  * </ul>
  */
-public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingChatterEvent> {
+public class EventDeduper extends AbstractSimulatedEventPipeline<CountingChatterEvent> {
 
     private final NodeId nodeId;
-    private final Map<Long, Queue<CountingChatterEvent>> eventsReceivedByCreator = new HashMap<>();
-    private final Queue<CountingChatterEvent> selfEvents = new ArrayDeque<>();
-    private final Set<Long> peerEventsReceived = new HashSet<>();
-    private long duplicateEventCounter = 0;
+    private final Set<Long> eventsReceived = new HashSet<>();
+    private long numDiscarded = 0;
 
-    public GossipEventTracker(final NodeId nodeId) {
+    public EventDeduper(final NodeId nodeId) {
         this.nodeId = nodeId;
     }
 
@@ -51,18 +49,12 @@ public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingC
      */
     @Override
     public void addEvent(final CountingChatterEvent event) {
-        final long creator = event.getCreator();
-        if (creator == nodeId.getId()) {
-            selfEvents.add(event);
+        if (!eventsReceived.contains(event.getOrder())) {
+            eventsReceived.add(event.getOrder());
+            next.addEvent(event);
         } else {
-            if (!peerEventsReceived.add(event.getOrder())) {
-                duplicateEventCounter++;
-            } else {
-                eventsReceivedByCreator.putIfAbsent(creator, new ArrayDeque<>());
-                eventsReceivedByCreator.get(creator).add(event);
-            }
+            numDiscarded++;
         }
-        next.addEvent(event);
     }
 
     /**
@@ -70,11 +62,7 @@ public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingC
      */
     @Override
     public void maybeHandleEvents(final ChatterCore<CountingChatterEvent> core) {
-        // Do nothing, this class only tracks events that pass through it
-    }
-
-    public long getNumDuplicates() {
-        return duplicateEventCounter;
+        // Do nothing, this class only passes along events this class has not already encountered
     }
 
     /**
@@ -82,15 +70,7 @@ public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingC
      */
     @Override
     public void printResults() {
-        final Map<Long, Integer> eventCounts = new HashMap<>();
-        eventsReceivedByCreator.forEach((key, value) -> eventCounts.put(key, value.size()));
-
-        final StringBuilder sb = new StringBuilder();
-        sb.append(String.format("Node %s", nodeId.getId())).append("\n");
-        sb.append("\tGossiped Events").append("\n");
-        sb.append(String.format("\t\tCreated: %s%n", selfEvents.size()));
-        sb.append(String.format("\t\tDuplicates Received: %s%n", duplicateEventCounter));
-        eventCounts.forEach((k, v) -> sb.append(String.format("\t\tReceived %s events created by %s%n", v, k)));
+        String sb = String.format("\tDuplicate Events Discarded: %s%n", numDiscarded);
         System.out.println(sb);
     }
 }

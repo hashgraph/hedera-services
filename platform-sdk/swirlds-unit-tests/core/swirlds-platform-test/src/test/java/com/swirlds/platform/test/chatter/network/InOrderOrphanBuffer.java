@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.chatter.network;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.chatter.protocol.ChatterCore;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
 import java.util.ArrayList;
@@ -36,12 +37,15 @@ import java.util.TreeSet;
  */
 public class InOrderOrphanBuffer extends AbstractSimulatedEventPipeline<CountingChatterEvent> {
 
-    private final long selfId;
+    private final NodeId selfId;
+    /** An ordered map of events to be emitted when the become linked */
     private final Map<Long, CountingChatterEvent> eventMap = new TreeMap<>();
+    /** The order number of the event that was most recently linked */
     private long lastEventLinked = -1;
+    /** An ordered set of self events that have been linked but are ahead of lastEventLinked */
     private final Set<Long> selfLinkedEvents = new TreeSet<>();
 
-    public InOrderOrphanBuffer(final long selfId) {
+    public InOrderOrphanBuffer(final NodeId selfId) {
         this.selfId = selfId;
     }
 
@@ -62,12 +66,34 @@ public class InOrderOrphanBuffer extends AbstractSimulatedEventPipeline<Counting
      */
     @Override
     public void maybeHandleEvents(final ChatterCore<CountingChatterEvent> core) {
+        boolean eventsLinked = true;
+        while (eventsLinked) {
+            eventsLinked = linkEvents(core);
+        }
+    }
+
+    /**
+     * Iterates through the event in the event map once, in order, and passes any events that are linked to chatter
+     * core.
+     *
+     * @param core the chatter core instance
+     * @return {@code true} if any events became linked and were sent to chatter core, {@code false} otherwise
+     */
+    private boolean linkEvents(final ChatterCore<CountingChatterEvent> core) {
         final Iterator<Map.Entry<Long, CountingChatterEvent>> iterator =
                 eventMap.entrySet().iterator();
         final List<Long> toRemove = new ArrayList<>();
         while (iterator.hasNext()) {
             final CountingChatterEvent event = iterator.next().getValue();
             final boolean isSelfEvent = isSelfEvent(event);
+
+            /*
+            Self events are always linked immediately, because in real operations,
+            no event can be created without first having its parent events.
+
+            Other events become linked when their order is the next number after the
+            last linked event order
+             */
             if (isSelfEvent || event.getOrder() == lastEventLinked + 1) {
                 toRemove.add(event.getOrder());
 
@@ -76,6 +102,8 @@ public class InOrderOrphanBuffer extends AbstractSimulatedEventPipeline<Counting
                 }
 
                 advanceLastLinked(event);
+
+                // Emit the event to chatter core
                 if (isSelfEvent) {
                     core.eventCreated(event);
                 } else {
@@ -84,10 +112,19 @@ public class InOrderOrphanBuffer extends AbstractSimulatedEventPipeline<Counting
             }
         }
         toRemove.forEach(eventMap::remove);
+        return !toRemove.isEmpty();
     }
 
     private void advanceLastLinked(final CountingChatterEvent event) {
-        if (!isSelfEvent(event)) {
+        if (isSelfEvent(event)) {
+            if (lastEventLinked + 1 == event.getOrder()) {
+                lastEventLinked = event.getOrder();
+            }
+        } else {
+            // if the linked event was created by a peer, it is possible
+            // that the next event to be linked is a self event we already
+            // have. In that case, the lastEventLinked pointer must be advanced,
+            // possibly several events if there are several contiguous self events.
             lastEventLinked = event.getOrder();
             final Iterator<Long> selfLinkedIt = selfLinkedEvents.iterator();
             while (selfLinkedIt.hasNext()) {
@@ -101,17 +138,16 @@ public class InOrderOrphanBuffer extends AbstractSimulatedEventPipeline<Counting
                     selfLinkedIt.remove();
                 }
             }
-        } else {
-            if (lastEventLinked + 1 == event.getOrder()) {
-                lastEventLinked = event.getOrder();
-            }
         }
     }
 
     private boolean isSelfEvent(final CountingChatterEvent event) {
-        return event.getCreator() == selfId;
+        return event.getCreator() == selfId.getId();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void printResults() {
         final StringBuilder sb = new StringBuilder();

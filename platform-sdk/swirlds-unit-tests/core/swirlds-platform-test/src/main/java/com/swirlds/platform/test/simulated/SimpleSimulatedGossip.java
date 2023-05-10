@@ -41,6 +41,7 @@ public class SimpleSimulatedGossip {
 
     private final List<Deque<Payload>> inTransit;
     private final List<Deque<GossipMessage>> delivered;
+    private final List<Deque<GossipMessage>> sentBy;
     private final NetworkLatency latency;
 
     /**
@@ -58,10 +59,12 @@ public class SimpleSimulatedGossip {
         nodes = new HashMap<>(numNodes);
         inTransit = new ArrayList<>(numNodes);
         delivered = new ArrayList<>(numNodes);
+        sentBy = new ArrayList<>(numNodes);
 
         for (int i = 0; i < numNodes; i++) {
             inTransit.add(new LinkedList<>());
             delivered.add(new LinkedList<>());
+            sentBy.add(new LinkedList<>());
         }
     }
 
@@ -97,12 +100,31 @@ public class SimpleSimulatedGossip {
     }
 
     /**
+     * Get all the messages (not just events) sent by a node via gossip
+     *
+     * @param nodeId the id of the node
+     * @return all messages sent by the node
+     */
+    public Deque<GossipMessage> getSentBy(final NodeId nodeId) {
+        return sentBy.get(nodeId.getIdAsInt());
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends SelfSerializable> Deque<T> getSentBy(final NodeId nodeId, final Class<T> clazz) {
+        return getSentBy(nodeId).stream()
+                .filter(msg -> clazz.isAssignableFrom(msg.message().getClass()))
+                .map(msg -> (T) msg.message())
+                .collect(Collectors.toCollection(LinkedList::new));
+    }
+
+    /**
      * Gossip an event to other nodes with the provided latency. This method will not actually do any gossiping, it will
      * only enqueue the events to send them later with {@link #distribute()}
      *
      * @param message the message to gossip
      */
     public void gossipPayload(final GossipMessage message) {
+        sentBy.get((int) message.senderId()).add(message);
         if (message.recipientId() == null) {
             sendToAllPeers(message);
         } else {
@@ -146,16 +168,44 @@ public class SimpleSimulatedGossip {
     public void printQueues() {
         final StringBuilder sb = new StringBuilder();
 
+        printInTransit(sb);
+        printDelivered(sb);
+//        printSentBy(sb);
+
+        System.out.println(sb);
+    }
+
+    private void printSentBy(final StringBuilder sb) {
+        for (int i = 0; i < sentBy.size(); i++) {
+            final Deque<GossipMessage> queue = sentBy.get(i);
+            sb.append(String.format("Messages sent by %s (%s messages)%n", i, queue.size()));
+            for (final GossipMessage msg : queue) {
+                sb.append("\t").append(msg).append("\n");
+            }
+            sb.append("\n");
+        }
+    }
+
+    private void printDelivered(final StringBuilder sb) {
+        for (int i = 0; i < delivered.size(); i++) {
+            final Deque<GossipMessage> queue = delivered.get(i);
+            sb.append(String.format("Messages delivered to %s (%s messages)%n", i, queue.size()));
+            for (final GossipMessage msg : queue) {
+                sb.append("\t").append(msg).append("\n");
+            }
+            sb.append("\n");
+        }
+    }
+
+    private void printInTransit(final StringBuilder sb) {
         for (int i = 0; i < inTransit.size(); i++) {
             final Deque<Payload> queue = inTransit.get(i);
-            sb.append(String.format("Gossip Queue for %s (%s messages)%n", i, queue.size()));
+            sb.append(String.format("Messages in transit to %s (%s messages)%n", i, queue.size()));
             for (final Payload payload : queue) {
                 sb.append("\t").append(payload).append("\n");
             }
             sb.append("\n");
         }
-
-        System.out.println(sb);
     }
 
     public record Payload(GossipMessage gossipMessage, Instant arrivalTime) {

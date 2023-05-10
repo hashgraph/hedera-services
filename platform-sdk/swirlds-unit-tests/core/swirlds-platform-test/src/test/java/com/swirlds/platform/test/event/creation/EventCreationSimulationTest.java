@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.event.creation;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.FakeTime;
@@ -31,8 +32,10 @@ import com.swirlds.platform.test.simulated.config.NodeConfig;
 import com.swirlds.platform.test.simulated.config.NodeConfigBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -106,7 +109,11 @@ public class EventCreationSimulationTest {
                 .build();
         final FakeTime time = new FakeTime();
         final TestIntake consensus = new TestIntake(addressBook, time);
-        final NetworkLatency latency = new NetworkLatency(addressBook, params.maxDelay(), random);
+        final Set<NodeId> nodeIds = new HashSet<>(params.numNodes());
+        for (final Address address : addressBook) {
+            nodeIds.add(NodeId.createMain(address.getId()));
+        }
+        final NetworkLatency latency = NetworkLatency.randomLatency(nodeIds, params.maxDelay(), random);
         List<NodeConfig> nodeConfigs = params.nodeConfigs();
         for (int i = 0; i < nodeConfigs.size(); i++) {
             final NodeConfig nodeConfig = nodeConfigs.get(i);

@@ -34,11 +34,22 @@ public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> imp
 
     protected abstract void printResults();
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setNext(final SimulatedEventPipeline<T> next) {
         this.next = next;
     }
 
+    @Override
+    public SimulatedEventPipeline<T> getNext() {
+        return next;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void maybeHandleEventsAndCallNext(final ChatterCore<T> core) {
         maybeHandleEvents(core);
@@ -47,6 +58,9 @@ public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> imp
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void applyNodeConfigAndCallNext(final NodeConfig nodeConfig) {
         applyNodeConfig(nodeConfig);
@@ -55,9 +69,15 @@ public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> imp
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void applyNodeConfig(final NodeConfig nodeConfig) {}
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void printResultsAndCallNext() {
         printResults();

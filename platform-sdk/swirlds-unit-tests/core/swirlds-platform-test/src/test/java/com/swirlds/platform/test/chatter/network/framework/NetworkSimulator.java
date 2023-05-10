@@ -54,7 +54,7 @@ public class NetworkSimulator {
         Instant lastConfigEffectiveTime = time.now().minusMillis(time.elapsed().toMillis());
         Duration prevConfigDuration = Duration.ZERO;
 
-        for (final NetworkConfig config : params.networkConfig()) {
+        for (final NetworkConfig config : params.networkConfigs()) {
             final Instant configEffectiveTime = lastConfigEffectiveTime.plus(prevConfigDuration);
 
             // if this is the first time step activating this config, move to the next config and return

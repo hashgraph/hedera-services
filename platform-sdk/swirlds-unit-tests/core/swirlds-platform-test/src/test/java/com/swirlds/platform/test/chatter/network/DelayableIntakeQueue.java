@@ -49,6 +49,9 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
         this.intakeQueueDelay = intakeQueueDelay;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void applyNodeConfig(final NodeConfig nodeConfig) {
         this.intakeQueueDelay = nodeConfig.intakeQueueDelay();
@@ -81,6 +84,9 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void printResults() {
         final StringBuilder sb = new StringBuilder();

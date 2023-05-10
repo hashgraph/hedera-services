@@ -61,4 +61,11 @@ public interface SimulatedEventPipeline<T extends ChatterEvent> extends NodeConf
      * @param next the next event component
      */
     void setNext(final SimulatedEventPipeline<T> next);
+
+    /**
+     * Gets the next event component
+     *
+     * @return the next event component
+     */
+    SimulatedEventPipeline<T> getNext();
 }
