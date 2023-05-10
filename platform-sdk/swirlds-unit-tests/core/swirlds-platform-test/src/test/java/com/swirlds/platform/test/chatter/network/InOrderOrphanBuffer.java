@@ -149,7 +149,7 @@ public class InOrderOrphanBuffer extends AbstractSimulatedEventPipeline<Counting
      * {@inheritDoc}
      */
     @Override
-    public void printResults() {
+    public void printCurrentState() {
         final StringBuilder sb = new StringBuilder();
         sb.append("\tOrphan Buffer (").append(eventMap.size()).append(")").append("\n");
         sb.append("\t\tLast event linked: ").append(lastEventLinked).append("\n");

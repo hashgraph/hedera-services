@@ -65,7 +65,7 @@ public class EventDeduper extends AbstractSimulatedEventPipeline<CountingChatter
      * {@inheritDoc}
      */
     @Override
-    public void printResults() {
+    public void printCurrentState() {
         String sb = String.format("\tDuplicate Events Discarded: %s%n", numDiscarded);
         System.out.println(sb);
     }

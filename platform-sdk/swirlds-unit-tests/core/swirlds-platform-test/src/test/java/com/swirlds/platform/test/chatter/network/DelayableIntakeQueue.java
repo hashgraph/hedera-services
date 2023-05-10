@@ -17,8 +17,8 @@
 package com.swirlds.platform.test.chatter.network;
 
 import com.swirlds.common.time.Time;
-import com.swirlds.platform.chatter.protocol.ChatterCore;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
@@ -88,7 +88,7 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
      * {@inheritDoc}
      */
     @Override
-    public void printResults() {
+    public void printCurrentState() {
         final StringBuilder sb = new StringBuilder();
         sb.append("\tIntake Queue (").append(intakeQueue.size()).append(")\n");
         for (final IntakeQueueTask<T> task : intakeQueue) {

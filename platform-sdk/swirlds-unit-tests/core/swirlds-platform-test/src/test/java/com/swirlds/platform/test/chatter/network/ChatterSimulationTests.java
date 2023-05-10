@@ -48,8 +48,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Contains chatter simulation tests. Each test runs a simulated network of nodes that gossips a simulated chatter
- * event using simulated gossip.
+ * Contains chatter simulation tests. Each test runs a simulated network of nodes that gossip simulated chatter events
+ * using simulated gossip.
  */
 public class ChatterSimulationTests {
 
@@ -129,6 +129,7 @@ public class ChatterSimulationTests {
      *     <li>All nodes have fast intake queues again</li>
      * </ol>
      */
+    @Disabled("Not a test. Useful for observing behavior")
     @Test
     @DisplayName("Work In Progress - attempt to simulate a scenario that causes a non-zero duplicate event rate")
     void testInduceHighDuplicateEventRate() {

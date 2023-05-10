@@ -56,18 +56,23 @@ import java.util.concurrent.Executors;
  *
  * @param <T> the type of event sent and received by this node
  */
-public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipMessageHandler {
+public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipMessageHandler, NodeConfigurable {
 
+    /** This node's id */
     private final NodeId selfId;
+    /** The time instances used by the simulation */
     private final Time time;
+    /** This node's chatter core instance */
     private final ChatterCore<T> core;
+    /** Creator of self events */
     private final SimulatedEventCreator<T> newEventCreator;
+    /** List of all peers in the network */
     private final List<Long> peerIds = new ArrayList<>();
 
     /**
-     * The first of N event processors. Each event processor passes the event to the next processor when it is time to
-     * do so. This first processor provided events as they are received via
-     * {@link #handleMessageFromWire(SelfSerializable, long)}
+     * The first of N event pipeline components chained together like a linked list. Each event component passes the
+     * event to the next component when it is time to do so. This first component provided events as they are received
+     * via {@link #handleMessageFromWire(SelfSerializable, long)}
      */
     private final SimulatedEventPipeline<T> eventPipeline;
 
@@ -97,6 +102,13 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
         }
     }
 
+    /**
+     * Returns the first event pipeline component matching the provided class. Useful for making assertions.
+     *
+     * @param clazz the class of the pipeline component to get
+     * @param <R>   the type of pipeline component
+     * @return the pipeline component, or {@code null} if none match
+     */
     @SuppressWarnings("unchecked")
     public <R extends SimulatedEventPipeline<T>> R getPipelineComponent(final Class<R> clazz) {
         SimulatedEventPipeline<T> pipelineComponent = eventPipeline;
@@ -123,6 +135,9 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
         });
     }
 
+    /**
+     * Causes events to be handled by the event pipeline if it is time to do so.
+     */
     public void maybeHandleEvents() {
         eventPipeline.maybeHandleEventsAndCallNext(core);
     }
@@ -137,11 +152,20 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void applyNodeConfig(final NodeConfig nodeConfig) {
         newEventCreator.applyNodeConfig(nodeConfig);
         eventPipeline.applyNodeConfigAndCallNext(nodeConfig);
     }
 
+    /**
+     * Returns a list of messages to gossip. This list may include more than just events.
+     *
+     * @return a list of messages to gossip
+     */
     public List<GossipMessage> getMessagesToGossip() {
         final List<GossipMessage> gossipMessages = new ArrayList<>();
         for (long peerId : peerIds) {
@@ -159,6 +183,12 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
         return gossipMessages;
     }
 
+    /**
+     * The chatter entry point. Messages are received from the gossip simulator and sent here.
+     *
+     * @param msg      the message received
+     * @param fromPeer the peer who sent the message
+     */
     @Override
     public void handleMessageFromWire(final SelfSerializable msg, final long fromPeer) {
         try {
@@ -175,10 +205,16 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
         }
     }
 
+    /**
+     * Prints the current state of the chatter instance and event pipeline. Useful for debugging.
+     */
     public void printResults() {
-        eventPipeline.printResultsAndCallNext();
+        eventPipeline.printCurrentStateAndCallNext();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public NodeId getNodeId() {
         return selfId;

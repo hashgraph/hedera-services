@@ -38,7 +38,7 @@ public class NoOpSimulatedEventPipeline<T extends ChatterEvent> implements Simul
     public void applyNodeConfigAndCallNext(final NodeConfig nodeConfig) {}
 
     @Override
-    public void printResultsAndCallNext() {}
+    public void printCurrentStateAndCallNext() {}
 
     @Override
     public void setNext(final SimulatedEventPipeline<T> next) {}

@@ -81,7 +81,7 @@ public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingC
      * {@inheritDoc}
      */
     @Override
-    public void printResults() {
+    public void printCurrentState() {
         final Map<Long, Integer> eventCounts = new HashMap<>();
         eventsReceivedByCreator.forEach((key, value) -> eventCounts.put(key, value.size()));
 

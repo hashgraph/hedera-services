@@ -51,9 +51,10 @@ public interface SimulatedEventPipeline<T extends ChatterEvent> extends NodeConf
     void applyNodeConfigAndCallNext(final NodeConfig nodeConfig);
 
     /**
-     * Prints the status and/or results of this event component and calls the next component in the pipeline
+     * Prints the status and/or current state of this event component and calls the next component in the pipeline.
+     * Useful for debugging.
      */
-    void printResultsAndCallNext();
+    void printCurrentStateAndCallNext();
 
     /**
      * Sets the next event component

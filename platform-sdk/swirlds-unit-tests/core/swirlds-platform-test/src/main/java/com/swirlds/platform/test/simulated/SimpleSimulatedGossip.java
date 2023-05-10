@@ -77,6 +77,11 @@ public class SimpleSimulatedGossip {
         nodes.put(node.getNodeId().getIdAsInt(), node);
     }
 
+    /**
+     * Gossips messages to the message recipients. Messages will be delivered once the applicable latency has elapsed.
+     *
+     * @param messages the messages to gossip
+     */
     public void gossipPayloads(final List<GossipMessage> messages) {
         messages.forEach(this::gossipPayload);
     }
@@ -91,6 +96,14 @@ public class SimpleSimulatedGossip {
         return delivered.get(nodeId.getIdAsInt());
     }
 
+    /**
+     * Returns all the messages of a certain type delivered to a node.
+     *
+     * @param nodeId the node id of the receiver
+     * @param clazz  the class of messages to return
+     * @param <T>    the message type
+     * @return the list of sent messages
+     */
     @SuppressWarnings("unchecked")
     public <T extends SelfSerializable> Deque<T> getDeliveredTo(final NodeId nodeId, final Class<T> clazz) {
         return getDeliveredTo(nodeId).stream()
@@ -109,6 +122,14 @@ public class SimpleSimulatedGossip {
         return sentBy.get(nodeId.getIdAsInt());
     }
 
+    /**
+     * Returns all the messages of a certain type sent by a node.
+     *
+     * @param nodeId the node id of the sender
+     * @param clazz  the class of messages to return
+     * @param <T>    the message type
+     * @return the list of sent messages
+     */
     @SuppressWarnings("unchecked")
     public <T extends SelfSerializable> Deque<T> getSentBy(final NodeId nodeId, final Class<T> clazz) {
         return getSentBy(nodeId).stream()
@@ -165,6 +186,9 @@ public class SimpleSimulatedGossip {
         }
     }
 
+    /**
+     * Prints all the queues of messages to std out.
+     */
     public void printQueues() {
         final StringBuilder sb = new StringBuilder();
 

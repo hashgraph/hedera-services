@@ -31,7 +31,7 @@ public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> imp
      */
     protected abstract void maybeHandleEvents(final ChatterCore<T> core);
 
-    protected abstract void printResults();
+    protected abstract void printCurrentState();
 
     /**
      * {@inheritDoc}
@@ -78,10 +78,10 @@ public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> imp
      * {@inheritDoc}
      */
     @Override
-    public void printResultsAndCallNext() {
-        printResults();
+    public void printCurrentStateAndCallNext() {
+        printCurrentState();
         if (next != null) {
-            next.printResultsAndCallNext();
+            next.printCurrentStateAndCallNext();
         }
     }
 }
