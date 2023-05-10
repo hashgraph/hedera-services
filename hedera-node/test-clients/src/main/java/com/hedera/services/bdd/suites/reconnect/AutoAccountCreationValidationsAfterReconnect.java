@@ -50,7 +50,7 @@ public class AutoAccountCreationValidationsAfterReconnect extends HapiSuite {
         return defaultHapiSpec("GetAccountInfoOfAutomaticallyCreatedAccounts")
                 .given()
                 .when()
-                .then(inParallel(asOpArray(TOTAL_ACCOUNTS, i -> getAccountInfo("0.0." + (i + 1004))
+                .then(inParallel(asOpArray(TOTAL_ACCOUNTS, i -> getAccountInfo("0.0." + (i + 1054))
                         .has(AccountInfoAsserts.accountWith().hasAlias())
                         .setNode("0.0.8")
                         .logged())));

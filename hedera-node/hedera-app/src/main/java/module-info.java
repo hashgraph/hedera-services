@@ -2,6 +2,7 @@ module com.hedera.node.app {
     requires com.hedera.pbj.runtime;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.spi;
+    requires com.hedera.node.config;
     requires com.hedera.node.app.service.networkadmin;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;

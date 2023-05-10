@@ -186,6 +186,9 @@ import java.time.Duration;
  * @param hangingThreadDuration
  *      the length of time a gossip thread is allowed to wait when it is asked to shutdown.
  *      If a gossip thread takes longer than this period to shut down, then an error message is written to the log.
+ * @param genesisFreezeTime
+ *      If this node starts from genesis, this value is used as the freeze time. This feature is deprecated and
+ *      planned for removal in a future platform version.
  */
 @ConfigData
 public record BasicConfig(
@@ -256,4 +259,5 @@ public record BasicConfig(
         @ConfigProperty(value = "maxIncomingSyncsInc", defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(value = "maxOutgoingSyncs", defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath,
-        @ConfigProperty(value = "hangingThreadDuration", defaultValue = "60s") Duration hangingThreadDuration) {}
+        @ConfigProperty(value = "hangingThreadDuration", defaultValue = "60s") Duration hangingThreadDuration,
+        @ConfigProperty(value = "genesisFreezeTime", defaultValue = "0") long genesisFreezeTime) {}

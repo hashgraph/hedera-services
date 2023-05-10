@@ -33,6 +33,17 @@ import org.apache.logging.log4j.Logger;
 public class MixedValidationsAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedValidationsAfterReconnect.class);
 
+    private static final String SENDER = "0.0.1301";
+    private static final String RECEIVER = "0.0.1302";
+    private static final String LAST_CREATED_ACCOUNT = "0.0.21063";
+    private static final String FIRST_CREATED_TOPIC = "0.0.21064";
+    private static final String LAST_CREATED_TOPIC = "0.0.41063";
+    private static final String INVALID_TOPIC_ID = "0.0.41064";
+    private static final String TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO = "0.0.30050";
+    private static final String FIRST_CREATED_FILE = "0.0.41064";
+    private static final String LAST_CREATED_FILE = "0.0.42063";
+    private static final String INVALID_FILE_ID = "0.0.42064";
+
     public static void main(String... args) {
         new MixedValidationsAfterReconnect().runSuiteSync();
     }
@@ -46,82 +57,73 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
         // Since https://github.com/hashgraph/hedera-services/pull/5799, the nodes will create
         // 299 "blocklist" accounts with EVM addresses commonly used in HardHat test environments,
         // to protect developers from accidentally sending hbar to those addresses
-        String sender = "0.0.1301";
-        String receiver = "0.0.1302";
-        String lastlyCreatedAccount = "0.0.21362";
+        // NOTE: blacklisted accounts are NOT created for use when blacklisted accounts are disabled
         return defaultHapiSpec("GetAccountBalanceFromAllNodes")
                 .given()
                 .when()
                 .then(
-                        balanceSnapshot("senderBalance", sender), // from default node 0.0.3
-                        balanceSnapshot("receiverBalance", receiver), // from default node 0.0.3
-                        balanceSnapshot("lastlyCreatedAccountBalance", lastlyCreatedAccount), // from default node 0.0.3
-                        getAccountBalance(sender)
+                        balanceSnapshot("senderBalance", SENDER), // from default node 0.0.3
+                        balanceSnapshot("receiverBalance", RECEIVER), // from default node 0.0.3
+                        balanceSnapshot("lastlyCreatedAccountBalance", LAST_CREATED_ACCOUNT), // from default node 0.0.3
+                        getAccountBalance(SENDER)
                                 .logged()
                                 .setNode("0.0.4")
                                 .hasTinyBars(changeFromSnapshot("senderBalance", 0)),
-                        getAccountBalance(receiver)
+                        getAccountBalance(RECEIVER)
                                 .logged()
                                 .setNode("0.0.4")
                                 .hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
-                        getAccountBalance(sender)
+                        getAccountBalance(SENDER)
                                 .logged()
                                 .setNode("0.0.5")
                                 .hasTinyBars(changeFromSnapshot("senderBalance", 0)),
-                        getAccountBalance(receiver)
+                        getAccountBalance(RECEIVER)
                                 .logged()
                                 .setNode("0.0.5")
                                 .hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
-                        getAccountBalance(sender)
+                        getAccountBalance(SENDER)
                                 .logged()
                                 .setNode("0.0.8")
                                 .hasTinyBars(changeFromSnapshot("senderBalance", 0)),
-                        getAccountBalance(receiver)
+                        getAccountBalance(RECEIVER)
                                 .logged()
                                 .setNode("0.0.8")
                                 .hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
-                        getAccountBalance(lastlyCreatedAccount)
+                        getAccountBalance(LAST_CREATED_ACCOUNT)
                                 .logged()
                                 .setNode("0.0.8")
                                 .hasTinyBars(changeFromSnapshot("lastlyCreatedAccountBalance", 0)));
     }
 
     private HapiSpec validateTopicInfo() {
-        String firstlyCreatedTopic = "0.0.21363";
-        String lastlyCreatedTopic = "0.0.41362";
-        String invalidTopicId = "0.0.41363";
-        String topicIdWithMessagesSubmittedTo = "0.0.30349";
-        byte[] emptyRunningHash = new byte[48];
+        final byte[] emptyRunningHash = new byte[48];
         return defaultHapiSpec("ValidateTopicInfo")
-                .given(getTopicInfo(topicIdWithMessagesSubmittedTo).logged().saveRunningHash())
+                .given(getTopicInfo(TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO).logged().saveRunningHash())
                 .when()
                 .then(
-                        getTopicInfo(firstlyCreatedTopic)
+                        getTopicInfo(FIRST_CREATED_TOPIC)
                                 .logged()
                                 .setNode("0.0.8")
                                 .hasRunningHash(emptyRunningHash),
-                        getTopicInfo(lastlyCreatedTopic)
+                        getTopicInfo(LAST_CREATED_TOPIC)
                                 .logged()
                                 .setNode("0.0.8")
                                 .hasRunningHash(emptyRunningHash),
-                        getTopicInfo(invalidTopicId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_TOPIC_ID),
-                        getTopicInfo(topicIdWithMessagesSubmittedTo)
+                        getTopicInfo(INVALID_TOPIC_ID).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_TOPIC_ID),
+                        getTopicInfo(TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO)
                                 .logged()
                                 .setNode("0.0.8")
-                                .hasRunningHash(topicIdWithMessagesSubmittedTo));
+                                .hasRunningHash(TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO));
     }
 
     private HapiSpec validateFileInfo() {
-        String firstlyCreatedFile = "0.0.41363";
-        String lastlyCreatedFile = "0.0.42362";
-        String invalidFileId = "0.0.42363";
         return defaultHapiSpec("ValidateFileInfo")
                 .given()
                 .when()
                 .then(
-                        getFileInfo(firstlyCreatedFile).logged().setNode("0.0.8"),
-                        getFileInfo(lastlyCreatedFile).logged().setNode("0.0.8"),
-                        getFileInfo(invalidFileId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_FILE_ID));
+                        getFileInfo(FIRST_CREATED_FILE).logged().setNode("0.0.8"),
+                        getFileInfo(LAST_CREATED_FILE).logged().setNode("0.0.8"),
+                        getFileInfo(INVALID_FILE_ID).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_FILE_ID));
     }
 
     @Override
