@@ -5,13 +5,14 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package com.hedera.node.config.testfixtures;
@@ -38,26 +39,30 @@ import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.source.ConfigSource;
+import com.swirlds.config.api.validation.ConfigValidator;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
-public class HederaTestConfigProvider {
+/**
+ * A builder for creating {@link Configuration} instances for testing. In future this builder can be based on
+ * {@link TestConfigBuilder} and most of the code can be removed. See {@link TestConfigBuilder} for more details.
+ */
+public class HederaTestConfigBuilder {
 
     private final AutoClosableLock configLock;
-
     private Configuration configuration;
-
     private final ConfigurationBuilder builder;
 
-    public HederaTestConfigProvider() {
+    public HederaTestConfigBuilder() {
         this(true);
     }
 
-    public HederaTestConfigProvider(final boolean registerAllTypes) {
+    public HederaTestConfigBuilder(boolean registerAllTypes) {
         this.configLock = Locks.createAutoLock();
         this.configuration = null;
         if (registerAllTypes) {
@@ -65,9 +70,7 @@ public class HederaTestConfigProvider {
         } else {
             this.builder = ConfigurationBuilder.create();
         }
-
-        this.builder
-                .withConverter(new CongestionMultipliersConverter())
+        this.builder.withConverter(new CongestionMultipliersConverter())
                 .withConverter(new EntityScaleFactorsConverter())
                 .withConverter(new EntityTypeConverter())
                 .withConverter(new KnownBlockValuesConverter())
@@ -85,94 +88,71 @@ public class HederaTestConfigProvider {
                 .withValidator(new EmulatesMapValidator());
     }
 
-    public HederaTestConfigProvider withValue(final String propertyName, final String value) {
+    public HederaTestConfigBuilder withValue(@NonNull String propertyName, @NonNull String value) {
         return this.withSource(new SimpleConfigSource(propertyName, value));
     }
 
-    public HederaTestConfigProvider withValue(final String propertyName, final int value) {
+    public HederaTestConfigBuilder withValue(@NonNull String propertyName, int value) {
         return this.withSource(new SimpleConfigSource(propertyName, value));
     }
 
-    public HederaTestConfigProvider withValue(final String propertyName, final double value) {
+    public HederaTestConfigBuilder withValue(@NonNull String propertyName, double value) {
         return this.withSource(new SimpleConfigSource(propertyName, value));
     }
 
-    public HederaTestConfigProvider withValue(final String propertyName, final long value) {
+    public HederaTestConfigBuilder withValue(@NonNull String propertyName, long value) {
         return this.withSource(new SimpleConfigSource(propertyName, value));
     }
 
-    public HederaTestConfigProvider withValue(final String propertyName, final boolean value) {
+    public HederaTestConfigBuilder withValue(@NonNull String propertyName, boolean value) {
         return this.withSource(new SimpleConfigSource(propertyName, value));
     }
 
-    public HederaTestConfigProvider withValue(final String propertyName, final Object value) {
-        Objects.requireNonNull(value, "value must not be null");
+    public HederaTestConfigBuilder withValue(@NonNull String propertyName, @NonNull Object value) {
+        CommonUtils.throwArgNull(value, "value");
         return this.withSource(new SimpleConfigSource(propertyName, value.toString()));
     }
 
     public Configuration getOrCreateConfig() {
-        final Locked ignore = this.configLock.lock();
-
-        final Configuration var2;
-        try {
-            if (this.configuration == null) {
-                this.configuration = this.builder.build();
-                ConfigurationHolder.getInstance().setConfiguration(this.configuration);
+        try (final Locked ignore = configLock.lock()) {
+            if (configuration == null) {
+                configuration = builder.build();
+                ConfigurationHolder.getInstance().setConfiguration(configuration);
             }
-
-            var2 = this.configuration;
-        } catch (final Throwable var5) {
-            if (ignore != null) {
-                try {
-                    ignore.close();
-                } catch (final Throwable var4) {
-                    var5.addSuppressed(var4);
-                }
-            }
-
-            throw var5;
+            return configuration;
         }
-
-        if (ignore != null) {
-            ignore.close();
-        }
-
-        return var2;
     }
 
     private void checkConfigState() {
-        final Locked ignore = this.configLock.lock();
-
-        try {
-            if (this.configuration != null) {
+        try (final Locked ignore = configLock.lock()) {
+            if (configuration != null) {
                 throw new IllegalStateException("Configuration already created!");
             }
-        } catch (final Throwable var5) {
-            if (ignore != null) {
-                try {
-                    ignore.close();
-                } catch (final Throwable var4) {
-                    var5.addSuppressed(var4);
-                }
-            }
-
-            throw var5;
-        }
-
-        if (ignore != null) {
-            ignore.close();
         }
     }
 
-    public HederaTestConfigProvider withSource(final ConfigSource configSource) {
+    public HederaTestConfigBuilder withSource(@NonNull ConfigSource configSource) {
         this.checkConfigState();
         this.builder.withSource(configSource);
         return this;
     }
 
-    public HederaTestConfigProvider withConverter(@NonNull final ConfigConverter<?> configConverter) {
+    public HederaTestConfigBuilder withConverter(@NonNull ConfigConverter<?> configConverter) {
         this.checkConfigState();
         this.builder.withConverter(configConverter);
         return this;
     }
+
+    public HederaTestConfigBuilder withValidator(@NonNull ConfigValidator configValidator) {
+        this.checkConfigState();
+        this.builder.withValidator(configValidator);
+        return this;
+    }
+
+    public <T extends Record> HederaTestConfigBuilder withConfigDataType(@NonNull Class<T> configDataType) {
+        this.checkConfigState();
+        this.builder.withConfigDataType(configDataType);
+        return this;
+    }
+
 }

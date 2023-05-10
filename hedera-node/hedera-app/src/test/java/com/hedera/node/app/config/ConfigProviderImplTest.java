@@ -17,195 +17,20 @@
 package com.hedera.node.app.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.config.VersionedConfiguration;
-import java.util.HashSet;
-import java.util.Set;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConfigProviderImplTest {
 
-    @Mock(strictness = Strictness.LENIENT)
-    private PropertySource propertySource;
-
-    @BeforeEach
-    void configureMockForConfigData() {
-        final Set<String> stringProperties = Set.of(
-                "pathToBalancesExportDir",
-                "evmVersion",
-                "upgradeArtifactsLoc",
-                "recordLogDir",
-                "nettyTlsCrtPath",
-                "nettyTlsKeyPath",
-                "devListeningAccount",
-                "accountsExportPath",
-                "consThrottlesToSample",
-                "hapiThrottlesToSample",
-                "sidecarDir");
-        final Set<String> booleanProperties = Set.of(
-                "allowTreasuryToOwnNfts",
-                "shouldExportBalances",
-                "shouldExportTokenBalances",
-                "dynamicEvmVersion",
-                "schedulingLongTermEnabled",
-                "areNftsEnabled",
-                "throttleByGas",
-                "autoCreationEnabled",
-                "expandSigsFromImmutableState",
-                "exportPrecompileResults",
-                "create2Enabled",
-                "redirectTokenCalls",
-                "enableAllowances",
-                "limitTokenAssociations",
-                "enableHTSPrecompileCreate",
-                "atomicCryptoTransferEnabled",
-                "contractAutoAssociationsEnabled",
-                "stakingEnabled",
-                "utilPrngEnabled",
-                "sidecarValidationEnabled",
-                "requireMinStakeToReward",
-                "itemizeStorageFees",
-                "compressRecordFilesOnCreation",
-                "tokenAutoCreationsEnabled",
-                "doTraceabilityExport",
-                "compressAccountBalanceFilesOnCreation",
-                "lazyCreationEnabled",
-                "cryptoCreateWithAliasEnabled",
-                "enforceContractCreationThrottle",
-                "recordStreamEnabled",
-                "devOnlyDefaultNodeListens",
-                "exportAccountsOnStartup");
-        final Set<String> numericProperties = Set.of(
-                "maxNftMetadataBytes",
-                "maxBatchSizeBurn",
-                "maxBatchSizeMint",
-                "maxNftTransfersLen",
-                "maxBatchSizeWipe",
-                "maxNftQueryRange",
-                "maxTokensPerAccount",
-                "maxTokenRelsPerInfoQuery",
-                "maxCustomFeesAllowed",
-                "maxTokenSymbolUtf8Bytes",
-                "maxTokenNameUtf8Bytes",
-                "maxFileSizeKb",
-                "cacheRecordsTtl",
-                "balancesExportPeriodSecs",
-                "ratesIntradayChangeLimitPercent",
-                "nodeBalanceWarningThreshold",
-                "maxTransfersLen",
-                "maxTokenTransfersLen",
-                "maxMemoUtf8Bytes",
-                "maxTxnDuration",
-                "minTxnDuration",
-                "minValidityBuffer",
-                "maxGasPerSec",
-                "defaultContractLifetime",
-                "feesTokenTransferUsageMultiplier",
-                "autoRenewNumberOfEntitiesToScan",
-                "autoRenewMaxNumberOfEntitiesToRenewOrDelete",
-                "autoRenewGracePeriod",
-                "maxAutoRenewDuration",
-                "minAutoRenewDuration",
-                "localCallEstRetBytes",
-                "schedulingMaxTxnPerSecond",
-                "schedulingMaxExpirationFutureSeconds",
-                "scheduledTxExpiryTimeSecs",
-                "messageMaxBytesAllowed",
-                "maxPrecedingRecords",
-                "maxFollowingRecords",
-                "feesMinCongestionPeriod",
-                "maxNftMints",
-                "maxXferBalanceChanges",
-                "maxCustomFeeDepth",
-                "contractMaxRefundPercentOfGasLimit",
-                "scheduleThrottleMaxGasLimit",
-                "htsDefaultGasCost",
-                "changeHistorianMemorySecs",
-                "maxAggregateContractKvPairs",
-                "maxIndividualContractKvPairs",
-                "maxMostRecentQueryableRecords",
-                "maxAllowanceLimitPerTransaction",
-                "maxAllowanceLimitPerAccount",
-                "exchangeRateGasReq",
-                "stakingRewardRate",
-                "stakingStartThreshold",
-                "nodeRewardPercent",
-                "stakingRewardPercent",
-                "maxDailyStakeRewardThPerH",
-                "recordFileVersion",
-                "recordSignatureFileVersion",
-                "maxNumAccounts",
-                "maxNumContracts",
-                "maxNumFiles",
-                "maxNumTokens",
-                "maxNumTokenRels",
-                "maxNumTopics",
-                "maxNumSchedules",
-                "sidecarMaxSizeMb",
-                "traceabilityMaxExportsPerConsSec",
-                "traceabilityMinFreeToUsedGasThrottleRatio",
-                "maxNumWithHapiSigsAccess",
-                "port",
-                "tlsPort",
-                "hapiOpStatsUpdateIntervalMs",
-                "entityUtilStatsUpdateIntervalMs",
-                "throttleUtilStatsUpdateIntervalMs",
-                "statsSpeedometerHalfLifeSecs",
-                "statsRunningAvgHalfLifeSecs",
-                "recordLogPeriod",
-                "recordStreamQueueCapacity",
-                "queryBlobLookupRetries",
-                "nettyProdKeepAliveTime",
-                "nettyMaxConnectionAge",
-                "nettyMaxConnectionAgeGrace",
-                "nettyMaxConnectionIdle",
-                "nettyMaxConcurrentCalls",
-                "nettyFlowControlWindow",
-                "nettyStartRetries",
-                "nettyStartRetryIntervalMs",
-                "numExecutionTimesToTrack",
-                "issResetPeriod",
-                "issRoundsToLog",
-                "prefetchQueueCapacity",
-                "prefetchThreadPoolSize",
-                "prefetchCodeCacheTtlSecs",
-                "workflowsPort",
-                "workflowsTlsPort",
-                "nettyProdKeepAliveTimeout");
-        final Set<String> customProperties = Set.of("fundingAccount", "activeProfile", "nettyMode");
-        final Set<String> allProperties = new HashSet<>();
-        allProperties.addAll(stringProperties);
-        allProperties.addAll(booleanProperties);
-        allProperties.addAll(numericProperties);
-        allProperties.addAll(customProperties);
-        when(propertySource.allPropertyNames()).thenReturn(allProperties);
-
-        stringProperties.forEach(
-                property -> when(propertySource.getRawValue(property)).thenReturn("test"));
-        booleanProperties.forEach(
-                property -> when(propertySource.getRawValue(property)).thenReturn("true"));
-        numericProperties.forEach(
-                property -> when(propertySource.getRawValue(property)).thenReturn("1"));
-    }
-
-    @Test
-    void testInvalidCreation() {
-        assertThatThrownBy(() -> new ConfigProviderImpl(null)).isInstanceOf(NullPointerException.class);
-    }
 
     @Test
     void testInitialConfig() {
         // given
-        final var configProvider = new ConfigProviderImpl(propertySource);
+        final var configProvider = new ConfigProviderImpl();
 
         // when
         final var configuration = configProvider.getConfiguration();
@@ -218,7 +43,7 @@ class ConfigProviderImplTest {
     @Test
     void testUpdateCreatesNewConfig() {
         // given
-        final var configProvider = new ConfigProviderImpl(propertySource);
+        final var configProvider = new ConfigProviderImpl();
 
         // when
         final var configuration1 = configProvider.getConfiguration();
@@ -234,18 +59,21 @@ class ConfigProviderImplTest {
     @Test
     void testUpdatedValue() {
         // given
-        final var configProvider = new ConfigProviderImpl(propertySource);
+        final var configProvider = new ConfigProviderImpl();
         final var configuration1 = configProvider.getConfiguration();
-        final String value1 = configuration1.getValue("port");
+        final boolean existsInitially = configuration1.exists("port");
 
         // when
         configProvider.update("port", "8080");
         final var configuration2 = configProvider.getConfiguration();
         final String value2 = configuration2.getValue("port");
+        configProvider.update("port", "9090");
+        final var configuration3 = configProvider.getConfiguration();
+        final String value3 = configuration3.getValue("port");
 
         // then
-        assertThat(value1).isNotSameAs(value2);
-        assertThat(value1).isEqualTo("1");
+        assertThat(existsInitially).isFalse();
         assertThat(value2).isEqualTo("8080");
+        assertThat(value3).isEqualTo("9090");
     }
 }
