@@ -19,21 +19,24 @@ package com.swirlds.common.system.address;
 import static com.swirlds.common.system.address.Address.ipString;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.address.internal.AddressBookIterator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * The Address of every known member of the swirld. The getters are public and the setters aren't, so it is read-only
@@ -218,8 +221,8 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Get the total weight of all members added together, where each member has nonnegative weight. This is zero if there
-     * are no members.
+     * Get the total weight of all members added together, where each member has nonnegative weight. This is zero if
+     * there are no members.
      *
      * @return the total weight
      */
@@ -348,11 +351,11 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
 
     /**
      * Updates the weight on the address with the given ID. If the address does not exist, a NoSuchElementException is
-     * thrown. If the weight value is negative, an IllegalArgumentException is thrown.  If the address book is immutable,
-     * a MutabilityException is thrown. This method does not validate the address book after updating the address.  When
-     * the user is finished with making incremental changes, the final address book should be validated.
+     * thrown. If the weight value is negative, an IllegalArgumentException is thrown.  If the address book is
+     * immutable, a MutabilityException is thrown. This method does not validate the address book after updating the
+     * address.  When the user is finished with making incremental changes, the final address book should be validated.
      *
-     * @param id    the ID of the address to update.
+     * @param id     the ID of the address to update.
      * @param weight the new weight value.  The weight must be nonnegative.
      * @throws NoSuchElementException   if the address does not exist.
      * @throws IllegalArgumentException if the weight is negative.
@@ -550,6 +553,16 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     @Override
     public Iterator<Address> iterator() {
         return new AddressBookIterator(orderedNodeIds.iterator(), addresses);
+    }
+
+    /**
+     * Get a set of all node IDs in the address book. Set is safe to modify.
+     *
+     * @return a set of all node IDs in the address book
+     */
+    @NonNull
+    public Set<Long> getNodeIdSet() {
+        return new HashSet<>(addresses.keySet());
     }
 
     /**

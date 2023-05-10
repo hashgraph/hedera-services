@@ -17,5 +17,4 @@ module com.hedera.node.app.service.file.impl {
             com.hedera.node.app,
             com.hedera.node.app.service.file.impl.test;
     exports com.hedera.node.app.service.file.impl.handlers;
-    exports com.hedera.node.app.service.file.impl.components;
 }

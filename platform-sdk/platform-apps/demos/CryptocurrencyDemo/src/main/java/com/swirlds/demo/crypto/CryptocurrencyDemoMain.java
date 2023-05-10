@@ -114,7 +114,8 @@ public class CryptocurrencyDemoMain implements SwirldMain {
     private void generateTransactions() {
         int numStocks = CryptocurrencyDemoState.NUM_STOCKS;
         byte[] price = new byte[numStocks];
-        try (final AutoCloseableWrapper<CryptocurrencyDemoState> wrapper = platform.getLatestImmutableState()) {
+        try (final AutoCloseableWrapper<CryptocurrencyDemoState> wrapper =
+                platform.getLatestImmutableState("CryptocurrencyDemoMain.generateTransactions()")) {
             final CryptocurrencyDemoState state = wrapper.get();
             state.getPriceCopy(price);
         }
@@ -152,7 +153,8 @@ public class CryptocurrencyDemoMain implements SwirldMain {
         this.transactionGenerator.start();
         // print the latest trades to the console, 4 times a second, forever
         while (true) {
-            try (final AutoCloseableWrapper<CryptocurrencyDemoState> wrapper = platform.getLatestImmutableState()) {
+            try (final AutoCloseableWrapper<CryptocurrencyDemoState> wrapper =
+                    platform.getLatestImmutableState("CryptocurrencyDemoMain.run()")) {
                 final CryptocurrencyDemoState state = wrapper.get();
                 console.setHeading(" Cryptocurrency and Stock Market Demo\n"
                         + " Press F for fast sync, S for slow, (currently "

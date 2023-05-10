@@ -36,8 +36,8 @@ import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.sync.ShadowEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
@@ -614,7 +614,7 @@ public class SyncTests {
         executor.setGenerationDefinitions((caller, listener) -> {
             long listenerMaxGen = SyncUtils.getMaxGen(listener.getShadowGraph().getTips());
             // make the min non-ancient gen slightly below the max gen
-            long listenerMinNonAncient = listenerMaxGen - (listenerMaxGen/10);
+            long listenerMinNonAncient = listenerMaxGen - (listenerMaxGen / 10);
             long listenerMinGen = SyncUtils.getMinGen(listener.getShadowGraph()
                     .findAncestors(listener.getShadowGraph().getTips(), (e) -> true));
 
@@ -624,7 +624,7 @@ public class SyncTests {
 
             long callerMaxGen = SyncUtils.getMaxGen(caller.getShadowGraph().getTips());
             // make the min non-ancient gen slightly below the max gen
-            long callerMinNonAncient = callerMaxGen - (callerMaxGen/10);
+            long callerMinNonAncient = callerMaxGen - (callerMaxGen / 10);
             long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph()
                     .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
 

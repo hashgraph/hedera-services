@@ -32,6 +32,11 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
+/**
+ * An implementation of {@link ExpiryValidator} that encapsulates the current policies
+ * for validating expiry metadata of create and update transactions, <i>without</i> using
+ * any {@code mono-service} components.
+ */
 public class StandardizedExpiryValidator implements ExpiryValidator {
     private final Consumer<Id> idValidator;
     private final LongSupplier consensusSecondNow;

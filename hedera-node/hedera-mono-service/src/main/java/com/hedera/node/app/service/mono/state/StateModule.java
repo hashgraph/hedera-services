@@ -36,6 +36,7 @@ import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
 import com.hedera.node.app.service.mono.state.exports.BalancesExporter;
+import com.hedera.node.app.service.mono.state.exports.ExportingRecoveredStateListener;
 import com.hedera.node.app.service.mono.state.exports.ServicesSignedStateListener;
 import com.hedera.node.app.service.mono.state.exports.SignedStateBalancesExporter;
 import com.hedera.node.app.service.mono.state.exports.ToStringAccountsExporter;
@@ -73,6 +74,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.JvmSystemExits;
@@ -88,10 +90,12 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.IssListener;
+import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.utility.CommonUtils;
 import dagger.Binds;
@@ -99,7 +103,6 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Paths;
@@ -124,8 +127,10 @@ public interface StateModule {
     @Provides
     @Singleton
     static ReplayAssetRecording provideReplayAssetRecording() {
-        final var recordingName = Optional.ofNullable(System.getProperty("recording.name")).orElse("default");
-        return new ReplayAssetRecording(Paths.get(REPLAY_ASSETS_DIR, recordingName).toFile());
+        final var recordingName =
+                Optional.ofNullable(System.getProperty("recording.name")).orElse("default");
+        return new ReplayAssetRecording(
+                Paths.get(REPLAY_ASSETS_DIR, recordingName).toFile());
     }
 
     @Provides
@@ -141,7 +146,6 @@ public interface StateModule {
             return statusChangeListener;
         }
     }
-
 
     @Provides
     @Singleton
@@ -196,6 +200,20 @@ public interface StateModule {
             return new SignedStateBalancesExporter(systemExits, properties, signer, dynamicProperties);
         } catch (final NoSuchAlgorithmException fatal) {
             throw new IllegalStateException("Could not construct signed state balances exporter", fatal);
+        }
+    }
+
+    @Provides
+    @Singleton
+    static Optional<NewRecoveredStateListener> provideMaybeRecoveredStateListener(
+            @NonNull final InitTrigger initTrigger,
+            @NonNull final RecordStreamManager recordStreamManager,
+            @NonNull final BalancesExporter balancesExporter,
+            @NonNull final NodeId nodeId) {
+        if (initTrigger == InitTrigger.EVENT_STREAM_RECOVERY) {
+            return Optional.of(new ExportingRecoveredStateListener(recordStreamManager, balancesExporter, nodeId));
+        } else {
+            return Optional.empty();
         }
     }
 

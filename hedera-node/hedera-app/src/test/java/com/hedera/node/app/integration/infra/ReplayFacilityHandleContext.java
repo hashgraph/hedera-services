@@ -18,6 +18,7 @@ package com.hedera.node.app.integration.infra;
 
 import com.hedera.node.app.integration.facilities.ReplayAdvancingConsensusNow;
 import com.hedera.node.app.integration.facilities.ReplayIds;
+import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -26,12 +27,14 @@ import java.time.Instant;
 import java.util.function.LongSupplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.NotImplementedException;
 
 @Singleton
 public class ReplayFacilityHandleContext implements HandleContext {
     private final ReplayIds replayIds;
     private final ExpiryValidator expiryValidator;
     private final AttributeValidator attributeValidator;
+    private final InMemoryWritableStoreFactory writableStoreFactory;
     private final ReplayAdvancingConsensusNow consensusNow;
 
     @Inject
@@ -39,11 +42,13 @@ public class ReplayFacilityHandleContext implements HandleContext {
             @NonNull final ReplayIds replayIds,
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final AttributeValidator attributeValidator,
+            @NonNull final InMemoryWritableStoreFactory writableStoreFactory,
             @NonNull final ReplayAdvancingConsensusNow consensusNow) {
         this.replayIds = replayIds;
         this.consensusNow = consensusNow;
         this.expiryValidator = expiryValidator;
         this.attributeValidator = attributeValidator;
+        this.writableStoreFactory = writableStoreFactory;
     }
 
     @Override
@@ -64,5 +69,15 @@ public class ReplayFacilityHandleContext implements HandleContext {
     @Override
     public ExpiryValidator expiryValidator() {
         return expiryValidator;
+    }
+
+    @NonNull
+    @Override
+    public <C> C createReadableStore(@NonNull Class<C> storeInterface) {
+        if (ReadableRunningHashLeafStore.class.equals(storeInterface)) {
+            return storeInterface.cast(writableStoreFactory.createRunningHashLeafStore());
+        } else {
+            throw new NotImplementedException();
+        }
     }
 }

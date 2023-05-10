@@ -16,20 +16,19 @@
 
 package com.hedera.node.app.service.mono.state.migration;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toB64Encoding;
+import static com.hedera.node.app.service.mono.state.submerkle.RecordingSequenceNumber.REPLAY_SEQ_NOS_ASSET;
+
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.utils.replay.PbjLeafConverters;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
 import java.util.Objects;
-
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toB64Encoding;
-import static com.hedera.node.app.service.mono.state.submerkle.RecordingSequenceNumber.REPLAY_SEQ_NOS_ASSET;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class RecordingMigrationManager implements MigrationManager {
     private static final Logger log = LogManager.getLogger(RecordingMigrationManager.class);
@@ -54,7 +53,8 @@ public class RecordingMigrationManager implements MigrationManager {
         // Restart the recording for sequence numbers, since we only want to replay for user-submitted transactions
         assetRecording.restartReplayAsset(REPLAY_SEQ_NOS_ASSET);
 
-        log.info("Recording {} initial system accounts", stateChildren.accounts().size());
+        log.info(
+                "Recording {} initial system accounts", stateChildren.accounts().size());
         stateChildren.accounts().forEach((num, account) -> {
             final var pbjAccount = PbjLeafConverters.accountFromMerkle((MerkleAccount) account);
             assetRecording.appendPlaintextToAsset(INITIAL_ACCOUNTS_ASSET, toB64Encoding(pbjAccount, Account.class));

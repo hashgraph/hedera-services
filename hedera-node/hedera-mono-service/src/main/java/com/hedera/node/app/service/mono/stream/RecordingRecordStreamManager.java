@@ -27,6 +27,7 @@ import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
@@ -51,7 +52,9 @@ public class RecordingRecordStreamManager extends RecordStreamManager {
                 accountMemo,
                 initialHash,
                 streamType,
-                globalDynamicProperties);
+                globalDynamicProperties,
+                null,
+                File::delete);
         this.replayAssetRecording = replayAssetRecording;
     }
 

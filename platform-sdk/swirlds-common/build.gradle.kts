@@ -23,6 +23,7 @@ plugins {
 
 dependencies {
   // Individual Dependencies
+  api(project(":swirlds-base"))
   api(project(":swirlds-logging"))
   api(project(":swirlds-config-api"))
   implementation(project(":swirlds-base"))
@@ -46,4 +47,5 @@ dependencies {
   testImplementation(testLibs.bundles.utils)
   testImplementation(project(":swirlds-config-impl"))
   testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+  testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
 }

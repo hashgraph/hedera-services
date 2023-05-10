@@ -16,15 +16,16 @@
 
 package com.swirlds.platform.components.state.output;
 
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateWrapper;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 
 /**
  * Invoked when an attempt to write a state to disk is made, either successfully or unsuccessfully.
  * <p>
- * The state within the {@link SignedStateWrapper} holds a reservation. The wiring layer must release the
- * {@link SignedStateWrapper} after all consumers have completed.
+ * The state within the {@link ReservedSignedState} holds a reservation. The wiring layer must release the
+ * {@link ReservedSignedState} after all consumers have completed.
  */
 @FunctionalInterface
 public interface StateToDiskAttemptConsumer {
@@ -35,9 +36,9 @@ public interface StateToDiskAttemptConsumer {
      * The signed state holds a reservation for the duration of this call. Implementers must not release this
      * reservation.
      *
-     * @param signedStateWrapper A wrapper with the {@link SignedState} attempted to be written to disk
-     * @param directory          The directory where the state was attempted to be written
-     * @param success            {@code true} if the attempt was successful, {@code false} otherwise
+     * @param signedState the {@link SignedState} attempted to be written to disk
+     * @param directory   The directory where the state was attempted to be written
+     * @param success     {@code true} if the attempt was successful, {@code false} otherwise
      */
-    void stateToDiskAttempt(SignedStateWrapper signedStateWrapper, Path directory, boolean success);
+    void stateToDiskAttempt(@NonNull SignedState signedState, @NonNull Path directory, boolean success);
 }

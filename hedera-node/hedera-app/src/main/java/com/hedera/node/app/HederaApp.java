@@ -22,7 +22,7 @@ import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.authorization.AuthorizerDaggerModule;
 import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
-import com.hedera.node.app.fees.AdaptedFeeCalculatorModule;
+import com.hedera.node.app.fees.FeesModule;
 import com.hedera.node.app.info.InfoDaggerModule;
 import com.hedera.node.app.metrics.MetricsDaggerModule;
 import com.hedera.node.app.service.mono.ServicesApp;
@@ -33,7 +33,6 @@ import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
 import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.contracts.ContractsModule;
-import com.hedera.node.app.service.mono.fees.FeesModule;
 import com.hedera.node.app.service.mono.files.FilesModule;
 import com.hedera.node.app.service.mono.grpc.GrpcModule;
 import com.hedera.node.app.service.mono.keys.KeysModule;
@@ -49,8 +48,10 @@ import com.hedera.node.app.service.mono.store.StoresModule;
 import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
-import com.hedera.node.app.services.ServiceModule;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
+import com.hedera.node.app.services.ServicesModule;
 import com.hedera.node.app.solvency.SolvencyModule;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleModule;
@@ -61,6 +62,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowModule;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
 import dagger.BindsInstance;
 import dagger.Component;
@@ -69,16 +71,15 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
- * The infrastructure used to implement the platform contract for a Hedera Services node.
- * This is needed for adding dagger subcomponents.
- * Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But,
- * in the future this class will be cleaned up to not have multiple module dependencies
+ * The infrastructure used to implement the platform contract for a Hedera Services node. This is needed for adding
+ * dagger subcomponents. Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But, in the future
+ * this class will be cleaned up to not have multiple module dependencies
  */
 @Singleton
 @Component(
         modules = {
             TaskModule.class,
-            FeesModule.class,
+            com.hedera.node.app.service.mono.fees.FeesModule.class,
             KeysModule.class,
             SigsModule.class,
             GrpcModule.class,
@@ -97,19 +98,20 @@ import javax.inject.Singleton;
             SubmissionModule.class,
             TransactionsModule.class,
             ExpiryModule.class,
-            ServiceModule.class,
+            ServicesModule.class,
             IngestModule.class,
             QueryWorkflowModule.class,
             HandleWorkflowModule.class,
             PreHandleWorkflowModule.class,
             HederaStateModule.class,
-            AdaptedFeeCalculatorModule.class,
+            FeesModule.class,
             HederaStateModule.class,
             MetricsDaggerModule.class,
             AuthorizerDaggerModule.class,
             InfoDaggerModule.class,
             ThrottleModule.class,
-            SolvencyModule.class
+            SolvencyModule.class,
+            HandleWorkflowModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
@@ -121,8 +123,13 @@ public interface HederaApp extends ServicesApp {
 
     AdaptedMonoEventExpansion adaptedMonoEventExpansion();
 
+    NonAtomicReference<HederaState> mutableState();
+
     @Component.Builder
     interface Builder {
+        @BindsInstance
+        Builder initTrigger(InitTrigger initTrigger);
+
         @BindsInstance
         Builder crypto(Cryptography engine);
 

@@ -27,6 +27,7 @@ import com.hedera.node.app.service.mono.stream.RecordStreamType;
 import com.hedera.node.app.service.mono.stream.RecordingRecordStreamManager;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import java.io.File;
@@ -81,7 +82,8 @@ class RecordsModuleTest {
                 streamType,
                 globalDynamicProperties,
                 assetRecording,
-                isRecordingFacilityMocks);
+                isRecordingFacilityMocks,
+                InitTrigger.GENESIS);
         assertInstanceOf(RecordingRecordStreamManager.class, manager);
 
         manager.close();
@@ -101,7 +103,8 @@ class RecordsModuleTest {
                 streamType,
                 globalDynamicProperties,
                 assetRecording,
-                isRecordingFacilityMocks);
+                isRecordingFacilityMocks,
+                InitTrigger.GENESIS);
         assertInstanceOf(RecordStreamManager.class, manager);
 
         manager.close();

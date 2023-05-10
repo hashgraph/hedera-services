@@ -16,28 +16,22 @@
 
 package com.hedera.node.app.service.mono.utils.replay;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
-import com.hedera.hapi.node.state.token.AccountTokenAllowance;
-import com.hedera.hapi.node.token.CryptoAllowance;
-import com.hedera.hapi.node.token.NftAllowance;
-import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-
-import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 
 public class PbjLeafConverters {
     private PbjLeafConverters() {
@@ -99,46 +93,46 @@ public class PbjLeafConverters {
                 .stakedToMe(account.getStakedToMe())
                 .stakePeriodStart(account.getStakePeriodStart())
                 .stakedNumber(account.getStakedId())
-                .autoRenewAccountNumber(Optional.ofNullable(account.getAutoRenewAccount()).map(EntityId::num).orElse(0L))
+                .autoRenewAccountNumber(Optional.ofNullable(account.getAutoRenewAccount())
+                        .map(EntityId::num)
+                        .orElse(0L))
                 .expiredAndPendingRemoval(account.isExpiredAndPendingRemoval())
                 .build();
     }
 
-    static List<AccountTokenAllowance> orderedOperatorApprovalsFrom(@NonNull final MerkleAccount account) {
-        return orderedOperatorApprovals(
-                account.getApproveForAllNfts().stream()
-                        .map(a -> AccountTokenAllowance.newBuilder()
-                                .accountNum(a.getSpenderNum().longValue())
-                                .tokenNum(a.getTokenNum().longValue())
-                                .build()
-                        ).toList());
+    static List<AccountApprovalForAllAllowance> orderedOperatorApprovalsFrom(@NonNull final MerkleAccount account) {
+        return orderedOperatorApprovals(account.getApproveForAllNfts().stream()
+                .map(a -> AccountApprovalForAllAllowance.newBuilder()
+                        .spenderNum(a.getSpenderNum().longValue())
+                        .tokenNum(a.getTokenNum().longValue())
+                        .build())
+                .toList());
     }
 
     static List<AccountCryptoAllowance> orderedHbarAllowancesFrom(@NonNull final MerkleAccount account) {
-        return orderedHbarAllowances(
-                account.getCryptoAllowances().entrySet().stream()
-                        .map(e -> AccountCryptoAllowance.newBuilder()
-                                .accountNum(e.getKey().longValue())
-                                .amount(e.getValue())
-                                .build()
-                        ).toList());
+        return orderedHbarAllowances(account.getCryptoAllowances().entrySet().stream()
+                .map(e -> AccountCryptoAllowance.newBuilder()
+                        .spenderNum(e.getKey().longValue())
+                        .amount(e.getValue())
+                        .build())
+                .toList());
     }
 
     static List<AccountFungibleTokenAllowance> orderedFungibleAllowancesFrom(@NonNull final MerkleAccount account) {
-        return orderedFungibleAllowances(
-                account.getFungibleTokenAllowances().entrySet().stream()
-                        .map(e -> AccountFungibleTokenAllowance.newBuilder()
-                                .tokenAllowanceKey(AccountTokenAllowance.newBuilder()
-                                        .tokenNum(e.getKey().getTokenNum().longValue())
-                                        .accountNum(e.getKey().getSpenderNum().longValue()))
-                                .amount(e.getValue())
-                                .build()
-                        ).toList());
+        return orderedFungibleAllowances(account.getFungibleTokenAllowances().entrySet().stream()
+                .map(e -> AccountFungibleTokenAllowance.newBuilder()
+                        .tokenNum(e.getKey().getTokenNum().longValue())
+                        .spenderNum(e.getKey().getSpenderNum().longValue())
+                        .amount(e.getValue())
+                        .build())
+                .toList());
     }
 
-    static List<AccountTokenAllowance> orderedOperatorApprovals(final List<AccountTokenAllowance> approvals) {
+    static List<AccountApprovalForAllAllowance> orderedOperatorApprovals(
+            final List<AccountApprovalForAllAllowance> approvals) {
         return approvals.stream()
-                .sorted(Comparator.comparingLong(AccountTokenAllowance::tokenNum))
+                .sorted(Comparator.comparingLong(AccountApprovalForAllAllowance::spenderNum)
+                        .thenComparingLong(AccountApprovalForAllAllowance::tokenNum))
                 .toList();
     }
 
@@ -148,9 +142,10 @@ public class PbjLeafConverters {
                 .toList();
     }
 
-    static List<AccountFungibleTokenAllowance> orderedFungibleAllowances(final List<AccountFungibleTokenAllowance> allowances) {
+    static List<AccountFungibleTokenAllowance> orderedFungibleAllowances(
+            final List<AccountFungibleTokenAllowance> allowances) {
         return allowances.stream()
-                .sorted(Comparator.<AccountFungibleTokenAllowance>comparingLong(allowance -> allowance.tokenAllowanceKey().tokenNum())
+                .sorted(Comparator.comparingLong(AccountFungibleTokenAllowance::tokenNum)
                         .thenComparingLong(AccountFungibleTokenAllowance::amount))
                 .toList();
     }

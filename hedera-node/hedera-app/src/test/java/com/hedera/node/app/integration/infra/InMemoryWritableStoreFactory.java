@@ -26,11 +26,14 @@ import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
+import com.hedera.node.app.service.network.impl.ReadableRunningHashLeafStoreImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.util.UtilService;
@@ -67,6 +70,10 @@ public class InMemoryWritableStoreFactory implements WritableStoreFactory {
         services.forEach((name, service) -> serviceStates.put(name, inMemoryStatesFrom(service::registerSchemas)));
     }
 
+    public ReadableRunningHashLeafStore createRunningHashLeafStore() {
+        return new ReadableRunningHashLeafStoreImpl(serviceStates.get(NetworkService.NAME));
+    }
+
     @Override
     public WritableTokenRelationStore createTokenRelStore() {
         return new WritableTokenRelationStore(serviceStates.get(TokenService.NAME));
@@ -80,6 +87,11 @@ public class InMemoryWritableStoreFactory implements WritableStoreFactory {
     @Override
     public WritableTokenStore createTokenStore() {
         return new WritableTokenStore(serviceStates.get(TokenService.NAME));
+    }
+
+    @Override
+    public WritableAccountStore createAccountStore() {
+        return new WritableAccountStore(serviceStates.get(TokenService.NAME));
     }
 
     public Map<String, MapWritableStates> getServiceStates() {

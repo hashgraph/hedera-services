@@ -16,14 +16,14 @@
 
 package com.swirlds.common.threading.interrupt;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.swirlds.base.functions.ThrowingConsumer;
+import com.swirlds.base.function.CheckedConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,15 +52,15 @@ public final class Uninterruptable {
      * </p>
      *
      * <p>
-     * This method is useful when operating in a context where it is inconvenient to throw an
-     * {@link InterruptedException}, or when performing an action using an interruptable interface but where the
-     * required operation is needed to always succeed regardless of interrupts.
+     * This method is useful when operating in a context where it is inconvenient to throw an {@link
+     * InterruptedException}, or when performing an action using an interruptable interface but where the required
+     * operation is needed to always succeed regardless of interrupts.
      * </p>
      *
      * @param action the action to perform, may be called multiple times if interrupted
      */
     public static void retryIfInterrupted(@NonNull final InterruptableRunnable action) {
-        throwArgNull(action, "action");
+        Objects.requireNonNull(action, "action");
         boolean finished = false;
         boolean interrupted = false;
         while (!finished) {
@@ -85,15 +85,15 @@ public final class Uninterruptable {
      * </p>
      *
      * <p>
-     * This method is useful when operating in a context where it is inconvenient to throw an
-     * {@link InterruptedException}, or when performing an action using an interruptable interface but where the
-     * required operation is needed to always succeed regardless of interrupts.
+     * This method is useful when operating in a context where it is inconvenient to throw an {@link
+     * InterruptedException}, or when performing an action using an interruptable interface but where the required
+     * operation is needed to always succeed regardless of interrupts.
      * </p>
      *
      * @param action the action to perform, may be called multiple times if interrupted
      */
     public static @Nullable <T> T retryIfInterrupted(@NonNull final InterruptableSupplier<T> action) {
-        throwArgNull(action, "action");
+        Objects.requireNonNull(action, "action");
         boolean finished = false;
         boolean interrupted = false;
         T value = null;
@@ -119,8 +119,8 @@ public final class Uninterruptable {
      *
      * @param action the action to perform
      */
-    public static void abortIfInterrupted(@NonNull InterruptableRunnable action) {
-        throwArgNull(action, "action");
+    public static void abortIfInterrupted(@NonNull final InterruptableRunnable action) {
+        Objects.requireNonNull(action, "action");
         try {
             action.run();
         } catch (final InterruptedException e) {
@@ -143,7 +143,7 @@ public final class Uninterruptable {
      */
     public static void abortAndLogIfInterrupted(
             @NonNull final InterruptableRunnable action, @NonNull final String errorMessage) {
-        throwArgNull(action, "action");
+        Objects.requireNonNull(action, "action");
         try {
             action.run();
         } catch (final InterruptedException e) {
@@ -167,12 +167,12 @@ public final class Uninterruptable {
      * @param errorMessage the error message to write to the log if this thread is inerrupted
      */
     public static <T> void abortAndLogIfInterrupted(
-            @NonNull final ThrowingConsumer<T, InterruptedException> consumer,
+            @NonNull final CheckedConsumer<T, InterruptedException> consumer,
             @Nullable final T object,
             @NonNull final String errorMessage) {
 
-        throwArgNull(consumer, "consumer");
-        throwArgNull(errorMessage, "errorMessage");
+        Objects.requireNonNull(consumer, "consumer");
+        Objects.requireNonNull(errorMessage, "errorMessage");
 
         try {
             consumer.accept(object);
@@ -198,10 +198,41 @@ public final class Uninterruptable {
      * @throws IllegalStateException if interrupted
      */
     public static void abortAndThrowIfInterrupted(
-            @NonNull InterruptableRunnable action, @NonNull final String errorMessage) {
-        throwArgNull(action, "action");
+            @NonNull final InterruptableRunnable action, @NonNull final String errorMessage) {
+        Objects.requireNonNull(action, "action");
         try {
             action.run();
+        } catch (final InterruptedException e) {
+            logger.error(EXCEPTION.getMarker(), errorMessage);
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(errorMessage);
+        }
+    }
+
+    /**
+     * <p>
+     * Pass an object to a consumer that may throw an {@link InterruptedException}. If the thread is interrupted, the
+     * action will be aborted and the thread's interrupt flag will be set. Also writes an error message to the log.
+     * </p>
+     *
+     * <p>
+     * This method is useful for situations where interrupts are only expected if there has been an error condition.
+     * </p>
+     *
+     * @param consumer     an object that consumes something and may throw an {@link InterruptedException}
+     * @param object       the object to pass to the consumer
+     * @param errorMessage the error message to write to the log if this thread is interrupted
+     */
+    public static <T> void abortAndThrowIfInterrupted(
+            @NonNull final CheckedConsumer<T, InterruptedException> consumer,
+            @Nullable final T object,
+            @NonNull final String errorMessage) {
+
+        Objects.requireNonNull(consumer, "consumer");
+        Objects.requireNonNull(errorMessage, "errorMessage");
+
+        try {
+            consumer.accept(object);
         } catch (final InterruptedException e) {
             logger.error(EXCEPTION.getMarker(), errorMessage);
             Thread.currentThread().interrupt();
@@ -214,7 +245,7 @@ public final class Uninterruptable {
      *
      * @param duration the amount of time to sleep
      */
-    public static void tryToSleep(@NonNull Duration duration) {
+    public static void tryToSleep(@NonNull final Duration duration) {
         abortIfInterrupted(() -> MILLISECONDS.sleep(duration.toMillis()));
     }
 }

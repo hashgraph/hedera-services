@@ -60,6 +60,7 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.SwirldStateManagerImpl;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
@@ -103,7 +104,7 @@ class EventFlowTests {
 
     private final SettingsProvider settingsProvider = mock(SettingsProvider.class);
     protected AddressBook addressBook;
-    private BlockingQueue<SignedState> signedStateTracker;
+    private BlockingQueue<ReservedSignedState> signedStateTracker;
     protected SystemTransactionTracker systemTransactionTracker;
 
     protected SwirldStateManager swirldStateManager;
@@ -137,7 +138,7 @@ class EventFlowTests {
         preConsensusEventHandler.clear();
         swirldStateManager.clear();
         while (!signedStateTracker.isEmpty()) {
-            signedStateTracker.poll().release();
+            signedStateTracker.poll().close();
         }
     }
 
@@ -191,7 +192,10 @@ class EventFlowTests {
      */
     void testPostConsensusHandleEpochUpdate(
             final Long seed, final int numNodes, final int numEvents, final SwirldState origSwirldState) {
-        final State state = getInitialState(origSwirldState, null);
+
+        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+
+        final State state = getInitialState(origSwirldState, null, addressBook);
         final Random random = RandomUtils.initRandom(seed);
         final Hash nextEpochHash = RandomUtils.randomHash(random);
 
@@ -312,10 +316,10 @@ class EventFlowTests {
                 Duration.ofSeconds(5),
                 "The expected number of signed states were not created");
 
-        final List<SignedState> signedStates = new ArrayList<>();
+        final List<ReservedSignedState> signedStates = new ArrayList<>();
         signedStateTracker.drainTo(signedStates);
 
-        signedStates.forEach(ss -> missingSignedStateRounds.remove(ss.getRound()));
+        signedStates.forEach(ss -> missingSignedStateRounds.remove(ss.get().getRound()));
 
         // Check that there were no failures in the state
         final TransactionTracker currSwirldState = getCurrState();
@@ -329,11 +333,11 @@ class EventFlowTests {
                 missingSignedStateRounds.size(),
                 String.format("Missing signed states for rounds %s", missingSignedStateRounds));
 
-        for (final SignedState ss : signedStates) {
+        for (final ReservedSignedState ss : signedStates) {
             final TransactionTracker ssSwirldState =
-                    (TransactionTracker) ss.getState().getSwirldState();
+                    (TransactionTracker) ss.get().getState().getSwirldState();
             verifyNoFailures(ssSwirldState);
-            ss.release();
+            ss.close();
         }
     }
 
@@ -394,23 +398,23 @@ class EventFlowTests {
         verifyNoFailures(currSwirldState);
 
         // Verify the correct number of signed states
-        final List<SignedState> signedStates = new ArrayList<>();
+        final List<ReservedSignedState> signedStates = new ArrayList<>();
         signedStateTracker.drainTo(signedStates);
         assertEquals(finalExpectedNum, signedStates.size(), "Incorrect number of signed states created.");
 
         // Verify the correct freeze round signed state
-        for (final SignedState signedState : signedStates) {
+        for (final ReservedSignedState signedState : signedStates) {
             final TransactionTracker ssSwirldState =
-                    (TransactionTracker) signedState.getState().getSwirldState();
+                    (TransactionTracker) signedState.get().getState().getSwirldState();
             verifyNoFailures(ssSwirldState);
 
-            if (signedState.getRound() == freezeRound.get()) {
+            if (signedState.get().getRound() == freezeRound.get()) {
                 assertTrue(
-                        signedState.isFreezeState(),
+                        signedState.get().isFreezeState(),
                         String.format("Signed state for round %s should be a freeze state.", freezeRound));
             }
 
-            signedState.release();
+            signedState.close();
         }
         swirldStateManager.releaseCurrentSwirldState();
     }
@@ -587,7 +591,8 @@ class EventFlowTests {
                 .when(eventStreamManager)
                 .addEvents(anyList());
 
-        final State state = getInitialState(swirldState, initialState);
+        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+        final State state = getInitialState(swirldState, initialState, addressBook);
 
         systemTransactionTracker = new SystemTransactionTracker();
         signedStateTracker = new ArrayBlockingQueue<>(100);
@@ -603,6 +608,8 @@ class EventFlowTests {
                         .build();
 
         swirldStateManager = new SwirldStateManagerImpl(
+                TestPlatformContextBuilder.create().build(),
+                addressBook,
                 selfNodeId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
@@ -631,7 +638,8 @@ class EventFlowTests {
                 SoftwareVersion.NO_VERSION);
     }
 
-    private State getInitialState(final SwirldState swirldState, final State initialState) {
+    private State getInitialState(
+            final SwirldState swirldState, final State initialState, final AddressBook addressBook) {
         final State state;
         if (initialState == null) {
             state = new State();
@@ -639,6 +647,7 @@ class EventFlowTests {
             final PlatformState platformState = new PlatformState();
             platformState.setPlatformData(new PlatformData());
             state.setPlatformState(platformState);
+            state.getPlatformState().setAddressBook(addressBook);
         } else {
             state = initialState;
         }

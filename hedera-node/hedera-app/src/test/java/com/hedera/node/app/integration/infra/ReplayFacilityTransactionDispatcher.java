@@ -19,7 +19,6 @@ package com.hedera.node.app.integration.infra;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
@@ -27,18 +26,14 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRe
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
+import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
 
 @Singleton
 public class ReplayFacilityTransactionDispatcher extends TransactionDispatcher {
@@ -48,9 +43,8 @@ public class ReplayFacilityTransactionDispatcher extends TransactionDispatcher {
     public ReplayFacilityTransactionDispatcher(
             @NonNull HandleContext handleContext,
             @NonNull TransactionHandlers handlers,
-            @NonNull HederaAccountNumbers accountNumbers,
             @NonNull GlobalDynamicProperties dynamicProperties) {
-        super(handleContext, handlers, accountNumbers, dynamicProperties);
+        super(handleContext, handlers, dynamicProperties);
     }
 
     @Override

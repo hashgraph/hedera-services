@@ -34,7 +34,8 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -115,7 +116,7 @@ public class TokenHandlerTestBase {
         writableTokenState = emptyWritableTokenState();
         given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
-        readableStore = new ReadableTokenStore(readableStates);
+        readableStore = new ReadableTokenStoreImpl(readableStates);
         writableStore = new WritableTokenStore(writableStates);
     }
 
@@ -124,7 +125,7 @@ public class TokenHandlerTestBase {
         writableTokenState = writableTokenStateWithOneKey();
         given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
-        readableStore = new ReadableTokenStore(readableStates);
+        readableStore = new ReadableTokenStoreImpl(readableStates);
         writableStore = new WritableTokenStore(writableStates);
     }
 
@@ -251,6 +252,7 @@ public class TokenHandlerTestBase {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 2,
-                false);
+                false,
+                null);
     }
 }

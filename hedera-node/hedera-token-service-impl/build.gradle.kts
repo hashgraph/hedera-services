@@ -29,14 +29,16 @@ configurations.all {
 
 dependencies {
   implementation(project(":hedera-node:hapi"))
+  testImplementation(project(mapOf("path" to ":hedera-node:hedera-app")))
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-token-service"))
+  implementation(project(":hedera-node:hapi"))
   implementation(project(":hedera-node:hedera-mono-service"))
   implementation(libs.bundles.di)
   implementation(libs.pbj.runtime)
-
   implementation(libs.swirlds.virtualmap)
   implementation(libs.swirlds.jasperdb)
+
   testImplementation(testLibs.bundles.testing)
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))

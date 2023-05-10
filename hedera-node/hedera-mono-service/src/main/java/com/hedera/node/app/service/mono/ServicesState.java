@@ -70,6 +70,7 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.spi.config.PropertyNames;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -86,6 +87,7 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
@@ -273,7 +275,10 @@ public class ServicesState extends PartialNaryMerkleInternal
     @Override
     public void handleConsensusRound(final Round round, final SwirldDualState dualState) {
         throwIfImmutable();
+
         final var app = metadata.app();
+        app.mapWarmer().warmCache(round);
+
         app.dualStateAccessor().setDualState(dualState);
         app.logic().incorporateConsensus(round);
     }
@@ -281,6 +286,15 @@ public class ServicesState extends PartialNaryMerkleInternal
     @Override
     public void preHandle(final Event event) {
         metadata.app().eventExpansion().expandAllSigs(event, this);
+    }
+
+    @Override
+    public AddressBook updateWeight(@NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
+        throwIfImmutable();
+        stakingInfo()
+                .forEach((nodeNum, stakingInfo) ->
+                        configAddressBook.updateWeight(nodeNum.longValue(), stakingInfo.getWeight()));
+        return configAddressBook;
     }
 
     private ServicesApp deserializedInit(
@@ -329,6 +343,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final var initialHash = runningHashLeaf().getRunningHash().getHash();
             app = appBuilder
                     .get()
+                    .initTrigger(trigger)
                     .staticAccountMemo(nodeAddress.getMemo())
                     .bootstrapProps(bootstrapProps)
                     .initialHash(initialHash)
@@ -339,6 +354,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                     .build();
             APPS.save(selfId, app);
         }
+        app.maybeNewRecoveredStateListener().ifPresent(listener -> platform.getNotificationEngine()
+                .register(NewRecoveredStateListener.class, listener));
 
         if (dualState == null) {
             dualState = new DualStateImpl();
@@ -564,7 +581,6 @@ public class ServicesState extends PartialNaryMerkleInternal
         setChild(StateChildIndices.SPECIAL_FILES, new MerkleSpecialFiles());
         setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions());
         setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
-        //        setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
         setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
         setChild(
                 StateChildIndices.STAKING_INFO,
@@ -680,7 +696,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         return virtualRootNode.getDataSource() instanceof VirtualDataSourceJasperDB;
     }
 
-    private static <K extends VirtualKey<? super K>, V extends VirtualValue> VirtualMap<K, V> migrateVirtualMap(
+    private static <K extends VirtualKey, V extends VirtualValue> VirtualMap<K, V> migrateVirtualMap(
             final VirtualMap<K, V> source, final VirtualMap<K, V> target) {
         final int copyTargetMapEveryPuts = 10_000;
         final AtomicInteger count = new AtomicInteger(copyTargetMapEveryPuts);

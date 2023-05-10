@@ -1,24 +1,35 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.consensus;
 
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.time.Instant;
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
+import java.time.Instant;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HcsCrudSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HcsCrudSuite.class);
@@ -49,23 +60,20 @@ public class HcsCrudSuite extends HapiSuite {
                                 .memo(oldMemo)
                                 .adminKeyName(firstKey)
                                 .submitKeyName(firstKey),
-                        createTopic(topicToDelete)
-                                .adminKeyName(firstKey))
+                        createTopic(topicToDelete).adminKeyName(firstKey))
                 .when(
-                        submitMessageTo(topicToUpdate)
-                                .message("Hello"),
-                        submitMessageTo(topicToDelete)
-                                .message("World"),
-                        submitMessageTo(topicToUpdate)
-                                .message("!"))
+                        submitMessageTo(topicToUpdate).message("Hello"),
+                        submitMessageTo(topicToDelete).message("World"),
+                        submitMessageTo(topicToUpdate).message("!"))
                 .then(
-                        updateTopic(topicToUpdate)
-                                .submitKey(secondKey)
-                                .topicMemo(newMemo),
+                        updateTopic(topicToUpdate).submitKey(secondKey).topicMemo(newMemo),
                         deleteTopic(topicToDelete),
                         // Trigger snapshot of final state for replay assets
-                        freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)));
+                        freezeOnly()
+                                .payingWith(GENESIS)
+                                .startingAt(Instant.now().plusSeconds(10)));
     }
+
     @Override
     protected Logger getResultsLogger() {
         return log;

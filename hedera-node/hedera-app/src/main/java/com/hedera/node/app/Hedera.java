@@ -97,6 +97,28 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/*
+ ****************        ****************************************************************************************
+ **********                    **********                                                                       *
+ *******                          *******                                                                       *
+ *****                              *****                                                                       *
+ ****                                ****      ___           ___           ___           ___           ___      *
+ **         HHHH          HHHH         **     /\  \         /\  \         /\  \         /\  \         /\  \     *
+ **         HHHH          HHHH         **    /::\  \       /::\  \       /::\  \       /::\  \       /::\  \    *
+ *          HHHHHHHHHHHHHHHHHH          *   /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \   *
+            HHHHHHHHHHHHHHHHHH             /::\~\:\  \   /:/  \:\__\   /::\~\:\  \   /::\~\:\  \   /::\~\:\  \  *
+            HHHH          HHHH            /:/\:\ \:\__\ /:/__/ \:|__| /:/\:\ \:\__\ /:/\:\ \:\__\ /:/\:\ \:\__\ *
+            HHHHHHHHHHHHHHHHHH            \:\~\:\ \/__/ \:\  \ /:/  / \:\~\:\ \/__/ \/_|::\/:/  / \/__\:\/:/  / *
+ *          HHHHHHHHHHHHHHHHHH          *  \:\ \:\__\    \:\  /:/  /   \:\ \:\__\      |:|::/  /       \::/  /  *
+ **         HHHH          HHHH         **   \:\ \/__/     \:\/:/  /     \:\ \/__/      |:|\/__/        /:/  /   *
+ ***        HHHH          HHHH        ***    \:\__\        \::/__/       \:\__\        |:|  |         /:/  /    *
+ ****                                ****     \/__/         ~~            \/__/         \|__|         \/__/     *
+ ******                            ******                                                                       *
+ *********                      *********                                                                       *
+ ************                ************                                                                       *
+ ****************        ****************************************************************************************
+*/
+
 /**
  * Represents the Hedera Consensus Node.
  *
@@ -406,7 +428,7 @@ public final class Hedera implements SwirldMain {
 
     private void validateLedgerState() {
         daggerApp.ledgerValidator().validate(daggerApp.workingState().accounts());
-        daggerApp.nodeInfo().validateSelfAccountIfStaked();
+        daggerApp.nodeInfo().validateSelfAccountIfNonZeroStake();
         final var notifications = daggerApp.notificationEngine().get();
         notifications.register(PlatformStatusChangeListener.class, daggerApp.statusChangeListener());
         notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
@@ -492,6 +514,7 @@ public final class Hedera implements SwirldMain {
     private void onHandleConsensusRound(
             @NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
         // TBD: The handle workflow should be created by dagger and just be something we can delegate to here.
+        daggerApp.mutableState().set(state);
         daggerApp.dualStateAccessor().setDualState(dualState);
         daggerApp.workingStateAccessor().setHederaState(state);
         daggerApp.logic().incorporateConsensus(round);
@@ -531,7 +554,7 @@ public final class Hedera implements SwirldMain {
         createSpecialGenesisChildren(state, platform.getAddressBook(), seqStart);
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
-        initializeDagger(state);
+        initializeDagger(state, InitTrigger.GENESIS);
 
         // Store the version in state (ideally this would move to be something that is done when the
         // network service runs its schema migration)
@@ -637,7 +660,7 @@ public final class Hedera implements SwirldMain {
         }
 
         // Now that we have the state created, we are ready to create the all the dagger dependencies
-        initializeDagger(state);
+        initializeDagger(state, InitTrigger.RESTART);
 
         // We may still want to change the address book without an upgrade. But note
         // that without a dynamic address book, this MUST be a no-op during reconnect.
@@ -688,7 +711,7 @@ public final class Hedera implements SwirldMain {
     *
     =================================================================================================================*/
 
-    private void initializeDagger(@NonNull final MerkleHederaState state) {
+    private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
         logger.debug("Initializing dagger");
         final var selfId = platform.getSelfId().getId();
         if (daggerApp == null) {
@@ -699,6 +722,7 @@ public final class Hedera implements SwirldMain {
                     stateChildren.runningHashLeaf().getRunningHash().getHash();
             // Fully qualified so as to not confuse javadoc
             daggerApp = com.hedera.node.app.DaggerHederaApp.builder()
+                    .initTrigger(trigger)
                     .staticAccountMemo(nodeAddress.getMemo())
                     .bootstrapProps(bootstrapProps)
                     .initialHash(initialHash)

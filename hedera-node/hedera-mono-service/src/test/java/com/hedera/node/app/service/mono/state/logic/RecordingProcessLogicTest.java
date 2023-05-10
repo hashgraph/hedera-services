@@ -70,8 +70,7 @@ class RecordingProcessLogicTest {
 
         final var observed = captor.getValue();
         assertEquals(memberId, observed.getMemberId());
-        final var nominalConsTime = consensusTimestamp
-                .minusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS - 3);
+        final var nominalConsTime = consensusTimestamp.minusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS - 3);
         assertEquals(nominalConsTime, Instant.parse(observed.getConsensusTimestamp()));
         assertEquals(encodedContents, observed.getB64Transaction());
     }

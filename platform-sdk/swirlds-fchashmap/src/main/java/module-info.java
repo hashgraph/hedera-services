@@ -2,6 +2,7 @@
  * A HashMap-like structure that implements the FastCopyable interface.
  */
 module com.swirlds.fchashmap {
+    requires com.swirlds.base;
     requires com.swirlds.common;
     requires com.swirlds.logging;
     requires org.apache.logging.log4j;

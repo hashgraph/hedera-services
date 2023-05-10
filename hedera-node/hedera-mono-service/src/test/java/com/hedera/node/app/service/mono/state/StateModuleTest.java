@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -30,14 +31,18 @@ import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.ledger.ids.SeqNoEntityIdSource;
-import com.hedera.node.app.service.mono.state.logic.ProcessLogicModule;
+import com.hedera.node.app.service.mono.state.exports.BalancesExporter;
+import com.hedera.node.app.service.mono.state.exports.ExportingRecoveredStateListener;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hedera.node.app.service.mono.state.migration.RecordingMigrationManager;
 import com.hedera.node.app.service.mono.state.submerkle.RecordingSequenceNumber;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
+import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.CommonUtils;
 import java.nio.charset.Charset;
@@ -75,6 +80,14 @@ class StateModuleTest {
 
     @Mock
     private MerkleNetworkContext networkContext;
+
+    @Mock
+    private RecordStreamManager recordStreamManager;
+
+    @Mock
+    private BalancesExporter balancesExporter;
+
+    private final NodeId nodeId = new NodeId(false, 0);
 
     @Test
     void providesRecordingSeqNumbersIfApropos() {
@@ -167,5 +180,22 @@ class StateModuleTest {
                 stateChildren, assetRecording, migrationRecordsManager, isRecordingFacilityMocks);
 
         assertInstanceOf(RecordingMigrationManager.class, manager);
+    }
+
+    @Test
+    void providesNoRecoveredStateListenerIfNotInEventRecovery() {
+        final var maybeListener = StateModule.provideMaybeRecoveredStateListener(
+                InitTrigger.GENESIS, recordStreamManager, balancesExporter, nodeId);
+
+        assertTrue(maybeListener.isEmpty());
+    }
+
+    @Test
+    void providesRecoveredStateListenerIfNotInEventRecovery() {
+        final var maybeListener = StateModule.provideMaybeRecoveredStateListener(
+                InitTrigger.EVENT_STREAM_RECOVERY, recordStreamManager, balancesExporter, nodeId);
+
+        assertTrue(maybeListener.isPresent());
+        assertInstanceOf(ExportingRecoveredStateListener.class, maybeListener.get());
     }
 }

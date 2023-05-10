@@ -25,13 +25,8 @@ import static com.hedera.node.app.service.mono.utils.replay.PbjLeafConverters.or
 import static com.hedera.node.app.service.mono.utils.replay.PbjLeafConverters.orderedOperatorApprovalsFrom;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.token.CryptoAllowance;
-import com.hedera.hapi.node.token.NftAllowance;
-import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -44,11 +39,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.fcqueue.FCQueue;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.junit.jupiter.api.Test;
-
-import java.util.Comparator;
 import java.util.List;
 import java.util.SplittableRandom;
+import org.junit.jupiter.api.Test;
 
 class PbjLeafConvertersTest {
     private static final long AUTO_RENEW_DURATION_SECONDS = 7776000L;
@@ -108,9 +101,7 @@ class PbjLeafConvertersTest {
         }
     }
 
-    private void assertAccountsMatch(
-            @NonNull final MerkleAccount merkleAccount,
-            @NonNull final Account account) {
+    private void assertAccountsMatch(@NonNull final MerkleAccount merkleAccount, @NonNull final Account account) {
         assertEquals(merkleAccount.getKey().longValue(), account.accountNumber());
         assertEquals(merkleAccount.getNftsOwned(), account.numberOwnedNfts());
         assertEquals(merkleAccount.getNumTreasuryTitles(), account.numberTreasuryTitles());
@@ -133,8 +124,7 @@ class PbjLeafConvertersTest {
         assertEquals(merkleAccount.getNumContractKvPairs(), account.contractKvPairsNumber());
         // TODO - represent and match merkleAccount.getFirstUint256Key()
         assertEquals(
-                orderedHbarAllowancesFrom(merkleAccount),
-                orderedHbarAllowances(account.cryptoAllowancesOrThrow()));
+                orderedHbarAllowancesFrom(merkleAccount), orderedHbarAllowances(account.cryptoAllowancesOrThrow()));
         assertEquals(
                 orderedOperatorApprovalsFrom(merkleAccount),
                 orderedOperatorApprovals(account.approveForAllNftAllowancesOrThrow()));

@@ -26,7 +26,7 @@ import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
@@ -51,7 +51,7 @@ class ScheduleHandlerTestBase {
     protected Account payerAccount;
 
     @Mock
-    protected AccountAccess keyLookup;
+    protected ReadableAccountStore accountStore;
 
     @Mock
     protected Key payerKey;

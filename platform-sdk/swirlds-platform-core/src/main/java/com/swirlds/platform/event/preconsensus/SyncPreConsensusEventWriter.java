@@ -17,24 +17,29 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
+import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
+import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.base.state.Startable;
+import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.utility.LongRunningAverage;
-import com.swirlds.common.utility.Startable;
-import com.swirlds.common.utility.Stoppable;
-import com.swirlds.common.utility.Units;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
-import java.util.PriorityQueue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This object is responsible for writing events to the database.
  */
 public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Startable, Stoppable {
+
+    private static final Logger logger = LogManager.getLogger(SyncPreConsensusEventWriter.class);
 
     /**
      * Keeps track of the event stream files on disk.
@@ -84,14 +89,26 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     private final LongRunningAverage averageGenerationalSpanUtilization;
 
     /**
-     * Use this value as a stand-in for the running average if we haven't yet collected any data for the running
-     * average.
+     * The previous generational span. Set to a constant at bootstrap time.
      */
-    private final int bootstrapGenerationalSpan;
+    private long previousGenerationalSpan;
 
     /**
-     * Multiply this value by the running average when deciding the generation span for a new file (i.e. the difference
-     * between the maximum and the minimum legal generation).
+     * If true then use {@link #bootstrapGenerationalSpanOverlapFactor} to compute the maximum generation for new files.
+     * If false then use {@link #generationalSpanOverlapFactor} to compute the maximum generation for new files.
+     * Bootstrap mode is used until we create the first file that exceeds the preferred file size.
+     */
+    private boolean bootstrapMode = true;
+
+    /**
+     * During bootstrap mode, multiply this value by the running average when deciding the generation span for a new
+     * file (i.e. the difference between the maximum and the minimum legal generation).
+     */
+    private final double bootstrapGenerationalSpanOverlapFactor;
+
+    /**
+     * When not in boostrap mode, multiply this value by the running average when deciding the generation span for a new
+     * file (i.e. the difference between the maximum and the minimum legal generation).
      */
     private final double generationalSpanOverlapFactor;
 
@@ -106,15 +123,16 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     private final CountUpLatch lastFlushedEvent = new CountUpLatch(-1);
 
     /**
-     * Events that should be flushed ASAP.
+     * If true then all added events are new and need to be written to the stream. If false then all added events
+     * are already durable and do not need to be written to the stream.
      */
-    private final PriorityQueue<Long> flushableEvents = new PriorityQueue<>();
+    private boolean streamingNewEvents = false;
 
     /**
      * Create a new PreConsensusEventWriter.
      *
      * @param platformContext the platform context
-     * @param fileManager manages all preconsensus event stream files currently on disk
+     * @param fileManager     manages all preconsensus event stream files currently on disk
      */
     public SyncPreConsensusEventWriter(
             @NonNull final PlatformContext platformContext, @NonNull final PreConsensusEventFileManager fileManager) {
@@ -129,7 +147,8 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
 
         averageGenerationalSpanUtilization =
                 new LongRunningAverage(config.generationalUtilizationSpanRunningAverageLength());
-        bootstrapGenerationalSpan = config.bootstrapGenerationalSpan();
+        previousGenerationalSpan = config.bootstrapGenerationalSpan();
+        bootstrapGenerationalSpanOverlapFactor = config.bootstrapGenerationalSpanOverlapFactor();
         generationalSpanOverlapFactor = config.generationalSpanOverlapFactor();
         minimumGenerationalCapacity = config.minimumGenerationalCapacity();
 
@@ -140,13 +159,36 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public synchronized void writeEvent(@NonNull final EventImpl event) {
+    public void beginStreamingNewEvents() {
+        if (streamingNewEvents) {
+            logger.warn(EXCEPTION.getMarker(), "beginStreamingNewEvents() called while already streaming new events");
+        }
+        streamingNewEvents = true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void writeEvent(@NonNull final EventImpl event) {
         validateSequenceNumber(event);
-        if (event.getGeneration() >= minimumGenerationNonAncient) {
-            writeEventToStream(event);
-            flushIfNeeded();
-        } else {
+
+        if (!streamingNewEvents) {
+            lastWrittenEvent = event.getStreamSequenceNumber();
+            return;
+        }
+
+        if (event.getGeneration() < minimumGenerationNonAncient) {
             event.setStreamSequenceNumber(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
+            return;
+        }
+
+        try {
+            prepareOutputStream(event);
+            currentMutableFile.writeEvent(event);
+            lastWrittenEvent = event.getStreamSequenceNumber();
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -161,54 +203,10 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     }
 
     /**
-     * Flush the stream if needed.
-     */
-    private synchronized void flushIfNeeded() {
-        while (!flushableEvents.isEmpty()) {
-            final long nextFlushableEvent = flushableEvents.peek();
-
-            if (nextFlushableEvent > lastWrittenEvent) {
-                // We can't flush this until it gets written
-                break;
-            }
-
-            flushableEvents.remove();
-
-            if (nextFlushableEvent <= lastFlushedEvent.getCount()) {
-                // This is already flushed
-                continue;
-            }
-
-            try {
-                currentMutableFile.flush();
-            } catch (final IOException e) {
-                throw new UncheckedIOException("unable to flush", e);
-            }
-            markEventsAsFlushed();
-        }
-    }
-
-    /**
-     * Write an event to the file stream.
-     *
-     * @param event the event to write
-     */
-    private void writeEventToStream(@NonNull final EventImpl event) {
-        throwArgNull(event, "event");
-        try {
-            prepareOutputStream(event);
-            currentMutableFile.writeEvent(event);
-            lastWrittenEvent = event.getStreamSequenceNumber();
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
-    public synchronized void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         if (minimumGenerationNonAncient < this.minimumGenerationNonAncient) {
             throw new IllegalArgumentException("Minimum generation non-ancient cannot be decreased. Current = "
                     + this.minimumGenerationNonAncient + ", requested = " + minimumGenerationNonAncient);
@@ -221,7 +219,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public synchronized void setMinimumGenerationToStore(final long minimumGenerationToStore) {
+    public void setMinimumGenerationToStore(final long minimumGenerationToStore) {
         this.minimumGenerationToStore = minimumGenerationToStore;
         pruneOldFiles();
     }
@@ -230,7 +228,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public synchronized boolean isEventDurable(@NonNull final EventImpl event) {
+    public boolean isEventDurable(@NonNull final EventImpl event) {
         throwArgNull(event, "event");
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             // Stale events are not written to disk.
@@ -248,7 +246,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event is stale and will never be durable");
         }
-        flushIfNeeded();
         lastFlushedEvent.await(event.getStreamSequenceNumber());
     }
 
@@ -263,7 +260,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event is stale and will never be durable");
         }
-        flushIfNeeded();
         return lastFlushedEvent.await(event.getStreamSequenceNumber(), timeToWait);
     }
 
@@ -289,20 +285,22 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public synchronized void requestFlush(@NonNull final EventImpl event) {
-        throwArgNull(event, "event");
-        final long eventSequenceNumber = event.getStreamSequenceNumber();
-        if (eventSequenceNumber == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            // Stale events are not written to disk.
-            throw new IllegalStateException("Event is stale and will never be written to disk");
-        }
-
-        if (lastFlushedEvent.getCount() >= eventSequenceNumber) {
-            // The event has already been flushed.
+    public void requestFlush() {
+        if (!streamingNewEvents) {
+            markEventsAsFlushed();
             return;
         }
 
-        flushableEvents.add(eventSequenceNumber);
+        if (currentMutableFile == null) {
+            return;
+        }
+
+        try {
+            currentMutableFile.flush();
+            markEventsAsFlushed();
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to flush", e);
+        }
     }
 
     /**
@@ -310,10 +308,11 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      */
     private void closeFile() {
         try {
-            averageGenerationalSpanUtilization.add(currentMutableFile.getUtilizedGenerationalSpan());
+            previousGenerationalSpan = currentMutableFile.getUtilizedGenerationalSpan();
+            if (!bootstrapMode) {
+                averageGenerationalSpanUtilization.add(previousGenerationalSpan);
+            }
             currentMutableFile.close();
-
-            // Future work: "compactify" file name here
 
             fileManager.finishedWritingFile(currentMutableFile);
             markEventsAsFlushed();
@@ -331,12 +330,15 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * Calculate the generation span for a new file that is about to be created.
      */
     private long computeNewFileSpan(final long minimumFileGeneration, final long nextGenerationToWrite) {
-        if (averageGenerationalSpanUtilization.isEmpty()) {
-            return bootstrapGenerationalSpan;
-        }
 
-        final long desiredSpan =
-                (long) (averageGenerationalSpanUtilization.getAverage() * generationalSpanOverlapFactor);
+        final long basisSpan = (bootstrapMode || averageGenerationalSpanUtilization.isEmpty())
+                ? previousGenerationalSpan
+                : averageGenerationalSpanUtilization.getAverage();
+
+        final double overlapFactor =
+                bootstrapMode ? bootstrapGenerationalSpanOverlapFactor : generationalSpanOverlapFactor;
+
+        final long desiredSpan = (long) (basisSpan * overlapFactor);
 
         final long minimumSpan = (nextGenerationToWrite + minimumGenerationalCapacity) - minimumFileGeneration;
 
@@ -349,10 +351,18 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * @param eventToWrite the event that is about to be written
      */
     private void prepareOutputStream(@NonNull final EventImpl eventToWrite) throws IOException {
-        if (currentMutableFile != null
-                && (!currentMutableFile.canContain(eventToWrite)
-                        || currentMutableFile.fileSize() * Units.BYTES_TO_MEBIBYTES >= preferredFileSizeMegabytes)) {
-            closeFile();
+        if (currentMutableFile != null) {
+            final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite);
+            final boolean fileIsFull =
+                    UNIT_BYTES.convertTo(currentMutableFile.fileSize(), UNIT_MEGABYTES) >= preferredFileSizeMegabytes;
+
+            if (!fileCanContainEvent || fileIsFull) {
+                closeFile();
+            }
+
+            if (fileIsFull) {
+                bootstrapMode = false;
+            }
         }
 
         if (currentMutableFile == null) {

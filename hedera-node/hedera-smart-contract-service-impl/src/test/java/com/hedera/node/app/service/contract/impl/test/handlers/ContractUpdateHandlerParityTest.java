@@ -36,27 +36,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContractUpdateHandlerParityTest {
-    private AccountAccess keyLookup;
+    private ReadableAccountStore accountStore;
     private final ContractUpdateHandler subject = new ContractUpdateHandler();
 
     @BeforeEach
     void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 
     @Test
     void getsContractUpdateWithAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_WITH_NEW_ADMIN_KEY);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -67,7 +67,7 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateNewExpirationTimeOnly() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_ONLY_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -77,7 +77,7 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateWithDeprecatedAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_DEPRECATED_CID_ADMIN_KEY_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -87,7 +87,7 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateNewExpirationTimeAndAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_ADMIN_KEY_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -98,7 +98,7 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateNewExpirationTimeAndProxy() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_PROXY_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -108,7 +108,7 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateNewExpirationTimeAndAutoRenew() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_AUTORENEW_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -118,7 +118,7 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateNewExpirationTimeAndFile() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_FILE_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -128,7 +128,7 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateNewExpirationTimeAndMemo() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
@@ -138,7 +138,7 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateNewAutoRenewAccount() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_UPDATE_NEW_AUTO_RENEW_SCENARIO);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());

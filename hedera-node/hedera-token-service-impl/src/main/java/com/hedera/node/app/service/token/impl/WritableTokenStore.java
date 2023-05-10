@@ -48,7 +48,7 @@ public class WritableTokenStore {
     public WritableTokenStore(@NonNull final WritableStates states) {
         requireNonNull(states);
 
-        this.tokenState = states.get("TOKENS");
+        this.tokenState = states.get(TokenServiceImpl.TOKENS_KEY);
     }
 
     /**
@@ -81,7 +81,7 @@ public class WritableTokenStore {
     }
 
     /**
-     * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify(Comparable K)}.
+     * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify}.
      * If no such token exists, returns {@code Optional.empty()}
      * @param tokenNum - the number of the token to be retrieved.
      */

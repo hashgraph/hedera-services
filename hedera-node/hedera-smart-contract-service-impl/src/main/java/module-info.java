@@ -11,6 +11,7 @@ module com.hedera.node.app.service.contract.impl {
     requires javax.inject;
     requires com.github.spotbugs.annotations;
     requires com.hedera.pbj.runtime;
+    requires com.hedera.node.app.service.token;
 
     provides com.hedera.node.app.service.contract.ContractService with
             ContractServiceImpl;
@@ -19,5 +20,4 @@ module com.hedera.node.app.service.contract.impl {
             com.hedera.node.app,
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.handlers;
-    exports com.hedera.node.app.service.contract.impl.components;
 }

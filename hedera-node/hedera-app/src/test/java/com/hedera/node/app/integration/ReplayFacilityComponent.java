@@ -21,18 +21,17 @@ import com.hedera.node.app.integration.infra.InMemoryWritableStoreFactory;
 import com.hedera.node.app.integration.infra.RecordingName;
 import com.hedera.node.app.integration.infra.ReplayFacilityTransactionDispatcher;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
-import com.hedera.node.app.services.ServiceModule;
+import com.hedera.node.app.services.ServicesModule;
 import com.hedera.node.app.workflows.handle.HandlersModule;
 import dagger.BindsInstance;
 import dagger.Component;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import javax.inject.Singleton;
 
 @Singleton
 @Component(
         modules = {
-            ServiceModule.class,
+            ServicesModule.class,
             HandlersModule.class,
             ReplayFacilityModule.class,
         })

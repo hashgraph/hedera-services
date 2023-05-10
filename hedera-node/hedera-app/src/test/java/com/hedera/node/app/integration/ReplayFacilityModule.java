@@ -25,9 +25,9 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.integration.facilities.ReplayAdvancingConsensusNow;
 import com.hedera.node.app.integration.infra.InMemoryWritableStoreFactory;
+import com.hedera.node.app.integration.infra.RecordingName;
 import com.hedera.node.app.integration.infra.ReplayFacilityHandleContext;
 import com.hedera.node.app.integration.infra.ReplayFacilityTransactionDispatcher;
-import com.hedera.node.app.integration.infra.RecordingName;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -40,21 +40,25 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
+import com.hedera.node.app.workflows.prehandle.DummyPreHandleDispatcher;
 import com.hedera.test.mocks.MockAccountNumbers;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.file.Paths;
 import java.util.function.LongSupplier;
 import javax.inject.Singleton;
 
 @Module
 public interface ReplayFacilityModule {
+    @Binds
+    @Singleton
+    PreHandleDispatcher bindPreHandleDispatcher(DummyPreHandleDispatcher dummy);
 
     @Binds
     @Singleton

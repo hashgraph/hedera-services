@@ -16,40 +16,35 @@
 
 package com.hedera.node.app.service.mono.state.migration;
 
-import com.hedera.hapi.node.state.consensus.Topic;
+import static com.hedera.node.app.service.mono.state.migration.RecordingMigrationManager.INITIAL_ACCOUNTS_ASSET;
+import static com.hedera.node.app.service.mono.utils.replay.PbjLeafConverters.accountFromMerkle;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.RecordingSequenceNumber;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.replay.PbjLeafConverters;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
-import java.time.Instant;
-import java.util.List;
-import java.util.SplittableRandom;
-
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
+import java.time.Instant;
+import java.util.List;
+import java.util.SplittableRandom;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static com.hedera.node.app.service.mono.state.logic.RecordingStatusChangeListener.FINAL_TOPICS_ASSET;
-import static com.hedera.node.app.service.mono.state.migration.RecordingMigrationManager.INITIAL_ACCOUNTS_ASSET;
-import static com.hedera.node.app.service.mono.utils.replay.PbjLeafConverters.accountFromMerkle;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class RecordingMigrationManagerTest {
@@ -104,7 +99,6 @@ class RecordingMigrationManagerTest {
             throw new IllegalStateException(e);
         }
     }
-
 
     private void givenSomeAccounts() {
         accounts = new MerkleMap<>();

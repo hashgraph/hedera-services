@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
 
@@ -31,9 +30,11 @@ public interface SignedStateFinder {
      * iterated over from newest to oldest, starting at the latest immutable state.
      *
      * @param criteria the first state that matches this criteria is returned
-     * @return a wrapper around the first matching state, or a wrapper around null if no state currently in memory
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
+     * @return the first matching state, or a reservation on null if no state currently in memory
      * matches the criteria
      */
     @NonNull
-    AutoCloseableWrapper<SignedState> find(@NonNull final Predicate<SignedState> criteria);
+    ReservedSignedState find(@NonNull final Predicate<SignedState> criteria, @NonNull final String reason);
 }

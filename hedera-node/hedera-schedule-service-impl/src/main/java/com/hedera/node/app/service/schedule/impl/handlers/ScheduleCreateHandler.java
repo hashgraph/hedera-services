@@ -33,29 +33,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#SCHEDULE_CREATE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_CREATE}.
  */
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
+
+    // @todo('6249') This constructor should be removed and the @Inject annotation added to the remaining constructor
     @Inject
-    public ScheduleCreateHandler() {
-        // Exists for injection
+    public ScheduleCreateHandler(@NonNull final PreHandleDispatcher dispatcher) {
+        super(dispatcher);
     }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Pre-handles a {@link HederaFunctionality#SCHEDULE_CREATE} transaction, returning the
-     * metadata required to, at minimum, validate the signatures of all required signing keys.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
-     *     txn
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull final PreHandleDispatcher dispatcher)
-            throws PreCheckException {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.scheduleCreateOrThrow();
@@ -80,7 +70,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
 
         // FUTURE: Once we allow schedule transactions to be scheduled inside, we need a check here
         // to see if provided payer is same as payer in the inner transaction.
-        preHandleScheduledTxn(context, scheduledTxn, payerForNested, dispatcher);
+        preHandleScheduledTxn(context, scheduledTxn, payerForNested);
     }
 
     /**

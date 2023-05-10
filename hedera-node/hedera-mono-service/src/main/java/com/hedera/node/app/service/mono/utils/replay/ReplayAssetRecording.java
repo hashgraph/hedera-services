@@ -96,18 +96,19 @@ public class ReplayAssetRecording {
     }
 
     public <T extends Record> List<T> readPbjEncodingsFromReplayAsset(
-            @NonNull final String assetFileName,
-            @NonNull final Codec<T> codec) {
+            @NonNull final String assetFileName, @NonNull final Codec<T> codec) {
         try {
             final var assetPath = replayPathDirOf(assetFileName);
             try (final var lines = Files.lines(assetPath)) {
                 return lines.map(line -> {
-                    try {
-                        return codec.parse(BufferedData.wrap(Base64.getDecoder().decode(line)));
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                }).toList();
+                            try {
+                                return codec.parse(
+                                        BufferedData.wrap(Base64.getDecoder().decode(line)));
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                        })
+                        .toList();
             }
         } catch (final Exception e) {
             throw new RuntimeException(e);

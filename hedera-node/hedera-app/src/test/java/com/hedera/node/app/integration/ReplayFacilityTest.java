@@ -19,6 +19,8 @@ package com.hedera.node.app.integration;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.state.logic.RecordingStatusChangeListener.FINAL_TOPICS_ASSET;
 import static com.hedera.node.app.service.mono.state.migration.RecordingMigrationManager.INITIAL_ACCOUNTS_ASSET;
+import static com.hedera.node.app.service.mono.stream.RecordingRecordStreamManager.RECORDS_ASSET;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -37,20 +39,16 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.service.mono.utils.replay.ConsensusTxn;
 import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
-import java.time.Instant;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
-
-import static com.hedera.node.app.service.mono.stream.RecordingRecordStreamManager.RECORDS_ASSET;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ReplayFacilityTest {
     private ReplayFacilityComponent component;
@@ -90,9 +88,13 @@ public class ReplayFacilityTest {
 
     private void assertFinalTopicsMatch() {
         final var expectedTopics = assetRecording.readPbjEncodingsFromReplayAsset(FINAL_TOPICS_ASSET, Topic.PROTOBUF);
-        final var actualTopics = writableStoreFactory.getServiceStates()
-                .get(ConsensusService.NAME).<EntityNum, Topic>get(ConsensusServiceImpl.TOPICS_KEY);
-        assertEquals(expectedTopics.size(), (int) actualTopics.size(),
+        final var actualTopics = writableStoreFactory
+                .getServiceStates()
+                .get(ConsensusService.NAME)
+                .<EntityNum, Topic>get(ConsensusServiceImpl.TOPICS_KEY);
+        assertEquals(
+                expectedTopics.size(),
+                (int) actualTopics.size(),
                 "Expected " + expectedTopics.size() + " topics, but got " + actualTopics.size());
         expectedTopics.forEach(expectedTopic -> {
             final var actualTopic = actualTopics.get(EntityNum.fromLong(expectedTopic.topicNumber()));
@@ -112,15 +114,19 @@ public class ReplayFacilityTest {
     }
 
     private void loadExpectedRecords() {
-        assetRecording.readPbjEncodingsFromReplayAsset(RECORDS_ASSET, TransactionRecord.PROTOBUF).forEach(pbjRecord ->
-                expectedRecords.put(pbjRecord.transactionID(), pbjRecord));
+        assetRecording
+                .readPbjEncodingsFromReplayAsset(RECORDS_ASSET, TransactionRecord.PROTOBUF)
+                .forEach(pbjRecord -> expectedRecords.put(pbjRecord.transactionID(), pbjRecord));
     }
 
     private void rebuildInitialAccounts() {
-        final var tokens = writableStoreFactory.getServiceStates()
-                .get(TokenService.NAME).<EntityNum, Account>get(TokenServiceImpl.ACCOUNTS_KEY);
-        assetRecording.readPbjEncodingsFromReplayAsset(INITIAL_ACCOUNTS_ASSET, Account.PROTOBUF).forEach(account ->
-                tokens.put(EntityNum.fromLong(account.accountNumber()), account));
+        final var tokens = writableStoreFactory
+                .getServiceStates()
+                .get(TokenService.NAME)
+                .<EntityNum, Account>get(TokenServiceImpl.ACCOUNTS_KEY);
+        assetRecording
+                .readPbjEncodingsFromReplayAsset(INITIAL_ACCOUNTS_ASSET, Account.PROTOBUF)
+                .forEach(account -> tokens.put(EntityNum.fromLong(account.accountNumber()), account));
         ((MapWritableKVState<EntityNum, Account>) tokens).commit();
     }
 
