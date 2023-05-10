@@ -47,6 +47,10 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Contains chatter simulation tests. Each test runs a simulated network of nodes that gossips a simulated chatter
+ * event using simulated gossip.
+ */
 public class ChatterSimulationTests {
 
     private static final Duration PHASE_DURATION = Duration.ofMillis(500);

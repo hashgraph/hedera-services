@@ -42,8 +42,17 @@ import java.util.List;
 import java.util.concurrent.Executors;
 
 /**
+ * <p>
  * A simulated node that uses chatter logic to determine which messages to send to peers. It does not use any of the
- * chatter protocols, but it does use the chatter peer instances that track which messages should be sent to each peer.
+ * chatter protocols, but it does use the chatter peer instances that track which messages should be sent to each peer
+ * and when.
+ * </p>
+ * <p>
+ * Once an event is received via gossip, it is passed on to the event pipeline. The event pipeline is a custom set of
+ * one or more components that can be used to simulate certain behaviors, such as a full intake queue, in-order orphan
+ * buffer, etc. These components can also be used to track data about the events that pass through, such as the number
+ * of events received from a peer, or the number of duplicate events received.
+ * </p>
  *
  * @param <T> the type of event sent and received by this node
  */
