@@ -16,7 +16,7 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -32,8 +32,8 @@ import org.apache.logging.log4j.Logger;
  * Main entry point.
  *
  * <p>This class simply delegates to either {@link MonoServicesMain} or {@link Hedera} depending on
- * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows
- * are enabled, then {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
+ * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows are enabled, then
+ * {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
  */
 public class ServicesMain implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);
@@ -41,7 +41,7 @@ public class ServicesMain implements SwirldMain {
     /**
      * The {@link SwirldMain} to actually use, depending on whether workflows are enabled.
      */
-    private SwirldMain delegate;
+    private final SwirldMain delegate;
 
     /** Create a new instance */
     public ServicesMain() {
