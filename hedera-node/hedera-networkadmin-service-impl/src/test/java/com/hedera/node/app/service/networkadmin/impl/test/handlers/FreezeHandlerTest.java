@@ -258,6 +258,27 @@ class FreezeHandlerTest {
     }
 
     @Test
+    void rejectIfNoStartTimeSet() {
+        TransactionBody txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .freeze(FreezeTransactionBody.newBuilder().build())
+                // do not set freeze start time
+                .build();
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+    }
+
+    @Test
+    void rejectIfNoFreezeTxSet() {
+        TransactionBody txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .build();
+        // do not set freeze transaction body
+        given(context.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+    }
+
+    @Test
     void rejectIfStartHourSet() {
         // start hour is not supported
         TransactionBody txn = TransactionBody.newBuilder()
