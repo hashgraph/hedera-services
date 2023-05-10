@@ -42,6 +42,10 @@ import org.apache.logging.log4j.Logger;
  * Object representing the entire history of transaction handling for the testing app
  * <p>
  * Contains a record of all rounds that have come to consensus, and the transactions which were included
+ * <p>
+ * Writes a log file containing the history of transaction handling, so that any replayed transactions after a reboot
+ * can be confirmed to match the original handling. NOTE: Partially written log lines are simply ignored by this tool,
+ * so it is NOT verifying handling of transactions in a partially handled round at the time of a crash.
  */
 public class TransactionHandlingHistory {
     private static final Logger logger = LogManager.getLogger(TransactionHandlingHistory.class);
