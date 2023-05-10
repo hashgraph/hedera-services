@@ -853,11 +853,11 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    // Since 0.30 JDB files include the ':' character which is forbidden by Windows (and may
+    // Since 0.38 JDB files include the ':' character which is forbidden by Windows (and may
     // exceed the maximum path length besides), only run this test on Linux, Mac, or UNIX
     @EnabledOnOs({OS.LINUX, OS.MAC, OS.AIX, OS.SOLARIS})
     void testLoading038XState() throws IOException {
-        // The saved state used for this test is from 0.30.5, meaning the JDB file names
+        // The saved state used for this test is from 0.38.1, meaning the JDB file names
         // use the ':' character; but Windows prohibits such files, so the repository
         // couldn't be cloned on that OS with the as-is saved state. The solution is to
         // store the JDB files in the repo with ':' replaced by 'cln' (plus other
