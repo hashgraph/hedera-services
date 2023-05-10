@@ -73,7 +73,7 @@ public record PreHandleResult(
         NODE_DUE_DILIGENCE_FAILURE,
         /**
          * When the pre-handle fails because the combination of state and transaction is invalid, such as insufficient
-         * balance, missing account, or invalid transaction body.
+         * balance, missing account, or invalid transaction body data.
          */
         PRE_HANDLE_FAILURE,
         /**
@@ -227,6 +227,7 @@ public record PreHandleResult(
                 payer, payerKey, Status.PRE_HANDLE_FAILURE, responseCode, txInfo, verificationResults, null);
     }
 
+    /** Convenience method to create a SignatureVerification that failed */
     private static SignatureVerification failedVerification(final Key key) {
         return new SignatureVerification() {
             @NonNull
