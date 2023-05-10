@@ -47,7 +47,6 @@ import org.apache.commons.codec.DecoderException;
 
 @Singleton
 public class AdaptedMonoProcessLogic implements ProcessLogic {
-    private static final long MILLIS_TO_WAIT_FOR_SIGNATURE_VERIFICATION = 60_000L;
     private final StandardProcessLogic monoProcessLogic;
 
     @Inject
