@@ -18,4 +18,11 @@ package com.swirlds.platform.test.chatter.network.framework;
 
 import com.swirlds.common.system.NodeId;
 
+/**
+ * A simulated node that uses chatter to gossip.
+ *
+ * @param id              this node's id
+ * @param chatterInstance the chatter instance of the node
+ * @param <T>             the event gossiped by this node
+ */
 public record Node<T extends SimulatedChatterEvent>(NodeId id, ChatterInstance<T> chatterInstance) {}

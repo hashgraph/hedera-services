@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.FakeTime;
-import com.swirlds.platform.chatter.ChatterSubSetting;
+import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
 import com.swirlds.platform.test.chatter.network.NoOpSimulatedEventPipeline;
 import java.time.Duration;
 
@@ -41,46 +41,91 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
     private SimulatedEventCreator<T> newEventCreator;
     private SimulatedEventPipeline<T> eventPipeline;
 
+    /**
+     * Sets the node id for this node
+     *
+     * @return {@code this}
+     */
     public NodeBuilder<T> nodeId(final NodeId nodeId) {
         this.nodeId = nodeId;
         return this;
     }
 
+    /**
+     * Sets the number of nodes in the network
+     *
+     * @return {@code this}
+     */
     public NodeBuilder<T> numNodes(final int numNodes) {
         this.numNodes = numNodes;
         return this;
     }
 
+    /**
+     * Sets the time instance used by the simulation
+     *
+     * @return {@code this}
+     */
     public NodeBuilder<T> time(final FakeTime time) {
         this.time = time;
         return this;
     }
 
+    /**
+     * Sets the class of events gossiped by this network
+     *
+     * @return {@code this}
+     */
     public NodeBuilder<T> eventClass(final Class<T> eventClass) {
         this.eventClass = eventClass;
         return this;
     }
 
+    /**
+     * Sets the event creator of this node
+     *
+     * @return {@code this}
+     */
     public NodeBuilder<T> eventCreator(final SimulatedEventCreator<T> newEventCreator) {
         this.newEventCreator = newEventCreator;
         return this;
     }
 
+    /**
+     * Sets the event pipeline of this node. Events are sent to this pipeline as they are received from peers
+     *
+     * @return {@code this}
+     */
     public NodeBuilder<T> eventPipeline(final SimulatedEventPipeline<T> eventPipeline) {
         this.eventPipeline = eventPipeline;
         return this;
     }
 
+    /**
+     * Sets the other event delay used to determine when to send a peer an event
+     *
+     * @return {@code this}
+     */
     public NodeBuilder<T> otherEventDelay(final Duration otherEventDelay) {
         this.otherEventDelay = otherEventDelay;
         return this;
     }
 
+    /**
+     * Sets the processing time message interval
+     *
+     * @return {@code this}
+     */
     public NodeBuilder<T> procTimeInterval(final Duration procTimeInterval) {
         this.procTimeInterval = procTimeInterval;
         return this;
     }
 
+    /**
+     * Builds a new node.
+     *
+     * @return the new node
+     */
     public Node<T> build() {
         if (newEventCreator == null) {
             throw new IllegalArgumentException("an event creator must be supplied");
