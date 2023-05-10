@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -290,6 +291,15 @@ public class PreConsensusEventFileManager {
      */
     public @NonNull Iterator<PreConsensusEventFile> getFileIterator(
             final long minimumGeneration, final boolean requireMinimumGeneration) {
+
+        if (files.size() == 0) {
+            if (requireMinimumGeneration) {
+                throw new IllegalStateException("No event files are available, cannot iterate over events");
+            } else {
+                return Collections.emptyIterator();
+            }
+        }
+
         try {
             // Returns the index of the last file with a maximum generation that is
             // less than or equal to the minimum requested generation.

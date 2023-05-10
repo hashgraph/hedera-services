@@ -73,6 +73,8 @@ include(":hedera-node:hapi-fees")
 
 include(":hedera-node:hapi")
 
+include(":hedera-node:hedera-config")
+
 include(":hedera-node:hedera-app")
 
 include(":hedera-node:hedera-app-spi")
@@ -102,7 +104,7 @@ gitRepositories {
     // choose tag or branch of HAPI you would like to test with
     // this looks for a tag in hedera-protobufs repo
     // This version needs to match tha HAPI version below in versionCatalogs
-    tag.set("add-missing-account-fields")
+    tag.set("add-pbj-types-for-state")
     // do not load project from repo
     autoInclude.set(false)
   }
@@ -144,7 +146,7 @@ dependencyResolutionManagement {
       version("netty-version", "4.1.66.Final")
       version("protobuf-java-version", "3.19.4")
       version("slf4j-version", "2.0.3")
-      version("swirlds-version", "0.38.0-alpha.2")
+      version("swirlds-version", "0.38.0-alpha.3")
       version("tuweni-version", "2.2.0")
       version("jna-version", "5.12.1")
       version("jsr305-version", "3.0.2")
@@ -239,7 +241,7 @@ dependencyResolutionManagement {
       library("protobuf-java", "com.google.protobuf", "protobuf-java")
           .versionRef("protobuf-java-version")
       library("swirlds-common", "com.swirlds", "swirlds-common").versionRef("swirlds-version")
-      library("swirlds-config", "com.swirlds", "swirlds-config").versionRef("swirlds-version")
+      library("swirlds-config", "com.swirlds", "swirlds-config-api").versionRef("swirlds-version")
       library("swirlds-config-impl", "com.swirlds", "swirlds-config-impl")
           .versionRef("swirlds-version")
       library("slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
