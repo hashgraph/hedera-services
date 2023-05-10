@@ -29,8 +29,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -50,9 +52,9 @@ public class TransactionHandlingHistory {
     private boolean permitRoundGaps;
 
     /**
-     * A list of rounds that have come to consensus
+     * A map from round number to historical rounds
      */
-    private final List<ConsistencyTestingToolRound> roundHistory;
+    private final Map<Long, ConsistencyTestingToolRound> roundHistory;
 
     /**
      * A set of all transactions which have been seen
@@ -70,10 +72,15 @@ public class TransactionHandlingHistory {
     private BufferedWriter writer;
 
     /**
+     * The round number of the previous round handled
+     */
+    private long previousRoundHandled;
+
+    /**
      * Constructor
      */
     public TransactionHandlingHistory() {
-        this.roundHistory = new ArrayList<>();
+        this.roundHistory = new HashMap<>();
         this.seenTransactions = new HashSet<>();
 
         // initialization is happening in init()
@@ -140,22 +147,6 @@ public class TransactionHandlingHistory {
     }
 
     /**
-     * Searches the history for a round which has the same round number as the new round
-     *
-     * @param newRound the round to search for a historical counterpart of
-     * @return the historical counterpart of the new round, or null if no such round exists
-     */
-    @Nullable
-    private ConsistencyTestingToolRound findHistoricalRound(final @NonNull ConsistencyTestingToolRound newRound) {
-        Objects.requireNonNull(newRound);
-
-        return roundHistory.stream()
-                .filter(oldRound -> newRound.compareTo(oldRound) == 0)
-                .findFirst()
-                .orElse(null);
-    }
-
-    /**
      * Compare a newly received round with the historical counterpart. Logs an error if the new round isn't identical to
      * the historical round
      *
@@ -192,11 +183,9 @@ public class TransactionHandlingHistory {
      */
     @NonNull
     private List<String> addRoundToHistory(final @NonNull ConsistencyTestingToolRound newRound) {
-        Objects.requireNonNull(newRound);
-
         final List<String> errors = new ArrayList<>();
 
-        roundHistory.add(newRound);
+        roundHistory.put(newRound.roundNumber(), newRound);
 
         newRound.transactionsContents().forEach(transaction -> {
             final String error = addTransaction(transaction);
@@ -207,30 +196,31 @@ public class TransactionHandlingHistory {
         });
 
         if (roundHistory.size() <= 1) {
+            previousRoundHandled = newRound.roundNumber();
             // only 1 round is in the history, so no additional checks are necessary
             return errors;
         }
 
         final long newRoundNumber = newRound.roundNumber();
-        final long previousRoundNumber =
-                roundHistory.get(roundHistory.size() - 2).roundNumber();
 
         // make sure round numbers always increase
-        if (newRoundNumber <= previousRoundNumber) {
-            final String error = "Round " + newRoundNumber + " is not greater than round " + previousRoundNumber;
+        if (newRoundNumber <= previousRoundHandled) {
+            final String error = "Round " + newRoundNumber + " is not greater than round " + previousRoundHandled;
             logger.error(EXCEPTION.getMarker(), error);
 
             errors.add(error);
         }
         // if gaps in round history aren't permitted, check that the round numbers are consecutive
-        else if (!permitRoundGaps && newRoundNumber != previousRoundNumber + 1) {
+        else if (!permitRoundGaps && newRoundNumber != previousRoundHandled + 1) {
             final String error = "Gap in round history found. Round " + newRoundNumber
-                    + " was added, but previous round was " + previousRoundNumber;
+                    + " was added, but previous round was " + previousRoundHandled;
 
             logger.error(EXCEPTION.getMarker(), error);
 
             errors.add(error);
         }
+
+        previousRoundHandled = newRound.roundNumber();
 
         return errors;
     }
@@ -266,7 +256,7 @@ public class TransactionHandlingHistory {
     public List<String> processRound(final @NonNull ConsistencyTestingToolRound round) {
         Objects.requireNonNull(round);
 
-        final ConsistencyTestingToolRound historicalRound = findHistoricalRound(round);
+        final ConsistencyTestingToolRound historicalRound = roundHistory.get(round.roundNumber());
 
         final List<String> errors = new ArrayList<>();
         if (historicalRound == null) {

@@ -59,7 +59,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     private final TransactionHandlingHistory transactionHandlingHistory;
 
     /**
-     * The true "state" of this app. This long value is updated with every transaction
+     * The true "state" of this app. This long value is updated with every transaction, and with every round
      */
     private long stateLong = 0;
 
@@ -170,8 +170,11 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @Override
     public void handleConsensusRound(final @NonNull Round round, final @NonNull SwirldDualState swirldDualState) {
-        Objects.requireNonNull(round).forEachTransaction(this::applyTransactionToState);
+        Objects.requireNonNull(round);
         Objects.requireNonNull(swirldDualState);
+
+        round.forEachTransaction(this::applyTransactionToState);
+        stateLong = NonCryptographicHashing.hash64(stateLong, round.getRoundNum());
 
         transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round, stateLong));
     }
