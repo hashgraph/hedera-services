@@ -53,6 +53,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
 
     /**
      * The history of transactions that have been handled by this app
+     * <p>
+     * A deep copy of this object is NOT created when this state is copied
      */
     private final TransactionHandlingHistory transactionHandlingHistory;
 
@@ -78,7 +80,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     private ConsistencyTestingToolState(@NonNull final ConsistencyTestingToolState that) {
         super(Objects.requireNonNull(that));
 
-        this.transactionHandlingHistory = new TransactionHandlingHistory(that.transactionHandlingHistory);
+        this.transactionHandlingHistory = that.transactionHandlingHistory;
         this.stateLong = that.stateLong;
     }
 

@@ -65,6 +65,11 @@ public class TransactionHandlingHistory {
     private Path logFilePath;
 
     /**
+     * The writer for the log file
+     */
+    private BufferedWriter writer;
+
+    /**
      * Constructor
      */
     public TransactionHandlingHistory() {
@@ -72,20 +77,6 @@ public class TransactionHandlingHistory {
         this.seenTransactions = new HashSet<>();
 
         // initialization is happening in init()
-    }
-
-    /**
-     * Copy constructor
-     *
-     * @param that the object to copy
-     */
-    public TransactionHandlingHistory(@NonNull final TransactionHandlingHistory that) {
-        Objects.requireNonNull(that);
-
-        this.permitRoundGaps = that.permitRoundGaps;
-        this.roundHistory = new ArrayList<>(that.roundHistory);
-        this.seenTransactions = new HashSet<>(that.seenTransactions);
-        this.logFilePath = that.logFilePath;
     }
 
     /**
@@ -103,6 +94,12 @@ public class TransactionHandlingHistory {
         logger.info(STARTUP.getMarker(), "Consistency testing tool log path: {}", logFilePath);
 
         tryReadLog();
+
+        try {
+            this.writer = new BufferedWriter(new FileWriter(logFilePath.toFile(), true));
+        } catch (final IOException e) {
+            throw new RuntimeException("Failed to open writer for transaction handling history", e);
+        }
     }
 
     /**
@@ -246,11 +243,11 @@ public class TransactionHandlingHistory {
     private void writeRoundToLog(final @NonNull ConsistencyTestingToolRound round) {
         Objects.requireNonNull(round);
 
-        try (final BufferedWriter file = new BufferedWriter(new FileWriter(logFilePath.toFile(), true))) {
-            file.write(round.toString());
-            file.flush();
-        } catch (final IOException e) {
-            e.printStackTrace();
+        try {
+            writer.write(round.toString());
+            writer.flush();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write round `%s` to log".formatted(round.roundNumber()), e);
         }
     }
 
