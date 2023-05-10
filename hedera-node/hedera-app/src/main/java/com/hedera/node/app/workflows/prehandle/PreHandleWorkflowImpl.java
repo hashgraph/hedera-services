@@ -224,7 +224,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             signatureExpander.expand(payerKey, originals, expanded);
         }
 
-        // 4. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
+        // 4a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
         try {
             // NOTE: Once PreHandleContext is moved from being a concrete implementation in SPI, to being an Interface/
@@ -240,7 +240,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                     "Payer account disappeared between preHandle and preHandleContext creation!", preCheck);
         }
 
-        // 5. Call Pre-Transaction Handlers
+        // 4b. Call Pre-Transaction Handlers
         try {
             // FUTURE: First, perform semantic checks on the transaction (TBD)
             // Then gather the signatures from the transaction handler
@@ -254,7 +254,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             return preHandleFailure(payer, payerKey, preCheck.responseCode(), txInfo, results);
         }
 
-        // 6. Expand additional SignaturePairs based on gathered keys and hollow accounts
+        // 5. Expand additional SignaturePairs based on gathered keys and hollow accounts
         final var nonPayerKeys = context.requiredNonPayerKeys();
         for (final var key : nonPayerKeys) {
             signatureExpander.expand(key, originals, expanded);
@@ -265,10 +265,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             signatureExpander.expand(hollowAccount, originals, expanded);
         }
 
-        // 7. Submit the expanded SignaturePairs to the cryptography engine for verification
+        // 6. Submit the expanded SignaturePairs to the cryptography engine for verification
         final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
 
-        // 8. Create and return TransactionMetadata
+        // 7. Create and return TransactionMetadata
         return new PreHandleResult(payer, payerKey, SO_FAR_SO_GOOD, OK, txInfo, results, null);
     }
 
