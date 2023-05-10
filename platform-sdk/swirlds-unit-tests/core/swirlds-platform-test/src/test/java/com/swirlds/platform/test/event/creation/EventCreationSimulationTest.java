@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.event.creation;
 
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -128,6 +129,7 @@ public class EventCreationSimulationTest {
         for (NodeConfig nodeConfig : params.nodeConfigs()) {
             final NodeId selfId = NodeId.createMain(i++);
             final SimulatedEventCreationNode node = new SimulatedEventCreationNode(
+                    new BasicSoftwareVersion(1),
                     random,
                     time,
                     addressBook,

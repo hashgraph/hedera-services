@@ -26,7 +26,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.io.SerializationUtils;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 

@@ -22,15 +22,15 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.sync.Generations;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -65,7 +65,7 @@ public class OrphanBufferTester implements EventLinker {
     public void newAncientGeneration(final long ancientGeneration) {
         updateGenerations(new Generations(
                 GraphGenerations.FIRST_GENERATION, ancientGeneration + 1, Long.MAX_VALUE // not relevant ATM
-                ));
+        ));
     }
 
     public void loadFromSignedState(final SignedState signedState) {

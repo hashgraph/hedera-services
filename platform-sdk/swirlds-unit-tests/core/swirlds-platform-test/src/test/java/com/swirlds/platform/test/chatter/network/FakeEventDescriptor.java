@@ -19,7 +19,7 @@ package com.swirlds.platform.test.chatter.network;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.chatter.protocol.messages.EventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import java.io.IOException;
 
 public class FakeEventDescriptor implements EventDescriptor {

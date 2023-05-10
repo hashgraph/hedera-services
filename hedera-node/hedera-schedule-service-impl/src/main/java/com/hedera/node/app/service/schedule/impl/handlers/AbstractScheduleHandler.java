@@ -29,17 +29,22 @@ import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
+import java.util.Objects;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
+
+    private final PreHandleDispatcher dispatcher;
+
+    AbstractScheduleHandler(PreHandleDispatcher dispatcher) {
+        this.dispatcher = Objects.requireNonNull(dispatcher, "The supplied argument 'dispatcher' must not be null.");
+    }
+
     protected void preHandleScheduledTxn(
-            final PreHandleContext context,
-            final TransactionBody scheduledTxn,
-            final AccountID payerForNested,
-            final PreHandleDispatcher dispatcher)
+            final PreHandleContext context, final TransactionBody scheduledTxn, final AccountID payerForNested)
             throws PreCheckException {
         final var innerContext =
                 context.createNestedContext(scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);

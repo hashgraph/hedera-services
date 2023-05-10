@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -81,6 +81,6 @@ public class JContractAliasKey extends JKey {
 
     @Override
     public boolean isValid() {
-        return !isEmpty() && evmAddress.length == EVM_ADDRESS_SIZE;
+        return !isEmpty() && isOfEvmAddressSize(evmAddress);
     }
 }

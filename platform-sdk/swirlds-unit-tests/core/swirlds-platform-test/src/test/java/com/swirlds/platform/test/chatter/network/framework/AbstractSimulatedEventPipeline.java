@@ -17,8 +17,8 @@
 
 package com.swirlds.platform.test.chatter.network.framework;
 
-import com.swirlds.platform.chatter.protocol.ChatterCore;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 
 public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> implements SimulatedEventPipeline<T> {

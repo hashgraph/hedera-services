@@ -31,6 +31,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.SystemExitReason.NODE_ADDRESS_MISMATCH;
 
@@ -42,12 +43,11 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.config.sources.AliasConfigSource;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
@@ -75,9 +75,8 @@ import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.p2p.portforwarding.PortForwarder;
 import com.swirlds.p2p.portforwarding.PortMapping;
-import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.config.ConfigAliases;
+import com.swirlds.platform.config.ConfigMappings;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.legacy.ConfigPropertiesSource;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
@@ -85,6 +84,8 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.internal.InfoApp;
 import com.swirlds.platform.gui.internal.InfoMember;
 import com.swirlds.platform.gui.internal.InfoSwirld;
@@ -93,16 +94,18 @@ import com.swirlds.platform.health.OSHealthChecker;
 import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
+import com.swirlds.platform.network.Network;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
@@ -164,11 +167,13 @@ public class Browser {
 
     private final Configuration configuration;
 
+    // @formatter:off
     private static final String STARTUP_MESSAGE =
             """
               //////////////////////
              // Node is Starting //
             //////////////////////""";
+    // @formatter:on
 
     /**
      * Prevent this class from being instantiated.
@@ -182,10 +187,9 @@ public class Browser {
                 Settings.getInstance().getConfigPath());
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
-        final ConfigSource settingsAliasConfigSource = ConfigAliases.addConfigAliases(settingsConfigSource);
+        final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
         final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
-        final ConfigSource configPropertiesAliasConfigSource = new AliasConfigSource(configPropertiesConfigSource);
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
@@ -196,8 +200,8 @@ public class Browser {
 
         // Load Configuration Definitions
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
-                .withSource(settingsAliasConfigSource)
-                .withSource(configPropertiesAliasConfigSource)
+                .withSource(mappedSettingsConfigSource)
+                .withSource(configPropertiesConfigSource)
                 .withConfigDataType(BasicConfig.class)
                 .withConfigDataType(StateConfig.class)
                 .withConfigDataType(CryptoConfig.class)
@@ -215,7 +219,9 @@ public class Browser {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(WiringConfig.class)
-                .withConfigDataType(PreConsensusEventStreamConfig.class);
+                .withConfigDataType(PreConsensusEventStreamConfig.class)
+                .withConfigDataType(SyncConfig.class)
+                .withConfigDataType(UptimeConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -634,15 +640,26 @@ public class Browser {
                 final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
                         Shutdown::immediateShutDown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
 
-                final SignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
-                        mainClassName, swirldName, nodeId, appVersion, addressBook.copy(), emergencyRecoveryManager);
+                final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
+                        platformContext,
+                        mainClassName,
+                        swirldName,
+                        nodeId,
+                        appVersion,
+                        addressBook.copy(),
+                        emergencyRecoveryManager);
 
                 // check software version compatibility
-                final boolean softwareUpgrade = BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState);
+                final boolean softwareUpgrade =
+                        BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.getNullable());
 
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                        appVersion, softwareUpgrade, loadedSignedState, addressBook.copy(), platformContext);
+                        appVersion,
+                        softwareUpgrade,
+                        loadedSignedState.getNullable(),
+                        addressBook.copy(),
+                        platformContext);
 
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
@@ -703,7 +720,9 @@ public class Browser {
      * @param emergencyRecoveryManager the emergency recovery manager to use for emergency recovery.
      * @return the signed state loaded from disk.
      */
-    private SignedState getUnmodifiedSignedStateFromDisk(
+    @NonNull
+    private ReservedSignedState getUnmodifiedSignedStateFromDisk(
+            @NonNull final PlatformContext platformContext,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
@@ -719,6 +738,7 @@ public class Browser {
         // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
         // time this class is used.
         final SavedStateLoader savedStateLoader = new SavedStateLoader(
+                platformContext,
                 Shutdown::immediateShutDown,
                 configAddressBook,
                 savedStateFiles,
@@ -733,7 +753,7 @@ public class Browser {
                 SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
             }
         }
-        return null;
+        return createNullReservation();
     }
 
     /**

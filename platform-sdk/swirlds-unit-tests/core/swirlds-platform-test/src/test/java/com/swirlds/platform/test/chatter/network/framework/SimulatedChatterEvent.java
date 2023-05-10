@@ -17,7 +17,7 @@
 
 package com.swirlds.platform.test.chatter.network.framework;
 
-import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import java.time.Instant;
 
 /**

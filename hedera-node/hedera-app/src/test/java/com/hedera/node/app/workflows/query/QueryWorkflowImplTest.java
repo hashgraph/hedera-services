@@ -512,7 +512,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, 12345L))
                 .when(queryChecker)
-                .validateAccountBalances(payer, txBody, 200L);
+                .validateAccountBalances(payer, transactionInfo, 200L);
         final var responseBuffer = newEmptyBuffer();
 
         // when

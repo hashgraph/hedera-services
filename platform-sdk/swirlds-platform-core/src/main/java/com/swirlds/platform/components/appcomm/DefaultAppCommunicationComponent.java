@@ -23,8 +23,9 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateNotification;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateWrapper;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 
 /**
@@ -40,31 +41,32 @@ public class DefaultAppCommunicationComponent implements AppCommunicationCompone
 
     @Override
     public void stateToDiskAttempt(
-            final SignedStateWrapper signedStateWrapper, final Path directory, final boolean success) {
+            @NonNull final SignedState signedState, @NonNull final Path directory, final boolean success) {
         if (success) {
-            final SignedState state = signedStateWrapper.get();
             // Synchronous notification, no need to take an extra reservation
             notificationEngine.dispatch(
                     StateWriteToDiskCompleteListener.class,
                     new StateWriteToDiskCompleteNotification(
-                            state.getRound(),
-                            state.getConsensusTimestamp(),
-                            state.getSwirldState(),
+                            signedState.getRound(),
+                            signedState.getConsensusTimestamp(),
+                            signedState.getSwirldState(),
                             directory,
-                            state.isFreezeState()));
+                            signedState.isFreezeState()));
         }
     }
 
     @Override
-    public void newLatestCompleteStateEvent(final SignedStateWrapper signedStateWrapper) {
-        final SignedState signedState = signedStateWrapper.get();
+    public void newLatestCompleteStateEvent(@NonNull final SignedState signedState) {
+        final ReservedSignedState reservedSignedState =
+                signedState.reserve("DefaultAppCommunicationComponent.newLatestCompleteStateEvent()");
+
         final NewSignedStateNotification notification = new NewSignedStateNotification(
                 signedState.getSwirldState(),
                 signedState.getState().getSwirldDualState(),
                 signedState.getRound(),
                 signedState.getConsensusTimestamp());
-        signedState.reserve();
-        notificationEngine.dispatch(NewSignedStateListener.class, notification, r -> signedState.release());
+
+        notificationEngine.dispatch(NewSignedStateListener.class, notification, r -> reservedSignedState.close());
     }
 
     @Override

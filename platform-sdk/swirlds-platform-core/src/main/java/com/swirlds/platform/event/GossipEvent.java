@@ -22,9 +22,9 @@ import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
-import com.swirlds.platform.chatter.protocol.messages.EventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -45,10 +45,8 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     public GossipEvent() {}
 
     /**
-     * @param hashedData
-     * 		the hashed data for the event
-     * @param unhashedData
-     * 		the unhashed data for the event
+     * @param hashedData   the hashed data for the event
+     * @param unhashedData the unhashed data for the event
      */
     public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
         this.hashedData = hashedData;

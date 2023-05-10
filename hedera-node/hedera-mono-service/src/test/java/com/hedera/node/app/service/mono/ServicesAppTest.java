@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -43,6 +44,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelp
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.exports.ExportingRecoveredStateListener;
 import com.hedera.node.app.service.mono.state.exports.ServicesSignedStateListener;
 import com.hedera.node.app.service.mono.state.exports.SignedStateBalancesExporter;
 import com.hedera.node.app.service.mono.state.exports.ToStringAccountsExporter;
@@ -54,6 +56,9 @@ import com.hedera.node.app.service.mono.state.initialization.TreasuryCloner;
 import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
 import com.hedera.node.app.service.mono.state.logic.ReconnectListener;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.validation.BasedLedgerValidator;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.stats.ServicesStatsManager;
@@ -91,6 +96,15 @@ class ServicesAppTest {
     @Mock
     private PropertySource overridingProps;
 
+    @Mock
+    private AccountStorageAdapter accountsStorageAdapter;
+
+    @Mock
+    private UniqueTokenMapAdapter nftsAdapter;
+
+    @Mock
+    private TokenRelStorageAdapter tokenRelsAdapter;
+
     private ServicesApp subject;
 
     @BeforeEach
@@ -121,6 +135,12 @@ class ServicesAppTest {
                 .crypto(cryptography)
                 .selfId(selfId)
                 .build();
+
+        // Make sure the MutableStateChildren has the needed children to instantiate EntityMapWarmer
+        subject.workingState().setAccounts(accountsStorageAdapter);
+        subject.workingState().setTokenAssociations(tokenRelsAdapter);
+        subject.workingState().setUniqueTokens(nftsAdapter);
+        assertThat(subject.mapWarmer(), instanceOf(EntityMapWarmer.class));
     }
 
     @Test
@@ -138,6 +158,9 @@ class ServicesAppTest {
         // Since we gave InitTrigger.EVENT_STREAM_RECOVERY, the record stream manager
         // should be instantiated with a recovery writer
         assertNotNull(subject.recordStreamManager().getRecoveryRecordsWriter());
+        final var maybeRecoveredStateListener = subject.maybeNewRecoveredStateListener();
+        assertTrue(maybeRecoveredStateListener.isPresent());
+        assertThat(maybeRecoveredStateListener.get(), instanceOf(ExportingRecoveredStateListener.class));
         assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
         assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
         assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));
@@ -164,5 +187,6 @@ class ServicesAppTest {
         assertSame(SLEEPING_PAUSE, subject.pause());
         assertTrue(subject.consoleOut().isEmpty());
         assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));
+        assertThat(subject.mapWarmer(), instanceOf(EntityMapWarmer.class));
     }
 }

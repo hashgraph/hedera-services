@@ -2,6 +2,7 @@ module com.hedera.node.app {
     requires com.hedera.pbj.runtime;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.spi;
+    requires com.hedera.node.config;
     requires com.hedera.node.app.service.admin;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
@@ -61,4 +62,5 @@ module com.hedera.node.app {
             com.swirlds.platform;
     exports com.hedera.node.app.throttle to
             com.swirlds.platform;
+    exports com.hedera.node.app.workflows.dispatcher;
 }

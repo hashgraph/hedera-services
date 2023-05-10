@@ -107,8 +107,10 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.txns;
     exports com.hedera.node.app.service.mono.throttling to
             com.fasterxml.jackson.databind,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.config;
     exports com.hedera.node.app.service.mono.ledger.accounts.staking to
+            com.hedera.node.config,
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.context.init to
             com.hedera.node.app;
@@ -246,6 +248,10 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.legacy.exception;
     exports com.hedera.node.app.service.mono.pbj;
     exports com.hedera.node.app.service.mono.sigs.sourcing;
+    exports com.hedera.node.app.service.mono.cache;
+
+    opens com.hedera.node.app.service.mono.cache to
+            com.swirlds.common;
 
     requires com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;

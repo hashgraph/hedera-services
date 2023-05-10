@@ -25,8 +25,8 @@ import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
-import com.swirlds.platform.chatter.protocol.messages.EventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -62,30 +62,27 @@ public class EventTracker {
     private final GossipCSV eventCSV;
 
     /**
-     * Records the number of times that an event has been distributed to N nodes.
-     * For example, distributionCounts.get(3) returns the number of events that
-     * have been distributed to at least 3 nodes.
+     * Records the number of times that an event has been distributed to N nodes. For example, distributionCounts.get(3)
+     * returns the number of events that have been distributed to at least 3 nodes.
      */
     private final Map<Integer, Long> distributionCounts = new HashMap<>();
 
     /**
-     * Records the number of times that an event has failed to be distributed to
-     * N nodes. For example, distributionFailureCounts.get(3) returns the number
-     * of events that were distributed to fewer than 3 nodes.
+     * Records the number of times that an event has failed to be distributed to N nodes. For example,
+     * distributionFailureCounts.get(3) returns the number of events that were distributed to fewer than 3 nodes.
      */
     private final Map<Integer, Long> distributionFailureCounts = new HashMap<>();
 
     /**
-     * Records the total time required to deliver events to N nodes. Times are summed,
-     * when the simulation is complete the average can be computed.
+     * Records the total time required to deliver events to N nodes. Times are summed, when the simulation is complete
+     * the average can be computed.
      */
     private final Map<Integer, Duration> distributionSums = new HashMap<>();
 
     /**
      * Create a new EventTracker.
      *
-     * @param builder
-     * 		contains configuration for the simulation
+     * @param builder contains configuration for the simulation
      */
     public EventTracker(final GossipSimulationBuilder builder) {
         debugEnabled = builder.isDebugEnabled();
@@ -108,10 +105,8 @@ public class EventTracker {
     /**
      * This is called by the simulation engine each time a new event is created.
      *
-     * @param descriptor
-     * 		describes the event that was just created
-     * @param creationTime
-     * 		the time when the event was created
+     * @param descriptor   describes the event that was just created
+     * @param creationTime the time when the event was created
      */
     public void registerNewEvent(final ChatterEventDescriptor descriptor, final Instant creationTime) {
         final TrackedEvent prev = events.put(descriptor, new TrackedEvent(descriptor.getCreator(), creationTime));
@@ -124,12 +119,9 @@ public class EventTracker {
     /**
      * Each node should call this method each time it receives a new event, including self events.
      *
-     * @param descriptor
-     * 		describes the event that a node just received
-     * @param nodeId
-     * 		the ID of the node that received the event
-     * @param receiveTime
-     * 		the time when the event was received
+     * @param descriptor  describes the event that a node just received
+     * @param nodeId      the ID of the node that received the event
+     * @param receiveTime the time when the event was received
      */
     public void registerEvent(final EventDescriptor descriptor, final long nodeId, final Instant receiveTime) {
 
@@ -154,8 +146,7 @@ public class EventTracker {
     /**
      * Purge all data about events older than a given round.
      *
-     * @param olderThanRound
-     * 		all events associated with rounds strictly older than this will be erased
+     * @param olderThanRound all events associated with rounds strictly older than this will be erased
      */
     public void purge(final long olderThanRound) {
         events.shiftWindow(olderThanRound, this::captureStatistics);
@@ -164,10 +155,8 @@ public class EventTracker {
     /**
      * Capture event statistics on an event that is about to be purged.
      *
-     * @param descriptor
-     * 		a description of the event
-     * @param event
-     * 		the destination event
+     * @param descriptor a description of the event
+     * @param event      the destination event
      */
     private void captureStatistics(final EventDescriptor descriptor, final TrackedEvent event) {
 
@@ -202,8 +191,7 @@ public class EventTracker {
     /**
      * Capture data about how an event propagated through the network.
      *
-     * @param event
-     * 		the event in question
+     * @param event the event in question
      */
     private void writeDataToCSV(final TrackedEvent event, final List<Duration> times) {
         if (eventCSV == null) {

@@ -24,8 +24,8 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.LogMarker;
-import com.swirlds.platform.Connection;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
@@ -101,16 +101,18 @@ public class ReconnectController implements Runnable {
     private boolean executeReconnect() throws InterruptedException {
         helper.prepareForReconnect();
 
-        final SignedState signedState;
         logger.info(RECONNECT.getMarker(), "waiting for reconnect connection");
         try (final LockedResource<Connection> connection = connectionProvider.waitForResource()) {
             logger.info(RECONNECT.getMarker(), "acquired reconnect connection");
-            signedState = helper.receiveSignedState(connection.getResource(), validator.get());
+            try (final ReservedSignedState reservedState =
+                    helper.receiveSignedState(connection.getResource(), validator.get())) {
+
+                if (!helper.loadSignedState(reservedState.get())) {
+                    return false;
+                }
+            }
         } catch (final RuntimeException e) {
             logger.info(RECONNECT.getMarker(), "receiving signed state failed", e);
-            return false;
-        }
-        if (!helper.loadSignedState(signedState)) {
             return false;
         }
         startChatter.run();

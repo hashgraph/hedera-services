@@ -21,12 +21,12 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.MonoFeeAccumulator;
-import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
-import com.hedera.node.app.service.contract.impl.components.ContractComponent;
-import com.hedera.node.app.service.file.impl.components.FileComponent;
-import com.hedera.node.app.service.network.impl.components.NetworkComponent;
-import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
-import com.hedera.node.app.service.token.impl.handlers.TokenComponent;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
+import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
+import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
+import com.hedera.node.app.service.network.impl.handlers.NetworkHandlers;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
+import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.system.Platform;
@@ -57,42 +57,43 @@ public interface QueryWorkflowModule {
     static Function<ResponseType, AutoCloseableWrapper<HederaState>> provideStateAccess(
             @NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
-        return responseType -> (AutoCloseableWrapper) platform.getLatestImmutableState();
+        return responseType ->
+                (AutoCloseableWrapper) platform.getLatestImmutableState(QueryWorkflowModule.class.getName());
     }
 
     @Provides
     static QueryHandlers provideQueryHandlers(
-            @NonNull final ConsensusComponent consensusComponent,
-            @NonNull final FileComponent fileComponent,
-            @NonNull final NetworkComponent networkComponent,
-            @NonNull final ContractComponent contractComponent,
-            @NonNull final ScheduleComponent scheduleComponent,
-            @NonNull final TokenComponent tokenComponent) {
+            @NonNull final ConsensusHandlers consensusHandlers,
+            @NonNull final FileHandlers fileHandlers,
+            @NonNull final NetworkHandlers networkHandlers,
+            @NonNull final ContractHandlers contractHandlers,
+            @NonNull final ScheduleHandlers scheduleHandlers,
+            @NonNull final TokenHandlers tokenHandlers) {
         return new QueryHandlers(
-                consensusComponent.consensusGetTopicInfoHandler(),
-                contractComponent.contractGetBySolidityIDHandler(),
-                contractComponent.contractCallLocalHandler(),
-                contractComponent.contractGetInfoHandler(),
-                contractComponent.contractGetBytecodeHandler(),
-                contractComponent.contractGetRecordsHandler(),
-                tokenComponent.cryptoGetAccountBalanceHandler(),
-                tokenComponent.cryptoGetAccountInfoHandler(),
-                tokenComponent.cryptoGetAccountRecordsHandler(),
-                tokenComponent.cryptoGetLiveHashHandler(),
-                tokenComponent.cryptoGetStakersHandler(),
-                fileComponent.fileGetContentsHandler(),
-                fileComponent.fileGetInfoHandler(),
-                networkComponent.networkGetAccountDetailsHandler(),
-                networkComponent.networkGetByKeyHandler(),
-                networkComponent.networkGetExecutionTimeHandler(),
-                networkComponent.networkGetVersionInfoHandler(),
-                networkComponent.networkTransactionGetReceiptHandler(),
-                networkComponent.networkTransactionGetRecordHandler(),
-                scheduleComponent.scheduleGetInfoHandler(),
-                tokenComponent.tokenGetInfoHandler(),
-                tokenComponent.tokenGetAccountNftInfosHandler(),
-                tokenComponent.tokenGetNftInfoHandler(),
-                tokenComponent.tokenGetNftInfosHandler());
+                consensusHandlers.consensusGetTopicInfoHandler(),
+                contractHandlers.contractGetBySolidityIDHandler(),
+                contractHandlers.contractCallLocalHandler(),
+                contractHandlers.contractGetInfoHandler(),
+                contractHandlers.contractGetBytecodeHandler(),
+                contractHandlers.contractGetRecordsHandler(),
+                tokenHandlers.cryptoGetAccountBalanceHandler(),
+                tokenHandlers.cryptoGetAccountInfoHandler(),
+                tokenHandlers.cryptoGetAccountRecordsHandler(),
+                tokenHandlers.cryptoGetLiveHashHandler(),
+                tokenHandlers.cryptoGetStakersHandler(),
+                fileHandlers.fileGetContentsHandler(),
+                fileHandlers.fileGetInfoHandler(),
+                networkHandlers.networkGetAccountDetailsHandler(),
+                networkHandlers.networkGetByKeyHandler(),
+                networkHandlers.networkGetExecutionTimeHandler(),
+                networkHandlers.networkGetVersionInfoHandler(),
+                networkHandlers.networkTransactionGetReceiptHandler(),
+                networkHandlers.networkTransactionGetRecordHandler(),
+                scheduleHandlers.scheduleGetInfoHandler(),
+                tokenHandlers.tokenGetInfoHandler(),
+                tokenHandlers.tokenGetAccountNftInfosHandler(),
+                tokenHandlers.tokenGetNftInfoHandler(),
+                tokenHandlers.tokenGetNftInfosHandler());
     }
 
     @Provides

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.chatter.protocol.peer;
 
-import com.swirlds.platform.chatter.protocol.peer.CommunicationState;
+import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

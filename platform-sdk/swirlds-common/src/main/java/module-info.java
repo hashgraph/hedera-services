@@ -46,6 +46,7 @@ module com.swirlds.common {
     exports com.swirlds.common.metrics;
     exports com.swirlds.common.metrics.atomic;
     exports com.swirlds.common.metrics.config;
+    exports com.swirlds.common.metrics.noop;
     exports com.swirlds.common.metrics.platform;
     exports com.swirlds.common.metrics.platform.prometheus;
     exports com.swirlds.common.notification;
@@ -140,10 +141,6 @@ module com.swirlds.common {
 
     opens com.swirlds.common.merkle.crypto to
             com.fasterxml.jackson.databind;
-
-    exports com.swirlds.common.context.internal to
-            com.swirlds.platform;
-
     opens com.swirlds.common.formatting to
             com.fasterxml.jackson.databind;
     opens com.swirlds.common.units to

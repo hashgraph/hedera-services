@@ -17,13 +17,9 @@
 package com.swirlds.platform.test.chatter.network;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.chatter.protocol.ChatterCore;
+import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
-import java.util.ArrayDeque;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 
 /**

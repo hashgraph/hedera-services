@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAliasSizeGreaterThanEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
+
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
@@ -37,7 +40,6 @@ import java.util.Optional;
  * Default implementation of {@link ReadableAccountStore}
  */
 public class ReadableAccountStoreImpl implements ReadableAccountStore {
-    public static final int EVM_ADDRESS_LEN = 20;
     private static final byte[] MIRROR_PREFIX = new byte[12];
 
     static {
@@ -62,7 +64,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
         this.aliases = states.get("ALIASES");
     }
 
-    private static boolean isMirror(final Bytes bytes) {
+    protected static boolean isMirror(final Bytes bytes) {
         return bytes.matchesPrefix(MIRROR_PREFIX);
     }
 
@@ -90,7 +92,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
      * @return merkle leaf for the given account number
      */
     @Nullable
-    private Account getAccountLeaf(@NonNull final AccountID id) {
+    protected Account getAccountLeaf(@NonNull final AccountID id) {
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =
@@ -98,7 +100,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                     case ACCOUNT_NUM -> accountOneOf.as();
                     case ALIAS -> {
                         final Bytes alias = accountOneOf.as();
-                        if (alias.length() == EVM_ADDRESS_LEN && isMirror(alias)) {
+                        if (isOfEvmAddressSize(alias) && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
                             final var entityNum = aliases.get(alias.asUtf8String());
@@ -139,7 +141,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                         // If we didn't find an alias, we will want to auto-create this account. But
                         // we don't want to auto-create an account if there is already another
                         // account in the system with the same EVM address that we would have auto-created.
-                        if (evmAddress.length() > EVM_ADDRESS_LEN && entityNum == null) {
+                        if (isAliasSizeGreaterThanEvmAddress(evmAddress) && entityNum == null) {
                             // if we don't find entity num for key alias we can try to derive EVM
                             // address from it and look it up
                             final var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);

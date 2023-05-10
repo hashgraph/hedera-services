@@ -32,10 +32,10 @@ import static org.mockito.BDDMockito.given;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -71,10 +71,14 @@ class UpdateCustomizerFactoryTest {
     @Mock
     private OptionValidator optionValidator;
 
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
     @Test
     void makesExpectedChanges() {
         // setup:
         final var newExpiryTime = Timestamp.newBuilder().setSeconds(newExpiry).build();
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
 
         // given:
         var mutableContract = MerkleAccountFactory.newContract()
@@ -97,7 +101,7 @@ class UpdateCustomizerFactoryTest {
         given(optionValidator.isValidExpiry(newExpiryTime)).willReturn(true);
 
         // when:
-        var result = subject.customizerFor(mutableContract, optionValidator, op);
+        var result = subject.customizerFor(mutableContract, optionValidator, op, dynamicProperties);
         // and when:
         mutableContract = (MerkleAccount) result.getLeft().get().customizing(mutableContract);
 
@@ -129,7 +133,7 @@ class UpdateCustomizerFactoryTest {
                 .build();
 
         // when:
-        var result = subject.customizerFor(mutableContract, optionValidator, op);
+        var result = subject.customizerFor(mutableContract, optionValidator, op, dynamicProperties);
 
         // then:
         assertTrue(result.getLeft().isEmpty());
@@ -138,18 +142,18 @@ class UpdateCustomizerFactoryTest {
 
     @Test
     void rejectsExcessAutoAssociations() {
+        given(dynamicProperties.maxAllowedAutoAssociations()).willReturn(5000);
         // given:
         var mutableContract = MerkleAccountFactory.newContract()
                 .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
                 .get();
         // and:
         var op = ContractUpdateTransactionBody.newBuilder()
-                .setMaxAutomaticTokenAssociations(
-                        Int32Value.newBuilder().setValue(CryptoCreateChecks.MAX_CHARGEABLE_AUTO_ASSOCIATIONS + 1))
+                .setMaxAutomaticTokenAssociations(Int32Value.newBuilder().setValue(5001))
                 .build();
 
         // when:
-        var result = subject.customizerFor(mutableContract, optionValidator, op);
+        var result = subject.customizerFor(mutableContract, optionValidator, op, dynamicProperties);
 
         // then:
         assertTrue(result.getLeft().isEmpty());
@@ -169,7 +173,7 @@ class UpdateCustomizerFactoryTest {
                 .build();
 
         // when:
-        var result = subject.customizerFor(mutableContract, optionValidator, op);
+        var result = subject.customizerFor(mutableContract, optionValidator, op, dynamicProperties);
         // and when:
         mutableContract = (MerkleAccount) result.getLeft().get().customizing(mutableContract);
 
@@ -189,7 +193,7 @@ class UpdateCustomizerFactoryTest {
                 .build();
 
         // when:
-        var result = subject.customizerFor(mutableContract, optionValidator, op);
+        var result = subject.customizerFor(mutableContract, optionValidator, op, dynamicProperties);
 
         // then:
         assertTrue(result.getLeft().isEmpty());
@@ -210,7 +214,7 @@ class UpdateCustomizerFactoryTest {
                 .build();
 
         // when:
-        var result = subject.customizerFor(mutableContract, optionValidator, op);
+        var result = subject.customizerFor(mutableContract, optionValidator, op, dynamicProperties);
 
         // then:
         assertTrue(result.getLeft().isEmpty());
@@ -229,7 +233,7 @@ class UpdateCustomizerFactoryTest {
                 .build();
 
         // when:
-        var result = subject.customizerFor(mutableContract, optionValidator, op);
+        var result = subject.customizerFor(mutableContract, optionValidator, op, dynamicProperties);
 
         // then:
         assertTrue(result.getLeft().isEmpty());
@@ -252,7 +256,7 @@ class UpdateCustomizerFactoryTest {
                 .build();
 
         // when:
-        var result = subject.customizerFor(mutableContract, optionValidator, op);
+        var result = subject.customizerFor(mutableContract, optionValidator, op, dynamicProperties);
 
         // then:
         assertTrue(result.getLeft().isEmpty());
@@ -271,7 +275,7 @@ class UpdateCustomizerFactoryTest {
                 .build();
 
         // when:
-        var result = subject.customizerFor(immutableContract, optionValidator, op);
+        var result = subject.customizerFor(immutableContract, optionValidator, op, dynamicProperties);
 
         // then:
         assertTrue(result.getLeft().isEmpty());

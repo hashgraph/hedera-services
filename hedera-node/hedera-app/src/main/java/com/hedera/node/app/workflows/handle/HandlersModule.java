@@ -16,79 +16,80 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import com.hedera.node.app.service.admin.impl.components.AdminComponent;
-import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
-import com.hedera.node.app.service.contract.impl.components.ContractComponent;
-import com.hedera.node.app.service.file.impl.components.FileComponent;
-import com.hedera.node.app.service.network.impl.components.NetworkComponent;
-import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
-import com.hedera.node.app.service.token.impl.handlers.TokenComponent;
-import com.hedera.node.app.service.util.impl.components.UtilComponent;
+import com.hedera.node.app.components.StoreComponent;
+import com.hedera.node.app.service.admin.impl.handlers.AdminHandlers;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
+import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
+import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
+import com.hedera.node.app.service.network.impl.handlers.NetworkHandlers;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
+import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
+import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 
-@Module
+@Module(subcomponents = {StoreComponent.class})
 public interface HandlersModule {
     @Provides
     @Singleton
     static TransactionHandlers provideTransactionHandlers(
-            @NonNull final AdminComponent adminComponent,
-            @NonNull final ConsensusComponent consensusComponent,
-            @NonNull final FileComponent fileComponent,
-            @NonNull final NetworkComponent networkComponent,
-            @NonNull final ContractComponent contractComponent,
-            @NonNull final ScheduleComponent scheduleComponent,
-            @NonNull final TokenComponent tokenComponent,
-            @NonNull final UtilComponent utilComponent) {
+            @NonNull final AdminHandlers adminHandlers,
+            @NonNull final ConsensusHandlers consensusHandlers,
+            @NonNull final FileHandlers fileHandlers,
+            @NonNull final NetworkHandlers networkHandlers,
+            @NonNull final ContractHandlers contractHandlers,
+            @NonNull final ScheduleHandlers scheduleHandlers,
+            @NonNull final TokenHandlers tokenHandlers,
+            @NonNull final UtilHandlers utilHandlers) {
         return new TransactionHandlers(
-                consensusComponent.consensusCreateTopicHandler(),
-                consensusComponent.consensusUpdateTopicHandler(),
-                consensusComponent.consensusDeleteTopicHandler(),
-                consensusComponent.consensusSubmitMessageHandler(),
-                contractComponent.contractCreateHandler(),
-                contractComponent.contractUpdateHandler(),
-                contractComponent.contractCallHandler(),
-                contractComponent.contractDeleteHandler(),
-                contractComponent.contractSystemDeleteHandler(),
-                contractComponent.contractSystemUndeleteHandler(),
-                contractComponent.etherumTransactionHandler(),
-                tokenComponent.cryptoCreateHandler(),
-                tokenComponent.cryptoUpdateHandler(),
-                tokenComponent.cryptoTransferHandler(),
-                tokenComponent.cryptoDeleteHandler(),
-                tokenComponent.cryptoApproveAllowanceHandler(),
-                tokenComponent.cryptoDeleteAllowanceHandler(),
-                tokenComponent.cryptoAddLiveHashHandler(),
-                tokenComponent.cryptoDeleteLiveHashHandler(),
-                fileComponent.fileCreateHandler(),
-                fileComponent.fileUpdateHandler(),
-                fileComponent.fileDeleteHandler(),
-                fileComponent.fileAppendHandler(),
-                fileComponent.fileSystemDeleteHandler(),
-                fileComponent.fileSystemUndeleteHandler(),
-                adminComponent.freezeHandler(),
-                networkComponent.networkUncheckedSubmitHandler(),
-                scheduleComponent.scheduleCreateHandler(),
-                scheduleComponent.scheduleSignHandler(),
-                scheduleComponent.scheduleDeleteHandler(),
-                tokenComponent.tokenCreateHandler(),
-                tokenComponent.tokenUpdateHandler(),
-                tokenComponent.tokenMintHandler(),
-                tokenComponent.tokenBurnHandler(),
-                tokenComponent.tokenDeleteHandler(),
-                tokenComponent.tokenAccountWipeHandler(),
-                tokenComponent.tokenFreezeAccountHandler(),
-                tokenComponent.tokenUnfreezeAccountHandler(),
-                tokenComponent.tokenGrantKycToAccountHandler(),
-                tokenComponent.tokenRevokeKycFromAccountHandler(),
-                tokenComponent.tokenAssociateToAccountHandler(),
-                tokenComponent.tokenDissociateFromAccountHandler(),
-                tokenComponent.tokenFeeScheduleUpdateHandler(),
-                tokenComponent.tokenPauseHandler(),
-                tokenComponent.tokenUnpauseHandler(),
-                utilComponent.prngHandler());
+                consensusHandlers.consensusCreateTopicHandler(),
+                consensusHandlers.consensusUpdateTopicHandler(),
+                consensusHandlers.consensusDeleteTopicHandler(),
+                consensusHandlers.consensusSubmitMessageHandler(),
+                contractHandlers.contractCreateHandler(),
+                contractHandlers.contractUpdateHandler(),
+                contractHandlers.contractCallHandler(),
+                contractHandlers.contractDeleteHandler(),
+                contractHandlers.contractSystemDeleteHandler(),
+                contractHandlers.contractSystemUndeleteHandler(),
+                contractHandlers.etherumTransactionHandler(),
+                tokenHandlers.cryptoCreateHandler(),
+                tokenHandlers.cryptoUpdateHandler(),
+                tokenHandlers.cryptoTransferHandler(),
+                tokenHandlers.cryptoDeleteHandler(),
+                tokenHandlers.cryptoApproveAllowanceHandler(),
+                tokenHandlers.cryptoDeleteAllowanceHandler(),
+                tokenHandlers.cryptoAddLiveHashHandler(),
+                tokenHandlers.cryptoDeleteLiveHashHandler(),
+                fileHandlers.fileCreateHandler(),
+                fileHandlers.fileUpdateHandler(),
+                fileHandlers.fileDeleteHandler(),
+                fileHandlers.fileAppendHandler(),
+                fileHandlers.fileSystemDeleteHandler(),
+                fileHandlers.fileSystemUndeleteHandler(),
+                adminHandlers.freezeHandler(),
+                networkHandlers.networkUncheckedSubmitHandler(),
+                scheduleHandlers.scheduleCreateHandler(),
+                scheduleHandlers.scheduleSignHandler(),
+                scheduleHandlers.scheduleDeleteHandler(),
+                tokenHandlers.tokenCreateHandler(),
+                tokenHandlers.tokenUpdateHandler(),
+                tokenHandlers.tokenMintHandler(),
+                tokenHandlers.tokenBurnHandler(),
+                tokenHandlers.tokenDeleteHandler(),
+                tokenHandlers.tokenAccountWipeHandler(),
+                tokenHandlers.tokenFreezeAccountHandler(),
+                tokenHandlers.tokenUnfreezeAccountHandler(),
+                tokenHandlers.tokenGrantKycToAccountHandler(),
+                tokenHandlers.tokenRevokeKycFromAccountHandler(),
+                tokenHandlers.tokenAssociateToAccountHandler(),
+                tokenHandlers.tokenDissociateFromAccountHandler(),
+                tokenHandlers.tokenFeeScheduleUpdateHandler(),
+                tokenHandlers.tokenPauseHandler(),
+                tokenHandlers.tokenUnpauseHandler(),
+                utilHandlers.prngHandler());
     }
 }

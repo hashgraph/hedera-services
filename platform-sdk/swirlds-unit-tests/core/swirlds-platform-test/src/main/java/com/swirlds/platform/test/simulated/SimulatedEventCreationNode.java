@@ -23,12 +23,12 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.event.EventCreatorThread;
@@ -39,11 +39,13 @@ import com.swirlds.platform.event.creation.OtherParentTracker;
 import com.swirlds.platform.event.creation.ParentBasedCreationRule;
 import com.swirlds.platform.event.creation.StaticCreationRules;
 import com.swirlds.platform.event.intake.ChatterEventMapper;
+import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -69,40 +71,34 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
     private Instant nextEventCreation;
 
     /**
-     * @param random
-     * 		source of randomness
-     * @param time
-     * 		current time
-     * @param addressBook
-     * 		address book of the network
-     * @param consumers
-     * 		consumers of created events
-     * @param nodeId
-     * 		this node's ID
-     * @param eventByHash
-     * 		retrive an {@link EventImpl} by its hash
-     * @param config
-     * 		the configuration for this node
+     * @param softwareVersion software version of the node
+     * @param random          source of randomness
+     * @param time            current time
+     * @param addressBook     address book of the network
+     * @param consumers       consumers of created events
+     * @param nodeId          this node's ID
+     * @param eventByHash     retrive an {@link EventImpl} by its hash
+     * @param config          the configuration for this node
      */
     public SimulatedEventCreationNode(
-            final Random random,
-            final Time time,
-            final AddressBook addressBook,
-            final List<Consumer<GossipEvent>> consumers,
-            final NodeId nodeId,
-            final Function<Hash, EventImpl> eventByHash,
-            final NodeConfig config) {
-        this.time = time;
-        this.nodeId = nodeId;
-        this.eventByHash = eventByHash;
-        criticalQuorum = new CriticalQuorumImpl(
-                addressBook,
-                false,
-                new TestConfigBuilder()
-                        .getOrCreateConfig()
-                        .getConfigData(ChatterConfig.class)
-                        .criticalQuorumSoftening());
-        this.config = config;
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final Random random,
+            @NonNull final Time time,
+            @NonNull final AddressBook addressBook,
+            @NonNull final List<Consumer<GossipEvent>> consumers,
+            @NonNull final NodeId nodeId,
+            @NonNull final Function<Hash, EventImpl> eventByHash,
+            @NonNull final NodeConfig config) {
+        Objects.requireNonNull(softwareVersion, "the software version is null");
+        Objects.requireNonNull(random, "the random is null");
+        Objects.requireNonNull(addressBook, "the address book is null");
+        Objects.requireNonNull(consumers, "the consumers is null");
+        this.time = Objects.requireNonNull(time, "the time is null");
+        this.nodeId = Objects.requireNonNull(nodeId, "the node ID is null");
+        this.eventByHash = Objects.requireNonNull(eventByHash, "the event by hash function is null");
+        this.config = Objects.requireNonNull(config, "the config is null");
+        criticalQuorum =
+                new CriticalQuorumImpl(addressBook, false, new ChatterSubSetting().getCriticalQuorumSoftening());
         final OtherParentTracker otherParentTracker = new OtherParentTracker();
         final LoggingEventCreationRules eventCreationRules = LoggingEventCreationRules.create(
                 List.of(), List.of(NULL_OTHER_PARENT, otherParentTracker, criticalQuorum));
@@ -116,6 +112,7 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
                     return hash;
                 });
         chatterEventCreator = new ChatterEventCreator(
+                softwareVersion,
                 nodeId,
                 new RandomSigner(random),
                 () -> new ConsensusTransactionImpl[0],
@@ -164,8 +161,7 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
     /**
      * Add an event created by another nodes
      *
-     * @param msg
-     * 		the message to add
+     * @param msg the message to add
      */
     @Override
     public void handleMessageFromWire(final SelfSerializable msg, final long fromPeer) {

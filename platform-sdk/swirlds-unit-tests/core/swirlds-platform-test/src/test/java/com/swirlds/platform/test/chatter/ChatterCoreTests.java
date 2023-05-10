@@ -22,12 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.time.OSTime;
-import com.swirlds.platform.chatter.ChatterSubSetting;
-import com.swirlds.platform.chatter.protocol.ChatterCore;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
+import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.event.GossipEventBuilder;
 import java.util.LinkedList;

@@ -16,6 +16,7 @@
 
 package com.swirlds.common.config.sources;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.io.IOException;
@@ -30,8 +31,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * A {@link com.swirlds.config.api.source.ConfigSource} implementation that can be used to provide values from
- * files based on the old syntax of swirlds settings.txt files.
+ * A {@link com.swirlds.config.api.source.ConfigSource} implementation that can be used to provide values from files
+ * based on the old syntax of swirlds settings.txt files.
  *
  * @deprecated should be removed once the old fileformat is not used anymore
  */
@@ -48,8 +49,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
      * Creates an instance that provides the config properties from the legacy settings.txt file
      *
      * @return config source for the settings.txt file
-     * @throws IOException
-     * 		if settings.txt can not be loaded
+     * @throws IOException if settings.txt can not be loaded
      */
     public static LegacyFileConfigSource ofSettingsFile() throws IOException {
         final Path path = FileSystems.getDefault()
@@ -60,25 +60,10 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Creates an instance that provides the config properties from the legacy config.txt file
-     *
-     * @return config source for the config.txt file
-     * @throws IOException
-     * 		if config.txt can not be loaded
-     */
-    public static LegacyFileConfigSource ofConfigFile() throws IOException {
-        final Path path =
-                FileSystems.getDefault().getPath("config.txt").toAbsolutePath().normalize();
-        return new LegacyFileConfigSource(path, ConfigSourceOrdinalConstants.LEGACY_PROPERTY_FILE_ORDINAL_FOR_CONFIG);
-    }
-
-    /**
      * Creates a new instance based on a file
      *
-     * @param filePath
-     * 		the file that contains the config properties
-     * @throws IOException
-     * 		if the file can not be loaded or parsed
+     * @param filePath the file that contains the config properties
+     * @throws IOException if the file can not be loaded or parsed
      */
     public LegacyFileConfigSource(final Path filePath) throws IOException {
         this(filePath, ConfigSourceOrdinalConstants.LEGACY_PROPERTY_FILE_ORDINAL);
@@ -87,15 +72,12 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
     /**
      * Creates a new instance based on a file
      *
-     * @param ordinal
-     * 		the ordinal of the source (see {@link #getOrdinal()})
-     * @param filePath
-     * 		the file that contains the config properties
-     * @throws IOException
-     * 		if the file can not be loaded or parsed
+     * @param ordinal  the ordinal of the source (see {@link #getOrdinal()})
+     * @param filePath the file that contains the config properties
+     * @throws IOException if the file can not be loaded or parsed
      */
     public LegacyFileConfigSource(final Path filePath, final int ordinal) throws IOException {
-        this.filePath = CommonUtils.throwArgNull(filePath, "filePath");
+        this.filePath = ArgumentUtils.throwArgNull(filePath, "filePath");
         this.ordinal = ordinal;
         this.internalProperties = Collections.unmodifiableMap(loadSettings(filePath.toFile()));
     }
@@ -103,10 +85,8 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
     /**
      * Creates a new instance based on a file
      *
-     * @param filePath
-     * 		the path of the file that contains the config properties
-     * @throws IOException
-     * 		if the file can not be loaded or parsed
+     * @param filePath the path of the file that contains the config properties
+     * @throws IOException if the file can not be loaded or parsed
      */
     public LegacyFileConfigSource(final String filePath) throws IOException {
         this(Paths.get(CommonUtils.throwArgBlank(filePath, "filePath")));
@@ -131,7 +111,6 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
                         final String[] pars = splitLine(line);
                         try {
                             if (pars.length > 1) {
-                                final String[] params = new String[pars.length - 1];
                                 StringBuilder stringBuilder = new StringBuilder();
                                 for (int i = 1; i < pars.length; i++) {
                                     stringBuilder.append(pars[i].trim());
@@ -152,7 +131,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
     }
 
     private static String[] splitLine(final String line) {
-        return Arrays.stream(line.split(",")).map(e -> e.trim()).toArray(i -> new String[i]);
+        return Arrays.stream(line.split(",")).map(String::trim).toArray(String[]::new);
     }
 
     /**
