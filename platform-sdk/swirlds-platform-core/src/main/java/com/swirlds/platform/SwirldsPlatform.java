@@ -1302,7 +1302,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
         syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
 
-        Runnable stopGossip;
+        final Runnable stopGossip;
         if (settings.getChatter().isChatterUsed()) {
             stopGossip = chatterCore::stopChatter;
         } else if (syncConfig.syncAsProtocolEnabled()) {
