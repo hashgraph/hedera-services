@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.gossip.chatter.protocol;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
@@ -52,6 +51,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 
 /**
@@ -86,7 +86,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
      * @param eventClass           the class of the type of event used
      * @param prepareReceivedEvent the first handler to be called when an event is received, this should do any
      *                             preparation work that might be needed by other handlers (such as hashing)
-     * @param config             chatter config
+     * @param config               chatter config
      * @param pingConsumer         consumer of the reported ping time for a given peer. accepts the ID of the peer and
      *                             the number of nanoseconds it took for the peer to respond
      * @param metrics              reference to the metrics-system
@@ -98,13 +98,13 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
             @NonNull final ChatterConfig config,
             @NonNull final BiConsumer<NodeId, Long> pingConsumer,
             @NonNull final Metrics metrics) {
-        ArgumentUtils.throwArgNull(metrics, "metrics");
+        Objects.requireNonNull(metrics);
 
-        this.time = ArgumentUtils.throwArgNull(time, "time");
-        this.eventClass = ArgumentUtils.throwArgNull(eventClass, "eventClass");
-        this.prepareReceivedEvent = ArgumentUtils.throwArgNull(prepareReceivedEvent, "prepareReceivedEvent");
-        this.config = ArgumentUtils.throwArgNull(config, "config");
-        this.pingConsumer = ArgumentUtils.throwArgNull(pingConsumer, "pingConsumer");
+        this.time = Objects.requireNonNull(time);
+        this.eventClass = Objects.requireNonNull(eventClass);
+        this.prepareReceivedEvent = Objects.requireNonNull(prepareReceivedEvent);
+        this.config = Objects.requireNonNull(config);
+        this.pingConsumer = Objects.requireNonNull(pingConsumer);
 
         this.selfEventOutput = new QueueOutputMain<>("selfEvent", config.selfEventQueueCapacity(), metrics);
         this.otherEventOutput = new QueueOutputMain<>("otherEvent", config.otherEventQueueCapacity(), metrics);
