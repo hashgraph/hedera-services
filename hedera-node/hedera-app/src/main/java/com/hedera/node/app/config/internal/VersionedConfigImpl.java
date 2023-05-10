@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.config.internal;
 
-import com.hedera.node.app.spi.config.VersionedConfiguration;
+import com.hedera.node.config.VersionedConfiguration;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;

@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.mono.state.initialization;
 
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
